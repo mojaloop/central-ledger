@@ -88,6 +88,7 @@ const getSettlementModelsCached = async () => {
   Public API
 */
 exports.initialize = async () => {
+  console.log('settlemetModelCached.initialize called')
   /* Register as cache client */
   const settlementModelCacheClientMeta = {
     id: 'settlementModels',

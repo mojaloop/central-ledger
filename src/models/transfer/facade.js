@@ -102,6 +102,7 @@ const getById = async (id) => {
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
+      console.log('getById, transferResult', transferResult)
       if (transferResult) {
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
         if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {

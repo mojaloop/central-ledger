@@ -67,6 +67,7 @@ exports.adjustLimits = async (participantName, limitObj = {}) => {
         value: limitObj.limit.value || limitAndInitialPositionSampleData.limit.value
       }
     }
+    console.log('adjustLimits!')
     return Model.adjustLimits(participantName, limit)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

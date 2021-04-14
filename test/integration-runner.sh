@@ -36,7 +36,7 @@ fi
 >&2 echo ""
 >&2 echo "====== Loading environment variables ======"
 cat $1
-. $1
+source $1
 >&2 echo "==========================================="
 >&2 echo ""
 
@@ -178,10 +178,19 @@ is_db_up() {
 }
 
 # Script execution
-# docker-compose stop
-# TODO: maybe remove this?
-# docker-compose -f docker-compose.yml -f docker-compose.integration.yml build
+if [ ${INTEGRATION_TEST_REPEAT_MODE} = "true" ]; then
+  echo 'INTEGRATION_TEST_REPEAT_MODE set, stopping containers and clearing mysql state'
+  docker-compose stop
+  docker-compose rm -f mysql
+else 
+  echo 'INTEGRATION_TEST_REPEAT_MODE not set, building containers from scratch'
+  docker-compose -f docker-compose.yml -f docker-compose.integration.yml build
+fi 
+
 docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql objstore central-ledger
+docker-compose ps
+
+echo "Waiting for MySQL"
 
 until is_db_up; do
   >&2 printf "."

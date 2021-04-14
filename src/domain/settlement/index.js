@@ -33,6 +33,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Util = require('@mojaloop/central-services-shared').Util
 
 const createSettlementModel = async (settlementModel, trx = null) => {
+  console.log('createSettlementModel called')
   try {
     // check for existing hub account with the settlementModel to be able to create participant accounts automatically
     await ParticipantService.validateHubAccounts(settlementModel.currency)
@@ -58,6 +59,7 @@ const createSettlementModel = async (settlementModel, trx = null) => {
 }
 /* istanbul ignore next */
 const getByName = async (name, trx = null) => {
+  console.log('settlement getByName name:', name)
   try {
     return await SettlementModelModel.getByName(name, trx)
   } catch (err) {

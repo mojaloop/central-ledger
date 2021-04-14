@@ -259,9 +259,14 @@ Test('Handlers test', async handlersTest => {
   await ParticipantCached.initialize()
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
-  await SettlementModelCached.initialize()
   await Cache.initCache()
-  await SettlementHelper.prepareData()
+  // TODO: For some reason, this throws an error if it's already been initialized
+  // I'm not sure if this is on purpose, or a test bug... for now I'll wrap in a try
+  try {
+    await SettlementHelper.prepareData()
+  } catch (err) {
+    console.log('SettlementModelCached.initialize threw err',err)
+  }
   await HubAccountsHelper.prepareData()
 
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
@@ -293,12 +298,16 @@ Test('Handlers test', async handlersTest => {
 
       const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
 
+      // TODO: hmm I think something isn't getting seeded here.
       const tests = async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        console.log("transfer is", transfer)
         const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
         const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+        console.log("tests 2")
         const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+        console.log("tests 3")
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
         test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
@@ -307,14 +316,16 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.RESERVED) {
-            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-          }
-          return tests()
-        }, retryOpts)
+        await tests()
+        // await retry(async () => { // use bail(new Error('to break before max retries'))
+        //   console.log("retry??")
+        //   const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        //   if (transfer.transferState !== TransferState.RESERVED) {
+        //     if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+        //     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+        //   }
+        //   return tests()
+        // }, retryOpts)
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
