@@ -162,11 +162,11 @@ ftest "npm run test:int"
 test_exit_code=$?
 echo "Test exited with result code.... $test_exit_code ..."
 
-# >&1 echo "Displaying test logs"
-# docker logs $APP_HOST
+>&1 echo "Displaying test logs"
+docker logs $APP_HOST
 
-# >&1 echo "Copy results to local directory"
-# docker cp $APP_HOST:$DOCKER_WORKING_DIR/$APP_DIR_TEST_RESULTS $TEST_DIR
+>&1 echo "Copy results to local directory"
+docker cp $APP_HOST:$DOCKER_WORKING_DIR/$APP_DIR_TEST_RESULTS $TEST_DIR
 
 if [ "$test_exit_code" = "0" ]
 then
