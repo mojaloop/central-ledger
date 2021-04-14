@@ -323,7 +323,6 @@ Test('Handlers test', async handlersTest => {
           return tests()
         }, retryOpts)
       } catch (err) {
-        console.log('transferFulfilCommit err'. err)
         Logger.error(err)
         test.fail(err.message)
       }
@@ -621,6 +620,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
+    // TODO: fix me!
     // await timeoutTest.test('position resets after a timeout', async (test) => {
     //   // Arrange
     //   const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value

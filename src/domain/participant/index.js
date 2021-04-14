@@ -293,12 +293,9 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSITION
     }
     const payload = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
-    console.log("emitting kafka message 1")
     await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Events.Event.Type.NOTIFICATION, Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Enum.Events.EventStatus.SUCCESS)
-    console.log("emitting kafka message 2")
     return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition, true)
   } catch (err) {
-    console.log("some error was thrown", err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -317,7 +314,6 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
 
 const getPositionByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    console.log('getPositionByParticipantCurrencyId 1')
     return ParticipantPositionModel.getByParticipantCurrencyId(participantCurrencyId)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
