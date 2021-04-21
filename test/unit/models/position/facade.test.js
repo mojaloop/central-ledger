@@ -320,6 +320,24 @@ Test('Position facade', async (positionFacadeTest) => {
 
           sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(participantLimit))
           const getByNameAndCurrencyStub = sandbox.stub(ModelParticipant, 'getByNameAndCurrency')
+
+          const allSettlementModels = [{
+            settlementModelId: 1,
+            name: 'DEFERREDNET',
+            isActive: 1,
+            settlementGranularityId: 2,
+            settlementInterchangeId: 2,
+            settlementDelayId: 2,
+            currencyId: null,
+            requireLiquidityCheck: 1,
+            ledgerAccountTypeId: 1,
+            autoPositionReset: 1,
+            adjustPosition: 0,
+            settlementAccountTypeId: 2
+          }]
+
+          sandbox.stub(SettlementModelCached, 'getAll').resolves(allSettlementModels)
+
           getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 1).resolves({
             participantCurrencyId: 1,
             participantId: 1,
@@ -406,6 +424,24 @@ Test('Position facade', async (positionFacadeTest) => {
             settlementDelayId: Enum.Settlements.SettlementDelay.DEFERRED,
             settlementAccountTypeId: Enum.Accounts.LedgerAccountType.SETTLEMENT
           })
+
+          const allSettlementModels = [{
+            settlementModelId: 1,
+            name: 'DEFERREDNET',
+            isActive: 1,
+            settlementGranularityId: 2,
+            settlementInterchangeId: 2,
+            settlementDelayId: 2,
+            currencyId: null,
+            requireLiquidityCheck: 1,
+            ledgerAccountTypeId: 1,
+            autoPositionReset: 1,
+            adjustPosition: 0,
+            settlementAccountTypeId: 2
+          }]
+
+          sandbox.stub(SettlementModelCached, 'getAll').resolves(allSettlementModels)
+
           const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
@@ -498,6 +534,24 @@ Test('Position facade', async (positionFacadeTest) => {
             settlementDelayId: Enum.Settlements.SettlementDelay.DEFERRED,
             settlementAccountTypeId: Enum.Accounts.LedgerAccountType.SETTLEMENT
           })
+
+          const allSettlementModels = [{
+            settlementModelId: 1,
+            name: 'DEFERREDNET',
+            isActive: 1,
+            settlementGranularityId: 2,
+            settlementInterchangeId: 2,
+            settlementDelayId: 2,
+            currencyId: null,
+            requireLiquidityCheck: 1,
+            ledgerAccountTypeId: 1,
+            autoPositionReset: 1,
+            adjustPosition: 0,
+            settlementAccountTypeId: 2
+          }]
+
+          sandbox.stub(SettlementModelCached, 'getAll').resolves(allSettlementModels)
+
           const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
