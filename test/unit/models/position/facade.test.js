@@ -369,6 +369,87 @@ Test('Position facade', async (positionFacadeTest) => {
         }
       })
 
+      await prepareChangeParticipantPositionTransaction.test('Should throw', async test => {
+        try {
+          sandbox.stub(Db, 'getKnex')
+          const knexStub = sandbox.stub()
+          const trxStub = sandbox.stub()
+
+          trxStub.commit = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          knexStub.batchInsert = sandbox.stub()
+          knexStub.batchInsert.returns({
+            transacting: sandbox.stub().resolves([1])
+          })
+
+          Db.getKnex.returns(knexStub)
+          knexStub.returns({
+            transacting: sandbox.stub().returns({
+              forUpdate: sandbox.stub().returns({
+                whereIn: sandbox.stub().returns({
+                  select: sandbox.stub().returns(Promise.resolve())
+                })
+              }),
+              where: sandbox.stub().returns({
+                update: sandbox.stub().returns(Promise.resolve()),
+                orderBy: sandbox.stub().returns({
+                  first: sandbox.stub().resolves(Object.assign({}, transferStateChange))
+                })
+              }),
+              whereIn: sandbox.stub().returns({
+                forUpdate: sandbox.stub().returns({
+                  select: sandbox.stub().returns(initialParticipantPositions)
+                })
+              })
+            })
+          })
+
+          sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').throws(new Error('Error'))
+          const getByNameAndCurrencyStub = sandbox.stub(ModelParticipant, 'getByNameAndCurrency')
+
+          const allSettlementModels = [{
+            settlementModelId: 1,
+            name: 'DEFERREDNET',
+            isActive: 1,
+            settlementGranularityId: 2,
+            settlementInterchangeId: 2,
+            settlementDelayId: 2,
+            currencyId: null,
+            requireLiquidityCheck: 1,
+            ledgerAccountTypeId: 1,
+            autoPositionReset: 1,
+            adjustPosition: 0,
+            settlementAccountTypeId: 2
+          }]
+
+          sandbox.stub(SettlementModelCached, 'getAll').resolves(allSettlementModels)
+
+          getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 1).resolves({
+            participantCurrencyId: 1,
+            participantId: 1,
+            currencyId: 'USD',
+            isActive: 1
+          })
+          getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 2).resolves({
+            participantCurrencyId: 2,
+            participantId: 1,
+            currencyId: 'USD',
+            isActive: 1
+          })
+          sandbox.stub(SettlementModelCached, 'getByLedgerAccountTypeId').resolves({
+            settlementDelayId: Enum.Settlements.SettlementDelay.DEFERRED,
+            settlementAccountTypeId: Enum.Accounts.LedgerAccountType.SETTLEMENT
+          })
+          await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
+          test.fail()
+
+          test.end()
+        } catch (err) {
+          test.pass('completed successfully')
+          test.end()
+        }
+      })
+
       await prepareChangeParticipantPositionTransaction.test('abort transfer if state is not correct ', async test => {
         // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
         try {

@@ -33,7 +33,6 @@ const SettlementService = require('../../../src/domain/settlement')
 const SettlementModel = require('../../../src/models/settlement/settlementModel')
 const LedgerAccountTypeModel = require('../../../src/models/ledgerAccountType/ledgerAccountType')
 const Db = require('../../../src/lib/db')
-const ConfigValidator = require('../../../src/lib/configValidator')
 const LedgerAccountTypesService = require('../../../src/domain/ledgerAccountTypes')
 
 const Config = require('../../../src/lib/config')
@@ -62,7 +61,6 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
     sandbox.stub(Db)
     sandbox.stub(SettlementService)
     sandbox.stub(SettlementModel)
-    sandbox.stub(ConfigValidator)
     sandbox.stub(LedgerAccountTypesService)
     Db.getKnex.returns(knexStub)
     knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
@@ -92,20 +90,20 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
       // LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves()
       SettlementModel.getSettlementModelsByName.resolves([])
       SettlementService.createSettlementModel.resolves()
-      const expectedLedgerAccountRecords = [
-        {
-          name: 'INTERCHANGE_FEE',
-          description: 'Interchange fees chargeable to DFSPs',
-          isSettleable: true,
-          isActive: true
-        },
-        {
-          name: 'INTERCHANGE_FEE_SETTLEMENT',
-          description: 'Interchange fees settlement account',
-          isSettleable: true,
-          isActive: true
-        }
-      ]
+      // const expectedLedgerAccountRecords = [
+      //   {
+      //     name: 'INTERCHANGE_FEE',
+      //     description: 'Interchange fees chargeable to DFSPs',
+      //     isSettleable: true,
+      //     isActive: true
+      //   },
+      //   {
+      //     name: 'INTERCHANGE_FEE_SETTLEMENT',
+      //     description: 'Interchange fees settlement account',
+      //     isSettleable: true,
+      //     isActive: true
+      //   }
+      // ]
 
       await ConfigDataSeeder.initializeSeedData()
       // // assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.callCount, 1, 'should call the model getLedgerAccountsByName function')

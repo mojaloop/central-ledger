@@ -31,7 +31,6 @@ const SettlementModel = require('../models/settlement/settlementModel')
 
 // const LedgerAccountTypesService = require('../domain/ledgerAccountTypes')
 const Db = require('./db')
-const ConfigValidator = require('./configValidator')
 
 const SETTLEMENT_MODELS_ALIASES = {
   CGS: {
@@ -70,7 +69,6 @@ const SETTLEMENT_MODELS_ALIASES = {
  * [initializeSeedData Adds configurable seeds data]
  */
 async function initializeSeedData () {
-  await ConfigValidator.validateConfig()
   const knex = Db.getKnex()
   return knex.transaction(async trx => {
     try {
