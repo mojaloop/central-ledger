@@ -20,7 +20,6 @@
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Lazola Lucas <lazola.lucas@modusbox.com>
-§ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -54,22 +53,22 @@ const ledgerAccountTypes = [
     description: null
   }
 ]
-
 const ledgerAccountList = ledgerAccountTypes.filter(currentValue => {
   return currentValue.isSettleable
 }).map(currentValue => {
   return currentValue.name
 }).sort()
-
 const seed = async function (knex) {
   try {
-    return await knex('ledgerAccountType').insert(ledgerAccountTypes).onConflict('name').ignore()
+    return await knex('ledgerAccountType').insert(ledgerAccountTypes)
   } catch (err) {
-    console.log(`Uploading seeds for ledgerAccountType has failed with the following error: ${err}`)
-    return -1000
+    if (err.code === 'ER_DUP_ENTRY') return -1001
+    else {
+      console.log(`Uploading seeds for ledgerAccountType has failed with the following error: ${err}`)
+      return -1000
+    }
   }
 }
-
 module.exports = {
   ledgerAccountList,
   seed

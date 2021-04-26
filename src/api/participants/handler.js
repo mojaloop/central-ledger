@@ -102,9 +102,18 @@ const create = async function (request, h) {
         }
       }
     } else {
-      const participantCurrencyId1 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION, false)
-      const participantCurrencyId2 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT, false)
-      participant.currencyList = [await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)]
+      const defaultSettlementModels = allSettlementModels.filter(model => model.currencyId === null)
+      if (Array.isArray(defaultSettlementModels) && defaultSettlementModels.length > 0) {
+        for (const settlementModel of defaultSettlementModels) {
+          const [participantCurrencyId1, participantCurrencyId2] = await Promise.all([
+            ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.ledgerAccountTypeId, false),
+            ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.settlementAccountTypeId, false)
+          ])
+          participant.currencyList = await Promise.all([ParticipantService.getParticipantCurrencyById(participantCurrencyId1), ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
+        }
+      } else {
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'No Default Settlement Model has been set')
+      }
     }
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {

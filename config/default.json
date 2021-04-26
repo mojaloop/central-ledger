@@ -435,5 +435,6 @@
         }
       }
     }
-  }
+  },
+  "SETTLEMENT_MODELS": [ "DEFERREDNET" ]
 }

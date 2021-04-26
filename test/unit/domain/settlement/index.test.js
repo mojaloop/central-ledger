@@ -227,6 +227,54 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
     }
   })
 
+  await settlementModelTest.test('create should create a settlementModel with currency if it does not exists', async function (test) {
+    try {
+      const payload = {
+        name: 'DEFERRED_NET',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION',
+        currency: 'USD'
+      }
+      const existingModels = [{
+        name: 'DEFERRED_NET_EXISTING',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }]
+      sandbox.stub(SettlementModel, 'create')
+      ParticipantService.validateHubAccounts.resolves(true)
+
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 1 })
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 2 })
+      sandbox.stub(SettlementModel, 'getAll').returns(existingModels)
+      sandbox.stub(SettlementModel, 'getByName').returns(null)
+
+      await ParticipantService.createAssociatedParticipantAccounts.resolves(true)
+      await ParticipantService.createAssociatedParticipantAccounts.resolves(true)
+
+      const expected = await SettlementService.createSettlementModel(payload, {})
+      test.equal(expected, true, 'should return true')
+      test.end()
+    } catch (err) {
+      test.ok(err instanceof Error, 'should throw an error')
+      test.equal(err.message, 'Settlement account type was not found', 'throws Settlement account type was not found')
+      test.end()
+    }
+  })
+
   await settlementModelTest.test('create settlement model should throw an error', async (assert) => {
     try {
       sandbox.stub(SettlementModel, 'create').throws(new Error())
