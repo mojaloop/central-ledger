@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [13.3.0](https://github.com/mojaloop/central-ledger/compare/v13.2.6...v13.3.0) (2021-05-04)
+
+
+### Features
+
+* **db migrations:** fix subid db ([#836](https://github.com/mojaloop/central-ledger/issues/836)) ([de5077a](https://github.com/mojaloop/central-ledger/commit/de5077a478131455f43ec478e55caa7d2c5ce295))
+
+
+### Bug Fixes
+
+* **security:** Bump y18n from 3.2.1 to 3.2.2 ([#830](https://github.com/mojaloop/central-ledger/issues/830)) ([32346e5](https://github.com/mojaloop/central-ledger/commit/32346e522075589c956e9f2d7a979b2905215c89))
+* package.json & package-lock.json to reduce vulnerabilities ([#829](https://github.com/mojaloop/central-ledger/issues/829)) ([16a75af](https://github.com/mojaloop/central-ledger/commit/16a75af6ff7bc7aa7ed45d11344ec976c0cfd9bc))
+
+
+### Chore
+
+* **deps:** bump djv from 2.1.2 to 2.1.4 ([#833](https://github.com/mojaloop/central-ledger/issues/833)) ([182a591](https://github.com/mojaloop/central-ledger/commit/182a591196e2056440f4aaf5ca5b9dceccbc81ed))
+
 ### [13.2.6](https://github.com/mojaloop/central-ledger/compare/v13.2.5...v13.2.6) (2021-03-15)
 
 
