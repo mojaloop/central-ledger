@@ -158,7 +158,7 @@ start_db() {
     -e MYSQL_PASSWORD=$DB_PASSWORD \
     -e MYSQL_DATABASE=$DB_NAME \
     -e MYSQL_ALLOW_EMPTY_PASSWORD=true \
-    $DB_IMAGE:$DB_TAG
+    $DB_IMAGE:$DB_TAG --log-error=stdout
 }
 
 fdb() {
