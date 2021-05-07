@@ -112,7 +112,7 @@ const create = async function (request, h) {
           participant.currencyList = await Promise.all([ParticipantService.getParticipantCurrencyById(participantCurrencyId1), ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
         }
       } else {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'No Default Settlement Model has been set')
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'No Default Settlement Model has been set')
       }
     }
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)

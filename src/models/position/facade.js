@@ -45,8 +45,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   const histTimerChangeParticipantPositionEnd = Metrics.getHistogram(
     'model_position',
-    'facade_prepareChangeParticipantPositionTransaction - Metrics for position model',
-    ['success', 'queryName']
+    'facade_prepareChangeParticipantPositionTransaction - Metrics for position model', ['success', 'queryName']
   ).startTimer()
   try {
     const knex = await Db.getKnex()
@@ -56,6 +55,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
     if (!(Array.isArray(settlementModels)) || settlementModels.length <= 0) {
       settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+      if (!settlementModels || (!(Array.isArray(settlementModels) || settlementModels.length <= 0))) {
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'No Default Settlement Model has been set')
+      }
     }
     const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
@@ -69,8 +71,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     let sumTransfersInBatch = 0
     const histTimerChangeParticipantPositionTransEnd = Metrics.getHistogram(
       'model_position',
-      'facade_prepareChangeParticipantPositionTransaction_transaction - Metrics for position model',
-      ['success', 'queryName']
+      'facade_prepareChangeParticipantPositionTransaction_transaction - Metrics for position model', ['success', 'queryName']
     ).startTimer()
     await knex.transaction(async (trx) => {
       try {
@@ -98,15 +99,13 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         }
         const histTimerinitialTransferStateChangeListEnd = Metrics.getHistogram(
           'model_position',
-          'facade_prepareChangeParticipantPositionTransaction_transaction_initialTransferStateChangeList - Metrics for position model',
-          ['success', 'queryName']
+          'facade_prepareChangeParticipantPositionTransaction_transaction_initialTransferStateChangeList - Metrics for position model', ['success', 'queryName']
         ).startTimer()
         const initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
         histTimerinitialTransferStateChangeListEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_initialTransferStateChangeList' })
         const histTimerTransferStateChangePrepareAndBatchInsertEnd = Metrics.getHistogram(
           'model_position',
-          'facade_prepareChangeParticipantPositionTransaction_transaction_transferStateChangeBatchInsert - Metrics for position model',
-          ['success', 'queryName']
+          'facade_prepareChangeParticipantPositionTransaction_transaction_transferStateChangeBatchInsert - Metrics for position model', ['success', 'queryName']
         ).startTimer()
         for (const id in initialTransferStateChangeList) {
           const transferState = initialTransferStateChangeList[id]
@@ -132,8 +131,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         // and reserved the total value of the transfers in the batch (sumTransfersInBatch)
         const histTimerUpdateEffectivePositionEnd = Metrics.getHistogram(
           'model_position',
-          'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateEffectivePosition - Metrics for position model',
-          ['success', 'queryName']
+          'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateEffectivePosition - Metrics for position model', ['success', 'queryName']
         ).startTimer()
         const participantPositions = await knex('participantPosition')
           .transacting(trx)
@@ -153,8 +151,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         // Note: see optimisation decision notes to understand the justification for the algorithm
         const histTimerValidatePositionBatchEnd = Metrics.getHistogram(
           'model_position',
-          'facade_prepareChangeParticipantPositionTransaction_transaction_ValidatePositionBatch - Metrics for position model',
-          ['success', 'queryName']
+          'facade_prepareChangeParticipantPositionTransaction_transaction_ValidatePositionBatch - Metrics for position model', ['success', 'queryName']
         ).startTimer()
         const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
         // Calculate liquidity cover as per story OTC-651
@@ -190,8 +187,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         histTimerValidatePositionBatchEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_ValidatePositionBatch' })
         const histTimerUpdateParticipantPositionEnd = Metrics.getHistogram(
           'model_position',
-          'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateParticipantPosition - Metrics for position model',
-          ['success', 'queryName']
+          'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateParticipantPosition - Metrics for position model', ['success', 'queryName']
         ).startTimer()
         /*
           Update the participantPosition with the eventual impact of the Batch
@@ -215,8 +211,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         */
         const histTimerPersistTransferStateChangeEnd = Metrics.getHistogram(
           'model_position',
-          'facade_prepareChangeParticipantPositionTransaction_transaction_PersistTransferState - Metrics for position model',
-          ['success', 'queryName']
+          'facade_prepareChangeParticipantPositionTransaction_transaction_PersistTransferState - Metrics for position model', ['success', 'queryName']
         ).startTimer()
         await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
         const processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
@@ -262,8 +257,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
 const changeParticipantPositionTransaction = async (participantCurrencyId, isReversal, amount, transferStateChange) => {
   const histTimerChangeParticipantPositionTransactionEnd = Metrics.getHistogram(
     'model_position',
-    'facade_changeParticipantPositionTransaction - Metrics for position model',
-    ['success', 'queryName']
+    'facade_changeParticipantPositionTransaction - Metrics for position model', ['success', 'queryName']
   ).startTimer()
   try {
     const knex = await Db.getKnex()
