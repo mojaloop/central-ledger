@@ -147,8 +147,9 @@
       "madeAt": 1620349525945
     },
     "1673|@mojaloop/central-services-database>knex>lodash": {
-      "decision": "fix",
-      "madeAt": 1620349537503
+      "decision": "ignore",
+      "madeAt": 1620350787638,
+      "expiresAt": 1622942782995
     },
     "1673|@mojaloop/central-services-database>lodash": {
       "decision": "ignore",
