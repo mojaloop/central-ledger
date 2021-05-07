@@ -236,7 +236,7 @@ const endpointTypes = [
   },
   {
     name: 'TP_CB_URL_SERVICES_GET',
-    description: 'Participant callback URL where GET /consentRequests/{ServiceType} can be sent'
+    description: 'Participant callback URL where GET /services/{ServiceType} can be sent'
   },
   {
     name: 'TP_CB_URL_SERVICES_PUT',
