@@ -233,6 +233,18 @@ const endpointTypes = [
   {
     name: 'TP_CB_URL_ACCOUNTS_PUT_ERROR',
     description: 'Accounts callback URL where PUT /accounts/{ID}/error error information can be sent'
+  },
+  {
+    name: 'TP_CB_URL_SERVICES_GET',
+    description: 'Participant callback URL where GET /consentRequests/{ServiceType} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_SERVICES_PUT',
+    description: 'Participant callback URL where PUT /services/{ServiceType} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_SERVICES_PUT_ERROR',
+    description: 'Participant callback URL where PUT /services/{ServiceType}/error can be sent'
   }
 ]
 
