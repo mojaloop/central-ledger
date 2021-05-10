@@ -90,8 +90,12 @@ const create = async function (request, h) {
     }
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     const allSettlementModels = await SettlementService.getAll()
-    const settlementModels = allSettlementModels.filter(model => model.currencyId === request.payload.currency)
-    if (Array.isArray(settlementModels) && settlementModels.length > 0) {
+    let settlementModels = allSettlementModels.filter(model => model.currencyId === request.payload.currency)
+    if (settlementModels.length === 0) {
+      settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+      if (settlementModels.length === 0) {
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
+      }
       for (const settlementModel of settlementModels) {
         const [participantCurrencyId1, participantCurrencyId2] = await Promise.all([
           ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.ledgerAccountTypeId, false),
@@ -101,21 +105,6 @@ const create = async function (request, h) {
         } else {
           participant.currencyList = await Promise.all([ParticipantService.getParticipantCurrencyById(participantCurrencyId1), ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
         }
-      }
-    } else {
-      const defaultSettlementModel = allSettlementModels.find(model => model.currencyId === null)
-      if (defaultSettlementModel) {
-        const [participantCurrencyId1, participantCurrencyId2] = await Promise.all([
-          ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, defaultSettlementModel.ledgerAccountTypeId, false),
-          ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, defaultSettlementModel.settlementAccountTypeId, false)
-        ])
-        if (Array.isArray(participant.currencyList)) {
-          participant.currencyList = participant.currencyList.concat([await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
-        } else {
-          participant.currencyList = await Promise.all([ParticipantService.getParticipantCurrencyById(participantCurrencyId1), ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
-        }
-      } else {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'No Default Settlement Model has been set')
       }
     }
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)

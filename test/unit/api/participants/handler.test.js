@@ -313,7 +313,7 @@ Test('Participant', participantHandlerTest => {
         test.end()
       } catch (e) {
         test.ok('should throw an error')
-        test.equal(e.message, 'No Default Settlement Model has been set')
+        test.equal(e.message, 'Unable to find a matching or default, Settlement Model')
         test.end()
       }
     })

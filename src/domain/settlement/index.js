@@ -28,7 +28,6 @@
 const SettlementModelModel = require('../../models/settlement/settlementModel')
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
-// const ParticipantService = require('../participant')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Util = require('@mojaloop/central-services-shared').Util
 
