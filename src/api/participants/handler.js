@@ -93,26 +93,29 @@ const create = async function (request, h) {
     const settlementModels = allSettlementModels.filter(model => model.currencyId === request.payload.currency)
     if (Array.isArray(settlementModels) && settlementModels.length > 0) {
       for (const settlementModel of settlementModels) {
-        const participantCurrencyId1 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.ledgerAccountTypeId, false)
-        const participantCurrencyId2 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.settlementAccountTypeId, false)
+        const [participantCurrencyId1, participantCurrencyId2] = await Promise.all([
+          ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.ledgerAccountTypeId, false),
+          ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.settlementAccountTypeId, false)])
         if (Array.isArray(participant.currencyList)) {
           participant.currencyList = participant.currencyList.concat([await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
         } else {
-          participant.currencyList = [await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)]
+          participant.currencyList = await Promise.all([ParticipantService.getParticipantCurrencyById(participantCurrencyId1), ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
         }
       }
     } else {
-      const defaultSettlementModels = allSettlementModels.filter(model => model.currencyId === null)
-      if (Array.isArray(defaultSettlementModels) && defaultSettlementModels.length > 0) {
-        for (const settlementModel of defaultSettlementModels) {
-          const [participantCurrencyId1, participantCurrencyId2] = await Promise.all([
-            ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.ledgerAccountTypeId, false),
-            ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.settlementAccountTypeId, false)
-          ])
+      const defaultSettlementModel = allSettlementModels.find(model => model.currencyId === null)
+      if (defaultSettlementModel) {
+        const [participantCurrencyId1, participantCurrencyId2] = await Promise.all([
+          ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, defaultSettlementModel.ledgerAccountTypeId, false),
+          ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, defaultSettlementModel.settlementAccountTypeId, false)
+        ])
+        if (Array.isArray(participant.currencyList)) {
+          participant.currencyList = participant.currencyList.concat([await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
+        } else {
           participant.currencyList = await Promise.all([ParticipantService.getParticipantCurrencyById(participantCurrencyId1), ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
         }
       } else {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'No Default Settlement Model has been set')
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'No Default Settlement Model has been set')
       }
     }
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)

@@ -51,6 +51,16 @@ const settlementModels = [
     autoPositionReset: true,
     currency: 'USD',
     requireLiquidityCheck: true
+  },
+  {
+    name: 'DEFERREDNET',
+    settlementGranularity: 'NET',
+    settlementInterchange: 'MULTILATERAL',
+    settlementAccountType: 'SETTLEMENT',
+    settlementDelay: 'DEFERRED',
+    ledgerAccountType: 'POSITION',
+    autoPositionReset: true,
+    requireLiquidityCheck: true
   }
 ]
 
@@ -64,7 +74,14 @@ exports.prepareData = async () => {
   await Cache.initCache()
 
   try {
-    await Model.createSettlementModel(settlementModels[0])
+    const settlementModelUSDExists = await Model.getByName(settlementModels[0].name)
+    const settlementModelDefaultExists = await Model.getByName(settlementModels[0].name)
+    if (!settlementModelUSDExists) {
+      await Model.createSettlementModel(settlementModels[0])
+    }
+    if (!settlementModelDefaultExists) {
+      await Model.createSettlementModel(settlementModels[1])
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

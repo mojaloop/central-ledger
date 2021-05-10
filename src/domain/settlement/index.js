@@ -28,7 +28,7 @@
 const SettlementModelModel = require('../../models/settlement/settlementModel')
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
-const ParticipantService = require('../participant')
+// const ParticipantService = require('../participant')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Util = require('@mojaloop/central-services-shared').Util
 
@@ -43,14 +43,14 @@ const createSettlementModel = async (settlementModel, trx = null) => {
       settlementInterchangeId, settlementDelayId, settlementModel.currency,
       settlementModel.requireLiquidityCheck,
       ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, settlementModel.autoPositionReset, trx)
-
-    if (settlementModel.currency) {
-      // check for existing hub account with the settlementModel to be able to create participant accounts automatically
-      await ParticipantService.validateHubAccounts(settlementModel.currency)
-      // create the accounts required for the settlementModel for existing participants
-      await ParticipantService.createAssociatedParticipantAccounts(settlementModel.currency, ledgerAccountType.ledgerAccountTypeId, trx)
-      await ParticipantService.createAssociatedParticipantAccounts(settlementModel.currency, settlementAccountType.ledgerAccountTypeId, trx)
-    }
+    // Commented out because in DEFERREDNET settlement model the Limit cannot be added or adjusted after this is executed
+    // if (settlementModel.currency) {
+    //   // check for existing hub account with the settlementModel to be able to create participant accounts automatically
+    //   await ParticipantService.validateHubAccounts(settlementModel.currency)
+    //   // create the accounts required for the settlementModel for existing participants
+    //   await ParticipantService.createAssociatedParticipantAccounts(settlementModel.currency, ledgerAccountType.ledgerAccountTypeId, trx)
+    //   await ParticipantService.createAssociatedParticipantAccounts(settlementModel.currency, settlementAccountType.ledgerAccountTypeId, trx)
+    // }
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

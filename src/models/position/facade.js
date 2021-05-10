@@ -56,6 +56,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
     if (!(Array.isArray(settlementModels)) || settlementModels.length <= 0) {
       settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+      if (!settlementModels || (!(Array.isArray(settlementModels) || settlementModels.length <= 0))) {
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'No Default Settlement Model has been set')
+      }
     }
     const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
