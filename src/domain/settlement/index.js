@@ -43,14 +43,6 @@ const createSettlementModel = async (settlementModel, trx = null) => {
       settlementInterchangeId, settlementDelayId, settlementModel.currency,
       settlementModel.requireLiquidityCheck,
       ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, settlementModel.autoPositionReset, trx)
-    // Commented out because in DEFERREDNET settlement model the Limit cannot be added or adjusted after this is executed
-    // if (settlementModel.currency) {
-    //   // check for existing hub account with the settlementModel to be able to create participant accounts automatically
-    //   await ParticipantService.validateHubAccounts(settlementModel.currency)
-    //   // create the accounts required for the settlementModel for existing participants
-    //   await ParticipantService.createAssociatedParticipantAccounts(settlementModel.currency, ledgerAccountType.ledgerAccountTypeId, trx)
-    //   await ParticipantService.createAssociatedParticipantAccounts(settlementModel.currency, settlementAccountType.ledgerAccountTypeId, trx)
-    // }
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
