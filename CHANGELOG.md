@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [13.4.0](https://github.com/mojaloop/central-ledger/compare/v13.3.0...v13.4.0) (2021-05-07)
+
+
+### Features
+
+* add services endpoint seeds ([#838](https://github.com/mojaloop/central-ledger/issues/838)) ([233785e](https://github.com/mojaloop/central-ledger/commit/233785e73662782be29c12590007313bda21b2d5))
+
 ## [13.3.0](https://github.com/mojaloop/central-ledger/compare/v13.2.6...v13.3.0) (2021-05-04)
 
 
