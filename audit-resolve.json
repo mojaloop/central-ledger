@@ -199,6 +199,16 @@
       "decision": "ignore",
       "madeAt": 1620636606023,
       "expiresAt": 1623228560826
+    },
+    "1693|@mojaloop/central-services-health>@mojaloop/central-services-shared>shins>sanitize-html>postcss": {
+      "decision": "ignore",
+      "madeAt": 1620740704991,
+      "expiresAt": 1621345497277
+    },
+    "1693|@mojaloop/central-services-shared>shins>sanitize-html>postcss": {
+      "decision": "ignore",
+      "madeAt": 1620740704991,
+      "expiresAt": 1621345497277
     }
   },
   "rules": {},
