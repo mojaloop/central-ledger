@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [13.6.0](https://github.com/mojaloop/central-ledger/compare/v13.4.0...v13.6.0) (2021-05-12)
+
+
+### Features
+
+* **#2123:** default settlement model added ([#839](https://github.com/mojaloop/central-ledger/issues/839)) ([605177a](https://github.com/mojaloop/central-ledger/commit/605177af94314e5170c7d1927b2492dd8060c4b5)), closes [#2123](https://github.com/mojaloop/central-ledger/issues/2123)
+
 ## [13.4.0](https://github.com/mojaloop/central-ledger/compare/v13.3.0...v13.4.0) (2021-05-07)
 
 
