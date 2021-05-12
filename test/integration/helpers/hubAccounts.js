@@ -48,6 +48,14 @@ exports.prepareData = async () => {
     if (!hubMlnsAccountExists) {
       await ParticipantService.createHubAccount(Config.HUB_ID, testData.currency, Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
     }
+    const hubReconciliationAccountExistsZAR = await ParticipantService.hubAccountExists('ZAR', Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION)
+    if (!hubReconciliationAccountExistsZAR) {
+      await ParticipantService.createHubAccount(Config.HUB_ID, 'ZAR', Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION)
+    }
+    const hubMlnsAccountExistsZAR = await ParticipantService.hubAccountExists('ZAR', Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
+    if (!hubMlnsAccountExistsZAR) {
+      await ParticipantService.createHubAccount(Config.HUB_ID, 'ZAR', Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

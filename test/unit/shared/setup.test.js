@@ -226,7 +226,6 @@ Test('setup', setupTest => {
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
         '../lib/config': ConfigStub
-        // '../handlers/lib/kafka': KafkaCronStub
       })
 
       Setup.initialize({ service }).then(s => {

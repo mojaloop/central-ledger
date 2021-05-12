@@ -351,7 +351,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
           .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
           .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
           .select(
-            'participant.participantID AS participantId',
+            'participant.participantId AS participantId',
             'pc.currencyId AS currencyId',
             'pl.participantLimitTypeId as participantLimitTypeId',
             'pl.value AS value'

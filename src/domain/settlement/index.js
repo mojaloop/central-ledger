@@ -28,15 +28,11 @@
 const SettlementModelModel = require('../../models/settlement/settlementModel')
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
-const ParticipantService = require('../participant')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Util = require('@mojaloop/central-services-shared').Util
 
 const createSettlementModel = async (settlementModel, trx = null) => {
   try {
-    // check for existing hub account with the settlementModel to be able to create participant accounts automatically
-    await ParticipantService.validateHubAccounts(settlementModel.currency)
-
     const settlementGranularityId = Enum.SettlementGranularity[settlementModel.settlementGranularity]
     const settlementInterchangeId = Enum.SettlementInterchange[settlementModel.settlementInterchange]
     const settlementDelayId = Enum.SettlementDelay[settlementModel.settlementDelay]
@@ -46,11 +42,6 @@ const createSettlementModel = async (settlementModel, trx = null) => {
       settlementInterchangeId, settlementDelayId, settlementModel.currency,
       settlementModel.requireLiquidityCheck,
       ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, settlementModel.autoPositionReset, trx)
-
-    // create the accounts required for the settlementModel for existing participants
-    await ParticipantService.createAssociatedParticipantAccounts(settlementModel.currency, ledgerAccountType.ledgerAccountTypeId, trx)
-    await ParticipantService.createAssociatedParticipantAccounts(settlementModel.currency, settlementAccountType.ledgerAccountTypeId, trx)
-
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
