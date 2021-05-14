@@ -56,18 +56,18 @@ Test('logger', loggerTest => {
       const request = {
         headers: { traceid: '123456' },
         method: 'post',
-        url: { path: '/participants' },
+        path: '/participants',
         query: { token: '1234' },
-        body: 'this is the body'
+        payload: 'this is the body'
       }
       RequestLogger.logRequest(request)
       test.ok(Logger.debug.calledThrice)
       const args = Logger.debug.firstCall.args
       const args2 = Logger.debug.secondCall.args
       const args3 = Logger.debug.thirdCall.args
-      test.equal(args[0], `L1p-Trace-Id=${request.headers.traceid} - Method: ${request.method} Path: ${request.url.path} Query: ${JSON.stringify(request.query)}`)
-      test.equal(args2[0], `L1p-Trace-Id=${request.headers.traceid} - Headers: ${JSON.stringify(request.headers)}`)
-      test.equal(args3[0], `L1p-Trace-Id=${request.headers.traceid} - Body: ${request.body}`)
+      test.equal(args[0], `L1p-Trace-Id=${request.headers.traceid} - Method: ${request.method}, Path: ${request.path}, Query: ${JSON.stringify(request.query)}`)
+      test.equal(args2[0], `L1p-Trace-Id=${request.headers.traceid} - Headers: ${JSON.stringify(request.headers, null, 2)}`)
+      test.equal(args3[0], `L1p-Trace-Id=${request.headers.traceid} - Body: ${JSON.stringify(request.payload, null, 2)}`)
       test.end()
     })
 
@@ -75,7 +75,7 @@ Test('logger', loggerTest => {
       const request = {
         headers: { traceid: '123456' },
         method: 'post',
-        url: { path: '/participants' },
+        path: '/participants',
         query: { token: '1234' }
       }
       RequestLogger.logRequest(request)
@@ -90,11 +90,11 @@ Test('logger', loggerTest => {
     responseTest.test('send info message to the serviceslogger', test => {
       const request = {
         headers: { traceid: '123456' },
-        response: { source: 'this is the response', statusCode: '200' }
+        response: { message: 'this is the response', statusCode: '200', stack: 'test' }
       }
       RequestLogger.logResponse(request)
       const args = Logger.debug.firstCall.args
-      test.equal(args[0], `L1p-Trace-Id=${request.headers.traceid} - Response: ${JSON.stringify(request.response.source)} Status: ${request.response.statusCode}`)
+      test.equal(args[0], `L1p-Trace-Id=${request.headers.traceid} - Response: ${JSON.stringify(request.response, null, 2)}, Status: ${request.response.statusCode}, Stack: ${request.response.stack}`)
       test.end()
     })
 
@@ -110,12 +110,12 @@ Test('logger', loggerTest => {
     responseTest.test('use util.inspect if JSON.stringify throws', test => {
       const request = {
         headers: { traceid: '123456' },
-        response: { source: { body: 'this is the response' }, statusCode: '200' }
+        response: { body: 'this is the response', statusCode: '200' }
       }
-      request.response.source.circular = request.response
+      request.response.circular = request.response
       RequestLogger.logResponse(request)
       const args = Util.inspect.firstCall.args
-      test.equal(args[0], request.response.source)
+      test.equal(args[0], request.response)
       test.end()
     })
     responseTest.end()
@@ -124,7 +124,7 @@ Test('logger', loggerTest => {
   loggerTest.test('websocket should', requestTest => {
     requestTest.test('send info message to the serviceslogger', test => {
       const request = {
-        body: 'this is the body'
+        payload: 'this is the body'
       }
       RequestLogger.logWebsocket(request)
       const args = Logger.info.firstCall.args

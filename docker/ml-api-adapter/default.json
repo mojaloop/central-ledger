@@ -10,6 +10,11 @@
   "ENDPOINT_SECURITY": {
     "TLS": {
       "rejectUnauthorized": true
+    },
+    "JWS": {
+      "JWS_SIGN": false,
+      "FSPIOP_SOURCE_TO_SIGN": "switch",
+      "JWS_SIGNING_KEY_PATH": "secrets/jwsSigningKey.key"
     }
   },
   "MAX_CALLBACK_TIME_LAG_DILATION_MILLISECONDS": 200,
