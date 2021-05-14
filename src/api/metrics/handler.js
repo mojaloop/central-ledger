@@ -27,6 +27,6 @@
 
 const Metrics = require('@mojaloop/central-services-metrics')
 
-exports.metrics = function (request, h) {
-  return h.response(Metrics.getMetricsForPrometheus()).code(200)
+exports.metrics = async (request, h) => {
+  return h.response(await Metrics.getMetricsForPrometheus()).code(200)
 }
