@@ -242,12 +242,13 @@ const initializeCache = async () => {
  */
 const initialize = async function ({ service, port, modules = [], runMigrations = false, runHandlers = false, handlers = [] }) {
   try {
+    initializeInstrumentation()
     await migrate(runMigrations)
     await connectDatabase()
     await connectMongoose()
     await initializeCache()
     await Sidecar.connect(service)
-    initializeInstrumentation()
+
     let server
     switch (service) {
       case 'api':
