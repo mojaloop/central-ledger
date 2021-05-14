@@ -20,7 +20,6 @@ services:
       - ./src:/opt/central-ledger/src
       # - ./node_modules:/opt/central-ledger/node_modules
     environment:
-      - CLEDG_SIDECAR__DISABLED=true
       - CLEDG_MONGODB__DISABLED=true
     command:
       - tail

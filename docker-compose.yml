@@ -24,7 +24,6 @@ services:
     environment:
       - LOG_LEVEL=info
       - CSL_LOG_TRANSPORT=file
-      - CLEDG_SIDECAR__DISABLED=true
       - CLEDG_MONGODB__DISABLED=false
     networks:
       - cl-mojaloop-net

@@ -5,7 +5,6 @@ const Sinon = require('sinon')
 
 const Logger = require('@mojaloop/central-services-logger')
 const Handler = require('../../../../src/api/participants/handler')
-const Sidecar = require('../../../../src/lib/sidecar')
 const Participant = require('../../../../src/domain/participant')
 const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
@@ -128,7 +127,6 @@ Test('Participant', participantHandlerTest => {
 
   participantHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(Sidecar)
     sandbox.stub(Logger)
     sandbox.stub(Participant)
     sandbox.stub(EnumCached)

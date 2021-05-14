@@ -18,5 +18,4 @@ export CENTRAL_LEDGER_ADMIN_HOST=localhost
 export CENTRAL_LEDGER_ADMIN_PORT=3001
 export CENTRAL_LEDGER_ADMIN_BASE=/
 export CLEDG_DATABASE_URI=mysql://$DBUSER:$DBPASS@localhost:3306/central_ledger
-export CLEDG_SIDECAR__DISABLED=true
 export LOG_LEVEL=info

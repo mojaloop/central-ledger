@@ -26,7 +26,6 @@
 'use strict'
 
 const SettlementService = require('../../domain/settlement')
-const Sidecar = require('../../lib/sidecar')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
 const Util = require('@mojaloop/central-services-shared').Util
@@ -77,7 +76,6 @@ const getAll = async function () {
 }
 
 const update = async function (request) {
-  Sidecar.logRequest(request)
   try {
     const updatedEntity = await SettlementService.update(request.params.name, request.payload)
     if (request.payload.isActive !== undefined) {
@@ -96,7 +94,6 @@ const update = async function (request) {
   }
 }
 const create = async function (request, h) {
-  Sidecar.logRequest(request)
   try {
     await SettlementService.createSettlementModel(request.payload)
     return h.response().code(201)

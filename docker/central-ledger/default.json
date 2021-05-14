@@ -26,13 +26,6 @@
     "PRECISION": 10,
     "SCALE": 2
   },
-  "SIDECAR": {
-    "DISABLED": true,
-    "HOST": "localhost",
-    "PORT": 5678,
-    "CONNECT_TIMEOUT": 45000,
-    "RECONNECT_INTERVAL": 5000
-  },
   "MONGODB": {
     "DISABLED": false,
     "URI": "mongodb://objstore:27017/mlos"

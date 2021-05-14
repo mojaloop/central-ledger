@@ -17,7 +17,6 @@ Test('setup', setupTest => {
   let CacheStub
   let ObjStoreStub
   // let ObjStoreStubThrows
-  let SidecarStub
   let MigratorStub
   let RegisterHandlersStub
   let requestLoggerStub
@@ -57,10 +56,6 @@ Test('setup', setupTest => {
     requestLoggerStub = {
       logRequest: sandbox.stub().returns(Promise.resolve()),
       logResponse: sandbox.stub().returns(Promise.resolve())
-    }
-
-    SidecarStub = {
-      connect: sandbox.stub().returns(Promise.resolve())
     }
 
     DbStub = {
@@ -125,7 +120,6 @@ Test('setup', setupTest => {
       '../lib/cache': CacheStub,
       '@mojaloop/central-object-store': ObjStoreStub,
       '../lib/migrator': MigratorStub,
-      '../lib/sidecar': SidecarStub,
       '../lib/requestLogger': requestLoggerStub,
       './plugins': PluginsStub,
       '../lib/urlParser': UrlParserStub,
@@ -168,7 +162,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
@@ -190,13 +183,12 @@ Test('setup', setupTest => {
   })
 
   setupTest.test('initialize should', async (initializeTest) => {
-    initializeTest.test('connect to Database, Sidecar & ObjStore', async (test) => {
+    initializeTest.test('connect to Database & ObjStore', async (test) => {
       const service = 'api'
 
       Setup.initialize({ service }).then(s => {
         test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
-        test.ok(SidecarStub.connect.calledWith(service))
         test.ok(CacheStub.initCache.called)
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
@@ -207,7 +199,7 @@ Test('setup', setupTest => {
       })
     })
 
-    initializeTest.test('connect to Database & Sidecar, but NOT too ObjStore', async (test) => {
+    initializeTest.test('connect to Database, but NOT too ObjStore', async (test) => {
       const ConfigStub = Config
       ConfigStub.MONGODB_DISABLED = true
 
@@ -220,7 +212,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
@@ -231,7 +222,6 @@ Test('setup', setupTest => {
       Setup.initialize({ service }).then(s => {
         test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.notOk(ObjStoreStub.Db.connect.called)
-        test.ok(SidecarStub.connect.calledWith(service))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
         test.end()
@@ -336,7 +326,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
@@ -368,7 +357,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
@@ -401,7 +389,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
@@ -436,7 +423,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
@@ -669,7 +655,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,

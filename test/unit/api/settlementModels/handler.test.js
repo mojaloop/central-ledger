@@ -29,7 +29,6 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-logger')
 const Handler = require('../../../../src/api/settlementModels/handler')
-const Sidecar = require('../../../../src/lib/sidecar')
 const SettlementService = require('../../../../src/domain/settlement')
 const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
@@ -95,7 +94,6 @@ Test('SettlementModel', settlementModelHandlerTest => {
   ]
   settlementModelHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(Sidecar)
     sandbox.stub(Logger)
     sandbox.stub(SettlementService)
     sandbox.stub(EnumCached)

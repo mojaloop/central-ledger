@@ -39,7 +39,6 @@ const Db = require('../lib/db')
 const ObjStoreDb = require('@mojaloop/central-object-store').Db
 const Plugins = require('./plugins')
 const Config = require('../lib/config')
-const Sidecar = require('../lib/sidecar')
 const RequestLogger = require('../lib/requestLogger')
 const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlParser')
@@ -247,7 +246,6 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     await connectDatabase()
     await connectMongoose()
     await initializeCache()
-    await Sidecar.connect(service)
 
     let server
     switch (service) {

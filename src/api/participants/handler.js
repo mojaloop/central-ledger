@@ -28,7 +28,6 @@ const ParticipantService = require('../../domain/participant')
 const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
 const Util = require('@mojaloop/central-services-shared').Util
-const Sidecar = require('../../lib/sidecar')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
@@ -71,7 +70,6 @@ const handleMissingRecord = (entity) => {
 }
 
 const create = async function (request, h) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`create: request - ${JSON.stringify(request)}`)
   try {
     const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
@@ -115,7 +113,6 @@ const create = async function (request, h) {
 }
 
 const createHubAccount = async function (request, h) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`createHubAccount: request - ${JSON.stringify(request)}`)
   try {
     // start - To Do move to domain
@@ -179,7 +176,6 @@ const getByName = async function (request) {
 }
 
 const update = async function (request) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`update: request - ${JSON.stringify(request)}`)
   try {
     const updatedEntity = await ParticipantService.update(request.params.name, request.payload)
@@ -198,7 +194,6 @@ const update = async function (request) {
 }
 
 const addEndpoint = async function (request, h) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`addEndpoint: request - ${JSON.stringify(request)}`)
   try {
     await ParticipantService.addEndpoint(request.params.name, request.payload)
@@ -210,7 +205,6 @@ const addEndpoint = async function (request, h) {
 }
 
 const getEndpoint = async function (request) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`getEndpoint: request - ${JSON.stringify(request)}`)
   try {
     if (request.query.type) {
@@ -243,7 +237,6 @@ const getEndpoint = async function (request) {
 }
 
 const addLimitAndInitialPosition = async function (request, h) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`addLimitAndInitialPosition: request - ${JSON.stringify(request)}`)
   try {
     await ParticipantService.addLimitAndInitialPosition(request.params.name, request.payload)
@@ -255,7 +248,6 @@ const addLimitAndInitialPosition = async function (request, h) {
 }
 
 const getLimits = async function (request) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`getLimits: request - ${JSON.stringify(request)}`)
   try {
     const result = await ParticipantService.getLimits(request.params.name, request.query)
@@ -280,7 +272,6 @@ const getLimits = async function (request) {
 }
 
 const getLimitsForAllParticipants = async function (request) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`getLimitsForAllParticipants: request - ${JSON.stringify(request)}`)
   try {
     const result = await ParticipantService.getLimitsForAllParticipants(request.query)
@@ -306,7 +297,6 @@ const getLimitsForAllParticipants = async function (request) {
 }
 
 const adjustLimits = async function (request, h) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`adjustLimits: request - ${JSON.stringify(request)}`)
   try {
     const result = await ParticipantService.adjustLimits(request.params.name, request.payload)
@@ -328,7 +318,6 @@ const adjustLimits = async function (request, h) {
 }
 
 const getPositions = async function (request) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`getPositions: request - ${JSON.stringify(request)}`)
   try {
     return await ParticipantService.getPositions(request.params.name, request.query)
@@ -339,7 +328,6 @@ const getPositions = async function (request) {
 }
 
 const getAccounts = async function (request) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`getAccounts: request - ${JSON.stringify(request)}`)
   try {
     return await ParticipantService.getAccounts(request.params.name, request.query)
@@ -350,7 +338,6 @@ const getAccounts = async function (request) {
 }
 
 const updateAccount = async function (request, h) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`updateAccount: request - ${JSON.stringify(request)}`)
   try {
     const enums = {
@@ -370,7 +357,6 @@ const updateAccount = async function (request, h) {
 }
 
 const recordFunds = async function (request, h) {
-  Sidecar.logRequest(request)
   Logger.isDebugEnabled && Logger.debug(`recordFunds: request - ${JSON.stringify(request)}`)
   try {
     const enums = await Enums.getEnums('all')
