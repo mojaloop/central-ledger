@@ -28,7 +28,6 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-logger')
 const Handler = require('../../../../src/api/ledgerAccountTypes/handler')
-const Sidecar = require('../../../../src/lib/sidecar')
 const LedgerAccountTypeService = require('../../../../src/domain/ledgerAccountTypes')
 
 Test('LedgerAccountTypes', ledgerAccountTypesHandlerTest => {
@@ -36,7 +35,6 @@ Test('LedgerAccountTypes', ledgerAccountTypesHandlerTest => {
 
   ledgerAccountTypesHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(Sidecar)
     sandbox.stub(Logger)
     sandbox.stub(LedgerAccountTypeService)
     test.end()

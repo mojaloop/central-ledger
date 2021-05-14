@@ -25,14 +25,12 @@
 'use strict'
 
 const LedgerAccountTypesService = require('../../domain/ledgerAccountTypes')
-const Sidecar = require('../../lib/sidecar')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getAll = async function () {
   return LedgerAccountTypesService.getAll()
 }
 async function create (request, h) {
-  Sidecar.logRequest(request)
   try {
     const ledgerAccountTypeExist = await LedgerAccountTypesService.getByName(request.payload.name)
     if (ledgerAccountTypeExist) {
