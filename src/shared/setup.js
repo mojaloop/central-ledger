@@ -100,8 +100,8 @@ const createServer = (port, modules) => {
         }
       }
     })
-    server.ext('onRequest', function (request, h) {
-      const transferId = UrlParser.idFromTransferUri(`${Config.HOSTNAME}${request.url.path}`)
+    server.ext('onPostAuth', function (request, h) {
+      const transferId = UrlParser.idFromTransferUri(`${Config.HOSTNAME}${request.path}`)
       request.headers.traceid = request.headers.traceid || transferId || Uuid()
       RequestLogger.logRequest(request)
       return h.continue
