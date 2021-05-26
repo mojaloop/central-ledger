@@ -85,7 +85,8 @@
               "client.id": "ml-con-notification-event",
               "group.id": "ml-group-notification-event",
               "metadata.broker.list": "kafka:29092",
-              "socket.keepalive.enable": true
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -107,6 +108,7 @@
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true,
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
@@ -125,6 +127,7 @@
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true,
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
@@ -143,6 +146,7 @@
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true,
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {

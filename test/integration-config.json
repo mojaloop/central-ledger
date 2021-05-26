@@ -110,7 +110,8 @@
               "client.id": "cl-con-transfer-prepare",
               "group.id": "cl-group-transfer-prepare",
               "metadata.broker.list": "kafka-int:9092",
-              "socket.keepalive.enable": true
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -133,7 +134,8 @@
               "client.id": "cl-con-transfer-get",
               "group.id": "cl-group-transfer-get",
               "metadata.broker.list": "kafka-int:9092",
-              "socket.keepalive.enable": true
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -156,7 +158,8 @@
               "client.id": "cl-con-transfer-fulfil",
               "group.id": "cl-group-transfer-fulfil",
               "metadata.broker.list": "kafka-int:9092",
-              "socket.keepalive.enable": true
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -179,7 +182,8 @@
               "client.id": "cl-con-transfer-reject",
               "group.id": "cl-group-transfer-reject",
               "metadata.broker.list": "kafka-int:9092",
-              "socket.keepalive.enable": true
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -202,7 +206,8 @@
               "client.id": "cl-con-transfer-position",
               "group.id": "cl-group-transfer-position",
               "metadata.broker.list": "kafka-int:9092",
-              "socket.keepalive.enable": true
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -227,7 +232,8 @@
               "client.id": "cl-con-transfer-admin",
               "group.id": "cl-group-transfer-admin",
               "metadata.broker.list": "kafka-int:9092",
-              "socket.keepalive.enable": true
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
