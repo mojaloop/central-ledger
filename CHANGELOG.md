@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [13.11.0](https://github.com/mojaloop/central-ledger/compare/v13.10.2...v13.11.0) (2021-06-13)
+
+
+### Features
+
+* add endpoints for last stage of account linking ([#849](https://github.com/mojaloop/central-ledger/issues/849)) ([eff5c7f](https://github.com/mojaloop/central-ledger/commit/eff5c7f3c099c28b631725709e69902fb6773739))
+
+
+### Chore
+
+* **deps:** [security] bump hosted-git-info from 2.8.8 to 2.8.9 ([#840](https://github.com/mojaloop/central-ledger/issues/840)) ([d093895](https://github.com/mojaloop/central-ledger/commit/d093895b0bca6a4a2d36e86547ccafe39aa3b8f1))
+
 ### [13.10.2](https://github.com/mojaloop/central-ledger/compare/v13.10.0...v13.10.2) (2021-05-26)
 
 
