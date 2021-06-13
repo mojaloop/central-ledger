@@ -97,8 +97,8 @@
     },
     "1500|@mojaloop/central-services-shared>widdershins>yargs>yargs-parser": {
       "decision": "ignore",
-      "madeAt": 1620636596190,
-      "expiresAt": 1623228560826
+      "madeAt": 1623606400566,
+      "expiresAt": 1626198161510
     },
     "1594|@mojaloop/central-services-health>@mojaloop/central-services-shared>axios": {
       "decision": "ignore",
@@ -187,8 +187,8 @@
     },
     "1675|@mojaloop/central-services-shared>shins>sanitize-html": {
       "decision": "ignore",
-      "madeAt": 1620636606023,
-      "expiresAt": 1623228560826
+      "madeAt": 1623606402052,
+      "expiresAt": 1626198161510
     },
     "1676|@mojaloop/central-services-health>@mojaloop/central-services-shared>shins>sanitize-html": {
       "decision": "ignore",
@@ -197,8 +197,8 @@
     },
     "1676|@mojaloop/central-services-shared>shins>sanitize-html": {
       "decision": "ignore",
-      "madeAt": 1620636606023,
-      "expiresAt": 1623228560826
+      "madeAt": 1623606402052,
+      "expiresAt": 1626198161510
     },
     "1693|@mojaloop/central-services-health>@mojaloop/central-services-shared>shins>sanitize-html>postcss": {
       "decision": "ignore",
@@ -207,8 +207,20 @@
     },
     "1693|@mojaloop/central-services-shared>shins>sanitize-html>postcss": {
       "decision": "ignore",
-      "madeAt": 1621957953345,
-      "expiresAt": 1622562734399
+      "madeAt": 1623606403377,
+      "expiresAt": 1626198161510
+    },
+    "1751|require-glob>glob-parent": {
+      "decision": "fix",
+      "madeAt": 1623606347615
+    },
+    "1754|@mojaloop/central-services-shared>shins>cheerio>cheerio-select>css-select>css-what": {
+      "decision": "fix",
+      "madeAt": 1623606387347
+    },
+    "1754|@mojaloop/central-services-shared>shins>cheerio>cheerio-select>css-what": {
+      "decision": "fix",
+      "madeAt": 1623606387347
     }
   },
   "rules": {},
