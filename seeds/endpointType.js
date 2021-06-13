@@ -211,6 +211,10 @@ const endpointTypes = [
     description: 'Participant callback URL where PUT /consents/{ID} can be sent'
   },
   {
+    name: 'TP_CB_URL_CONSENT_PATCH',
+    description: 'Participant callback URL where PATCH /consents/{ID} can be sent'
+  },
+  {
     name: 'TP_CB_URL_CONSENT_PUT_ERROR',
     description: 'Participant callback URL where PUT /consents/{ID}/error error information can be sent'
   },
@@ -245,6 +249,18 @@ const endpointTypes = [
   {
     name: 'TP_CB_URL_SERVICES_PUT_ERROR',
     description: 'Participant callback URL where PUT /services/{ServiceType}/error can be sent'
+  },
+  {
+    name: 'TP_CB_URL_PARTICIPANT_TYPE_ID_POST',
+    description: 'Participant callback URL where POST /participants/{Type}/{ID} can be sent (specific to thirdparty flows)'
+  },
+  {
+    name: 'TP_CB_URL_PARTICIPANT_TYPE_ID_PUT',
+    description: 'Participant callback URL where PUT /participants/{Type}/{ID} can be sent (specific to thirdparty flows)'
+  },
+  {
+    name: 'TP_CB_URL_PARTICIPANT_TYPE_ID_PUT_ERROR',
+    description: 'Participant callback URL where PUT /participants/{Type}/{ID}/error can be sent (specific to thirdparty flows)'
   }
 ]
 
