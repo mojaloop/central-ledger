@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.11.1](https://github.com/mojaloop/central-ledger/compare/v13.11.0...v13.11.1) (2021-06-15)
+
+
+### Chore
+
+* remove seeds added by mistake ([#850](https://github.com/mojaloop/central-ledger/issues/850)) ([b5195ac](https://github.com/mojaloop/central-ledger/commit/b5195ac2806683ec38035aa71a978ba0444b0be9))
+
 ## [13.11.0](https://github.com/mojaloop/central-ledger/compare/v13.10.2...v13.11.0) (2021-06-13)
 
 
