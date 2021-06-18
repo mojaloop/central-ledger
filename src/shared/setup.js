@@ -68,6 +68,7 @@ const connectMongoose = async () => {
     try {
       return ObjStoreDb.connect(Config.MONGODB_URI)
     } catch (err) {
+      Logger.isErrorEnabled && Logger.error(`${err.message}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
       // TODO: review as code is being changed from returning null to returning a FSPIOPError
       // Logger.isErrorEnabled && Logger.error(`error - ${err}`)

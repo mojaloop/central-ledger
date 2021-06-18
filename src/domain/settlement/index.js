@@ -30,6 +30,7 @@ const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAcc
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Util = require('@mojaloop/central-services-shared').Util
+const Logger = require('@mojaloop/central-services-logger')
 
 const createSettlementModel = async (settlementModel, trx = null) => {
   try {
@@ -44,6 +45,7 @@ const createSettlementModel = async (settlementModel, trx = null) => {
       ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, settlementModel.autoPositionReset, trx)
     return true
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -52,6 +54,7 @@ const getByName = async (name, trx = null) => {
   try {
     return await SettlementModelModel.getByName(name, trx)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     /* istanbul ignore next */
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -60,6 +63,7 @@ const getAll = async () => {
   try {
     return await SettlementModelModel.getAll()
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -67,6 +71,7 @@ const getLedgerAccountTypeName = async (name) => {
   try {
     return await LedgerAccountTypeModel.getLedgerAccountByName(name)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -79,6 +84,7 @@ const update = async (name, payload) => {
     settlementModel.isActive = +payload.isActive
     return settlementModel
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

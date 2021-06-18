@@ -116,6 +116,7 @@ const createParticipantPositionRecords = async (participantPositions, trx) => {
           await trx.commit
         }
       } catch (err) {
+        Logger.isErrorEnabled && Logger.error(err)
         if (doCommit) {
           await trx.rollback
         }
@@ -128,6 +129,7 @@ const createParticipantPositionRecords = async (participantPositions, trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

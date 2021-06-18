@@ -39,6 +39,7 @@ const ParticipantLimitCached = require('../../models/participant/participantLimi
 const Config = require('../../lib/config')
 const SettlementModelModel = require('../settlement/settlementModel')
 const { Enum } = require('@mojaloop/central-services-shared')
+const Logger = require('@mojaloop/central-services-logger')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -101,6 +102,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
 
     return participant
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     histTimerParticipantGetByNameAndCurrencyEnd({ success: false, queryName: 'facade_getByNameAndCurrency' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -124,6 +126,7 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
         )
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -174,6 +177,7 @@ const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId
         )
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -203,6 +207,7 @@ const getEndpoint = async (participantId, endpointType) => {
           'et.name')
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -230,6 +235,7 @@ const getAllEndpoints = async (participantId) => {
           'et.name')
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -289,6 +295,7 @@ const addEndpoint = async (participantId, endpoint) => {
       }
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -361,6 +368,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
     histGetParticipantLimitEnd({ success: true, queryName: 'facade_getParticipantLimitByParticipantCurrencyLimit' })
     return participantLimit
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -477,11 +485,13 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
         await trx.commit
         return true
       } catch (err) {
+        Logger.isErrorEnabled && Logger.error(err)
         await trx.rollback
         throw err
       }
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -545,6 +555,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         if (doCommit) {
           await trx.rollback
         }
+        Logger.isErrorEnabled && Logger.error(err)
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
@@ -556,6 +567,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -592,6 +604,7 @@ const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => 
         ).orderBy('lt.name')
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -632,6 +645,7 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
         ).orderBy('pc.currencyId', 'lt.name')
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -666,11 +680,13 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
           participantPosition
         }
       } catch (err) {
+        Logger.isErrorEnabled && Logger.error(err)
         await trx.rollback
         throw err
       }
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -698,6 +714,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccoun
         .select('*', 'lap.name AS ledgerAccountType', 'participantCurrency.isActive AS accountIsActive')
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -719,6 +736,7 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
         }
         return res
       } catch (err) {
+        Logger.isErrorEnabled && Logger.error(err)
         if (doCommit) {
           await trx.rollback
         }
@@ -731,6 +749,7 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

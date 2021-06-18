@@ -26,12 +26,13 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-// const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('@mojaloop/central-services-logger')
 
 const getByParams = async (params) => {
   try {
     return await Db.from('segment').findOne(params)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

@@ -299,10 +299,12 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
         await trx.commit()
         histTimerChangeParticipantPositionTransactionEnd({ success: true, queryName: 'facade_changeParticipantPositionTransaction' })
       } catch (err) {
+        Logger.isErrorEnabled && Logger.error(err)
         await trx.rollback()
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
+      Logger.isErrorEnabled && Logger.error(err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
   } catch (err) {
@@ -345,6 +347,7 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
           'pc.currencyId')
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -370,6 +373,7 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
         )
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

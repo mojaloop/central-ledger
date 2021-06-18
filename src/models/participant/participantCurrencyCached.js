@@ -29,6 +29,7 @@ const Cache = require('../../lib/cache')
 const Config = require('../../../src/lib/config')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const Metrics = require('@mojaloop/central-services-metrics')
+const Logger = require('@mojaloop/central-services-logger')
 
 let cacheClient
 let participantCurrencyAllCacheKey
@@ -159,6 +160,7 @@ const withInvalidate = (theFunctionName) => {
       await exports.invalidateParticipantCurrencyCache()
       return result
     } catch (err) {
+      Logger.isErrorEnabled && Logger.error(err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }

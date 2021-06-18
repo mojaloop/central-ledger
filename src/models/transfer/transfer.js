@@ -32,6 +32,7 @@ const getById = async (transferId) => {
   try {
     return await Db.from('transfer').findOne({ transferId: transferId })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -50,6 +51,7 @@ const destroyById = async (id) => {
   try {
     await Db.from('transfer').destroy({ transferId: id })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

@@ -26,6 +26,7 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Logger = require('@mojaloop/central-services-logger')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
@@ -37,6 +38,7 @@ exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive
       createdBy: 'unknown'
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -45,6 +47,7 @@ exports.getAll = async () => {
   try {
     return Db.from('participantCurrency').find({}, { order: 'participantCurrencyId asc' })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -53,6 +56,7 @@ exports.getById = async (id) => {
   try {
     return await Db.from('participantCurrency').findOne({ participantCurrencyId: id })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -61,6 +65,7 @@ exports.update = async (participantCurrencyId, isActive) => {
   try {
     return await Db.from('participantCurrency').update({ participantCurrencyId }, { isActive })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -73,6 +78,7 @@ exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
     }
     return await Db.from('participantCurrency').find(params)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -81,6 +87,7 @@ exports.destroyByParticipantId = async (id) => {
   try {
     return await Db.from('participantCurrency').destroy({ participantId: id })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -90,6 +97,7 @@ exports.getByName = async (accountParams) => {
     const participantCurrency = await Db.from('participantCurrency').findOne(accountParams)
     return participantCurrency
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

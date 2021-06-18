@@ -164,7 +164,8 @@ const validateConditionAndExpiration = async (payload) => {
   try {
     const condition = 'ni:///sha-256;' + payload.condition + '?fpt=preimage-sha-256&cost=0'
     await CryptoConditions.validateCondition(condition)
-  } catch (e) {
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(`${err.message}`)
     reasons.push('Condition validation failed')
     histTimerValidateTimer({ success: false, funcName: 'validateConditionAndExpiration' })
     return false

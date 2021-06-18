@@ -26,11 +26,13 @@
 const Db = require('../../lib/db')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const LibUtil = require('@mojaloop/central-services-shared').Util
+const Logger = require('@mojaloop/central-services-logger')
 
 exports.create = async (bulkTransferAssociation) => {
   try {
     return Db.from('bulkTransferAssociation').insert(bulkTransferAssociation)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -45,6 +47,7 @@ exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => 
     })
     return Db.from('bulkTransferAssociation').update({ transferId, bulkTransferId }, record)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -55,6 +58,7 @@ exports.exists = async (bulkTransferId, bulkProcessingStateId) => {
       bulkTransferId, bulkProcessingStateId
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -67,6 +71,7 @@ exports.count = async (bulkTransferId, bulkProcessingStateId) => {
       .first()
     return result.count
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw new Error(err.message)
   }
 }

@@ -18,7 +18,8 @@ const logResponse = function (request) {
     let response
     try {
       response = JSON.stringify(request.response, null, 2)
-    } catch (e) {
+    } catch (err) {
+      Logger.isErrorEnabled && Logger.error(err)
       response = Util.inspect(request.response)
     }
     if (!response) {

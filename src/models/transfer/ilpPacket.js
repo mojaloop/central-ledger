@@ -30,6 +30,7 @@
 const Db = require('../../lib/db')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Logger = require('@mojaloop/central-services-logger')
 
 exports.saveIlpPacket = async (record) => {
   try {
@@ -38,6 +39,7 @@ exports.saveIlpPacket = async (record) => {
       value: record.value
     })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -46,6 +48,7 @@ exports.getByTransferId = async (transferId) => {
   try {
     return await Db.from('ilpPacket').findOne({ transferId: transferId })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -58,6 +61,7 @@ exports.update = async (record) => {
   try {
     return await Db.from('ilpPacket').update({ transferId: record.transferId }, Util.omitNil(fields))
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -66,6 +70,7 @@ exports.destroyByTransferId = async (record) => {
   try {
     return await Db.from('ilpPacket').destroy({ transferId: record.transferId })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

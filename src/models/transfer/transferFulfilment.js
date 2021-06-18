@@ -33,6 +33,7 @@ const getByTransferId = async (transferId) => {
   try {
     return await Db.from('transferFulfilment').find({ transferId: transferId })
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

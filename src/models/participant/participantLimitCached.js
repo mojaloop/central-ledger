@@ -28,6 +28,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
 const Metrics = require('@mojaloop/central-services-metrics')
+const Logger = require('@mojaloop/central-services-logger')
 
 let cacheClient
 let participantLimitAllCacheKey
@@ -113,6 +114,7 @@ const withInvalidate = (theFunctionName) => {
       await exports.invalidateParticipantLimitCache()
       return result
     } catch (err) {
+      Logger.isErrorEnabled && Logger.error(err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }

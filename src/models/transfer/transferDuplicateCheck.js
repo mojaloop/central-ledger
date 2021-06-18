@@ -55,6 +55,7 @@ const getTransferDuplicateCheck = async (transferId) => {
     histTimerGetTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_getTransferDuplicateCheck' })
     return result
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     histTimerGetTransferDuplicateCheckEnd({ success: false, queryName: 'transferDuplicateCheck_getTransferDuplicateCheck' })
     throw new Error(err.message)
   }
@@ -84,6 +85,7 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
     histTimerSaveTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })
     return result
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     histTimerSaveTransferDuplicateCheckEnd({ success: false, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
