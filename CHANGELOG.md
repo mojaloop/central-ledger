@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.12.1](https://github.com/mojaloop/central-ledger/compare/v13.11.1...v13.12.1) (2021-06-22)
+
+
+### Bug Fixes
+
+* helm release 12.1 for default settlement functionality  ([#853](https://github.com/mojaloop/central-ledger/issues/853)) ([7904b76](https://github.com/mojaloop/central-ledger/commit/7904b76f0f56539a4024b9d5233f77423ddcd63b))
+
 ### [13.11.1](https://github.com/mojaloop/central-ledger/compare/v13.11.0...v13.11.1) (2021-06-15)
 
 
