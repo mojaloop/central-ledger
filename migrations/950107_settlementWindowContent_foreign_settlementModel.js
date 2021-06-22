@@ -42,5 +42,8 @@ exports.up = async (knex) => {
 }
 
 exports.down = function (knex) {
-  return knex.schema.dropTableIfExists('settlementWindowContent')
+  return knex.schema
+    .table('settlementWindowContent', (t) => {
+      t.dropForeign('settlementWindowContent')
+    })
 }
