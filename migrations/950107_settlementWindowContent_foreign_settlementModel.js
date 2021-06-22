@@ -43,7 +43,8 @@ exports.up = async (knex) => {
 
 exports.down = function (knex) {
   return knex.schema
-    .table('settlementWindowContent', (t) => {
-      t.dropForeign('settlementWindowContent')
+    .alterTable('settlementWindowContent', (t) => {
+      t.dropForeign('SettlementModelId')
+      t.dropColumn('SettlementModelId')
     })
 }
