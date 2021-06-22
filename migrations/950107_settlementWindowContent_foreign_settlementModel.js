@@ -41,8 +41,8 @@
    })
  }
  
- exports.down = function (knex) {
-   return await knew.schema.hasTable('settlementWindowContent').then(async function (exists) {
+ exports.down = async function (knex) {
+   return await knex.schema.hasTable('settlementWindowContent').then(async function (exists) {
      if (exists) {
        await knex.schema.hasColumn('settlementWindowContent', 'settlementModelId')
          .then(async (columnExists) => {
