@@ -29,13 +29,11 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-logger')
 
 const saveTransferExtension = async (extension) => {
   try {
     return await Db.from('transferExtension').insert(extension)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -44,7 +42,6 @@ const getByTransferId = async (transferId, isFulfilment = false, isError = false
   try {
     return await Db.from('transferExtension').find({ transferId, isFulfilment, isError })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -53,7 +50,6 @@ const getByTransferExtensionId = async (transferExtensionId) => {
   try {
     return await Db.from('transferExtension').findOne({ transferExtensionId })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -62,7 +58,6 @@ const destroyByTransferId = async (transferId) => {
   try {
     return await Db.from('transferExtension').destroy({ transferId })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

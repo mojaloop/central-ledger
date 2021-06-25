@@ -29,14 +29,12 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-logger')
 
 exports.getAll = async () => {
   try {
     const result = await Db.from('participant').find({}, { order: 'name asc' })
     return result
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -49,7 +47,6 @@ exports.create = async (participant) => {
     })
     return result
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -59,7 +56,6 @@ exports.update = async (participant, isActive) => {
     const result = await Db.from('participant').update({ participantId: participant.participantId }, { isActive })
     return result
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -69,7 +65,6 @@ exports.destroyByName = async (name) => {
     const result = await Db.from('participant').destroy({ name: name })
     return result
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -79,7 +74,6 @@ exports.destroyParticipantEndpointByParticipantId = async (participantId) => {
     const result = Db.from('participantEndpoint').destroy({ participantId: participantId })
     return result
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

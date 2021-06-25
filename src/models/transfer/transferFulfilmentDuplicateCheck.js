@@ -48,7 +48,6 @@ const getTransferFulfilmentDuplicateCheck = async (transferId) => {
   try {
     return Db.from('transferFulfilmentDuplicateCheck').findOne({ transferId })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -70,7 +69,6 @@ const saveTransferFulfilmentDuplicateCheck = async (transferId, hash) => {
   try {
     return Db.from('transferFulfilmentDuplicateCheck').insert({ transferId, hash })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

@@ -40,7 +40,6 @@ const TransferObjectTransform = require('./transform')
 const TransferError = require('../../models/transfer/transferError')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
-const Logger = require('@mojaloop/central-services-logger')
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   const histTimerTransferServicePrepareEnd = Metrics.getHistogram(
@@ -53,7 +52,6 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
     histTimerTransferServicePrepareEnd({ success: true, funcName: 'prepare' })
     return result
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     histTimerTransferServicePrepareEnd({ success: false, funcName: 'prepare' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -72,7 +70,6 @@ const handlePayeeResponse = async (transferId, payload, action, fspiopError) => 
     histTimerTransferServiceHandlePayeeResponseEnd({ success: true, funcName: 'handlePayeeResponse' })
     return result
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     histTimerTransferServiceHandlePayeeResponseEnd({ success: false, funcName: 'handlePayeeResponse' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -99,7 +96,6 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
     const transferStateChange = await TransferStateChangeModel.getByTransferId(transferId)
     return TransferError.insert(transferId, transferStateChange.transferStateChangeId, errorCode, errorDescription)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

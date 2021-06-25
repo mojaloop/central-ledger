@@ -29,7 +29,6 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const ilpPacket = require('ilp-packet')
 const base64url = require('base64url')
-const Logger = require('@mojaloop/central-services-logger')
 
 const getById = async (id) => {
   try {

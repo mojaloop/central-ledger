@@ -116,7 +116,6 @@ const getById = async (id) => {
       return transferResult
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -169,7 +168,6 @@ const getByIdLight = async (id) => {
       return transferResult
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -224,7 +222,6 @@ const getAll = async () => {
       return transferResultList
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -249,7 +246,6 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         .first()
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -397,7 +393,6 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
     histTimerSavePayeeTranferResponsedEnd({ success: true, queryName: 'facade_savePayeeTransferResponse' })
     return result
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     histTimerSavePayeeTranferResponsedEnd({ success: false, queryName: 'facade_savePayeeTransferResponse' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -491,7 +486,6 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           await trx.commit()
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         } catch (err) {
-          Logger.isErrorEnabled && Logger.error(err)
           await trx.rollback()
           histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
           throw err
@@ -507,14 +501,14 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       try {
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(`Payer transferParticipant insert error: ${err.message}`)
+        Logger.isWarnEnabled && Logger.warn(`Payer transferParticipant insert error: ${err.message}`)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferParticipant').insert(payeeTransferParticipantRecord)
       } catch (err) {
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
-        Logger.isErrorEnabled && Logger.error(`Payee transferParticipant insert error: ${err.message}`)
+        Logger.isWarnEnabled && Logger.warn(`Payee transferParticipant insert error: ${err.message}`)
       }
       payerTransferParticipantRecord.name = payload.payerFsp
       payeeTransferParticipantRecord.name = payload.payeeFsp
@@ -530,27 +524,26 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         try {
           await knex.batchInsert('transferExtension', transferExtensionsRecordList)
         } catch (err) {
-          Logger.isErrorEnabled && Logger.error(`batchInsert transferExtension error: ${err.message}`)
+          Logger.isWarnEnabled && Logger.warn(`batchInsert transferExtension error: ${err.message}`)
           histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
         }
       }
       try {
         await knex('ilpPacket').insert(ilpPacketRecord)
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(`ilpPacket insert error: ${err.message}`)
+        Logger.isWarnEnabled && Logger.warn(`ilpPacket insert error: ${err.message}`)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferStateChange').insert(transferStateChangeRecord)
         histTimerSaveTranferNoValidationEnd({ success: true, queryName: 'facade_saveTransferPrepared_no_validation' })
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(`transferStateChange insert error: ${err.message}`)
+        Logger.isWarnEnabled && Logger.warn(`transferStateChange insert error: ${err.message}`)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
     }
     histTimerSaveTransferPreparedEnd({ success: true, queryName: 'transfer_model_facade_saveTransferPrepared' })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     histTimerSaveTransferPreparedEnd({ success: false, queryName: 'transfer_model_facade_saveTransferPrepared' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -593,7 +586,6 @@ const getTransferStateByTransferId = async (id) => {
         .first()
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -667,12 +659,10 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
         }
         await trx.commit
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
         await trx.rollback
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
-      Logger.isErrorEnabled && Logger.error(err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
 
@@ -707,7 +697,6 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
         'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId',
         'bta.bulkTransferId')
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -825,7 +814,6 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           await trx.commit
         }
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
         if (doCommit) {
           await trx.rollback
         }
@@ -844,7 +832,6 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       return await knex.transaction(trxFunction)
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -949,7 +936,6 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           await trx.commit
         }
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
         if (doCommit) {
           await trx.rollback
         }
@@ -964,7 +950,6 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -996,7 +981,6 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
           await trx.commit
         }
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
         if (doCommit) {
           await trx.rollback
         }
@@ -1011,7 +995,6 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -1060,7 +1043,6 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
           await trx.commit
         }
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
         if (doCommit) {
           await trx.rollback
         }
@@ -1075,7 +1057,6 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     }
     return 0
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -1123,7 +1104,6 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
           await trx.commit
         }
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
         if (doCommit) {
           await trx.rollback
         }
@@ -1138,7 +1118,6 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     }
     return 0
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -1160,7 +1139,6 @@ const getTransferParticipant = async (participantName, transferId) => {
         )
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

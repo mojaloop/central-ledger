@@ -26,14 +26,12 @@
 
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-logger')
 
 async function create (name, description, isActive = false, isSettleable = false) {
   try {
     await LedgerAccountTypeModel.create(name, description, isActive, isSettleable)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -42,7 +40,6 @@ async function getAll () {
   try {
     return await LedgerAccountTypeModel.getAll()
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -50,7 +47,6 @@ async function getByName (name) {
   try {
     return await LedgerAccountTypeModel.getLedgerAccountByName(name)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

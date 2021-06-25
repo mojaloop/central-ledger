@@ -123,7 +123,6 @@ const transformTransferToFulfil = (transfer) => {
     }
     return Util.omitNil(result)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Unable to transform to fulfil response: ${err}`)
   }
 }

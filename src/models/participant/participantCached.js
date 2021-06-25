@@ -28,7 +28,6 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const ParticipantModel = require('../../models/participant/participant')
 const Metrics = require('@mojaloop/central-services-metrics')
-const Logger = require('@mojaloop/central-services-logger')
 
 let cacheClient
 let participantsAllCacheKey
@@ -110,7 +109,6 @@ exports.getById = async (id) => {
     const cachedParticipants = await getParticipantsCached()
     return cachedParticipants.indexById[id]
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -120,7 +118,6 @@ exports.getByName = async (name) => {
     const cachedParticipants = await getParticipantsCached()
     return cachedParticipants.indexByName[name]
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -130,7 +127,6 @@ exports.getAll = async () => {
     const cachedParticipants = await getParticipantsCached()
     return cachedParticipants.allParticipants
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -142,7 +138,6 @@ const withInvalidate = (theFunctionName) => {
       await exports.invalidateParticipantsCache()
       return result
     } catch (err) {
-      Logger.isErrorEnabled && Logger.error(err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }

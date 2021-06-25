@@ -30,7 +30,6 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-logger')
 
 /* istanbul ignore next */
 exports.getLedgerAccountByName = async (name, trx = null) => {
@@ -50,7 +49,6 @@ exports.getLedgerAccountByName = async (name, trx = null) => {
         if (doCommit) {
           await trx.rollback
         }
-        Logger.isErrorEnabled && Logger.error(err)
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
@@ -60,7 +58,6 @@ exports.getLedgerAccountByName = async (name, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -83,7 +80,6 @@ exports.getLedgerAccountsByName = async (names, trx = null) => {
         if (doCommit) {
           await trx.rollback
         }
-        Logger.isErrorEnabled && Logger.error(err)
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
@@ -93,7 +89,6 @@ exports.getLedgerAccountsByName = async (names, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -120,7 +115,6 @@ exports.bulkInsert = async (records, trx = null) => {
         if (doCommit) {
           await trx.rollback
         }
-        Logger.isErrorEnabled && Logger.error(err)
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
@@ -130,7 +124,6 @@ exports.bulkInsert = async (records, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -160,7 +153,6 @@ exports.create = async (name, description, isActive, isSettleable, trx = null) =
         if (doCommit) {
           await trx.rollback()
         }
-        Logger.isErrorEnabled && Logger.error(err)
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
@@ -170,7 +162,6 @@ exports.create = async (name, description, isActive, isSettleable, trx = null) =
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -179,7 +170,6 @@ exports.getAll = async () => {
   try {
     return await Db.from('ledgerAccountType').find({ })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

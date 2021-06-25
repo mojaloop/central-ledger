@@ -56,13 +56,11 @@ const ParticipantInitialPositionExistsText = 'Participant Limit or Initial Posit
 const ParticipantNotFoundText = 'Participant does not exist'
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { destroyParticipantEndpointByParticipantId } = require('../../models/participant/participant')
-const Logger = require('@mojaloop/central-services-logger')
 
 const create = async (payload) => {
   try {
     return ParticipantModel.create({ name: payload.name })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -75,7 +73,6 @@ const getAll = async () => {
     }))
     return all
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -115,7 +112,6 @@ const update = async (name, payload) => {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     return participant
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -125,7 +121,6 @@ const createParticipantCurrency = async (participantId, currencyId, ledgerAccoun
     const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId, isActive)
     return participantCurrency
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -135,7 +130,6 @@ const createHubAccount = async (participantId, currencyId, ledgerAccountTypeId) 
     const participantCurrency = await ParticipantFacade.addHubAccountAndInitPosition(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -144,7 +138,6 @@ const getParticipantCurrencyById = async (participantCurrencyId) => {
   try {
     return await ParticipantCurrencyModel.getById(participantCurrencyId)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -158,7 +151,6 @@ const destroyByName = async (name) => {
     await destroyParticipantEndpointByParticipantId(participant.participantId)
     return await ParticipantModel.destroyByName(name)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -187,7 +179,6 @@ const addEndpoint = async (name, payload) => {
     participantExists(participant)
     return ParticipantFacade.addEndpoint(participant.participantId, payload)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -213,7 +204,6 @@ const getEndpoint = async (name, type) => {
     participantExists(participant)
     return ParticipantFacade.getEndpoint(participant.participantId, type)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -238,7 +228,6 @@ const getAllEndpoints = async (name) => {
     participantExists(participant)
     return ParticipantFacade.getAllEndpoints(participant.participantId)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -261,7 +250,6 @@ const destroyParticipantEndpointByName = async (name) => {
     participantExists(participant)
     return ParticipantModel.destroyParticipantEndpointByParticipantId(participant.participantId)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -308,7 +296,6 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Events.Event.Type.NOTIFICATION, Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Enum.Events.EventStatus.SUCCESS)
     return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition, true)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -329,7 +316,6 @@ const getPositionByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return ParticipantPositionModel.getByParticipantCurrencyId(participantCurrencyId)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -350,7 +336,6 @@ const getPositionChangeByParticipantPositionId = async (participantPositionId) =
   try {
     return ParticipantPositionChangeModel.getByParticipantPositionId(participantPositionId)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -373,7 +358,6 @@ const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => 
     participantExists(participant)
     return ParticipantPositionModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -397,7 +381,6 @@ const destroyParticipantLimitByNameAndCurrency = async (name, currencyId) => {
     participantExists(participant)
     return ParticipantLimitModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -432,7 +415,6 @@ const getLimits = async (name, { currency = null, type = null }) => {
       return ParticipantFacade.getParticipantLimitsByParticipantId(participant.participantId, type, Enum.Accounts.LedgerAccountType.POSITION)
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -455,7 +437,6 @@ const getLimitsForAllParticipants = async ({ currency = null, type = null }) => 
   try {
     return ParticipantFacade.getLimitsForAllParticipants(currency, type, Enum.Accounts.LedgerAccountType.POSITION)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -493,7 +474,6 @@ const adjustLimits = async (name, payload) => {
     await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Events.Event.Type.NOTIFICATION, Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Enum.Events.EventStatus.SUCCESS)
     return result
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -597,7 +577,6 @@ const getPositions = async (name, query) => {
       return positions
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -623,7 +602,6 @@ const getAccounts = async (name, query) => {
     }
     return positions
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -643,7 +621,6 @@ const updateAccount = async (payload, params, enums) => {
     }
     return await ParticipantCurrencyModel.update(id, payload.isActive)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -652,7 +629,6 @@ const getLedgerAccountTypeName = async (name) => {
   try {
     return await LedgerAccountTypeModel.getLedgerAccountByName(name)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -661,7 +637,6 @@ const getParticipantAccount = async (accountParams) => {
   try {
     return await ParticipantCurrencyModel.findOneByParams(accountParams)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -739,7 +714,6 @@ const recordFundsInOut = async (payload, params, enums) => {
     }
     return await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Action.TRANSFER, messageProtocol, Enum.Events.EventStatus.SUCCESS)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -786,7 +760,6 @@ const createAssociatedParticipantAccounts = async (currency, ledgerAccountTypeId
     }
     await ParticipantPositionModel.createParticipantPositionRecords(participantPositionRecords, trx)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

@@ -27,7 +27,6 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-logger')
 
 /* istanbul ignore next */
 exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset, trx = null) => {
@@ -53,7 +52,6 @@ exports.create = async (name, isActive, settlementGranularityId, settlementInter
           await trx.commit
         }
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
         if (doCommit) {
           await trx.rollback
         }
@@ -84,7 +82,6 @@ exports.getByName = async (name, trx = null) => {
         }
         return result.length > 0 ? result[0] : null
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
         if (doCommit) {
           await trx.rollback
         }
@@ -97,7 +94,6 @@ exports.getByName = async (name, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -105,7 +101,6 @@ exports.getAll = async () => {
   try {
     return await Db.from('settlementModel').find({ isActive: 1 })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -113,7 +108,6 @@ exports.update = async (settlementModel, isActive) => {
   try {
     return await Db.from('settlementModel').update({ settlementModelId: settlementModel.settlementModelId }, { isActive })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -133,7 +127,6 @@ exports.getSettlementModelsByName = async (names, trx = null) => {
         }
         return settlementModelNames
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
         if (doCommit) {
           await trx.rollback
         }
@@ -146,7 +139,6 @@ exports.getSettlementModelsByName = async (names, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
