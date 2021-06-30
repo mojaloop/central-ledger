@@ -191,6 +191,7 @@ const prepare = async (error, messages) => {
            * HOWTO: Stop execution at the `TransferService.prepare`, stop mysql,
            * continue execution to catch block, start mysql
            */
+          Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         }
@@ -490,6 +491,7 @@ const fulfil = async (error, messages) => {
                  * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
                  * so that such requests are rejected right away, instead of aborting the transfer here.
                  */
+                Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
                 fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
                 await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
                 const eventDetail = { functionality: TransferEventType.POSITION, action }
@@ -636,6 +638,7 @@ const registerPrepareHandler = async () => {
     await Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
     return true
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -659,6 +662,7 @@ const registerFulfilHandler = async () => {
     await Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
     return true
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -682,6 +686,7 @@ const registerGetTransferHandler = async () => {
     await Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)
     return true
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -701,6 +706,7 @@ const registerAllHandlers = async () => {
     await registerGetTransferHandler()
     return true
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

@@ -44,6 +44,7 @@ const Utility = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const resourceVersions = require('@mojaloop/central-services-shared').Util.resourceVersions
+const Logger = require('@mojaloop/central-services-logger')
 let timeoutJob
 let isRegistered
 
@@ -111,6 +112,7 @@ const timeout = async () => {
           }
         }
       } catch (err) {
+        Logger.isErrorEnabled && Logger.error(err)
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
         const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
         await span.error(fspiopError, state)
@@ -129,6 +131,7 @@ const timeout = async () => {
       result
     }
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -182,6 +185,7 @@ const registerTimeoutHandler = async () => {
     await timeoutJob.start()
     return true
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -201,6 +205,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
