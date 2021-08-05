@@ -175,6 +175,18 @@ const endpointTypes = [
     description: 'Participant callback URL where PUT /thirdpartyRequests/transactions/{ID}/authorizations/error error information can be sent'
   },
   {
+    name: 'TP_CB_URL_VERIFICATION_REQUEST_POST',
+    description: 'Participant callback URL where POST /thirdpartyRequests/verifications can be sent'
+  },
+  {
+    name: 'TP_CB_URL_VERIFICATION_REQUEST_PUT',
+    description: 'Participant callback URL where PUT /thirdpartyRequests/verifications/{ID} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_VERIFICATION_REQUEST_PUT_ERROR',
+    description: 'Participant callback URL where PUT /thirdpartyRequests/verifications/{ID}/error can be sent'
+  },
+  {
     name: 'TP_CB_URL_CONSENT_REQUEST_POST',
     description: 'Participant callback URL where POST /consentRequests can be sent'
   },
