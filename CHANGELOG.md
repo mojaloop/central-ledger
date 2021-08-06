@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.13.2](https://github.com/mojaloop/central-ledger/compare/v13.13.1...v13.13.2) (2021-08-06)
+
+
+### Chore
+
+* **deps:** [security] bump normalize-url from 4.5.0 to 4.5.1 ([#848](https://github.com/mojaloop/central-ledger/issues/848)) ([d3f0c48](https://github.com/mojaloop/central-ledger/commit/d3f0c48f176f73b0e682f3cd14222bdb1546751a))
+* **deps:** [security] bump urijs from 1.19.6 to 1.19.7 ([#854](https://github.com/mojaloop/central-ledger/issues/854)) ([97db6ac](https://github.com/mojaloop/central-ledger/commit/97db6ac73eefb5628843121d8ad7eec9238bc030))
+
 ### [13.13.1](https://github.com/mojaloop/central-ledger/compare/v13.13.0...v13.13.1) (2021-08-06)
 
 
