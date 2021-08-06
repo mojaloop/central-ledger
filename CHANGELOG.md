@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.13.1](https://github.com/mojaloop/central-ledger/compare/v13.13.0...v13.13.1) (2021-08-06)
+
+
+### Chore
+
+* add seeds for /verifications endpoint ([#857](https://github.com/mojaloop/central-ledger/issues/857)) ([024942b](https://github.com/mojaloop/central-ledger/commit/024942b288001fb3b52ebbbd7463aebe1929f150))
+
 ## [13.13.0](https://github.com/mojaloop/central-ledger/compare/v13.12.1...v13.13.0) (2021-06-30)
 
 
