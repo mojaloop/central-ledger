@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.13.4](https://github.com/mojaloop/central-ledger/compare/v13.13.3...v13.13.4) (2021-08-24)
+
+
+### Chore
+
+* **deps:** bump path-parse from 1.0.6 to 1.0.7 ([#858](https://github.com/mojaloop/central-ledger/issues/858)) ([77d4251](https://github.com/mojaloop/central-ledger/commit/77d42518075e200a00a958a19db35591d96b6f65))
+
 ### [13.13.3](https://github.com/mojaloop/central-ledger/compare/v13.13.1...v13.13.3) (2021-08-06)
 
 
