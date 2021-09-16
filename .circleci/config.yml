@@ -71,7 +71,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - dependency-cache-{{ checksum "package-lock.json" }}
+            - dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Access npm folder as root
           command: cd $(npm root -g)/npm
@@ -82,7 +82,7 @@ jobs:
           name: Delete build dependencies
           command: apk del build-dependencies
       - save_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
           paths:
             - node_modules
 
@@ -95,7 +95,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-          - dependency-cache-{{ checksum "package-lock.json" }}
+          - dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Install tape, tapes and tap-xunit
           command: npm install -g tape tapes tap-xunit
@@ -123,7 +123,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - dependency-cache-{{ checksum "package-lock.json" }}
+            - dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Execute code coverage check
           command: npm -s run test:coverage-check
@@ -148,7 +148,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
@@ -170,7 +170,7 @@ jobs:
           command: *defaults_Dependencies
       - checkout
       - restore_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Create dir for test results
           command: mkdir -p ./audit/results
@@ -191,7 +191,7 @@ jobs:
       - run:
           <<: *defaults_license_scanner
       - restore_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Prune non-production packages before running license-scanner
           command: npm prune --production
@@ -211,7 +211,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-          - dependency-cache-{{ checksum "package-lock.json" }}
+          - dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Configure git
           command: |
