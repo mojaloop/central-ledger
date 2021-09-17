@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.14.1](https://github.com/mojaloop/central-ledger/compare/v13.14.0...v13.14.1) (2021-09-17)
+
+
+### Bug Fixes
+
+* change endpoint types to line up with enums ([#863](https://github.com/mojaloop/central-ledger/issues/863)) ([2046288](https://github.com/mojaloop/central-ledger/commit/2046288d7070711a5bb7eb600bf0f1e87c0e8768))
+
 ## [13.14.0](https://github.com/mojaloop/central-ledger/compare/v13.13.4...v13.14.0) (2021-09-16)
 
 
