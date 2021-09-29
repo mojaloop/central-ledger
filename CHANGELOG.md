@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.14.2](https://github.com/mojaloop/central-ledger/compare/v13.14.1...v13.14.2) (2021-09-29)
+
+
+### Bug Fixes
+
+* **mojaloop/#2522:** cl-migration scripts should configure quoting tables to utf8 follow-up ([#865](https://github.com/mojaloop/central-ledger/issues/865)) ([dcc57b8](https://github.com/mojaloop/central-ledger/commit/dcc57b8f22bc66fa4e6ae35ce04cf095fce780c6)), closes [mojaloop/#2522](https://github.com/mojaloop/central-ledger/issues/2522) [mojaloop/#2522](https://github.com/mojaloop/central-ledger/issues/2522)
+
 ### [13.14.1](https://github.com/mojaloop/central-ledger/compare/v13.14.0...v13.14.1) (2021-09-17)
 
 
