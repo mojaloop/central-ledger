@@ -33,24 +33,22 @@ const characterSet = 'utf8mb4'
 const coalition = 'utf8mb4_unicode_ci'
 
 exports.up = async (knex) => {
-  console.log(`WARNING: Migration script 501002_quoteExtension-2522.js is converting quoteExtension table to use the following character set ${characterSet} with ${coalition} collation`)
+  console.log(`WARNING: Migration script 501002_quoteExtension-2522.js is converting quoteExtension 'value' column to use the following character set ${characterSet} with ${coalition} collation`)
   return knex.schema.hasTable('quoteExtension').then(async (exists) => {
     if (exists) {
       try {
       const result = await knex.select(knex.raw(`
-        CCSA.character_set_name, CCSA.collation_name
-        FROM information_schema.TABLES T,
-        information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA 
-        WHERE CCSA.collation_name = T.table_collation 
-        AND T.table_name = "quoteExtension";
+        table_name, column_name, character_set_name, collation_name
+        FROM information_schema.COLUMNS
+        WHERE table_name = 'quoteExtension' AND column_name = 'value';
       `))
       console.log(`WARNING: Migration script 501002_quoteExtension-2522.js - take note of the current configuration if you wish to revert= ${JSON.stringify(result)}`)
       await knex.raw(`
-        ALTER TABLE quoteExtension CONVERT TO CHARACTER
-        SET ${characterSet} COLLATE ${coalition}
+        ALTER TABLE quoteExtension
+        CHANGE COLUMN \`value\` \`value\` TEXT CHARACTER SET '${characterSet}' COLLATE '${coalition}' NOT NULL;
       `)
       } catch (err) {
-        console.log(`ERROR: Migration script 501002_quoteExtension-2522.js - converting quoteExtension table to use the following character set ${characterSet} with ${coalition} collation has failed!`)
+        console.log(`ERROR: Migration script 501002_quoteExtension-2522.js - converting quoteExtension 'value' column to use the following character set ${characterSet} with ${coalition} collation has failed!`)
         console.error(err)
         throw err
       }
