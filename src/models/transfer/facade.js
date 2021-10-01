@@ -336,7 +336,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
 
     await knex.transaction(async (trx) => {
       try {
-        if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
+        if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT, TransferEventAction.RESERVE].includes(action)) {
           const res = await Db.from('settlementWindow').query(builder => {
             return builder
               .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')

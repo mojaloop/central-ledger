@@ -56,6 +56,10 @@ jspm_packages
 
 .history
 
+# https://devspace.sh/
+devspace*
+.devspace/**.*
+
 # Add ignores
 *IGNORE*
 *ignore*
