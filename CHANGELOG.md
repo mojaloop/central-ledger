@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.14.3](https://github.com/mojaloop/central-ledger/compare/v13.14.2...v13.14.3) (2021-10-01)
+
+
+### Bug Fixes
+
+* **mojaloop/2525:** transfers are not being assigned to a settlementWindow on transfers version=1.1 ([#866](https://github.com/mojaloop/central-ledger/issues/866)) ([602704b](https://github.com/mojaloop/central-ledger/commit/602704bfb9d63764e66d59d53e42b2469c34bfc3)), closes [#2525](https://github.com/mojaloop/central-ledger/issues/2525)
+
 ### [13.14.2](https://github.com/mojaloop/central-ledger/compare/v13.14.1...v13.14.2) (2021-09-29)
 
 
