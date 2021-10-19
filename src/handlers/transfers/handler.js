@@ -118,7 +118,7 @@ const prepare = async (error, messages) => {
           ? Enum.Events.ActionLetter.bulkPrepare
           : Enum.Events.ActionLetter.unknown)
 
-    let functionality = action === TransferEventAction.PREPARE
+    const functionality = action === TransferEventAction.PREPARE
       ? TransferEventType.NOTIFICATION
       : (action === TransferEventAction.BULK_PREPARE
           ? TransferEventType.BULK_PROCESSING
@@ -196,8 +196,7 @@ const prepare = async (error, messages) => {
           throw fspiopError
         }
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
-        functionality = TransferEventType.POSITION
-        const eventDetail = { functionality, action }
+        const eventDetail = { functionality: TransferEventType.POSITION, action }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true

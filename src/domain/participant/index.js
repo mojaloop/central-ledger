@@ -28,6 +28,7 @@
  * @module src/domain/participant/
  */
 
+const assert = require('assert').strict;
 const ParticipantModel = require('../../models/participant/participantCached')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrencyCached')
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
@@ -685,34 +686,52 @@ const setPayerPayeeFundsInOut = (fspName, payload, enums) => {
       payee: fspName
     }
   }
-  if (!actions[action]) throw ErrorHandler.Factory.createInternalServerFSPIOPError(ActionNotSupportedText)
+  assert(
+    action in actions,
+    ErrorHandler.Factory.createInternalServerFSPIOPError(ActionNotSupportedText)
+  )
   return Object.assign(payload, actions[action])
 }
 
 const recordFundsInOut = async (payload, params, enums) => {
   try {
     const { name, id, transferId } = params
+
     const participant = await ParticipantModel.getByName(name)
-    const currency = (payload.amount && payload.amount.currency) || null
-    const isAccountActive = null
     const checkIsActive = true
     participantExists(participant, checkIsActive)
+
+    const currency = (payload.amount && payload.amount.currency) || null
+    const isAccountActive = null
     const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency, isAccountActive)
-    const accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
-    if (!accountMatched) {
-      throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantAccountCurrencyMismatchText)
-    } else if (!accountMatched.accountIsActive) {
-      throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountInactiveErrorText)
-    } else if (accountMatched.ledgerAccountTypeId !== enums.ledgerAccountType.SETTLEMENT) {
-      throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountNotSettlementTypeErrorText)
-    }
-    transferId && (payload.transferId = transferId)
-    const messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload, enums))
-    messageProtocol.metadata.request = {
-      params: params,
-      enums: enums
-    }
-    return await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Action.TRANSFER, messageProtocol, Enum.Events.EventStatus.SUCCESS)
+    const accountMatched = accounts.find((a) => a.participantCurrencyId === id)
+
+    assert(
+      accountMatched,
+      ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantAccountCurrencyMismatchText)
+    )
+    assert(
+      accountMatched.accountIsActive,
+      ErrorHandler.Factory.createInternalServerFSPIOPError(AccountInactiveErrorText)
+    )
+    assert(
+      accountMatched.ledgerAccountTypeId === enums.ledgerAccountType.SETTLEMENT,
+      ErrorHandler.Factory.createInternalServerFSPIOPError(AccountNotSettlementTypeErrorText)
+    )
+
+    payload.transferId = transferId || payload.transferId
+    const messageProtocol = createRecordFundsMessageProtocol(
+      setPayerPayeeFundsInOut(name, payload, enums)
+    )
+    messageProtocol.metadata.request = { params, enums }
+    return await Kafka.produceGeneralMessage(
+      Config.KAFKA_CONFIG,
+      KafkaProducer,
+      Enum.Events.Event.Type.ADMIN,
+      Enum.Events.Event.Action.TRANSFER,
+      messageProtocol,
+      Enum.Events.EventStatus.SUCCESS,
+    )
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

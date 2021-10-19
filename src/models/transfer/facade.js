@@ -32,6 +32,7 @@
  * @module src/models/transfer/facade/
  */
 
+const assert = require('assert').strict
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
@@ -415,7 +416,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       }
     }
 
-    const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
+    const participantCurrencyIds = _.reduce(participants, (m, acct) =>
       _.set(m, acct.name, acct.participantCurrencyId), {})
 
     const transferRecord = {
@@ -722,8 +723,11 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           })
           .join('participantCurrency AS crpc', 'crpc.participantCurrencyId', 'dr.participantCurrencyId')
           .join('participantPosition AS crp', 'crp.participantCurrencyId', 'cr.participantCurrencyId')
+          .join('participantCurrency AS settCur', 'settCur.currencyId', 'drpc.currencyId') // debit settlement account
+          .join('participantPosition AS settPos', 'settPos.participantCurrencyId', 'settCur.participantCurrencyId')
           .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
           .where('t.transferId', param1.transferId)
+          .where('settCur.ledgerAccountTypeId', enums.ledgerAccountType.SETTLEMENT)
           .whereIn('drpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
             enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
           .whereIn('crpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
@@ -731,7 +735,8 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           .select('dr.participantCurrencyId AS drAccountId', 'dr.amount AS drAmount', 'drp.participantPositionId AS drPositionId',
             'drp.value AS drPositionValue', 'drp.reservedValue AS drReservedValue', 'cr.participantCurrencyId AS crAccountId',
             'cr.amount AS crAmount', 'crp.participantPositionId AS crPositionId', 'crp.value AS crPositionValue',
-            'crp.reservedValue AS crReservedValue', 'tsc.transferStateId', 'drpc.ledgerAccountTypeId', 'crpc.ledgerAccountTypeId')
+            'crp.reservedValue AS crReservedValue', 'tsc.transferStateId', 'drpc.ledgerAccountTypeId', 'crpc.ledgerAccountTypeId',
+            'settPos.value AS settlementAccountValue')
           .orderBy('tsc.transferStateChangeId', 'desc')
           .first()
           .transacting(trx)
@@ -821,8 +826,8 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       }
       return {
         transferStateChangeId,
-        drPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
-        crPositionValue: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE)
+        drPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).add(info.settlementAccountValue).toFixed(Config.AMOUNT.SCALE),
+        crPositionValue: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
       }
     }
 
@@ -970,8 +975,10 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
         }
         const positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
 
-        if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
-          positionResult.drPositionValue > 0) {
+        if (
+          payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
+          positionResult.drPositionValue > 0
+        ) {
           payload.reason = 'Aborted due to insufficient funds'
           payload.action = Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT
           await TransferFacade.reconciliationTransferAbort(payload, transactionTimestamp, enums, trx)
@@ -1024,20 +1031,24 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
           })
           .transacting(trx)
 
-        if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN ||
-          payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
-          const param1 = {
-            transferId: payload.transferId,
-            transferStateId: enums.transferState.COMMITTED,
-            reason: payload.reason,
-            createdDate: transactionTimestamp,
-            drUpdated: false,
-            crUpdated: true
-          }
-          await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
-        } else {
-          throw new Error('Action not allowed for reconciliationTransferCommit')
+        const allowableActions = [
+          Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN,
+          Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_COMMIT,
+        ]
+        assert(
+          allowableActions.includes(payload.action),
+          new Error('Action not allowed for reconciliationTransferCommit')
+        )
+
+        const param1 = {
+          transferId: payload.transferId,
+          transferStateId: enums.transferState.COMMITTED,
+          reason: payload.reason,
+          createdDate: transactionTimestamp,
+          drUpdated: false,
+          crUpdated: true
         }
+        await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
 
         if (doCommit) {
           await trx.commit
