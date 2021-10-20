@@ -723,7 +723,10 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           })
           .join('participantCurrency AS crpc', 'crpc.participantCurrencyId', 'dr.participantCurrencyId')
           .join('participantPosition AS crp', 'crp.participantCurrencyId', 'cr.participantCurrencyId')
-          .join('participantCurrency AS settCur', 'settCur.currencyId', 'drpc.currencyId') // debit settlement account
+          .join('participantCurrency AS settCur', function () {
+            this.on('settCur.currencyId', 'drpc.currencyId')
+              .andOn('settCur.participantId', 'drpc.participantId')
+          })
           .join('participantPosition AS settPos', 'settPos.participantCurrencyId', 'settCur.participantCurrencyId')
           .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
           .where('t.transferId', param1.transferId)
@@ -826,7 +829,8 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       }
       return {
         transferStateChangeId,
-        drPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).add(info.settlementAccountValue).toFixed(Config.AMOUNT.SCALE),
+        drPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
+        netDrPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).subtract(info.settlementAccountValue).toFixed(Config.AMOUNT.SCALE),
         crPositionValue: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
       }
     }
@@ -977,7 +981,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
 
         if (
           payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
-          positionResult.drPositionValue > 0
+          positionResult.netDrPositionValue > 0
         ) {
           payload.reason = 'Aborted due to insufficient funds'
           payload.action = Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT
