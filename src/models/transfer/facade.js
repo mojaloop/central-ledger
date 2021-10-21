@@ -708,7 +708,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
 
     const trxFunction = async (trx, doCommit = true) => {
       const transactionTimestamp = Time.getUTCString(new Date())
-      let info, transferStateChangeId
+      let info, transferStateChangeId, settlementAccountBalance
       try {
         info = await knex('transfer AS t')
           .join('transferParticipant AS dr', function () {
@@ -723,14 +723,8 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           })
           .join('participantCurrency AS crpc', 'crpc.participantCurrencyId', 'dr.participantCurrencyId')
           .join('participantPosition AS crp', 'crp.participantCurrencyId', 'cr.participantCurrencyId')
-          .join('participantCurrency AS settCur', function () {
-            this.on('settCur.currencyId', 'drpc.currencyId')
-              .andOn('settCur.participantId', 'drpc.participantId')
-          })
-          .join('participantPosition AS settPos', 'settPos.participantCurrencyId', 'settCur.participantCurrencyId')
           .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
           .where('t.transferId', param1.transferId)
-          .where('settCur.ledgerAccountTypeId', enums.ledgerAccountType.SETTLEMENT)
           .whereIn('drpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
             enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
           .whereIn('crpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
@@ -739,10 +733,32 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             'drp.value AS drPositionValue', 'drp.reservedValue AS drReservedValue', 'cr.participantCurrencyId AS crAccountId',
             'cr.amount AS crAmount', 'crp.participantPositionId AS crPositionId', 'crp.value AS crPositionValue',
             'crp.reservedValue AS crReservedValue', 'tsc.transferStateId', 'drpc.ledgerAccountTypeId', 'crpc.ledgerAccountTypeId',
-            'settPos.value AS settlementAccountValue')
+            'drpc.currencyId as drCurrency', 'drpc.participantId as drParticipant')
           .orderBy('tsc.transferStateChangeId', 'desc')
           .first()
           .transacting(trx)
+
+        console.log({
+          transferId: param1.transferId,
+          enums: [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
+            enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT],
+          settlementEnum: enums.ledgerAccountType.SETTLEMENT,
+        })
+
+        console.log('info', JSON.stringify(info, null, 2))
+
+        const HUB_PARTICIPANT_ID = 1
+        settlementAccountBalance = (info.drParticipant === HUB_PARTICIPANT_ID) ?  0 :
+          await knex('participantCurrency AS settAcc')
+            .join('participantPosition AS settPos', 'settPos.participantCurrencyId', 'settAcc.participantCurrencyId')
+            .where('settAcc.currencyId', info.drCurrency)
+            .andWhere('settAcc.participantId', info.drParticipant)
+            .andWhere('settAcc.ledgerAccountTypeId', enums.ledgerAccountType.SETTLEMENT)
+            .select('settPos.value AS value')
+            .first()
+            .transacting(trx)
+            .then(res => res.value)
+        console.log('settlementAccountBalance', JSON.stringify(settlementAccountBalance, null, 2))
 
         if (param1.transferStateId === enums.transferState.COMMITTED) {
           await knex('transferStateChange')
@@ -830,7 +846,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       return {
         transferStateChangeId,
         drPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
-        netDrPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).subtract(info.settlementAccountValue).toFixed(Config.AMOUNT.SCALE),
+        netDrPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).subtract(settlementAccountBalance).toFixed(Config.AMOUNT.SCALE),
         crPositionValue: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
       }
     }
@@ -978,6 +994,8 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
           crUpdated: false
         }
         const positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
+
+        console.log('positionResult', JSON.stringify(positionResult, null, 2))
 
         if (
           payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
