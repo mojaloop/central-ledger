@@ -836,7 +836,9 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       return {
         transferStateChangeId,
         drPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
-        netDrPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).subtract(settlementAccountBalance).toFixed(Config.AMOUNT.SCALE),
+        // Note: the settlement account balance will be < 0 for a credit. Therefore, we add the
+        // settlement account balance to the position to determine the difference.
+        netDrPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).add(settlementAccountBalance).toFixed(Config.AMOUNT.SCALE),
         crPositionValue: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
       }
     }
