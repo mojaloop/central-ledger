@@ -738,15 +738,6 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           .first()
           .transacting(trx)
 
-        console.log({
-          transferId: param1.transferId,
-          enums: [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
-            enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT],
-          settlementEnum: enums.ledgerAccountType.SETTLEMENT,
-        })
-
-        console.log('info', JSON.stringify(info, null, 2))
-
         const HUB_PARTICIPANT_ID = 1
         settlementAccountBalance = (info.drParticipant === HUB_PARTICIPANT_ID) ?  0 :
           await knex('participantCurrency AS settAcc')
@@ -758,7 +749,6 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             .first()
             .transacting(trx)
             .then(res => res.value)
-        console.log('settlementAccountBalance', JSON.stringify(settlementAccountBalance, null, 2))
 
         if (param1.transferStateId === enums.transferState.COMMITTED) {
           await knex('transferStateChange')
@@ -994,8 +984,6 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
           crUpdated: false
         }
         const positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
-
-        console.log('positionResult', JSON.stringify(positionResult, null, 2))
 
         if (
           payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
