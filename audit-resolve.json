@@ -253,6 +253,66 @@
       "decision": "ignore",
       "madeAt": 1632909595878,
       "expiresAt": 1633514382984
+    },
+    "1002401|@mojaloop/event-sdk>@grpc/proto-loader>yargs>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1636383357793,
+      "expiresAt": 1638975351187
+    },
+    "1002401|@mojaloop/event-sdk>@grpc/proto-loader>yargs>cliui>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1636383357794,
+      "expiresAt": 1638975351187
+    },
+    "1002401|@mojaloop/event-sdk>@grpc/proto-loader>yargs>cliui>wrap-ansi>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1636383357794,
+      "expiresAt": 1638975351187
+    },
+    "1002401|blipp>easy-table>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1636383359018,
+      "expiresAt": 1638975351187
+    },
+    "1002423|@mojaloop/central-services-shared>shins>cheerio>cheerio-select>css-select>nth-check": {
+      "decision": "ignore",
+      "madeAt": 1636383360126,
+      "expiresAt": 1638975351187
+    },
+    "1002401|@mojaloop/central-services-shared>widdershins>yargs>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1636383361373,
+      "expiresAt": 1638975351187
+    },
+    "1002401|@mojaloop/central-services-shared>widdershins>yargs>cliui>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1636383361373,
+      "expiresAt": 1638975351187
+    },
+    "1002490|@mojaloop/central-object-store>mongoose>mpath": {
+      "decision": "ignore",
+      "madeAt": 1636383362665,
+      "expiresAt": 1638975351187
+    },
+    "1002865|@mojaloop/central-services-shared>shins>sanitize-html": {
+      "decision": "ignore",
+      "madeAt": 1636383364395,
+      "expiresAt": 1638975351187
+    },
+    "1002866|@mojaloop/central-services-shared>shins>sanitize-html": {
+      "decision": "ignore",
+      "madeAt": 1636383364395,
+      "expiresAt": 1638975351187
+    },
+    "1003019|@mojaloop/central-services-shared>widdershins>yargs>yargs-parser": {
+      "decision": "ignore",
+      "madeAt": 1636383365881,
+      "expiresAt": 1638975351187
+    },
+    "1004784|hapi-swagger>swagger-parser>z-schema>validator": {
+      "decision": "ignore",
+      "madeAt": 1636383367449,
+      "expiresAt": 1638975351187
     }
   },
   "rules": {},
