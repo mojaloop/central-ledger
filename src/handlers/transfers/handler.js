@@ -439,7 +439,7 @@ const fulfil = async (error, messages) => {
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
           const apiFspiopError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
           await TransferService.handlePayeeResponse(transferId, payload, action, apiFspiopError)
-          const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+          const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT_VALIDATION }
           /**
            * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
            */

@@ -45,6 +45,26 @@ curl -X POST \
     "type": "HUB_MULTILATERAL_SETTLEMENT"
 }'
 
+echo "---------------------------------------------------------------------"
+echo "Creating Default Settlement Model"
+echo "---------------------------------------------------------------------"
+curl -X POST \
+  ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}settlementModels \
+  -H 'Cache-Control: no-cache' \
+  -H 'Content-Type: application/json' \
+  -H 'cache-control: no-cache' \
+  -d '{
+        "name": "DEFERREDNETUSD",
+        "settlementGranularity": "NET",
+        "settlementInterchange": "MULTILATERAL",
+        "settlementDelay": "DEFERRED",
+        "requireLiquidityCheck": true,
+        "ledgerAccountType": "POSITION",
+        "autoPositionReset": true,
+        "currency": "USD",
+        "settlementAccountType": "SETTLEMENT"
+      }'
+
 echo
 echo "---------------------------------------------------------------------"
 echo " Creating TestData for $FSPList"
