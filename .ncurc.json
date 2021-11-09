@@ -1,7 +1,8 @@
 {
   "reject": [
     "tape",
-    "ilp-packet"
+    "ilp-packet",
+    "get-port"
   ]
 }
 

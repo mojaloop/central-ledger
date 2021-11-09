@@ -313,6 +313,21 @@
       "decision": "ignore",
       "madeAt": 1636383367449,
       "expiresAt": 1638975351187
+    },
+    "1004809|@mojaloop/central-services-shared>widdershins>openapi-sampler>json-pointer": {
+      "decision": "ignore",
+      "madeAt": 1636447959947,
+      "expiresAt": 1639039953006
+    },
+    "1004812|@mojaloop/central-services-shared>widdershins>swagger2openapi>better-ajv-errors>jsonpointer": {
+      "decision": "ignore",
+      "madeAt": 1636447961306,
+      "expiresAt": 1639039953006
+    },
+    "1004812|@mojaloop/central-services-shared>widdershins>swagger2openapi>oas-validator>better-ajv-errors>jsonpointer": {
+      "decision": "ignore",
+      "madeAt": 1636447961306,
+      "expiresAt": 1639039953006
     }
   },
   "rules": {},
