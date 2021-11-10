@@ -445,80 +445,26 @@ const fulfil = async (error, messages) => {
 
     // Transfer is not a duplicate, or message hasn't been changed. 
 
-    if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.RESERVE, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT, TransferEventAction.BULK_ABORT].includes(action)) {
-      Util.breadcrumb(location, { path: 'validationCheck' })
-      if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
-        const apiFspiopError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
-        await TransferService.handlePayeeResponse(transferId, payload, action, apiFspiopError)
-        const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
-        /**
-         * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
-         */
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
-        throw fspiopError
-      } else if (transfer.transferState !== TransferState.RESERVED) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state')
-        const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-        /**
-         * TODO: BulkProcessingHandler (not in scope of #967)
-         */
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-        throw fspiopError
-      } else if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
-        const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-        /**
-         * TODO: BulkProcessingHandler (not in scope of #967)
-         */
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-        throw fspiopError
-      } else { // validations success
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
-        if ([TransferEventAction.COMMIT, TransferEventAction.RESERVE, TransferEventAction.BULK_COMMIT].includes(action)) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
-          await TransferService.handlePayeeResponse(transferId, payload, action)
-          const eventDetail = { functionality: TransferEventType.POSITION, action }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
-        } else {
-          if (action === TransferEventAction.REJECT) {
-            Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
-            const errorMessage = 'action REJECT is not allowed into fulfil handler'
-            Logger.isErrorEnabled && Logger.error(errorMessage)
-            !!span && span.error(errorMessage)
-            histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-            return true
-          } else { // action === TransferEventAction.ABORT || action === TransferEventAction.BULK_ABORT // error-callback request to be processed
-            Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
-            let fspiopError
-            const eInfo = payload.errorInformation
-            try { // handle only valid errorCodes provided by the payee
-              fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(eInfo)
-            } catch (err) {
-              /**
-               * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
-               * so that such requests are rejected right away, instead of aborting the transfer here.
-               */
-              Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-              fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
-              await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
-              const eventDetail = { functionality: TransferEventType.POSITION, action }
-              await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
-              throw fspiopError
-            }
-            await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
-            const eventDetail = { functionality: TransferEventType.POSITION, action }
-            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
-            throw fspiopError
-          }
-        }
-      }
-    } else {
+    if (type !== TransferEventType.FULFIL) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventType--${actionLetter}15`))
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event type:(${type})`)
+      const eventDetail = { functionality, action: TransferEventAction.COMMIT }
+      /**
+       * TODO: BulkProcessingHandler (not in scope of #967)
+       */
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
+    }
+
+    const validActions = [
+      TransferEventAction.COMMIT, 
+      TransferEventAction.RESERVE, 
+      TransferEventAction.REJECT, 
+      TransferEventAction.ABORT, 
+      TransferEventAction.BULK_COMMIT, 
+      TransferEventAction.BULK_ABORT
+    ]
+    if (!validActions.includes(action)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${actionLetter}15`))
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${type})`)
       const eventDetail = { functionality, action: TransferEventAction.COMMIT }
@@ -528,7 +474,89 @@ const fulfil = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
-  
+
+
+    Util.breadcrumb(location, { path: 'validationCheck' })
+    if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
+      const apiFspiopError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
+      await TransferService.handlePayeeResponse(transferId, payload, action, apiFspiopError)
+      const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+      /**
+       * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
+       */
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
+      throw fspiopError
+    } else if (transfer.transferState !== TransferState.RESERVED) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state')
+      const eventDetail = { functionality, action: TransferEventAction.COMMIT }
+      /**
+       * TODO: BulkProcessingHandler (not in scope of #967)
+       */
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
+    } else if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
+      const eventDetail = { functionality, action: TransferEventAction.COMMIT }
+      /**
+       * TODO: BulkProcessingHandler (not in scope of #967)
+       */
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
+    }
+    
+    // Validations Succeeded - process the fulfil 
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
+    switch (action) {
+      case TransferEventAction.COMMIT:
+      case TransferEventAction.RESERVE:
+      case TransferEventAction.BULK_COMMIT: {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
+        await TransferService.handlePayeeResponse(transferId, payload, action)
+        const eventDetail = { functionality: TransferEventType.POSITION, action }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        return true
+      }
+      // TODO: why do we let this logic get this far? Why not remove it from validActions array above?
+      case TransferEventAction.REJECT: {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
+        const errorMessage = 'action REJECT is not allowed into fulfil handler'
+        Logger.isErrorEnabled && Logger.error(errorMessage)
+        !!span && span.error(errorMessage)
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        return true
+      }
+      // TODO: why do we let this logic get this far? Why not remove it from validActions array above?
+      case TransferEventAction.ABORT:
+      case TransferEventAction.BULK_ABORT:
+      default: { // action === TransferEventAction.ABORT || action === TransferEventAction.BULK_ABORT // error-callback request to be processed
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
+        let fspiopError
+        const eInfo = payload.errorInformation
+        try { // handle only valid errorCodes provided by the payee
+          fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(eInfo)
+        } catch (err) {
+          /**
+           * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
+           * so that such requests are rejected right away, instead of aborting the transfer here.
+           */
+          Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+          fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
+          await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
+          const eventDetail = { functionality: TransferEventType.POSITION, action }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
+          throw fspiopError
+        }
+        await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
+        const eventDetail = { functionality: TransferEventType.POSITION, action }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
+        throw fspiopError
+      }
+    }  
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
