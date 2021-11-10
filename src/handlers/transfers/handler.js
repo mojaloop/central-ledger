@@ -486,8 +486,12 @@ const fulfil = async (error, messages) => {
        * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
+
+      //TODO: emit FINAL_STATUS_FAILED if action === TransferEventAction.RESERVE
       throw fspiopError
-    } else if (transfer.transferState !== TransferState.RESERVED) {
+    } 
+
+    if (transfer.transferState !== TransferState.RESERVED) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state')
       const eventDetail = { functionality, action: TransferEventAction.COMMIT }
@@ -495,8 +499,11 @@ const fulfil = async (error, messages) => {
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      //TODO: emit FINAL_STATUS_FAILED if action === TransferEventAction.RESERVE
       throw fspiopError
-    } else if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
+    } 
+    
+    if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
       const eventDetail = { functionality, action: TransferEventAction.COMMIT }
@@ -504,6 +511,7 @@ const fulfil = async (error, messages) => {
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      //TODO: emit FINAL_STATUS_FAILED if action === TransferEventAction.RESERVE
       throw fspiopError
     }
     
@@ -553,6 +561,8 @@ const fulfil = async (error, messages) => {
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
         const eventDetail = { functionality: TransferEventType.POSITION, action }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
+        //TODO: emit FINAL_STATUS_FAILED if action === TransferEventAction.RESERVE???
+
         throw fspiopError
       }
     }  
