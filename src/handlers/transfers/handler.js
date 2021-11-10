@@ -475,7 +475,6 @@ const fulfil = async (error, messages) => {
       throw fspiopError
     }
 
-
     Util.breadcrumb(location, { path: 'validationCheck' })
     if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
