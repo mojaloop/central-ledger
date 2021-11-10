@@ -278,32 +278,32 @@ const fulfil = async (error, messages) => {
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
 
-    const actionLetter = action === TransferEventAction.COMMIT
-      ? Enum.Events.ActionLetter.commit
-      : (action === TransferEventAction.RESERVE
-          ? Enum.Events.ActionLetter.reserve
-          : (action === TransferEventAction.REJECT
-              ? Enum.Events.ActionLetter.reject
-              : (action === TransferEventAction.ABORT
-                  ? Enum.Events.ActionLetter.abort
-                  : (action === TransferEventAction.BULK_COMMIT
-                      ? Enum.Events.ActionLetter.bulkCommit
-                      : (action === TransferEventAction.BULK_ABORT
-                          ? Enum.Events.ActionLetter.bulkAbort
-                          : Enum.Events.ActionLetter.unknown)))))
-    const functionality = action === TransferEventAction.COMMIT
-      ? TransferEventType.NOTIFICATION
-      : (action === TransferEventAction.RESERVE
-          ? TransferEventType.NOTIFICATION
-          : (action === TransferEventAction.REJECT
-              ? TransferEventType.NOTIFICATION
-              : (action === TransferEventAction.ABORT
-                  ? TransferEventType.NOTIFICATION
-                  : (action === TransferEventAction.BULK_COMMIT
-                      ? TransferEventType.BULK_PROCESSING
-                      : (action === TransferEventAction.BULK_ABORT
-                          ? TransferEventType.BULK_PROCESSING
-                          : Enum.Events.ActionLetter.unknown)))))
+    const actionLetter = (() => {
+      switch (action) {
+        case TransferEventAction.COMMIT: return Enum.Events.ActionLetter.commit;
+        case TransferEventAction.RESERVE: return Enum.Events.ActionLetter.reserve;
+        case TransferEventAction.REJECT: return Enum.Events.ActionLetter.reject;
+        case TransferEventAction.ABORT: return Enum.Events.ActionLetter.abort;
+        case TransferEventAction.BULK_COMMIT: return Enum.Events.ActionLetter.bulkCommit;
+        case TransferEventAction.BULK_ABORT: return Enum.Events.ActionLetter.bulkAbort;
+        default: return Enum.Events.ActionLetter.unknown;
+      }
+    })()
+
+    const functionality = (() => {
+      switch (action) {
+        case TransferEventAction.COMMIT: 
+        case TransferEventAction.RESERVE:
+        case TransferEventAction.REJECT:
+        case TransferEventAction.ABORT:
+          return TransferEventType.NOTIFICATION;
+        case TransferEventAction.BULK_COMMIT:
+        case TransferEventAction.BULK_ABORT: 
+          return TransferEventType.BULK_PROCESSING;
+        default: return Enum.Events.ActionLetter.unknown;
+      }
+    })()
+
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }

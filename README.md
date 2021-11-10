@@ -81,6 +81,7 @@ docker-compose -f docker-compose.yml -f docker-compose.integration.yml up kafka 
 
 #in a new shell
 docker exec -it cl_central-ledger sh
+export CL_DATABASE_HOST=mysql
 npm run migrate #first time only
 npm run test:int
 ```
