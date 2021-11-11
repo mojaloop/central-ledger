@@ -169,3 +169,17 @@ services:
       timeout: 20s
       retries: 10
       interval: 30s
+
+  kowl:
+    image: quay.io/cloudhut/kowl:v1.4.0
+    container_name: cl_kowl
+    restart: on-failure
+    hostname: kowl
+    ports:
+    - "8080:8080"
+    networks:
+      - cl-mojaloop-net
+    environment:
+      - KAFKA_BROKERS=kafka:29092
+    depends_on:
+      - kafka
