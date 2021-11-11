@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.14.5](https://github.com/mojaloop/central-ledger/compare/v13.14.4...v13.14.5) (2021-11-11)
+
+
+### Chore
+
+* update to docker-compose & dependencies ([#871](https://github.com/mojaloop/central-ledger/issues/871)) ([69fc49e](https://github.com/mojaloop/central-ledger/commit/69fc49e32d4768447f980d455b8a462618ba5a75))
+
 ### [13.14.4](https://github.com/mojaloop/central-ledger/compare/v13.14.3...v13.14.4) (2021-11-10)
 
 
