@@ -194,7 +194,7 @@ const positions = async (error, messages) => {
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
         return true
       }
-    } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.REJECT, Enum.Events.Event.Action.ABORT, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
+    } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.REJECT, Enum.Events.Event.Action.ABORT, Enum.Events.Event.Action.ABORT_VALIDATION, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: action }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       let transferStateId

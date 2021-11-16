@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.14.5](https://github.com/mojaloop/central-ledger/compare/v13.14.4...v13.14.5) (2021-11-11)
+
+
+### Chore
+
+* update to docker-compose & dependencies ([#871](https://github.com/mojaloop/central-ledger/issues/871)) ([69fc49e](https://github.com/mojaloop/central-ledger/commit/69fc49e32d4768447f980d455b8a462618ba5a75))
+
+### [13.14.4](https://github.com/mojaloop/central-ledger/compare/v13.14.3...v13.14.4) (2021-11-10)
+
+
+### Bug Fixes
+
+* **#2557:** error notification to payer fsp, header for source having wrong value ([#869](https://github.com/mojaloop/central-ledger/issues/869)) ([472fc12](https://github.com/mojaloop/central-ledger/commit/472fc12763ca53f2ea92093b7d9925c9028a92a1)), closes [#2557](https://github.com/mojaloop/central-ledger/issues/2557)
+
 ### [13.14.3](https://github.com/mojaloop/central-ledger/compare/v13.14.2...v13.14.3) (2021-10-01)
 
 
