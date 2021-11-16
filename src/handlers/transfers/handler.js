@@ -487,7 +487,7 @@ const fulfil = async (error, messages) => {
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
 
-      //TODO: emit FINAL_STATUS_FAILED if action === TransferEventAction.RESERVE
+      //TODO(2566): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
       throw fspiopError
     } 
 
@@ -499,7 +499,7 @@ const fulfil = async (error, messages) => {
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      //TODO: emit FINAL_STATUS_FAILED if action === TransferEventAction.RESERVE
+      //TODO(2566): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
       throw fspiopError
     } 
     
@@ -511,7 +511,7 @@ const fulfil = async (error, messages) => {
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      //TODO: emit FINAL_STATUS_FAILED if action === TransferEventAction.RESERVE
+      //TODO(2566): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
       throw fspiopError
     }
     
@@ -561,7 +561,7 @@ const fulfil = async (error, messages) => {
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
         const eventDetail = { functionality: TransferEventType.POSITION, action }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
-        //TODO: emit FINAL_STATUS_FAILED if action === TransferEventAction.RESERVE???
+        //TODO(2566): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
 
         throw fspiopError
       }
