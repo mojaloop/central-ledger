@@ -85,7 +85,7 @@
     "@hapi/inert": "6.0.4",
     "@hapi/joi": "17.1.1",
     "@hapi/vision": "6.1.0",
-    "@mojaloop/object-store-lib": "11.1.0",
+    "@mojaloop/object-store-lib": "11.1.1",
     "@mojaloop/central-services-database": "10.7.0",
     "@mojaloop/central-services-error-handling": "11.3.0",
     "@mojaloop/central-services-health": "13.0.0",
