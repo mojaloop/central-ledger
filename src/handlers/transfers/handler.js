@@ -488,7 +488,9 @@ const fulfil = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
 
       //emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
+      console.log('action is', action)
       if (action === TransferEventAction.RESERVE) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
         const metadataState = StreamingProtocol.createEventState(
           Enum.Events.EventStatus.FAILURE.status,
           fspiopError.errorInformation.errorCode,
