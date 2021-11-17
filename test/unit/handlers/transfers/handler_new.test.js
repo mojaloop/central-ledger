@@ -337,7 +337,7 @@ Test('Transfer handler', transferHandlerTest => {
       // Arrange
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       localfulfilMessages[0].value.content.payload.transferState = 'RESERVED'
-      localfulfilMessages[0].value.content.payload.transferState = 'RESERVED'
+      localfulfilMessages[0].value.metadata.event.action = 'reserve'
 
       // mock out validation calls
       TransferService.getById.returns(Promise.resolve({ 

@@ -53,7 +53,7 @@ const TransferEventAction = Enum.Events.Event.Action
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
-const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
+const decodePayload = Util.StreamingProtocol.decodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -487,14 +487,13 @@ const fulfil = async (error, messages) => {
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
 
-      //emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
-      console.log('action is', action)
+      // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
       if (action === TransferEventAction.RESERVE) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
-        const metadataState = StreamingProtocol.createEventState(
+        const metadataState = Util.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.FAILURE.status,
-          fspiopError.errorInformation.errorCode,
-          fspiopError.errorInformation.errorDescription
+          apiFspiopError.errorInformation.errorCode,
+          apiFspiopError.errorInformation.errorDescription
         )
         const metadata = {
           event: {
@@ -513,8 +512,7 @@ const fulfil = async (error, messages) => {
         const reservedAbortedHeaders = JSON.parse(JSON.stringify(headers))
         reservedAbortedHeaders[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payeeFsp
         reservedAbortedHeaders[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
-
-        const message = Util.StreamingProtocol.createMessage(
+        const reservedAbortedMessage = Util.StreamingProtocol.createMessage(
           transferId,
           transfer.payeeFsp, 
           Enum.Http.Headers.FSPIOP.SWITCH.value,
