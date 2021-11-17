@@ -487,7 +487,49 @@ const fulfil = async (error, messages) => {
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
 
-      //TODO(2566): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
+      //emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
+      if (action === TransferEventAction.RESERVE) {
+        const metadataState = StreamingProtocol.createEventState(
+          Enum.Events.EventStatus.FAILURE.status,
+          fspiopError.errorInformation.errorCode,
+          fspiopError.errorInformation.errorDescription
+        )
+        const metadata = {
+          event: {
+            type: TransferEventType.FULFIL,
+            action: TransferEventAction.RESERVED_ABORTED,
+            state: metadataState
+          }
+        }
+        const reservedAbortedPayload = {
+          transferId: transfer.id,
+          completedTimestamp: Util.Time.getUTCString(new Date()),
+          transferState: TransferState.ABORTED
+        }
+
+        // clone the headers, and change the FSPIOP-Source and FSPIOP-Destination
+        const reservedAbortedHeaders = JSON.parse(JSON.stringify(headers))
+        reservedAbortedHeaders[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payeeFsp
+        reservedAbortedHeaders[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+
+        const message = Util.StreamingProtocol.createMessage(
+          transferId,
+          transfer.payeeFsp, 
+          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          metadata,
+          reservedAbortedHeaders,
+          reservedAbortedPayload,
+        )
+
+        await Kafka.produceGeneralMessage(
+          Config.KAFKA_CONFIG,
+          Producer,
+          functionality,
+          TransferEventAction.RESERVED_ABORTED,
+          reservedAbortedMessage,
+          metadataState
+        )
+      }
       throw fspiopError
     } 
 
@@ -499,7 +541,7 @@ const fulfil = async (error, messages) => {
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      //TODO(2566): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
+      //TODO(2556): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
       throw fspiopError
     } 
     
@@ -511,7 +553,7 @@ const fulfil = async (error, messages) => {
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      //TODO(2566): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
+      //TODO(2556): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
       throw fspiopError
     }
     
@@ -561,8 +603,7 @@ const fulfil = async (error, messages) => {
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
         const eventDetail = { functionality: TransferEventType.POSITION, action }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
-        //TODO(2566): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
-
+        // TODO(2556): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
         throw fspiopError
       }
     }  
