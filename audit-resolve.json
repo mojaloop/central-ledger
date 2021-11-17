@@ -1,6 +1,6 @@
 {
   "decisions": {
-    "1589|@mojaloop/central-object-store>@mojaloop/central-services-logger>rc>ini": {
+    "1589|@mojaloop/object-store-lib>@mojaloop/central-services-logger>rc>ini": {
       "decision": "ignore",
       "madeAt": 1609286190947,
       "expiresAt": 1611878178540
@@ -125,7 +125,7 @@
       "madeAt": 1615756855516,
       "expiresAt": 1618348850367
     },
-    "1649|@mojaloop/central-object-store>mongoose>mquery": {
+    "1649|@mojaloop/object-store-lib>mongoose>mquery": {
       "decision": "ignore",
       "madeAt": 1620636598642,
       "expiresAt": 1623228560826
@@ -249,7 +249,7 @@
       "decision": "fix",
       "madeAt": 1631789411221
     },
-    "1785|@mojaloop/central-object-store>mongoose>mpath": {
+    "1785|@mojaloop/object-store-lib>mongoose>mpath": {
       "decision": "ignore",
       "madeAt": 1632909595878,
       "expiresAt": 1633514382984
@@ -289,7 +289,7 @@
       "madeAt": 1636383361373,
       "expiresAt": 1638975351187
     },
-    "1002490|@mojaloop/central-object-store>mongoose>mpath": {
+    "1002490|@mojaloop/object-store-lib>mongoose>mpath": {
       "decision": "ignore",
       "madeAt": 1636383362665,
       "expiresAt": 1638975351187

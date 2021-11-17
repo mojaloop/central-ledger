@@ -39,7 +39,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
-const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
+const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTransfer
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
