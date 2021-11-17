@@ -981,6 +981,38 @@ Test('Transfer handler', transferHandlerTest => {
   })
 
   transferHandlerTest.test('fulfil should', fulfilTest => {
+    fulfilTest.test('emit a RESERVED_ABORTED if validation fails when action === RESERVE', async (test) => {
+      // Arrange
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      localfulfilMessages[0].value.content.payload.transferState = 'RESERVED'
+      localfulfilMessages[0].value.metadata.event.action = 'reserve'
+
+      // mock out validation calls
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp1',
+        transferState: TransferState.RESERVED
+      }))
+      Comparators.duplicateCheckComparator.withArgs(
+        transfer.transferId,
+        localfulfilMessages[0].value.content.payload
+      ).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      Validator.validateFulfilCondition.returns(false)
+      Kafka.proceed.returns(true)
+
+      // Act
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+
+      // Assert
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      test.ok(Kafka.produceGeneralMessage.calledOnce, 'Kafka.produceGeneralMessage was called once')
+      test.equal(result, true)
+      test.end()
+    })
+
     fulfilTest.test('fail validation when when RESERVED transfer state is received from v1.0 clients', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.0'
