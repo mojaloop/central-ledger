@@ -525,7 +525,9 @@ const fulfil = async (error, messages) => {
           Config.KAFKA_CONFIG,
           Producer,
           functionality,
-          TransferEventAction.RESERVED_ABORTED,
+          // should this be EVENT? or should we make a new message?
+          // TransferEventAction.RESERVED_ABORTED,
+          TransferEventAction.EVENT,
           reservedAbortedMessage,
           metadataState
         )

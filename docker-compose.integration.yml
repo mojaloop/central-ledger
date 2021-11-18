@@ -21,6 +21,8 @@ services:
       # - ./node_modules:/opt/central-ledger/node_modules
     environment:
       - CLEDG_MONGODB__DISABLED=true
+      # Disable audit logs - makes it too verbose
+      - EVENT_SDK_LOG_FILTER="log:info, log:warning, log:error"
     command:
       - tail
       - -f
