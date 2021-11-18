@@ -128,7 +128,7 @@ async function waitFor (func, name, retries = 5, increment = 2) {
       await func()
       return Promise.resolve(true)
     } catch (err) {
-      Logger.error(`waitFor: '${name}' failed. Sleeping for: ${curr} seconds.`)
+      Logger.warn(`waitFor: '${name}' failed. Sleeping for: ${curr} seconds.`)
     }
 
     return sleepPromise(curr).then(() => false)

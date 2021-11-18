@@ -48,6 +48,7 @@ const TransferExtensionModel = require('../../../src/models/transfer/transferExt
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { sleepPromise, waitFor } = require('../../util/helpers')
+const TestConsumer = require('../helpers/testConsumer')
 
 const ParticipantCached = require('../../../src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('../../../src/models/participant/participantCurrencyCached')
@@ -286,6 +287,10 @@ Test('Handlers test', async handlersTest => {
   await SettlementHelper.prepareData()
   await HubAccountsHelper.prepareData()
 
+  // Start a testConsumer to monitor events that our handlers emit
+  const testConsumer = new TestConsumer({})
+  await testConsumer.startListening()
+
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
       await Handlers.transfers.registerPrepareHandler()
@@ -315,6 +320,10 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       const prepareResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      
+      await waitFor(testConsumer.peekOrDie, 'Prepare message')
+      const messageIJustSent = testConsumer.peekOrDie()
+      
 
       // Wait until transfer is created by handler
       const isTransferCreated = async () => {
@@ -347,6 +356,8 @@ Test('Handlers test', async handlersTest => {
       // const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
 
       // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
+      console.log("hello world")
+
 
 
       // Assert
@@ -749,6 +760,7 @@ Test('Handlers test', async handlersTest => {
       await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
+      await testConsumer.destroy()
 
       const topics = [
         'topic-transfer-prepare',
