@@ -47,7 +47,7 @@ const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { sleepPromise, waitFor, wrapWithRetries } = require('../../util/helpers')
+const { currentEventLoopEnd, sleepPromise, waitFor, wrapWithRetries } = require('../../util/helpers')
 const TestConsumer = require('../helpers/testConsumer')
 
 const ParticipantCached = require('../../../src/models/participant/participantCached')
@@ -288,8 +288,47 @@ Test('Handlers test', async handlersTest => {
   await HubAccountsHelper.prepareData()
 
   // Start a testConsumer to monitor events that our handlers emit
-  const testConsumer = new TestConsumer({})
-  await testConsumer.startListening()
+  const testConsumer = new TestConsumer([
+    {
+      topicName: Utility.transformGeneralTopicName(
+        Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+        Enum.Events.Event.Type.TRANSFER,
+        Enum.Events.Event.Action.PREPARE
+      ),
+      config: Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.CONSUMER,
+        Enum.Events.Event.Type.TRANSFER.toUpperCase(),
+        Enum.Events.Event.Action.PREPARE.toUpperCase()
+      )
+    },
+    {
+      topicName: Utility.transformGeneralTopicName(
+        Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+        Enum.Events.Event.Type.TRANSFER,
+        Enum.Events.Event.Action.FULFIL
+      ),
+      config: Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.CONSUMER,
+        Enum.Events.Event.Type.TRANSFER.toUpperCase(),
+        Enum.Events.Event.Action.FULFIL.toUpperCase()
+      )
+    },
+    {
+      topicName: Utility.transformGeneralTopicName(
+        Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+        Enum.Events.Event.Type.NOTIFICATION,
+        Enum.Events.Event.Action.EVENT
+      ),
+      config: Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.CONSUMER,
+        Enum.Events.Event.Type.NOTIFICATION.toUpperCase(),
+        Enum.Events.Event.Action.EVENT.toUpperCase()
+      )
+    },
+  ])
 
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
@@ -297,6 +336,9 @@ Test('Handlers test', async handlersTest => {
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
       await Handlers.timeouts.registerTimeoutHandler()
+
+      // Set up the testConsumer here
+      await testConsumer.startListening()
 
       sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
 
@@ -320,23 +362,10 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       const prepareResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)      
-      // const messageIJustSent = await wrapWithRetries(() => testConsumer.peekOrDie())
-
-      // Wait until transfer is created by handler
-      // const isTransferCreated = async () => {
-      //   const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-      //   if (!transfer) {
-      //     throw new Error('transfer not found')
-      //   }
-      //   return true
-      //  }
       const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
-      console.log('transfer is', transfer)
+      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
 
-      // Act
       // 2. send a RESERVED request with an invalid validation(from Payee)
-      // TODO: modify the test data to have a RESERVED status and invalid fulfilment
-      
       td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
       td.messageProtocolFulfil.content.payload = {
         fulfilment: 'INVALIDZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
@@ -350,15 +379,24 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.FULFIL.toUpperCase())
       fulfilConfig.logger = Logger
       const fulfilResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
-
-      // const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-
-      // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
-      console.log("hello world")
-
-
+      
+      const transferStateIsAbortedError = await wrapWithRetries(async () => {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+        if (transfer.transferState !== 'ABORTED_ERROR') {
+          return false
+        }
+        return true
+      })
+      test.equal(transferStateIsAbortedError, true, 'Transfer is in ABORTED_ERROR state')
 
       // Assert
+      // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
+      await currentEventLoopEnd()
+      const allEvents = testConsumer.getEvents()
+      console.log('allEvents.length', allEvents.length)
+      console.log('allEvents are', allEvents)
+
+
       test.end()
     })
 

@@ -43,12 +43,12 @@ const Config = require('../../../src/lib/config')
  *   makes it easy to ensure that 
  */
 class TestConsumer {
+  handlers = {}
   eventLog = []
   topics = []
 
-  constructor(config) {
-    //TODO: create based on some config...
-
+  constructor(handlers) {
+    this.handlers = handlers
   }
 
   /**
@@ -56,26 +56,19 @@ class TestConsumer {
    * @description Start listening for Consumers
    */
   async startListening() {
-    // TODO: get this from the config object.
-    const transferHandler = {
-      command: this.onEvent.bind(this),
-      topicName: Kafka.transformGeneralTopicName(
-        Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, 
-        Enum.Events.Event.Type.TRANSFER,
-        Enum.Events.Event.Action.PREPARE
-      ),
-      config: Kafka.getKafkaConfig(
-        Config.KAFKA_CONFIG, 
-        Enum.Kafka.Config.CONSUMER, 
-        Enum.Events.Event.Type.TRANSFER.toUpperCase(),
-        Enum.Events.Event.Action.PREPARE.toUpperCase()
-      )
-    }
-    transferHandler.config.rdkafkaConf['client.id'] = 'testConsumer'
+    await Promise.all(this.handlers.map(async handlerConfig => {
+      const handler = {
+        command: this.onEvent.bind(this),
+        topicName: handlerConfig.topicName,
+        config: handlerConfig.config
+      }
+      // Override the client and group ids:
+      handler.config.rdkafkaConf['client.id'] = 'testConsumer'
+      handler.config.rdkafkaConf['group.id'] = 'testConsumerGroup'
 
-    Logger.warn(`TestConsumer.startListening(): registering consumer with topicName: ${transferHandler.topicName}`)
-    await Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
-    this.topics.push(transferHandler.topicName)
+      Logger.warn(`TestConsumer.startListening(): registering consumer with topicName: ${handler.topicName}`)
+      return Consumer.createHandler(handler.topicName, handler.config, handler.command)
+    }))
   }
 
   /**
@@ -111,8 +104,6 @@ class TestConsumer {
     return peekResult
   }
 
-
-
   /**
    * @function getEvents
    * @description Get a list of events for a given eventId
@@ -120,10 +111,19 @@ class TestConsumer {
    * @returns {Array<event>} A list of the events found for the eventId
    */
   getEvents(eventId) {
-    
+    return this.eventLog
+  }
+
+  /**
+   * @function clearEvents
+   * @description Clears the event queue
+   */
+  clearEvents() {
+    this.eventLog = []
   }
 
   onEvent(arg1, events) {
+    Logger.warn(`TestConsumer.onEvent`)
     Logger.debug(`TestConsumer.onEvent - received event: ${JSON.stringify(events)}`)
     this.eventLog = this.eventLog.concat(events)
   }

@@ -155,7 +155,12 @@ async function wrapWithRetries(func, remainingRetries = 5, timeout = 2) {
   }
 }
 
+function currentEventLoopEnd() {
+  return new Promise(resolve => setImmediate(resolve));
+}
+
 module.exports = {
+  currentEventLoopEnd,
   createRequest,
   sleepPromise,
   unwrapResponse,
