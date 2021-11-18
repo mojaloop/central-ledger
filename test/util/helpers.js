@@ -135,9 +135,30 @@ async function waitFor (func, name, retries = 5, increment = 2) {
   }, Promise.resolve(false))
 }
 
+async function wrapWithRetries(func, remainingRetries = 5, timeout = 2) {
+  Logger.warn(`wrapWithRetries remainingRetries:${remainingRetries}, timeout:${timeout}`)
+
+  try {
+    const result = await func()
+    if (!result) {
+      throw new Error('result is undefined')
+    }
+    return result
+  } catch (err) {
+    if (remainingRetries === 0) {
+      Logger.warn(`wrapWithRetries ran out of retries`)
+      throw err
+    }
+
+    await sleepPromise(2)
+    return wrapWithRetries(func, remainingRetries - 1, timeout)
+  }
+}
+
 module.exports = {
   createRequest,
   sleepPromise,
   unwrapResponse,
-  waitFor
+  waitFor,
+  wrapWithRetries
 }

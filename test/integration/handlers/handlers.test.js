@@ -47,7 +47,7 @@ const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { sleepPromise, waitFor } = require('../../util/helpers')
+const { sleepPromise, waitFor, wrapWithRetries } = require('../../util/helpers')
 const TestConsumer = require('../helpers/testConsumer')
 
 const ParticipantCached = require('../../../src/models/participant/participantCached')
@@ -319,21 +319,19 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
-      const prepareResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      
-      await waitFor(testConsumer.peekOrDie, 'Prepare message')
-      const messageIJustSent = testConsumer.peekOrDie()
-      
+      const prepareResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)      
+      // const messageIJustSent = await wrapWithRetries(() => testConsumer.peekOrDie())
 
       // Wait until transfer is created by handler
-      const isTransferCreated = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        if (!transfer) {
-          throw new Error('transfer not found')
-        }
-        return true
-       }
-      await waitFor(isTransferCreated, 'Transfer creation')
+      // const isTransferCreated = async () => {
+      //   const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+      //   if (!transfer) {
+      //     throw new Error('transfer not found')
+      //   }
+      //   return true
+      //  }
+      const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
+      console.log('transfer is', transfer)
 
       // Act
       // 2. send a RESERVED request with an invalid validation(from Payee)

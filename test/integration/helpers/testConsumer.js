@@ -83,9 +83,11 @@ class TestConsumer {
    * @description Stop listening for the registered Consumers 
    *   and release and open files 
    */
+  // TODO: this won't work - if we have multiple consumers for the same topic names, there's no easy way
+  // to get them at a later date and destroy....
   async destroy() {
     Logger.warn(`TestConsumer.destroy(): destroying consumers for the following topics: ${JSON.stringify(this.topics)}`)
-    await Promise.all(this.topics.map(topic => Consumer.getConsumer(topic).disconnect()))
+    // await Promise.all(this.topics.map(topic => Consumer.getConsumer(topic).disconnect()))
   }
 
   /**
@@ -102,9 +104,7 @@ class TestConsumer {
    * @description Read the last event that we saw. Throw an error if not found 
    */
   peekOrDie() {
-    console.log("peekOrDie!", this.peek)
     const peekResult = this.peek()
-    console.log("peekOrDie! peekResult", peekResult)
     if (!peekResult) {
       throw new Error('TestConsumer.peekOrDie(): `peek()` found no events.')
     }
@@ -124,7 +124,7 @@ class TestConsumer {
   }
 
   onEvent(arg1, events) {
-    Logger.warn(`TestConsumer.onEvent - received event: ${JSON.stringify(events)}`)
+    Logger.debug(`TestConsumer.onEvent - received event: ${JSON.stringify(events)}`)
     this.eventLog = this.eventLog.concat(events)
   }
 }
