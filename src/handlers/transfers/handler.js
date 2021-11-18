@@ -521,10 +521,11 @@ const fulfil = async (error, messages) => {
           reservedAbortedPayload,
         )
 
+        console.log('Kafka.produceGeneralMessage - ', Enum.Events.Event.Type.NOTIFICATION, TransferEventAction.EVENT)
         await Kafka.produceGeneralMessage(
           Config.KAFKA_CONFIG,
           Producer,
-          functionality,
+          Enum.Events.Event.Type.NOTIFICATION,
           // should this be EVENT? or should we make a new message?
           // TransferEventAction.RESERVED_ABORTED,
           TransferEventAction.EVENT,

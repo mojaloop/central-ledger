@@ -177,7 +177,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-bulk-get",
               "group.id": "cl-group-bulk-get",
-              "metadata.broker.list": "localhost:29092",
+              "metadata.broker.list": "kafka:29092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true
             },
@@ -327,7 +327,7 @@
             "rdkafkaConf": {
               "client.id": "TESTONLY",
               "group.id": "TESTONLY",
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "kafka:29092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true
             },

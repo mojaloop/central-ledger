@@ -105,13 +105,40 @@ class TestConsumer {
   }
 
   /**
-   * @function getEvents
-   * @description Get a list of events for a given eventId
+   * @function getAllEvents
+   * @description Get a list of all events
    * @param {string} eventId 
    * @returns {Array<event>} A list of the events found for the eventId
    */
-  getEvents(eventId) {
+  getAllEvents() {
     return this.eventLog
+  }
+
+  getEventsForFilter(filters) {
+    let { action, topicFilter, valueFromFilter, valueToFilter } = filters
+
+    let events = this.eventLog
+    if (topicFilter !== undefined) {
+      events = events.filter(e => e.topic === topicFilter)
+    }
+
+    if (action !== undefined) {
+      events = events.filter(e => e.value.metadata.event.action === action)
+    }
+
+    if (valueFromFilter !== undefined) {
+      events = events.filter(e => e.value.from === valueFromFilter)
+    }
+
+    if (valueToFilter !== undefined) {
+      events = events.filter(e => e.value.to === valueToFilter)
+    }
+
+    if (events.length === 0) {
+      throw new Error(`No events found for given filters" ${filters}`)
+    }
+
+    return events
   }
 
   /**

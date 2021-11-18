@@ -354,6 +354,12 @@ Test('Handlers test', async handlersTest => {
 
     await transferFulfilReserve.test('send a RESERVED_ABORTED notification when the validation fails', async (test) => {
       // Arrange
+      const prepareEventId = td.messageProtocolPrepare.metadata.event.id
+      const fulfilEventId = td.messageProtocolFulfil.metadata.event.id
+      console.log('prepareEventId', prepareEventId)
+      console.log('fulfilEventId', fulfilEventId)
+      console.log('transferId', td.messageProtocolPrepare.content.payload.transferId)
+
       // 1. send a PREPARE request (from Payer)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -392,11 +398,15 @@ Test('Handlers test', async handlersTest => {
       // Assert
       // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
       await currentEventLoopEnd()
-      const allEvents = testConsumer.getEvents()
-      console.log('allEvents.length', allEvents.length)
-      console.log('allEvents are', allEvents)
+      const payerAbortNotification = testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' })[0]
+      // TODO: I don't think this action should be event
+      const payeeAbortNotification = testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'event' })[0]
+      console.log('payerAbortNotification are', JSON.stringify(payerAbortNotification))
+      console.log('payeeAbortNotification are', JSON.stringify(payeeAbortNotification))
 
 
+      // Cleanup
+      testConsumer.clearEvents()
       test.end()
     })
 
