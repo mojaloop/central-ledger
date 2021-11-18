@@ -354,11 +354,11 @@ Test('Handlers test', async handlersTest => {
 
     await transferFulfilReserve.test('send a RESERVED_ABORTED notification when the validation fails', async (test) => {
       // Arrange
-      const prepareEventId = td.messageProtocolPrepare.metadata.event.id
-      const fulfilEventId = td.messageProtocolFulfil.metadata.event.id
-      console.log('prepareEventId', prepareEventId)
-      console.log('fulfilEventId', fulfilEventId)
-      console.log('transferId', td.messageProtocolPrepare.content.payload.transferId)
+      // const prepareEventId = td.messageProtocolPrepare.metadata.event.id
+      // const fulfilEventId = td.messageProtocolFulfil.metadata.event.id
+      // console.log('prepareEventId', prepareEventId)
+      // console.log('fulfilEventId', fulfilEventId)
+      // console.log('transferId', td.messageProtocolPrepare.content.payload.transferId)
 
       // 1. send a PREPARE request (from Payer)
       const prepareConfig = Utility.getKafkaConfig(
@@ -400,6 +400,7 @@ Test('Handlers test', async handlersTest => {
       await currentEventLoopEnd()
       const payerAbortNotification = testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' })[0]
       // TODO: I don't think this action should be event
+      // There seem to be some inconsistiences with how different kafka messages are produced
       const payeeAbortNotification = testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'event' })[0]
       console.log('payerAbortNotification are', JSON.stringify(payerAbortNotification))
       console.log('payeeAbortNotification are', JSON.stringify(payeeAbortNotification))

@@ -497,6 +497,8 @@ const fulfil = async (error, messages) => {
         )
         const metadata = {
           event: {
+            // TODO: These seem to have no effect - they are overridden by
+            // some crazy logic in Kafka.produceGeneralMessage
             type: TransferEventType.FULFIL,
             action: TransferEventAction.RESERVED_ABORTED,
             state: metadataState
@@ -521,13 +523,18 @@ const fulfil = async (error, messages) => {
           reservedAbortedPayload,
         )
 
-        console.log('Kafka.produceGeneralMessage - ', Enum.Events.Event.Type.NOTIFICATION, TransferEventAction.EVENT)
+        console.log('Kafka.produceGeneralMessage - ', JSON.stringify(reservedAbortedMessage))
         await Kafka.produceGeneralMessage(
           Config.KAFKA_CONFIG,
           Producer,
           Enum.Events.Event.Type.NOTIFICATION,
-          // should this be EVENT? or should we make a new message?
+          // TODO: should this be EVENT? or should we make a new topic for RESERVED_ABORTED?
+          // I can't seem to find how to send a message to the `topic-notification-event` topic
+          // that has the reservedAbortedMessage.metadata.event.action of RESERVED_ABORTED
           // TransferEventAction.RESERVED_ABORTED,
+          // 
+          // produceGeneralMessage overrides the reservedAbortedMessage.metadata.event.action
+          // for some reason.
           TransferEventAction.EVENT,
           reservedAbortedMessage,
           metadataState
