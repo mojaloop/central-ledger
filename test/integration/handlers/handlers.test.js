@@ -25,6 +25,7 @@
 
 'use strict'
 
+// require("leaked-handles");
 const Test = require('tape')
 const Uuid = require('uuid4')
 const retry = require('async-retry')
@@ -338,7 +339,7 @@ Test('Handlers test', async handlersTest => {
       await Handlers.timeouts.registerTimeoutHandler()
 
       // Set up the testConsumer here
-      await testConsumer.startListening()
+      // await testConsumer.startListening()
 
       sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
 

@@ -33,7 +33,6 @@ const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
 
-
 const Config = require('../../../src/lib/config')
 
 
@@ -67,7 +66,8 @@ class TestConsumer {
       handler.config.rdkafkaConf['group.id'] = 'testConsumerGroup'
 
       Logger.warn(`TestConsumer.startListening(): registering consumer with topicName: ${handler.topicName}`)
-      return Consumer.createHandler(handler.topicName, handler.config, handler.command)
+      await Consumer.createHandler(handler.topicName, handler.config, handler.command)
+      this.topics.push(handler.topicName)
     }))
   }
 
@@ -76,11 +76,9 @@ class TestConsumer {
    * @description Stop listening for the registered Consumers 
    *   and release and open files 
    */
-  // TODO: this won't work - if we have multiple consumers for the same topic names, there's no easy way
-  // to get them at a later date and destroy....
   async destroy() {
     Logger.warn(`TestConsumer.destroy(): destroying consumers for the following topics: ${JSON.stringify(this.topics)}`)
-    // await Promise.all(this.topics.map(topic => Consumer.getConsumer(topic).disconnect()))
+    await Promise.all(this.topics.map(topic => Consumer.getConsumer(topic).disconnect()))
   }
 
   /**
@@ -114,6 +112,17 @@ class TestConsumer {
     return this.eventLog
   }
 
+  /**
+   * @function getEventsForFilter
+   * @description Get a list of all events that match a basic filter
+   * @param {*} filters
+   * @param {string} filters.action - String matching filter for `event.value.metadata.event.action`
+   * @param {string} filters.topicFilter - String matching filter for `event.topic`
+   * @param {string} filters.valueFromFilter - String matching filter for `event.value.from`
+   * @param {string} filters.valueToFilter - String matching filter for `event.value.to`
+   * @returns {Array<event>} A list of the events found for the eventId
+   * @throws {Error} If no events could be found for the given set of filters
+   */
   getEventsForFilter(filters) {
     let { action, topicFilter, valueFromFilter, valueToFilter } = filters
 
