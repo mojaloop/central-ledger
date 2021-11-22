@@ -52,7 +52,6 @@ const getTransferDuplicateCheck = async (transferId) => {
   Logger.isDebugEnabled && Logger.debug(`get transferDuplicateCheck (transferId=${transferId})`)
   try {
     const result = Db.from('transferDuplicateCheck').findOne({ transferId })
-    console.log("getTransferDuplicateCheck", result)
     histTimerGetTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_getTransferDuplicateCheck' })
     return result
   } catch (err) {

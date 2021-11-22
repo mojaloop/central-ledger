@@ -490,55 +490,77 @@ const fulfil = async (error, messages) => {
       // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
       if (action === TransferEventAction.RESERVE) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
-        const metadataState = Util.StreamingProtocol.createEventState(
-          Enum.Events.EventStatus.FAILURE.status,
-          apiFspiopError.errorInformation.errorCode,
-          apiFspiopError.errorInformation.errorDescription
-        )
-        const metadata = {
-          event: {
-            // TODO: These seem to have no effect - they are overridden by
-            // some crazy logic in Kafka.produceGeneralMessage
-            type: TransferEventType.FULFIL,
-            action: TransferEventAction.RESERVED_ABORTED,
-            state: metadataState
-          }
+        const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED  }
+        const abortParams = {
+          // TODO: can we just use the original message?
+          message,
+          kafkaTopic,
+          span,
+          consumer: Consumer, 
+          producer: Producer,
         }
         const reservedAbortedPayload = {
           transferId: transfer.id,
+          //TODO: get this time from the db - don't be lazy
           completedTimestamp: Util.Time.getUTCString(new Date()),
           transferState: TransferState.ABORTED
         }
+        message.value.content.payload = reservedAbortedPayload
+        await Kafka.proceed(Config.KAFKA_CONFIG, abortParams, { consumerCommit, eventDetail, toDestination: transfer.payeeFsp, fromSwitch: true })
 
-        // clone the headers, and change the FSPIOP-Source and FSPIOP-Destination
-        const reservedAbortedHeaders = JSON.parse(JSON.stringify(headers))
-        reservedAbortedHeaders[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payeeFsp
-        reservedAbortedHeaders[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
-        const reservedAbortedMessage = Util.StreamingProtocol.createMessage(
-          transferId,
-          transfer.payeeFsp, 
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
-          metadata,
-          reservedAbortedHeaders,
-          reservedAbortedPayload,
-        )
 
-        console.log('Kafka.produceGeneralMessage - ', JSON.stringify(reservedAbortedMessage))
-        await Kafka.produceGeneralMessage(
-          Config.KAFKA_CONFIG,
-          Producer,
-          Enum.Events.Event.Type.NOTIFICATION,
-          // TODO: should this be EVENT? or should we make a new topic for RESERVED_ABORTED?
-          // I can't seem to find how to send a message to the `topic-notification-event` topic
-          // that has the reservedAbortedMessage.metadata.event.action of RESERVED_ABORTED
-          // TransferEventAction.RESERVED_ABORTED,
-          // 
-          // produceGeneralMessage overrides the reservedAbortedMessage.metadata.event.action
-          // for some reason.
-          TransferEventAction.EVENT,
-          reservedAbortedMessage,
-          metadataState
-        )
+        // Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
+        // const metadataState = Util.StreamingProtocol.createEventState(
+        //   Enum.Events.EventStatus.FAILURE.status,
+        //   apiFspiopError.errorInformation.errorCode,
+        //   apiFspiopError.errorInformation.errorDescription
+        // )
+        // //TODO: replace this call with createEventMetadata
+        // const metadata = {
+        //   event: {
+        //     // TODO: These seem to have no effect - they are overridden by
+        //     // some crazy logic in Kafka.produceGeneralMessage
+        //     type: TransferEventType.FULFIL,
+        //     action: TransferEventAction.RESERVED_ABORTED,
+        //     state: metadataState
+        //     // TODO: add span/trace stuff in here?
+        //   }
+        // }
+        
+
+        // // clone the headers, and change the FSPIOP-Source and FSPIOP-Destination
+        // const reservedAbortedHeaders = Util.clone(headers)
+        // reservedAbortedHeaders[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payeeFsp
+        // reservedAbortedHeaders[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+        // const reservedAbortedMessage = Util.StreamingProtocol.createMessage(
+        //   // TODO: should this be the transferId or a messageId
+        //   transferId,
+        //   transfer.payeeFsp, 
+        //   Enum.Http.Headers.FSPIOP.SWITCH.value,
+        //   metadata,
+        //   reservedAbortedHeaders,
+        //   reservedAbortedPayload,
+        // )
+
+        // console.log('Kafka.produceGeneralMessage - ', JSON.stringify(reservedAbortedMessage))
+        // await Kafka.produceGeneralMessage(
+        //   Config.KAFKA_CONFIG,
+        //   Producer,
+        //   Enum.Events.Event.Type.NOTIFICATION,
+        //   // TODO: should this be EVENT? or should we make a new topic for RESERVED_ABORTED?
+        //   // I can't seem to find how to send a message to the `topic-notification-event` topic
+        //   // that has the reservedAbortedMessage.metadata.event.action of RESERVED_ABORTED
+        //   // TransferEventAction.RESERVED_ABORTED,
+        //   // 
+        //   // produceGeneralMessage overrides the reservedAbortedMessage.metadata.event.action
+        //   // for some reason.
+        //   TransferEventAction.RESERVED_ABORTED,
+        //   // TransferEventAction.EVENT,
+        //   reservedAbortedMessage,
+        //   metadataState
+
+        //   // TODO: missing tracing here - pass the span object in
+        // )
       }
       throw fspiopError
     } 

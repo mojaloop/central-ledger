@@ -388,23 +388,20 @@ Test('Handlers test', async handlersTest => {
       
       const transferStateIsAbortedError = await wrapWithRetries(async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        if (transfer.transferState !== 'ABORTED_ERROR') {
-          return false
-        }
-        return true
+        return transfer.transferState === 'ABORTED_ERROR'
       })
       test.equal(transferStateIsAbortedError, true, 'Transfer is in ABORTED_ERROR state')
 
       // Assert
       // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
-      await currentEventLoopEnd()
-      const payerAbortNotification = testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' })[0]
-      // TODO: I don't think this action should be event
-      // There seem to be some inconsistiences with how different kafka messages are produced
-      const payeeAbortNotification = testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'event' })[0]
-      console.log('payerAbortNotification are', JSON.stringify(payerAbortNotification))
-      console.log('payeeAbortNotification are', JSON.stringify(payeeAbortNotification))
-
+      const payerAbortNotification = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' }))
+      )[0]
+      const payeeAbortNotification = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
+        )[0]
+      test.ok(payerAbortNotification, 'Payer Abort notification sent')
+      test.ok(payeeAbortNotification, 'Payee Abort notification sent')
 
       // Cleanup
       testConsumer.clearEvents()
