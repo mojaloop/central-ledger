@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.14.6](https://github.com/mojaloop/central-ledger/compare/v13.14.5...v13.14.6) (2021-11-17)
+
+
+### Chore
+
+* **refactor:** tidy up fulfil handler code ([#870](https://github.com/mojaloop/central-ledger/issues/870)) ([49c1f88](https://github.com/mojaloop/central-ledger/commit/49c1f887d54aea902ba03f15755cd7f32faabaf3))
+
 ### [13.14.5](https://github.com/mojaloop/central-ledger/compare/v13.14.4...v13.14.5) (2021-11-11)
 
 
