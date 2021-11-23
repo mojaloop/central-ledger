@@ -280,27 +280,27 @@ const fulfil = async (error, messages) => {
 
     const actionLetter = (() => {
       switch (action) {
-        case TransferEventAction.COMMIT: return Enum.Events.ActionLetter.commit;
-        case TransferEventAction.RESERVE: return Enum.Events.ActionLetter.reserve;
-        case TransferEventAction.REJECT: return Enum.Events.ActionLetter.reject;
-        case TransferEventAction.ABORT: return Enum.Events.ActionLetter.abort;
-        case TransferEventAction.BULK_COMMIT: return Enum.Events.ActionLetter.bulkCommit;
-        case TransferEventAction.BULK_ABORT: return Enum.Events.ActionLetter.bulkAbort;
-        default: return Enum.Events.ActionLetter.unknown;
+        case TransferEventAction.COMMIT: return Enum.Events.ActionLetter.commit
+        case TransferEventAction.RESERVE: return Enum.Events.ActionLetter.reserve
+        case TransferEventAction.REJECT: return Enum.Events.ActionLetter.reject
+        case TransferEventAction.ABORT: return Enum.Events.ActionLetter.abort
+        case TransferEventAction.BULK_COMMIT: return Enum.Events.ActionLetter.bulkCommit
+        case TransferEventAction.BULK_ABORT: return Enum.Events.ActionLetter.bulkAbort
+        default: return Enum.Events.ActionLetter.unknown
       }
     })()
 
     const functionality = (() => {
       switch (action) {
-        case TransferEventAction.COMMIT: 
+        case TransferEventAction.COMMIT:
         case TransferEventAction.RESERVE:
         case TransferEventAction.REJECT:
         case TransferEventAction.ABORT:
-          return TransferEventType.NOTIFICATION;
+          return TransferEventType.NOTIFICATION
         case TransferEventAction.BULK_COMMIT:
-        case TransferEventAction.BULK_ABORT: 
-          return TransferEventType.BULK_PROCESSING;
-        default: return Enum.Events.ActionLetter.unknown;
+        case TransferEventAction.BULK_ABORT:
+          return TransferEventType.BULK_PROCESSING
+        default: return Enum.Events.ActionLetter.unknown
       }
     })()
 
@@ -395,7 +395,7 @@ const fulfil = async (error, messages) => {
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
-      
+
       if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `inProgress2--${actionLetter}5`))
         /**
@@ -408,7 +408,7 @@ const fulfil = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
-      } 
+      }
 
       // Error scenario - transfer.transferStateEnumeration is in some invalid state
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidTransferStateEnum--${actionLetter}6`))
@@ -420,8 +420,8 @@ const fulfil = async (error, messages) => {
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true  
-    } 
+      return true
+    }
 
     // ERROR: We have seen a transfer of this ID before, but it's message hash doesn't match
     // the previous message hash.
@@ -440,9 +440,9 @@ const fulfil = async (error, messages) => {
       const eventDetail = { functionality, action }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
-    } 
+    }
 
-    // Transfer is not a duplicate, or message hasn't been changed. 
+    // Transfer is not a duplicate, or message hasn't been changed.
 
     if (type !== TransferEventType.FULFIL) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventType--${actionLetter}15`))
@@ -456,11 +456,11 @@ const fulfil = async (error, messages) => {
     }
 
     const validActions = [
-      TransferEventAction.COMMIT, 
-      TransferEventAction.RESERVE, 
-      TransferEventAction.REJECT, 
-      TransferEventAction.ABORT, 
-      TransferEventAction.BULK_COMMIT, 
+      TransferEventAction.COMMIT,
+      TransferEventAction.RESERVE,
+      TransferEventAction.REJECT,
+      TransferEventAction.ABORT,
+      TransferEventAction.BULK_COMMIT,
       TransferEventAction.BULK_ABORT
     ]
     if (!validActions.includes(action)) {
@@ -493,7 +493,7 @@ const fulfil = async (error, messages) => {
         // return the completed timestamp? Or is it safer to go back to the DB here?
         const transferAborted = await TransferService.getById(transferId)
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
-        const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED  }
+        const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
         const reservedAbortedPayload = {
           transferId: transferAborted.id,
           completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
@@ -503,7 +503,7 @@ const fulfil = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination: transfer.payeeFsp, fromSwitch: true })
       }
       throw fspiopError
-    } 
+    }
 
     if (transfer.transferState !== TransferState.RESERVED) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
@@ -531,8 +531,8 @@ const fulfil = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination: transfer.payeeFsp, fromSwitch: true })
       }
       throw fspiopError
-    } 
-    
+    }
+
     if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
@@ -541,7 +541,7 @@ const fulfil = async (error, messages) => {
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      
+
       // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
       if (action === TransferEventAction.RESERVE) {
         // Get the updated transfer now that completedTimestamp will be different
@@ -560,8 +560,8 @@ const fulfil = async (error, messages) => {
       }
       throw fspiopError
     }
-    
-    // Validations Succeeded - process the fulfil 
+
+    // Validations Succeeded - process the fulfil
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
     switch (action) {
       case TransferEventAction.COMMIT:
@@ -611,7 +611,7 @@ const fulfil = async (error, messages) => {
         // this is the case where the Payee sent an ABORT, so we don't need to tell them to abort
         throw fspiopError
       }
-    }  
+    }
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)

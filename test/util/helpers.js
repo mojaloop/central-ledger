@@ -135,7 +135,7 @@ async function waitFor (func, name, retries = 5, increment = 2) {
   }, Promise.resolve(false))
 }
 
-async function wrapWithRetries(func, remainingRetries = 5, timeout = 2) {
+async function wrapWithRetries (func, remainingRetries = 5, timeout = 2) {
   Logger.warn(`wrapWithRetries remainingRetries:${remainingRetries}, timeout:${timeout}`)
 
   try {
@@ -146,26 +146,26 @@ async function wrapWithRetries(func, remainingRetries = 5, timeout = 2) {
     return result
   } catch (err) {
     if (remainingRetries === 0) {
-      Logger.warn(`wrapWithRetries ran out of retries`)
+      Logger.warn('wrapWithRetries ran out of retries')
       throw err
     }
 
     await sleepPromise(2)
     return wrapWithRetries(func, remainingRetries - 1, timeout)
-      // .catch(err => {
-      //   console.log(`wrapWithRetries failed, nest: ${remainingRetries - 1}`)
-      // })
+    // .catch(err => {
+    //   console.log(`wrapWithRetries failed, nest: ${remainingRetries - 1}`)
+    // })
   }
 }
 
-function currentEventLoopEnd() {
-  return new Promise(resolve => setImmediate(resolve));
+function currentEventLoopEnd () {
+  return new Promise(resolve => setImmediate(resolve))
 }
 
-function getMessagePayloadOrThrow(message) {
+function getMessagePayloadOrThrow (message) {
   try {
     return message.value.content.payload
-  } catch(err) {
+  } catch (err) {
     throw new Error('unwrapMessagePayloadOrThrow - malformed message')
   }
 }

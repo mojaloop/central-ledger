@@ -27,35 +27,26 @@
  ******/
 'use strict'
 
-
 const Logger = require('@mojaloop/central-services-logger')
-const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Consumer = require('@mojaloop/central-services-stream').Kafka.Consumer
-const Enum = require('@mojaloop/central-services-shared').Enum
-
-const Config = require('../../../src/lib/config')
-
 
 /**
  * @class TestConsumer
- * @description A Kafka consumer that listens for events from our test harness, and 
- *   makes it easy to ensure that 
+ * @description A Kafka consumer that listens for events from our test harness, and
+ *   makes it easy to ensure that
  */
 class TestConsumer {
-  handlers = {}
-  eventLog = []
-  topics = []
-  consumers = []
-
-  constructor(handlers) {
+  constructor (handlers) {
     this.handlers = handlers
+    this.eventLog = []
+    this.consumers = []
   }
 
   /**
    * @function startListening
    * @description Start listening for Consumers
    */
-  async startListening() {
+  async startListening () {
     await Promise.all(this.handlers.map(async handlerConfig => {
       const handler = {
         command: this.onEvent.bind(this),
@@ -77,28 +68,28 @@ class TestConsumer {
 
   /**
    * @function destroy
-   * @description Stop listening for the registered Consumers 
-   *   and release and open files 
+   * @description Stop listening for the registered Consumers
+   *   and release and open files
    */
-  async destroy() {
+  async destroy () {
     Logger.warn(`TestConsumer.destroy(): destroying ${this.consumers.length} consumers`)
     await Promise.all(this.consumers.map(async c => c.disconnect()))
   }
 
   /**
    * @function peek
-   * @description Read the last event that we saw 
+   * @description Read the last event that we saw
    */
-  peek() {
+  peek () {
     Logger.warn(`peeking at event log. EventLogLength:${this.eventLog.length}`)
     return this.eventLog[0]
   }
 
   /**
    * @function peekOrDie
-   * @description Read the last event that we saw. Throw an error if not found 
+   * @description Read the last event that we saw. Throw an error if not found
    */
-  peekOrDie() {
+  peekOrDie () {
     const peekResult = this.peek()
     if (!peekResult) {
       throw new Error('TestConsumer.peekOrDie(): `peek()` found no events.')
@@ -109,10 +100,10 @@ class TestConsumer {
   /**
    * @function getAllEvents
    * @description Get a list of all events
-   * @param {string} eventId 
+   * @param {string} eventId
    * @returns {Array<event>} A list of the events found for the eventId
    */
-  getAllEvents() {
+  getAllEvents () {
     return this.eventLog
   }
 
@@ -127,8 +118,8 @@ class TestConsumer {
    * @returns {Array<event>} A list of the events found for the eventId
    * @throws {Error} If no events could be found for the given set of filters
    */
-  getEventsForFilter(filters) {
-    let { action, topicFilter, valueFromFilter, valueToFilter } = filters
+  getEventsForFilter (filters) {
+    const { action, topicFilter, valueFromFilter, valueToFilter } = filters
 
     let events = this.eventLog
     if (topicFilter !== undefined) {
@@ -158,12 +149,12 @@ class TestConsumer {
    * @function clearEvents
    * @description Clears the event queue
    */
-  clearEvents() {
+  clearEvents () {
     this.eventLog = []
   }
 
-  onEvent(arg1, events) {
-    Logger.warn(`TestConsumer.onEvent`)
+  onEvent (arg1, events) {
+    Logger.warn('TestConsumer.onEvent')
     Logger.debug(`TestConsumer.onEvent - received event: ${JSON.stringify(events)}`)
     this.eventLog = this.eventLog.concat(events)
   }

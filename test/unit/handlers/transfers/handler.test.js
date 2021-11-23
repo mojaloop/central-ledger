@@ -1010,7 +1010,7 @@ Test('Transfer handler', transferHandlerTest => {
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
-      
+
       // Assert
       test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
       const reservedAbortedPayload = getMessagePayloadOrThrow(Kafka.proceed.getCall(1).args[1].message)
@@ -1048,7 +1048,7 @@ Test('Transfer handler', transferHandlerTest => {
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
-      
+
       // Assert
       test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
       const reservedAbortedPayload = getMessagePayloadOrThrow(Kafka.proceed.getCall(1).args[1].message)
@@ -1086,7 +1086,7 @@ Test('Transfer handler', transferHandlerTest => {
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
-      
+
       // Assert
       test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
       const reservedAbortedPayload = getMessagePayloadOrThrow(Kafka.proceed.getCall(1).args[1].message)

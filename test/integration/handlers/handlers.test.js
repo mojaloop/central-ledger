@@ -49,10 +49,9 @@ const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { 
-  waitFor, 
-  wrapWithRetries, 
-  getMessagePayloadOrThrow, 
+const {
+  wrapWithRetries,
+  getMessagePayloadOrThrow,
   sleepPromise
 } = require('../../util/helpers')
 const TestConsumer = require('../helpers/testConsumer')
@@ -189,7 +188,7 @@ const prepareTestData = async (dataObj) => {
       'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
     }
 
-    const fulfilPayload = { 
+    const fulfilPayload = {
       fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
       completedTimestamp: dataObj.now,
       transferState: 'COMMITTED',
@@ -285,7 +284,6 @@ const prepareTestData = async (dataObj) => {
 Test('Handlers test', async handlersTest => {
   const startTime = new Date()
   await Db.connect(Config.DATABASE)
-  const knex = Db.getKnex()
   await ParticipantCached.initialize()
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
@@ -321,7 +319,7 @@ Test('Handlers test', async handlersTest => {
         Enum.Events.Event.Type.NOTIFICATION.toUpperCase(),
         Enum.Events.Event.Action.EVENT.toUpperCase()
       )
-    },
+    }
   ])
 
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
@@ -355,7 +353,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
-      const prepareResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)      
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
       test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
 
@@ -365,7 +363,7 @@ Test('Handlers test', async handlersTest => {
       td.messageProtocolFulfil.content.payload = {
         ...td.messageProtocolFulfil.content.payload,
         completedTimestamp,
-        transferState: 'ABORTED',
+        transferState: 'ABORTED'
       }
       const fulfilConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -373,31 +371,29 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.FULFIL.toUpperCase())
       fulfilConfig.logger = Logger
-      const fulfilResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
-      
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
 
-      // Assert      
+      // Assert
       // 3. Check that we didn't sent a notification for the Payee
       try {
         await wrapWithRetries(() => testConsumer.getEventsForFilter({
-          topicFilter: 'topic-notification-event', 
+          topicFilter: 'topic-notification-event',
           action: 'reserved-aborted'
         }))
         test.notOk('Should not be executed')
-      }
-      catch (err) {
+      } catch (err) {
         console.log(err)
         test.ok('No payee abort notification sent')
       }
       console.log(JSON.stringify(testConsumer.getAllEvents()))
-      
+
       // TODO: I can't seem to find the payer abort notification in the log
       // is there something I'm missing here? Does it go to a different handler?
 
       // 4. Check that we sent 1 notification for the payer
       // const payerAbortNotification = (await wrapWithRetries(() => testConsumer.getEventsForFilter({
       //   topicFilter: 'topic-notification-event',
-      //   action: 'abort' 
+      //   action: 'abort'
       // })))[0]
       // test.ok(payerAbortNotification, 'Payer Abort notification sent')
 
@@ -406,10 +402,6 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    transferFulfilReserve.end()
-    return
-
-
     await transferFulfilReserve.test('send a RESERVED_ABORTED notification if the transfer is expired', async (test) => {
       // Arrange
       const customTestData = {
@@ -417,7 +409,7 @@ Test('Handlers test', async handlersTest => {
         expiration: new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
       }
       const td = await prepareTestData(customTestData)
-      
+
       // 1. send a PREPARE request (from Payer)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -425,10 +417,9 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
-      const prepareResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)      
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
       test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
-
 
       // 2. sleep so that the RESERVED transfer expires
       await sleepPromise(2)
@@ -439,7 +430,7 @@ Test('Handlers test', async handlersTest => {
       td.messageProtocolFulfil.content.payload = {
         ...td.messageProtocolFulfil.content.payload,
         completedTimestamp,
-        transferState: 'RESERVED',
+        transferState: 'RESERVED'
       }
       const fulfilConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -447,9 +438,9 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.FULFIL.toUpperCase())
       fulfilConfig.logger = Logger
-      const fulfilResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
-      
-     // 4. Get the updated transfer since the completedTimestamp may have changed
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      // 4. Get the updated transfer since the completedTimestamp may have changed
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
       const expectedAbortNotificationPayload = {
         completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
@@ -463,13 +454,13 @@ Test('Handlers test', async handlersTest => {
       )[0]
       const payeeAbortNotification = (await wrapWithRetries(
         () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
-        )[0]
+      )[0]
       test.ok(payerAbortNotification, 'Payer Abort notification sent')
       test.ok(payeeAbortNotification, 'Payee Abort notification sent')
 
       test.deepEqual(
-        getMessagePayloadOrThrow(payeeAbortNotification), 
-        expectedAbortNotificationPayload, 
+        getMessagePayloadOrThrow(payeeAbortNotification),
+        expectedAbortNotificationPayload,
         'Abort notification should be sent with the correct values'
       )
 
@@ -487,13 +478,13 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
-      const prepareResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)      
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
       test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. Modify the transfer in the DB
       await TransferService.saveTransferStateChange({
-        transferId: transfer.transferId, 
+        transferId: transfer.transferId,
         transferStateId: 'INVALID'
       })
 
@@ -503,7 +494,7 @@ Test('Handlers test', async handlersTest => {
       td.messageProtocolFulfil.content.payload = {
         ...td.messageProtocolFulfil.content.payload,
         completedTimestamp,
-        transferState: 'RESERVED',
+        transferState: 'RESERVED'
       }
       const fulfilConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -511,9 +502,9 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.FULFIL.toUpperCase())
       fulfilConfig.logger = Logger
-      const fulfilResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
-      
-     // 4. Get the updated transfer since the completedTimestamp may have changed
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      // 4. Get the updated transfer since the completedTimestamp may have changed
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
       const expectedAbortNotificationPayload = {
         completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
@@ -527,13 +518,13 @@ Test('Handlers test', async handlersTest => {
       )[0]
       const payeeAbortNotification = (await wrapWithRetries(
         () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
-        )[0]
+      )[0]
       test.ok(payerAbortNotification, 'Payer Abort notification sent')
       test.ok(payeeAbortNotification, 'Payee Abort notification sent')
 
       test.deepEqual(
-        getMessagePayloadOrThrow(payeeAbortNotification), 
-        expectedAbortNotificationPayload, 
+        getMessagePayloadOrThrow(payeeAbortNotification),
+        expectedAbortNotificationPayload,
         'Abort notification should be sent with the correct values'
       )
 
@@ -551,7 +542,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
-      const prepareResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)      
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
       test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
 
@@ -561,7 +552,7 @@ Test('Handlers test', async handlersTest => {
       td.messageProtocolFulfil.content.payload = {
         fulfilment: 'INVALIDZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
         completedTimestamp,
-        transferState: 'RESERVED',
+        transferState: 'RESERVED'
       }
       const fulfilConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -569,9 +560,9 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.FULFIL.toUpperCase())
       fulfilConfig.logger = Logger
-      const fulfilResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
-      
-      const transferStateIsAbortedError = await wrapWithRetries(async () => {
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      await wrapWithRetries(async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
         return transfer.transferState === 'ABORTED_ERROR'
       })
@@ -589,13 +580,13 @@ Test('Handlers test', async handlersTest => {
       )[0]
       const payeeAbortNotification = (await wrapWithRetries(
         () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
-        )[0]
+      )[0]
       test.ok(payerAbortNotification, 'Payer Abort notification sent')
       test.ok(payeeAbortNotification, 'Payee Abort notification sent')
 
       test.deepEqual(
-        getMessagePayloadOrThrow(payeeAbortNotification), 
-        expectedAbortNotificationPayload, 
+        getMessagePayloadOrThrow(payeeAbortNotification),
+        expectedAbortNotificationPayload,
         'Abort notification should be sent with the correct values'
       )
 
@@ -982,7 +973,7 @@ Test('Handlers test', async handlersTest => {
     await timeoutTest.test('position resets after a timeout', async (test) => {
       // Arrange
       const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
-      
+
       // Act
       const payerPositionDidReset = async () => {
         const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
