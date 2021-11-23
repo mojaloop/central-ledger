@@ -30,7 +30,7 @@
 
 const Logger = require('@mojaloop/central-services-logger')
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
+const Consumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
 
 const Config = require('../../../src/lib/config')
@@ -45,6 +45,7 @@ class TestConsumer {
   handlers = {}
   eventLog = []
   topics = []
+  consumers = []
 
   constructor(handlers) {
     this.handlers = handlers
@@ -66,8 +67,11 @@ class TestConsumer {
       handler.config.rdkafkaConf['group.id'] = 'testConsumerGroup'
 
       Logger.warn(`TestConsumer.startListening(): registering consumer with topicName: ${handler.topicName}`)
-      await Consumer.createHandler(handler.topicName, handler.config, handler.command)
-      this.topics.push(handler.topicName)
+      const topics = [handler.topicName]
+      const consumer = new Consumer(topics, handler.config)
+      await consumer.connect()
+      await consumer.consume(handler.command)
+      this.consumers.push(consumer)
     }))
   }
 
@@ -77,8 +81,8 @@ class TestConsumer {
    *   and release and open files 
    */
   async destroy() {
-    Logger.warn(`TestConsumer.destroy(): destroying consumers for the following topics: ${JSON.stringify(this.topics)}`)
-    await Promise.all(this.topics.map(topic => Consumer.getConsumer(topic).disconnect()))
+    Logger.warn(`TestConsumer.destroy(): destroying ${this.consumers.length} consumers`)
+    await Promise.all(this.consumers.map(async c => c.disconnect()))
   }
 
   /**
