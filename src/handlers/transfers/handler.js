@@ -516,7 +516,25 @@ const fulfil = async (error, messages) => {
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      //TODO(2556): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
+
+      // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
+      if (action === TransferEventAction.RESERVE) {
+        // Get the updated transfer now that completedTimestamp will be different
+        // TODO: should we just modify TransferService.handlePayeeResponse to
+        // return the completed timestamp? Or is it safer to go back to the DB here?
+        const transferAborted = await TransferService.getById(transferId)
+        console.log('transfer.completedTimestamp', transfer.completedTimestamp)
+        console.log('transferAborted.completedTimestamp', transferAborted.completedTimestamp)
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
+        const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
+        const reservedAbortedPayload = {
+          transferId: transferAborted.id,
+          completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
+          transferState: TransferState.ABORTED
+        }
+        message.value.content.payload = reservedAbortedPayload
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination: transfer.payeeFsp, fromSwitch: true })
+      }
       throw fspiopError
     } 
     
@@ -528,7 +546,25 @@ const fulfil = async (error, messages) => {
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      //TODO(2556): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
+      
+      // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
+      if (action === TransferEventAction.RESERVE) {
+        // Get the updated transfer now that completedTimestamp will be different
+        // TODO: should we just modify TransferService.handlePayeeResponse to
+        // return the completed timestamp? Or is it safer to go back to the DB here?
+        const transferAborted = await TransferService.getById(transferId)
+        console.log('transfer.completedTimestamp', transfer.completedTimestamp)
+        console.log('transferAborted.completedTimestamp', transferAborted.completedTimestamp)
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
+        const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
+        const reservedAbortedPayload = {
+          transferId: transferAborted.id,
+          completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
+          transferState: TransferState.ABORTED
+        }
+        message.value.content.payload = reservedAbortedPayload
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination: transfer.payeeFsp, fromSwitch: true })
+      }
       throw fspiopError
     }
     
@@ -578,7 +614,8 @@ const fulfil = async (error, messages) => {
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
         const eventDetail = { functionality: TransferEventType.POSITION, action }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
-        // TODO(2556): emit RESERVED_ABORTED if action === TransferEventAction.RESERVE
+        // TODO(2556): I don't think we should emit an extra notification here
+        // this is the case where the Payee sent an ABORT, so we don't need to tell them to abort
         throw fspiopError
       }
     }  

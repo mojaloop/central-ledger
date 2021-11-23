@@ -330,16 +330,19 @@
       "expiresAt": 1639039953006
     },
     "1004946|@mojaloop/event-sdk>@grpc/proto-loader>yargs>string-width>strip-ansi>ansi-regex": {
-      "decision": "fix",
-      "madeAt": 1637631820537
+      "decision": "ignore",
+      "madeAt": 1637632202484,
+      "expiresAt": 1640224196369
     },
     "1004946|@mojaloop/event-sdk>@grpc/proto-loader>yargs>cliui>string-width>strip-ansi>ansi-regex": {
-      "decision": "fix",
-      "madeAt": 1637631820537
+      "decision": "ignore",
+      "madeAt": 1637632202484,
+      "expiresAt": 1640224196369
     },
     "1004946|@mojaloop/event-sdk>@grpc/proto-loader>yargs>cliui>wrap-ansi>string-width>strip-ansi>ansi-regex": {
-      "decision": "fix",
-      "madeAt": 1637631820537
+      "decision": "ignore",
+      "madeAt": 1637632202484,
+      "expiresAt": 1640224196369
     },
     "1004946|blipp>easy-table>ansi-regex": {
       "decision": "fix",
