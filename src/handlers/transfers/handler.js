@@ -396,7 +396,6 @@ const fulfil = async (error, messages) => {
         return true
       }
       
-      // TODO: what does this section do? I don't understand it...
       if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `inProgress2--${actionLetter}5`))
         /**

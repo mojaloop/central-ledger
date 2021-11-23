@@ -152,6 +152,9 @@ async function wrapWithRetries(func, remainingRetries = 5, timeout = 2) {
 
     await sleepPromise(2)
     return wrapWithRetries(func, remainingRetries - 1, timeout)
+      // .catch(err => {
+      //   console.log(`wrapWithRetries failed, nest: ${remainingRetries - 1}`)
+      // })
   }
 }
 

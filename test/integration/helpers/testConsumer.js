@@ -148,7 +148,7 @@ class TestConsumer {
     }
 
     if (events.length === 0) {
-      throw new Error(`No events found for given filters" ${filters}`)
+      throw new Error(`No events found for given filters" ${JSON.stringify(filters)}`)
     }
 
     return events
