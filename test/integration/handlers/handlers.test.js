@@ -768,11 +768,17 @@ Test('Handlers test', async handlersTest => {
     await timeoutTest.test('position resets after a timeout', async (test) => {
       // Arrange
       const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+      
       // Act
-      await sleepPromise(15) // give the timeout handler some time to expire the request
+      const payerPositionDidReset = async () => {
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
+        return payerCurrentPosition.value === payerInitialPosition
+      }
+      // wait until we know the position reset, or throw after 5 tries
+      await wrapWithRetries(payerPositionDidReset)
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
-      // Assert // TODO: ggrg (20191108) not always valid!? (docker restart fixed it)
+      // Assert
       test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
       test.end()
     })
