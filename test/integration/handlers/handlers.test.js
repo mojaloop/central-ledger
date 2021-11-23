@@ -775,7 +775,7 @@ Test('Handlers test', async handlersTest => {
         return payerCurrentPosition.value === payerInitialPosition
       }
       // wait until we know the position reset, or throw after 5 tries
-      await wrapWithRetries(payerPositionDidReset)
+      await wrapWithRetries(payerPositionDidReset, 10, 4)
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
       // Assert
