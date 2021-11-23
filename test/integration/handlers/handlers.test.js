@@ -381,7 +381,9 @@ Test('Handlers test', async handlersTest => {
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
       test.equal(updatedTransfer.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
       const expectedAbortNotificationPayload = {
-        completedTimestamp: Time.getUTCString(updatedTransfer.completedTimestamp),
+        // completedTimestamp: Time.getUTCString(updatedTransfer.completedTimestamp),
+        // completedTimestamp: (new Date(updatedTransfer.completedTimestamp)).toISOString(),
+        completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
         transferState: 'ABORTED'
       }
 

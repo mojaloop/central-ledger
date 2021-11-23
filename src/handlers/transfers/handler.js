@@ -489,11 +489,17 @@ const fulfil = async (error, messages) => {
 
       // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
       if (action === TransferEventAction.RESERVE) {
+        // Get the updated transfer now that completedTimestamp will be different
+        // TODO: should we just modify TransferService.handlePayeeResponse to
+        // return the completed timestamp? Or is it safer to go back to the DB here?
+        const transferAborted = await TransferService.getById(transferId)
+        console.log('transfer.completedTimestamp', transfer.completedTimestamp)
+        console.log('transferAborted.completedTimestamp', transferAborted.completedTimestamp)
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
         const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED  }
         const reservedAbortedPayload = {
-          transferId: transfer.id,
-          completedTimestamp: transfer.completedTimestamp,
+          transferId: transferAborted.id,
+          completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
           transferState: TransferState.ABORTED
         }
         message.value.content.payload = reservedAbortedPayload
