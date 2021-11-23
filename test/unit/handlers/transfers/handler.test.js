@@ -1023,9 +1023,6 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    fulfilTest.end()
-    return
-
     fulfilTest.test('fail validation when when RESERVED transfer state is received from v1.0 clients', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.0'

@@ -328,6 +328,67 @@
       "decision": "ignore",
       "madeAt": 1636447961306,
       "expiresAt": 1639039953006
+    },
+    "1004946|@mojaloop/event-sdk>@grpc/proto-loader>yargs>string-width>strip-ansi>ansi-regex": {
+      "decision": "fix",
+      "madeAt": 1637631820537
+    },
+    "1004946|@mojaloop/event-sdk>@grpc/proto-loader>yargs>cliui>string-width>strip-ansi>ansi-regex": {
+      "decision": "fix",
+      "madeAt": 1637631820537
+    },
+    "1004946|@mojaloop/event-sdk>@grpc/proto-loader>yargs>cliui>wrap-ansi>string-width>strip-ansi>ansi-regex": {
+      "decision": "fix",
+      "madeAt": 1637631820537
+    },
+    "1004946|blipp>easy-table>ansi-regex": {
+      "decision": "fix",
+      "madeAt": 1637631903782
+    },
+    "1004854|00unidentified>widdershins>openapi-sampler>json-pointer": {
+      "decision": "ignore",
+      "madeAt": 1637631916550,
+      "expiresAt": 1640223810787
+    },
+    "1004869|00unidentified>widdershins>swagger2openapi>better-ajv-errors>jsonpointer": {
+      "decision": "ignore",
+      "madeAt": 1637631920791,
+      "expiresAt": 1640223810787
+    },
+    "1004869|00unidentified>widdershins>swagger2openapi>oas-validator>better-ajv-errors>jsonpointer": {
+      "decision": "ignore",
+      "madeAt": 1637631920791,
+      "expiresAt": 1640223810787
+    },
+    "1004876|hapi-swagger>swagger-parser>z-schema>validator": {
+      "decision": "ignore",
+      "madeAt": 1637631925279,
+      "expiresAt": 1640223810787
+    },
+    "1004946|00unidentified>widdershins>yargs>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1637631928013,
+      "expiresAt": 1640223810787
+    },
+    "1004946|00unidentified>widdershins>yargs>cliui>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1637631928013,
+      "expiresAt": 1640223810787
+    },
+    "1005383|00unidentified>shins>sanitize-html": {
+      "decision": "ignore",
+      "madeAt": 1637631931208,
+      "expiresAt": 1640223810787
+    },
+    "1005384|00unidentified>shins>sanitize-html": {
+      "decision": "ignore",
+      "madeAt": 1637631931208,
+      "expiresAt": 1640223810787
+    },
+    "1005534|00unidentified>widdershins>yargs>yargs-parser": {
+      "decision": "ignore",
+      "madeAt": 1637631933199,
+      "expiresAt": 1640223810787
     }
   },
   "rules": {},
