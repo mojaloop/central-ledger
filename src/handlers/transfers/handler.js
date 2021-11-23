@@ -381,13 +381,13 @@ const fulfil = async (error, messages) => {
         const eventDetail = { functionality, action }
         if (action !== TransferEventAction.RESERVE) {
           if (!isTransferError) {
-            Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinilized2--${actionLetter}3`))
+            Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinalized2--${actionLetter}3`))
             eventDetail.action = TransferEventAction.FULFIL_DUPLICATE
             /**
              * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil
              */
           } else {
-            Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinilized3--${actionLetter}4`))
+            Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinalized3--${actionLetter}4`))
             eventDetail.action = TransferEventAction.ABORT_DUPLICATE
           }
         }
@@ -493,8 +493,6 @@ const fulfil = async (error, messages) => {
         // TODO: should we just modify TransferService.handlePayeeResponse to
         // return the completed timestamp? Or is it safer to go back to the DB here?
         const transferAborted = await TransferService.getById(transferId)
-        console.log('transfer.completedTimestamp', transfer.completedTimestamp)
-        console.log('transferAborted.completedTimestamp', transferAborted.completedTimestamp)
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
         const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED  }
         const reservedAbortedPayload = {
@@ -523,8 +521,6 @@ const fulfil = async (error, messages) => {
         // TODO: should we just modify TransferService.handlePayeeResponse to
         // return the completed timestamp? Or is it safer to go back to the DB here?
         const transferAborted = await TransferService.getById(transferId)
-        console.log('transfer.completedTimestamp', transfer.completedTimestamp)
-        console.log('transferAborted.completedTimestamp', transferAborted.completedTimestamp)
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
         const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
         const reservedAbortedPayload = {
@@ -553,8 +549,6 @@ const fulfil = async (error, messages) => {
         // TODO: should we just modify TransferService.handlePayeeResponse to
         // return the completed timestamp? Or is it safer to go back to the DB here?
         const transferAborted = await TransferService.getById(transferId)
-        console.log('transfer.completedTimestamp', transfer.completedTimestamp)
-        console.log('transferAborted.completedTimestamp', transferAborted.completedTimestamp)
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
         const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
         const reservedAbortedPayload = {
