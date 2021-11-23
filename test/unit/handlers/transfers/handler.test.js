@@ -1007,8 +1007,7 @@ Test('Transfer handler', transferHandlerTest => {
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
       // Assert
-      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
-      test.ok(Kafka.produceGeneralMessage.calledOnce, 'Kafka.produceGeneralMessage was called once')
+      test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
       test.equal(result, true)
       test.end()
     })

@@ -507,60 +507,6 @@ const fulfil = async (error, messages) => {
         }
         message.value.content.payload = reservedAbortedPayload
         await Kafka.proceed(Config.KAFKA_CONFIG, abortParams, { consumerCommit, eventDetail, toDestination: transfer.payeeFsp, fromSwitch: true })
-
-
-        // Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
-        // const metadataState = Util.StreamingProtocol.createEventState(
-        //   Enum.Events.EventStatus.FAILURE.status,
-        //   apiFspiopError.errorInformation.errorCode,
-        //   apiFspiopError.errorInformation.errorDescription
-        // )
-        // //TODO: replace this call with createEventMetadata
-        // const metadata = {
-        //   event: {
-        //     // TODO: These seem to have no effect - they are overridden by
-        //     // some crazy logic in Kafka.produceGeneralMessage
-        //     type: TransferEventType.FULFIL,
-        //     action: TransferEventAction.RESERVED_ABORTED,
-        //     state: metadataState
-        //     // TODO: add span/trace stuff in here?
-        //   }
-        // }
-        
-
-        // // clone the headers, and change the FSPIOP-Source and FSPIOP-Destination
-        // const reservedAbortedHeaders = Util.clone(headers)
-        // reservedAbortedHeaders[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payeeFsp
-        // reservedAbortedHeaders[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
-        // const reservedAbortedMessage = Util.StreamingProtocol.createMessage(
-        //   // TODO: should this be the transferId or a messageId
-        //   transferId,
-        //   transfer.payeeFsp, 
-        //   Enum.Http.Headers.FSPIOP.SWITCH.value,
-        //   metadata,
-        //   reservedAbortedHeaders,
-        //   reservedAbortedPayload,
-        // )
-
-        // console.log('Kafka.produceGeneralMessage - ', JSON.stringify(reservedAbortedMessage))
-        // await Kafka.produceGeneralMessage(
-        //   Config.KAFKA_CONFIG,
-        //   Producer,
-        //   Enum.Events.Event.Type.NOTIFICATION,
-        //   // TODO: should this be EVENT? or should we make a new topic for RESERVED_ABORTED?
-        //   // I can't seem to find how to send a message to the `topic-notification-event` topic
-        //   // that has the reservedAbortedMessage.metadata.event.action of RESERVED_ABORTED
-        //   // TransferEventAction.RESERVED_ABORTED,
-        //   // 
-        //   // produceGeneralMessage overrides the reservedAbortedMessage.metadata.event.action
-        //   // for some reason.
-        //   TransferEventAction.RESERVED_ABORTED,
-        //   // TransferEventAction.EVENT,
-        //   reservedAbortedMessage,
-        //   metadataState
-
-        //   // TODO: missing tracing here - pass the span object in
-        // )
       }
       throw fspiopError
     } 
