@@ -25,7 +25,6 @@
 
 'use strict'
 
-// require("leaked-handles");
 const Test = require('tape')
 const Uuid = require('uuid4')
 const retry = require('async-retry')
