@@ -39,6 +39,7 @@ const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const MainUtil = require('@mojaloop/central-services-shared').Util
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const ilp = require('../../../../src/models/transfer/ilpPacket')
 const Uuid = require('uuid4')
 const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
@@ -49,6 +50,7 @@ const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const Proxyquire = require('proxyquire')
+const { getMessagePayloadOrThrow } = require('../../../util/helpers')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -991,7 +993,11 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
         payeeFsp: 'dfsp1',
-        transferState: TransferState.RESERVED
+        transferState: TransferState.RESERVED,
+        // Hmm the transfer may not have a completed timestamp yet...
+        id: Uuid(),
+        completedTimestamp: Time.getUTCString(new Date())
+
       }))
       Comparators.duplicateCheckComparator.withArgs(
         transfer.transferId,
@@ -1006,11 +1012,19 @@ Test('Transfer handler', transferHandlerTest => {
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
+      
       // Assert
       test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
+      const reservedAbortedPayload = getMessagePayloadOrThrow(Kafka.proceed.getCall(1).args[1].message)
+      test.equal(reservedAbortedPayload.transferState, 'ABORTED')
+      test.ok(reservedAbortedPayload.transferId, 'payload.transferId is defined')
+      test.ok(reservedAbortedPayload.completedTimestamp, 'payload.completedTimestamp is defined')
       test.equal(result, true)
       test.end()
     })
+
+    fulfilTest.end()
+    return
 
     fulfilTest.test('fail validation when when RESERVED transfer state is received from v1.0 clients', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)

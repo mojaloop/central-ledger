@@ -491,22 +491,13 @@ const fulfil = async (error, messages) => {
       if (action === TransferEventAction.RESERVE) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
         const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED  }
-        const abortParams = {
-          // TODO: can we just use the original message?
-          message,
-          kafkaTopic,
-          span,
-          consumer: Consumer, 
-          producer: Producer,
-        }
         const reservedAbortedPayload = {
           transferId: transfer.id,
-          //TODO: get this time from the db - don't be lazy
-          completedTimestamp: Util.Time.getUTCString(new Date()),
+          completedTimestamp: transfer.completedTimestamp,
           transferState: TransferState.ABORTED
         }
         message.value.content.payload = reservedAbortedPayload
-        await Kafka.proceed(Config.KAFKA_CONFIG, abortParams, { consumerCommit, eventDetail, toDestination: transfer.payeeFsp, fromSwitch: true })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination: transfer.payeeFsp, fromSwitch: true })
       }
       throw fspiopError
     } 

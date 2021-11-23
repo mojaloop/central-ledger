@@ -159,11 +159,20 @@ function currentEventLoopEnd() {
   return new Promise(resolve => setImmediate(resolve));
 }
 
+function getMessagePayloadOrThrow(message) {
+  try {
+    return message.value.content.payload
+  } catch(err) {
+    throw new Error('unwrapMessagePayloadOrThrow - malformed message')
+  }
+}
+
 module.exports = {
   currentEventLoopEnd,
   createRequest,
   sleepPromise,
   unwrapResponse,
   waitFor,
-  wrapWithRetries
+  wrapWithRetries,
+  getMessagePayloadOrThrow
 }

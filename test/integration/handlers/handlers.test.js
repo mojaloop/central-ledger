@@ -31,7 +31,8 @@ const Uuid = require('uuid4')
 const retry = require('async-retry')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../src/lib/config')
-const sleep = require('@mojaloop/central-services-shared').Util.Time.sleep
+const Time = require('@mojaloop/central-services-shared').Util.Time
+const sleep = Time.sleep
 const Db = require('@mojaloop/central-services-database').Db
 const Cache = require('../../../src/lib/cache')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
@@ -48,7 +49,11 @@ const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { currentEventLoopEnd, sleepPromise, waitFor, wrapWithRetries } = require('../../util/helpers')
+const { 
+  waitFor, 
+  wrapWithRetries, 
+  getMessagePayloadOrThrow 
+} = require('../../util/helpers')
 const TestConsumer = require('../helpers/testConsumer')
 
 const ParticipantCached = require('../../../src/models/participant/participantCached')
@@ -355,9 +360,10 @@ Test('Handlers test', async handlersTest => {
 
       // 2. send a RESERVED request with an invalid validation(from Payee)
       td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
+      const completedTimestamp = Time.getUTCString(new Date())
       td.messageProtocolFulfil.content.payload = {
         fulfilment: 'INVALIDZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
-        completedTimestamp: new Date(),
+        completedTimestamp,
         transferState: 'RESERVED',
       }
       const fulfilConfig = Utility.getKafkaConfig(
@@ -372,7 +378,12 @@ Test('Handlers test', async handlersTest => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
         return transfer.transferState === 'ABORTED_ERROR'
       })
-      test.equal(transferStateIsAbortedError, true, 'Transfer is in ABORTED_ERROR state')
+      const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+      test.equal(updatedTransfer.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
+      const expectedAbortNotificationPayload = {
+        completedTimestamp: Time.getUTCString(updatedTransfer.completedTimestamp),
+        transferState: 'ABORTED'
+      }
 
       // Assert
       // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
@@ -384,6 +395,12 @@ Test('Handlers test', async handlersTest => {
         )[0]
       test.ok(payerAbortNotification, 'Payer Abort notification sent')
       test.ok(payeeAbortNotification, 'Payee Abort notification sent')
+
+      test.deepEqual(
+        getMessagePayloadOrThrow(payeeAbortNotification), 
+        expectedAbortNotificationPayload, 
+        'Abort notification should be sent with the correct values'
+      )
 
       // Cleanup
       testConsumer.clearEvents()
