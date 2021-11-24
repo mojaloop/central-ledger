@@ -257,7 +257,7 @@
             "rdkafkaConf": {
               "client.id": "TESTONLY",
               "group.id": "TESTONLY",
-              "metadata.broker.list": "kafka:29092",
+              "metadata.broker.list": "kafka-int:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true
             },

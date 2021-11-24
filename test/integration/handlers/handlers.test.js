@@ -341,10 +341,10 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferFulfilReserve should', async transferFulfilReserve => {
-    const td = await prepareTestData(testData)
-
     await transferFulfilReserve.test('Does not send a RESERVED_ABORTED notification when the Payee aborts the transfer', async (test) => {
       // Arrange
+      const td = await prepareTestData(testData)
+
       // 1. send a PREPARE request (from Payer)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -470,6 +470,8 @@ Test('Handlers test', async handlersTest => {
 
     await transferFulfilReserve.test('send a RESERVED_ABORTED notification when the transfer is not in a RESERVED state', async (test) => {
       // Arrange
+      const td = await prepareTestData(testData)
+
       // 1. send a PREPARE request (from Payer)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -512,20 +514,27 @@ Test('Handlers test', async handlersTest => {
 
       // Assert
       // 5. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
-      const payerAbortNotification = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }))
-      )[0]
-      const payeeAbortNotification = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
-      )[0]
-      test.ok(payerAbortNotification, 'Payer Abort notification sent')
-      test.ok(payeeAbortNotification, 'Payee Abort notification sent')
-
-      test.deepEqual(
-        getMessagePayloadOrThrow(payeeAbortNotification),
-        expectedAbortNotificationPayload,
-        'Abort notification should be sent with the correct values'
-      )
+      try {
+        const payerAbortNotification = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }))
+          )[0]
+        test.ok(payerAbortNotification, 'Payer Abort notification sent')
+      } catch (err) {
+        test.notOk('No payerAbortNotification was sent')
+      } 
+      try {
+        const payeeAbortNotification = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
+          )[0]
+        test.ok(payeeAbortNotification, 'Payee Abort notification sent')
+        test.deepEqual(
+          getMessagePayloadOrThrow(payeeAbortNotification),
+          expectedAbortNotificationPayload,
+          'Abort notification should be sent with the correct values'
+        )
+      } catch (err) {
+        test.notOk('No payeeAbortNotification was sent')
+      }
 
       // Cleanup
       testConsumer.clearEvents()
@@ -534,6 +543,8 @@ Test('Handlers test', async handlersTest => {
 
     await transferFulfilReserve.test('send a RESERVED_ABORTED notification when the validation fails', async (test) => {
       // Arrange
+      const td = await prepareTestData(testData)
+
       // 1. send a PREPARE request (from Payer)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
