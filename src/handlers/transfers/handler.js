@@ -335,24 +335,80 @@ const fulfil = async (error, messages) => {
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
-    } else if (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase()) {
+
+      // Lets validate FSPIOP Source & Destination Headers
+    } else if (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase() || headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()) {
       /**
-       * If fulfilment request is coming from a source not matching transfer payee fsp,
-       * don't proceed the request, but rather send error callback to original payee fsp.
-       * This is also the reason why we need to retrieve the transfer info upfront now.
+       * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
        */
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorSourceNotMatchingPayeeFsp--${actionLetter}2`))
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.SOURCE} does not match payee fsp`)
-      const toDestination = transfer.payeeFsp // overrding global boolean declaration with a string value for local use only
-      const eventDetail = { functionality, action: TransferEventAction.COMMIT }
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorSourceNotMatchingTransferFSPs--${actionLetter}2`))
+
+      // Lets set a default non-matching error to fallback-on
+      let fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `FSP does not match one of the fsp-id's associated with a transfer on the Fulfil callback response`)
+
+      // Lets make the error specific if the PayeeFSP IDs do not match
+      if (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase()) {
+        fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.SOURCE} does not match payee fsp on the Fulfil callback response`)
+      }
+
+      // Lets make the error specific if the PayerFSP IDs do not match
+      if (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()) {
+        fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.DESTINATION} does not match payer fsp on the Fulfil callback response`)
+      }
+
+      const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
+
+      // Overriding global boolean declaration with a string value for local as we should handle notifications only to FSPs involved with this transfer
+      const toPayerDestination = transfer.payerFsp
+      const toPayeeDestination = transfer.payeeFsp
+
+      // Set the event details to map to an ABORT_VALIDATION event targeted to the Position Handler
+      const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT_VALIDATION }
+
+      // Lets handle the abort validation and change the transfer state to reflect this
+      const transferAbortResult = await TransferService.handlePayeeResponse(transferId, payload, TransferEventAction.ABORT_VALIDATION, apiFSPIOPError)
+
       /**
        * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
        * HOWTO: For regular transfers, send the fulfil from non-payee dfsp.
        * Not sure if it will apply to bulk, as it could/should be captured
        * at BulkPrepareHander. To be verified as part of future story.
        */
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, toDestination })
-      throw fspiopError
+
+      // Publish message to Position Handler
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, toDestination: toPayerDestination })
+
+      /**
+       * Send patch notification callback to original payee fsp if they asked for a a patch response.
+       */
+      if (action === TransferEventAction.RESERVE) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
+
+        // Set the event details to map to an RESERVE_ABORTED event targeted to the Notification Handler
+        const reserveAbortedEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
+
+        // Extract error information
+        const errorCode = apiFSPIOPError && apiFSPIOPError.errorInformation && apiFSPIOPError.errorInformation.errorCode
+        const errorDescription = apiFSPIOPError && apiFSPIOPError.errorInformation && apiFSPIOPError.errorInformation.errorDescription
+
+        // TODO: This should be handled by a PATCH /transfers/{id}/error callback in the future FSPIOP v1.2 specification, and instead we should just send the FSPIOP-Error instead!
+        const reservedAbortedPayload = {
+          completedTimestamp: transferAbortResult && transferAbortResult.completedTimestamp && (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
+          transferState: TransferState.ABORTED,
+          extensionList: { // lets add the extension list to handle the limitation of the FSPIOP v1.1 specification
+            extension: [
+              {
+                key: 'cause',
+                value: `${errorCode}: ${errorDescription}`
+              }
+            ]
+          }
+        }
+        message.value.content.payload = reservedAbortedPayload
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail: reserveAbortedEventDetail, toDestination: toPayeeDestination, fromSwitch: true })
+      }
+
+      throw apiFSPIOPError
     }
     // If execution continues after this point we are sure transfer exists and source matches payee fsp
 
@@ -494,7 +550,7 @@ const fulfil = async (error, messages) => {
         const transferAborted = await TransferService.getById(transferId)
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
         const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
-        const reservedAbortedPayload = {
+        const reservedAbortedPayload = { // TODO: get completedTimestamp from DB????
           transferId: transferAborted.id,
           completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
           transferState: TransferState.ABORTED
@@ -512,19 +568,19 @@ const fulfil = async (error, messages) => {
       /**
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      const transferAbortResult = await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
 
       // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
       if (action === TransferEventAction.RESERVE) {
         // Get the updated transfer now that completedTimestamp will be different
         // TODO: should we just modify TransferService.handlePayeeResponse to
         // return the completed timestamp? Or is it safer to go back to the DB here?
-        const transferAborted = await TransferService.getById(transferId)
+        // const transferAborted = await TransferService.getById(transferId) // TODO: remove this once it can be tested
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
         const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
         const reservedAbortedPayload = {
-          transferId: transferAborted.id,
-          completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
+          // completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)), // TODO: remove this once it can be tested
+          completedTimestamp: transferAbortResult && transferAbortResult.completedTimestamp && (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
           transferState: TransferState.ABORTED
         }
         message.value.content.payload = reservedAbortedPayload

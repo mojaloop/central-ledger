@@ -1,6 +1,16 @@
 {
   "PORT": 3001,
   "HOSTNAME": "http://central-ledger",
+  "PROTOCOL_VERSIONS": {
+    "CONTENT": "1.1",
+    "ACCEPT": {
+      "DEFAULT": "1",
+      "VALIDATELIST": [
+        "1",
+        "1.1"
+      ]
+    }
+  },
   "DATABASE": {
     "DIALECT": "mysql",
     "HOST": "localhost",
