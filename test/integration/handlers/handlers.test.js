@@ -517,15 +517,15 @@ Test('Handlers test', async handlersTest => {
       try {
         const payerAbortNotification = (await wrapWithRetries(
           () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }))
-          )[0]
+        )[0]
         test.ok(payerAbortNotification, 'Payer Abort notification sent')
       } catch (err) {
         test.notOk('No payerAbortNotification was sent')
-      } 
+      }
       try {
         const payeeAbortNotification = (await wrapWithRetries(
           () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
-          )[0]
+        )[0]
         test.ok(payeeAbortNotification, 'Payee Abort notification sent')
         test.deepEqual(
           getMessagePayloadOrThrow(payeeAbortNotification),

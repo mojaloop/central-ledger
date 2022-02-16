@@ -344,7 +344,7 @@ const fulfil = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorSourceNotMatchingTransferFSPs--${actionLetter}2`))
 
       // Lets set a default non-matching error to fallback-on
-      let fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `FSP does not match one of the fsp-id's associated with a transfer on the Fulfil callback response`)
+      let fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'FSP does not match one of the fsp-id\'s associated with a transfer on the Fulfil callback response')
 
       // Lets make the error specific if the PayeeFSP IDs do not match
       if (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase()) {
