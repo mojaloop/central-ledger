@@ -337,7 +337,7 @@ const fulfil = async (error, messages) => {
       throw fspiopError
 
       // Lets validate FSPIOP Source & Destination Headers
-    } else if (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase() || headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()) {
+    } else if ((headers[Enum.Http.Headers.FSPIOP.SOURCE] && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) || (headers[Enum.Http.Headers.FSPIOP.DESTINATION] && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()))) {
       /**
        * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
        */
@@ -393,6 +393,7 @@ const fulfil = async (error, messages) => {
 
         // TODO: This should be handled by a PATCH /transfers/{id}/error callback in the future FSPIOP v1.2 specification, and instead we should just send the FSPIOP-Error instead!
         const reservedAbortedPayload = {
+          transferId: transferAbortResult && transferAbortResult.id,
           completedTimestamp: transferAbortResult && transferAbortResult.completedTimestamp && (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
           transferState: TransferState.ABORTED,
           extensionList: { // lets add the extension list to handle the limitation of the FSPIOP v1.1 specification
@@ -568,19 +569,19 @@ const fulfil = async (error, messages) => {
       /**
        * TODO: BulkProcessingHandler (not in scope of #967)
        */
-      const transferAbortResult = await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
 
       // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
       if (action === TransferEventAction.RESERVE) {
         // Get the updated transfer now that completedTimestamp will be different
         // TODO: should we just modify TransferService.handlePayeeResponse to
         // return the completed timestamp? Or is it safer to go back to the DB here?
-        // const transferAborted = await TransferService.getById(transferId) // TODO: remove this once it can be tested
+        const transferAborted = await TransferService.getById(transferId) // TODO: remove this once it can be tested
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
         const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
         const reservedAbortedPayload = {
-          // completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)), // TODO: remove this once it can be tested
-          completedTimestamp: transferAbortResult && transferAbortResult.completedTimestamp && (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
+          transferId: transferAborted.id,
+          completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)), // TODO: remove this once it can be tested
           transferState: TransferState.ABORTED
         }
         message.value.content.payload = reservedAbortedPayload
