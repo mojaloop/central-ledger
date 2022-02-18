@@ -535,26 +535,40 @@ const fulfil = async (error, messages) => {
     if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
-      const apiFspiopError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
-      await TransferService.handlePayeeResponse(transferId, payload, action, apiFspiopError)
+      const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
+      await TransferService.handlePayeeResponse(transferId, payload, action, apiFSPIOPError)
       const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT_VALIDATION }
       /**
        * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
        */
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, toDestination })
 
       // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
       if (action === TransferEventAction.RESERVE) {
         // Get the updated transfer now that completedTimestamp will be different
         // TODO: should we just modify TransferService.handlePayeeResponse to
         // return the completed timestamp? Or is it safer to go back to the DB here?
-        const transferAborted = await TransferService.getById(transferId)
+        const transferAbortResult = await TransferService.getById(transferId)
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
         const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
-        const reservedAbortedPayload = { // TODO: get completedTimestamp from DB????
-          transferId: transferAborted.id,
-          completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
-          transferState: TransferState.ABORTED
+
+        // Extract error information
+        const errorCode = apiFSPIOPError && apiFSPIOPError.errorInformation && apiFSPIOPError.errorInformation.errorCode
+        const errorDescription = apiFSPIOPError && apiFSPIOPError.errorInformation && apiFSPIOPError.errorInformation.errorDescription
+
+        // TODO: This should be handled by a PATCH /transfers/{id}/error callback in the future FSPIOP v1.2 specification, and instead we should just send the FSPIOP-Error instead! Ref: https://github.com/mojaloop/mojaloop-specification/issues/106.
+        const reservedAbortedPayload = {
+          transferId: transferAbortResult && transferAbortResult.id,
+          completedTimestamp: transferAbortResult && transferAbortResult.completedTimestamp && (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
+          transferState: TransferState.ABORTED,
+          extensionList: { // lets add the extension list to handle the limitation of the FSPIOP v1.1 specification by adding the error cause...
+            extension: [
+              {
+                key: 'cause',
+                value: `${errorCode}: ${errorDescription}`
+              }
+            ]
+          }
         }
         message.value.content.payload = reservedAbortedPayload
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination: transfer.payeeFsp, fromSwitch: true })
