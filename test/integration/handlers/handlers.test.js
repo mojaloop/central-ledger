@@ -579,23 +579,23 @@ Test('Handlers test', async handlersTest => {
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
       test.equal(updatedTransfer.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
       const expectedAbortNotificationPayload = {
-        completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
+        completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
         transferState: 'ABORTED'
       }
 
       // Assert
       // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
-      const payerAbortNotification = (await wrapWithRetries(
+      const payerAbortNotificationEvent = (await wrapWithRetries(
         () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' }))
       )[0]
-      const payeeAbortNotification = (await wrapWithRetries(
+      const payeeAbortNotificationEvent = (await wrapWithRetries(
         () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
       )[0]
-      test.ok(payerAbortNotification, 'Payer Abort notification sent')
-      test.ok(payeeAbortNotification, 'Payee Abort notification sent')
+      test.ok(payerAbortNotificationEvent, 'Payer Abort notification sent')
+      test.ok(payeeAbortNotificationEvent, 'Payee Abort notification sent')
 
       // grab kafka message
-      const payerAbortNotificationPayload = getMessagePayloadOrThrow(payeeAbortNotification)
+      const payerAbortNotificationPayload = getMessagePayloadOrThrow(payeeAbortNotificationEvent)
 
       test.equal(
         payerAbortNotificationPayload.transferState,
