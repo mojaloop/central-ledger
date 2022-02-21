@@ -594,10 +594,19 @@ Test('Handlers test', async handlersTest => {
       test.ok(payerAbortNotification, 'Payer Abort notification sent')
       test.ok(payeeAbortNotification, 'Payee Abort notification sent')
 
-      test.deepEqual(
-        getMessagePayloadOrThrow(payeeAbortNotification),
-        expectedAbortNotificationPayload,
-        'Abort notification should be sent with the correct values'
+      // grab kafka message
+      const payerAbortNotificationPayload = getMessagePayloadOrThrow(payeeAbortNotification)
+
+      test.equal(
+        payerAbortNotificationPayload.transferState,
+        expectedAbortNotificationPayload.transferState,
+        'Abort notification should be sent with the correct transferState'
+      )
+
+      test.equal(
+        payerAbortNotificationPayload.completedTimestamp,
+        expectedAbortNotificationPayload.completedTimestamp,
+        'Abort notification should be sent with the correct completedTimestamp'
       )
 
       // Cleanup
