@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [13.15.0](https://github.com/mojaloop/central-ledger/compare/v13.14.6...v13.15.0) (2022-02-22)
+
+
+### Features
+
+* **mojaloop/project#2556:** implement patch notification for failure scenarios ([#874](https://github.com/mojaloop/central-ledger/issues/874)) ([8b72cfe](https://github.com/mojaloop/central-ledger/commit/8b72cfe41558bf955fd516eba06d921e988d0664)), closes [mojaloop/project#2556](https://github.com/mojaloop/project/issues/2556) [#2697](https://github.com/mojaloop/central-ledger/issues/2697)
+
 ### [13.14.6](https://github.com/mojaloop/central-ledger/compare/v13.14.5...v13.14.6) (2021-11-17)
 
 
