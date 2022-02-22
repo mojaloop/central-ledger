@@ -128,16 +128,51 @@ async function waitFor (func, name, retries = 5, increment = 2) {
       await func()
       return Promise.resolve(true)
     } catch (err) {
-      Logger.error(`waitFor: '${name}' failed. Sleeping for: ${curr} seconds.`)
+      Logger.warn(`waitFor: '${name}' failed. Sleeping for: ${curr} seconds.`)
     }
 
     return sleepPromise(curr).then(() => false)
   }, Promise.resolve(false))
 }
 
+async function wrapWithRetries (func, remainingRetries = 5, timeout = 2) {
+  Logger.warn(`wrapWithRetries remainingRetries:${remainingRetries}, timeout:${timeout}`)
+
+  try {
+    const result = await func()
+    if (!result) {
+      throw new Error('wrapWithRetries returned false of undefined response')
+    }
+    return result
+  } catch (err) {
+    if (remainingRetries === 0) {
+      Logger.warn('wrapWithRetries ran out of retries')
+      throw err
+    }
+
+    await sleepPromise(2)
+    return wrapWithRetries(func, remainingRetries - 1, timeout)
+  }
+}
+
+function currentEventLoopEnd () {
+  return new Promise(resolve => setImmediate(resolve))
+}
+
+function getMessagePayloadOrThrow (message) {
+  try {
+    return message.value.content.payload
+  } catch (err) {
+    throw new Error('unwrapMessagePayloadOrThrow - malformed message')
+  }
+}
+
 module.exports = {
+  currentEventLoopEnd,
   createRequest,
   sleepPromise,
   unwrapResponse,
-  waitFor
+  waitFor,
+  wrapWithRetries,
+  getMessagePayloadOrThrow
 }

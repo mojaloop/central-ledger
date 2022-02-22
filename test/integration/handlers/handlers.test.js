@@ -30,7 +30,8 @@ const Uuid = require('uuid4')
 const retry = require('async-retry')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../src/lib/config')
-const sleep = require('@mojaloop/central-services-shared').Util.Time.sleep
+const Time = require('@mojaloop/central-services-shared').Util.Time
+const sleep = Time.sleep
 const Db = require('@mojaloop/central-services-database').Db
 const Cache = require('../../../src/lib/cache')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
@@ -47,7 +48,12 @@ const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { sleepPromise } = require('../../util/helpers')
+const {
+  wrapWithRetries,
+  getMessagePayloadOrThrow,
+  sleepPromise
+} = require('../../util/helpers')
+const TestConsumer = require('../helpers/testConsumer')
 
 const ParticipantCached = require('../../../src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('../../../src/models/participant/participantCurrencyCached')
@@ -285,12 +291,45 @@ Test('Handlers test', async handlersTest => {
   await SettlementHelper.prepareData()
   await HubAccountsHelper.prepareData()
 
+  // Start a testConsumer to monitor events that our handlers emit
+  const testConsumer = new TestConsumer([
+    {
+      topicName: Utility.transformGeneralTopicName(
+        Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+        Enum.Events.Event.Type.TRANSFER,
+        Enum.Events.Event.Action.FULFIL
+      ),
+      config: Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.CONSUMER,
+        Enum.Events.Event.Type.TRANSFER.toUpperCase(),
+        Enum.Events.Event.Action.FULFIL.toUpperCase()
+      )
+    },
+    {
+      topicName: Utility.transformGeneralTopicName(
+        Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+        Enum.Events.Event.Type.NOTIFICATION,
+        Enum.Events.Event.Action.EVENT
+      ),
+      config: Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.CONSUMER,
+        Enum.Events.Event.Type.NOTIFICATION.toUpperCase(),
+        Enum.Events.Event.Action.EVENT.toUpperCase()
+      )
+    }
+  ])
+
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
       await Handlers.timeouts.registerTimeoutHandler()
+
+      // Set up the testConsumer here
+      await testConsumer.startListening()
 
       sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
 
@@ -299,6 +338,283 @@ Test('Handlers test', async handlersTest => {
     })
 
     await registerAllHandlers.end()
+  })
+
+  await handlersTest.test('transferFulfilReserve should', async transferFulfilReserve => {
+    await transferFulfilReserve.test('Does not send a RESERVED_ABORTED notification when the Payee aborts the transfer', async (test) => {
+      // Arrange
+      const td = await prepareTestData(testData)
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
+      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      // 2. send an ABORTED request from Payee
+      td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
+      const completedTimestamp = Time.getUTCString(new Date())
+      td.messageProtocolFulfil.content.payload = {
+        ...td.messageProtocolFulfil.content.payload,
+        completedTimestamp,
+        transferState: 'ABORTED'
+      }
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      // Assert
+      // 3. Check that we didn't sent a notification for the Payee
+      try {
+        await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'reserved-aborted'
+        }))
+        test.notOk('Should not be executed')
+      } catch (err) {
+        console.log(err)
+        test.ok('No payee abort notification sent')
+      }
+      console.log(JSON.stringify(testConsumer.getAllEvents()))
+
+      // TODO: I can't seem to find the payer abort notification in the log
+      // is there something I'm missing here? Does it go to a different handler?
+
+      // 4. Check that we sent 1 notification for the payer
+      // const payerAbortNotification = (await wrapWithRetries(() => testConsumer.getEventsForFilter({
+      //   topicFilter: 'topic-notification-event',
+      //   action: 'abort'
+      // })))[0]
+      // test.ok(payerAbortNotification, 'Payer Abort notification sent')
+
+      // Cleanup
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferFulfilReserve.test('send a RESERVED_ABORTED notification if the transfer is expired', async (test) => {
+      // Arrange
+      const customTestData = {
+        ...testData,
+        expiration: new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
+      }
+      const td = await prepareTestData(customTestData)
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
+      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      // 2. sleep so that the RESERVED transfer expires
+      await sleepPromise(2)
+
+      // 3. send a RESERVED request from Payee
+      td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
+      const completedTimestamp = Time.getUTCString(new Date())
+      td.messageProtocolFulfil.content.payload = {
+        ...td.messageProtocolFulfil.content.payload,
+        completedTimestamp,
+        transferState: 'RESERVED'
+      }
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      // 4. Get the updated transfer since the completedTimestamp may have changed
+      const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+      const expectedAbortNotificationPayload = {
+        completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
+        transferState: 'ABORTED'
+      }
+
+      // Assert
+      // 5. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
+      const payerAbortNotification = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }))
+      )[0]
+      const payeeAbortNotification = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
+      )[0]
+      test.ok(payerAbortNotification, 'Payer Abort notification sent')
+      test.ok(payeeAbortNotification, 'Payee Abort notification sent')
+
+      test.deepEqual(
+        getMessagePayloadOrThrow(payeeAbortNotification),
+        expectedAbortNotificationPayload,
+        'Abort notification should be sent with the correct values'
+      )
+
+      // Cleanup
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferFulfilReserve.test('send a RESERVED_ABORTED notification when the transfer is not in a RESERVED state', async (test) => {
+      // Arrange
+      const td = await prepareTestData(testData)
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
+      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      // 2. Modify the transfer in the DB
+      await TransferService.saveTransferStateChange({
+        transferId: transfer.transferId,
+        transferStateId: 'INVALID'
+      })
+
+      // 3. send a RESERVED request from Payee
+      td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
+      const completedTimestamp = Time.getUTCString(new Date())
+      td.messageProtocolFulfil.content.payload = {
+        ...td.messageProtocolFulfil.content.payload,
+        completedTimestamp,
+        transferState: 'RESERVED'
+      }
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      // 4. Get the updated transfer since the completedTimestamp may have changed
+      const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+      const expectedAbortNotificationPayload = {
+        completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
+        transferState: 'ABORTED'
+      }
+
+      // Assert
+      // 5. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
+      try {
+        const payerAbortNotification = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }))
+        )[0]
+        test.ok(payerAbortNotification, 'Payer Abort notification sent')
+      } catch (err) {
+        test.notOk('No payerAbortNotification was sent')
+      }
+      try {
+        const payeeAbortNotification = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
+        )[0]
+        test.ok(payeeAbortNotification, 'Payee Abort notification sent')
+        test.deepEqual(
+          getMessagePayloadOrThrow(payeeAbortNotification),
+          expectedAbortNotificationPayload,
+          'Abort notification should be sent with the correct values'
+        )
+      } catch (err) {
+        test.notOk('No payeeAbortNotification was sent')
+      }
+
+      // Cleanup
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferFulfilReserve.test('send a RESERVED_ABORTED notification when the validation fails', async (test) => {
+      // Arrange
+      const td = await prepareTestData(testData)
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
+      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      // 2. send a RESERVED request with an invalid validation(from Payee)
+      td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
+      const completedTimestamp = Time.getUTCString(new Date())
+      td.messageProtocolFulfil.content.payload = {
+        fulfilment: 'INVALIDZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
+        completedTimestamp,
+        transferState: 'RESERVED'
+      }
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      await wrapWithRetries(async () => {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+        return transfer.transferState === 'ABORTED_ERROR'
+      })
+      const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+      test.equal(updatedTransfer.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
+      const expectedAbortNotificationPayload = {
+        completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
+        transferState: 'ABORTED'
+      }
+
+      // Assert
+      // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
+      const payerAbortNotificationEvent = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' }))
+      )[0]
+      const payeeAbortNotificationEvent = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
+      )[0]
+      test.ok(payerAbortNotificationEvent, 'Payer Abort notification sent')
+      test.ok(payeeAbortNotificationEvent, 'Payee Abort notification sent')
+
+      // grab kafka message
+      const payerAbortNotificationPayload = getMessagePayloadOrThrow(payeeAbortNotificationEvent)
+
+      test.equal(
+        payerAbortNotificationPayload.transferState,
+        expectedAbortNotificationPayload.transferState,
+        'Abort notification should be sent with the correct transferState'
+      )
+
+      test.equal(
+        payerAbortNotificationPayload.completedTimestamp,
+        expectedAbortNotificationPayload.completedTimestamp,
+        'Abort notification should be sent with the correct completedTimestamp'
+      )
+
+      // Cleanup
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    transferFulfilReserve.end()
   })
 
   await handlersTest.test('transferFulfilCommit should', async transferFulfilCommit => {
@@ -382,6 +698,7 @@ Test('Handlers test', async handlersTest => {
       }
       test.end()
     })
+
     transferFulfilCommit.end()
   })
 
@@ -501,47 +818,6 @@ Test('Handlers test', async handlersTest => {
       }
       test.end()
     })
-
-    // await transferFulfilReject.test('update transfer state to ABORTED_REJECTED by ABORT request', async (test) => {
-    //   const config = Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.PRODUCER,
-    //     TransferEventType.TRANSFER.toUpperCase(),
-    //     TransferEventType.FULFIL.toUpperCase())
-    //   config.logger = Logger
-
-    //   const producerResponse = await Producer.produceMessage(td.messageProtocolReject, td.topicConfTransferFulfil, config)
-
-    //   const tests = async () => {
-    //     const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-    //     const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
-    //     const payerExpectedPosition = testData.amount.amount - td.transferPayload.amount.amount
-    //     const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-    //     test.equal(producerResponse, true, 'Producer for fulfil published message')
-    //     test.equal(transfer.transferState, TransferInternalState.ABORTED_REJECTED, `Transfer state changed to ${TransferInternalState.ABORTED_REJECTED}`)
-    //     test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Reject ilpFulfilment saved')
-    //     test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
-    //     test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
-    //     test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
-    //   }
-
-    //   try {
-    //     await retry(async () => { // use bail(new Error('to break before max retries'))
-    //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-    //       if (transfer.transferState !== TransferInternalState.ABORTED_REJECTED) {
-    //         if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-    //         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-    //       }
-    //       return tests()
-    //     }, retryOpts)
-    //   } catch (err) {
-    //     Logger.error(err)
-    //     test.fail(err.message)
-    //   }
-    //   test.end()
-    // })
-
-    // transferFulfilReject.end()
   })
 
   await handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
@@ -716,11 +992,17 @@ Test('Handlers test', async handlersTest => {
     await timeoutTest.test('position resets after a timeout', async (test) => {
       // Arrange
       const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+
       // Act
-      await sleepPromise(15) // give the timeout handler some time to expire the request
+      const payerPositionDidReset = async () => {
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
+        return payerCurrentPosition.value === payerInitialPosition
+      }
+      // wait until we know the position reset, or throw after 5 tries
+      await wrapWithRetries(payerPositionDidReset, 10, 4)
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
-      // Assert // TODO: ggrg (20191108) not always valid!? (docker restart fixed it)
+      // Assert
       test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
       test.end()
     })
@@ -734,6 +1016,7 @@ Test('Handlers test', async handlersTest => {
       await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
+      await testConsumer.destroy()
 
       const topics = [
         'topic-transfer-prepare',
@@ -762,6 +1045,7 @@ Test('Handlers test', async handlersTest => {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
         console.log(`handlers.test.js finished in (${elapsedTime}s)`)
       }
+
       assert.end()
     } catch (err) {
       Logger.error(`teardown failed with error - ${err}`)

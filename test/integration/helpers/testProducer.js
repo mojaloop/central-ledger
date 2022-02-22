@@ -98,7 +98,6 @@ exports.transferPrepare = async () => {
   const transferObj = requestBodys().messageProtocol()
   await Producer.produceMessage(transferObj, topicConfTransferPrepare, config)
   return transferObj.id
-  // return true
 }
 
 const topicConfTransferFulfil = {

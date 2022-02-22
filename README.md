@@ -77,7 +77,7 @@ Tests include code coverage via istanbul. See the test/ folder for testing scrip
 If you want to run integration tests in a repetitive manner, you can startup the test containers using `docker-compose`, login to running `central-ledger` container like so:
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.integration.yml up kafka mysql central-ledger
+docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger
 
 #in a new shell
 docker exec -it cl_central-ledger sh

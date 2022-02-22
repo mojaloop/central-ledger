@@ -268,18 +268,20 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
     case TransferEventAction.BULK_COMMIT:
     case TransferEventAction.RESERVE:
       state = TransferInternalState.RECEIVED_FULFIL
-      extensionList = payload.extensionList
+      extensionList = payload && payload.extensionList
       isFulfilment = true
       break
     case TransferEventAction.REJECT:
       state = TransferInternalState.RECEIVED_REJECT
+      extensionList = payload && payload.extensionList
       extensionList = payload.extensionList
       isFulfilment = true
       break
     case TransferEventAction.BULK_ABORT:
+    case TransferEventAction.ABORT_VALIDATION:
     case TransferEventAction.ABORT:
       state = TransferInternalState.RECEIVED_ERROR
-      extensionList = payload.errorInformation.extensionList
+      extensionList = payload && payload.errorInformation && payload.errorInformation.extensionList
       isError = true
       break
     default:
