@@ -29,7 +29,6 @@
  ******/
 'use strict'
 
-const AwaitifyStream = require('awaitify-stream')
 const Logger = require('@mojaloop/central-services-logger')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
@@ -144,9 +143,7 @@ const bulkFulfil = async (error, messages) => {
           const IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
           const individualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
           // enable async/await operations for the stream
-          const streamReader = AwaitifyStream.createReader(individualTransfersFulfilStream)
-          let doc
-          while ((doc = await streamReader.readAsync()) !== null) {
+          for await (const doc of individualTransfersFulfilStream.find({ messageId }).cursor()) {
             await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, doc.payload, histTimerEnd)
           }
         }
@@ -177,6 +174,7 @@ const bulkFulfil = async (error, messages) => {
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
+    Logger.isErrorEnabled && Logger.error(err)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw err
   }

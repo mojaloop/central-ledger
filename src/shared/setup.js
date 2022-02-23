@@ -66,6 +66,10 @@ const connectDatabase = async () => {
 const connectMongoose = async () => {
   if (!Config.MONGODB_DISABLED) {
     try {
+      if (Config.MONGODB_DEBUG) {
+        Logger.isWarnEnabled && Logger.warn('Enabling debug for Mongoose...')
+        ObjStoreDb.Mongoose.set('debug', Config.MONGODB_DEBUG) // enable debug
+      }
       return ObjStoreDb.connect(Config.MONGODB_URI)
     } catch (err) {
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
