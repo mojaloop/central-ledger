@@ -38,6 +38,7 @@
   },
   "MONGODB": {
     "DISABLED": true,
+    "DEBUG": false,
     "URI": "mongodb://localhost:27017/mlos"
   },
   "ERROR_HANDLING": {

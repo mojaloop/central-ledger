@@ -30,7 +30,6 @@
  ******/
 'use strict'
 
-const AwaitifyStream = require('awaitify-stream')
 const Logger = require('@mojaloop/central-services-logger')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
@@ -133,14 +132,11 @@ const bulkPrepare = async (error, messages) => {
       }
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransfers'))
-        // stream initialization
-        const IndividualTransferModel = BulkTransferModels.getIndividualTransferModel()
-        const indvidualTransfersStream = IndividualTransferModel.find({ messageId }).cursor()
-        // enable async/await operations for the stream
-        const streamReader = AwaitifyStream.createReader(indvidualTransfersStream)
-        let doc
 
-        while ((doc = await streamReader.readAsync()) !== null) {
+        const IndividualTransferModel = BulkTransferModels.getIndividualTransferModel()
+
+        // for loop on a stream cursor
+        for await (const doc of IndividualTransferModel.find({ messageId }).cursor()) {
           const individualTransfer = doc.payload
           individualTransfer.payerFsp = payload.payerFsp
           individualTransfer.payeeFsp = payload.payeeFsp
@@ -184,6 +180,7 @@ const bulkPrepare = async (error, messages) => {
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
+    Logger.isErrorEnabled && Logger.error(err)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw err
   }

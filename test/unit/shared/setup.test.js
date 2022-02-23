@@ -69,7 +69,10 @@ Test('setup', setupTest => {
 
     ObjStoreStub = {
       Db: {
-        connect: sandbox.stub().returns(Promise.resolve())
+        connect: sandbox.stub().returns(Promise.resolve()),
+        Mongoose: {
+          set: sandbox.stub()
+        }
       }
     }
     // ObjStoreStubThrows = {
