@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.15.3](https://github.com/mojaloop/central-ledger/compare/v13.15.2...v13.15.3) (2022-02-25)
+
+
+### Chore
+
+* added-more-error-loggers-on-bulk-prepare ([#881](https://github.com/mojaloop/central-ledger/issues/881)) ([e212160](https://github.com/mojaloop/central-ledger/commit/e212160874abf71314702f27bef208c0f071b64a))
+
 ### [13.15.2](https://github.com/mojaloop/central-ledger/compare/v13.15.1...v13.15.2) (2022-02-25)
 
 
