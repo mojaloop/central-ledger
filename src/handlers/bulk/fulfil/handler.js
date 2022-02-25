@@ -74,6 +74,7 @@ const bulkFulfil = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
   if (error) {
+    Logger.isErrorEnabled && Logger.error(error)
     throw error
   }
   let message = {}
@@ -103,6 +104,7 @@ const bulkFulfil = async (error, messages) => {
     if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
+      Logger.isErrorEnabled && Logger.error(err)
       return true
     }
     if (hasDuplicateId && !hasDuplicateHash) {
@@ -128,6 +130,7 @@ const bulkFulfil = async (error, messages) => {
       } catch (err) { // TODO: handle insert errors
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
         Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isErrorEnabled && Logger.error(err)
         return true
       }
       try {
@@ -141,15 +144,16 @@ const bulkFulfil = async (error, messages) => {
           }
         } else {
           const IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
-          const individualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
+
           // enable async/await operations for the stream
-          for await (const doc of individualTransfersFulfilStream.find({ messageId }).cursor()) {
+          for await (const doc of IndividualTransferFulfilModel.find({ messageId }).cursor()) {
             await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, doc.payload, histTimerEnd)
           }
         }
       } catch (err) { // TODO: handle individual transfers streaming error
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
         Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isErrorEnabled && Logger.error(err)
         return true
       }
     } else { // TODO: handle validation failure
@@ -166,6 +170,7 @@ const bulkFulfil = async (error, messages) => {
       } catch (err) { // TODO: handle insert error
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
         Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isErrorEnabled && Logger.error(err)
         return true
       }
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
