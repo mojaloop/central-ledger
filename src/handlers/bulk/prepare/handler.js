@@ -128,6 +128,7 @@ const bulkPrepare = async (error, messages) => {
       } catch (err) { // TODO: handle insert error
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
         Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isErrorEnabled && Logger.error(err)
         return true
       }
       try {
@@ -162,6 +163,7 @@ const bulkPrepare = async (error, messages) => {
       } catch (err) { // TODO: handle individual transfers streaming error
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
         Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isErrorEnabled && Logger.error(err)
         return true
       }
     } else { // TODO: handle validation failure
@@ -172,6 +174,7 @@ const bulkPrepare = async (error, messages) => {
       } catch (err) { // TODO: handle insert error
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
         Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isErrorEnabled && Logger.error(err)
         return true
       }
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
