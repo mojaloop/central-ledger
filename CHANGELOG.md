@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.15.2](https://github.com/mojaloop/central-ledger/compare/v13.15.1...v13.15.2) (2022-02-25)
+
+
+### Bug Fixes
+
+* bug fix for the last chore update on bulk handlers ([#880](https://github.com/mojaloop/central-ledger/issues/880)) ([6b3a269](https://github.com/mojaloop/central-ledger/commit/6b3a2695b657c6dff8c79a1fb4447320411eb746))
+
 ### [13.15.1](https://github.com/mojaloop/central-ledger/compare/v13.15.0...v13.15.1) (2022-02-23)
 
 
