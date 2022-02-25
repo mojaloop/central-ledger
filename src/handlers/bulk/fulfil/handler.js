@@ -104,7 +104,6 @@ const bulkFulfil = async (error, messages) => {
     if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
-      Logger.isErrorEnabled && Logger.error(err)
       return true
     }
     if (hasDuplicateId && !hasDuplicateHash) {
