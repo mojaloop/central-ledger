@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [13.16.0](https://github.com/mojaloop/central-ledger/compare/v13.15.4...v13.16.0) (2022-03-03)
+
+
+### Features
+
+* **mojaloop/#2704:** core-services support for non-breaking backward api compatibility ([#884](https://github.com/mojaloop/central-ledger/issues/884)) ([02cf7c2](https://github.com/mojaloop/central-ledger/commit/02cf7c25b4071bb44f62271d7e9bdbc8674a1ee7)), closes [mojaloop/#2704](https://github.com/mojaloop/central-ledger/issues/2704) [mojaloop/#2704](https://github.com/mojaloop/central-ledger/issues/2704)
+
 ### [13.15.4](https://github.com/mojaloop/central-ledger/compare/v13.15.3...v13.15.4) (2022-02-25)
 
 
