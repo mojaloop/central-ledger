@@ -46,8 +46,13 @@ exports.up = (knex) => {
 }
 
 exports.down = (knex) => {
-  // lets reverse what we did
-  return knex.schema.alterTable('quote', (t) => {
-    t.foreign('transactionRequestId').references('transactionReferenceId').inTable('transactionReference')
+  return knex.schema.hasTable('quote').then((exists) => {
+    if (!exists) {
+      return knex.schema
+      .table('quote', (t) => {
+        // lets reverse what we did
+        t.foreign('transactionRequestId').references('transactionReferenceId').inTable('transactionReference')
+      })
+    }
   })
 }
