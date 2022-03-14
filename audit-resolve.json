@@ -1,150 +1,54 @@
 {
   "decisions": {
-    "1006904|hapi-swagger>swagger-ui-dist": {
-      "decision": "ignore",
-      "madeAt": 1645093979764,
-      "expiresAt": 1647685971147
-    },
-    "1004946|@mojaloop/event-sdk>@grpc/proto-loader>yargs>string-width>strip-ansi>ansi-regex": {
-      "decision": "ignore",
-      "madeAt": 1645093981212,
-      "expiresAt": 1647685971147
-    },
-    "1004946|@mojaloop/event-sdk>@grpc/proto-loader>yargs>cliui>string-width>strip-ansi>ansi-regex": {
-      "decision": "ignore",
-      "madeAt": 1645093981212,
-      "expiresAt": 1647685971147
-    },
-    "1004946|@mojaloop/event-sdk>@grpc/proto-loader>yargs>cliui>wrap-ansi>string-width>strip-ansi>ansi-regex": {
-      "decision": "ignore",
-      "madeAt": 1645093981212,
-      "expiresAt": 1647685971147
-    },
-    "1004854|@mojaloop/central-services-shared>widdershins>openapi-sampler>json-pointer": {
-      "decision": "ignore",
-      "madeAt": 1645093982981,
-      "expiresAt": 1647685971147
-    },
-    "1004869|@mojaloop/central-services-shared>widdershins>swagger2openapi>better-ajv-errors>jsonpointer": {
-      "decision": "ignore",
-      "madeAt": 1645093984643,
-      "expiresAt": 1647685971147
-    },
-    "1004869|@mojaloop/central-services-shared>widdershins>swagger2openapi>oas-validator>better-ajv-errors>jsonpointer": {
-      "decision": "ignore",
-      "madeAt": 1645093984643,
-      "expiresAt": 1647685971147
-    },
-    "1004876|hapi-swagger>swagger-parser>z-schema>validator": {
-      "decision": "ignore",
-      "madeAt": 1645093985740,
-      "expiresAt": 1647685971147
-    },
-    "1004946|@mojaloop/central-services-shared>widdershins>yargs>string-width>strip-ansi>ansi-regex": {
-      "decision": "ignore",
-      "madeAt": 1645093986801,
-      "expiresAt": 1647685971147
-    },
-    "1004946|@mojaloop/central-services-shared>widdershins>yargs>cliui>string-width>strip-ansi>ansi-regex": {
-      "decision": "ignore",
-      "madeAt": 1645093986801,
-      "expiresAt": 1647685971147
-    },
-    "1005383|@mojaloop/central-services-shared>shins>sanitize-html": {
-      "decision": "ignore",
-      "madeAt": 1645093987944,
-      "expiresAt": 1647685971147
-    },
-    "1005384|@mojaloop/central-services-shared>shins>sanitize-html": {
-      "decision": "ignore",
-      "madeAt": 1645093987944,
-      "expiresAt": 1647685971147
-    },
-    "1005534|@mojaloop/central-services-shared>widdershins>yargs>yargs-parser": {
-      "decision": "ignore",
-      "madeAt": 1645093989033,
-      "expiresAt": 1647685971147
-    },
-    "1006846|@mojaloop/central-services-shared>shins>sanitize-html>postcss": {
-      "decision": "ignore",
-      "madeAt": 1645093990094,
-      "expiresAt": 1647685971147
-    },
-    "1006886|@mojaloop/central-services-shared>shins>markdown-it": {
-      "decision": "ignore",
-      "madeAt": 1645093991106,
-      "expiresAt": 1647685971147
-    },
-    "1007017|@mojaloop/central-services-shared>widdershins>swagger2openapi>oas-validator>ajv": {
-      "decision": "ignore",
-      "madeAt": 1645093992120,
-      "expiresAt": 1647685971147
-    },
-    "1064584|@mojaloop/central-services-shared>widdershins>urijs": {
-      "decision": "fix",
-      "madeAt": 1647255182985
-    },
-    "1064843|@mojaloop/event-sdk>@grpc/proto-loader>yargs>string-width>strip-ansi>ansi-regex": {
-      "decision": "fix",
-      "madeAt": 1647255229071
-    },
-    "1064843|@mojaloop/event-sdk>@grpc/proto-loader>yargs>cliui>string-width>strip-ansi>ansi-regex": {
-      "decision": "fix",
-      "madeAt": 1647255229072
-    },
-    "1064843|@mojaloop/event-sdk>@grpc/proto-loader>yargs>cliui>wrap-ansi>string-width>strip-ansi>ansi-regex": {
-      "decision": "fix",
-      "madeAt": 1647255229072
-    },
     "1064661|@mojaloop/central-services-shared>shins>markdown-it": {
       "decision": "ignore",
-      "madeAt": 1647255377177,
-      "expiresAt": 1649847151259
+      "madeAt": 1647265377168,
+      "expiresAt": 1649857369058
     },
     "1064761|@mojaloop/central-services-shared>widdershins>swagger2openapi>better-ajv-errors>jsonpointer": {
       "decision": "ignore",
-      "madeAt": 1647255378283,
-      "expiresAt": 1649847151259
+      "madeAt": 1647265378456,
+      "expiresAt": 1649857369058
     },
     "1064761|@mojaloop/central-services-shared>widdershins>swagger2openapi>oas-validator>better-ajv-errors>jsonpointer": {
       "decision": "ignore",
-      "madeAt": 1647255378283,
-      "expiresAt": 1649847151259
+      "madeAt": 1647265378456,
+      "expiresAt": 1649857369058
     },
     "1064768|hapi-swagger>swagger-parser>z-schema>validator": {
       "decision": "ignore",
-      "madeAt": 1647255379355,
-      "expiresAt": 1649847151259
+      "madeAt": 1647265379481,
+      "expiresAt": 1649857369058
     },
     "1064843|@mojaloop/central-services-shared>widdershins>yargs>string-width>strip-ansi>ansi-regex": {
       "decision": "ignore",
-      "madeAt": 1647255380458,
-      "expiresAt": 1649847151259
+      "madeAt": 1647265380510,
+      "expiresAt": 1649857369058
     },
     "1064843|@mojaloop/central-services-shared>widdershins>yargs>cliui>string-width>strip-ansi>ansi-regex": {
       "decision": "ignore",
-      "madeAt": 1647255380458,
-      "expiresAt": 1649847151259
+      "madeAt": 1647265380510,
+      "expiresAt": 1649857369058
     },
     "1065159|@mojaloop/central-services-shared>widdershins>swagger2openapi>oas-validator>ajv": {
       "decision": "ignore",
-      "madeAt": 1647255381954,
-      "expiresAt": 1649847151259
+      "madeAt": 1647265381612,
+      "expiresAt": 1649857369058
     },
     "1065367|@mojaloop/central-services-shared>shins>sanitize-html": {
       "decision": "ignore",
-      "madeAt": 1647255383047,
-      "expiresAt": 1649847151259
+      "madeAt": 1647265382779,
+      "expiresAt": 1649857369058
     },
     "1065368|@mojaloop/central-services-shared>shins>sanitize-html": {
       "decision": "ignore",
-      "madeAt": 1647255383047,
-      "expiresAt": 1649847151259
+      "madeAt": 1647265382779,
+      "expiresAt": 1649857369058
     },
     "1065523|@mojaloop/central-services-shared>widdershins>yargs>yargs-parser": {
       "decision": "ignore",
-      "madeAt": 1647255384146,
-      "expiresAt": 1649847151259
+      "madeAt": 1647265383836,
+      "expiresAt": 1649857369058
     }
   },
   "rules": {},
