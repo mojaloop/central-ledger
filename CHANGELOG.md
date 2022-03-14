@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.16.1](https://github.com/mojaloop/central-ledger/compare/v13.16.0...v13.16.1) (2022-03-14)
+
+
+### Bug Fixes
+
+* **mojaloop/#2719:** post quotes fails when transactionId does not equal transactionRequestId ([#887](https://github.com/mojaloop/central-ledger/issues/887)) ([b9944d1](https://github.com/mojaloop/central-ledger/commit/b9944d15c9486ffd62b968797fb79847a512a6c8)), closes [mojaloop/#2719](https://github.com/mojaloop/central-ledger/issues/2719) [mojaloop/#2719](https://github.com/mojaloop/central-ledger/issues/2719)
+
 ## [13.16.0](https://github.com/mojaloop/central-ledger/compare/v13.15.4...v13.16.0) (2022-03-03)
 
 
