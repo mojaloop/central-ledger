@@ -33,5 +33,8 @@ exports.up = async (knex, Promise) => {
 }
 
 exports.down = function (knex) {
-  return knex.schema.dropTableIfExists('transferError')
+  return knex.schema.table('transferError', (t) => {
+    // Undo dropping of foreign key
+    t.foreign('transferId').references('transferId').inTable('transferErrorDuplicateCheck')
+  })
 }

@@ -35,7 +35,7 @@ Contributors
 
 exports.up = (knex) => {
   return knex.schema.hasTable('quote').then((exists) => {
-    if (!exists) {
+    if (exists) {
       return knex.schema
       .table('quote', (t) => {
         // remove unnecessary foreign key constraint that has a conflict with transactionReferenceId foreign key constraint
@@ -47,7 +47,7 @@ exports.up = (knex) => {
 
 exports.down = (knex) => {
   return knex.schema.hasTable('quote').then((exists) => {
-    if (!exists) {
+    if (exists) {
       return knex.schema
       .table('quote', (t) => {
         // lets reverse what we did
