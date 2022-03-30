@@ -22,48 +22,47 @@ echo "---------------------------------------------------------------------"
 echo "---------------------------------------------------------------------"
 echo "Creating Hub Reconciliation account for the Scheme so that participant accounts in that currency can be created."
 echo "---------------------------------------------------------------------"
-curl -X POST \
-  ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/Hub/accounts \
-  -H 'Cache-Control: no-cache' \
-  -H 'Content-Type: application/json' \
-  -H 'cache-control: no-cache' \
-  -d '{
-    "currency": "USD",
-    "type": "HUB_RECONCILIATION"
-}'
+curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/Hub/accounts" \
+  --header 'Cache-Control: no-cache' \
+  --header 'Content-Type: application/json' \
+  --header 'FSPIOP-Source: populateTestData.sh' \
+  --data-raw '{
+      "currency": "USD",
+      "type": "HUB_RECONCILIATION"
+    }'
 
+echo
 echo "---------------------------------------------------------------------"
 echo "Creating Hub Multilateral Net Settlement account for the Scheme so that participant accounts in that currency can be created."
 echo "---------------------------------------------------------------------"
-curl -X POST \
-  ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/Hub/accounts \
-  -H 'Cache-Control: no-cache' \
-  -H 'Content-Type: application/json' \
-  -H 'cache-control: no-cache' \
-  -d '{
-    "currency": "USD",
-    "type": "HUB_MULTILATERAL_SETTLEMENT"
-}'
+curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/Hub/accounts" \
+  --header 'Cache-Control: no-cache' \
+  --header 'Content-Type: application/json' \
+  --header 'FSPIOP-Source: populateTestData.sh' \
+  --data-raw '{
+      "currency": "USD",
+      "type": "HUB_MULTILATERAL_SETTLEMENT"
+    }'
 
+echo
 echo "---------------------------------------------------------------------"
-echo "Creating Default Settlement Model"
+echo "Creating default Settlement Model."
 echo "---------------------------------------------------------------------"
-curl -X POST \
-  ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}settlementModels \
-  -H 'Cache-Control: no-cache' \
-  -H 'Content-Type: application/json' \
-  -H 'cache-control: no-cache' \
-  -d '{
-        "name": "DEFERREDNETUSD",
-        "settlementGranularity": "NET",
-        "settlementInterchange": "MULTILATERAL",
-        "settlementDelay": "DEFERRED",
-        "requireLiquidityCheck": true,
-        "ledgerAccountType": "POSITION",
-        "autoPositionReset": true,
-        "currency": "USD",
-        "settlementAccountType": "SETTLEMENT"
-      }'
+curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}settlementModels" \
+  --header 'Cache-Control: no-cache' \
+  --header 'Content-Type: application/json' \
+  --header 'FSPIOP-Source: populateTestData.sh' \
+  --data-raw '{
+      "name": "DEFERREDNET",
+      "settlementGranularity": "NET",
+      "settlementInterchange": "MULTILATERAL",
+      "settlementDelay": "DEFERRED",
+      "requireLiquidityCheck": true,
+      "ledgerAccountType": "POSITION",
+      "autoPositionReset": true,
+      "currency": "USD",
+      "settlementAccountType": "SETTLEMENT"
+    }'
 
 echo
 echo "---------------------------------------------------------------------"
@@ -81,201 +80,153 @@ do
   echo
   echo "Creating participants '$FSP'"
   echo "---------------------------------------------------------------------"
-  sh -c "curl -i -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"name\": \"$FSP\",
-    \"currency\":\"USD\"
-  }'"
+curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants" \
+  --header 'Cache-Control: no-cache' \
+  --header 'Content-Type: application/json' \
+  --header 'FSPIOP-Source: populateTestData.sh' \
+  --data-raw "{
+      \"name\": \"$FSP\",
+      \"currency\":\"USD\"
+    }"
 
   echo
   echo "Setting limits and initial position for '$FSP'"
   echo "---------------------------------------------------------------------"
-  sh -c "curl -i -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/initialPositionAndLimits \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/initialPositionAndLimits" \
+  --header 'Cache-Control: no-cache' \
+  --header 'Content-Type: application/json' \
+  --header 'FSPIOP-Source: populateTestData.sh' \
+  --data-raw "{
     \"currency\": \"USD\",
     \"limit\": {
       \"type\": \"NET_DEBIT_CAP\",
       \"value\": ${DEFAULT_NET_DEBIT_CAP}
     },
     \"initialPosition\": 0
-  }'"
+  }"
 
   echo
   echo "Retrieving limits for '$FSP'"
   echo "---------------------------------------------------------------------"
-  curl -X GET \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/limits \
-    -H 'Cache-Control: no-cache'
+  curl -X GET "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/limits" -H 'Cache-Control: no-cache'
 
   echo
   echo "Set callback URIs for each FSP '$FSP'"
   echo "---------------------------------------------------------------------"
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_POST\",
-    \"value\": \"http://localhost:1080/${FSP}/transfers\"
-  }'"
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_POST\",
+        \"value\": \"http://localhost:1080/${FSP}/transfers\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_PUT\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}\"
-  }'"
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_PUT\",
+        \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_GET\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
-  }'"
+ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_GET\",
+        \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_PUT_ERROR\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}/error\"
-  }'"
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_PUT\",
+        \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{requestId}}\"
-  }'"
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_ERROR\",
+        \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}/error\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT_ERROR\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}\/participants/{{requestId}}/error\"
-   }'"
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST\",
+        \"value\": \"http://localhost:1080/${FSP}/bulkTransfers\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_PUT\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
-  }'"
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT\",
+        \"value\": \"http://localhost:1080/${FSP}/bulkTransfers/{{id}}\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_PUT_ERROR\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
-  }'"
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR\",
+        \"value\": \"http://localhost:1080/${FSP}/bulkTransfers/{{id}}/error\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_PUT\",
-    \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}\"
-  }'"
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_QUOTES\",
+        \"value\": \"http://localhost:1080/${FSP}\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_ERROR\",
-    \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}/error\"
-  }'"
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_AUTHORIZATIONS\",
+        \"value\": \"http://localhost:1080/${FSP}\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST\",
-    \"value\": \"http://localhost:1080/${FSP}/bulkTransfers\"
-  }'"
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE\",
+        \"value\": \"http://localhost:1080/${FSP}\"
+      }"
 
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT\",
-    \"value\": \"http://localhost:1080/${FSP}/bulkTransfers/{{id}}\"
-  }'"
-
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR\",
-    \"value\": \"http://localhost:1080/${FSP}/bulkTransfers/{{id}}/error\"
-  }'"
-
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_QUOTES\",
-    \"value\": \"http://localhost:1080/${FSP}\"
-  }'"
-
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_AUTHORIZATIONS\",
-    \"value\": \"http://localhost:1080/${FSP}\"
-  }'"
-
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE\",
-    \"value\": \"http://localhost:1080/${FSP}\"
-  }'"
-
-  sh -c "curl -X POST \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache' \
-    -H 'Content-Type: application/json' \
-    -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_BULK_QUOTES\",
-    \"value\": \"http://localhost:1080\"
-  }'"
-
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_BULK_QUOTES\",
+        \"value\": \"http://localhost:1080\"
+      }"
 
   echo
   echo "Retrieving EndPoints for '$FSP'"
   echo "---------------------------------------------------------------------"
-  curl -X GET \
-    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
-    -H 'Cache-Control: no-cache'
+  curl -i -X GET "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'FSPIOP-Source: populateTestData.sh'
 
 done
 
