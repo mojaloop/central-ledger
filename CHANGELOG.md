@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.16.2](https://github.com/mojaloop/central-ledger/compare/v13.16.1...v13.16.2) (2022-03-30)
+
+
+### Chore
+
+* updated populateTestData.sh script ([#892](https://github.com/mojaloop/central-ledger/issues/892)) ([df2495b](https://github.com/mojaloop/central-ledger/commit/df2495b6c14da7dbf16bc44d88655a8d54b7024e))
+
 ### [13.16.1](https://github.com/mojaloop/central-ledger/compare/v13.16.0...v13.16.1) (2022-03-14)
 
 
