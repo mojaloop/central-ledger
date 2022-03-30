@@ -49,6 +49,26 @@
       "decision": "ignore",
       "madeAt": 1647265383836,
       "expiresAt": 1649857369058
+    },
+    "1067285|rc>minimist": {
+      "decision": "fix",
+      "madeAt": 1648633921431
+    },
+    "1067285|@mojaloop/central-services-logger>rc>minimist": {
+      "decision": "fix",
+      "madeAt": 1648633921431
+    },
+    "1067285|@mojaloop/object-store-lib>@mojaloop/central-services-logger>rc>minimist": {
+      "decision": "fix",
+      "madeAt": 1648633921431
+    },
+    "1067300|@mojaloop/central-services-shared>widdershins>yargs>string-width>strip-ansi>ansi-regex": {
+      "decision": "fix",
+      "madeAt": 1648634192733
+    },
+    "1067300|@mojaloop/central-services-shared>widdershins>yargs>cliui>string-width>strip-ansi>ansi-regex": {
+      "decision": "fix",
+      "madeAt": 1648634192733
     }
   },
   "rules": {},
