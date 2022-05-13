@@ -86,7 +86,6 @@ exports.prepareData = async () => {
     })
 
     await TransferParticipantModel.saveTransferParticipant({
-      transferParticipantId: transferDuplicateCheckResult.participantPayerResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
       participantCurrencyId: transferDuplicateCheckResult.participantPayerResult.participantCurrencyId,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
@@ -95,7 +94,6 @@ exports.prepareData = async () => {
     })
 
     await TransferParticipantModel.saveTransferParticipant({
-      transferParticipantId: transferDuplicateCheckResult.participantPayeeResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
       participantCurrencyId: transferDuplicateCheckResult.participantPayeeResult.participantCurrencyId,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
