@@ -2609,5 +2609,31 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
+  await transferFacadeTest.test('recordFundsIn should call transfer prepare, reserve and commit functions', async (test) => {
+    const payload = {}
+    const transactionTimestamp = Time.getUTCString(now)
+    const enums = {}
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      sandbox.stub(TransferFacade, 'reconciliationTransferPrepare')
+      sandbox.stub(TransferFacade, 'reconciliationTransferReserve')
+      sandbox.stub(TransferFacade, 'reconciliationTransferCommit')
+
+      await TransferFacade.recordFundsIn(payload, transactionTimestamp, enums)
+      test.ok(TransferFacade.reconciliationTransferPrepare.callsArgWith(0, trxStub))
+      test.ok(TransferFacade.reconciliationTransferReserve.callsArgWith(0, trxStub))
+      test.ok(TransferFacade.reconciliationTransferCommit.callsArgWith(0, trxStub))
+      test.end()
+    } catch (e) {
+      test.fail(`${e} error thrown`)
+      test.end()
+    }
+  })
+
   await transferFacadeTest.end()
 })
