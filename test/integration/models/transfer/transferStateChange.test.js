@@ -40,7 +40,6 @@ const ParticipantCached = require('../../../../src/models/participant/participan
 const ParticipantCurrencyCached = require('../../../../src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../../../src/models/participant/participantLimitCached')
 
-
 Test('Transfer State Change model test', async (stateChangeTest) => {
   let stateChangePrepareResult = {}
   await stateChangeTest.test('setup', async (assert) => {

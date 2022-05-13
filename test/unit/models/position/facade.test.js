@@ -256,6 +256,16 @@ Test('Position facade', async (positionFacadeTest) => {
         thresholdAlarmPercentage: 0.5
       }
 
+      const insufficientParticipantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: 100,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 0.5
+      }
+
       const initialParticipantPositions = [{
         participantPositionId: 1,
         participantCurrencyId: 1,
@@ -265,7 +275,7 @@ Test('Position facade', async (positionFacadeTest) => {
       {
         participantPositionId: 2,
         participantCurrencyId: 2,
-        value: 1000,
+        value: -10000,
         reservedValue: 0
       }]
 
@@ -278,7 +288,7 @@ Test('Position facade', async (positionFacadeTest) => {
       {
         participantPositionId: 2,
         participantCurrencyId: 2,
-        value: 1000,
+        value: -1000,
         reservedValue: 0
       }]
 
@@ -522,8 +532,8 @@ Test('Position facade', async (positionFacadeTest) => {
           }]
 
           sandbox.stub(SettlementModelCached, 'getAll').resolves(allSettlementModels)
-
-          const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
+          const messageProtocolCopy = JSON.parse(JSON.stringify(messageProtocol))
+          const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocolCopy }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
           test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
@@ -560,7 +570,7 @@ Test('Position facade', async (positionFacadeTest) => {
         }
       })
 
-      await prepareChangeParticipantPositionTransaction.test('abort transfer if net-debit-cap is exceeded ', async test => {
+      await prepareChangeParticipantPositionTransaction.test('abort transfer if settlement balance is not enough ', async test => {
         // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
         try {
           sandbox.stub(Db, 'getKnex')
@@ -586,7 +596,7 @@ Test('Position facade', async (positionFacadeTest) => {
               where: sandbox.stub().returns({
                 update: sandbox.stub().returns(Promise.resolve()),
                 orderBy: sandbox.stub().returns({
-                  first: sandbox.stub().resolves(transferStateChange)
+                  first: sandbox.stub().resolves(JSON.parse(JSON.stringify(transferStateChange)))
                 })
               }),
               whereIn: sandbox.stub().returns({
@@ -632,10 +642,100 @@ Test('Position facade', async (positionFacadeTest) => {
           }]
 
           sandbox.stub(SettlementModelCached, 'getAll').resolves(allSettlementModels)
-
-          const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
+          const messageProtocolCopy = JSON.parse(JSON.stringify(messageProtocol))
+          const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocolCopy }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
+          test.ok(preparedMessagesList[0].rawMessage.value.content.payload.errorInformation.errorCode === '4001')
+          test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
+          test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange twice')
+          test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transferStateChange twice')
+          test.pass('completed successfully')
+          test.end()
+        } catch (err) {
+          Logger.error(`prepareChangeParticipantPositionTransaction failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await prepareChangeParticipantPositionTransaction.test('abort transfer if net-debit-cap is exceeded ', async test => {
+        // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
+        try {
+          sandbox.stub(Db, 'getKnex')
+          const knexStub = sandbox.stub()
+          const trxStub = sandbox.stub()
+
+          trxStub.commit = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+
+          knexStub.batchInsert = sandbox.stub()
+          knexStub.batchInsert.returns({
+            transacting: sandbox.stub().resolves([1])
+          })
+
+          Db.getKnex.returns(knexStub)
+          knexStub.returns({
+            transacting: sandbox.stub().returns({
+              forUpdate: sandbox.stub().returns({
+                whereIn: sandbox.stub().returns({
+                  select: sandbox.stub().returns(Promise.resolve())
+                })
+              }),
+              where: sandbox.stub().returns({
+                update: sandbox.stub().returns(Promise.resolve()),
+                orderBy: sandbox.stub().returns({
+                  first: sandbox.stub().resolves(JSON.parse(JSON.stringify(transferStateChange)))
+                })
+              }),
+              whereIn: sandbox.stub().returns({
+                forUpdate: sandbox.stub().returns({
+                  select: sandbox.stub().returns(initialParticipantPositions)
+                })
+              })
+            })
+          })
+
+          sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(insufficientParticipantLimit))
+          const getByNameAndCurrencyStub = sandbox.stub(ModelParticipant, 'getByNameAndCurrency')
+          getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 1).resolves({
+            participantCurrencyId: 1,
+            participantId: 1,
+            currencyId: 'USD',
+            isActive: 1
+          })
+          getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 2).resolves({
+            participantCurrencyId: 2,
+            participantId: 1,
+            currencyId: 'USD',
+            isActive: 1
+          })
+          sandbox.stub(SettlementModelCached, 'getByLedgerAccountTypeId').resolves({
+            settlementDelayId: Enum.Settlements.SettlementDelay.DEFERRED,
+            settlementAccountTypeId: Enum.Accounts.LedgerAccountType.SETTLEMENT
+          })
+
+          const allSettlementModels = [{
+            settlementModelId: 1,
+            name: 'DEFERREDNET',
+            isActive: 1,
+            settlementGranularityId: 2,
+            settlementInterchangeId: 2,
+            settlementDelayId: 2,
+            currencyId: null,
+            requireLiquidityCheck: 1,
+            ledgerAccountTypeId: 1,
+            autoPositionReset: 1,
+            adjustPosition: 0,
+            settlementAccountTypeId: 2
+          }]
+
+          sandbox.stub(SettlementModelCached, 'getAll').resolves(allSettlementModels)
+          const messageProtocolCopy = JSON.parse(JSON.stringify(messageProtocol))
+          const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocolCopy }])
+          test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
+          test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
+          test.ok(preparedMessagesList[0].rawMessage.value.content.payload.errorInformation.errorCode === '4200')
           test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
           test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange twice')
           test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transferStateChange twice')
@@ -703,7 +803,7 @@ Test('Position facade', async (positionFacadeTest) => {
             })
           })
 
-          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
+          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, JSON.parse(JSON.stringify(transferStateChange)))
           test.pass('completed successfully')
           test.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition twice')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
@@ -744,7 +844,7 @@ Test('Position facade', async (positionFacadeTest) => {
             })
           })
 
-          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
+          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, JSON.parse(JSON.stringify(transferStateChange)))
           test.pass('completed successfully')
           test.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition twice')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
@@ -768,7 +868,7 @@ Test('Position facade', async (positionFacadeTest) => {
 
           knexStub.throws(new Error())
 
-          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
+          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, JSON.parse(JSON.stringify(transferStateChange)))
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {

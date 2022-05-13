@@ -30,10 +30,6 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 
-const {
-  wrapWithRetries
-} = require('../../util/helpers')
-
 const recordFundsInSampleData = {
   currency: 'USD',
   amount: 1000.0
@@ -53,17 +49,12 @@ exports.recordFundsIn = async (participantName, participantCurrencyId, recordFun
       reason: 'Reason for in flow of funds',
       extensionList: {}
     }
-    const params = {
-      name: participantName,
-      id: participantCurrencyId,
-      transferId: transferId
-    }
 
     const fundsInPayload = {
       ...payload,
       participantCurrencyId: participantCurrencyId,
-      payee:'Hub',
-      payer: participantName,
+      payee: 'Hub',
+      payer: participantName
     }
 
     const enums = {

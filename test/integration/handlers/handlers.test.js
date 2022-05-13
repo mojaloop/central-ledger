@@ -141,7 +141,7 @@ const prepareTestData = async (dataObj) => {
       currency: dataObj.amount.currency,
       limit: { value: dataObj.payee.limit }
     })
-    const payerFundsIn = await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
+    await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
       currency: dataObj.amount.currency,
       amount: 10000
     })
