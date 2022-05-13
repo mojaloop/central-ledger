@@ -1145,6 +1145,23 @@ const getTransferParticipant = async (participantName, transferId) => {
   }
 }
 
+const recordFundsIn = async (payload, transactionTimestamp, enums) => {
+  const knex = Db.getKnex()
+  // Save the valid transfer into the database
+  return knex.transaction(async trx => {
+    try {
+      await TransferFacade.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
+      await TransferFacade.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
+      await TransferFacade.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
+      await trx.commit
+    } catch (err) {
+      Logger.isErrorEnabled && Logger.error(err)
+      await trx.rollback
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  })
+}
+
 const TransferFacade = {
   getById,
   getByIdLight,
@@ -1159,7 +1176,8 @@ const TransferFacade = {
   reconciliationTransferReserve,
   reconciliationTransferCommit,
   reconciliationTransferAbort,
-  getTransferParticipant
+  getTransferParticipant,
+  recordFundsIn
 }
 
 module.exports = TransferFacade

@@ -56,18 +56,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   // Save the valid transfer into the database
   if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_IN) {
     Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
-    return knex.transaction(async trx => {
-      try {
-        await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
-        await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
-        await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
-        await trx.commit
-      } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
-        await trx.rollback
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
-      }
-    })
+    return await TransferService.recordFundsIn(payload, transactionTimestamp, enums)
   } else {
     Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE_RESERVE`)
     return knex.transaction(async trx => {
