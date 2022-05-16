@@ -35,7 +35,7 @@ module.exports = [
     path: '/metrics',
     handler: Handler.metrics,
     config: {
-      tags: tags,
+      tags,
       description: 'Prometheus metrics endpoint',
       id: 'metrics'
     }

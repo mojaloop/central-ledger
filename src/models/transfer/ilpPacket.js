@@ -44,7 +44,7 @@ exports.saveIlpPacket = async (record) => {
 
 exports.getByTransferId = async (transferId) => {
   try {
-    return await Db.from('ilpPacket').findOne({ transferId: transferId })
+    return await Db.from('ilpPacket').findOne({ transferId })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

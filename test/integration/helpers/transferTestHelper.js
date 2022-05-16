@@ -120,13 +120,13 @@ exports.prepareData = async () => {
 exports.deletePreparedData = async (transferId, payerName, payeeName) => {
   try {
     return await StateChangeModel.truncate({
-      transferId: transferId
+      transferId
     }).then(async () => {
       await IlpModel.destroyByTransferId({
-        transferId: transferId
+        transferId
       }).then(async () => {
         await TransferExtensionModel.destroyByTransferId({
-          transferId: transferId
+          transferId
         }).then(async () => {
           // await TransferStatePreparationHelper.deletePreparedData()
           await TransferFacade.destroyByTransferId({ transferId: 'test_tr_id' }).then(async () => {

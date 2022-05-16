@@ -781,7 +781,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           await knex('participantPositionChange')
             .insert({
               participantPositionId: info.drPositionId,
-              transferStateChangeId: transferStateChangeId,
+              transferStateChangeId,
               value: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
               reservedValue: info.drReservedValue,
               createdDate: param1.createdDate
@@ -804,7 +804,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           await knex('participantPositionChange')
             .insert({
               participantPositionId: info.crPositionId,
-              transferStateChangeId: transferStateChangeId,
+              transferStateChangeId,
               value: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
               reservedValue: info.crReservedValue,
               createdDate: param1.createdDate
@@ -885,8 +885,8 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
             transferId: payload.transferId,
             participantCurrencyId: reconciliationAccountId,
             transferParticipantRoleTypeId: enums.transferParticipantRoleType.HUB,
-            ledgerEntryTypeId: ledgerEntryTypeId,
-            amount: amount,
+            ledgerEntryTypeId,
+            amount,
             createdDate: transactionTimestamp
           })
           .transacting(trx)
@@ -895,7 +895,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
             transferId: payload.transferId,
             participantCurrencyId: payload.participantCurrencyId,
             transferParticipantRoleTypeId: enums.transferParticipantRoleType.DFSP_SETTLEMENT,
-            ledgerEntryTypeId: ledgerEntryTypeId,
+            ledgerEntryTypeId,
             amount: -amount,
             createdDate: transactionTimestamp
           })

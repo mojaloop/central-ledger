@@ -39,7 +39,7 @@ exports.recordFundsIn = async (participantName, participantCurrencyId, recordFun
   try {
     const transferId = Uuid()
     const payload = {
-      transferId: transferId,
+      transferId,
       externalReference: 'string',
       action: 'recordFundsIn',
       amount: {
@@ -52,7 +52,7 @@ exports.recordFundsIn = async (participantName, participantCurrencyId, recordFun
 
     const fundsInPayload = {
       ...payload,
-      participantCurrencyId: participantCurrencyId,
+      participantCurrencyId,
       payee: 'Hub',
       payer: participantName
     }

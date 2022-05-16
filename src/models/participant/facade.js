@@ -265,7 +265,7 @@ const addEndpoint = async (participantId, endpoint) => {
 
         const existingEndpoint = await knex('participantEndpoint').transacting(trx).forUpdate().select('*')
           .where({
-            participantId: participantId,
+            participantId,
             endpointTypeId: endpointType.endpointTypeId,
             isActive: 1
           })
@@ -273,7 +273,7 @@ const addEndpoint = async (participantId, endpoint) => {
           await knex('participantEndpoint').transacting(trx).update({ isActive: 0 }).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
         }
         const newEndpoint = {
-          participantId: participantId,
+          participantId,
           endpointTypeId: endpointType.endpointTypeId,
           value: endpoint.value,
           isActive: 1,
@@ -516,7 +516,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         // const limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limit.type, 'isActive': 1 })
         const existingLimit = await knex('participantLimit').transacting(trx).forUpdate().select('*')
           .where({
-            participantCurrencyId: participantCurrencyId,
+            participantCurrencyId,
             participantLimitTypeId: limitType.participantLimitTypeId,
             isActive: 1
           })
@@ -526,7 +526,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Participant Limit does not exist')
         }
         const newLimit = {
-          participantCurrencyId: participantCurrencyId,
+          participantCurrencyId,
           participantLimitTypeId: limitType.participantLimitTypeId,
           value: limit.value,
           thresholdAlarmPercentage: limit.alarmPercentage,

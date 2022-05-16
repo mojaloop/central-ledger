@@ -78,7 +78,7 @@ const insert = async (transferId, transferStateChangeId, errorCode, errorDescrip
 
 const getByTransferStateChangeId = async (transferStateChangeId) => {
   try {
-    return Db.from('transferError').find({ transferStateChangeId: transferStateChangeId })
+    return Db.from('transferError').find({ transferStateChangeId })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

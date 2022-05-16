@@ -48,7 +48,7 @@ const randTransfer = (amount, currency, maxHoursDiff) => {
   }
   return {
     transferId: Uuid(),
-    amount: amount,
+    amount,
     currencyId: currency,
     ilpCondition: 'ilpCondition',
     expirationDate,
