@@ -88,7 +88,7 @@ docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kaf
   ```
 - Running natively
   ```bash
-  export CL_DATABASE_HOST=mysql
+  export CL_DATABASE_HOST=localhost
   npm run migrate #first time only
   npm run test:int
   ```
