@@ -29,6 +29,9 @@ const TransferService = require('../../../src/domain/transfer')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
+const CentralEnums = require('@mojaloop/central-services-shared').Enum
+const Config = require('../../../src/lib/config')
+const Enums = require('../../../src/lib/enumCached')
 
 const recordFundsInSampleData = {
   currency: 'USD',
@@ -41,7 +44,7 @@ exports.recordFundsIn = async (participantName, participantCurrencyId, recordFun
     const payload = {
       transferId,
       externalReference: 'string',
-      action: 'recordFundsIn',
+      action: CentralEnums.Transfers.AdminTransferAction.RECORD_FUNDS_IN,
       amount: {
         amount: recordFundsInObj.amount || recordFundsInSampleData.amount,
         currency: recordFundsInObj.currency || recordFundsInSampleData.currency
@@ -53,48 +56,19 @@ exports.recordFundsIn = async (participantName, participantCurrencyId, recordFun
     const fundsInPayload = {
       ...payload,
       participantCurrencyId,
-      payee: 'Hub',
+      payee: Config.HUB_NAME,
       payer: participantName
     }
 
+    await Enums.initialize()
     const enums = {
-      transferState: {
-        RESERVED: 'RESERVED',
-        COMMITTED: 'COMMITTED',
-        ABORTED_REJECTED: 'ABORTED_REJECTED',
-        RECEIVED_PREPARE: 'RECEIVED_PREPARE',
-        RECEIVED_FULFIL: 'RECEIVED_FULFIL',
-        RECEIVED_REJECT: 'RECEIVED_REJECT'
-      },
-      transferParticipantRoleType: {
-        PAYER_DFSP: 1,
-        PAYEE_DFSP: 2,
-        HUB: 3,
-        DFSP_SETTLEMENT: 4,
-        DFSP_POSITION: 5
-      },
-      ledgerAccountType: {
-        POSITION: 1,
-        SETTLEMENT: 2,
-        HUB_RECONCILIATION: 3,
-        HUB_MULTILATERAL_SETTLEMENT: 4,
-        INTERCHANGE_FEE: 5,
-        INTERCHANGE_FEE_SETTLEMENT: 6
-      },
-      ledgerEntryType: {
-        PRINCIPLE_VALUE: 1,
-        INTERCHANGE_FEE: 2,
-        HUB_FEE: 3,
-        SETTLEMENT_NET_RECIPIENT: 6,
-        SETTLEMENT_NET_SENDER: 7,
-        SETTLEMENT_NET_ZERO: 8,
-        RECORD_FUNDS_IN: 9,
-        RECORD_FUNDS_OUT: 10
-      },
-      hubParticipant: {
-        name: 'Hub'
-      }
+      transferState: await Enums.getEnums('transferState'),
+      transferParticipantRoleType: await Enums.getEnums('transferParticipantRoleType'),
+      ledgerAccountType: await Enums.getEnums('ledgerAccountType'),
+      ledgerEntryType: await Enums.getEnums('ledgerEntryType'),
+      hubParticipant: await Enums.getEnums('hubParticipant')
     }
+
     const transactionTimestamp = Time.getUTCString(new Date())
 
     await Comparators.duplicateCheckComparator(transferId, fundsInPayload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
