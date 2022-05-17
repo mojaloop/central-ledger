@@ -100,7 +100,7 @@ module.exports = [
     handler: Handler.addEndpoint,
     options: {
       id: 'participants_endpoints_add',
-      tags: tags,
+      tags,
       description: 'Add/Update participant endpoints',
       payload: {
         allow: ['application/json'],
@@ -123,7 +123,7 @@ module.exports = [
     handler: Handler.getEndpoint,
     options: {
       id: 'participants_endpoints_get',
-      tags: tags,
+      tags,
       description: 'View participant endpoints',
       validate: {
         params: Joi.object({
@@ -138,7 +138,7 @@ module.exports = [
     handler: Handler.addLimitAndInitialPosition,
     options: {
       id: 'participants_limits_pos_add',
-      tags: tags,
+      tags,
       description: 'Add initial participant limits and position',
       payload: {
         allow: ['application/json'],
@@ -165,7 +165,7 @@ module.exports = [
     handler: Handler.getLimits,
     options: {
       id: 'participants_limits_get',
-      tags: tags,
+      tags,
       description: 'View participant limits',
       validate: {
         params: Joi.object({
@@ -184,7 +184,7 @@ module.exports = [
     handler: Handler.getLimitsForAllParticipants,
     options: {
       id: 'participants_limits_get_all',
-      tags: tags,
+      tags,
       description: 'View limits for all participants',
       validate: {
         query: Joi.object({
@@ -200,7 +200,7 @@ module.exports = [
     handler: Handler.adjustLimits,
     options: {
       id: 'participants_limits_adjust',
-      tags: tags,
+      tags,
       description: 'Adjust participant limits',
       payload: {
         allow: ['application/json'],
@@ -227,7 +227,7 @@ module.exports = [
     handler: Handler.createHubAccount,
     options: {
       id: 'hub_accounts_create',
-      tags: tags,
+      tags,
       description: 'Create hub accounts',
       payload: {
         allow: ['application/json'],
@@ -250,7 +250,7 @@ module.exports = [
     handler: Handler.getPositions,
     options: {
       id: 'participants_positions_get',
-      tags: tags,
+      tags,
       description: 'View participant positions',
       validate: {
         params: Joi.object({
@@ -268,7 +268,7 @@ module.exports = [
     handler: Handler.getAccounts,
     options: {
       id: 'participants_accounts_get',
-      tags: tags,
+      tags,
       description: 'View participant accounts and balances',
       validate: {
         params: Joi.object({
@@ -283,7 +283,7 @@ module.exports = [
     handler: Handler.updateAccount,
     options: {
       id: 'participants_accounts_update',
-      tags: tags,
+      tags,
       description: 'Update participant accounts',
       validate: {
         payload: Joi.object({
@@ -302,7 +302,7 @@ module.exports = [
     handler: Handler.recordFunds,
     options: {
       id: 'post_participants_accounts_funds',
-      tags: tags,
+      tags,
       description: 'Record Funds In or Out of participant account',
       validate: {
         payload: Joi.object({
@@ -334,7 +334,7 @@ module.exports = [
     handler: Handler.recordFunds,
     options: {
       id: 'put_participants_accounts_funds',
-      tags: tags,
+      tags,
       description: 'Record Funds In or Out of participant account',
       validate: {
         payload: Joi.object({

@@ -259,7 +259,7 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       const whereStub = sandbox.stub()
       transactingStub.rejects(new Error())
       whereStub.returns({ transacting: transactingStub })
-      fromStub.returns({ whereStub: whereStub })
+      fromStub.returns({ whereStub })
       knexStub.select = selectStub.returns({ from: fromStub })
 
       await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable)
@@ -306,7 +306,7 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       const whereStub = sandbox.stub()
       transactingStub.rejects(new Error())
       whereStub.returns({ transacting: transactingStub })
-      fromStub.returns({ whereStub: whereStub })
+      fromStub.returns({ whereStub })
       knexStub.select = selectStub.returns({ from: fromStub })
 
       await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable, trxStub)

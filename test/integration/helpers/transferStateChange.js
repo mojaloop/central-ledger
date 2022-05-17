@@ -61,7 +61,7 @@ exports.prepareData = async () => {
 exports.deletePreparedData = async (transferId, payerName, payeeName) => {
   try {
     return await Model.truncate({
-      transferId: transferId
+      transferId
     }).then(async () => {
       await TransferStatePreparationHelper.deletePreparedData()
       await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)

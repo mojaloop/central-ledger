@@ -36,12 +36,18 @@ const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferStateChange')
 const HelperModule = require('../../helpers')
 const Time = require('@mojaloop/central-services-shared').Util.Time
+const ParticipantCached = require('../../../../src/models/participant/participantCached')
+const ParticipantCurrencyCached = require('../../../../src/models/participant/participantCurrencyCached')
+const ParticipantLimitCached = require('../../../../src/models/participant/participantLimitCached')
 
 Test('Transfer State Change model test', async (stateChangeTest) => {
   let stateChangePrepareResult = {}
   await stateChangeTest.test('setup', async (assert) => {
     try {
       await Db.connect(Config.DATABASE).then(async () => {
+        await ParticipantCached.initialize()
+        await ParticipantCurrencyCached.initialize()
+        await ParticipantLimitCached.initialize()
         await Cache.initCache()
         assert.pass('setup OK')
         assert.end()

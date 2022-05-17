@@ -51,7 +51,7 @@ exports.prepareData = async () => {
 exports.deletePreparedData = async (ilpId, transferId, payerName, payeeName) => {
   try {
     return await IlpPacketModel.destroyByTransferId({
-      transferId: transferId
+      transferId
     }).then(async () => {
       return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
     })

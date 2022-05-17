@@ -162,12 +162,16 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
         // Calculate liquidity cover as per story OTC-651
         let liquidityCover
+        let payerLimit
         if (settlementModel.settlementDelayId === Enum.Settlements.SettlementDelay.IMMEDIATE) {
           liquidityCover = new MLNumber(settlementParticipantPosition.value).add(new MLNumber(participantLimit.value))
+          payerLimit = new MLNumber(participantLimit.value)
         } else {
-          liquidityCover = new MLNumber(participantLimit.value)
+          liquidityCover = new MLNumber(settlementParticipantPosition.value).multiply(-1)
+          payerLimit = new MLNumber(participantLimit.value)
         }
-        let availablePosition = liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
+        let availablePositionBasedOnLiquidityCover = liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
+        let availablePositionBasedOnPayerLimit = payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
         /* Validate entire batch if availablePosition >= sumTransfersInBatch - the impact is that applying per transfer rules would require to be handled differently
            since further rules are expected we do not do this at this point
            As we enter this next step the order in which the transfer is processed against the Position is critical.
@@ -177,14 +181,19 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
         for (const transferId in reservedTransfers) {
           const { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
-          if (new MLNumber(availablePosition).toNumber() >= transferAmount.toNumber()) {
-            availablePosition = new MLNumber(availablePosition).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
-            transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
-            sumReserved = new MLNumber(sumReserved).add(transferAmount).toFixed(Config.AMOUNT.SCALE) /* actually used */
-          } else {
+          if (new MLNumber(availablePositionBasedOnLiquidityCover).toNumber() < transferAmount.toNumber()) {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
             rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
+          } else if (new MLNumber(availablePositionBasedOnPayerLimit).toNumber() < transferAmount.toNumber()) {
+            transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
+            transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
+            rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
+          } else {
+            availablePositionBasedOnLiquidityCover = new MLNumber(availablePositionBasedOnLiquidityCover).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
+            availablePositionBasedOnPayerLimit = new MLNumber(availablePositionBasedOnPayerLimit).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
+            transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
+            sumReserved = new MLNumber(sumReserved).add(transferAmount).toFixed(Config.AMOUNT.SCALE) /* actually used */
           }
           const runningPosition = new MLNumber(currentPosition).add(sumReserved).toFixed(Config.AMOUNT.SCALE) /* effective position */
           const runningReservedValue = new MLNumber(sumTransfersInBatch).subtract(sumReserved).toFixed(Config.AMOUNT.SCALE)

@@ -62,7 +62,7 @@ exports.update = async (participant, isActive) => {
 
 exports.destroyByName = async (name) => {
   try {
-    const result = await Db.from('participant').destroy({ name: name })
+    const result = await Db.from('participant').destroy({ name })
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -71,7 +71,7 @@ exports.destroyByName = async (name) => {
 
 exports.destroyParticipantEndpointByParticipantId = async (participantId) => {
   try {
-    const result = Db.from('participantEndpoint').destroy({ participantId: participantId })
+    const result = Db.from('participantEndpoint').destroy({ participantId })
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

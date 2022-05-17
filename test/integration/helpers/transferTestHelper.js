@@ -86,7 +86,6 @@ exports.prepareData = async () => {
     })
 
     await TransferParticipantModel.saveTransferParticipant({
-      transferParticipantId: transferDuplicateCheckResult.participantPayerResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
       participantCurrencyId: transferDuplicateCheckResult.participantPayerResult.participantCurrencyId,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
@@ -95,7 +94,6 @@ exports.prepareData = async () => {
     })
 
     await TransferParticipantModel.saveTransferParticipant({
-      transferParticipantId: transferDuplicateCheckResult.participantPayeeResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
       participantCurrencyId: transferDuplicateCheckResult.participantPayeeResult.participantCurrencyId,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
@@ -122,13 +120,13 @@ exports.prepareData = async () => {
 exports.deletePreparedData = async (transferId, payerName, payeeName) => {
   try {
     return await StateChangeModel.truncate({
-      transferId: transferId
+      transferId
     }).then(async () => {
       await IlpModel.destroyByTransferId({
-        transferId: transferId
+        transferId
       }).then(async () => {
         await TransferExtensionModel.destroyByTransferId({
-          transferId: transferId
+          transferId
         }).then(async () => {
           // await TransferStatePreparationHelper.deletePreparedData()
           await TransferFacade.destroyByTransferId({ transferId: 'test_tr_id' }).then(async () => {

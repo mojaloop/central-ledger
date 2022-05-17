@@ -117,6 +117,7 @@ const TransferService = {
   reconciliationTransferReserve: TransferFacade.reconciliationTransferReserve,
   reconciliationTransferCommit: TransferFacade.reconciliationTransferCommit,
   reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort,
+  recordFundsIn: TransferFacade.recordFundsIn,
   getTransferParticipant: TransferFacade.getTransferParticipant,
   getTransferDuplicateCheck: TransferDuplicateCheckModel.getTransferDuplicateCheck,
   saveTransferDuplicateCheck: TransferDuplicateCheckModel.saveTransferDuplicateCheck,

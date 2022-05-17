@@ -50,7 +50,7 @@ exports.prepareData = async () => {
 
     }
     const transfer = {
-      transferId: transferId,
+      transferId,
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
       ilpCondition: payload.condition,

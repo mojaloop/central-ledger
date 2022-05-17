@@ -31,7 +31,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const getByTransferId = async (transferId) => {
   Logger.isDebugEnabled && Logger.debug('getByTransferId ' + transferId.toString())
   try {
-    return await Db.from('transferFulfilment').find({ transferId: transferId })
+    return await Db.from('transferFulfilment').find({ transferId })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

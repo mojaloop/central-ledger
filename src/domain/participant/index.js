@@ -709,8 +709,8 @@ const recordFundsInOut = async (payload, params, enums) => {
     transferId && (payload.transferId = transferId)
     const messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload, enums))
     messageProtocol.metadata.request = {
-      params: params,
-      enums: enums
+      params,
+      enums
     }
     return await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Action.TRANSFER, messageProtocol, Enum.Events.EventStatus.SUCCESS)
   } catch (err) {
@@ -738,7 +738,7 @@ const createAssociatedParticipantAccounts = async (currency, ledgerAccountTypeId
     const participantCurrencies = nonHubParticipantWithCurrencies.map(item => ({
       participantId: item.participantId,
       currencyId: currency,
-      ledgerAccountTypeId: ledgerAccountTypeId,
+      ledgerAccountTypeId,
       isActive: true
     }))
 

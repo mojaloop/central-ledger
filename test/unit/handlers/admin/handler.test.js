@@ -311,6 +311,7 @@ Test('Admin handler', adminHandlerTest => {
     sandbox.stub(TransferService, 'reconciliationTransferReserve')
     sandbox.stub(TransferService, 'reconciliationTransferCommit')
     sandbox.stub(TransferService, 'reconciliationTransferAbort')
+    sandbox.stub(TransferService, 'recordFundsIn')
     sandbox.stub(TransferService, 'getTransferStateChange')
     sandbox.stub(TransferService, 'getTransferState')
     sandbox.stub(TransferService, 'getTransferById')
@@ -374,9 +375,7 @@ Test('Admin handler', adminHandlerTest => {
 
         const result = await AdminHandler.transfer(null, Object.assign({}, messages[0]))
         Logger.info(result)
-        test.ok(TransferService.reconciliationTransferPrepare.callsArgWith(0, trxStub))
-        test.ok(TransferService.reconciliationTransferReserve.callsArgWith(0, trxStub))
-        test.ok(TransferService.reconciliationTransferCommit.callsArgWith(0, trxStub))
+        test.ok(TransferService.recordFundsIn.callsArgWith(0, trxStub))
         test.equal(result, true)
         test.end()
       } catch (e) {
@@ -417,7 +416,7 @@ Test('Admin handler', adminHandlerTest => {
           hasDuplicateId: false,
           hasDuplicateHash: false
         }))
-        TransferService.reconciliationTransferPrepare.callsArgWith(0, trxStub).throws(new Error())
+        TransferService.recordFundsIn.callsArgWith(0, trxStub).throws(new Error())
         await AdminHandler.transfer(null, Object.assign({}, messages[0]))
         test.fail('Error is not thrown!')
         test.end()

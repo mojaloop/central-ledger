@@ -40,6 +40,7 @@ const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantHelper = require('../helpers/participant')
 const ParticipantLimitHelper = require('../helpers/participantLimit')
+const ParticipantFundsInOutHelper = require('../helpers/participantFundsInOut')
 const ParticipantEndpointHelper = require('../helpers/participantEndpoint')
 const SettlementHelper = require('../helpers/settlementModels')
 const HubAccountsHelper = require('../helpers/hubAccounts')
@@ -139,6 +140,10 @@ const prepareTestData = async (dataObj) => {
     const payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
       currency: dataObj.amount.currency,
       limit: { value: dataObj.payee.limit }
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
+      currency: dataObj.amount.currency,
+      amount: 10000
     })
 
     for (const name of [payer.participant.name, payee.participant.name]) {
