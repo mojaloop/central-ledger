@@ -32,6 +32,7 @@ const ModelParticipant = require('../../../../src/models/participant/facade')
 const ModelPosition = require('../../../../src/models/position/facade')
 const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const MainUtil = require('@mojaloop/central-services-shared').Util
 
 Test('Position facade', async (positionFacadeTest) => {
   let sandbox
@@ -532,7 +533,7 @@ Test('Position facade', async (positionFacadeTest) => {
           }]
 
           sandbox.stub(SettlementModelCached, 'getAll').resolves(allSettlementModels)
-          const messageProtocolCopy = JSON.parse(JSON.stringify(messageProtocol))
+          const messageProtocolCopy = MainUtil.clone(messageProtocol)
           const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocolCopy }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
@@ -596,7 +597,7 @@ Test('Position facade', async (positionFacadeTest) => {
               where: sandbox.stub().returns({
                 update: sandbox.stub().returns(Promise.resolve()),
                 orderBy: sandbox.stub().returns({
-                  first: sandbox.stub().resolves(JSON.parse(JSON.stringify(transferStateChange)))
+                  first: sandbox.stub().resolves(MainUtil.clone(transferStateChange))
                 })
               }),
               whereIn: sandbox.stub().returns({
@@ -642,7 +643,7 @@ Test('Position facade', async (positionFacadeTest) => {
           }]
 
           sandbox.stub(SettlementModelCached, 'getAll').resolves(allSettlementModels)
-          const messageProtocolCopy = JSON.parse(JSON.stringify(messageProtocol))
+          const messageProtocolCopy = MainUtil.clone(messageProtocol)
           const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocolCopy }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
@@ -685,7 +686,7 @@ Test('Position facade', async (positionFacadeTest) => {
               where: sandbox.stub().returns({
                 update: sandbox.stub().returns(Promise.resolve()),
                 orderBy: sandbox.stub().returns({
-                  first: sandbox.stub().resolves(JSON.parse(JSON.stringify(transferStateChange)))
+                  first: sandbox.stub().resolves(MainUtil.clone(transferStateChange))
                 })
               }),
               whereIn: sandbox.stub().returns({
@@ -731,7 +732,7 @@ Test('Position facade', async (positionFacadeTest) => {
           }]
 
           sandbox.stub(SettlementModelCached, 'getAll').resolves(allSettlementModels)
-          const messageProtocolCopy = JSON.parse(JSON.stringify(messageProtocol))
+          const messageProtocolCopy = MainUtil.clone(messageProtocol)
           const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocolCopy }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
@@ -803,7 +804,7 @@ Test('Position facade', async (positionFacadeTest) => {
             })
           })
 
-          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, JSON.parse(JSON.stringify(transferStateChange)))
+          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, MainUtil.clone(transferStateChange))
           test.pass('completed successfully')
           test.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition twice')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
@@ -844,7 +845,7 @@ Test('Position facade', async (positionFacadeTest) => {
             })
           })
 
-          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, JSON.parse(JSON.stringify(transferStateChange)))
+          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, MainUtil.clone(transferStateChange))
           test.pass('completed successfully')
           test.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition twice')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
@@ -868,7 +869,7 @@ Test('Position facade', async (positionFacadeTest) => {
 
           knexStub.throws(new Error())
 
-          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, JSON.parse(JSON.stringify(transferStateChange)))
+          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, MainUtil.clone(transferStateChange))
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
