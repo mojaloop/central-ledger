@@ -29,9 +29,11 @@
  */
 
 const Db = require('../../lib/db')
+const Tb = require('../../lib/tb')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
+const Config = require("../../lib/config");
 /**
  * @function GetTransferDuplicateCheck
  *
@@ -44,6 +46,9 @@ const Metrics = require('@mojaloop/central-services-metrics')
  */
 
 const getTransferDuplicateCheck = async (transferId) => {
+  //TODO @jason no need to perform duplicate check with TB enabled.
+  //TODO Tb
+
   const histTimerGetTransferDuplicateCheckEnd = Metrics.getHistogram(
     'model_transfer',
     'transferDuplicateCheck_getTransferDuplicateCheck - Metrics for transfer duplicate check model',
@@ -79,14 +84,25 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
     ['success', 'queryName']
   ).startTimer()
   Logger.isDebugEnabled && Logger.debug(`save transferDuplicateCheck (transferId=${transferId}, hash=${hash})`)
+
   try {
-    const result = Db.from('transferDuplicateCheck').insert({ transferId, hash })
+    var result = 0
+    if (Config.TIGERBEETLE.enabled) {
+      //insertTransferDuplicateCheck(transferId, hash)
+      result = 1
+    } else {
+      result = await insertTransferDuplicateCheck(transferId, hash)
+    }
     histTimerSaveTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })
     return result
   } catch (err) {
     histTimerSaveTransferDuplicateCheckEnd({ success: false, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
+}
+
+const insertTransferDuplicateCheck = async (transferId, hash) => {
+  return Db.from('transferDuplicateCheck').insert({ transferId, hash })
 }
 
 module.exports = {

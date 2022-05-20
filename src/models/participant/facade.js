@@ -29,6 +29,8 @@
  */
 
 const Db = require('../../lib/db')
+const Tb = require('../../lib/tb')
+const Logger = require('@mojaloop/central-services-logger')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -54,7 +56,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
       /* find paricipant id by name */
       participant = await ParticipantModelCached.getByName(name)
       if (participant) {
-        /* use the paricipant id and incoming params to prepare the filter */
+        /* use the participant id and incoming params to prepare the filter */
         const searchFilter = {
           participantId: participant.participantId,
           currencyId,
@@ -367,6 +369,11 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
 
 const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
+    if (Config.TIGERBEETLE.enabled) {
+      //TODO return await Tb.tbLookupAccount(participantId, ledgerAccountTypeId, currencyId)
+    }
+
+
     return await Db.from('participant').query(async (builder) => {
       return builder
         .where({
@@ -641,6 +648,11 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       try {
+        if (Config.TIGERBEETLE.enabled) {
+          Logger.info('Creating HUB Account ' + participantId + ':' + currencyId + ':' + ledgerAccountTypeId)
+          await Tb.tbCreateAccount(participantId, ledgerAccountTypeId, currencyId)
+        }
+
         let result
         const participantCurrency = {
           participantId,

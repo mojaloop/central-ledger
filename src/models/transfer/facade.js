@@ -33,6 +33,10 @@
  */
 
 const Db = require('../../lib/db')
+const Tb = require("../../lib/tb")
+const Crypto = require('crypto')
+const util = require('util')
+
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
@@ -336,6 +340,12 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
       ['success', 'queryName']
     ).startTimer()
 
+    const dbInsertTransferFulfilment = async (logHistogram, tbEnabled) => {
+      await knex.transaction(async (trx) => {
+
+      })
+    }
+
     await knex.transaction(async (trx) => {
       try {
         if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT, TransferEventAction.RESERVE].includes(action)) {
@@ -356,7 +366,15 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::settlementWindowId')
         }
         if (isFulfilment) {
+          if (Config.TIGERBEETLE.enabled) {
+            await Tb.tbFulfilTransfer(transferFulfilmentRecord)
+          }
+          console.log('TB is done!')
+          console.log(transferFulfilmentRecord)
+
           await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
+          console.log('Here it is.')
+          console.log(transferFulfilmentRecord)
           result.transferFulfilmentRecord = transferFulfilmentRecord
           Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferFulfilment')
         }
@@ -369,9 +387,13 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           result.transferExtensionRecordsList = transferExtensionRecordsList
           Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
         }
+
+        console.log('Now for state change.')
         await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
         result.transferStateChangeRecord = transferStateChangeRecord
         Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferStateChange')
+
+        console.log('Here it is state has changed.')
         if (fspiopError) {
           const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
             .where({ transferId })
@@ -386,6 +408,9 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
         result.savePayeeTransferResponseExecuted = true
         Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::success')
       } catch (err) {
+        console.log('ERROR!')
+        console.log(err)
+
         await trx.rollback()
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
         Logger.isErrorEnabled && Logger.error('savePayeeTransferResponse::failure')
@@ -465,34 +490,69 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         'facade_saveTransferPrepared_transaction - Metrics for transfer model',
         ['success', 'queryName']
       ).startTimer()
-      return await knex.transaction(async (trx) => {
-        try {
-          await knex('transfer').transacting(trx).insert(transferRecord)
-          await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
-          await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
-          payerTransferParticipantRecord.name = payload.payerFsp
-          payeeTransferParticipantRecord.name = payload.payeeFsp
-          let transferExtensionsRecordList = []
-          if (payload.extensionList && payload.extensionList.extension) {
-            transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
-              return {
-                transferId: payload.transferId,
-                key: ext.key,
-                value: ext.value
-              }
-            })
-            await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+
+      const dbInsertTransfer = async (logHistogram, tbEnabled) => {
+        await knex.transaction(async (trx) => {
+          try {
+            if (tbEnabled) {
+              const hashSha256 = Crypto.createHash('sha256')
+              let hash = JSON.stringify(payload)
+              hash = hashSha256.update(hash)
+              hash = hashSha256.digest(hash).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
+              const transferId = transferRecord.transferId;
+              await knex('transferDuplicateCheck').transacting(trx).insert({ transferId, hash })
+            }
+
+            await knex('transfer').transacting(trx).insert(transferRecord)//TODO done in TB
+            await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)//TODO done in TB
+            await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)//TODO done in TB
+            payerTransferParticipantRecord.name = payload.payerFsp
+            payeeTransferParticipantRecord.name = payload.payeeFsp
+            let transferExtensionsRecordList = []
+            if (payload.extensionList && payload.extensionList.extension) {
+              transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+                return {
+                  transferId: payload.transferId,
+                  key: ext.key,
+                  value: ext.value
+                }
+              })
+              await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+            }
+            await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
+            await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+            await trx.commit()
+            logHistogram && histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
+          } catch (errDB) {
+            console.trace(errDB)
+            await trx.rollback()
+            logHistogram && histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
+            throw errDB
           }
-          await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
-          await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-          await trx.commit()
+        })
+      }
+
+      if (Config.TIGERBEETLE.enabled) {
+        try {
+          await Tb.tbPrepareTransfer(
+            transferRecord,
+            payerTransferParticipantRecord,
+            payeeTransferParticipantRecord,
+            participants,
+            participantCurrencyIds
+          )
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
-        } catch (err) {
-          await trx.rollback()
+        } catch (errTB) {
           histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-          throw err
+          throw errTB
         }
-      })
+
+        if (!Config.TIGERBEETLE.disableSQL) {
+          dbInsertTransfer(false, true)
+        }
+      } else {
+        await dbInsertTransfer(true, false)
+      }
     } else {
       const histTimerSaveTranferNoValidationEnd = Metrics.getHistogram(
         'model_transfer',
@@ -575,6 +635,12 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
 const getTransferStateByTransferId = async (id) => {
   try {
+
+    if (Config.TIGERBEETLE.enabled) {
+      //TODO lookup transfer in TB.. If found, we are good...
+      //TODO Need to update the node-js client to support fetching a transfer
+    }
+
     /** @namespace Db.transferStateChange **/
     return await Db.from('transferStateChange').query(async (builder) => {
       return builder
@@ -879,6 +945,34 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Action not allowed for reconciliationTransferPrepare')
         }
 
+        //TODO @jason, store in TB -> [HUB] + [DFSP_SETTLEMENT]
+        if (Config.TIGERBEETLE.enabled) {
+          //[HUB] Transfer
+          const transferRecord = {
+            transferId: payload.transferId,
+            amount: amount,
+          }
+          const payerTransferParticipantRecord = {
+            ledgerEntryTypeId: ledgerEntryTypeId,
+            participantCurrencyId: reconciliationAccountId
+          }
+          const payeeTransferParticipantRecord = {
+            participantCurrencyId: payload.participantCurrencyId
+          }
+          const participants = [];//TODO looukp
+
+          Logger.info('--> reconciliation-Payload-reconciliation: ' + util.inspect(payload))
+          Logger.info('--> reconciliation        : ' + util.inspect(reconciliationAccountId))
+          //TODO await Tb.tbTransfer(....)
+          /*TODO await Tb.tbPrepareTransfer(
+            transferRecord,
+            payerTransferParticipantRecord,
+            payeeTransferParticipantRecord,
+            participants,
+            null
+          )*/
+        }
+
         // Insert transferParticipant records
         await knex('transferParticipant')
           .insert({
@@ -1126,6 +1220,16 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
 
 const getTransferParticipant = async (participantName, transferId) => {
   try {
+    if (Config.TIGERBEETLE.enabled) {
+      const tbLookup = await Tb.tbLookupTransfer(transferId)
+      return [{
+        'transferId' : transferId,
+        'amount' : {
+          'amount' : Number(tbLookup.amount)
+        }
+      }]
+    }
+
     return Db.from('participant').query(async (builder) => {
       return builder
         .where({
@@ -1141,6 +1245,8 @@ const getTransferParticipant = async (participantName, transferId) => {
         )
     })
   } catch (err) {
+    console.error('ERROR with Transfer lookup!')
+    console.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

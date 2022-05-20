@@ -15,3 +15,13 @@ Dockerfile
 LICENSE
 README.md
 sonar-project.properties
+
+# TigerBeetle
+tb/cluster_*.tigerbeetle
+
+# Mojaloop Central Ledger Stress Test
+stresstesting/target
+
+# jMeter
+stresstesting/jMeterOut
+stresstesting/test-plan/InData.json

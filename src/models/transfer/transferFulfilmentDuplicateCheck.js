@@ -31,6 +31,7 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Config = require("../../lib/config");
 
 /**
  * @function GetTransferFulfilmentDuplicateCheck
@@ -66,11 +67,23 @@ const getTransferFulfilmentDuplicateCheck = async (transferId) => {
 
 const saveTransferFulfilmentDuplicateCheck = async (transferId, hash) => {
   Logger.isDebugEnabled && Logger.debug(`save transferFulfilmentDuplicateCheck (transferId=${transferId}, hash=${hash})`)
+
   try {
-    return Db.from('transferFulfilmentDuplicateCheck').insert({ transferId, hash })
+    var result = 0
+    if (Config.TIGERBEETLE.enabled) {
+      insertTransferFulfilmentDuplicateCheck(transferId, hash)
+      result = 1
+    } else {
+      result = await insertTransferFulfilmentDuplicateCheck(transferId, hash)
+    }
+    return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
+}
+
+const insertTransferFulfilmentDuplicateCheck = async (transferId, hash) => {
+  return Db.from('transferFulfilmentDuplicateCheck').insert({ transferId, hash })
 }
 
 module.exports = {

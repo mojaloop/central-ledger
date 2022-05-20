@@ -1,4 +1,4 @@
-FROM node:12.16.0-alpine
+FROM node:14.15.0-alpine
 USER root
 
 WORKDIR /opt/central-ledger
@@ -19,6 +19,7 @@ COPY config /opt/central-ledger/config
 COPY migrations /opt/central-ledger/migrations
 COPY seeds /opt/central-ledger/seeds
 COPY test /opt/central-ledger/test
+COPY tb /opt/central-ledger/tb
 
 # overwrite default.json with integration environment specific config
 RUN cp -f /opt/central-ledger/test/integration-config.json /opt/central-ledger/config/default.json

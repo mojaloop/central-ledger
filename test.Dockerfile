@@ -1,4 +1,4 @@
-FROM node:12.16.0-alpine
+FROM node:14.15.0-alpine
 USER root
 
 WORKDIR /opt/central-ledger

@@ -31,7 +31,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const getById = async function (request) {
   try {
     const entity = await Transaction.getById(request.params.id)
-    if (entity) {
+    if (entity && entity.length > 0) {
       return await Transaction.getTransactionObject(entity[0].value)
     }
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND, 'The requested resource could not be found.')
