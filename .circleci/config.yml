@@ -230,25 +230,25 @@ jobs:
       - store_test_results:
           path: ./test/results
 
-  test-functional:
-    executor: default-machine
-    steps:
-      - checkout
-      - run:
-          <<: *defaults_configure_nvm
-      - restore_cache:
-          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
-      - run:
-          name: Create dir for test results
-          command: mkdir -p ./test/results
-      - run:
-          name: Execute functional tests
-          command: npm -s run test:functional
-      - store_artifacts:
-          path: ./test/results
-          prefix: test
-      - store_test_results:
-          path: ./test/results
+  # test-functional:
+  #   executor: default-machine
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         <<: *defaults_configure_nvm
+  #     - restore_cache:
+  #         key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+  #     - run:
+  #         name: Create dir for test results
+  #         command: mkdir -p ./test/results
+  #     - run:
+  #         name: Execute functional tests
+  #         command: npm -s run test:functional
+  #     - store_artifacts:
+  #         path: ./test/results
+  #         prefix: test
+  #     - store_test_results:
+  #         path: ./test/results
 
   vulnerability-check:
     executor: default-docker
@@ -659,17 +659,17 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
-      - test-functional:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              ignore:
-                - /feature*/
-                - /bugfix*/
+      # - test-functional:
+      #     context: org-global
+      #     requires:
+      #       - setup
+      #     filters:
+      #       tags:
+      #         only: /.*/
+      #       branches:
+      #         ignore:
+      #           - /feature*/
+      #           - /bugfix*/
       - vulnerability-check:
           context: org-global
           requires:
@@ -701,7 +701,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+            # - test-functional
             - vulnerability-check
             - audit-licenses
           filters:
@@ -740,7 +740,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+            # - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
@@ -768,7 +768,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+            # - test-functional
             - vulnerability-check
             - audit-licenses
             - test-integration
@@ -789,7 +789,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+            # - test-functional
             - vulnerability-check
             - audit-licenses
             - test-integration
