@@ -117,7 +117,7 @@
     "jsdoc": "3.6.10",
     "jsonpath": "1.1.1",
     "nodemon": "2.0.16",
-    "npm-audit-resolver": "2.3.1",
+    "npm-audit-resolver": "3.0.0-7",
     "npm-check-updates": "13.0.3",
     "nyc": "15.1.0",
     "pre-commit": "1.2.2",
