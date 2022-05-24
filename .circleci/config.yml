@@ -193,63 +193,63 @@ jobs:
             fi
 
   ## TODO: Replace legacy integration-test-runner with this method
-  # test-integration:
-  #   executor: default-machine
-  #   steps:
-  #     - checkout
-  #     - run:
-  #         <<: *defaults_configure_nvm
-  #     - restore_cache:
-  #         key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
-  #     - run:
-  #         name: Create dir for test results
-  #         command: mkdir -p ./test/results
-  #     - run:
-  #         name: Build and start the docker containers
-  #         command: | 
-  #           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  #           docker-compose build
-  #           docker-compose pull
-  #           docker-compose up -d
-  #
-  #           # Check straight away to see if any containers have exited
-  #           docker-compose ps
-  #
-  #           # wait for services to be up and running
-  #           npm run wait-4-docker
-  #     - run:
-  #         name: Run the integration tests
-  #         command: |
-  #           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  #           curl localhost:3000/health
-  #           npm run test:int
-  #         environment:
-  #           ENDPOINT_URL: http://localhost:4545/notification  
-  #     - store_artifacts:
-  #         path: ./test/results
-  #         prefix: test
-  #     - store_test_results:
-  #         path: ./test/results
-
-  ## TODO: Align integration tests to use Docker-compose instead (i.e. above commented out job)
   test-integration:
     executor: default-machine
     steps:
       - checkout
+      - run:
+          <<: *defaults_configure_nvm
       - restore_cache:
           key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
       - run:
-          name: Execute integration tests
-          command: npm -s run test:integration
-          no_output_timeout: 25m
+          name: Build and start the docker containers
+          command: | 
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            docker-compose build
+            docker-compose pull
+            docker-compose up -d
+  
+            # Check straight away to see if any containers have exited
+            docker-compose ps
+  
+            # wait for services to be up and running
+            npm run wait-4-docker
+      - run:
+          name: Run the integration tests
+          command: |
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            curl localhost:3001/health
+            npm run test:int
+          environment:
+            ENDPOINT_URL: http://localhost:4545/notification  
       - store_artifacts:
           path: ./test/results
           prefix: test
       - store_test_results:
           path: ./test/results
+
+  ## TODO: Align integration tests to use Docker-compose instead (i.e. above commented out job)
+  # test-integration:
+  #   executor: default-machine
+  #   steps:
+  #     - checkout
+  #     - restore_cache:
+  #         key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+  #     - run:
+  #         name: Create dir for test results
+  #         command: mkdir -p ./test/results
+  #     - run:
+  #         name: Execute integration tests
+  #         command: npm -s run test:integration
+  #         no_output_timeout: 25m
+  #     - store_artifacts:
+  #         path: ./test/results
+  #         prefix: test
+  #     - store_test_results:
+  #         path: ./test/results
 
   # test-functional:
   #   executor: default-machine

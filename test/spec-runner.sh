@@ -127,6 +127,6 @@ fi
 shutdown_and_remove
 
 >&2 echo "Copy results to local directory"
-docker cp $CENTRALLEDGER_TEST_HOST:/opt/central-ledger/test/results ./test
+docker cp $CENTRALLEDGER_TEST_HOST:/opt/app/test/results ./test
 
 exit "$test_exit_code"
