@@ -15,10 +15,10 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./docker/central-ledger/default.json:/opt/central-ledger/config/default.json
-      - ./test:/opt/central-ledger/test
-      - ./src:/opt/central-ledger/src
-      # - ./node_modules:/opt/central-ledger/node_modules
+      - ./docker/central-ledger/default.json:/opt/app/config/default.json
+      - ./test:/opt/app/test
+      - ./src:/opt/app/src
+      # - ./node_modules:/opt/app/node_modules
     environment:
       - CLEDG_MONGODB__DISABLED=true
       # Disable audit logs - makes it too verbose

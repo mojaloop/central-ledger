@@ -23,17 +23,8 @@
     "type": "git",
     "url": "git@github.com:mojaloop/central-ledger.git"
   },
-  "config": {
-    "knex": "--knexfile ./config/knexfile.js",
-    "images": {
-      "api": "central-ledger",
-      "admin": "central-ledger-admin"
-    }
-  },
-  "standard": {
-    "ignore": [
-      "/migrations/**"
-    ]
+  "engines": {
+    "node": "=16.x"
   },
   "pre-commit": [
     "lint",
@@ -41,43 +32,41 @@
     "test"
   ],
   "scripts": {
-    "start": "run-p start:api",
+    "start": "npm run start:api",
     "start:api": "node src/api/index.js",
-    "watch:api": "nodemon src/api/index.js",
+    "watch:api": "npx nodemon src/api/index.js",
     "start:handlers": "node src/handlers/index.js",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
-    "lint": "standard",
-    "lint:fix": "standard --fix",
+    "lint": "npx standard",
+    "lint:fix": "npx standard --fix",
     "test": "npm run test:unit",
-    "test:unit": "tape 'test/unit/**/*.test.js' | tap-spec",
-    "test:int": "tape 'test/integration/**/*.test.js'",
-    "test:all": "run-s test test:integration test:functional test:spec",
-    "test:xunit": "tape 'test/unit/**/*.test.js' | tap-xunit",
-    "test:coverage": "nyc --reporter=lcov --reporter=text-summary tapes -- 'test/unit/**/*.test.js'",
+    "test:unit": "npx tape 'test/unit/**/*.test.js' | tap-spec",
+    "test:int": "npx tape 'test/integration/**/*.test.js'",
+    "test:xunit": "npx tape 'test/unit/**/**.test.js' | tap-xunit > ./test/results/xunit.xml",
+    "test:coverage": "npx nyc --reporter=lcov --reporter=text-summary tapes -- 'test/unit/**/**.test.js'",
     "test:coverage-check": "npm run test:coverage && nyc check-coverage",
     "test:integration": "sh ./test/integration-runner.sh ./test/integration-runner.env",
-    "db:psql": "docker run -it --net centralledger_back --rm postgres:9.4 sh -c 'exec psql -h postgres -p \"$POSTGRES_PORT_5432_TCP_PORT\" -U central_ledger -d postgres'",
-    "migrate": "run-s migrate:latest seed:run",
-    "migrate:latest": "knex $npm_package_config_knex migrate:latest",
-    "migrate:create": "knex migrate:make $npm_package_config_knex",
-    "migrate:rollback": "knex migrate:rollback $npm_package_config_knex",
-    "migrate:current": "knex migrate:currentVersion $npm_package_config_knex",
-    "seed:run": "knex seed:run $npm_package_config_knex",
-    "docker:build": "run-s docker:build:test docker:build:api docker:build:admin",
+    "migrate": "npm run migrate:latest && npm run seed:run",
+    "migrate:latest": "npx knex $npm_package_config_knex migrate:latest",
+    "migrate:create": "npx knex migrate:make $npm_package_config_knex",
+    "migrate:rollback": "npx knex migrate:rollback $npm_package_config_knex",
+    "migrate:current": "npx knex migrate:currentVersion $npm_package_config_knex",
+    "seed:run": "npx knex seed:run $npm_package_config_knex",
+    "docker:build": "npm run docker:build:test && npm run docker:build:api",
     "docker:build:test": "docker build --no-cache -f test.Dockerfile -t $npm_package_config_images_api:test .",
-    "docker:build:api": "docker build --no-cache -f api.Dockerfile -t $npm_package_config_images_api:latest .",
-    "docker:build:admin": "docker build --no-cache -f admin.Dockerfile -t $npm_package_config_images_admin:latest .",
+    "docker:build:api": "docker build --no-cache -f Dockerfile -t $npm_package_config_images_api:latest .",
     "docker:up": "docker-compose -f docker-compose.yml up",
     "docker:stop": "docker-compose -f docker-compose.yml stop",
     "docker:rm": "docker-compose -f docker-compose.yml rm -f -v",
     "docker:down": "docker-compose -f docker-compose.yml down -v",
     "docker:clean": "docker-compose -f docker-compose.yml down --rmi local",
-    "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json",
-    "audit:resolve": "SHELL=sh resolve-audit --production",
-    "audit:check": "SHELL=sh check-audit --production",
+    "generate-docs": "npx jsdoc -c jsdoc.json",
+    "audit:resolve": "npx resolve-audit --production",
+    "audit:check": "npx check-audit --production",
     "dep:check": "npx ncu -e 2",
     "dep:update": "npx ncu -u",
-    "release": "standard-version --releaseCommitMessageFormat 'chore(release): {{currentTag}} [skip ci]'"
+    "release": "npx standard-version --no-verify --releaseCommitMessageFormat 'chore(release): {{currentTag}} [skip ci]'",
+    "snapshot": "npx standard-version --no-verify --skip.changelog --prerelease snapshot --releaseCommitMessageFormat 'chore(snapshot): {{currentTag}}'"
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
@@ -85,15 +74,15 @@
     "@hapi/inert": "6.0.5",
     "@hapi/joi": "17.1.1",
     "@hapi/vision": "6.1.0",
-    "@mojaloop/object-store-lib": "11.1.2",
+    "@mojaloop/object-store-lib": "12.0.0",
     "@mojaloop/central-services-database": "10.7.0",
-    "@mojaloop/central-services-error-handling": "11.3.0",
-    "@mojaloop/central-services-health": "13.0.0",
-    "@mojaloop/central-services-logger": "11.0.0",
-    "@mojaloop/central-services-metrics": "11.0.0",
-    "@mojaloop/central-services-shared": "16.0.0",
-    "@mojaloop/central-services-stream": "10.7.0",
-    "@mojaloop/event-sdk": "10.7.2",
+    "@mojaloop/central-services-error-handling": "12.0.3",
+    "@mojaloop/central-services-health": "14.0.1",
+    "@mojaloop/central-services-logger": "11.0.1",
+    "@mojaloop/central-services-metrics": "12.0.5",
+    "@mojaloop/central-services-shared": "17.0.2",
+    "@mojaloop/central-services-stream": "11.0.0",
+    "@mojaloop/event-sdk": "11.0.2",
     "@mojaloop/ml-number": "11.2.1",
     "@now-ims/hapi-now-auth": "2.1.0",
     "ajv": "8.11.0",
@@ -110,12 +99,11 @@
     "glob": "8.0.3",
     "hapi-auth-basic": "5.0.0",
     "hapi-auth-bearer-token": "8.0.0",
-    "hapi-swagger": "14.5.0",
+    "hapi-swagger": "14.5.1",
     "ilp-packet": "2.2.0",
     "knex": "2.0.0",
     "lodash": "4.17.21",
     "moment": "2.29.3",
-    "npm-run-all": "4.1.5",
     "rc": "1.2.8",
     "require-glob": "^4.0.0",
     "uuid4": "2.0.2"
@@ -130,7 +118,7 @@
     "jsonpath": "1.1.1",
     "nodemon": "2.0.16",
     "npm-audit-resolver": "2.3.1",
-    "npm-check-updates": "13.0.0",
+    "npm-check-updates": "13.0.3",
     "nyc": "15.1.0",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",
@@ -141,5 +129,22 @@
     "tap-xunit": "2.4.1",
     "tape": "4.13.2",
     "tapes": "4.1.0"
+  },
+  "config": {
+    "knex": "--knexfile ./config/knexfile.js",
+    "images": {
+      "api": "central-ledger",
+      "admin": "central-ledger-admin"
+    }
+  },
+  "standard": {
+    "ignore": [
+      "/migrations/**"
+    ]
+  },
+  "standard-version": {
+    "scripts": {
+      "postchangelog": "replace '\\[mojaloop/#(\\d+)\\]\\(https://github.com/mojaloop/(.*)/issues/(\\d+)\\)' '[mojaloop/#$1](https://github.com/mojaloop/project/issues/$1)' CHANGELOG.md"
+    }
   }
 }

@@ -19,7 +19,7 @@ services:
     ports:
       - "3001:3001"
     volumes:
-       - ./docker/central-ledger/default.json:/opt/central-ledger/config/default.json
+       - ./docker/central-ledger/default.json:/opt/app/config/default.json
        - ./docker/wait-for:/opt/wait-for
     environment:
       - LOG_LEVEL=info
@@ -47,7 +47,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./docker/ml-api-adapter/default.json:/opt/ml-api-adapter/config/default.json
+      - ./docker/ml-api-adapter/default.json:/opt/app/config/default.json
       - ./docker/wait-for:/opt/wait-for
     environment:
       - LOG_LEVEL=info
