@@ -23,8 +23,7 @@ The following documentation represents the services, APIs and endpoints responsi
   - [API](#api)
   - [Logging](#logging)
   - [Tests](#tests)
-    - [Running Integration Tests interactively-ish](#running-integration-tests-interactively-ish)
-  - [Auditing Dependencies](#auditing-dependencies)
+    - [Running Integration Tests interactively](#running-integration-tests-interactively)
   - [Container Scans](#container-scans)
   - [Automated Releases](#automated-releases)
     - [Potential problems](#potential-problems)
@@ -85,19 +84,28 @@ If you want to run integration tests in a repetitive manner, you can startup the
 ```bash
 docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger
 ```
+
 - Running inside docker
-  ```bash
-  docker exec -it cl_central-ledger sh
-  export CL_DATABASE_HOST=mysql
-  npm run migrate #first time only
-  npm run test:int
+
+    ```bash
+    docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger
+    ```
+
+    ```bash
+    docker exec -it cl_central-ledger sh
+    export CL_DATABASE_HOST=mysql
+    npm run test:int
   ```
+
 - Running natively
-  ```bash
-  export CL_DATABASE_HOST=localhost
-  npm run migrate #first time only
-  npm run test:int
-  ```
+
+    ```bash
+    docker-compose -f docker-compose.yml up -d kafka mysql
+    ```
+
+    ```bash
+    npm run test:int
+    ```
 
 ## Auditing Dependencies
 

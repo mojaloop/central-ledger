@@ -210,7 +210,7 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             docker-compose build
             docker-compose pull
-            docker-compose up -d
+            docker-compose up -d mysql kafka
   
             # Check straight away to see if any containers have exited
             docker-compose ps
@@ -220,8 +220,6 @@ jobs:
       - run:
           name: Run the integration tests
           command: |
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            curl localhost:3001/health
             npm run test:int
           environment:
             ENDPOINT_URL: http://localhost:4545/notification  

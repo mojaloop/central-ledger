@@ -6,6 +6,10 @@ networks:
 
 services:
   central-ledger:
+    image: mojaloop/central-ledger:local
+    deploy:
+      replicas: 1
+    user: root
     build:
       context: .
       cache_from:
@@ -32,7 +36,7 @@ services:
       - kafka
       - objstore
     healthcheck:
-      test: ["CMD", "bash", "-c" ,"apk --no-cache add curl", ";", "curl", "http://localhost:3001/health"]
+      test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", "&&", "curl", "http://localhost:3001/health"]
       timeout: 20s
       retries: 10
       interval: 30s
@@ -40,6 +44,9 @@ services:
   ml-api-adapter:
     image: mojaloop/ml-api-adapter:latest
     container_name: cl_ml-api-adapter
+    deploy:
+      replicas: 1
+    user: root
     command:
       - "sh"
       - "-c"
@@ -56,7 +63,7 @@ services:
     depends_on:
       - kafka
     healthcheck:
-      test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", ";", "curl", "http://localhost:3000/health"]
+      test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", "&&", "curl", "http://localhost:3000/health"]
       timeout: 20s
       retries: 10
       interval: 30s
@@ -64,6 +71,8 @@ services:
   mysql:
     image: mysql/mysql-server
     container_name: cl_mysql
+    deploy:
+      replicas: 1
     # Disable logging as it is far too verbose for debugging locally
     logging:
       driver: none
@@ -89,6 +98,8 @@ services:
   mockserver:
     image: jamesdbloom/mockserver
     container_name: mockserver
+    deploy:
+      replicas: 1
     ports:
       - "1080:1080"
     networks:
@@ -110,23 +121,69 @@ services:
     depends_on:
       - mockserver
 
-  kafka:
-    image: johnnypark/kafka-zookeeper:2.3.0
-    container_name: cl_kafka
-    # Disable logging as it is far too verbose for debugging locally
-    logging:
-      driver: none
-    volumes:
-      - ./docker/kafka/:/opt/kafka_2.12-2.3.0/config/
+  # kafka:
+  #   image: johnnypark/kafka-zookeeper:2.3.0
+  #   # image: johnnypark/kafka-zookeeper:2.6.0
+  #   container_name: cl_kafka
+  #   deploy:
+  #     replicas: 1
+  #   # Disable logging as it is far too verbose for debugging locally
+  #   # logging:
+  #   #   driver: none
+  #   volumes:
+  #     - ./docker/kafka/:/opt/kafka_2.12-2.3.0/config/
+  #   ports:
+  #     - "2181:2181"
+  #     - "9092:9092"
+  #   environment:
+  #     - ZOO_LOG4J_PROP=WARN
+  #   networks:
+  #     - cl-mojaloop-net
+  #   healthcheck:
+  #     test: ["CMD" ,"/opt/kafka_2.12-2.3.0/bin/kafka-broker-api-versions.sh","--bootstrap-server","localhost:9092"]
+  #     timeout: 20s
+  #     retries: 10
+  #     start_period: 40s
+  #     interval: 30s
+
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: cl_zookeeper
     ports:
       - "2181:2181"
-      - "9092:9092"
-    environment:
-      - ZOO_LOG4J_PROP=WARN
     networks:
       - cl-mojaloop-net
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: cl_kafka
+    ports:
+    # To learn about configuring Kafka for access across networks see
+    # https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/
+      - "9092:9092"
+    networks:
+      - cl-mojaloop-net
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      # KAFKA_LISTENERS: LISTENER_DOCKER://kafka:29092,LISTENER_HOST://kafka:9092
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_LISTENERS: LISTENER_DOCKER://kafka:29092,LISTENER_HOST://kafka:9092
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER://kafka:29092,LISTENER_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER:PLAINTEXT,LISTENER_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
     healthcheck:
-      test: ["CMD" ,"/opt/kafka_2.12-2.3.0/bin/kafka-broker-api-versions.sh","--bootstrap-server","localhost:9092"]
+      test: ["CMD" ,"kafka-broker-api-versions","--bootstrap-server","kafka:29092"]
       timeout: 20s
       retries: 10
       start_period: 40s
@@ -135,6 +192,8 @@ services:
   objstore:
     image: mongo:latest
     container_name: cl_objstore
+    deploy:
+      replicas: 1
     # Disable logging as it is far too verbose for debugging locally
     logging:
       driver: none
@@ -143,7 +202,7 @@ services:
     networks:
       - cl-mojaloop-net
     healthcheck:
-      test: mongo localhost:27017/test --quiet 1
+      test: mongo --eval 'db.runCommand("ping").ok' localhost:27017/test --quiet
       interval: 10s
       timeout: 10s
       retries: 5
@@ -152,6 +211,9 @@ services:
   simulator:
     image: mojaloop/simulator:latest
     container_name: cl_simulator
+    user: root
+    deploy:
+      replicas: 1
     ports:
       - "8444:8444"
     environment:
@@ -173,6 +235,8 @@ services:
   kowl:
     image: quay.io/cloudhut/kowl:v1.4.0
     container_name: cl_kowl
+    deploy:
+      replicas: 1
     restart: on-failure
     hostname: kowl
     ports:
