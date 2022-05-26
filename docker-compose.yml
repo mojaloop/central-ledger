@@ -121,35 +121,12 @@ services:
     depends_on:
       - mockserver
 
-  # kafka:
-  #   image: johnnypark/kafka-zookeeper:2.3.0
-  #   # image: johnnypark/kafka-zookeeper:2.6.0
-  #   container_name: cl_kafka
-  #   deploy:
-  #     replicas: 1
-  #   # Disable logging as it is far too verbose for debugging locally
-  #   # logging:
-  #   #   driver: none
-  #   volumes:
-  #     - ./docker/kafka/:/opt/kafka_2.12-2.3.0/config/
-  #   ports:
-  #     - "2181:2181"
-  #     - "9092:9092"
-  #   environment:
-  #     - ZOO_LOG4J_PROP=WARN
-  #   networks:
-  #     - cl-mojaloop-net
-  #   healthcheck:
-  #     test: ["CMD" ,"/opt/kafka_2.12-2.3.0/bin/kafka-broker-api-versions.sh","--bootstrap-server","localhost:9092"]
-  #     timeout: 20s
-  #     retries: 10
-  #     start_period: 40s
-  #     interval: 30s
-
-
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
     container_name: cl_zookeeper
+    # Disable logging as it is far too verbose for debugging locally
+    logging:
+      driver: none
     ports:
       - "2181:2181"
     networks:
@@ -161,6 +138,9 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.0.1
     container_name: cl_kafka
+    # Disable logging as it is far too verbose for debugging locally
+    logging:
+      driver: none
     ports:
     # To learn about configuring Kafka for access across networks see
     # https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/
@@ -172,9 +152,6 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      # KAFKA_LISTENERS: LISTENER_DOCKER://kafka:29092,LISTENER_HOST://kafka:9092
-      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
       KAFKA_LISTENERS: LISTENER_DOCKER://kafka:29092,LISTENER_HOST://kafka:9092
       KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER://kafka:29092,LISTENER_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER:PLAINTEXT,LISTENER_HOST:PLAINTEXT
