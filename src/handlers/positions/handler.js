@@ -147,7 +147,7 @@ const positions = async (error, messages) => {
 
     if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.PREPARE, Enum.Events.Event.Action.BULK_PREPARE].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'prepare' }))
-      const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
+      const { preparedMessagesList, limitAlarms, customParams } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
       for (const limit of limitAlarms) {
         // Publish alarm message to KafkaTopic for the Hub to consume as it is the Hub
         // rather than the switch to manage this (the topic is an participantEndpoint)
@@ -163,7 +163,7 @@ const positions = async (error, messages) => {
           return true
         } else {
           Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payerNotifyInsufficientLiquidity--${actionLetter}2`))
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes[transferState.reason] || ErrorHandler.Enums.FSPIOPErrorCodes.SERVER_ERROR)
+          const fspiopError = ErrorHandler.Factory.createFSPIOPError(customParams.errorCode)
           const fspiopApiError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
           await TransferService.logTransferError(transferId, fspiopApiError.errorInformation.errorCode, fspiopApiError.errorInformation.errorDescription)
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopApiError, eventDetail, fromSwitch })
