@@ -358,7 +358,15 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(() => TransferService.getById(td.messageProtocolPrepare.content.payload.transferId))
+      const transfer = await wrapWithRetries(async () => {
+        // lets fetch the transfer
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+        // lets check its status, and if its what we expect return the result
+        if (transfer.transferState === 'RESERVED') return transfer
+        // otherwise lets return nothing
+        return null
+      })
+
       test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. send an ABORTED request from Payee
