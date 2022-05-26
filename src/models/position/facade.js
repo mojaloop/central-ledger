@@ -183,13 +183,11 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           const { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
           if (new MLNumber(availablePositionBasedOnLiquidityCover).toNumber() < transferAmount.toNumber()) {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-            transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
-            transferState.errorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
+            transferState.reason = 'PAYER_FSP_INSUFFICIENT_LIQUIDITY'
             rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
           } else if (new MLNumber(availablePositionBasedOnPayerLimit).toNumber() < transferAmount.toNumber()) {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-            transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
-            transferState.errorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR
+            transferState.reason = 'PAYER_LIMIT_ERROR'
             rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
           } else {
             availablePositionBasedOnLiquidityCover = new MLNumber(availablePositionBasedOnLiquidityCover).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
