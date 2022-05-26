@@ -207,9 +207,8 @@ jobs:
       - run:
           name: Build and start the docker containers
           command: | 
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            docker-compose build
-            docker-compose pull
+            # docker-compose build
+            # docker-compose pull
             docker-compose up -d mysql kafka
   
             # Check straight away to see if any containers have exited
