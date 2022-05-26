@@ -10,7 +10,7 @@ const { execSync } = require('child_process')
 // Define the docker-compose containers you want to monitor here
 const expectedContainers = [
   'cl_mysql',
-  'cl_kafka',
+  'cl_kafka'
   // ## NOTE: These are not needed for Integration Tests
   // 'cl_central-ledger',
   // 'cl_ml-api-adapter',

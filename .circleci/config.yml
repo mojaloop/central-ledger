@@ -207,7 +207,7 @@ jobs:
       - run:
           name: Build and start the docker containers
           command: |
-            ## These are not needed as we are only doing narrow-integration tests.
+            ## This is not needed as we are only doing narrow-integration tests.
             # docker-compose build 
 
             ## Lets pull only the Services needed for the Integration Test
