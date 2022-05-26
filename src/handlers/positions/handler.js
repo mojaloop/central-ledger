@@ -155,7 +155,7 @@ const positions = async (error, messages) => {
       }
       if (Array.isArray(preparedMessagesList) && preparedMessagesList.length > 0) {
         const prepareMessage = preparedMessagesList[0]
-        const { transferState } = prepareMessage
+        const { transferState, fspiopError } = prepareMessage
         if (transferState.transferStateId === Enum.Transfers.TransferState.RESERVED) {
           Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payer--${actionLetter}1`))
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
@@ -163,11 +163,11 @@ const positions = async (error, messages) => {
           return true
         } else {
           Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payerNotifyInsufficientLiquidity--${actionLetter}2`))
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY)
-          const fspiopApiError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
+          const responseFspiopError = fspiopError || ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+          const fspiopApiError = responseFspiopError.toApiErrorObject(Config.ERROR_HANDLING)
           await TransferService.logTransferError(transferId, fspiopApiError.errorInformation.errorCode, fspiopApiError.errorInformation.errorDescription)
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopApiError, eventDetail, fromSwitch })
-          throw fspiopError
+          throw responseFspiopError
         }
       }
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
