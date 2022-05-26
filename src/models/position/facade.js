@@ -119,8 +119,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             transferState.transferStateChangeId = null
             transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
             const transferAmount = new MLNumber(transfer.amount.amount) /* Just do this once, so add to reservedTransfers */
-            const customParams = {}
-            reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage, transferAmount, customParams }
+            reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage, transferAmount }
             sumTransfersInBatch = new MLNumber(sumTransfersInBatch).add(transferAmount).toFixed(Config.AMOUNT.SCALE)
           } else {
             transferState.transferStateChangeId = null
@@ -181,16 +180,16 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         */
         let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
         for (const transferId in reservedTransfers) {
-          const { transfer, transferState, rawMessage, transferAmount, customParams } = reservedTransfers[transferId]
+          const { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
           if (new MLNumber(availablePositionBasedOnLiquidityCover).toNumber() < transferAmount.toNumber()) {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
-            customParams.errorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
+            reservedTransfers[transferId].fspiopErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
             rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
           } else if (new MLNumber(availablePositionBasedOnPayerLimit).toNumber() < transferAmount.toNumber()) {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
-            customParams.errorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR
+            reservedTransfers[transferId].fspiopErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR
             rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
           } else {
             availablePositionBasedOnLiquidityCover = new MLNumber(availablePositionBasedOnLiquidityCover).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)

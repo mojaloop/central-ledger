@@ -155,7 +155,7 @@ const positions = async (error, messages) => {
       }
       if (Array.isArray(preparedMessagesList) && preparedMessagesList.length > 0) {
         const prepareMessage = preparedMessagesList[0]
-        const { transferState, customParams } = prepareMessage
+        const { transferState, fspiopErrorCode } = prepareMessage
         if (transferState.transferStateId === Enum.Transfers.TransferState.RESERVED) {
           Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payer--${actionLetter}1`))
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
@@ -163,7 +163,7 @@ const positions = async (error, messages) => {
           return true
         } else {
           Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payerNotifyInsufficientLiquidity--${actionLetter}2`))
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(customParams.errorCode)
+          const fspiopError = fspiopErrorCode || ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
           const fspiopApiError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
           await TransferService.logTransferError(transferId, fspiopApiError.errorInformation.errorCode, fspiopApiError.errorInformation.errorDescription)
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopApiError, eventDetail, fromSwitch })
