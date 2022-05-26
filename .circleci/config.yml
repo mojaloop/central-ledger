@@ -224,7 +224,7 @@ jobs:
       - run:
           name: Run the integration tests
           command: |
-            npm run rebuild
+            npm rebuild
             npm run test:int
           environment:
             ENDPOINT_URL: http://localhost:4545/notification  
