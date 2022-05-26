@@ -192,7 +192,6 @@ jobs:
                 echo "Not a release (env CIRCLE_BRANCH != 'master'), skipping sending lcov.info to SonarQube."
             fi
 
-  ## TODO: Replace legacy integration-test-runner with this method
   test-integration:
     executor: default-machine
     steps:
@@ -233,46 +232,6 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
-
-  ## TODO: Align integration tests to use Docker-compose instead (i.e. above commented out job)
-  # test-integration:
-  #   executor: default-machine
-  #   steps:
-  #     - checkout
-  #     - restore_cache:
-  #         key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
-  #     - run:
-  #         name: Create dir for test results
-  #         command: mkdir -p ./test/results
-  #     - run:
-  #         name: Execute integration tests
-  #         command: npm -s run test:integration
-  #         no_output_timeout: 25m
-  #     - store_artifacts:
-  #         path: ./test/results
-  #         prefix: test
-  #     - store_test_results:
-  #         path: ./test/results
-
-  # test-functional:
-  #   executor: default-machine
-  #   steps:
-  #     - checkout
-  #     - run:
-  #         <<: *defaults_configure_nvm
-  #     - restore_cache:
-  #         key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
-  #     - run:
-  #         name: Create dir for test results
-  #         command: mkdir -p ./test/results
-  #     - run:
-  #         name: Execute functional tests
-  #         command: npm -s run test:functional
-  #     - store_artifacts:
-  #         path: ./test/results
-  #         prefix: test
-  #     - store_test_results:
-  #         path: ./test/results
 
   vulnerability-check:
     executor: default-docker
