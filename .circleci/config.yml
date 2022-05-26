@@ -206,15 +206,20 @@ jobs:
           command: mkdir -p ./test/results
       - run:
           name: Build and start the docker containers
-          command: | 
-            # docker-compose build
-            # docker-compose pull
+          command: |
+            ## These are not needed as we are only doing narrow-integration tests.
+            # docker-compose build 
+
+            ## Lets pull only the Services needed for the Integration Test
+            docker-compose pull mysql kafka
+
+            ## Lets startup only the Services needed for the Integration Test
             docker-compose up -d mysql kafka
   
-            # Check straight away to see if any containers have exited
+            ## Check straight away to see if any containers have exited
             docker-compose ps
   
-            # wait for services to be up and running
+            ## wait for services to be up and running
             npm run wait-4-docker
       - run:
           name: Run the integration tests
