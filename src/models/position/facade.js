@@ -184,13 +184,13 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           if (new MLNumber(availablePositionBasedOnLiquidityCover).toNumber() < transferAmount.toNumber()) {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
-            reservedTransfers[transferId].fspiopErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
-            rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
+            reservedTransfers[transferId].fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList)
+            rawMessage.value.content.payload = reservedTransfers[transferId].fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
           } else if (new MLNumber(availablePositionBasedOnPayerLimit).toNumber() < transferAmount.toNumber()) {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
-            reservedTransfers[transferId].fspiopErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR
-            rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
+            reservedTransfers[transferId].fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR, null, null, null, rawMessage.value.content.payload.extensionList)
+            rawMessage.value.content.payload = reservedTransfers[transferId].fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
           } else {
             availablePositionBasedOnLiquidityCover = new MLNumber(availablePositionBasedOnLiquidityCover).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
             availablePositionBasedOnPayerLimit = new MLNumber(availablePositionBasedOnPayerLimit).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
