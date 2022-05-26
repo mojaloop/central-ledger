@@ -54,7 +54,6 @@
     "docker:build": "npm run docker:build:test && npm run docker:build:api",
     "docker:build:test": "docker build --no-cache -f test.Dockerfile -t $npm_package_config_images_api:test .",
     "docker:build:api": "docker build --no-cache -f Dockerfile -t $npm_package_config_images_api:latest .",
-    "docker:int:up": "docker build --no-cache -f Dockerfile -t $npm_package_config_images_api:latest .",
     "docker:up": "docker-compose -f docker-compose.yml up",
     "docker:stop": "docker-compose -f docker-compose.yml stop",
     "docker:rm": "docker-compose -f docker-compose.yml rm -f -v",
