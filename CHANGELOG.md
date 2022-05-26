@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.0.1](https://github.com/mojaloop/central-ledger/compare/v15.0.0...v15.0.1) (2022-05-26)
+
+
+### Bug Fixes
+
+* error codes for liquidity and ndc limit check ([#901](https://github.com/mojaloop/central-ledger/issues/901)) ([83a197c](https://github.com/mojaloop/central-ledger/commit/83a197cdded36f71c884104587cd67d2f494ce92))
+
 ## [15.0.0](https://github.com/mojaloop/central-ledger/compare/v14.0.0...v15.0.0) (2022-05-26)
 
 
