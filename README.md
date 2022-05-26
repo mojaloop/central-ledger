@@ -79,33 +79,43 @@ Tests include code coverage via istanbul. See the test/ folder for testing scrip
 
 ### Running Integration Tests interactively
 
-If you want to run integration tests in a repetitive manner, you can startup the test containers using `docker-compose`, login to running `central-ledger` container like so:
+If you want to run integration tests in a repetitive manner, you can startup the test containers using `docker-compose` via one of the following methods:
 
-```bash
-docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger
-```
+- Running locally
+
+    Start containers required for Integration Tests
+
+    ```bash
+    docker-compose -f docker-compose.yml up -d kafka mysql
+    ```
+
+    Run wait script which will report once all required containers are up and running
+
+    ```bash
+    npm run wait-4-docker
+    ```
+
+    Run the Integration Tests
+
+    ```bash
+    npm run test:int
+    ```
 
 - Running inside docker
+
+    Start containers required for Integration Tests, including a `central-ledger` container which will be used as a proxy shell.
 
     ```bash
     docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger
     ```
+
+    Run the Integration Tests from the `central-ledger` container
 
     ```bash
     docker exec -it cl_central-ledger sh
     export CL_DATABASE_HOST=mysql
     npm run test:int
   ```
-
-- Running natively
-
-    ```bash
-    docker-compose -f docker-compose.yml up -d kafka mysql
-    ```
-
-    ```bash
-    npm run test:int
-    ```
 
 ## Auditing Dependencies
 
