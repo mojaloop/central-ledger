@@ -147,7 +147,7 @@ const positions = async (error, messages) => {
 
     if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.PREPARE, Enum.Events.Event.Action.BULK_PREPARE].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'prepare' }))
-      const { preparedMessagesList, limitAlarms, customParams } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
+      const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
       for (const limit of limitAlarms) {
         // Publish alarm message to KafkaTopic for the Hub to consume as it is the Hub
         // rather than the switch to manage this (the topic is an participantEndpoint)
@@ -155,7 +155,7 @@ const positions = async (error, messages) => {
       }
       if (Array.isArray(preparedMessagesList) && preparedMessagesList.length > 0) {
         const prepareMessage = preparedMessagesList[0]
-        const { transferState } = prepareMessage
+        const { transferState, customParams } = prepareMessage
         if (transferState.transferStateId === Enum.Transfers.TransferState.RESERVED) {
           Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payer--${actionLetter}1`))
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
