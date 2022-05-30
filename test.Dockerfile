@@ -3,7 +3,7 @@ USER root
 
 WORKDIR /opt/central-ledger
 
-RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake \
+RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake wget \
     && cd $(npm root -g)/npm \
     && npm config set unsafe-perm true \
     && npm install -g node-gyp tape tap-xunit \

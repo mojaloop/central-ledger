@@ -1,7 +1,7 @@
 FROM node:14.15.0-alpine AS builder
 WORKDIR /opt/central-ledger
 
-RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake \
+RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake wget \
     && cd $(npm root -g)/npm \
     && npm config set unsafe-perm true \
     && npm install -g node-gyp

@@ -7,7 +7,8 @@ RUN apk add --no-cache -t build-dependencies make gcc g++ python libtool autocon
   && cd $(npm root -g)/npm \
   && npm config set unsafe-perm true \
   && npm install -g node-gyp tape tap-xunit \
-  && apk --no-cache add git
+  && apk --no-cache add git \
+  && apk add wget
 
 COPY package.json package-lock.json* /opt/central-ledger/
 RUN npm install
