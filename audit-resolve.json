@@ -7,8 +7,8 @@
     },
     "1070030|widdershins>markdown-it": {
       "decision": "ignore",
-      "madeAt": 1653393759905,
-      "expiresAt": 1655985751719
+      "madeAt": 1654684466912,
+      "expiresAt": 1657276460811
     },
     "1068155|@mojaloop/central-services-shared>shins>markdown-it>sanitize-html": {
       "decision": "ignore",
@@ -72,8 +72,8 @@
     },
     "1070030|shins>markdown-it": {
       "decision": "ignore",
-      "madeAt": 1653397119849,
-      "expiresAt": 1655989102215
+      "madeAt": 1654684412273,
+      "expiresAt": 1657276383700
     },
     "1068310|@mojaloop/central-services-shared>widdershins>markdown-it>yargs>yargs-parser": {
       "decision": "ignore",
@@ -89,6 +89,46 @@
       "decision": "ignore",
       "madeAt": 1653397123215,
       "expiresAt": 1655989102215
+    },
+    "1070449|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>protobufjs": {
+      "decision": "ignore",
+      "madeAt": 1654684408664,
+      "expiresAt": 1657276383700
+    },
+    "1070449|@mojaloop/event-sdk>grpc>protobufjs": {
+      "decision": "ignore",
+      "madeAt": 1654684408664,
+      "expiresAt": 1657276383700
+    },
+    "1070030|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>protobufjs>widdershins>markdown-it": {
+      "decision": "ignore",
+      "madeAt": 1654684412273,
+      "expiresAt": 1657276383700
+    },
+    "1068310|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>protobufjs>widdershins>markdown-it>yargs>yargs-parser": {
+      "decision": "ignore",
+      "madeAt": 1654684414498,
+      "expiresAt": 1657276383700
+    },
+    "1070030|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>protobufjs>shins>markdown-it": {
+      "decision": "ignore",
+      "madeAt": 1654684466912,
+      "expiresAt": 1657276460811
+    },
+    "1068155|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>protobufjs>shins>markdown-it>sanitize-html": {
+      "decision": "ignore",
+      "madeAt": 1654684468290,
+      "expiresAt": 1657276460811
+    },
+    "1070260|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>protobufjs>shins>markdown-it>sanitize-html": {
+      "decision": "ignore",
+      "madeAt": 1654684469471,
+      "expiresAt": 1657276460811
+    },
+    "1070412|ejs": {
+      "decision": "ignore",
+      "madeAt": 1654684471083,
+      "expiresAt": 1657276460811
     }
   },
   "rules": {},
