@@ -285,6 +285,8 @@ services:
         condition: service_healthy
       quoting-service:
         condition: service_healthy
+    networks:
+      - mojaloop-net
     command:
       - sh
       - -c
