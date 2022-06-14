@@ -1,0 +1,55 @@
+[
+  {
+    "ruleId": 1,
+    "priority": 1,
+    "description": "post /quotes",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "body",
+          "operator": "numericGreaterThan",
+          "value": "{$environment.ttkAllowedAmount}",
+          "path": "amount.amount"
+        },
+        {
+          "fact": "body",
+          "operator": "equal",
+          "value": "testingtoolkitdfsp",
+          "path": "payee.partyIdInfo.fspId"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/quotes"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "post"
+        }
+      ]
+    },
+    "event": {
+      "method": "put",
+      "path": "/quotes/{ID}/error",
+      "params": {
+        "body": {
+          "errorInformation": {
+            "errorCode": "5100",
+            "errorDescription": "The total allowed amount for the dfsp has been reached"
+          }
+        },
+        "scripts": {}
+      },
+      "type": "MOCK_ERROR_CALLBACK"
+    },
+    "type": "validation",
+    "version": 1
+  }
+]

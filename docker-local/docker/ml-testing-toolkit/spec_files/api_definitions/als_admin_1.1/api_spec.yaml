@@ -1,0 +1,802 @@
+openapi: 3.0.1
+info:
+  title: Open API for ALS Admin API
+  description: Open API for ALS Admin API
+  license:
+    name: Apache 2.0
+  version: "1.1"
+servers:
+  - url: /
+paths:
+  /oracles:
+    parameters:
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+    get:
+      tags:
+        - admin
+        - sampled
+      summary: Get Oracles
+      description: The HTTP request GET /oracles is used to return the list of all
+        oracle endpoints. There are optional fields for type and currency i.e. /admin/oracles?type=MSISDN&currency=USD
+        which can be used to get more filtered results or a specific entry
+      operationId: OraclesGet
+      parameters:
+        - $ref: '#/components/parameters/type'
+        - $ref: '#/components/parameters/currency'
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        200:
+          $ref: '#/components/responses/Response200'
+        400:
+          $ref: '#/components/responses/ErrorResponse400'
+        401:
+          $ref: '#/components/responses/ErrorResponse401'
+        403:
+          $ref: '#/components/responses/ErrorResponse403'
+        404:
+          $ref: '#/components/responses/ErrorResponse404'
+        405:
+          $ref: '#/components/responses/ErrorResponse405'
+        406:
+          $ref: '#/components/responses/ErrorResponse406'
+        501:
+          $ref: '#/components/responses/ErrorResponse501'
+        503:
+          $ref: '#/components/responses/ErrorResponse503'
+    post:
+      tags:
+        - admin
+        - sampled
+      summary: Create Oracles
+      description: The HTTP request POST /oracles is used to create information in
+        the server regarding the provided oracles. This request should be used for
+        creation of Oracle information.
+      operationId: OraclesPost
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OracleInfo'
+        required: true
+      responses:
+        201:
+          $ref: '#/components/responses/Response201'
+        400:
+          $ref: '#/components/responses/ErrorResponse400'
+        401:
+          $ref: '#/components/responses/ErrorResponse401'
+        403:
+          $ref: '#/components/responses/ErrorResponse403'
+        404:
+          $ref: '#/components/responses/ErrorResponse404'
+        405:
+          $ref: '#/components/responses/ErrorResponse405'
+        406:
+          $ref: '#/components/responses/ErrorResponse406'
+        501:
+          $ref: '#/components/responses/ErrorResponse501'
+        503:
+          $ref: '#/components/responses/ErrorResponse503'
+  /oracles/{ID}:
+    parameters:
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/ID'
+    put:
+      tags:
+        - admin
+        - sampled
+      summary: Update Oracle
+      description: The HTTP request PUT /oracles/{ID} is used to update information
+        in the server regarding the provided oracle. This request should be used for
+        individual update of Oracle information.
+      operationId: OraclesByIdPut
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OracleInfo'
+        required: true
+      responses:
+        204:
+          $ref: '#/components/responses/Response204'
+        400:
+          $ref: '#/components/responses/ErrorResponse400'
+        401:
+          $ref: '#/components/responses/ErrorResponse401'
+        403:
+          $ref: '#/components/responses/ErrorResponse403'
+        404:
+          $ref: '#/components/responses/ErrorResponse404'
+        405:
+          $ref: '#/components/responses/ErrorResponse405'
+        406:
+          $ref: '#/components/responses/ErrorResponse406'
+        501:
+          $ref: '#/components/responses/ErrorResponse501'
+        503:
+          $ref: '#/components/responses/ErrorResponse503'
+    delete:
+      tags:
+        - admin
+        - sampled
+      summary: Delete Oracle
+      description: The HTTP request DELETE /oracles/{ID} is used to delete information
+        in the server regarding the provided oracle.
+      operationId: OraclesByIdDelete
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        204:
+          $ref: '#/components/responses/Response204'
+        400:
+          $ref: '#/components/responses/ErrorResponse400'
+        401:
+          $ref: '#/components/responses/ErrorResponse401'
+        403:
+          $ref: '#/components/responses/ErrorResponse403'
+        404:
+          $ref: '#/components/responses/ErrorResponse404'
+        405:
+          $ref: '#/components/responses/ErrorResponse405'
+        406:
+          $ref: '#/components/responses/ErrorResponse406'
+        501:
+          $ref: '#/components/responses/ErrorResponse501'
+        503:
+          $ref: '#/components/responses/ErrorResponse503'
+  /health:
+    get:
+      tags:
+        - admin
+      summary: Get Oracles
+      description: The HTTP request GET /health is used to return the current status
+        of the Admin API.
+      operationId: HealthGet
+      responses:
+        200:
+          $ref: '#/components/responses/ResponseHealth200'
+        400:
+          $ref: '#/components/responses/ErrorResponse400'
+        401:
+          $ref: '#/components/responses/ErrorResponse401'
+        403:
+          $ref: '#/components/responses/ErrorResponse403'
+        404:
+          $ref: '#/components/responses/ErrorResponse404'
+        405:
+          $ref: '#/components/responses/ErrorResponse405'
+        406:
+          $ref: '#/components/responses/ErrorResponse406'
+        501:
+          $ref: '#/components/responses/ErrorResponse501'
+        503:
+          $ref: '#/components/responses/ErrorResponse503'
+components:
+  schemas:
+    ErrorCode:
+      title: ErrorCode
+      pattern: ^[1-9]\d{3}$
+      type: string
+      description: The API data type ErrorCode is a JSON String of four characters,
+        consisting of digits only. Negative numbers are not allowed. A leading zero
+        is not allowed. Each error code in the API is a four-digit number, for example,
+        1234, where the first number (1 in the example) represents the high-level
+        error category, the second number (2 in the example) represents the low-level
+        error category, and the last two numbers (34 in the example) represents the
+        specific error.
+    ErrorDescription:
+      title: ErrorDescription
+      maxLength: 128
+      minLength: 1
+      type: string
+      description: Error description string.
+    ExtensionKey:
+      title: ExtensionKey
+      maxLength: 32
+      minLength: 1
+      type: string
+      description: Extension key.
+    ExtensionValue:
+      title: ExtensionValue
+      maxLength: 128
+      minLength: 1
+      type: string
+      description: Extension value.
+    Currency:
+      title: CurrencyEnum
+      maxLength: 3
+      minLength: 3
+      type: string
+      description: The currency codes defined in ISO 4217 as three-letter alphabetic
+        codes are used as the standard naming representation for currencies.
+      enum:
+        - AED
+        - AFN
+        - ALL
+        - AMD
+        - ANG
+        - AOA
+        - ARS
+        - AUD
+        - AWG
+        - AZN
+        - BAM
+        - BBD
+        - BDT
+        - BGN
+        - BHD
+        - BIF
+        - BMD
+        - BND
+        - BOB
+        - BRL
+        - BSD
+        - BTN
+        - BWP
+        - BYN
+        - BZD
+        - CAD
+        - CDF
+        - CHF
+        - CLP
+        - CNY
+        - COP
+        - CRC
+        - CUC
+        - CUP
+        - CVE
+        - CZK
+        - DJF
+        - DKK
+        - DOP
+        - DZD
+        - EGP
+        - ERN
+        - ETB
+        - EUR
+        - FJD
+        - FKP
+        - GBP
+        - GEL
+        - GGP
+        - GHS
+        - GIP
+        - GMD
+        - GNF
+        - GTQ
+        - GYD
+        - HKD
+        - HNL
+        - HRK
+        - HTG
+        - HUF
+        - IDR
+        - ILS
+        - IMP
+        - INR
+        - IQD
+        - IRR
+        - ISK
+        - JEP
+        - JMD
+        - JOD
+        - JPY
+        - KES
+        - KGS
+        - KHR
+        - KMF
+        - KPW
+        - KRW
+        - KWD
+        - KYD
+        - KZT
+        - LAK
+        - LBP
+        - LKR
+        - LRD
+        - LSL
+        - LYD
+        - MAD
+        - MDL
+        - MGA
+        - MKD
+        - MMK
+        - MNT
+        - MOP
+        - MRO
+        - MUR
+        - MVR
+        - MWK
+        - MXN
+        - MYR
+        - MZN
+        - NAD
+        - NGN
+        - NIO
+        - NOK
+        - NPR
+        - NZD
+        - OMR
+        - PAB
+        - PEN
+        - PGK
+        - PHP
+        - PKR
+        - PLN
+        - PYG
+        - QAR
+        - RON
+        - RSD
+        - RUB
+        - RWF
+        - SAR
+        - SBD
+        - SCR
+        - SDG
+        - SEK
+        - SGD
+        - SHP
+        - SLL
+        - SOS
+        - SPL
+        - SRD
+        - STD
+        - SVC
+        - SYP
+        - SZL
+        - THB
+        - TJS
+        - TMT
+        - TND
+        - TOP
+        - TRY
+        - TTD
+        - TVD
+        - TWD
+        - TZS
+        - UAH
+        - UGX
+        - USD
+        - UYU
+        - UZS
+        - VEF
+        - VND
+        - VUV
+        - WST
+        - XAF
+        - XCD
+        - XDR
+        - XOF
+        - XPF
+        - YER
+        - ZAR
+        - ZMW
+        - ZWD
+    ErrorInformation:
+      title: ErrorInformation
+      required:
+        - errorCode
+        - errorDescription
+      type: object
+      properties:
+        errorCode:
+          $ref: '#/components/schemas/ErrorCode'
+        errorDescription:
+          $ref: '#/components/schemas/ErrorDescription'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      description: Data model for the complex type ErrorInformation.
+    ErrorInformationResponse:
+      title: ErrorInformationResponse
+      type: object
+      properties:
+        errorInformation:
+          $ref: '#/components/schemas/ErrorInformation'
+      description: Data model for the complex type object that contains an optional
+        element ErrorInformation used along with 4xx and 5xx responses.
+    Extension:
+      title: Extension
+      required:
+        - key
+        - value
+      type: object
+      properties:
+        key:
+          $ref: '#/components/schemas/ExtensionKey'
+        value:
+          $ref: '#/components/schemas/ExtensionValue'
+      description: Data model for the complex type Extension
+    ExtensionList:
+      title: ExtensionList
+      required:
+        - extension
+      type: object
+      properties:
+        extension:
+          maxItems: 16
+          minItems: 1
+          type: array
+          description: Number of Extension elements
+          items:
+            $ref: '#/components/schemas/Extension'
+      description: Data model for the complex type ExtensionList
+    Endpoint:
+      title: Endpoint
+      required:
+        - endpointType
+        - value
+      type: object
+      properties:
+        value:
+          type: string
+          description: An endpoint for the Oracle.
+        endpointType:
+          $ref: '#/components/schemas/EndpointType'
+      description: Contains information about an endpoint
+    EndpointType:
+      title: EndpointType
+      type: string
+      description: The type of endpoint requested
+      enum:
+        - URL
+    HealthStatusType:
+      title: HealthStatusType
+      type: string
+      description: Below are the allowed values for the enumeration HealthStatusType
+        - OK - DOWN
+      enum:
+        - OK
+        - DOWN
+    HealthServicesType:
+      title: HealthServicesType
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/HealthStatusType'
+      description: Data model for the complex type HealthServicesType. Contains health
+        services information.
+    OracleInfo:
+      title: OracleInfo
+      required:
+        - endpoint
+        - oracleIdType
+      type: object
+      properties:
+        oracleIdType:
+          $ref: '#/components/schemas/PartyIdType'
+        endpoint:
+          $ref: '#/components/schemas/Endpoint'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        isDefault:
+          type: boolean
+          description: Is the endpoint default or not
+      description: Data model for the complex type OracleInfo.
+    OracleInfoGetResponse:
+      title: OracleInfoGetResponse
+      required:
+        - endpoint
+        - oracleIdType
+      type: object
+      properties:
+        oracleId:
+          type: string
+          description: Oracle type entry's unique identified
+        oracleIdType:
+          $ref: '#/components/schemas/PartyIdType'
+        endpoint:
+          $ref: '#/components/schemas/Endpoint'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        isDefault:
+          type: boolean
+          description: Is the endpoint default or not
+      description: Data model for the complex type OracleInfo.
+    OracleInfoGetResponseList:
+      title: OracleInfoGetResponseList
+      type: array
+      description: List of OracleInfoGetResponse
+      items:
+        $ref: '#/components/schemas/OracleInfoGetResponse'
+    PartyIdType:
+      title: PartyIdTypeEnum
+      type: string
+      description: Below are the allowed values for the enumeration - MSISDN An MSISDN
+        (Mobile Station International Subscriber Directory Number, that is, the phone
+        number) is used as reference to a participant. The MSISDN identifier should
+        be in international format according to the ITU-T E.164 standard. Optionally,
+        the MSISDN may be prefixed by a single plus sign, indicating the international
+        prefix. - EMAIL An email is used as reference to a participant. The format
+        of the email should be according to the informational RFC 3696. - PERSONAL_ID
+        A personal identifier is used as reference to a participant. Examples of personal
+        identification are passport number, birth certificate number, and national
+        registration number. The identifier number is added in the PartyIdentifier
+        element. The personal identifier type is added in the PartySubIdOrType element.
+        - BUSINESS A specific Business (for example, an organization or a company)
+        is used as reference to a participant. The BUSINESS identifier can be in any
+        format. To make a transaction connected to a specific username or bill number
+        in a Business, the PartySubIdOrType element should be used. - DEVICE A specific
+        device (for example, a POS or ATM) ID connected to a specific business or
+        organization is used as reference to a Party. For referencing a specific device
+        under a specific business or organization, use the PartySubIdOrType element.
+        - ACCOUNT_ID A bank account number or FSP account ID should be used as reference
+        to a participant. The ACCOUNT_ID identifier can be in any format, as formats
+        can greatly differ depending on country and FSP. - IBAN A bank account number
+        or FSP account ID is used as reference to a participant. The IBAN identifier
+        can consist of up to 34 alphanumeric characters and should be entered without
+        whitespace. - ALIAS An alias is used as reference to a participant. The alias
+        should be created in the FSP as an alternative reference to an account owner.
+        Another example of an alias is a username in the FSP system. The ALIAS identifier
+        can be in any format. It is also possible to use the PartySubIdOrType element
+        for identifying an account under an Alias defined by the PartyIdentifier.
+      enum:
+        - MSISDN
+        - EMAIL
+        - PERSONAL_ID
+        - BUSINESS
+        - DEVICE
+        - ACCOUNT_ID
+        - IBAN
+        - ALIAS
+    Status:
+      title: Status
+      type: object
+      properties:
+        status:
+          type: string
+          description: The return status, usually "OK"
+        uptime:
+          type: number
+          description: The amount of time in seconds that the server has been up for.
+        startTime:
+          type: string
+          description: The UTC time that the server started up
+        versionNumber:
+          type: string
+          description: Current version of the API
+        services:
+          type: array
+          description: An list of the statuses of services that the API requires
+          items:
+            $ref: '#/components/schemas/HealthServicesType'
+      description: Data model for the api status.
+  responses:
+    ErrorResponse400:
+      description: Bad Request - The application cannot process the request; for example,
+        due to malformed syntax or the payload exceeded size restrictions.
+      headers:
+        Content-Length:
+          description: The Content-Length header field indicates the anticipated size
+            of the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: The Content-Type header indicates the specific version of the
+            API used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse401:
+      description: Unauthorized - The request requires authentication in order to
+        be processed.
+      headers:
+        Content-Length:
+          description: The Content-Length header field indicates the anticipated size
+            of the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: The Content-Type header indicates the specific version of the
+            API used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse403:
+      description: Forbidden - The request was denied and will be denied in the future.
+      headers:
+        Content-Length:
+          description: The Content-Length header field indicates the anticipated size
+            of the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: The Content-Type header indicates the specific version of the
+            API used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse404:
+      description: Not Found - The resource specified in the URI was not found.
+      headers:
+        Content-Length:
+          description: The Content-Length header field indicates the anticipated size
+            of the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: The Content-Type header indicates the specific version of the
+            API used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse405:
+      description: Method Not Allowed - An unsupported HTTP method for the request
+        was used.
+      headers:
+        Content-Length:
+          description: The Content-Length header field indicates the anticipated size
+            of the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: The Content-Type header indicates the specific version of the
+            API used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse406:
+      description: Not acceptable - The server is not capable of generating content
+        according to the Accept headers sent in the request. Used in the API to indicate
+        that the server does not support the version that the client is requesting.
+      headers:
+        Content-Length:
+          description: The Content-Length header field indicates the anticipated size
+            of the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: The Content-Type header indicates the specific version of the
+            API used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse501:
+      description: Not Implemented - The server does not support the requested service.
+        The client should not retry.
+      headers:
+        Content-Length:
+          description: The Content-Length header field indicates the anticipated size
+            of the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: The Content-Type header indicates the specific version of the
+            API used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse503:
+      description: Service Unavailable - The server is currently unavailable to accept
+        any new service requests. This should be a temporary state, and the client
+        should retry within a reasonable time frame.
+      headers:
+        Content-Length:
+          description: The Content-Length header field indicates the anticipated size
+            of the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: The Content-Type header indicates the specific version of the
+            API used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    Response200:
+      description: OK
+      headers:
+        Content-Length:
+          description: The Content-Length header field indicates the anticipated size
+            of the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: The Content-Type header indicates the specific version of the
+            API used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OracleInfoGetResponseList'
+    Response201:
+      description: Created
+      content: {}
+    Response204:
+      description: No Content
+      content: {}
+    ResponseHealth200:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Status'
+  parameters:
+    Accept:
+      name: accept
+      in: header
+      description: The Accept header field indicates the version of the API the client
+        would like the server to use.
+      required: true
+      schema:
+        type: string
+    Accept-Optional:
+      name: accept
+      in: header
+      description: The Accept header field indicates the version of the API the client
+        would like the server to use.
+      schema:
+        type: string
+    Content-Length:
+      name: content-length
+      in: header
+      description: The Content-Length header field indicates the anticipated size
+        of the payload body. Only sent if there is a body. Note - The API supports
+        a maximum size of 5242880 bytes (5 Megabytes)
+      schema:
+        type: integer
+    Content-Type:
+      name: content-type
+      in: header
+      description: The Content-Type header indicates the specific version of the API
+        used to send the payload body.
+      required: true
+      schema:
+        type: string
+    Date:
+      name: date
+      in: header
+      description: The Date header field indicates the date when the request was sent.
+      required: true
+      schema:
+        type: string
+    ID:
+      name: ID
+      in: path
+      description: ID relating to the oracle endpoint entry
+      required: true
+      schema:
+        type: string
+    type:
+      name: type
+      in: query
+      description: type of oracle entry
+      schema:
+        type: string
+    currency:
+      name: currency
+      in: query
+      description: currency relating to the oracle endpoint entry
+      schema:
+        type: string

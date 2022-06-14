@@ -1,0 +1,126 @@
+{
+  "name": "Transaction Request Service Followup",
+  "inputValues": {
+    "payerFirstName": "Vijay",
+    "payerLastName": "Kumar",
+    "payerDOB": "1984-01-01",
+    "accept": "application/vnd.interoperability.parties+json;version=1.0",
+    "contentType": "application/vnd.interoperability.parties+json;version=1.0",
+    "transactionId": "e8c4572c-0826-22f4-aa3e-f5bbe928afa6",
+    "TrsNote": "note",
+    "TrsCurrency": "USD",
+    "TrsAmount": "100",
+    "TrsPayerIdType": "MSISDN",
+    "TrsPayerIdValue": "44123456789",
+    "TrsPayerFspId": "testingtoolkitdfsp",
+    "TrsPayeeIdType": "MSISDN",
+    "TrsPayeeIdValue": "9876543210",
+    "TrsPayeeFspId": "userdfsp",
+    "TrsScenario": "DEPOSIT",
+    "TrsInitiator": "PAYEE",
+    "TrsInitiatorType": "CONSUMER"
+  },
+  "test_cases": [
+    {
+      "id": 1,
+      "name": "Transaction Request Followup",
+      "requests": [
+        {
+          "id": 2,
+          "description": "Get quote",
+          "apiVersion": {
+            "minorVersion": 0,
+            "majorVersion": 1,
+            "type": "fspiop",
+            "asynchronous": true
+          },
+          "operationPath": "/quotes",
+          "method": "post",
+          "headers": {
+            "Accept": "{$inputs.accept}",
+            "Content-Type": "{$inputs.contentType}",
+            "Date": "{$function.generic.curDate}",
+            "FSPIOP-Source": "{$inputs.TrsPayerFspId}"
+          },
+          "body": {
+            "quoteId": "{$function.generic.generateUUID}",
+            "transactionId": "{$inputs.transactionId}",
+            "payer": {
+              "partyIdInfo": {
+                "partyIdType": "{$inputs.TrsPayerIdType}",
+                "partyIdentifier": "{$inputs.TrsPayerIdValue}",
+                "fspId": "{$inputs.TrsPayerFspId}"
+              },
+              "personalInfo": {
+                "complexName": {
+                  "firstName": "{$inputs.payerFirstName}",
+                  "lastName": "{$inputs.payerLastName}"
+                },
+                "dateOfBirth": "{$inputs.payerDOB}"
+              }
+            },
+            "payee": {
+              "partyIdInfo": {
+                "partyIdType": "{$inputs.TrsPayeeIdType}",
+                "partyIdentifier": "{$inputs.TrsPayeeIdValue}",
+                "fspId": "{$inputs.TrsPayeeFspId}"
+              }
+            },
+            "amountType": "SEND",
+            "amount": {
+              "amount": "{$inputs.TrsAmount}",
+              "currency": "{$inputs.TrsCurrency}"
+            },
+            "transactionType": {
+              "scenario": "{$inputs.TrsScenario}",
+              "initiator": "{$inputs.TrsInitiator}",
+              "initiatorType": "{$inputs.TrsInitiatorType}"
+            },
+            "transactionRequestId": "{$inputs.TrsTransactionRequestId}",
+            "note": "{$inputs.TrsNote}"
+          },
+          "tests": {
+            "assertions": []
+          },
+          "params": {
+            "Type": "",
+            "ID": ""
+          }
+        },
+        {
+          "id": 3,
+          "description": "Send transfer",
+          "apiVersion": {
+            "minorVersion": 0,
+            "majorVersion": 1,
+            "type": "fspiop",
+            "asynchronous": true
+          },
+          "operationPath": "/transfers",
+          "method": "post",
+          "headers": {
+            "Accept": "{$inputs.accept}",
+            "Content-Type": "{$inputs.contentType}",
+            "Date": "{$function.generic.curDate}",
+            "FSPIOP-Source": "{$inputs.TrsPayerFspId}"
+          },
+          "body": {
+            "transferId": "{$prev.2.request.body.transactionId}",
+            "payerFsp": "{$inputs.TrsPayerFspId}",
+            "payeeFsp": "{$inputs.TrsPayeeFspId}",
+            "amount": {
+              "amount": "{$inputs.TrsAmount}",
+              "currency": "{$inputs.TrsCurrency}"
+            },
+            "expiration": "{$prev.2.callback.body.expiration}",
+            "ilpPacket": "{$prev.2.callback.body.ilpPacket}",
+            "condition": "{$prev.2.callback.body.condition}"
+          },
+          "tests": {
+            "assertions": []
+          }
+        }
+      ]
+    }
+  ]
+}

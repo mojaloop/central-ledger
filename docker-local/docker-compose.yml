@@ -1,0 +1,290 @@
+version: "3.7"
+
+networks:
+  mojaloop-net:
+    name: mojaloop-net
+
+services:
+  ## Config file generator
+  config-builder:
+    image: ubuntu:focal
+    environment:
+      - ML_API_ADAPTER_VERSION
+      - ACCOUNT_LOOKUP_SERVICE_VERSION
+      - QUOTING_SERVICE_VERSION
+      - CENTRAL_LEDGER_VERSION
+    volumes:
+      - ./docker/config-builder:/opt/config-builder
+      - ./generated-config-files:/opt/generated-config-files
+    command: >
+        sh -c "ls /opt/config-builder
+        && cd /opt/config-builder
+        && sh ./run.sh -c /opt/config-builder/config.json -o /opt/generated-config-files"
+  ## Switch
+  central-ledger:
+    image: mojaloop/central-ledger:${CENTRAL_LEDGER_VERSION}
+    container_name: central-ledger
+    command: sh -c "/opt/app/wait4/wait4.js central-ledger && node src/api/index.js"
+    ports:
+      - "3001:3001"
+    volumes:
+       - ./generated-config-files/central-ledger/default.json:/opt/app/config/default.json
+       - ./docker/wait4:/opt/app/wait4
+    environment:
+      - LOG_LEVEL=info
+      - CLEDG_MONGODB__DISABLED=false
+    networks:
+      - mojaloop-net
+    depends_on:
+      mysql:
+        condition: service_started
+      kafka:
+        condition: service_started
+      objstore:
+        condition: service_started
+      config-builder:
+        condition: service_completed_successfully
+    healthcheck:
+      test: wget -q http://localhost:3001/health -O /dev/null || exit 1
+      timeout: 20s
+      retries: 30
+      interval: 30s
+      start_period: 30s
+    user: root
+
+  objstore:
+    image: mongo:latest
+    container_name: objstore
+    # Disable logging, this container is not that important and rather verbose
+    logging:
+      driver: none
+    ports:
+      - "27017:27017"
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  quoting-service:
+    image: "mojaloop/quoting-service:${QUOTING_SERVICE_VERSION}"
+    container_name: quoting-service
+    networks:
+      - mojaloop-net
+    depends_on:
+      mysql:
+        condition: service_started
+      central-ledger:
+        condition: service_started
+      config-builder:
+        condition: service_completed_successfully
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./generated-config-files/quoting-service/default.json:/opt/app/config/default.json
+    healthcheck:
+      test: wget -q http://localhost:3002/health -O /dev/null || exit 1
+      timeout: 20s
+      retries: 30
+      interval: 15s
+    user: root
+
+  ml-api-adapter:
+    image: mojaloop/ml-api-adapter:${ML_API_ADAPTER_VERSION}
+    container_name: ml-api-adapter
+    command: sh -c "/opt/app/wait4/wait4.js ml-api-adapter && node src/api/index.js"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./generated-config-files/ml-api-adapter/default.json:/opt/app/config/default.json
+      - ./docker/wait4:/opt/app/wait4
+    environment:
+      - LOG_LEVEL=info
+    networks:
+      - mojaloop-net
+    depends_on:
+      kafka:
+        condition: service_started
+      central-ledger:
+        condition: service_started
+      account-lookup-service:
+        condition: service_started
+      config-builder:
+        condition: service_completed_successfully
+    healthcheck:
+      test: wget -q http://localhost:3000/health -O /dev/null || exit 1
+      timeout: 30s
+      retries: 30
+      interval: 30s
+      start_period: 30s
+
+  mysql:
+    image: mysql/mysql-server
+    container_name: mysql
+    ports:
+      - "3307:3306"
+    volumes:
+      # Note: this fixes the permissions issue, but docker-compose up will fail on first attempt
+      - ./docker/sql-init/:/docker-entrypoint-initdb.d/
+    environment:
+      - MYSQL_USER=${DBUSER:-central_ledger}
+      - MYSQL_PASSWORD=${DBPASS:-password}
+      - MYSQL_DATABASE=${DBUSER:-central_ledger}
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "mysql"]
+      timeout: 20s
+      retries: 10
+      start_period: 40s
+      interval: 30s
+
+  simulator:
+    image: mojaloop/simulator:v11.1.3
+    container_name: simulator
+    ports:
+      - "8444:8444"
+    environment:
+      - LOG_LEVEL=info
+      - TRANSFERS_ENDPOINT=http://ml-api-adapter:3000
+      - QUOTES_ENDPOINT=http://quoting-service:3002
+      - PARTIES_ENDPOINT=http://account-lookup-service:4002
+      - TRANSACTION_REQUESTS_ENDPOINT=http://transaction-request-service:4003
+      - TRANSFERS_FULFIL_RESPONSE_DISABLED=false
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: wget -q http://localhost:8444/health -O /dev/null || exit 1
+      timeout: 20s
+      retries: 10
+      interval: 30s
+
+  kafka:
+    image: johnnypark/kafka-zookeeper:2.3.0
+    container_name: kafka
+    volumes:
+      - ./docker/kafka/:/opt/kafka_2.12-2.3.0/config/
+    ports:
+      - "2181:2181"
+      - "9092:9092"
+    environment:
+      - ZOO_LOG4J_PROP=WARN
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: ["CMD" ,"/opt/kafka_2.12-2.3.0/bin/kafka-broker-api-versions.sh","--bootstrap-server","kafka:29092"]
+      timeout: 20s
+      retries: 10
+      start_period: 40s
+      interval: 30s
+
+  account-lookup-service:
+    image: mojaloop/account-lookup-service:${ACCOUNT_LOOKUP_SERVICE_VERSION}
+    container_name: account-lookup-service
+    command: sh -c "/opt/account-lookup-service/wait4/wait4.js account-lookup-service && npm run migrate && node src/index.js server"
+    ports:
+      - "4001:4001"
+      - "4002:4002"
+    environment:
+      - LOG_LEVEL=debug
+      - ALS_DISPLAY_ROUTES=false
+    networks:
+      - mojaloop-net
+    depends_on:
+      mysql-als:
+        condition: service_started
+      central-ledger:
+        condition: service_started
+      config-builder:
+        condition: service_completed_successfully      
+    volumes:
+      - ./generated-config-files/account-lookup-service/default.json:/opt/account-lookup-service/config/default.json
+      - ./docker/wait4:/opt/account-lookup-service/wait4
+    healthcheck:
+      test: wget -q http://localhost:4001/health -O /dev/null || exit 1
+      timeout: 20s
+      retries: 10
+      start_period: 40s
+      interval: 30s
+    user: root
+
+  mysql-als:
+    image: mysql/mysql-server
+    container_name: mysql-als
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/sql-als-init/:/docker-entrypoint-initdb.d/
+    environment:
+      - MYSQL_USER=${DBUSER:-account_lookup}
+      - MYSQL_PASSWORD=${DBPASS:-password}
+      - MYSQL_DATABASE=${DBUSER:-account_lookup}
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "mysql-als"]
+      timeout: 20s
+      retries: 10
+      start_period: 40s
+      interval: 30s
+
+  ## Testing Toolkit
+  mojaloop-testing-toolkit:
+    image: mojaloop/ml-testing-toolkit:v14.0.2
+    volumes:
+      - "./docker/ml-testing-toolkit/spec_files:/opt/mojaloop-testing-toolkit/spec_files"
+      - "./docker/ml-testing-toolkit/test-cases:/opt/mojaloop-testing-toolkit/examples"
+    ports:
+      - "9500:5000"
+      - "9550:5050"
+    command:
+      - sh
+      - -c
+      - "npm start"
+    networks:
+      - mojaloop-net
+    healthcheck:
+      test: ["CMD-SHELL", "nc localhost 5000"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+
+  mojaloop-testing-toolkit-ui:
+    image: mojaloop/ml-testing-toolkit-ui:v13.5.5
+    ports:
+      - "9660:6060"
+    environment:
+      - API_BASE_URL=http://localhost:9550
+      - AUTH_ENABLED=FALSE
+    command:
+      - sh
+      - /usr/share/nginx/start.sh
+    networks:
+      - mojaloop-net
+
+  ttk-provisioning:
+    image: mojaloop/ml-testing-toolkit-client-lib:v0.0.6
+    volumes:
+      - "./docker/ml-testing-toolkit/test-cases/collections:/opt/app/collections"
+      - "./docker/ml-testing-toolkit/test-cases/environments:/opt/app/environments"
+      - "./docker/ml-testing-toolkit/reports:/opt/app/reports"
+    depends_on:
+      mojaloop-testing-toolkit:
+        condition: service_healthy
+      central-ledger:
+        condition: service_healthy
+      ml-api-adapter:
+        condition: service_healthy
+      account-lookup-service:
+        condition: service_healthy
+      quoting-service:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - "npm run cli -- -u http://mojaloop-testing-toolkit:5050 -l 2 -i collections/provisioning -e environments/default-env.json --report-format html --report-target file://reports/latest.html"

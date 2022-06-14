@@ -1,0 +1,38 @@
+[
+  {
+    "id": "changedDate",
+    "pattern": "^(19)\\d\\d[-](0[1-9]|1[012])[-](0[1-9]|[12][0-9]|2[0-8])$"
+  },
+  {
+    "id": "createdDate",
+    "pattern": "^(19)\\d\\d[-](0[1-9]|1[012])[-](0[1-9]|[12][0-9]|2[0-8])$"
+  },
+  {
+    "id": "state",
+    "pattern": "OPEN|CLOSED"
+  },
+  {
+    "id": "settlementWindows.items.items.createdDate",
+    "pattern": "^(19)\\d\\d[-](0[1-9]|1[012])[-](0[1-9]|[12][0-9]|2[0-8])$"
+  },
+  {
+    "id": "settlementWindows.items.items.changedDate",
+    "pattern": "^(19)\\d\\d[-](0[1-9]|1[012])[-](0[1-9]|[12][0-9]|2[0-8])$"
+  },
+  {
+    "id": "settlementWindows.items.items.state",
+    "pattern": "OPEN|CLOSED"
+  },
+  { 
+    "id": "participants.items.accounts.items.state",
+    "pattern": "OPEN|CLOSED"
+  },
+  { 
+    "id": "participants.items.accounts.items.netSettlementAmount.amount",
+    "pattern": "123"
+  },
+  { 
+    "id": "participants.items.accounts.items.netSettlementAmount.currency",
+    "pattern": "USD"
+  }
+]

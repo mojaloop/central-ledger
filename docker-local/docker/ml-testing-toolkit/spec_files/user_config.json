@@ -1,0 +1,68 @@
+{
+  "VERSION": 1,
+  "CALLBACK_ENDPOINT": "http://example-users-api-service:8000",
+  "CALLBACK_RESOURCE_ENDPOINTS": {
+    "enabled": true,
+    "endpoints": [
+      {
+        "method": "put",
+        "path": "/parties",
+        "endpoint": "http://account-lookup-service:4002"
+      },
+      {
+        "method": "put",
+        "path": "/quotes",
+        "endpoint": "http://quoting-service:3002"
+      },
+      {
+        "method": "put",
+        "path": "/transfers",
+        "endpoint": "http://ml-api-adapter:3000"
+      }
+    ]
+  },
+  "HUB_ONLY_MODE": false,
+  "ENDPOINTS_DFSP_WISE": {
+    "dfsps": {}
+  },
+  "SEND_CALLBACK_ENABLE": true,
+  "FSPID": "ttkpayeefsp",
+  "DEFAULT_USER_FSPID": "userdfsp",
+  "TRANSFERS_VALIDATION_WITH_PREVIOUS_QUOTES": true,
+  "TRANSFERS_VALIDATION_ILP_PACKET": true,
+  "TRANSFERS_VALIDATION_CONDITION": true,
+  "ILP_SECRET": "secret",
+  "VERSIONING_SUPPORT_ENABLE": true,
+  "VALIDATE_INBOUND_JWS": false,
+  "VALIDATE_INBOUND_PUT_PARTIES_JWS": false,
+  "JWS_SIGN": false,
+  "JWS_SIGN_PUT_PARTIES": false,
+  "CLIENT_MUTUAL_TLS_ENABLED": false,
+  "ADVANCED_FEATURES_ENABLED": true,
+  "CALLBACK_TIMEOUT": 10000,
+  "DEFAULT_REQUEST_TIMEOUT": 3000,
+  "SCRIPT_TIMEOUT": 5000,
+  "LOG_SERVER_UI_URL": "http://some-url-here",
+  "UI_CONFIGURATION": {
+    "MOBILE_SIMULATOR": {
+      "HUB_CONSOLE_ENABLED": true
+    }
+  },
+  "CLIENT_TLS_CREDS": [
+    {
+      "HOST": "testfsp1",
+      "CERT": "-----BEGIN CERTIFICATE-----\nMIIFATCCAumgAwIBAgIUEcEtqgcXBoTykvaD6PprzY8kxpYwDQYJKoZIhvcNAQEL\nBQAwfzERMA8GA1UEChMITW9kdXNCb3gxHDAaBgNVBAsTE0luZnJhc3RydWN0dXJl\nIFRlYW0xTDBKBgNVBAMTQ3Rlc3Rmc3AxLnFhLnByZS5teWFubWFycGF5LXByZS5p\nby5pbnRlcm5hbCB0ZXN0ZnNwMSBJbnRlcm1lZGlhdGUgQ0EwHhcNMjEwMjIyMTkw\nMTEyWhcNMjMwMjIzMDY0MDA2WjBdMREwDwYDVQQKEwhNb2R1c0JveDEcMBoGA1UE\nCxMTSW5mcmFzdHJ1Y3R1cmUgVGVhbTEqMCgGA1UEAxMhdGVzdGZzcDEucWEucHJl\nLm15YW5tYXJwYXktcHJlLmlvMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC\nAQEApndEBbmdlfrpnidagKb2D32bEL+iGYxLEicdQVs24018zNPdbrIYtXyDjgjA\nq718HH5XQW2FSz6cA1CbQ6jLuY88EZRUiCSJ4rCkENWw+mpVLyOd+mcYU4JwOQNC\nP+W8GGcW/haifkXtHEDUO4pIxnXWC6DftvxZ3TH5PxtWO8aJcsoj94oBTPOhnGi0\nC356XyseYl7o7hdxZu3DvY3Wyh/k5pDDHOCjQYxl9wjtW+BVWMCFxRaCu4f/3LVj\nca9BccwZ8O4Rdhu6lhJEUCUgTqdx3vXRB1xzwHT0W7gariy4RVbvwE35AaCliyEr\n4O5WlCvAMOct7POYDAwNuoeb7wIDAQABo4GWMIGTMA4GA1UdDwEB/wQEAwIDqDAT\nBgNVHSUEDDAKBggrBgEFBQcDAjAdBgNVHQ4EFgQU2alVxVOOplYXiLAYCDaII4E0\n/WgwHwYDVR0jBBgwFoAUCFvcCetcirxZPE3N6qMdOo5H7Z4wLAYDVR0RBCUwI4Ih\ndGVzdGZzcDEucWEucHJlLm15YW5tYXJwYXktcHJlLmlvMA0GCSqGSIb3DQEBCwUA\nA4ICAQBkX5LItY0calp7NT21O8z+iufVNV8onEch4J7HJjEVwtCB4UVl7LrWJ3cw\n9KLt7nj85/AUuuhtNPJO9DW/x+0xRyW94Ef5MYHP3nheFWTag8riYl/1SXljOssS\nHCpTvRhirnfGeqBGO1OBwCbkYNIEZI95eMerVoPFm0PfGBb4DJ6mUdfc3qzeOP7K\nOlE5VMhwH2PYv1TS7Hpj1k/1dxpdvyOs7EKVvWD+OokLhJaHgU8NWVetTUtsXSN/\nTv06ZN8JGTN/Udm7POVyEaol8Jw2FRGGKcwOBKbqroNs6POqTofqZeL4SFAkzzQL\nvOAhbQIB6GSznG1Gg1G9IjGVCMXUhpNK2PD8RR1ovzi0MZlRkITGRPhBYQf5xMFl\nZeq0mGFQR3VYDdlwT0O37C8fpaYvpdupeYdxcB623PNz1VkO1MbsXnOoHY8kcFGa\nMh4IARCeR/MwXNWHpGrd6J5Mzmhk0Vy8GyBbqcROUpNR/XTZYRTyfTEq5+amJyLi\n67OB9FP5cS7oQhj7gsaQCTJlxbh/CjmQdKmIimWSEZkDePK5eExNPafBk47tx4KA\nFmh9pIqRyheROesa/zTDGYySNcVd14dl703pyZQNO4b5rap0SZoyGDTfI+7OqAHM\nAz0kWYyZps2nqPZgbwDFigIy2TESvoXahCCtNUoCy9sawa3Diw==\n-----END CERTIFICATE-----",
+      "KEY": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEApndEBbmdlfrpnidagKb2D32bEL+iGYxLEicdQVs24018zNPd\nbrIYtXyDjgjAq718HH5XQW2FSz6cA1CbQ6jLuY88EZRUiCSJ4rCkENWw+mpVLyOd\n+mcYU4JwOQNCP+W8GGcW/haifkXtHEDUO4pIxnXWC6DftvxZ3TH5PxtWO8aJcsoj\n94oBTPOhnGi0C356XyseYl7o7hdxZu3DvY3Wyh/k5pDDHOCjQYxl9wjtW+BVWMCF\nxRaCu4f/3LVjca9BccwZ8O4Rdhu6lhJEUCUgTqdx3vXRB1xzwHT0W7gariy4RVbv\nwE35AaCliyEr4O5WlCvAMOct7POYDAwNuoeb7wIDAQABAoIBAB4YIawHSn36xpFY\n+/uWM5XJV2dHvb5wpoG5oIhYPSwKri05gCaq+9yTjhT3cB2cO/vKu2uQqTBZOUtA\nH1G0CmCZjHqBHmcec+8PkBmbCEu9PXkwLzc9vCAczL0B4dA7cC3ZNUbqQKYjbiJV\ndgjtjwqR8whXJRqntHdQuYa3InfbufcHNHhSXJwE9MqVRpsv/BfY9wjhQfGBHUnT\nCz41xj1bu8Uy4+/1sRF/l9fYDm5E6WbgzvI49/fM7hA+8fQqoRkFLlEzzBhWb93Q\n2qVo2Y5RhVpffdyxPYX7b9RI7UmUZYp2sLl5GYj5ZzTzsffwUdPl2pZlRkYJGvUo\nortpToECgYEA17NVIZgeQ5VcSsZKGJlzPkcdPoWCk7RY5DugxTaNwSE/uO25B/Ax\nBPE6ZC9LbfXyfTQXaam2VtpSzvNJ7p7j30qkEK0Z+I2pGAVohZg4enkHaIQkYtIP\naZZ/wce5R8VZq6EpToprTm3cG6T+nNVOzqRjUqgnUZyY8nWy2CD5OucCgYEAxZEb\nOKjo9Iwrod2uOZlQDAsnTvgqZySW/lORrnfEWmOEiJpRvjlxMfNPNlc2iMTBQShq\naPZi48g17btU8ACs2NOH/FXuxooDe+0gJDj48WP9/bBzOAOJqhKZ+g9l/Cr978yJ\nAHNh/w8foUUkqAfxmXoTImw7LdSaPIc7ewAlPbkCgYAcGq6d6O8QiTZ0O6/N0riU\nRbnGuqiPzDDE1AwXhgskPcvKsZapNR998FxWT185nZERxSbDyqwKVvnxIvvgDm3M\nWzJTReqbWwHMMnAy7+lz868GbCk9gvclH8nXmslGU61iUmZKaHigyGmkZHQURSq2\ne+7BB03QMWIwPSunQ2yVwwKBgQCbPrzvNvtnPsYCeZmwNSLLc/A9g5B+YCguTSjK\nud4XUOASH4FgQu8J2zFBeCKoMkPRmZqURBfM+cQ2vN+vgDhSYVYYGMZ6SHUYamq5\nS/OCa5poQMEpIM6KT/eioXr4PigwyL5XFlPJAu9N4HE/gI5+lYh3oiiWiNtx+Knq\nq2CYMQKBgQCv+QTGDrSc3SUaWT+JMoFdfzvJyyqQOUvgRbSGAp5GryYqI9dozx70\nlT2IdoAZ0DHrJhNs13Pr7ngXwqS6pKlZU8NSX2ch7h5ZwIsYJESzKwXF/frLMQSy\nTPV3d0hb7UaW3wqOx2Dbj8vJJdvUo3UUkOcmgesqGg3nf3t51I6k0A==\n-----END RSA PRIVATE KEY-----"
+    }
+  ],
+  "GITHUB_CONFIG": {
+    "TEST_CASES_REPO_OWNER": "mojaloop",
+    "TEST_CASES_REPO_NAME": "testing-toolkit-test-cases",
+    "TEST_CASES_REPO_DEFAULT_RELEASE_TAG": "latest",
+    "TEST_CASES_REPO_BASE_PATH": "collections/dfsp",
+    "TEST_CASES_REPO_HUB_GP_PATH": "collections/dfsp/golden_path",
+    "TEST_CASES_REPO_HUB_PROVISIONING_PATH": "collections/dfsp/provisioning"
+  },
+  "DEFAULT_ENVIRONMENT_FILE_NAME": "default-env.json",
+  "LABELS": []
+}

@@ -1,0 +1,220 @@
+[
+  {
+    "type": "response",
+    "version": 1.0,
+    "ruleId": 1,
+    "priority": 1,
+    "description": "post /settlementWindows/{id}",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "settlements",
+      "asynchronous": false
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/settlementWindows/{id}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "post"
+        }
+      ]
+    },
+    "event": {
+      "method": null,
+      "path": null,
+      "params": {
+        "body": {
+          "state": "OPEN"
+        },
+        "statusCode": "200"
+      },
+      "delay": 0,
+      "type": "MOCK_RESPONSE"
+    }
+  },
+  {
+    "type": "response",
+    "version": 1.0,
+    "ruleId": 3,
+    "priority": 1,
+    "description": "post /settlements",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "settlements",
+      "asynchronous": false
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/settlements"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "post"
+        }
+      ]
+    },
+    "event": {
+      "method": null,
+      "path": null,
+      "params": {
+        "body": {
+          "id": "123",
+          "state": "PENDING_SETTLEMENT",
+          "settlementWindows": [
+            [
+              {
+                "id": 123,
+                "createdDate": "1954-11-03",
+                "state": "PENDING_SETTLEMENT",
+                "reason": "do",
+                "changedDate": "1954-11-03"
+              }
+            ]
+          ],
+          "participants": [
+            {
+              "id": -91450113,
+              "accounts": [
+                {
+                  "id": 81795155,
+                  "reason": "veniam est proident commodo aliqua",
+                  "state": "PENDING_SETTLEMENT",
+                  "netSettlementAmount": {
+                    "amount": 100,
+                    "currency": "USD"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "statusCode": "200"
+      },
+      "delay": 0,
+      "type": "FIXED_RESPONSE"
+    }
+  },
+  {
+    "type": "response",
+    "version": 1.0,
+    "ruleId": 4,
+    "priority": 1,
+    "description": "get /settlements/{id}",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "settlements",
+      "asynchronous": false
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/settlements/{id}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "get"
+        }
+      ]
+    },
+    "event": {
+      "method": null,
+      "path": null,
+      "params": {
+        "body": {
+          "id": "{$request.params.id}",
+          "state": "PS_TRANSFERS_RECORDED",
+          "settlementWindows": [
+            [
+              {
+                "createdDate": "2020-02-10",
+                "id": "{$request.params.id}",
+                "state": "PS_TRANSFERS_RECORDED",
+                "reason": "amet cillum culpa v",
+                "changedDate": "2020-02-10"
+              }
+            ]
+          ],
+          "participants": [
+            {
+              "id": -35933071,
+              "accounts": [
+                {
+                  "id": -14386227,
+                  "reason": "aliquip aliqua nulla deserunt",
+                  "state": "PS_TRANSFERS_RECORDED",
+                  "netSettlementAmount": {
+                    "amount": 100,
+                    "currency": "USD"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "statusCode": "200"
+      },
+      "delay": 0,
+      "type": "FIXED_RESPONSE"
+    }
+  },
+  {
+    "type": "response",
+    "version": 1.0,
+    "ruleId": 5,
+    "priority": 1,
+    "description": "get /settlementWindows",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "settlements",
+      "asynchronous": false
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/settlementWindows"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "get"
+        }
+      ]
+    },
+    "event": {
+      "method": null,
+      "path": null,
+      "params": {
+        "body": [
+          {
+            "createdDate": "2020-02-10",
+            "id": 123,
+            "state": "{$request.query.state}",
+            "reason": "string",
+            "changedDate": "2020-02-10"
+          }
+        ],
+        "statusCode": "200"
+      },
+      "delay": 0,
+      "type": "FIXED_RESPONSE"
+    }
+  }
+]

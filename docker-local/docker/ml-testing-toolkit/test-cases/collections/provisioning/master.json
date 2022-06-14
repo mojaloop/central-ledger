@@ -1,0 +1,16 @@
+{
+  "order": [
+    {
+      "name": "hub_setup.json",
+      "type": "file"
+    },
+    {
+      "name": "participant_testingtoolkitdfsp.json",
+      "type": "file"
+    },
+    {
+      "name": "participant_ttkpayeefsp",
+      "type": "file"
+    }
+  ]
+}

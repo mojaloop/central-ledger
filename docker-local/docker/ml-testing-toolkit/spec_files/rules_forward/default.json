@@ -1,0 +1,482 @@
+[
+  {
+    "ruleId": 1,
+    "priority": 1,
+    "description": "get /parties/{Type}/{ID}",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "headers",
+          "operator": "equal",
+          "value": "userdfsp",
+          "path": "fspiop-source"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/parties/{Type}/{ID}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "get"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payee",
+        "dfspId": "userdfsp2"
+      },
+      "type": "FORWARD"
+    },
+    "type": "forward",
+    "version": 1
+  },
+  {
+    "ruleId": 2,
+    "priority": 1,
+    "description": "put /parties/{Type}/{ID} to payer",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "headers",
+          "operator": "equal",
+          "value": "userdfsp",
+          "path": "fspiop-destination"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/parties/{Type}/{ID}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "put"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payer",
+        "dfspId": "userdfsp"
+      },
+      "type": "FORWARD"
+    },
+    "type": "forward",
+    "version": 1
+  },
+  {
+    "ruleId": 3,
+    "priority": 1,
+    "description": "post /quotes",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "headers",
+          "operator": "equal",
+          "value": "userdfsp2",
+          "path": "fspiop-destination"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/quotes"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "post"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payee",
+        "dfspId": "userdfsp2"
+      },
+      "type": "FORWARD"
+    },
+    "type": "forward",
+    "version": 1
+  },
+  {
+    "ruleId": 4,
+    "priority": 1,
+    "description": "put /quotes",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "headers",
+          "operator": "equal",
+          "value": "userdfsp",
+          "path": "fspiop-destination"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/quotes/{ID}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "put"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payer",
+        "dfspId": "userdfsp"
+      },
+      "type": "FORWARD"
+    },
+    "type": "forward",
+    "version": 1
+  },
+  {
+    "type": "forward",
+    "version": 1,
+    "ruleId": 5,
+    "priority": 1,
+    "description": "post /transfers",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "body",
+          "operator": "equal",
+          "value": "userdfsp2",
+          "path": "payeeFsp"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/transfers"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "post"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payee",
+        "dfspId": "userdfsp2"
+      },
+      "type": "FORWARD"
+    }
+  },
+  {
+    "type": "forward",
+    "version": 1,
+    "ruleId": 6,
+    "priority": 1,
+    "description": "put /transfers",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "headers",
+          "operator": "equal",
+          "value": "userdfsp",
+          "path": "fspiop-destination"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/transfers/{ID}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "put"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payer",
+        "dfspId": "userdfsp"
+      },
+      "type": "FORWARD"
+    }
+  },
+  {
+    "ruleId": 7,
+    "priority": 1,
+    "description": "get /parties/{Type}/{ID}",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "headers",
+          "operator": "equal",
+          "value": "userdfsp2",
+          "path": "fspiop-source"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/parties/{Type}/{ID}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "get"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payer",
+        "dfspId": "userdfsp"
+      },
+      "type": "FORWARD"
+    },
+    "type": "forward",
+    "version": 1
+  },
+  {
+    "ruleId": 8,
+    "priority": 1,
+    "description": "put /parties/{Type}/{ID}",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "headers",
+          "operator": "equal",
+          "value": "userdfsp2",
+          "path": "fspiop-destination"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/parties/{Type}/{ID}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "put"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payee",
+        "dfspId": "userdfsp2"
+      },
+      "type": "FORWARD"
+    },
+    "type": "forward",
+    "version": 1
+  },
+  {
+    "ruleId": 9,
+    "priority": 1,
+    "description": "post /quotes",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "headers",
+          "operator": "equal",
+          "value": "userdfsp",
+          "path": "fspiop-destination"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/quotes"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "post"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payer",
+        "dfspId": "userdfsp"
+      },
+      "type": "FORWARD"
+    },
+    "type": "forward",
+    "version": 1
+  },
+  {
+    "ruleId": 10,
+    "priority": 1,
+    "description": "put /quotes",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "headers",
+          "operator": "equal",
+          "value": "userdfsp2",
+          "path": "fspiop-destination"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/quotes/{ID}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "put"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payee",
+        "dfspId": "userdfsp2"
+      },
+      "type": "FORWARD"
+    },
+    "type": "forward",
+    "version": 1
+  },
+  {
+    "type": "forward",
+    "version": 1,
+    "ruleId": 11,
+    "priority": 1,
+    "description": "post /transfers",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "body",
+          "operator": "equal",
+          "value": "userdfsp",
+          "path": "payeeFsp"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/transfers"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "post"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payer",
+        "dfspId": "userdfsp"
+      },
+      "type": "FORWARD"
+    }
+  },
+  {
+    "type": "forward",
+    "version": 1,
+    "ruleId": 12,
+    "priority": 1,
+    "description": "put /transfers",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "headers",
+          "operator": "equal",
+          "value": "userdfsp2",
+          "path": "fspiop-destination"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/transfers/{ID}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "put"
+        }
+      ]
+    },
+    "event": {
+      "params": {
+        "to": "payee",
+        "dfspId": "userdfsp2"
+      },
+      "type": "FORWARD"
+    }
+  }
+]

@@ -1,0 +1,34 @@
+{
+  "/settlementWindows/{id}": {
+    "post": {
+      "response": {
+        "bodyOverride": {
+          "id": "{$request.params.id}",
+          "reason": "{$request.body.reason}"
+        }
+      }
+    }
+  },
+  "/settlementWindows": {
+    "get": {
+      "response": {}
+    }
+  },
+  "/settlements": {
+    "post": {
+      "response": {
+        "bodyOverride": {
+        }
+      }
+    }
+  },
+  "/settlements/{id}": {
+    "get": {
+      "response": {
+        "bodyOverride": {
+          "id": "{$request.params.id}"
+        }
+      }
+    }
+  }
+}

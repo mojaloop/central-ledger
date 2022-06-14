@@ -1,0 +1,129 @@
+[
+  {
+    "ruleId": 1,
+    "priority": 1,
+    "description": "get /parties/{Type}/{ID}",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/parties/{Type}/{ID}"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "get"
+        }
+      ]
+    },
+    "event": {
+      "method": "put",
+      "path": "/parties/{Type}/{ID}",
+      "params": {
+        "scripts": {
+          "exec": [
+            "const ttkAllowedAmount = pm.environment.get('ttkAllowedAmount')",
+            "if (ttkAllowedAmount === undefined) {",
+            "  pm.environment.set('ttkAllowedAmount', 1000)",
+            "}"
+          ]
+        }
+      },
+      "type": "MOCK_CALLBACK"
+    },
+    "type": "callback",
+    "version": 1
+  },
+  {
+    "type": "callback",
+    "version": 1,
+    "ruleId": 2,
+    "priority": 1,
+    "description": "post /quotes",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/quotes"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "post"
+        }
+      ]
+    },
+    "event": {
+      "method": null,
+      "path": null,
+      "params": {},
+      "delay": 0,
+      "type": "MOCK_CALLBACK"
+    }
+  },
+  {
+    "ruleId": 3,
+    "priority": 1,
+    "description": "post /transfers",
+    "apiVersion": {
+      "minorVersion": 0,
+      "majorVersion": 1,
+      "type": "fspiop",
+      "asynchronous": true
+    },
+    "conditions": {
+      "all": [
+        {
+          "fact": "body",
+          "operator": "equal",
+          "value": "testingtoolkitdfsp",
+          "path": "payeeFsp"
+        },
+        {
+          "fact": "operationPath",
+          "operator": "equal",
+          "value": "/transfers"
+        },
+        {
+          "fact": "method",
+          "operator": "equal",
+          "value": "post"
+        }
+      ]
+    },
+    "event": {
+      "method": "put",
+      "path": "/transfers/{ID}",
+      "params": {
+        "scripts": {
+          "exec": [
+            "const body = JSON.parse(pm.request.body)",
+            "var ttkdfspTotalAmount = pm.environment.get('ttkdfspTotalAmount') || 0",
+            "var ttkAllowedAmount = pm.environment.get('ttkAllowedAmount')",
+            "ttkdfspTotalAmount += +body.amount.amount",
+            "ttkAllowedAmount -= +body.amount.amount",
+            "pm.environment.set('ttkdfspTotalAmount', ttkdfspTotalAmount)",
+            "pm.environment.set('ttkAllowedAmount', ttkAllowedAmount)"
+          ]
+        }
+      },
+      "type": "MOCK_CALLBACK"
+    },
+    "type": "callback",
+    "version": 1
+  }
+]

@@ -1,0 +1,96 @@
+{
+  "/health": {
+    "get": {
+      "response": {}
+    }
+  },
+  "/metrics": {
+    "get": {
+      "response": {}
+    }
+  },
+  "/participants": {
+    "get": {
+      "response": {}
+    },
+    "post": {
+      "response": {}
+    }
+  },
+  "/participants/limits": {
+    "get": {
+      "response": {}
+    }
+  },
+  "/participants/{name}": {
+    "get": {
+      "response": {}
+    },
+    "put": {
+      "response": {}
+    }
+  },
+  "/participants/{name}/endpoints": {
+    "get": {
+      "response": {}
+    },
+    "post": {
+      "response": {}
+    }
+  },
+  "/participants/{name}/limits": {
+    "get": {
+      "response": {}
+    },
+    "put": {
+      "response": {}
+    }
+  },
+  "/participants/{name}/positions": {
+    "get": {
+      "response": {}
+    }
+  },
+  "/participants/{name}/accounts": {
+    "get": {
+      "response": {}
+    },
+    "post": {
+      "response": {}
+    }
+  },
+  "/participants/{name}/initialPositionAndLimits": {
+    "post": {
+      "response": {}
+    }
+  },
+  "/participants/{name}/accounts/{id}": {
+    "put": {
+      "response": {}
+    },
+    "post": {
+      "response": {}
+    }
+  },
+  "/participants/{name}/accounts/{id}/transfers/{transferId}": {
+    "put": {
+      "response": {}
+    }
+  },
+  "/settlementModels": {
+    "get": {
+      "response": {}
+    },
+    "post": {
+      "response": {}
+    }
+  },
+  "/settlementModels/{name}": {
+    "get": {
+      "response": {}
+    },
+    "put": {
+      "response": {}
+    }
+  }
+}

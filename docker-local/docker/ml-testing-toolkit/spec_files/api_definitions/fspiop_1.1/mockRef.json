@@ -1,0 +1,83 @@
+[
+  {
+    "id": "party.personalInfo.complexName.firstName",
+    "pattern": "John|David|Michael|Chris|Mike|Mark|Paul|Daniel|James|Maria"
+  },
+  {
+    "id": "party.personalInfo.complexName.middleName",
+    "pattern": "G|P|N|S"
+  },
+  {
+    "id": "party.personalInfo.complexName.lastName",
+    "pattern": "Smith|Jones|Johnson|Lee|Brown|Williams|Rodriguez|Garcia|Gonzalez|Lopez"
+  },
+  {
+    "id": "party.personalInfo.dateOfBirth",
+    "pattern": "^(19)\\d\\d[-](0[1-9]|1[012])[-](0[1-9]|[12][0-9]|2[0-8])$"
+  },
+  { 
+    "id": "transferId",
+    "faker": "internet.email"
+  },
+  {
+    "id": "transferState",
+    "pattern": "COMMITTED|RESERVED|ABORTED|RECEIVED"
+  },
+  {
+    "id": "fulfilment",
+    "pattern": "[A-Fa-f0-9]{64}"
+  },
+  {
+    "id": "condition",
+    "pattern": "[A-Fa-f0-9]{64}"
+  },
+  {
+    "id": "ilpPacket",
+    "pattern": "[A-Fa-f0-9]{256}"
+  },
+  {
+    "id": "transferAmount.currency",
+    "pattern": "USD"
+  },
+  {
+    "id": "transferAmount.amount",
+    "pattern": "123"
+  },
+  {
+    "id": "payeeReceiveAmount.currency",
+    "pattern": "USD"
+  },
+  {
+    "id": "payeeReceiveAmount.amount",
+    "pattern": "123"
+  },
+  {
+    "id": "payeeFspFee.currency",
+    "pattern": "USD"
+  },
+  {
+    "id": "payeeFspFee.amount",
+    "pattern": "2"
+  },
+  {
+    "id": "payeeFspCommission.currency",
+    "pattern": "USD"
+  },
+  {
+    "id": "payeeFspCommission.amount",
+    "pattern": "3"
+  },
+
+  {
+    "id": "errorInformation.errorCode",
+    "pattern": "600[1-9]"
+  },
+  {
+    "id": "errorInformation.errorDescription",
+    "pattern": "This is a mock error description"
+  },
+  {
+    "id": "Content-Length",
+    "pattern": "123"
+  }
+]

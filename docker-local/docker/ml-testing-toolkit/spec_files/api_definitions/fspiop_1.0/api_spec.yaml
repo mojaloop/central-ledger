@@ -1,0 +1,4185 @@
+openapi: 3.0.0
+info:
+  version: '1.0'
+  title: Open API for FSP Interoperability (FSPIOP)
+  description: >-
+    Based on API Definition.docx updated on 2018-03-13 Version 1.0. Note - The
+    API supports a maximum size of 65536 bytes (64 Kilobytes) in the HTTP
+    header.
+  license:
+    name: Open API for FSP Interoperability (FSPIOP)
+paths:
+  '/participants/{ID}/error':
+    put:
+      description: >-
+        If there is an error during FSP information creation in the server, the
+        error callback PUT /participants//error is used. The  in the URI should
+        contain the requestId that was used for the creation of the participant
+        information.
+      summary: ParticipantsByIDAndError
+      tags:
+        - participants
+      operationId: ParticipantsByIDAndError
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  '/participants/{ID}':
+    put:
+      description: >-
+        The callback PUT /participants/ is used to inform the client of the
+        result of the creation of the provided list of identities.
+      summary: ParticipantsByID
+      tags:
+        - participants
+      operationId: ParticipantsByIDPut
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          partyList:
+            - partyId:
+                partyIdType: PERSONAL_ID
+                partyIdentifier: personal_id
+            - partyId:
+                partyIdType: PERSONAL_ID
+                partyIdentifier: personal_id
+          currency: USD
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipantsIDPutResponse'
+        required: true
+  '/participants/{Type}/{ID}/error':
+    put:
+      description: >-
+        If the server is unable to find, create or delete the associated FSP of
+        the provided identity, or another processing error occurred, the error
+        callback PUT /participants///error (or PUT /participants////error) is
+        used.
+      summary: ParticipantsErrorByTypeAndID
+      tags:
+        - participants
+      operationId: ParticipantsErrorByTypeAndID
+      parameters:
+        - $ref: '#/components/parameters/Type'
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  '/participants/{Type}/{ID}/{SubId}/error':
+    put:
+      description: >-
+        If the server is unable to find, create or delete the associated FSP of
+        the provided identity, or another processing error occurred, the error
+        callback PUT /participants///error (or PUT /participants////error) is
+        used.
+      summary: ParticipantsSubIdErrorByTypeAndID
+      tags:
+        - participants
+      operationId: ParticipantsSubIdErrorByTypeAndID
+      parameters:
+        - $ref: '#/components/parameters/Type'
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/SubId'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  '/participants/{Type}/{ID}/{SubId}':
+    parameters:
+      - $ref: '#/components/parameters/Type'
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/SubId'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /participants// (or GET /participants///) is used
+        to find out in which FSP the requested Party, defined by ,  and
+        optionally , is located (for example, GET
+        /participants/MSISDN/123456789, or GET
+        /participants/BUSINESS/shoecompany/employee1). This HTTP request should
+        support a query string for filtering of currency. To use filtering of
+        currency, the HTTP request GET /participants//?currency=XYZ should be
+        used, where XYZ is the requested currency.
+      summary: ParticipantsSubIdByTypeAndID
+      tags:
+        - participants
+      operationId: ParticipantsSubIdByTypeAndID
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /participants// (or PUT /participants///) is used to
+        inform the client of a successful result of the lookup, creation, or
+        deletion of the FSP information related to the Party. If the FSP
+        information is deleted, the fspId element should be empty; otherwise the
+        element should include the FSP information for the Party.
+      summary: ParticipantsSubIdByTypeAndID
+      tags:
+        - participants
+      operationId: ParticipantsSubIdByTypeAndID3
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          fspId: '1234'
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ParticipantsTypeIDPutResponse'
+    post:
+      description: >-
+        The HTTP request POST /participants// (or POST /participants///) is used
+        to create information in the server regarding the provided identity,
+        defined by , , and optionally  (for example, POST
+        /participants/MSISDN/123456789 or POST
+        /participants/BUSINESS/shoecompany/employee1).
+      summary: ParticipantsSubIdByTypeAndID
+      tags:
+        - participants
+      operationId: ParticipantsSubIdByTypeAndIDPost
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          fspId: '1234'
+          currency: USD
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ParticipantsTypeIDSubIDPostRequest'
+    delete:
+      description: >-
+        The HTTP request DELETE /participants// (or DELETE /participants///) is
+        used to delete information in the server regarding the provided
+        identity, defined by  and ) (for example, DELETE
+        /participants/MSISDN/123456789), and optionally . This HTTP request
+        should support a query string to delete FSP information regarding a
+        specific currency only. To delete a specific currency only, the HTTP
+        request DELETE /participants//?currency=XYZ should be used, where XYZ is
+        the requested currency. Note -  The Account Lookup System should verify
+        that it is the Party’s current FSP that is deleting the FSP information.
+      summary: ParticipantsSubIdByTypeAndID
+      tags:
+        - participants
+      operationId: ParticipantsSubIdByTypeAndID2
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+  '/participants/{Type}/{ID}':
+    parameters:
+      - $ref: '#/components/parameters/Type'
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /participants// (or GET /participants///) is used
+        to find out in which FSP the requested Party, defined by ,  and
+        optionally , is located (for example, GET
+        /participants/MSISDN/123456789, or GET
+        /participants/BUSINESS/shoecompany/employee1). This HTTP request should
+        support a query string for filtering of currency. To use filtering of
+        currency, the HTTP request GET /participants//?currency=XYZ should be
+        used, where XYZ is the requested currency.
+      summary: ParticipantsByTypeAndID
+      tags:
+        - participants
+      operationId: ParticipantsByTypeAndID
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /participants// (or PUT /participants///) is used to
+        inform the client of a successful result of the lookup, creation, or
+        deletion of the FSP information related to the Party. If the FSP
+        information is deleted, the fspId element should be empty; otherwise the
+        element should include the FSP information for the Party.
+      summary: ParticipantsByTypeAndID
+      tags:
+        - participants
+      operationId: ParticipantsByTypeAndID3
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          fspId: '1234'
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ParticipantsTypeIDPutResponse'
+    post:
+      description: >-
+        The HTTP request POST /participants// (or POST /participants///) is used
+        to create information in the server regarding the provided identity,
+        defined by , , and optionally  (for example, POST
+        /participants/MSISDN/123456789 or POST
+        /participants/BUSINESS/shoecompany/employee1).
+      summary: ParticipantsByIDAndType
+      tags:
+        - participants
+      operationId: ParticipantsByIDAndType
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          fspId: '1234'
+          currency: USD
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ParticipantsTypeIDSubIDPostRequest'
+    delete:
+      description: >-
+        The HTTP request DELETE /participants// (or DELETE /participants///) is
+        used to delete information in the server regarding the provided
+        identity, defined by  and ) (for example, DELETE
+        /participants/MSISDN/123456789), and optionally . This HTTP request
+        should support a query string to delete FSP information regarding a
+        specific currency only. To delete a specific currency only, the HTTP
+        request DELETE /participants//?currency=XYZ should be used, where XYZ is
+        the requested currency. Note -  The Account Lookup System should verify
+        that it is the Party’s current FSP that is deleting the FSP information.
+      summary: ParticipantsByTypeAndID
+      tags:
+        - participants
+      operationId: ParticipantsByTypeAndID2
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+  /participants:
+    post:
+      description: >-
+        The HTTP request POST /participants is used to create information in the
+        server regarding the provided list of identities. This request should be
+        used for bulk creation of FSP information for more than one Party. The
+        optional currency parameter should indicate that each provided Party
+        supports the currency
+      summary: Participants
+      tags:
+        - participants
+      operationId: Participants1
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          requestId: b51ec534-ee48-4575-b6a9-ead2955b8069
+          partyList:
+            - partyIdType: PERSONAL_ID
+              partyIdentifier: '16135551212'
+              partySubIdOrType: PASSPORT
+              fspId: '1234'
+            - partyIdType: PERSONAL_ID
+              partyIdentifier: '16135551234'
+              partySubIdOrType: DRIVING_LICENSE
+              fspId: '1234'
+          currency: USD
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipantsPostRequest'
+        required: true
+  '/parties/{Type}/{ID}':
+    parameters:
+      - $ref: '#/components/parameters/Type'
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /parties// (or GET /parties///) is used to lookup
+        information regarding the requested Party, defined by ,  and optionally 
+        (for example, GET /parties/MSISDN/123456789, or GET
+        /parties/BUSINESS/shoecompany/employee1).
+      summary: PartiesByTypeAndID
+      tags:
+        - parties
+      operationId: PartiesByTypeAndID
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /parties// (or PUT /parties///) is used to inform the
+        client of a successful result of the Party information lookup.
+      summary: PartiesByTypeAndID2
+      tags:
+        - parties
+      operationId: PartiesByTypeAndID2
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          party:
+            partyIdInfo:
+              partyIdType: PERSONAL_ID
+              partyIdentifier: '16135551212'
+              partySubIdOrType: DRIVING_LICENSE
+              fspId: '1234'
+            merchantClassificationCode: '4321'
+            name: Justin Trudeau
+            personalInfo:
+              complexName:
+                firstName: Justin
+                middleName: Pierre
+                lastName: Trudeau
+              dateOfBirth: '1971-12-25'
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/PartiesTypeIDPutResponse'
+  '/parties/{Type}/{ID}/error':
+    put:
+      description: >-
+        If the server is unable to find Party information of the provided
+        identity, or another processing error occurred, the error callback PUT
+        /parties///error (or PUT /parties////error) is used.
+      summary: PartiesErrorByTypeAndID
+      tags:
+        - parties
+      operationId: PartiesErrorByTypeAndID
+      parameters:
+        - $ref: '#/components/parameters/Type'
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  '/parties/{Type}/{ID}/{SubId}':
+    parameters:
+      - $ref: '#/components/parameters/Type'
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/SubId'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /parties// (or GET /parties///) is used to lookup
+        information regarding the requested Party, defined by ,  and optionally 
+        (for example, GET /parties/MSISDN/123456789, or GET
+        /parties/BUSINESS/shoecompany/employee1).
+      summary: PartiesSubIdByTypeAndID
+      tags:
+        - parties
+      operationId: PartiesSubIdByTypeAndID
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /parties// (or PUT /parties///) is used to inform the
+        client of a successful result of the Party information lookup.
+      summary: PartiesSubIdByTypeAndID
+      tags:
+        - parties
+      operationId: PartiesSubIdByTypeAndIDPut
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          party:
+            partyIdInfo:
+              partyIdType: PERSONAL_ID
+              partyIdentifier: '16135551212'
+              partySubIdOrType: DRIVING_LICENSE
+              fspId: '1234'
+            merchantClassificationCode: '4321'
+            name: Justin Trudeau
+            personalInfo:
+              complexName:
+                firstName: Justin
+                middleName: Pierre
+                lastName: Trudeau
+              dateOfBirth: '1971-12-25'
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/PartiesTypeIDPutResponse'
+  '/parties/{Type}/{ID}/{SubId}/error':
+    put:
+      description: >-
+        If the server is unable to find Party information of the provided
+        identity, or another processing error occurred, the error callback PUT
+        /parties///error (or PUT /parties////error) is used.
+      summary: PartiesSubIdErrorByTypeAndID
+      tags:
+        - parties
+      operationId: PartiesSubIdErrorByTypeAndID
+      parameters:
+        - $ref: '#/components/parameters/Type'
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/SubId'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  '/transactionRequests/{ID}/error':
+    put:
+      description: >-
+        If the server is unable to find or create a transaction request, or
+        another processing error occurs, the error callback PUT
+        /transactionRequests//error is used. The  in the URI should contain the
+        transactionRequestId that was used for the creation of the transaction
+        request, or the  that was used in the GET /transactionRequests/.
+      summary: TransactionRequestsErrorByID
+      tags:
+        - transactionRequests
+      operationId: TransactionRequestsErrorByID
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  '/transactionRequests/{ID}':
+    parameters:
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /transactionRequests/ is used to get information
+        regarding an earlier created or requested transaction request. The  in
+        the URI should contain the transactionRequestId that was used for the
+        creation of the transaction request.
+      summary: TransactionRequestsByID
+      tags:
+        - transactionRequests
+      operationId: TransactionRequestsByID
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /transactionRequests/ is used to inform the client of a
+        requested or created transaction request. The  in the URI should contain
+        the transactionRequestId that was used for the creation of the
+        transaction request, or the  that was used in the GET
+        /transactionRequests/.
+      summary: TransactionRequestsByID
+      tags:
+        - transactionRequests
+      operationId: TransactionRequestsByIDPut
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          transactionId: b51ec534-ee48-4575-b6a9-ead2955b8069
+          transactionRequestState: RECEIVED
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequestsIDPutResponse'
+        required: true
+  /transactionRequests:
+    post:
+      description: >-
+        The HTTP request POST /transactionRequests is used to request the
+        creation of a transaction request for the provided financial transaction
+        in the server.
+      summary: TransactionRequests
+      tags:
+        - transactionRequests
+      operationId: TransactionRequests
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          transactionRequestId: b51ec534-ee48-4575-b6a9-ead2955b8069
+          payee:
+            partyIdInfo:
+              partyIdType: PERSONAL_ID
+              partyIdentifier: '16135551212'
+              partySubIdOrType: DRIVING_LICENSE
+              fspId: '1234'
+            merchantClassificationCode: '4321'
+            name: Justin Trudeau
+            personalInfo:
+              complexName:
+                firstName: Justin
+                middleName: Pierre
+                lastName: Trudeau
+              dateOfBirth: '1971-12-25'
+          payer:
+            partyIdType: PERSONAL_ID
+            partyIdentifier: '16135551212'
+            partySubIdOrType: DRIVING_LICENSE
+            fspId: '1234'
+          amount:
+            currency: USD
+            amount: '123.45'
+          transactionType:
+            scenario: DEPOSIT
+            subScenario: locally defined sub-scenario
+            initiator: PAYEE
+            initiatorType: CONSUMER
+            refundInfo:
+              originalTransactionId: b51ec534-ee48-4575-b6a9-ead2955b8069
+              refundReason: free text indicating reason for the refund
+            balanceOfPayments: '123'
+          note: Free-text memo
+          geoCode:
+            latitude: '+45.4215'
+            longitude: '+75.6972'
+          authenticationType: OTP
+          expiration: '2016-05-24T08:38:08.699-04:00'
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequestsPostRequest'
+        required: true
+  '/quotes/{ID}/error':
+    put:
+      description: >-
+        If the server is unable to find or create a quote, or some other
+        processing error occurs, the error callback PUT /quotes//error is used.
+        The  in the URI should contain the quoteId that was used for the
+        creation of the quote, or the  that was used in the GET /quotes/.
+      summary: QuotesByIDAndError
+      tags:
+        - quotes
+      operationId: QuotesByIDAndError
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  '/quotes/{ID}':
+    parameters:
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /quotes/ is used to get information regarding an
+        earlier created or requested quote. The  in the URI should contain the
+        quoteId that was used for the creation of the quote.
+      summary: QuotesByID
+      tags:
+        - quotes
+      operationId: QuotesByID
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /quotes/ is used to inform the client of a requested or
+        created quote. The  in the URI should contain the quoteId that was used
+        for the creation of the quote, or the  that was used in the GET
+        /quotes/GET /quotes/.
+      summary: QuotesByID
+      tags:
+        - quotes
+      operationId: QuotesByID1
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          transferAmount:
+            currency: USD
+            amount: '124.45'
+          payeeReceiveAmount:
+            currency: USD
+            amount: '123.45'
+          payeeFspFee:
+            currency: USD
+            amount: '1.45'
+          payeeFspCommission:
+            currency: USD
+            amount: '0'
+          expiration: '2016-05-24T08:38:08.699-04:00'
+          geoCode:
+            latitude: '+45.4215'
+            longitude: '+75.6972'
+          ilpPacket: >-
+            AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA
+          condition: f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuotesIDPutResponse'
+        required: true
+  /quotes:
+    post:
+      description: >-
+        The HTTP request POST /quotes is used to request the creation of a quote
+        for the provided financial transaction in the server.
+      summary: Quotes
+      tags:
+        - quotes
+      operationId: Quotes
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          quoteId: b51ec534-ee48-4575-b6a9-ead2955b8069
+          transactionId: a8323bc6-c228-4df2-ae82-e5a997baf899
+          transactionRequestId: a8323bc6-c228-4df2-ae82-e5a997baf890
+          payee:
+            partyIdInfo:
+              partyIdType: PERSONAL_ID
+              partyIdentifier: '16135551212'
+              partySubIdOrType: DRIVING_LICENSE
+              fspId: '1234'
+            merchantClassificationCode: '4321'
+            name: Justin Trudeau
+            personalInfo:
+              complexName:
+                firstName: Justin
+                middleName: Pierre
+                lastName: Trudeau
+              dateOfBirth: '1971-12-25'
+          payer:
+            partyIdInfo:
+              partyIdType: PERSONAL_ID
+              partyIdentifier: '16135551212'
+              partySubIdOrType: PASSPORT
+              fspId: '1234'
+            merchantClassificationCode: '1234'
+            name: Donald Trump
+            personalInfo:
+              complexName:
+                firstName: Donald
+                middleName: John
+                lastName: Trump
+              dateOfBirth: '1946-06-14'
+          amountType: SEND
+          amount:
+            currency: USD
+            amount: '123.45'
+          fees:
+            currency: USD
+            amount: '1.25'
+          transactionType:
+            scenario: DEPOSIT
+            subScenario: locally defined sub-scenario
+            initiator: PAYEE
+            initiatorType: CONSUMER
+            refundInfo:
+              originalTransactionId: b51ec534-ee48-4575-b6a9-ead2955b8069
+              refundReason: free text indicating reason for the refund
+            balanceOfPayments: '123'
+          geoCode:
+            latitude: '+45.4215'
+            longitude: '+75.6972'
+          note: Free-text memo
+          expiration: '2016-05-24T08:38:08.699-04:00'
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuotesPostRequest'
+        required: true
+  '/authorizations/{ID}':
+    parameters:
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /authorizations/ is used to request the Payer to
+        enter the applicable credentials in the Payee FSP system. The  in the
+        URI should contain the transactionRequestID, received from the POST
+        /transactionRequests service earlier in the process. This request
+        requires a query string to be included in the URI, with the following
+        key-value pairs - authenticationType=, where  value is a valid
+        authentication type from the enumeration AuthenticationType.
+        retriesLeft==, where  is the number of retries left before the financial
+        transaction is rejected.  must be expressed in the form of the data type
+        Integer. retriesLeft=1 means that this is the last retry before the
+        financial transaction is rejected. amount=, where  is the transaction
+        amount that will be withdrawn from the Payer’s account.  must be
+        expressed in the form of the data type Amount. currency=, where  is the
+        transaction currency for the amount that will be withdrawn from the
+        Payer’s account. The  value must be expressed in the form of the
+        enumeration CurrencyCode. An example URI containing all the required
+        key-value pairs in the query string is the following - GET
+        /authorization/3d492671-b7af-4f3f-88de-76169b1bdf88?authenticationType=OTP&retriesLeft=2&amount=102¤cy=USD
+      summary: AuthorizationsByID
+      tags:
+        - authorizations
+      operationId: AuthorizationsByIDGet
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /authorizations/ is used to inform the client of the
+        result of a previously-requested authorization. The  in the URI should
+        contain the  that was used in the GET /authorizations/.
+      summary: AuthorizationsByID
+      tags:
+        - authorizations
+      operationId: AuthorizationsByIDPut
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          authenticationInfo:
+            authentication: OTP
+            authenticationValue: '1234'
+          responseType: ENTERED
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizationsIDPutResponse'
+        required: true
+  '/authorizations/{ID}/error':
+    put:
+      description: >-
+        If the server is unable to find the transaction request, or another
+        processing error occurs, the error callback PUT /authorizations//error
+        is used. The  in the URI should contain the  that was used in the GET
+        /authorizations/.
+      summary: AuthorizationsByIDAndError
+      tags:
+        - authorizations
+      operationId: AuthorizationsByIDAndError
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  '/transfers/{ID}':
+    parameters:
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /transfers/ is used to get information regarding an
+        earlier created or requested transfer. The  in the URI should contain
+        the transferId that was used for the creation of the transfer.
+      summary: TransfersByIDGet
+      tags:
+        - transfers
+      operationId: TransfersByIDGet
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /transfers/ is used to inform the client of a requested
+        or created transfer. The  in the URI should contain the transferId that
+        was used for the creation of the transfer, or the  that was used in the
+        GET /transfers/.
+      summary: TransfersByIDPut
+      tags:
+        - transfers
+      operationId: TransfersByIDPut
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          fulfilment: WLctttbu2HvTsa1XWvUoGRcQozHsqeu9Ahl2JW9Bsu8
+          completedTimestamp: '2016-05-24T08:38:08.699-04:00'
+          transferState: RESERVED
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransfersIDPutResponse'
+        required: true
+  '/transfers/{ID}/error':
+    put:
+      description: >-
+        If the server is unable to find or create a transfer, or another
+        processing error occurs, the error callback PUT /transfers//error is
+        used. The  in the URI should contain the transferId that was used for
+        the creation of the transfer, or the  that was used in the GET
+        /transfers/.
+      summary: TransfersByIDAndError
+      tags:
+        - transfers
+      operationId: TransfersByIDAndError
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  /transfers:
+    post:
+      description: >-
+        The HTTP request POST /transfers is used to request the creation of a
+        transfer for the next ledger, and a financial transaction for the Payee
+        FSP.
+      summary: Transfers
+      tags:
+        - transfers
+      operationId: transfers
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          transferId: b51ec534-ee48-4575-b6a9-ead2955b8069
+          payeeFsp: '1234'
+          payerFsp: '5678'
+          amount:
+            currency: USD
+            amount: '123.45'
+          ilpPacket: >-
+            AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA
+          condition: f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA
+          expiration: '2016-05-24T08:38:08.699-04:00'
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransfersPostRequest'
+        required: true
+  '/transactions/{ID}':
+    parameters:
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /transactions/ is used to get transaction
+        information regarding a financial transaction created earlier. The  in
+        the URI should contain the transactionId that was used for the creation
+        of the quote, as the transaction is created as part of another process
+        (the transfer process).
+      summary: TransactionsByID
+      tags:
+        - transactions
+      operationId: TransactionsByID
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /transactions/ is used to inform the client of a
+        requested transaction. The  in the URI should contain the  that was used
+        in the GET /transactions/.
+      summary: TransactionsByID
+      tags:
+        - transactions
+      operationId: TransactionsByID1
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          completedTimestamp": '2016-05-24T08:38:08.699-04:00'
+          transactionState: RECEIVED
+          code: Test-Code
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionsIDPutResponse'
+        required: true
+  '/transactions/{ID}/error':
+    put:
+      description: >-
+        If the server is unable to find or create a transaction, or another
+        processing error occurs, the error callback PUT /transactions//error is
+        used. The  in the URI should contain the  that was used in the GET
+        /transactions/.
+      summary: TransactionsErrorByID
+      tags:
+        - transactions
+      operationId: TransactionsErrorByID
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  '/bulkQuotes/{ID}/error':
+    put:
+      description: >-
+        If the server is unable to find or create a bulk quote, or another
+        processing error occurs, the error callback PUT /bulkQuotes//error is
+        used. The  in the URI should contain the bulkQuoteId that was used for
+        the creation of the bulk quote, or the  that was used in the GET
+        /bulkQuotes/.
+      summary: BulkQuotesErrorByID
+      tags:
+        - bulkQuotes
+      operationId: BulkQuotesErrorByID
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+  '/bulkQuotes/{ID}':
+    parameters:
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /bulkQuotes/ is used to get information regarding
+        an earlier created or requested bulk quote. The  in the URI should
+        contain the bulkQuoteId that was used for the creation of the bulk
+        quote.
+      summary: BulkQuotesByID
+      tags:
+        - bulkQuotes
+      operationId: BulkQuotesByID
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /bulkQuotes/ is used to inform the client of a
+        requested or created bulk quote. The  in the URI should contain the
+        bulkQuoteId that was used for the creation of the bulk quote, or the
+         that was used in the GET /bulkQuotes/.
+      summary: BulkQuotesByID
+      tags:
+        - bulkQuotes
+      operationId: BulkQuotesByID1
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          individualQuoteResults:
+            - quoteId: b51ec534-ee48-4575-b6a9-ead2955b8069
+              payee:
+                partyIdInfo:
+                  partyIdType: PERSONAL_ID
+                  partyIdentifier: '16135551212'
+                  partySubIdOrType: DRIVING_LICENSE
+                  fspId: '1234'
+                merchantClassificationCode: '4321'
+                name: Justin Trudeau
+                personalInfo:
+                  complexName:
+                    firstName: Justin
+                    middleName: Pierre
+                    lastName: Trudeau
+                  dateOfBirth: '1971-12-25'
+              receiveAmount:
+                currency: USD
+                amount: '123.45'
+              payeeFspFee:
+                currency: USD
+                amount: '1.45'
+              payeeFspCommission:
+                currency: USD
+                amount: '1.45'
+              ilpPacket: >-
+                AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA
+              condition: f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA
+              errorInformation:
+                errorCode: '5100'
+                errorDescription: This is an error description
+                extensionList:
+                  extension:
+                    - key: errorDescription
+                      value: This is a more detailed error description
+                    - key: errorDescription
+                      value: This is a more detailed error description
+              extensionList:
+                extension:
+                  - key: errorDescription
+                    value: This is a more detailed error description
+                  - key: errorDescription
+                    value: This is a more detailed error description
+          expiration: '2016-05-24T08:38:08.699-04:00'
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkQuotesIDPutResponse'
+        required: true
+  /bulkQuotes:
+    post:
+      description: >-
+        The HTTP request POST /bulkQuotes is used to request the creation of a
+        bulk quote for the provided financial transactions in the server.
+      summary: BulkQuotes
+      tags:
+        - bulkQuotes
+      operationId: BulkQuotes
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          bulkQuoteId: b51ec534-ee48-4575-b6a9-ead2955b8069
+          payer:
+            partyIdInfo:
+              partyIdType: PERSONAL_ID
+              partyIdentifier: '16135551212'
+              partySubIdOrType: PASSPORT
+              fspId: '1234'
+            merchantClassificationCode: '1234'
+            name: Justin Trudeau
+            personalInfo:
+              complexName:
+                firstName: Justin
+                middleName: Pierre
+                lastName: Trudeau
+              dateOfBirth: '1971-12-25'
+          geoCode:
+            latitude: '+45.4215'
+            longitude: '+75.6972'
+          individualQuotes:
+            - quoteId: b51ec534-ee48-4575-b6a9-ead2955b8069
+              transactionId: b51ec534-ee48-4575-b6a9-ead2955b8069
+              payee:
+                partyIdInfo:
+                  partyIdType: PERSONAL_ID
+                  partyIdentifier: '16135551212'
+                  partySubIdOrType: PASSPORT
+                  fspId: '1234'
+                merchantClassificationCode: '1234'
+                name: Justin Trudeau
+                personalInfo:
+                  complexName:
+                    firstName: Justin
+                    middleName: Pierre
+                    lastName: Trudeau
+                  dateOfBirth: '1971-12-25'
+              amountType: RECEIVE
+              amount:
+                currency: USD
+                amount: '123.45'
+              fees:
+                currency: USD
+                amount: '1.45'
+              transactionType:
+                scenario: DEPOSIT
+                subScenario: locally defined sub-scenario
+                initiator: PAYEE
+                initiatorType: CONSUMER
+                refundInfo:
+                  originalTransactionId: b51ec534-ee48-4575-b6a9-ead2955b8069
+                  refundReason: free text indicating reason for the refund
+                balanceOfPayments: '123'
+              note: Note sent to Payee
+              extensionList:
+                extension:
+                  - key: errorDescription
+                    value: This is a more detailed error description
+                  - key: errorDescription
+                    value: This is a more detailed error description
+          expiration: '2016-05-24T08:38:08.699-04:00'
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkQuotesPostRequest'
+        required: true
+  '/bulkTransfers/{ID}':
+    parameters:
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request GET /bulkTransfers/ is used to get information
+        regarding an earlier created or requested bulk transfer. The  in the URI
+        should contain the bulkTransferId that was used for the creation of the
+        bulk transfer.
+      summary: BulkTransferByID
+      tags:
+        - bulkTransfers
+      operationId: BulkTransferByID
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback PUT /bulkTransfers/ is used to inform the client of a
+        requested or created bulk transfer. The  in the URI should contain the
+        bulkTransferId that was used for the creation of the bulk transfer (POST
+        /bulkTransfers), or the  that was used in the GET /bulkTransfers/.
+      summary: BulkTransfersByIDPut
+      tags:
+        - bulkTransfers
+      operationId: BulkTransfersByIDPut
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          completedTimestamp": '2016-05-24T08:38:08.699-04:00'
+          individualTransferResults:
+            - transferId: b51ec534-ee48-4575-b6a9-ead2955b8069
+              fulfilment: WLctttbu2HvTsa1XWvUoGRcQozHsqeu9Ahl2JW9Bsu8
+              errorInformation:
+                errorCode: '5100'
+                errorDescription: This is an error description
+                extensionList:
+                  extension:
+                    - key: errorDescription
+                      value: This is a more detailed error description
+                    - key: errorDescription
+                      value: This is a more detailed error description
+              extensionList:
+                extension:
+                  - key: errorDescription
+                    value: This is a more detailed error description
+                  - key: errorDescription
+                    value: This is a more detailed error description
+            - transferId: a8323bc6-c228-4df2-ae82-e5a997baf890
+              fulfilment: WLctttbu2HvTsa1XWvUoGRcQozHsqeu9Ahl2JW9Bsu8
+              errorInformation:
+                errorCode: '5100'
+                errorDescription: This is an error description
+                extensionList:
+                  extension:
+                    - key: errorDescription
+                      value: This is a more detailed error description
+                    - key: errorDescription
+                      value: This is a more detailed error description
+              extensionList:
+                extension:
+                  - key: errorDescription
+                    value: This is a more detailed error description
+                  - key: errorDescription
+                    value: This is a more detailed error description
+          bulkTransferState: RECEIVED
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkTransfersIDPutResponse'
+        required: true
+  /bulkTransfers:
+    post:
+      description: >-
+        The HTTP request POST /bulkTransfers is used to request the creation of
+        a bulk transfer in the server.
+      summary: BulkTransfers
+      tags:
+        - bulkTransfers
+      operationId: BulkTransfers
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          bulkTransferId: b51ec534-ee48-4575-b6a9-ead2955b8069
+          bulkQuoteId: b51ec534-ee48-4575-b6a9-ead2955b8069
+          payeeFsp: '1234'
+          payerFsp: '5678'
+          individualTransfers:
+            - transferId: b51ec534-ee48-4575-b6a9-ead2955b8069
+              transferAmount:
+                currency: USD
+                amount: '123.45'
+              ilpPacket: >-
+                AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA
+              condition: f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA
+              extensionList:
+                extension:
+                  - key: errorDescription
+                    value: This is a more detailed error description
+                  - key: errorDescription
+                    value: This is a more detailed error description
+            - transferId: b51ec534-ee48-4575-b6a9-ead2955b8069
+              transferAmount:
+                currency: USD
+                amount: '1233.55'
+              ilpPacket: >-
+                AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA
+              condition: f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA
+              extensionList:
+                extension:
+                  - key: errorDescription
+                    value: This is a more detailed error description
+                  - key: errorDescription
+                    value: This is a more detailed error description
+          expiration: '2016-05-24T08:38:08.699-04:00'
+          extensionList:
+            extension:
+              - key: errorDescription
+                value: This is a more detailed error description
+              - key: errorDescription
+                value: This is a more detailed error description
+      responses:
+        '202':
+          $ref: '#/components/responses/Response202'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkTransfersPostRequest'
+        required: true
+  '/bulkTransfers/{ID}/error':
+    put:
+      description: >-
+        If the server is unable to find or create a bulk transfer, or another
+        processing error occurs, the error callback PUT /bulkTransfers//error is
+        used. The  in the URI should contain the bulkTransferId that was used
+        for the creation of the bulk transfer (POST /bulkTransfers), or the 
+        that was used in the GET /bulkTransfers/.
+      summary: BulkTransfersErrorByID
+      tags:
+        - bulkTransfers
+      operationId: BulkTransfersErrorByID
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: '5100'
+            errorDescription: This is an error description
+            extensionList:
+              extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      requestBody:
+        $ref: '#/components/requestBodies/ErrorInformationObject'
+
+  '/requests/{ID}':
+    get:
+      description: Test support method. Allows the caller to see the body of a previous request
+      summary: getRequestsById
+      tags:
+        - test
+      operationId: getRequestsById
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          description: Response
+          content:
+            application/json:
+              schema:
+                type: object
+  '/callbacks/{ID}':
+    get:
+      description: Test support method. Allows the caller to see the body of a previous callback
+      summary: getRequestsById
+      tags:
+        - test
+      operationId: getCallbackById
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          description: Response
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  parameters:
+    Accept:
+      name: Accept
+      in: header
+      required: true
+      description: >-
+        The Accept header field indicates the version of the API the client
+        would like the server to use.
+      schema:
+        type: string
+    Content-Length:
+      name: Content-Length
+      in: header
+      required: false
+      description: >-
+        The Content-Length header field indicates the anticipated size of the
+        payload body. Only sent if there is a body. Note - The API supports a
+        maximum size of 5242880 bytes (5 Megabytes)
+      schema:
+        type: integer
+    Content-Type:
+      name: Content-Type
+      in: header
+      required: true
+      description: >-
+        The Content-Type header indicates the specific version of the API used
+        to send the payload body.
+      schema:
+        type: string
+    Date:
+      name: Date
+      in: header
+      required: true
+      description: The Date header field indicates the date when the request was sent.
+      schema:
+        type: string
+    X-Forwarded-For:
+      name: X-Forwarded-For
+      in: header
+      required: false
+      description: >-
+        The X-Forwarded-For header field is an unofficially accepted standard
+        used for informational purposes of the originating client IP address, as
+        a request might pass multiple proxies, firewalls, and so on. Multiple
+        X-Forwarded-For values as in the example shown here should be expected
+        and supported by implementers of the API. Note - An alternative to
+        X-Forwarded-For is defined in RFC 7239. However, to this point RFC 7239
+        is less-used and supported than X-Forwarded-For.
+      schema:
+        type: string
+    FSPIOP-Source:
+      name: FSPIOP-Source
+      in: header
+      required: true
+      description: >-
+        The FSPIOP-Source header field is a non-HTTP standard field used by the
+        API for identifying the sender of the HTTP request. The field should be
+        set by the original sender of the request. Required for routing and
+        signature verification (see header field FSPIOP-Signature).
+      schema:
+        type: string
+    FSPIOP-Destination:
+      name: FSPIOP-Destination
+      in: header
+      required: false
+      description: >-
+        The FSPIOP-Destination header field is a non-HTTP standard field used by
+        the API for HTTP header based routing of requests and responses to the
+        destination. The field should be set by the original sender of the
+        request (if known), so that any entities between the client and the
+        server do not need to parse the payload for routing purposes.
+      schema:
+        type: string
+    FSPIOP-Encryption:
+      name: FSPIOP-Encryption
+      in: header
+      required: false
+      description: >-
+        The FSPIOP-Encryption header field is a non-HTTP standard field used by
+        the API for applying end-to-end encryption of the request.
+      schema:
+        type: string
+    FSPIOP-Signature:
+      name: FSPIOP-Signature
+      in: header
+      required: false
+      description: >-
+        The FSPIOP-Signature header field is a non-HTTP standard field used by
+        the API for applying an end-to-end request signature.
+      schema:
+        type: string
+    FSPIOP-URI:
+      name: FSPIOP-URI
+      in: header
+      required: false
+      description: >-
+        The FSPIOP-URI header field is a non-HTTP standard field used by the API
+        for signature verification, should contain the service URI. Required if
+        signature verification is used, for more information see API Signature
+        document.
+      schema:
+        type: string
+    FSPIOP-HTTP-Method:
+      name: FSPIOP-HTTP-Method
+      in: header
+      required: false
+      description: >-
+        The FSPIOP-HTTP-Method header field is a non-HTTP standard field used by
+        the API for signature verification, should contain the service HTTP
+        method. Required if signature verification is used, for more information
+        see API Signature document.
+      schema:
+        type: string
+    ID:
+      name: ID
+      in: path
+      required: true
+      schema:
+        type: string
+    Type:
+      name: Type
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/PartyIdType'
+    SubId:
+      name: SubId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    Response200:
+      description: OK
+    Response202:
+      description: Accepted
+    ErrorResponse400:
+      description: >-
+        Bad Request - The application cannot process the request; for example,
+        due to malformed syntax or the payload exceeded size restrictions.
+      headers:
+        Content-Length:
+          description: >-
+            The Content-Length header field indicates the anticipated size of
+            the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: >-
+            The Content-Type header indicates the specific version of the API
+            used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse401:
+      description: >-
+        Unauthorized - The request requires authentication in order to be
+        processed.
+      headers:
+        Content-Length:
+          description: >-
+            The Content-Length header field indicates the anticipated size of
+            the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: >-
+            The Content-Type header indicates the specific version of the API
+            used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse403:
+      description: Forbidden - The request was denied and will be denied in the future.
+      headers:
+        Content-Length:
+          description: >-
+            The Content-Length header field indicates the anticipated size of
+            the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: >-
+            The Content-Type header indicates the specific version of the API
+            used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse404:
+      description: Not Found - The resource specified in the URI was not found.
+      headers:
+        Content-Length:
+          description: >-
+            The Content-Length header field indicates the anticipated size of
+            the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: >-
+            The Content-Type header indicates the specific version of the API
+            used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse405:
+      description: >-
+        Method Not Allowed - An unsupported HTTP method for the request was
+        used.
+      headers:
+        Content-Length:
+          description: >-
+            The Content-Length header field indicates the anticipated size of
+            the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: >-
+            The Content-Type header indicates the specific version of the API
+            used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse406:
+      description: >-
+        Not acceptable - The server is not capable of generating content
+        according to the Accept headers sent in the request. Used in the API to
+        indicate that the server does not support the version that the client is
+        requesting.
+      headers:
+        Content-Length:
+          description: >-
+            The Content-Length header field indicates the anticipated size of
+            the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: >-
+            The Content-Type header indicates the specific version of the API
+            used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse501:
+      description: >-
+        Not Implemented - The server does not support the requested service. The
+        client should not retry.
+      headers:
+        Content-Length:
+          description: >-
+            The Content-Length header field indicates the anticipated size of
+            the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: >-
+            The Content-Type header indicates the specific version of the API
+            used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+    ErrorResponse503:
+      description: >-
+        Service Unavailable - The server is currently unavailable to accept any
+        new service requests. This should be a temporary state, and the client
+        should retry within a reasonable time frame.
+      headers:
+        Content-Length:
+          description: >-
+            The Content-Length header field indicates the anticipated size of
+            the payload body. Only sent if there is a body.
+          schema:
+            type: integer
+        Content-Type:
+          description: >-
+            The Content-Type header indicates the specific version of the API
+            used to send the payload body.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationResponse'
+  requestBodies:
+    ParticipantsTypeIDSubIDPostRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ParticipantsTypeIDSubIDPostRequest'
+      required: true
+    ErrorInformationObject:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInformationObject'
+      required: true
+    ParticipantsTypeIDPutResponse:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ParticipantsTypeIDPutResponse'
+      required: true
+    PartiesTypeIDPutResponse:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PartiesTypeIDPutResponse'
+      required: true
+  schemas:
+    Amount:
+      title: Amount
+      type: string
+      pattern: '^([0]|([1-9][0-9]{0,17}))([.][0-9]{0,3}[1-9])?$'
+      description: >-
+        The API data type Amount is a JSON String in a canonical format that is
+        restricted by a regular expression for interoperability reasons. This
+        pattern does not allow any trailing zeroes at all, but allows an amount
+        without a minor currency unit. It also only allows four digits in the
+        minor currency unit; a negative value is not allowed. Using more than 18
+        digits in the major currency unit is not allowed.
+    AmountType:
+      title: AmountType
+      type: string
+      enum:
+        - SEND
+        - RECEIVE
+      description: >-
+        Below are the allowed values for the enumeration AmountType - SEND
+        Amount the Payer would like to send, that is, the amount that should be
+        withdrawn from the Payer account including any fees. - RECEIVE Amount
+        the Payer would like the Payee to receive, that is, the amount that
+        should be sent to the receiver exclusive fees.
+    AuthenticationType:
+      title: AuthenticationTypeEnum
+      type: string
+      enum:
+        - OTP
+        - QRCODE
+      description: >-
+        Below are the allowed values for the enumeration AuthenticationType. -
+        OTP One-time password generated by the Payer FSP. - QRCODE QR code used
+        as One Time Password.
+    AuthenticationValue:
+      title: AuthenticationValue
+      type: string
+      pattern: '^\d{3,10}$|^\S{1,64}$'
+      description: >-
+        Contains the authentication value. The format depends on the
+        authentication type used in the AuthenticationInfo complex type.
+    AuthorizationResponse:
+      title: AuthorizationResponse
+      type: string
+      enum:
+        - ENTERED
+        - REJECTED
+        - RESEND
+      description: >-
+        Below are the allowed values for the enumeration - ENTERED Consumer
+        entered the authentication value. - REJECTED Consumer rejected the
+        transaction. - RESEND Consumer requested to resend the authentication
+        value.
+    BalanceOfPayments:
+      title: BalanceOfPayments
+      type: string
+      pattern: '^[1-9]\d{2}$'
+      description: >-
+        (BopCode) The API data type BopCode is a JSON String of 3 characters,
+        consisting of digits only. Negative numbers are not allowed. A leading
+        zero is not allowed. https://www.imf.org/external/np/sta/bopcode/
+    BinaryString:
+      type: string
+      pattern: '^[A-Za-z0-9-_]+[=]{0,2}$'
+      description: >-
+        The API data type BinaryString is a JSON String. The string is a
+        base64url  encoding of a string of raw bytes, where padding (character
+        ‘=’) is added at the end of the data if needed to ensure that the string
+        is a multiple of 4 characters. The length restriction indicates the
+        allowed number of characters.
+    BinaryString32:
+      type: string
+      pattern: '^[A-Za-z0-9-_]{43}$'
+      description: >-
+        The API data type BinaryString32 is a fixed size version of the API data
+        type BinaryString, where the raw underlying data is always of 32 bytes.
+        The data type BinaryString32 should not use a padding character as the
+        size of the underlying data is fixed.
+    BulkTransferState:
+      title: BulkTransactionStateEnum
+      type: string
+      enum:
+        - RECEIVED
+        - PENDING
+        - ACCEPTED
+        - PROCESSING
+        - COMPLETED
+        - REJECTED
+      description: >-
+        Below are the allowed values for the enumeration - RECEIVED Payee FSP
+        has received the bulk transfer from the Payer FSP. - PENDING Payee FSP
+        has validated the bulk transfer. - ACCEPTED Payee FSP has accepted to
+        process the bulk transfer. - PROCESSING Payee FSP has started to
+        transfer fund to the Payees. - COMPLETED Payee FSP has completed
+        transfer of funds to the Payees. - REJECTED Payee FSP has rejected to
+        process the bulk transfer.
+    Code:
+      title: Code
+      type: string
+      pattern: '^[0-9a-zA-Z]{4,32}$'
+      description: Any code/token returned by the Payee FSP (TokenCode Type).
+    CorrelationId:
+      title: CorrelationId
+      type: string
+      pattern: >-
+        ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+      description: >-
+        Identifier that correlates all messages of the same sequence. The API
+        data type UUID (Universally Unique Identifier) is a JSON String in
+        canonical format, conforming to RFC 4122, that is restricted by a
+        regular expression for interoperability reasons. An UUID is always 36
+        characters long, 32 hexadecimal symbols and 4 dashes (‘-‘).
+    Currency:
+      title: CurrencyEnum
+      description: >-
+        The currency codes defined in ISO 4217 as three-letter alphabetic codes
+        are used as the standard naming representation for currencies.
+      type: string
+      minLength: 3
+      maxLength: 3
+      enum:
+        - AED
+        - AFN
+        - ALL
+        - AMD
+        - ANG
+        - AOA
+        - ARS
+        - AUD
+        - AWG
+        - AZN
+        - BAM
+        - BBD
+        - BDT
+        - BGN
+        - BHD
+        - BIF
+        - BMD
+        - BND
+        - BOB
+        - BRL
+        - BSD
+        - BTN
+        - BWP
+        - BYN
+        - BZD
+        - CAD
+        - CDF
+        - CHF
+        - CLP
+        - CNY
+        - COP
+        - CRC
+        - CUC
+        - CUP
+        - CVE
+        - CZK
+        - DJF
+        - DKK
+        - DOP
+        - DZD
+        - EGP
+        - ERN
+        - ETB
+        - EUR
+        - FJD
+        - FKP
+        - GBP
+        - GEL
+        - GGP
+        - GHS
+        - GIP
+        - GMD
+        - GNF
+        - GTQ
+        - GYD
+        - HKD
+        - HNL
+        - HRK
+        - HTG
+        - HUF
+        - IDR
+        - ILS
+        - IMP
+        - INR
+        - IQD
+        - IRR
+        - ISK
+        - JEP
+        - JMD
+        - JOD
+        - JPY
+        - KES
+        - KGS
+        - KHR
+        - KMF
+        - KPW
+        - KRW
+        - KWD
+        - KYD
+        - KZT
+        - LAK
+        - LBP
+        - LKR
+        - LRD
+        - LSL
+        - LYD
+        - MAD
+        - MDL
+        - MGA
+        - MKD
+        - MMK
+        - MNT
+        - MOP
+        - MRO
+        - MUR
+        - MVR
+        - MWK
+        - MXN
+        - MYR
+        - MZN
+        - NAD
+        - NGN
+        - NIO
+        - NOK
+        - NPR
+        - NZD
+        - OMR
+        - PAB
+        - PEN
+        - PGK
+        - PHP
+        - PKR
+        - PLN
+        - PYG
+        - QAR
+        - RON
+        - RSD
+        - RUB
+        - RWF
+        - SAR
+        - SBD
+        - SCR
+        - SDG
+        - SEK
+        - SGD
+        - SHP
+        - SLL
+        - SOS
+        - SPL
+        - SRD
+        - STD
+        - SVC
+        - SYP
+        - SZL
+        - THB
+        - TJS
+        - TMT
+        - TND
+        - TOP
+        - TRY
+        - TTD
+        - TVD
+        - TWD
+        - TZS
+        - UAH
+        - UGX
+        - USD
+        - UYU
+        - UZS
+        - VEF
+        - VND
+        - VUV
+        - WST
+        - XAF
+        - XCD
+        - XDR
+        - XOF
+        - XPF
+        - YER
+        - ZAR
+        - ZMW
+        - ZWD
+    Date:
+      title: Date
+      type: string
+      pattern: >-
+        ^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)$
+      description: >-
+        The API data type Date is a JSON String in a lexical format that is
+        restricted by a regular expression for interoperability reasons. This
+        format, as specified in ISO 8601, contains a date only. A more readable
+        version of the format is yyyy-MM-dd. Examples - "1982-05-23",
+        "1987-08-05
+    DateOfBirth:
+      title: DateofBirth (type Date)
+      type: string
+      pattern: >-
+        ^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)$
+      description: Date of Birth of the Party.
+    DateTime:
+      title: DateTime
+      type: string
+      pattern: >-
+        ^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:(\.\d{3}))(?:Z|[+-][01]\d:[0-5]\d)$
+      description: >-
+        The API data type DateTime is a JSON String in a lexical format that is
+        restricted by a regular expression for interoperability reasons. The
+        format is according to ISO 8601, expressed in a combined date, time and
+        time zone format. A more readable version of the format is
+        yyyy-MM-ddTHH:mm:ss.SSS[-HH:MM]. Examples - 
+        "2016-05-24T08:38:08.699-04:00", "2016-05-24T08:38:08.699Z" (where Z
+        indicates Zulu time zone, same as UTC).
+    ErrorCode:
+      title: ErrorCode
+      type: string
+      pattern: '^[1-9]\d{3}$'
+      description: >-
+        The API data type ErrorCode is a JSON String of four characters,
+        consisting of digits only. Negative numbers are not allowed. A leading
+        zero is not allowed. Each error code in the API is a four-digit number,
+        for example, 1234, where the first number (1 in the example) represents
+        the high-level error category, the second number (2 in the example)
+        represents the low-level error category, and the last two numbers (34 in
+        the example) represents the specific error.
+    ErrorDescription:
+      title: ErrorDescription
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: Error description string.
+    ExtensionKey:
+      title: ExtensionKey
+      type: string
+      minLength: 1
+      maxLength: 32
+      description: Extension key.
+    ExtensionValue:
+      title: ExtensionValue
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: Extension value.
+    FirstName:
+      title: FirstName
+      type: string
+      minLength: 1
+      maxLength: 128
+      pattern: '^(?!\s*$)[\p{L}\p{gc=Mark}\p{digit}\p{gc=Connector_Punctuation}\p{Join_Control} .,''-]{1,128}$'
+      description: First name of the Party (Name Type).
+    FspId:
+      title: FspId
+      type: string
+      minLength: 1
+      maxLength: 32
+      description: FSP identifier.
+    IlpCondition:
+      title: IlpCondition
+      type: string
+      pattern: '^[A-Za-z0-9-_]{43}$'
+      maxLength: 48
+      description: Condition that must be attached to the transfer by the Payer.
+    IlpFulfilment:
+      title: IlpFulfilment
+      type: string
+      pattern: '^[A-Za-z0-9-_]{43}$'
+      maxLength: 48
+      description: Fulfilment that must be attached to the transfer by the Payee.
+    IlpPacket:
+      title: IlpPacket
+      type: string
+      pattern: '^[A-Za-z0-9-_]+[=]{0,2}$'
+      minLength: 1
+      maxLength: 32768
+      description: Information for recipient (transport layer information).
+    Integer:
+      title: Integer
+      type: string
+      pattern: '^[1-9]\d*$'
+      description: >-
+        The API data type Integer is a JSON String consisting of digits only.
+        Negative numbers and leading zeroes are not allowed. The data type is
+        always limited to a specific number of digits.
+    LastName:
+      title: LastName
+      type: string
+      minLength: 1
+      maxLength: 128
+      pattern: '^(?!\s*$)[\p{L}\p{gc=Mark}\p{digit}\p{gc=Connector_Punctuation}\p{Join_Control} .,''-]{1,128}$'
+      description: Last name of the Party (Name Type).
+    Latitude:
+      title: Latitude
+      type: string
+      pattern: >-
+        ^(\+|-)?(?:90(?:(?:\.0{1,6})?)|(?:[0-9]|[1-8][0-9])(?:(?:\.[0-9]{1,6})?))$
+      description: >-
+        The API data type Latitude is a JSON String in a lexical format that is
+        restricted by a regular expression for interoperability reasons.
+    Longitude:
+      title: Longitude
+      type: string
+      pattern: >-
+        ^(\+|-)?(?:180(?:(?:\.0{1,6})?)|(?:[0-9]|[1-9][0-9]|1[0-7][0-9])(?:(?:\.[0-9]{1,6})?))$
+      description: >-
+        The API data type Longitude is a JSON String in a lexical format that is
+        restricted by a regular expression for interoperability reasons.
+    MerchantClassificationCode:
+      title: MerchantClassificationCode
+      type: string
+      pattern: '^[\d]{1,4}$'
+      description: >-
+        A limited set of pre-defined numbers. This list would be a limited set
+        of numbers identifying a set of popular merchant types like School Fees,
+        Pubs and Restaurants, Groceries, etc.
+    MiddleName:
+      title: MiddleName
+      type: string
+      minLength: 1
+      maxLength: 128
+      pattern: '^(?!\s*$)[\p{L}\p{gc=Mark}\p{digit}\p{gc=Connector_Punctuation}\p{Join_Control} .,''-]{1,128}$'
+      description: Middle name of the Party (Name Type).
+    Name:
+      title: Name
+      type: string
+      pattern: '^(?!\s*$)[\p{L}\p{gc=Mark}\p{digit}\p{gc=Connector_Punctuation}\p{Join_Control} .,''-]{1,128}$'
+      description: >-
+        The API data type Name is a JSON String, restricted by a regular
+        expression to avoid characters which are generally not used in a name.
+        Regular Expression - The regular expression for restricting the Name
+        type is '^(?!\s*$)[\p{L}\p{gc=Mark}\p{digit}\p{gc=Connector_Punctuation}\p{Join_Control} .,''-]{1,128}$'.
+        The restriction does not allow a string consisting of whitespace only,
+        all Unicode characters are allowed, as well as the period (.) (apostrophe (‘),
+        dash (-), comma (,)and space characters ( ). Note -  In some programming languages,
+        Unicode support must be specifically enabled. For example, if Java is used the
+        flag UNICODE_CHARACTER_CLASS must be enabled to allow Unicode
+        characters.
+    Note:
+      title: Note
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: Memo assigned to transaction
+    OtpValue:
+      title: OtpValue
+      type: string
+      pattern: '^\d{3,10}$'
+      description: >-
+        The API data type OtpValue is a JSON String of 3 to 10 characters,
+        consisting of digits only. Negative numbers are not allowed. One or more
+        leading zeros are allowed.
+    PartyIdentifier:
+      title: PartyIdentifier
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: Identifier of the Party.
+    PartyIdType:
+      title: PartyIdTypeEnum
+      type: string
+      enum:
+        - MSISDN
+        - EMAIL
+        - PERSONAL_ID
+        - BUSINESS
+        - DEVICE
+        - ACCOUNT_ID
+        - IBAN
+        - ALIAS
+      description: >-
+        Below are the allowed values for the enumeration - MSISDN An MSISDN
+        (Mobile Station International Subscriber Directory Number, that is, the
+        phone number) is used as reference to a participant. The MSISDN
+        identifier should be in international format according to the ITU-T
+        E.164 standard. Optionally, the MSISDN may be prefixed by a single plus
+        sign, indicating the international prefix. - EMAIL An email is used as
+        reference to a participant. The format of the email should be according
+        to the informational RFC 3696. - PERSONAL_ID A personal identifier is
+        used as reference to a participant. Examples of personal identification
+        are passport number, birth certificate number, and national registration
+        number. The identifier number is added in the PartyIdentifier element.
+        The personal identifier type is added in the PartySubIdOrType element. -
+        BUSINESS A specific Business (for example, an organization or a company)
+        is used as reference to a participant. The BUSINESS identifier can be in
+        any format. To make a transaction connected to a specific username or
+        bill number in a Business, the PartySubIdOrType element should be used.
+        - DEVICE A specific device (for example, a POS or ATM) ID connected to a
+        specific business or organization is used as reference to a Party. For
+        referencing a specific device under a specific business or organization,
+        use the PartySubIdOrType element. - ACCOUNT_ID A bank account number or
+        FSP account ID should be used as reference to a participant. The
+        ACCOUNT_ID identifier can be in any format, as formats can greatly
+        differ depending on country and FSP. - IBAN A bank account number or FSP
+        account ID is used as reference to a participant. The IBAN identifier
+        can consist of up to 34 alphanumeric characters and should be entered
+        without whitespace. - ALIAS An alias is used as reference to a
+        participant. The alias should be created in the FSP as an alternative
+        reference to an account owner. Another example of an alias is a username
+        in the FSP system. The ALIAS identifier can be in any format. It is also
+        possible to use the PartySubIdOrType element for identifying an account
+        under an Alias defined by the PartyIdentifier.
+    PartyName:
+      title: PartyName
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: Name of the Party. Could be a real name or a nickname.
+    PartySubIdOrType:
+      title: PartySubIdOrType
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: >-
+        Either a sub-identifier of a PartyIdentifier, or a sub-type of the
+        PartyIdType, normally a PersonalIdentifierType.
+    PersonalIdentifierType:
+      title: PersonalIdentifierType
+      type: string
+      enum:
+        - PASSPORT
+        - NATIONAL_REGISTRATION
+        - DRIVING_LICENSE
+        - ALIEN_REGISTRATION
+        - NATIONAL_ID_CARD
+        - EMPLOYER_ID
+        - TAX_ID_NUMBER
+        - SENIOR_CITIZENS_CARD
+        - MARRIAGE_CERTIFICATE
+        - HEALTH_CARD
+        - VOTERS_ID
+        - UNITED_NATIONS
+        - OTHER_ID
+      description: >-
+        Below are the allowed values for the enumeration - PASSPORT A passport
+        number is used as reference to a Party. - NATIONAL_REGISTRATION A
+        national registration number is used as reference to a Party. -
+        DRIVING_LICENSE A driving license is used as reference to a Party. -
+        ALIEN_REGISTRATION An alien registration number is used as reference to
+        a Party. - NATIONAL_ID_CARD A national ID card number is used as
+        reference to a Party. - EMPLOYER_ID A tax identification number is used
+        as reference to a Party. - TAX_ID_NUMBER A tax identification number is
+        used as reference to a Party. - SENIOR_CITIZENS_CARD A senior citizens
+        card number is used as reference to a Party. - MARRIAGE_CERTIFICATE A
+        marriage certificate number is used as reference to a Party. -
+        HEALTH_CARD A health card number is used as reference to a Party. -
+        VOTERS_ID A voter’s identification number is used as reference to a
+        Party. - UNITED_NATIONS An UN (United Nations) number is used as
+        reference to a Party. - OTHER_ID Any other type of identification type
+        number is used as reference to a Party.
+    QRCODE:
+      title: QRCODE
+      type: string
+      minLength: 1
+      maxLength: 64
+      description: QR code used as One Time Password.
+    RefundReason:
+      title: RefundReason
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: Reason for the refund.
+    TokenCode:
+      title: TokenCode
+      type: string
+      pattern: '^[0-9a-zA-Z]{4,32}$'
+      description: >-
+        The API data type TokenCode is a JSON String between 4 and 32
+        characters, consisting of digits or upper or lowercase characters from a
+        to z.
+    TransactionInitiator:
+      title: TransactionInitiatorEnum
+      type: string
+      enum:
+        - PAYER
+        - PAYEE
+      description: >-
+        Below are the allowed values for the enumeration - PAYER Sender of funds
+        is initiating the transaction. The account to send from is either owned
+        by the Payer or is connected to the Payer in some way. - PAYEE Recipient
+        of the funds is initiating the transaction by sending a transaction
+        request. The Payer must approve the transaction, either automatically by
+        a pre-generated OTP or by pre-approval of the Payee, or by manually
+        approving in his or her own Device.
+    TransactionInitiatorType:
+      title: TransactionInitiatorTypeEnum
+      type: string
+      enum:
+        - CONSUMER
+        - AGENT
+        - BUSINESS
+        - DEVICE
+      description: >-
+        Below are the allowed values for the enumeration - CONSUMER Consumer is
+        the initiator of the transaction. - AGENT Agent is the initiator of the
+        transaction. - BUSINESS Business is the initiator of the transaction. -
+        DEVICE Device is the initiator of the transaction.
+    TransactionRequestState:
+      title: TransactionRequestStateEnum
+      type: string
+      enum:
+        - RECEIVED
+        - PENDING
+        - ACCEPTED
+        - REJECTED
+      description: >-
+        Below are the allowed values for the enumeration - RECEIVED Payer FSP
+        has received the transaction from the Payee FSP. - PENDING Payer FSP has
+        sent the transaction request to the Payer. - ACCEPTED Payer has approved
+        the transaction. - REJECTED Payer has rejected the transaction.
+    TransactionScenario:
+      title: TransactionScenarioEnum
+      type: string
+      enum:
+        - DEPOSIT
+        - WITHDRAWAL
+        - TRANSFER
+        - PAYMENT
+        - REFUND
+      description: >-
+        Below are the allowed values for the enumeration - DEPOSIT Used for
+        performing a Cash-In (deposit) transaction. In a normal scenario,
+        electronic funds are transferred from a Business account to a Consumer
+        account, and physical cash is given from the Consumer to the Business
+        User. - WITHDRAWAL Used for performing a Cash-Out (withdrawal)
+        transaction. In a normal scenario, electronic funds are transferred from
+        a Consumer’s account to a Business account, and physical cash is given
+        from the Business User to the Consumer. - TRANSFER Used for performing a
+        P2P (Peer to Peer, or Consumer to Consumer) transaction. - PAYMENT
+        Usually used for performing a transaction from a Consumer to a Merchant
+        or Organization, but could also be for a B2B (Business to Business)
+        payment. The transaction could be online for a purchase in an Internet
+        store, in a physical store where both the Consumer and Business User are
+        present, a bill payment, a donation, and so on. - REFUND Used for
+        performing a refund of transaction.
+    TransactionState:
+      title: TransactionStateEnum
+      type: string
+      enum:
+        - RECEIVED
+        - PENDING
+        - COMPLETED
+        - REJECTED
+      description: >-
+        Below are the allowed values for the enumeration - RECEIVED Payee FSP
+        has received the transaction from the Payer FSP. - PENDING Payee FSP has
+        validated the transaction. - COMPLETED Payee FSP has successfully
+        performed the transaction. - REJECTED Payee FSP has failed to perform
+        the transaction.
+    TransactionSubScenario:
+      title: TransactionSubScenario
+      type: string
+      pattern: '^[A-Z_]{1,32}$'
+      description: >-
+        Possible sub-scenario, defined locally within the scheme (UndefinedEnum
+        Type).
+    TransferState:
+      title: TransferStateEnum
+      type: string
+      enum:
+        - RECEIVED
+        - RESERVED
+        - COMMITTED
+        - ABORTED
+      description: >-
+        Below are the allowed values for the enumeration - RECEIVED Next ledger
+        has received the transfer. - RESERVED Next ledger has reserved the
+        transfer. - COMMITTED Next ledger has successfully performed the
+        transfer. - ABORTED Next ledger has aborted the transfer due a rejection
+        or failure to perform the transfer.
+    UndefinedEnum:
+      title: UndefinedEnum
+      type: string
+      pattern: '^[A-Z_]{1,32}$'
+      description: >-
+        The API data type UndefinedEnum is a JSON String consisting of 1 to 32
+        uppercase characters including an underscore character (_).
+    AuthenticationInfo:
+      title: AuthenticationInfo
+      type: object
+      description: Data model for the complex type AuthenticationInfo
+      properties:
+        authentication:
+          $ref: '#/components/schemas/AuthenticationType'
+        authenticationValue:
+          $ref: '#/components/schemas/AuthenticationValue'
+      required:
+        - authentication
+        - authenticationValue
+    AuthorizationsIDPutResponse:
+      title: AuthorizationsIDPutResponse
+      type: object
+      description: 'PUT /authorizations/{ID} object'
+      properties:
+        authenticationInfo:
+          $ref: '#/components/schemas/AuthenticationInfo'
+        responseType:
+          $ref: '#/components/schemas/AuthorizationResponse'
+      required:
+        - responseType
+    BulkQuotesPostRequest:
+      title: BulkQuotesPostRequest
+      type: object
+      description: POST /bulkQuotes object
+      properties:
+        bulkQuoteId:
+          $ref: '#/components/schemas/CorrelationId'
+        payer:
+          $ref: '#/components/schemas/Party'
+        geoCode:
+          $ref: '#/components/schemas/GeoCode'
+        expiration:
+          $ref: '#/components/schemas/DateTime'
+        individualQuotes:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/IndividualQuote'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - bulkQuoteId
+        - payer
+        - individualQuotes
+    BulkQuotesIDPutResponse:
+      title: BulkQuotesIDPutResponse
+      type: object
+      description: 'PUT /bulkQuotes/{ID} object'
+      properties:
+        individualQuoteResults:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/IndividualQuoteResult'
+        expiration:
+          $ref: '#/components/schemas/DateTime'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - expiration
+    BulkTransfersPostRequest:
+      title: BulkTransfersPostRequest
+      type: object
+      description: POST /bulkTransfers object
+      properties:
+        bulkTransferId:
+          $ref: '#/components/schemas/CorrelationId'
+        bulkQuoteId:
+          $ref: '#/components/schemas/CorrelationId'
+        payerFsp:
+          $ref: '#/components/schemas/FspId'
+        payeeFsp:
+          $ref: '#/components/schemas/FspId'
+        individualTransfers:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/IndividualTransfer'
+        expiration:
+          $ref: '#/components/schemas/DateTime'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - bulkTransferId
+        - bulkQuoteId
+        - payerFsp
+        - payeeFsp
+        - individualTransfers
+        - expiration
+    BulkTransfersIDPutResponse:
+      title: BulkTransfersIDPutResponse
+      type: object
+      description: 'PUT /bulkTransfers/{ID} object'
+      properties:
+        completedTimestamp:
+          $ref: '#/components/schemas/DateTime'
+        individualTransferResults:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/IndividualTransferResult'
+        bulkTransferState:
+          $ref: '#/components/schemas/BulkTransferState'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - bulkTransferState
+    ErrorInformation:
+      title: ErrorInformation
+      type: object
+      description: Data model for the complex type ErrorInformation.
+      properties:
+        errorCode:
+          $ref: '#/components/schemas/ErrorCode'
+        errorDescription:
+          $ref: '#/components/schemas/ErrorDescription'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - errorCode
+        - errorDescription
+    ErrorInformationObject:
+      title: ErrorInformationObject
+      type: object
+      description: Data model for the complex type object that contains ErrorInformation.
+      properties:
+        errorInformation:
+          $ref: '#/components/schemas/ErrorInformation'
+      required:
+        - errorInformation
+    ErrorInformationResponse:
+      title: ErrorInformationResponse
+      type: object
+      description: >-
+        Data model for the complex type object that contains an optional element
+        ErrorInformation used along with 4xx and 5xx responses.
+      properties:
+        errorInformation:
+          $ref: '#/components/schemas/ErrorInformation'
+    Extension:
+      title: Extension
+      type: object
+      description: Data model for the complex type Extension
+      properties:
+        key:
+          $ref: '#/components/schemas/ExtensionKey'
+        value:
+          $ref: '#/components/schemas/ExtensionValue'
+      required:
+        - key
+        - value
+    ExtensionList:
+      title: ExtensionList
+      type: object
+      description: Data model for the complex type ExtensionList
+      properties:
+        extension:
+          type: array
+          items:
+            $ref: '#/components/schemas/Extension'
+          minItems: 1
+          maxItems: 16
+          description: Number of Extension elements
+      required:
+        - extension
+    GeoCode:
+      title: GeoCode
+      type: object
+      description: >-
+        Data model for the complex type GeoCode. Indicates the geographic
+        location from where the transaction was initiated.
+      properties:
+        latitude:
+          $ref: '#/components/schemas/Latitude'
+        longitude:
+          $ref: '#/components/schemas/Longitude'
+      required:
+        - latitude
+        - longitude
+    IndividualQuote:
+      title: IndividualQuote
+      type: object
+      description: Data model for the complex type IndividualQuote.
+      properties:
+        quoteId:
+          $ref: '#/components/schemas/CorrelationId'
+        transactionId:
+          $ref: '#/components/schemas/CorrelationId'
+        payee:
+          $ref: '#/components/schemas/Party'
+        amountType:
+          $ref: '#/components/schemas/AmountType'
+        amount:
+          $ref: '#/components/schemas/Money'
+        fees:
+          $ref: '#/components/schemas/Money'
+        transactionType:
+          $ref: '#/components/schemas/TransactionType'
+        note:
+          $ref: '#/components/schemas/Note'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - quoteId
+        - transactionId
+        - payee
+        - amountType
+        - amount
+        - transactionType
+    IndividualQuoteResult:
+      title: IndividualQuoteResult
+      type: object
+      description: Data model for the complex type IndividualQuoteResult.
+      properties:
+        quoteId:
+          $ref: '#/components/schemas/CorrelationId'
+        payee:
+          $ref: '#/components/schemas/Party'
+        transferAmount:
+          $ref: '#/components/schemas/Money'
+        payeeReceiveAmount:
+          $ref: '#/components/schemas/Money'
+        payeeFspFee:
+          $ref: '#/components/schemas/Money'
+        payeeFspCommission:
+          $ref: '#/components/schemas/Money'
+        ilpPacket:
+          $ref: '#/components/schemas/IlpPacket'
+        condition:
+          $ref: '#/components/schemas/IlpCondition'
+        errorInformation:
+          $ref: '#/components/schemas/ErrorInformation'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - quoteId
+    IndividualTransfer:
+      title: IndividualTransfer
+      type: object
+      description: Data model for the complex type IndividualTransfer.
+      properties:
+        transferId:
+          $ref: '#/components/schemas/CorrelationId'
+        transferAmount:
+          $ref: '#/components/schemas/Money'
+        ilpPacket:
+          $ref: '#/components/schemas/IlpPacket'
+        condition:
+          $ref: '#/components/schemas/IlpCondition'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - transferId
+        - transferAmount
+        - ilpPacket
+        - condition
+    IndividualTransferResult:
+      title: IndividualTransferResult
+      type: object
+      description: Data model for the complex type IndividualTransferResult.
+      properties:
+        transferId:
+          $ref: '#/components/schemas/CorrelationId'
+        fulfilment:
+          $ref: '#/components/schemas/IlpFulfilment'
+        errorInformation:
+          $ref: '#/components/schemas/ErrorInformation'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - transferId
+    Money:
+      title: Money
+      type: object
+      description: Data model for the complex type Money.
+      properties:
+        currency:
+          $ref: '#/components/schemas/Currency'
+        amount:
+          $ref: '#/components/schemas/Amount'
+      required:
+        - currency
+        - amount
+    ParticipantsTypeIDSubIDPostRequest:
+      title: ParticipantsTypeIDSubIDPostRequest
+      type: object
+      description: 'POST /participants/{Type}/{ID}/{SubId}, /participants/{Type}/{ID} object'
+      properties:
+        fspId:
+          $ref: '#/components/schemas/FspId'
+        currency:
+          $ref: '#/components/schemas/Currency'
+      required:
+        - fspId
+    ParticipantsTypeIDPutResponse:
+      title: ParticipantsTypeIDPutResponse
+      type: object
+      description: 'PUT /participants/{Type}/{ID}/{SubId}, /participants/{Type}/{ID} object'
+      properties:
+        fspId:
+          $ref: '#/components/schemas/FspId'
+    ParticipantsIDPutResponse:
+      title: ParticipantsIDPutResponse
+      type: object
+      description: 'PUT /participants/{ID} object'
+      properties:
+        partyList:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartyResult'
+          minItems: 1
+          maxItems: 10000
+          description: >-
+            List of PartyResult elements that were either created or failed to
+            be created.
+        currency:
+          $ref: '#/components/schemas/Currency'
+      required:
+        - partyList
+    ParticipantsPostRequest:
+      title: ParticipantsPostRequest
+      type: object
+      description: POST /participants object
+      properties:
+        requestId:
+          $ref: '#/components/schemas/CorrelationId'
+        partyList:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartyIdInfo'
+          minItems: 1
+          maxItems: 10000
+          description: >-
+            List of PartyIdInfo elements that the client would like to update or
+            create FSP information about.
+        currency:
+          $ref: '#/components/schemas/Currency'
+      required:
+        - requestId
+        - partyList
+    Party:
+      title: Party
+      type: object
+      description: Data model for the complex type Party.
+      properties:
+        partyIdInfo:
+          $ref: '#/components/schemas/PartyIdInfo'
+        merchantClassificationCode:
+          $ref: '#/components/schemas/MerchantClassificationCode'
+        name:
+          $ref: '#/components/schemas/PartyName'
+        personalInfo:
+          $ref: '#/components/schemas/PartyPersonalInfo'
+      required:
+        - partyIdInfo
+    PartyComplexName:
+      title: PartyComplexName
+      type: object
+      description: Data model for the complex type PartyComplexName.
+      properties:
+        firstName:
+          $ref: '#/components/schemas/FirstName'
+        middleName:
+          $ref: '#/components/schemas/MiddleName'
+        lastName:
+          $ref: '#/components/schemas/LastName'
+    PartyIdInfo:
+      title: PartyIdInfo
+      type: object
+      description: Data model for the complex type PartyIdInfo.
+      properties:
+        partyIdType:
+          $ref: '#/components/schemas/PartyIdType'
+        partyIdentifier:
+          $ref: '#/components/schemas/PartyIdentifier'
+        partySubIdOrType:
+          $ref: '#/components/schemas/PartySubIdOrType'
+        fspId:
+          $ref: '#/components/schemas/FspId'
+      required:
+        - partyIdType
+        - partyIdentifier
+    PartiesTypeIDPutResponse:
+      title: PartiesTypeIDPutResponse
+      type: object
+      description: 'PUT /parties/{Type}/{ID} object'
+      properties:
+        party:
+          $ref: '#/components/schemas/Party'
+      required:
+        - party
+    PartyPersonalInfo:
+      title: PartyPersonalInfo
+      type: object
+      description: Data model for the complex type PartyPersonalInfo.
+      properties:
+        complexName:
+          $ref: '#/components/schemas/PartyComplexName'
+        dateOfBirth:
+          $ref: '#/components/schemas/DateOfBirth'
+    PartyResult:
+      title: PartyResult
+      type: object
+      description: Data model for the complex type PartyResult.
+      properties:
+        partyId:
+          $ref: '#/components/schemas/PartyIdInfo'
+        errorInformation:
+          $ref: '#/components/schemas/ErrorInformation'
+      required:
+        - partyId
+    QuotesPostRequest:
+      title: QuotesPostRequest
+      type: object
+      description: POST /quotes object
+      properties:
+        quoteId:
+          $ref: '#/components/schemas/CorrelationId'
+        transactionId:
+          $ref: '#/components/schemas/CorrelationId'
+        transactionRequestId:
+          $ref: '#/components/schemas/CorrelationId'
+        payee:
+          $ref: '#/components/schemas/Party'
+        payer:
+          $ref: '#/components/schemas/Party'
+        amountType:
+          $ref: '#/components/schemas/AmountType'
+        amount:
+          $ref: '#/components/schemas/Money'
+        fees:
+          $ref: '#/components/schemas/Money'
+        transactionType:
+          $ref: '#/components/schemas/TransactionType'
+        geoCode:
+          $ref: '#/components/schemas/GeoCode'
+        note:
+          $ref: '#/components/schemas/Note'
+        expiration:
+          $ref: '#/components/schemas/DateTime'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - quoteId
+        - transactionId
+        - payee
+        - payer
+        - amountType
+        - amount
+        - transactionType
+    QuotesIDPutResponse:
+      title: QuotesIDPutResponse
+      type: object
+      description: 'PUT /quotes/{ID} object'
+      properties:
+        transferAmount:
+          $ref: '#/components/schemas/Money'
+        payeeReceiveAmount:
+          $ref: '#/components/schemas/Money'
+        payeeFspFee:
+          $ref: '#/components/schemas/Money'
+        payeeFspCommission:
+          $ref: '#/components/schemas/Money'
+        expiration:
+          $ref: '#/components/schemas/DateTime'
+        geoCode:
+          $ref: '#/components/schemas/GeoCode'
+        ilpPacket:
+          $ref: '#/components/schemas/IlpPacket'
+        condition:
+          $ref: '#/components/schemas/IlpCondition'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - transferAmount
+        - expiration
+        - ilpPacket
+        - condition
+    Refund:
+      title: Refund
+      type: object
+      description: Data model for the complex type Refund.
+      properties:
+        originalTransactionId:
+          $ref: '#/components/schemas/CorrelationId'
+        refundReason:
+          $ref: '#/components/schemas/RefundReason'
+      required:
+        - originalTransactionId
+    Transaction:
+      title: Transaction
+      type: object
+      description: >-
+        Data model for the complex type Transaction. The Transaction type is
+        used to carry end-to-end data between the Payer FSP and the Payee FSP in
+        the ILP Packet. Both the transactionId and the quoteId in the data model
+        are decided by the Payer FSP in the POST /quotes.
+      properties:
+        transactionId:
+          $ref: '#/components/schemas/CorrelationId'
+        quoteId:
+          $ref: '#/components/schemas/CorrelationId'
+        payee:
+          $ref: '#/components/schemas/Party'
+        payer:
+          $ref: '#/components/schemas/Party'
+        amount:
+          $ref: '#/components/schemas/Money'
+        transactionType:
+          $ref: '#/components/schemas/TransactionType'
+        note:
+          $ref: '#/components/schemas/Note'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - transactionId
+        - quoteId
+        - payee
+        - payer
+        - amount
+        - transactionType
+    TransactionRequestsIDPutResponse:
+      title: TransactionRequestsIDPutResponse
+      type: object
+      description: 'PUT /transactionRequests/{ID} object'
+      properties:
+        transactionId:
+          $ref: '#/components/schemas/CorrelationId'
+        transactionRequestState:
+          $ref: '#/components/schemas/TransactionRequestState'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - transactionRequestState
+    TransactionsIDPutResponse:
+      title: TransactionsIDPutResponse
+      type: object
+      description: 'PUT /transactions/{ID} object'
+      properties:
+        completedTimestamp:
+          $ref: '#/components/schemas/DateTime'
+        transactionState:
+          $ref: '#/components/schemas/TransactionState'
+        code:
+          $ref: '#/components/schemas/Code'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - transactionState
+    TransactionType:
+      title: TransactionType
+      type: object
+      description: Data model for the complex type TransactionType.
+      properties:
+        scenario:
+          $ref: '#/components/schemas/TransactionScenario'
+        subScenario:
+          $ref: '#/components/schemas/TransactionSubScenario'
+        initiator:
+          $ref: '#/components/schemas/TransactionInitiator'
+        initiatorType:
+          $ref: '#/components/schemas/TransactionInitiatorType'
+        refundInfo:
+          $ref: '#/components/schemas/Refund'
+        balanceOfPayments:
+          $ref: '#/components/schemas/BalanceOfPayments'
+      required:
+        - scenario
+        - initiator
+        - initiatorType
+    TransfersPostRequest:
+      title: TransfersPostRequest
+      type: object
+      description: POST /transfers Request object
+      properties:
+        transferId:
+          $ref: '#/components/schemas/CorrelationId'
+        payeeFsp:
+          $ref: '#/components/schemas/FspId'
+        payerFsp:
+          $ref: '#/components/schemas/FspId'
+        amount:
+          $ref: '#/components/schemas/Money'
+        ilpPacket:
+          $ref: '#/components/schemas/IlpPacket'
+        condition:
+          $ref: '#/components/schemas/IlpCondition'
+        expiration:
+          $ref: '#/components/schemas/DateTime'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - transferId
+        - payeeFsp
+        - payerFsp
+        - amount
+        - ilpPacket
+        - condition
+        - expiration
+    TransactionRequestsPostRequest:
+      title: TransactionRequestsPostRequest
+      type: object
+      description: POST /transactionRequests object
+      properties:
+        transactionRequestId:
+          $ref: '#/components/schemas/CorrelationId'
+        payee:
+          $ref: '#/components/schemas/Party'
+        payer:
+          $ref: '#/components/schemas/PartyIdInfo'
+        amount:
+          $ref: '#/components/schemas/Money'
+        transactionType:
+          $ref: '#/components/schemas/TransactionType'
+        note:
+          $ref: '#/components/schemas/Note'
+        geoCode:
+          $ref: '#/components/schemas/GeoCode'
+        authenticationType:
+          $ref: '#/components/schemas/AuthenticationType'
+        expiration:
+          $ref: '#/components/schemas/DateTime'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - transactionRequestId
+        - payee
+        - payer
+        - amount
+        - transactionType
+    TransfersIDPutResponse:
+      title: TransfersIDPutResponse
+      type: object
+      description: 'PUT /transfers/{ID} object'
+      properties:
+        fulfilment:
+          $ref: '#/components/schemas/IlpFulfilment'
+        completedTimestamp:
+          $ref: '#/components/schemas/DateTime'
+        transferState:
+          $ref: '#/components/schemas/TransferState'
+        extensionList:
+          $ref: '#/components/schemas/ExtensionList'
+      required:
+        - transferState

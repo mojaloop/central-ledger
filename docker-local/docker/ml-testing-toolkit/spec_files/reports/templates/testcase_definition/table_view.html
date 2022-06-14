@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <style>
+      #customers {
+        font-family: Arial, Helvetica, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+      }
+
+      #customers .tableRow:nth-child(even){
+        background-color: #f9f9f9;
+      }
+
+      #customers .tableRow:hover {
+        background-color: #eee;
+      }
+
+      #customers .tableHeader {
+        padding: 16px;
+        text-align: left;
+        background-color: #EEE;
+        color: black;
+      }
+
+      #customers .tableHeaderBlue {
+        background-color: #E0EfFE;
+        color: black;
+      }
+      #customers .tableHeaderYellow {
+        background-color: #FFFDDD;
+        color: black;
+      }
+
+      #customers .tableHeaderYellow .collapsed {
+        transform: rotate(90deg);
+      }
+
+    </style>
+  </head>
+<body>
+
+  <div id="customers" class="container-fluid border border-dark" >
+
+    <div class="row border border-white">
+      <div class="col border border-white">
+        <div class="btn-group float-right" role="group" aria-label="Button Group">
+          <button id="openAll" class="btn btn-outline-success btn-sm float-right">Expand Folders</button>
+          <button id="closeAll" class="btn btn-outline-success btn-sm float-right">Collapse Folders</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row border border-white">
+      <div class="col border border-white">
+        <div class="row tableRow border border-secondary">
+          <div class="col-2 tableHeader border border-secondary">Testcase</div>
+          <div class="col-2 tableHeader border border-secondary">Request Description</div>
+          <div class="col-3 tableHeader border border-secondary">Test Scenario</div>
+          <div class="col-5 tableHeader border border-secondary">Expected Result</div>
+        </div>
+      </div>
+    </div>
+    {{#each test_cases}}
+      <div class="row border border-white">
+        <div class="col border border-white">
+          <div class="row tableRow border border-secondary" >
+            <div class="col-sm tableHeaderBlue border border-secondary" >{{fileInfo.path}}
+              {{#if fileInfo.labels}}
+                - (Labels: {{fileInfo.labels}})
+              {{/if}}
+            </div>
+          </div>
+          <div class="row tableRow border border-secondary">
+            <div class="col tableHeaderYellow border border-secondary">
+              <a data-toggle="collapse" href="#" data-target="#folder-collapse-{{id}}" aria-expanded="false" aria-controls="collapse" id="folder-{{id}}" class="collapsed z-block">
+                {{name}}
+              </a>
+            </div>
+          </div>
+          
+          <div id="folder-collapse-{{id}}" class="collapse row border border-secondary" aria-labelledby="folder-{{id}}">
+            <div class="col border border-secondary">
+              {{#each requests}}
+                <div class="row tableRow border border-secondary">
+                  <div class="col-2 tableData border border-secondary">{{#if @first}}{{../meta.info}}{{/if}} </div>
+                  <div class="col-2 tableData border border-secondary">{{meta.info}}</div>
+                  <div class="col-3 tableData border border-secondary">{{description}} <br />({{method}} {{operationPath}})</div>
+                  <div class="col-5 tableData border border-secondary">
+                    {{#if tests.assertions}}
+                      <ul>
+                      {{#each tests.assertions}}
+                        <li>{{description}}</li>
+                      {{/each}}
+                      </ul>
+                    {{/if}}
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+          </div>
+        </div>
+      </div>
+    {{/each}}
+
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+  </body>
+</html>
+
+<script>
+  $('#openAll').on('click', function(e) {
+      {{#each test_cases}}
+      $('#folder-{{id}}').removeClass('collapsed')
+      $('#folder-collapse-{{id}}').addClass('show')
+      {{/each}}
+  })
+</script>
+
+<script>
+  $('#closeAll').on('click', function(e) {
+      {{#each test_cases}}
+      $('#folder-{{id}}').addClass('collapsed')
+      $('#folder-collapse-{{id}}').removeClass('show')
+      {{/each}}
+  })
+</script>

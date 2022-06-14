@@ -1,0 +1,983 @@
+openapi: 3.0.1
+info:
+  title: MOJALOOP Central Settlements
+  description: Mojaloop API for Settlements.
+  version: 1.1.0
+servers:
+- url: /v1
+paths:
+  /health:
+    get:
+      tags:
+      - getHealth
+      summary: getHealth
+      description: Gets the health of the service and sub-services (i.e. database).
+      operationId: getHealth
+      responses:
+        200:
+          description: A valid and health service.
+          content: {}
+        502:
+          description: API is live, but error connecting to required sub-service.
+          content: {}
+      deprecated: false
+  /settlementWindows/{id}:
+    get:
+      tags:
+      - getSettlementWindowById
+      summary: getSettlementWindowById
+      description: Returns a Settlement Window by id.
+      operationId: getSettlementWindowById
+      parameters:
+      - name: id
+        in: path
+        description: |
+          A valid settlement window id to be supplied in the query.
+        required: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: A settlement window's data returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementWindow'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+    post:
+      tags:
+      - closeSettlementWindow
+      summary: closeSettlementWindow
+      description: If the settlementWindow is open, it can be closed and a new window
+        is created. If it is already closed, return an error message. Returns the
+        new settlement window.
+      operationId: closeSettlementWindow
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        description: A JSON object containing settlement window closure info.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementWindowClosurePayload'
+        required: true
+      responses:
+        200:
+          description: Settlement window closed and new window opened.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementWindow'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: payload
+  /settlementWindows:
+    get:
+      tags:
+      - getSettlementWindowsByParams
+      summary: getSettlementWindowsByParams
+      description: Returns Settlement Windows as per parameter(s).
+      operationId: getSettlementWindowsByParams
+      parameters:
+      - name: participantId
+        in: query
+        description: |
+          A valid participant Id to filter on.
+        schema:
+          type: integer
+      - name: state
+        in: query
+        description: |
+          A settlement window state to filter on.
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - CLOSED
+          - PENDING_SETTLEMENT
+          - SETTLED
+          - ABORTED
+      - name: fromDateTime
+        in: query
+        description: |
+          The start date for query (relates to central-ledger.settlementWindow.createdDate). Can be used together with `toDateTime'. eg 2017-07-20T17:32:28Z
+        schema:
+          type: string
+          format: date-time
+      - name: toDateTime
+        in: query
+        description: |
+          The end date for query (relates to central-ledger.settlementWindow.createdDate). Can be used together with `fromDateTime'. eg 2017-07-21T17:32:28Z
+        schema:
+          type: string
+          format: date-time
+      responses:
+        200:
+          description: Settlement window(s) returned by the filtering parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementWindows'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+  /settlements:
+    get:
+      tags:
+      - getSettlementsByParams
+      summary: getSettlementsByParams
+      description: Returns Settlements as per parameter(s).
+      operationId: getSettlementsByParams
+      parameters:
+      - name: currency
+        in: query
+        description: |
+          A valid currency to filter on.
+        schema:
+          type: string
+      - name: participantId
+        in: query
+        description: |
+          A valid participant Id to filter on.
+        schema:
+          type: integer
+      - name: settlementWindowId
+        in: query
+        description: |
+          A valid Settlement Window Id to filter on.
+        schema:
+          type: number
+      - name: accountId
+        in: query
+        description: |
+          A valid Account Id to filter on.
+        schema:
+          type: number
+      - name: state
+        in: query
+        description: "A settlement state to filter on.  \n"
+        schema:
+          type: string
+          enum:
+          - PENDING_SETTLEMENT
+          - PS_TRANSFERS_RECORDED
+          - PS_TRANSFERS_RESERVED
+          - PS_TRANSFERS_COMMITTED
+          - SETTLING
+          - SETTLED
+          - ABORTED
+      - name: fromDateTime
+        in: query
+        description: |
+          The start date for query (relates to central-ledger.settlement.createdDate). Can be used together with `toDateTime'. eg 2017-07-20T17:32:28Z
+        schema:
+          type: string
+          format: date-time
+      - name: toDateTime
+        in: query
+        description: |
+          The end date for query (relates to central-ledger.settlement.createdDate). Can be used together with `fromDateTime'. eg 2017-07-21T17:32:28Z
+        schema:
+          type: string
+          format: date-time
+      - name: fromSettlementWindowDateTime
+        in: query
+        description: |
+          The start date for query (relates to central-ledger.settlementWindow.createdDate). Can be used together with `toDateTime'. eg 2017-07-20T17:32:28Z
+        schema:
+          type: string
+          format: date-time
+      - name: toSettlementWindowDateTime
+        in: query
+        description: |
+          The end date for query (relates to central-ledger.settlementWindow.createdDate). Can be used together with `fromDateTime'. eg 2017-07-21T17:32:28Z
+        schema:
+          type: string
+          format: date-time
+      responses:
+        200:
+          description: Settlement window(s) returned by the filtering parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlements'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+    post:
+      tags:
+      - createSettlement
+      summary: createSettlement
+      description: Trigger the creation of a settlement, that does the calculation
+        of the net settlement position per participant and marks all transfers in
+        the affected windows as PENDING_SETTLEMENT. Returned dataset is the net settlement
+        report for the settlementWindow
+      operationId: createSettlement
+      requestBody:
+        description: A JSON object containing settlement windows to be included.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementEventPayload'
+        required: true
+      responses:
+        200:
+          description: Created settlement with all windows and accounts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: payload
+  /settlements/{id}:
+    get:
+      tags:
+      - getSettlementById
+      summary: getSettlementById
+      description: Returns Settlement(s) as per parameters/filter criteria.
+      operationId: getSettlementById
+      parameters:
+      - name: id
+        in: path
+        description: |
+          A valid Settlement Id.
+        required: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: Settlement successfully returned by the filtering/Query parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+    put:
+      tags:
+      - updateSettlementById
+      summary: updateSettlementById
+      description: Acknowledgement of settlement by updating with Settlement Id.
+      operationId: updateSettlementById
+      parameters:
+      - name: id
+        in: path
+        description: A valid Settlement Id.
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        description: A JSON object containing settlement update info.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementUpdateBySettlementIdPayload'
+        required: true
+      responses:
+        200:
+          description: Settlements updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: payload
+  /settlements/{settlementId}/participants/{participantId}:
+    get:
+      tags:
+      - getSettlementBySettlementParticipant
+      summary: getSettlementBySettlementParticipant
+      description: Returns Settlement(s) as per filter criteria.
+      operationId: getSettlementBySettlementParticipant
+      parameters:
+      - name: settlementId
+        in: path
+        description: |
+          A valid Settlement Id.
+        required: true
+        schema:
+          type: integer
+      - name: participantId
+        in: path
+        description: |
+          A valid Participant Id.
+        required: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: Settlement, settlement windows and settlement accounts returned
+            by the filtering parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+    put:
+      tags:
+      - updateSettlementBySettlementParticipant
+      summary: updateSettlementBySettlementParticipant
+      description: Acknowledgement of settlement by updating with Settlements Id and
+        Participant Id.
+      operationId: updateSettlementBySettlementParticipant
+      parameters:
+      - name: settlementId
+        in: path
+        description: A valid Settlement Id.
+        required: true
+        schema:
+          type: integer
+      - name: participantId
+        in: path
+        description: A valid Participant Id.
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        description: A JSON object containing settlement update info.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementUpdateBySettlementParticipantPayload'
+        required: true
+      responses:
+        200:
+          description: Settlements updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: payload
+  /settlements/{settlementId}/participants/{participantId}/accounts/{accountId}:
+    get:
+      tags:
+      - getSettlementBySettlementParticipantAccount
+      summary: getSettlementBySettlementParticipantAccount
+      description: Returns Settlement(s) as per filter criteria.
+      operationId: getSettlementBySettlementParticipantAccount
+      parameters:
+      - name: settlementId
+        in: path
+        description: |
+          A valid Settlement Id.
+        required: true
+        schema:
+          type: integer
+      - name: participantId
+        in: path
+        description: |
+          A valid Participant Id.
+        required: true
+        schema:
+          type: integer
+      - name: accountId
+        in: path
+        description: "A valid Account Id.    \n"
+        required: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: Settlement, settlement windows and settlement accounts returned
+            by the filtering parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+    put:
+      tags:
+      - updateSettlementBySettlementParticipantAccount
+      summary: updateSettlementBySettlementParticipantAccount
+      description: Acknowledgement of settlement by updating the reason and state
+        by Settlements Id, Participant Id and accounts Id.
+      operationId: updateSettlementBySettlementParticipantAccount
+      parameters:
+      - name: settlementId
+        in: path
+        description: A valid Settlement Id.
+        required: true
+        schema:
+          type: integer
+      - name: participantId
+        in: path
+        description: A valid Participant Id.
+        required: true
+        schema:
+          type: integer
+      - name: accountId
+        in: path
+        description: A valid Account Id.
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        description: A JSON object containing settlement update info.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementUpdateBySettlementParticipantAccount'
+        required: true
+      responses:
+        200:
+          description: Settlements updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Authorisation information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: No data found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported Media Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: payload
+components:
+  schemas:
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Account Id
+        reason:
+          type: string
+          description: TBD
+        state:
+          type: string
+          example: PENDING_SETTLEMENT
+        netSettlementAmount:
+          $ref: '#/components/schemas/netSettlementAmount'
+    SettlementUpdateBySettlementIdPayload:
+      type: object
+      properties:
+        state:
+          type: string
+          enum:
+          - ABORTED
+          - INVALID
+        reason:
+          type: string
+        externalReference:
+          type: string
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettlementUpdateBySettlementIDOuterPayload'
+    SettlementUpdateBySettlementIDOuterPayload:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Participant Id
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettlementUpdateBySettlementIdInnerPayload'
+    SettlementUpdateBySettlementIdInnerPayload:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Participant Currency Id
+        reason:
+          type: string
+          example: reason
+        state:
+          type: string
+          example: SETTLED
+          enum:
+          - PENDING_SETTLEMENT
+          - PS_TRANSFERS_RECORDED
+          - PS_TRANSFERS_RESERVED
+          - PS_TRANSFERS_COMMITTED
+          - SETTLED
+        externalReference:
+          type: string
+          example: external-reference-abc123
+    SettlementUpdateBySettlementParticipantPayload:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettlementUpdateBySettlementIdInnerPayload'
+    Accounts:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Participant Currency Id
+        reason:
+          type: string
+          description: TBD
+        state:
+          type: string
+          example: PENDING_SETTLEMENT
+        netSettlementAmount:
+          $ref: '#/components/schemas/netSettlementAmount'
+    SettlementWindowClosurePayload:
+      required:
+      - reason
+      - state
+      type: object
+      properties:
+        state:
+          type: string
+          example: CLOSED
+          enum:
+          - CLOSED
+        reason:
+          type: string
+          example: string
+    SettlementUpdateBySettlementParticipantAccount:
+      required:
+      - reason
+      - state
+      type: object
+      properties:
+        state:
+          type: string
+          example: SETTLED
+          enum:
+          - PENDING_SETTLEMENT
+          - PS_TRANSFERS_RECORDED
+          - PS_TRANSFERS_RESERVED
+          - PS_TRANSFERS_COMMITTED
+          - SETTLED
+        reason:
+          type: string
+          example: string
+        externalReference:
+          type: string
+          example: external-reference-abc123
+    SettlementEventPayload:
+      required:
+      - reason
+      - settlementWindows
+      type: object
+      properties:
+        reason:
+          type: string
+        settlementWindows:
+          minItems: 1
+          uniqueItems: true
+          type: array
+          items:
+            $ref: '#/components/schemas/SettlementWindowId'
+    SettlementWindowId:
+      required:
+      - id
+      type: object
+      properties:
+        id:
+          type: integer
+    SettlementWindow:
+      required:
+      - createdDate
+      - id
+      - state
+      type: object
+      properties:
+        id:
+          type: integer
+        reason:
+          type: string
+        state:
+          type: string
+        createdDate:
+          type: string
+        changedDate:
+          type: string
+    SettlementWindows:
+      type: array
+      items:
+        $ref: '#/components/schemas/SettlementWindow'
+    netSettlementAmount:
+      type: object
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+    Participant:
+      type: object
+      properties:
+        id:
+          type: integer
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Accounts'
+    Settlements:
+      type: array
+      items:
+        $ref: '#/components/schemas/Settlement'
+    Settlement:
+      type: object
+      properties:
+        id:
+          type: integer
+        state:
+          type: string
+        settlementWindows:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettlementWindows'
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Participant'
+    Error:
+      required:
+      - errorInformation
+      type: object
+      properties:
+        errorInformation:
+          type: object
+          properties:
+            errorCode:
+              type: integer
+            errorDescription:
+              type: string
+            extensionList:
+              type: object
+              properties:
+                extension:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Extension'
+    Extension:
+      required:
+      - key
+      - value
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string

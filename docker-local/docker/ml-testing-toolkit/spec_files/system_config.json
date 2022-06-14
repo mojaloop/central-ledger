@@ -1,0 +1,95 @@
+{
+  "API_PORT": 5000,
+  "HOSTING_ENABLED": false,
+  "INBOUND_MUTUAL_TLS_ENABLED": false,
+  "OUTBOUND_MUTUAL_TLS_ENABLED": false,
+  "CONFIG_VERSIONS": {
+    "response": 1,
+    "callback": 1,
+    "validation": 1,
+    "forward": 1,
+    "userSettings": 1
+  },
+  "DB": {
+    "URI": "mongodb://ttk:ttk@localhost:27017/ttk"
+  },
+  "OAUTH": {
+    "AUTH_ENABLED": false,
+    "APP_OAUTH_CLIENT_KEY": "ttk",
+    "APP_OAUTH_CLIENT_SECRET": "secret",
+    "MTA_ROLE": "Application/MTA",
+    "PTA_ROLE": "Application/PTA",
+    "EVERYONE_ROLE": "Internal/everyone",
+    "OAUTH2_TOKEN_ISS": "http://mojaloop-testing-toolkit:5050/api/oauth2/token",
+    "OAUTH2_ISSUER": "http://mojaloop-testing-toolkit:5050/api/oauth2/token",
+    "EMBEDDED_CERTIFICATE": "CERTIFICATE"
+  },
+  "CONNECTION_MANAGER": {
+    "ENABLED": false,
+    "API_URL": "http://connection-manager-api:5061",
+    "AUTH_ENABLED": false,
+    "HUB_USERNAME": "hub",
+    "HUB_PASSWORD": "hub"
+  },
+  "KEYCLOAK": {
+    "ENABLED": false,
+    "API_URL": "http://localhost:8080",
+    "REALM": "testingtoolkit",
+    "ADMIN_REALM": "master",
+    "ADMIN_USERNAME": "admin",
+    "ADMIN_PASSWORD": "admin",
+    "ADMIN_CLIENT_ID": "admin-cli"
+  },
+  "SERVER_LOGS": {
+    "ENABLED": true,
+    "RESULTS_PAGE_SIZE": 50,
+    "ADAPTER": {
+      "TYPE": "ELASTICSEARCH",
+      "INDEX": "moja*",
+      "API_URL": "http://test-url/"
+    }
+  },
+  "HTTP_CLIENT": {
+    "KEEP_ALIVE": true,
+    "MAX_SOCKETS": 50,
+    "UNUSED_AGENTS_EXPIRY_MS": 1800000,
+    "UNUSED_AGENTS_CHECK_TIMER_MS": 300000
+  },
+  "INIT_CONFIG": {
+    "objectStore": {}
+  },
+  "API_DEFINITIONS": [
+    {
+      "type": "fspiop",
+      "version": "1.0",
+      "folderPath": "fspiop_1.0",
+      "asynchronous": true
+    },
+    {
+      "type": "fspiop",
+      "version": "1.1",
+      "folderPath": "fspiop_1.1",
+      "asynchronous": true
+    },
+    {
+      "type": "settlements",
+      "version": "1.0",
+      "folderPath": "settlements_1.0"
+    },
+    {
+      "type": "settlements",
+      "version": "2.0",
+      "folderPath": "settlements_2.0"
+    },
+    {
+      "type": "central_admin",
+      "version": "1.0",
+      "folderPath": "central_admin_1.0"
+    },
+    {
+      "type": "als_admin",
+      "version": "1.1",
+      "folderPath": "als_admin_1.1"
+    }
+  ]
+}
