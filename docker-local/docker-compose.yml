@@ -7,7 +7,8 @@ networks:
 services:
   ## Config file generator
   config-builder:
-    image: ubuntu:focal
+    # image: ubuntu:focal
+    image: dwdraju/alpine-curl-jq:latest
     environment:
       - ML_API_ADAPTER_VERSION
       - ACCOUNT_LOOKUP_SERVICE_VERSION

@@ -11,8 +11,8 @@ echo "Config File: $CONFIG_FILE";
 echo "Out Directory: $OUT_DIR";
 
 # Install dependencies
-apt-get update
-apt-get install -y jq curl
+# apt-get update
+# apt-get install -y jq curl
 
 # Set versions
 ML_API_ADAPTER_VERSION="${ML_API_ADAPTER_VERSION:-master}"
