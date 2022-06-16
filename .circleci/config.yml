@@ -233,6 +233,31 @@ jobs:
       - store_test_results:
           path: ./test/results
 
+  test-functional:
+    executor: default-machine
+    steps:
+      - checkout
+      # - run:
+      #     name: Create dir for test results
+      #     command: mkdir -p ./test/results
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Download the mojaloop/ml-core-test-harness repo
+          command: |
+            git clone https://github.com/mojaloop/ml-core-test-harness.git
+            cd /tmp/ml-core-test-harness
+      - run:
+          name: Execute TTK functional tests
+          command: |
+            ## Lets run core services and ttk tests
+            docker-compose --profile all-services --profile ttk-provisioning --profile ttk-tests up --exit-code-from ttk-tests
+      # - store_artifacts:
+      #     path: ./test/results
+      #     prefix: test
+      # - store_test_results:
+      #     path: ./test/results
+
   vulnerability-check:
     executor: default-docker
     steps:
@@ -642,17 +667,17 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
-      # - test-functional:
-      #     context: org-global
-      #     requires:
-      #       - setup
-      #     filters:
-      #       tags:
-      #         only: /.*/
-      #       branches:
-      #         ignore:
-      #           - /feature*/
-      #           - /bugfix*/
+      - test-functional:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
       - vulnerability-check:
           context: org-global
           requires:
