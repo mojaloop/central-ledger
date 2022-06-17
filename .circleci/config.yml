@@ -233,6 +233,33 @@ jobs:
       - store_test_results:
           path: ./test/results
 
+  test-functional:
+    executor: default-machine
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load the pre-built docker local image from workspace
+          command: docker load -i /tmp/docker-image-local.tar
+      - run:
+          name: Download the mojaloop/ml-core-test-harness repo
+          command: |
+            git clone --depth 1 --branch v0.0.2 https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
+      - run:
+          name: Execute TTK functional tests
+          command: |
+            cd /tmp/ml-core-test-harness
+            export CENTRAL_LEDGER_VERSION=local
+            docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
+            bash wait-for-container.sh ttk-func-ttk-tests-1
+            docker logs ttk-func-ttk-tests-1 > ./reports/ttk-tests-console.log
+            docker-compose -p ttk-func --ansi never down
+            cat ./reports/ttk-tests-console.log
+      - store_artifacts:
+          path: /tmp/ml-core-test-harness/reports
+          prefix: test
+
   vulnerability-check:
     executor: default-docker
     steps:
@@ -272,17 +299,38 @@ jobs:
           path: /tmp/license-scanner/results
           prefix: licenses
 
-  build:
+  build-local:
     executor: default-machine
     steps:
       - checkout
       - run:
-          name: Build Docker $CIRCLE_TAG image
+          name: Build Docker local image
           command: |
-            echo "Building Docker image: $CIRCLE_TAG"
-            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG .
+            echo "Building Docker image: local"
+            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:local .
       - run:
           name: Save docker image to workspace
+          command: docker save -o /tmp/docker-image-local.tar $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:local
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - ./docker-image-local.tar
+
+  build:
+    executor: default-machine
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load the pre-built docker local image from workspace
+          command: docker load -i /tmp/docker-image-local.tar
+      - run:
+          name: Re-tag the image
+          command: |
+            echo "Re-tagging Docker image: $CIRCLE_TAG"
+            docker tag $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:local $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+      - run:
+          name: Save the new docker image to workspace
           command: docker save -o /tmp/docker-image.tar $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
       - persist_to_workspace:
           root: /tmp
@@ -642,17 +690,18 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
-      # - test-functional:
-      #     context: org-global
-      #     requires:
-      #       - setup
-      #     filters:
-      #       tags:
-      #         only: /.*/
-      #       branches:
-      #         ignore:
-      #           - /feature*/
-      #           - /bugfix*/
+      - test-functional:
+          context: org-global
+          requires:
+            - setup
+            - build-local
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
       - vulnerability-check:
           context: org-global
           requires:
@@ -675,6 +724,17 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
+      - build-local:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
       - build:
           context: org-global
           requires:
@@ -687,6 +747,7 @@ workflows:
             # - test-functional
             - vulnerability-check
             - audit-licenses
+            - build-local
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
