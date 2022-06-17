@@ -250,16 +250,16 @@ jobs:
           name: Execute TTK functional tests
           command: |
             cd /tmp/ml-core-test-harness
-            bash get-config-files-from-docker-images.sh -o original-config-files
             docker-compose --project-name ttk-func --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
             bash wait-for-container.sh ttk-func-ttk-tests-1
-            docker logs ttk-func-ttk-tests-1
+            docker logs ttk-func-ttk-tests-1 > ./reports/ttk-tests-console.log
             docker-compose -p ttk-func down
-      # - store_artifacts:
-      #     path: ./test/results
-      #     prefix: test
-      # - store_test_results:
-      #     path: ./test/results
+            cat ./reports/ttk-tests-console.log
+      - store_artifacts:
+          path: ./reports
+          prefix: test
+      - store_test_results:
+          path: ./reports
 
   vulnerability-check:
     executor: default-docker
