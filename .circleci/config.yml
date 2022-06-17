@@ -256,10 +256,10 @@ jobs:
             docker-compose -p ttk-func down
             cat ./reports/ttk-tests-console.log
       - store_artifacts:
-          path: ./reports
+          path: /tmp/ml-core-test-harness/reports
           prefix: test
       - store_test_results:
-          path: ./reports
+          path: /tmp/ml-core-test-harness/reports
 
   vulnerability-check:
     executor: default-docker
