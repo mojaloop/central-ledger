@@ -727,6 +727,17 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
+      - build-local:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
       - build:
           context: org-global
           requires:
