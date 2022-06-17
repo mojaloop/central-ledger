@@ -237,9 +237,6 @@ jobs:
     executor: default-machine
     steps:
       - checkout
-      # - run:
-      #     name: Create dir for test results
-      #     command: mkdir -p ./test/results
       - attach_workspace:
           at: /tmp
       - run:
@@ -248,7 +245,7 @@ jobs:
       - run:
           name: Download the mojaloop/ml-core-test-harness repo
           command: |
-            git clone https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
+            git clone --depth 1 --branch v0.0.2 https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
       - run:
           name: Execute TTK functional tests
           command: |
