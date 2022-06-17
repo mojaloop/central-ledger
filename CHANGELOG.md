@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.1.0](https://github.com/mojaloop/central-ledger/compare/v15.0.2...v15.1.0) (2022-06-17)
+
+
+### Features
+
+* added functonal test pipline to circle-cicd ([#905](https://github.com/mojaloop/central-ledger/issues/905)) ([2dd0dae](https://github.com/mojaloop/central-ledger/commit/2dd0daef7aea4bc3694a21655105e6bd5f7d73db))
+
 ### [15.0.2](https://github.com/mojaloop/central-ledger/compare/v15.0.1...v15.0.2) (2022-06-10)
 
 
