@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.1.1](https://github.com/mojaloop/central-ledger/compare/v15.1.0...v15.1.1) (2022-06-17)
+
+
+### Bug Fixes
+
+* set ttk func tests as dependency ([#906](https://github.com/mojaloop/central-ledger/issues/906)) ([a146431](https://github.com/mojaloop/central-ledger/commit/a1464312e5b39d564d3b89ad0f055ca54f897df1))
+
 ## [15.1.0](https://github.com/mojaloop/central-ledger/compare/v15.0.2...v15.1.0) (2022-06-17)
 
 
