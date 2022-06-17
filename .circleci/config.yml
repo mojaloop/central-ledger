@@ -744,7 +744,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            # - test-functional
+            - test-functional
             - vulnerability-check
             - audit-licenses
             - build-local
@@ -784,7 +784,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            # - test-functional
+            - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
@@ -812,10 +812,9 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            # - test-functional
+            - test-functional
             - vulnerability-check
             - audit-licenses
-            - test-integration
             - license-scan
             - image-scan
           filters:
@@ -833,10 +832,9 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            # - test-functional
+            - test-functional
             - vulnerability-check
             - audit-licenses
-            - test-integration
             - license-scan
             - image-scan
           filters:
