@@ -243,6 +243,9 @@ jobs:
       - attach_workspace:
           at: /tmp
       - run:
+          name: Load the pre-built docker local image from workspace
+          command: docker load -i /tmp/docker-image-local.tar
+      - run:
           name: Download the mojaloop/ml-core-test-harness repo
           command: |
             git clone https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
@@ -250,16 +253,15 @@ jobs:
           name: Execute TTK functional tests
           command: |
             cd /tmp/ml-core-test-harness
-            docker-compose --project-name ttk-func --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
+            export CENTRAL_LEDGER_VERSION=local
+            docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
             bash wait-for-container.sh ttk-func-ttk-tests-1
             docker logs ttk-func-ttk-tests-1 > ./reports/ttk-tests-console.log
-            docker-compose -p ttk-func down
+            docker-compose -p ttk-func --ansi never down
             cat ./reports/ttk-tests-console.log
       - store_artifacts:
           path: /tmp/ml-core-test-harness/reports
           prefix: test
-      - store_test_results:
-          path: /tmp/ml-core-test-harness/reports
 
   vulnerability-check:
     executor: default-docker
@@ -300,17 +302,38 @@ jobs:
           path: /tmp/license-scanner/results
           prefix: licenses
 
-  build:
+  build-local:
     executor: default-machine
     steps:
       - checkout
       - run:
-          name: Build Docker $CIRCLE_TAG image
+          name: Build Docker local image
           command: |
-            echo "Building Docker image: $CIRCLE_TAG"
-            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG .
+            echo "Building Docker image: local"
+            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:local .
       - run:
           name: Save docker image to workspace
+          command: docker save -o /tmp/docker-image.tar $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:local
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - ./docker-image-local.tar
+
+  build:
+    executor: default-machine
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load the pre-built docker local image from workspace
+          command: docker load -i /tmp/docker-image-local.tar
+      - run:
+          name: Re-tag the image
+          command: |
+            echo "Re-tagging Docker image: $CIRCLE_TAG"
+            docker tag $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:local $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+      - run:
+          name: Save the new docker image to workspace
           command: docker save -o /tmp/docker-image.tar $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
       - persist_to_workspace:
           root: /tmp
@@ -674,6 +697,7 @@ workflows:
           context: org-global
           requires:
             - setup
+            - build-local
           filters:
             tags:
               only: /.*/
@@ -715,6 +739,7 @@ workflows:
             # - test-functional
             - vulnerability-check
             - audit-licenses
+            - build-local
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
