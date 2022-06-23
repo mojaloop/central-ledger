@@ -67,7 +67,7 @@ Tests include unit, functional, and integration.
 Running the tests:
 
 ```bash
-    npm run test:all
+npm run test:all
 ```
 
 Tests include code coverage via istanbul. See the test/ folder for testing scripts.
@@ -92,6 +92,11 @@ docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kaf
   npm run migrate #first time only
   npm run test:int
   ```
+
+- Removing the CL Image
+```shell
+docker rmi central-ledger_central-ledger
+```
 
 ## Auditing Dependencies
 

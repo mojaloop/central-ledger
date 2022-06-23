@@ -77,7 +77,7 @@
     "ENABLE_BATCHING" : false,
     "DISABLE_SQL" : false,
     "BATCH_MAX_SIZE" : 2048,
-    "CLUSTER" : 1,
+    "CLUSTER" : 0,
     "REPLICA_ENDPOINT_01" : "5001",
     "REPLICA_ENDPOINT_02" : "5002",
     "REPLICA_ENDPOINT_03" : "5003"

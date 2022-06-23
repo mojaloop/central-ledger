@@ -30,12 +30,12 @@ const TbNode = require('tigerbeetle-node')
 const createClient = TbNode.createClient
 const Config = require('../lib/config')
 const util = require('util')
-const crypto = require("crypto");
+const crypto = require("crypto")
+const uuidv4Gen = require('uuid4')
 
-let tbCachedClient
+let tbCachedClient;
 
 let inFlight = [];
-let lastWriteSecond = 0, lastWriteMinute = 0;
 
 const secret = 'This is a secret 🤫'
 
@@ -72,22 +72,23 @@ const tbCreateAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
     //console.trace('Creating the account' + 'BOOM -> '+id +' - '+accountType+' - '+currencyTxt)
 
     const userData = BigInt(id)
-    const currencyU16 = obtainUnitFromCurrency(currencyTxt)
+    const currencyU16 = obtainLedgerFromCurrency(currencyTxt)
     const tbId = tbIdFrom(userData, currencyU16, accountType)
 
     const account = {
       id: tbId, // u128 (137n)
       user_data: userData, // u128, opaque third-party identifier to link this account (many-to-one) to an external entity:
       reserved: Buffer.alloc(48, 0), // [48]u8
-      unit: currencyU16,   // u16, unit of value
+      ledger: currencyU16,   // u32, currency
       code: accountType, // u16, a chart of accounts code describing the type of account (e.g. clearing, settlement)
       flags: 0,  // u32
-      debits_reserved: 0n,  // u64
-      debits_accepted: 0n,  // u64
-      credits_reserved: 0n, // u64
-      credits_accepted: 0n, // u64
+      debits_pending: 0n,  // u64
+      debits_posted: 0n,  // u64
+      credits_pending: 0n, // u64
+      credits_posted: 0n, // u64
       timestamp: 0n, // u64, Reserved: This will be set by the server.
     }
+
     const errors = await client.createAccounts([account])
     if (errors.length > 0) {
       Logger.error('CreateAccount-ERROR: '+enumLabelFromCode(TbNode.CreateAccountError, errors[0].code))
@@ -112,7 +113,7 @@ const tbLookupAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
     if (client == null) return {}
 
     const userData = BigInt(id)
-    const currencyU16 = obtainUnitFromCurrency(currencyTxt)
+    const currencyU16 = obtainLedgerFromCurrency(currencyTxt)
     const tbId = tbIdFrom(userData, currencyU16, accountType)
 
     const accounts = await client.lookupAccounts([tbId])
@@ -158,17 +159,19 @@ const tbTransfer = async (
     const accountTypeNumeric = payerTransferParticipantRecord.ledgerEntryTypeId
     const payer = obtainTBAccountFrom(payerTransferParticipantRecord, participants, accountTypeNumeric)
     const payee = obtainTBAccountFrom(payeeTransferParticipantRecord, participants, accountTypeNumeric)
+    const ledgerPayer = obtainLedgerFrom(payerTransferParticipantRecord, participants)
 
-    Logger.info('(tbTransfer) Making use of id '+
-      uuidToBigInt(transferRecord.transferId) +' ['+ payer + ':::'+payee+']')
+    Logger.info('(tbTransfer) Making use of id '+ uuidToBigInt(transferRecord.transferId) +' ['+ payer + ':::'+payee+']')
 
     const transfer = {
       id: tranId, // u128
       debit_account_id: payer,  // u128
       credit_account_id: payee, // u128
       user_data: tranId, //TODO u128, opaque third-party identifier to link this transfer (many-to-one) to an external entity
-      reserved: Buffer.alloc(32, 0), // two-phase condition can go in here
+      reserved: BigInt(0), // two-phase condition can go in here / Buffer.alloc(32, 0)
+      pending_id: 0,
       timeout: 0n, // u64, in nano-seconds.
+      ledger: ledgerPayer,
       code: accountTypeNumeric,  // u32, a chart of accounts code describing the reason for the transfer (e.g. deposit, settlement)
       flags: 0, // u32
       amount: BigInt(transferRecord.amount), // u64
@@ -177,10 +180,11 @@ const tbTransfer = async (
 
     const errors = await client.createTransfers([transfer])
     if (errors.length > 0) {
-      Logger.error('Transfer-ERROR: '+enumLabelFromCode(TbNode.CreateTransferError, errors[0].code))
+      const errorTxt = errorsToString(TbNode.CreateTransferError, errors);
+
+      Logger.error('Transfer-ERROR: '+errorTxt)
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-        'TB-Transfer entry failed for [' + tranId + ':' +
-        enumLabelFromCode(TbNode.CreateTransferError, errors[0].code) + '] : '+ util.inspect(errors));
+        'TB-Transfer entry failed for [' + tranId + ':' + errorTxt + '] : '+ util.inspect(errors));
       throw fspiopError
     }
     return errors
@@ -211,52 +215,54 @@ const tbPrepareTransfer = async (
     const accountTypeNumeric = payerTransferParticipantRecord.ledgerEntryTypeId
     const payer = obtainTBAccountFrom(payerTransferParticipantRecord, participants, accountTypeNumeric)
     const payee = obtainTBAccountFrom(payeeTransferParticipantRecord, participants, accountTypeNumeric)
+    const ledgerPayer = obtainLedgerFrom(payerTransferParticipantRecord, participants)
 
     let flags = 0
-    flags |= TbNode.TransferFlags.two_phase_commit
+    flags |= TbNode.TransferFlags.pending
 
     const timeoutNanoseconds = BigInt(timeoutSeconds * 1000000000)
-
     const transfer = {
       id: tranId, // u128
       debit_account_id: payer,  // u128
       credit_account_id: payee, // u128
       user_data: tranId, // u128, opaque third-party identifier to link this transfer (many-to-one) to an external entity
-      reserved: Buffer.alloc(32, 0), // two-phase condition can go in here
+      reserved: BigInt(0),
+      pending_id: BigInt(0),
       timeout: timeoutNanoseconds, // u64, in nano-seconds.
+      ledger: ledgerPayer,
       code: accountTypeNumeric,  // u32, a chart of accounts code describing the reason for the transfer (e.g. deposit, settlement)
       flags: flags, // u32
       amount: BigInt(transferRecord.amount), // u64
       timestamp: 0n, //u64, Reserved: This will be set by the server.
     }
 
-    var errors = []
+    var errors = [];
     if (Config.TIGERBEETLE.enableBatching) {
-      inFlight.push(transfer)
+      inFlight.push(transfer);
 
       if (inFlight.length > Config.TIGERBEETLE.batchMaxSize) {
-        errors = await client.createTransfers(inFlight)
-        inFlight = []
+        errors = await client.createTransfers(inFlight);
+        inFlight = [];
       }
     } else {
-      errors = await client.createTransfers([transfer])
+      errors = await client.createTransfers([transfer]);
     }
 
     if (errors.length > 0) {
-      let nonExistErr = true
+      const errorTxt = errorsToString(TbNode.CreateTransferError, errors);
+      Logger.error('PrepareTransfer-ERROR: '+errorTxt)
+
+      /*let nonExistErr = true
       for (let i = 0; i < errors.length; i++) {
         if (errors[i].code != 2) {
-          nonExistErr = false
-          break
+          nonExistErr = false;
+          break;
         }
       }
       if (nonExistErr) return []//Already exists...
-
-      Logger.error('PrepareTransfer-ERROR: '+enumLabelFromCode(TbNode.CreateTransferError, errors[0].code))
-
+      */
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-        'TB-PrepareTransfer entry failed for [' + tranId + ':' +
-        enumLabelFromCode(TbNode.CreateTransferError, errors[0].code) + '] : '+ util.inspect(errors));
+        'TB-PrepareTransfer entry failed for [' + tranId + ':' + errorTxt + '] : '+ util.inspect(errors));
       throw fspiopError
     }
     return errors
@@ -270,27 +276,36 @@ const tbFulfilTransfer = async (
   ledgerEntryTypeId = 1,
 ) => {
   try {
-    const client = await getTBClient()
-    if (client == null) return {}
+    const client = await getTBClient();
+    if (client == null) return {};
 
-    const commit = {
-      id: uuidToBigInt(transferFulfilmentRecord.transferId), // u128
-      code: ledgerEntryTypeId,
-      flags: 0, // defaults to accept
-      reserved: Buffer.alloc(32, 0),
+    let flags = 0;
+    flags |= TbNode.TransferFlags.post_pending_transfer;
+
+    const postTransfer = {
+      id: uuidToBigInt(`${uuidv4Gen()}`),
+      debit_account_id: 0n,
+      credit_account_id: 0n,
+      user_data: 0n,
+      reserved: 0n,
+      pending_id: uuidToBigInt(transferFulfilmentRecord.transferId), // u128
+      timeout: 0n,
+      ledger: 0,
+      code: 0,
+      flags: flags,
+      amount: 0n, // Amount from pending transfer
       timestamp: 0n, // this will be set correctly by the TigerBeetle server
     }
 
-    const errors = await client.commitTransfers([commit])
+    const errors = await client.createTransfers([postTransfer]);
     if (errors.length > 0) {
-      Logger.error('FulfilTransfer-ERROR: '+enumLabelFromCode(TbNode.CommitTransferError, errors[0].code))
-
+      const errorTxt = errorsToString(TbNode.CommitTransferError, errors);
+      Logger.error('FulfilTransfer-ERROR: '+errorTxt);
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-        'TB-TransferFulfil entry failed for [' + tranId + ':' +
-        enumLabelFromCode(TbNode.CreateTransferError, errors[0].code) + '] : '+ util.inspect(errors));
-      throw fspiopError
+        'TB-TransferFulfil entry failed for [' + tranId + ':' + errorTxt + '] : '+ util.inspect(errors));
+      throw fspiopError;
     }
-    return errors
+    return errors;
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -319,7 +334,7 @@ const obtainTBAccountFrom = (
     if (itemAtIndex.participantCurrencyId == partCurrencyId) {
       return tbIdFrom(
         itemAtIndex.participantId,
-        obtainUnitFromCurrency(itemAtIndex.currencyId),
+        obtainLedgerFromCurrency(itemAtIndex.currencyId),
         accountTypeNumeric
       )
     }
@@ -330,12 +345,37 @@ const obtainTBAccountFrom = (
   throw fspiopError
 }
 
-const obtainUnitFromCurrency = (currencyTxt) => {
+const obtainLedgerFrom = (
+  account,
+  participants
+) => {
+  const partCurrencyId = account.participantCurrencyId;
+  for (let i = 0; i < participants.length; i++) {
+    const itemAtIndex = participants[i]
+    if (itemAtIndex.participantCurrencyId == partCurrencyId) {
+      return obtainLedgerFromCurrency(itemAtIndex.currencyId)
+    }
+  }
+
+  const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
+    'TB-Participant-NotFound '+partCurrencyId+ ' : '+ util.inspect(account) + ' : ' + util.inspect(participants));
+  throw fspiopError
+}
+
+const obtainLedgerFromCurrency = (currencyTxt) => {
   switch (currencyTxt) {
     case 'KES' : return 404;
     case 'ZAR' : return 710;
     default : return 840;//USD
   }
+}
+
+const errorsToString = (resultEnum, errors) => {
+  let errorListing = '';
+  for (let val of errors) {
+    errorListing = errorListing.concat('['+val.code+':'+enumLabelFromCode(resultEnum, val.code)+'],');
+  }
+  return errorListing;
 }
 
 const tbIdFrom = (userData, currencyTxt, accountTypeNumeric) => {

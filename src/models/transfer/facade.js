@@ -426,6 +426,8 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
 }
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
+  console.info('JASON::: TB saveTransferPrepared BEGIN -> ')
+
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
     'facade_saveTransferPrepared - Metrics for transfer model',
@@ -484,6 +486,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
 
     const knex = await Db.getKnex()
+    console.info(`JASON::: TB Prepared Transfer Validation -> ${hasPassedValidation}!`)
+
     if (hasPassedValidation) {
       const histTimerSaveTranferTransactionValidationPassedEnd = Metrics.getHistogram(
         'model_transfer',
@@ -494,18 +498,20 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       const dbInsertTransfer = async (logHistogram, tbEnabled) => {
         await knex.transaction(async (trx) => {
           try {
-            if (tbEnabled) {
+            if (false && tbEnabled) {
+              console.log(`JASON::: DUPL-CHECK-BEGIN`);
               const hashSha256 = Crypto.createHash('sha256')
               let hash = JSON.stringify(payload)
               hash = hashSha256.update(hash)
               hash = hashSha256.digest(hash).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
               const transferId = transferRecord.transferId;
               await knex('transferDuplicateCheck').transacting(trx).insert({ transferId, hash })
+              console.log(`JASON::: DUPL-CHECK [${transferId}]:[${hash}]`);
             }
 
-            await knex('transfer').transacting(trx).insert(transferRecord)//TODO done in TB
-            await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)//TODO done in TB
-            await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)//TODO done in TB
+            await knex('transfer').transacting(trx).insert(transferRecord)
+            await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
+            await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
             payerTransferParticipantRecord.name = payload.payerFsp
             payeeTransferParticipantRecord.name = payload.payeeFsp
             let transferExtensionsRecordList = []
@@ -522,9 +528,11 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
             await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
             await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
             await trx.commit()
+            console.info(`JASON::: TB Prepared Transfer SUCCESS for DB!`)
+
             logHistogram && histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
           } catch (errDB) {
-            console.trace(errDB)
+            console.error(errDB)
             await trx.rollback()
             logHistogram && histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
             throw errDB
@@ -542,13 +550,16 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
             participantCurrencyIds
           )
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
+          console.info(`JASON::: TB Prepared Transfer!`)
         } catch (errTB) {
+          console.error('JASON::: Unable to store in TB!!!')
+          console.error(errTB)
           histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
           throw errTB
         }
 
         if (!Config.TIGERBEETLE.disableSQL) {
-          dbInsertTransfer(false, true)
+          await dbInsertTransfer(false, true)
         }
       } else {
         await dbInsertTransfer(true, false)
@@ -1032,6 +1043,10 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           await trx.commit
         }
       } catch (err) {
+        console.error('JASON::: txFunction:::');
+        console.error(err);
+        console.error(payload);
+
         if (doCommit) {
           await trx.rollback
         }
@@ -1046,6 +1061,8 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
+    console.error('JASON::: Fulfill');
+    console.error(err);
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

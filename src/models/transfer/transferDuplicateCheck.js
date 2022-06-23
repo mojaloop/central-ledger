@@ -86,10 +86,12 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
   Logger.isDebugEnabled && Logger.debug(`save transferDuplicateCheck (transferId=${transferId}, hash=${hash})`)
 
   try {
-    var result = 0
-    if (Config.TIGERBEETLE.enabled) {
-      //insertTransferDuplicateCheck(transferId, hash)
-      result = 1
+    var result = 1
+    console.info('JASON::: saveTransferDuplicateCheck')
+    console.info(`${transferId} - ${hash}`)
+    if (!Config.TIGERBEETLE.enabled) {
+      result = await insertTransferDuplicateCheck(transferId, hash)
+      //TODO result = await 1
     } else {
       result = await insertTransferDuplicateCheck(transferId, hash)
     }
