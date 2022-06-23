@@ -34,6 +34,7 @@ const Time = require('@mojaloop/central-services-shared').Util.Time
 const sleep = Time.sleep
 const Db = require('@mojaloop/central-services-database').Db
 const Cache = require('../../../src/lib/cache')
+const Tb = require('../../../src/lib/tb')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
@@ -1018,8 +1019,10 @@ Test('Handlers test', async handlersTest => {
   await handlersTest.test('teardown', async (assert) => {
     try {
       await Handlers.timeouts.stop()
+      await Tb.tbDestroy()
       await Cache.destroyCache()
       await Db.disconnect()
+
       assert.pass('database connection closed')
       await testConsumer.destroy()
 

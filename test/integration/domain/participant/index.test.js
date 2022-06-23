@@ -32,6 +32,7 @@ const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Cache = require('../../../../src/lib/cache')
+const Tb = require('../../../../src/lib/tb')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const ParticipantService = require('../../../../src/domain/participant')
@@ -424,6 +425,7 @@ Test('Participant service', async (participantTest) => {
           assert.ok(result, `destroy ${participant.name} success`)
         }
       }
+      await Tb.tbDestroy()
       await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
