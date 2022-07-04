@@ -14,6 +14,9 @@ fi
 echo "Loading env vars..."
 source $CWD/env.sh
 
+## Uncomment next line to debug a single FSP's onboarding script
+# export FSPList=("dfsp1")
+
 echo
 echo "---------------------------------------------------------------------"
 echo " Creating TestData for $FSPList"
@@ -105,6 +108,37 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     \"initialPosition\": 0
   }"
 
+
+  echo
+  echo "Get accounts list for '$FSP' and filter by ledgerAccountType='SETTLEMENT'"
+  echo "---------------------------------------------------------------------"
+  ACCOUNT_LIST=$(curl --silent -X GET "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/accounts" --header 'Cache-Control: no-cache' --header 'Content-Type: application/json' --header 'FSPIOP-Source: populateTestData.sh')
+  ACCOUNT_ID=$(echo $ACCOUNT_LIST | jq '.[] | select(.ledgerAccountType == "SETTLEMENT") | .id')
+  echo "Account list=$ACCOUNT_LIST"
+  echo "Account with ledgerAccountType='SETTLEMENT' - ACCOUNT_ID=$ACCOUNT_ID"
+
+
+  ## Generate TransferId for Funds-in
+  FUNDS_IN_TRANSFER_ID=$(uuidgen)
+
+  echo
+  echo "Deposit funds for '$FSP' on account '$ACCOUNT_ID' with transferId='$FUNDS_IN_TRANSFER_ID'"
+  echo "---------------------------------------------------------------------"
+  curl --verbose -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/accounts/${ACCOUNT_ID}" \
+  --header 'Cache-Control: no-cache' \
+  --header 'Content-Type: application/json' \
+  --header 'FSPIOP-Source: populateTestData.sh' \
+  --data-raw "{
+    \"transferId\": \"${FUNDS_IN_TRANSFER_ID}\",
+    \"externalReference\": \"populateTestData.sh\",
+    \"action\": \"recordFundsIn\",
+    \"reason\": \"populateTestData.sh\",
+    \"amount\": {
+        \"amount\": \"${DEFAULT_NET_DEBIT_CAP}\",
+        \"currency\": \"USD\"
+    }
+  }"
+
   echo
   echo "Retrieving limits for '$FSP'"
   echo "---------------------------------------------------------------------"
@@ -119,7 +153,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_POST\",
-        \"value\": \"http://localhost:1080/${FSP}/transfers\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/transfers\"
       }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -128,7 +162,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_PUT\",
-        \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/fsp/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}\"
       }"
 
  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -137,7 +171,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_GET\",
-        \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
       }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -146,7 +180,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_PUT\",
-        \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/transfers/{{transferId}}\"
       }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -155,7 +189,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_ERROR\",
-        \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}/error\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/transfers/{{transferId}}/error\"
       }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -164,7 +198,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST\",
-        \"value\": \"http://localhost:1080/${FSP}/bulkTransfers\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/bulkTransfers\"
       }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -173,7 +207,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT\",
-        \"value\": \"http://localhost:1080/${FSP}/bulkTransfers/{{id}}\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/bulkTransfers/{{id}}\"
       }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -182,7 +216,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR\",
-        \"value\": \"http://localhost:1080/${FSP}/bulkTransfers/{{id}}/error\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/bulkTransfers/{{id}}/error\"
       }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -191,7 +225,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_QUOTES\",
-        \"value\": \"http://localhost:1080/${FSP}\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}\"
       }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -200,7 +234,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_AUTHORIZATIONS\",
-        \"value\": \"http://localhost:1080/${FSP}\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}\"
       }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -209,7 +243,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE\",
-        \"value\": \"http://localhost:1080/${FSP}\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}\"
       }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
@@ -218,7 +252,7 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_BULK_QUOTES\",
-        \"value\": \"http://localhost:1080\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}\"
       }"
 
   echo

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 export KAFKA_ID=cl_kafka
 export MOCKSERVER_ID=mockserver
+export MOCKSERVER_HOST=mockserver
+export MOCKSERVER_PORT=1080
 export MOCK_SIM_PORT=8444
 export DB_ID=cl_mysql
 export DBUSER=central_ledger

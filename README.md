@@ -67,7 +67,7 @@ Logs are sent to standard output by default.
 
 ## Tests
 
-Tests include unit, functional, and integration. 
+Tests include unit, functional, and integration.
 
 Running the tests:
 
