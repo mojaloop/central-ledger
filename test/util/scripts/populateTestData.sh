@@ -262,6 +262,14 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     --header 'Cache-Control: no-cache' \
     --header 'FSPIOP-Source: populateTestData.sh'
 
+  echo
+  echo "Get accounts list for '$FSP' to show balances"
+  echo "---------------------------------------------------------------------"
+  curl --silent -X GET "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/accounts" \
+  --header 'Cache-Control: no-cache' \
+  --header 'Content-Type: application/json' \
+  --header 'FSPIOP-Source: populateTestData.sh'
+
 done
 
 echo
