@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.1.2](https://github.com/mojaloop/central-ledger/compare/v15.1.1...v15.1.2) (2022-07-05)
+
+
+### Bug Fixes
+
+* **mojaloop/#2810:** timeout evts are being prod for transfers with an int-state of ABORTED_ERROR ([#907](https://github.com/mojaloop/central-ledger/issues/907)) ([e77de0a](https://github.com/mojaloop/central-ledger/commit/e77de0a8e7dd473d3afbb27df464d27ff5ce98a7)), closes [mojaloop/#2810](https://github.com/mojaloop/project/issues/2810)
+
+
+### Chore
+
+* fix audit-resolve ([4e3a969](https://github.com/mojaloop/central-ledger/commit/4e3a969b9da78760540f375144bf25b347d0a8ae))
+
 ### [15.1.1](https://github.com/mojaloop/central-ledger/compare/v15.1.0...v15.1.1) (2022-06-17)
 
 
