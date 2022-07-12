@@ -47,6 +47,7 @@ defaults_npm_publish_release: &defaults_npm_publish_release
     source $BASH_ENV
     echo "Publishing tag $RELEASE_TAG"
     npm publish --tag $RELEASE_TAG --access public
+
 defaults_export_version_from_package: &defaults_export_version_from_package
   name: Format the changelog into the github release body and get release tag
   command: |
@@ -930,7 +931,6 @@ workflows:
             branches:
               ignore:
                 - /.*/
-
       - publish-npm:
           context: org-global
           requires:
