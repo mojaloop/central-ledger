@@ -1,2 +1,3 @@
 # Ignore tests for publishing
 test/*
+.circleci/*
