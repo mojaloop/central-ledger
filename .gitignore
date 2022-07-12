@@ -63,3 +63,4 @@ devspace*
 # Add ignores
 *IGNORE*
 *ignore*
+!.npmignore
