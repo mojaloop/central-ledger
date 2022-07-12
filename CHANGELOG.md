@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.1.3](https://github.com/mojaloop/central-ledger/compare/v15.1.2...v15.1.3) (2022-07-12)
+
+
+### Chore
+
+* add ci to publish npm package ([#909](https://github.com/mojaloop/central-ledger/issues/909)) ([f0ac068](https://github.com/mojaloop/central-ledger/commit/f0ac068d1f689a650ac80cf9d8806dec1c64c59b))
+* fixed typo ([140ebdf](https://github.com/mojaloop/central-ledger/commit/140ebdfa7a8c0a36fb147191017b8714dc121a95))
+* updates to readme for header badges [skip ci] ([#910](https://github.com/mojaloop/central-ledger/issues/910)) ([c8b69b3](https://github.com/mojaloop/central-ledger/commit/c8b69b314e08eaa143d9e8a6fdc97b30e7387a5c))
+
 ### [15.1.2](https://github.com/mojaloop/central-ledger/compare/v15.1.1...v15.1.2) (2022-07-05)
 
 
