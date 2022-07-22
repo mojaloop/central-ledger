@@ -38,6 +38,8 @@ const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Validator = require('../shared/validator')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const TransferEventAction = Enum.Events.Event.Action
+const TransferEventType = Enum.Events.Event.Type
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTransfer
@@ -96,6 +98,21 @@ const bulkPrepare = async (error, messages) => {
     const action = message.value.metadata.event.action
     const bulkTransferId = payload.bulkTransferId
     const kafkaTopic = message.topic
+
+    const functionality = (() => {
+      switch (action) {
+        case TransferEventAction.COMMIT:
+        case TransferEventAction.RESERVE:
+        case TransferEventAction.REJECT:
+        case TransferEventAction.ABORT:
+          return TransferEventType.NOTIFICATION
+        case TransferEventAction.BULK_COMMIT:
+        case TransferEventAction.BULK_ABORT:
+          return TransferEventType.BULK_PROCESSING
+        default: return Enum.Events.ActionLetter.unknown
+      }
+    })()
+
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkPrepare' }))
 
     const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare : Enum.Events.ActionLetter.unknown
@@ -166,21 +183,27 @@ const bulkPrepare = async (error, messages) => {
         Logger.isErrorEnabled && Logger.error(err)
         return true
       }
-    } else { // TODO: handle validation failure
+    } else {
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasons)}`)
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasons.toString(), false)
-      } catch (err) { // TODO: handle insert error
+      } catch (err) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
         Logger.isErrorEnabled && Logger.error(err)
-        return true
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+        const eventDetail = { functionality, action: TransferEventAction.BULK_PREPARE }
+
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        throw fspiopError
       }
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
-      return true // TODO: store invalid bulk transfer to database and produce callback notification to payer
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
+      const eventDetail = { functionality, action }
+
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
