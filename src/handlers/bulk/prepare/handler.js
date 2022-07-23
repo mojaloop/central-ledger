@@ -38,8 +38,6 @@ const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Validator = require('../shared/validator')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const TransferEventAction = Enum.Events.Event.Action
-const TransferEventType = Enum.Events.Event.Type
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTransfer
@@ -98,20 +96,6 @@ const bulkPrepare = async (error, messages) => {
     const action = message.value.metadata.event.action
     const bulkTransferId = payload.bulkTransferId
     const kafkaTopic = message.topic
-
-    const functionality = (() => {
-      switch (action) {
-        case TransferEventAction.COMMIT:
-        case TransferEventAction.RESERVE:
-        case TransferEventAction.REJECT:
-        case TransferEventAction.ABORT:
-          return TransferEventType.NOTIFICATION
-        case TransferEventAction.BULK_COMMIT:
-        case TransferEventAction.BULK_ABORT:
-          return TransferEventType.BULK_PROCESSING
-        default: return Enum.Events.ActionLetter.unknown
-      }
-    })()
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkPrepare' }))
 
@@ -192,15 +176,17 @@ const bulkPrepare = async (error, messages) => {
       } catch (err) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
         Logger.isErrorEnabled && Logger.error(err)
+
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
-        const eventDetail = { functionality, action: TransferEventAction.BULK_PREPARE }
+        const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
       }
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
+
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
-      const eventDetail = { functionality, action }
+      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
