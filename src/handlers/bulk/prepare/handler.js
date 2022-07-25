@@ -165,7 +165,6 @@ const bulkPrepare = async (error, messages) => {
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
       } catch (err) { // handle individual transfers streaming error
-        // double check if this is the correct way to handle individual prepare error scenario
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
