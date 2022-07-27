@@ -106,15 +106,24 @@ const bulkPrepare = async (error, messages) => {
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
-      return true
+      // Unsure if this is the correct way to handle error scenario due to above comment
+      // TODO: handle resend :: GET /bulkTransfer
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}1`))
+
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Bulk transfer prepare duplicate')
+      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+      params.message.value.content.uriParams = { id: bulkTransferId }
+
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
     }
     if (hasDuplicateId && !hasDuplicateHash) { // handle modified request and produce error callback to payer
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
+
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       params.message.value.content.uriParams = { id: bulkTransferId }
+
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
@@ -131,6 +140,7 @@ const bulkPrepare = async (error, messages) => {
 
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+        params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
@@ -168,6 +178,7 @@ const bulkPrepare = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+        params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
@@ -185,6 +196,7 @@ const bulkPrepare = async (error, messages) => {
 
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+        params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
@@ -194,6 +206,7 @@ const bulkPrepare = async (error, messages) => {
 
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+      params.message.value.content.uriParams = { id: bulkTransferId }
 
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
