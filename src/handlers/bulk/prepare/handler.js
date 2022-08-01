@@ -108,23 +108,8 @@ const bulkPrepare = async (error, messages) => {
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) {
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
-
-      // Check to see if the resend is coming from a participant of involved
-      // with the bulk transfer to avoid potential data leakage.
-      const participants = await BulkTransferService.getParticipantsById(bulkTransferId)
-      if (![participants.payeeFsp, participants.payerFsp].includes(message.value.from)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}1`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
-        params.message.value.content.uriParams = { id: bulkTransferId }
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-        throw fspiopError
-      }
-
-      // Resend should typically only occur by the Payer FSP, but lets
-      // handle if the same request is somehow sent by the Payer FSP.
-      const isPayeeRequest = participants.payeeFsp === message.value.from
       const bulkTransferResult = await BulkTransferService.getBulkTransferById(bulkTransferId)
-      const bulkTransfer = isPayeeRequest ? bulkTransferResult.payeeBulkTransfer : bulkTransferResult.payerBulkTransfer
+      const bulkTransfer = bulkTransferResult.payerBulkTransfer
       const transferStateEnum = bulkTransfer && bulkTransfer.bulkTransferState
       if ([
         Enum.Transfers.BulkTransferState.COMPLETED,
