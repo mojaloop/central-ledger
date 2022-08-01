@@ -38,6 +38,7 @@ const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Validator = require('../shared/validator')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const TransferEventAction = Enum.Events.Event.Action
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTransfer
@@ -106,17 +107,70 @@ const bulkPrepare = async (error, messages) => {
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) {
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}1`))
+      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
 
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Bulk transfer prepare duplicate')
-      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
-      params.message.value.content.uriParams = { id: bulkTransferId }
+      // Check to see if the resend is coming from a participant of involved
+      // with the bulk transfer to avoid potential data leakage.
+      const participants = await BulkTransferService.getParticipantsById(bulkTransferId)
+      if (![participants.payeeFsp, participants.payerFsp].includes(message.value.from)) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}2`))
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
+        params.message.value.content.uriParams = { id: bulkTransferId }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        throw fspiopError
+      }
 
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      throw fspiopError
+      // Resend should typically only occur by the Payer FSP, but lets
+      // handle if the same request is somehow sent by the Payer FSP.
+      const isPayeeRequest = participants.payeeFsp === message.value.from
+      const bulkTransferResult = await BulkTransferService.getBulkTransferById(bulkTransferId)
+      const bulkTransfer = isPayeeRequest ? bulkTransferResult.payeeBulkTransfer : bulkTransferResult.payerBulkTransfer
+      const transferStateEnum = bulkTransfer && bulkTransfer.bulkTransferState
+      if ([
+        Enum.Transfers.BulkTransferState.COMPLETED,
+        Enum.Transfers.BulkTransferState.REJECTED,
+        Enum.Transfers.BulkTransferState.EXPIRED
+      ].includes(transferStateEnum)) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'finalized'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callback--${actionLetter}1`))
+
+        let payload = {
+          bulkTransferState: bulkTransfer.bulkTransferState
+        }
+        let fspiopError
+
+        if (bulkTransfer.bulkTransferState === Enum.Transfers.BulkTransferState.REJECTED) {
+          payload = {
+            errorInformation: bulkTransfer.individualTransferResults[0].errorInformation
+          }
+          fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(payload.errorInformation)
+        } else {
+          payload = {
+            ...payload,
+            completedTimestamp: bulkTransfer.completedTimestamp,
+            individualTransferResults: bulkTransfer.individualTransferResults,
+            extensionList: bulkTransfer.extensionList
+          }
+        }
+
+        params.message.value.content.payload = payload
+        params.message.value.content.uriParams = { id: bulkTransferId }
+        if (fspiopError) {
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        } else {
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+        }
+        return true
+      } else {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'inProgress'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}2`))
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+        return true
+      }
     }
+
     if (hasDuplicateId && !hasDuplicateHash) { // handle modified request and produce error callback to payer
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}3`))
 
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
@@ -134,7 +188,7 @@ const bulkPrepare = async (error, messages) => {
         const participants = { payerParticipantId, payeeParticipantId }
         await BulkTransferService.bulkPrepare(payload, participants)
       } catch (err) { // handle insert error and produce error callback to payer
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}4`))
 
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
@@ -189,7 +243,7 @@ const bulkPrepare = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasons.toString(), false)
       } catch (err) { // handle insert error and produce error callback notification to payer
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}5`))
         Logger.isErrorEnabled && Logger.error(err)
 
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
@@ -200,7 +254,7 @@ const bulkPrepare = async (error, messages) => {
         throw fspiopError
       }
       // produce validation error callback notification to payer
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}6`))
 
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
