@@ -112,9 +112,18 @@ const validateBulkTransfer = async (payload, headers) => {
     payerParticipantId = result.participantId
   }
   if (isValid) {
-    const result = await validateParticipantByName(payload.payeeFsp)
-    isValid = result.isValid
-    payeeParticipantId = result.participantId
+    // The double header/payload payee check is to cover the error scenario of
+    // a invalid dfsp sent in the FSPIOP-Destination header.
+    // The initial solution was to validate that FSPIOP-Destination is equal to
+    // payee.
+    // Due to the FX functionality in some projects the payee fspId in the headers
+    // and body may be different. So we can not enforce that check.
+
+    // We validate that both these fspId's exist and and continue on.
+    const payloadResult = await validateParticipantByName(payload.payeeFsp)
+    const headerResult = await validateParticipantByName(headers[Enum.Http.Headers.FSPIOP.DESTINATION])
+    isValid = payloadResult.isValid && headerResult.isValid
+    payeeParticipantId = payloadResult.participantId
   }
   return { isValid, reasons, payerParticipantId, payeeParticipantId }
 }
