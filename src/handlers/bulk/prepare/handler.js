@@ -105,9 +105,7 @@ const bulkPrepare = async (error, messages) => {
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck)
-    if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
-      // Unsure if this is the correct way to handle error scenario due to above comment
-      // TODO: handle resend :: GET /bulkTransfer
+    if (hasDuplicateId && hasDuplicateHash) {
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}1`))
 
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Bulk transfer prepare duplicate')
