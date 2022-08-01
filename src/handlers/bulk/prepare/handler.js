@@ -113,7 +113,7 @@ const bulkPrepare = async (error, messages) => {
       // with the bulk transfer to avoid potential data leakage.
       const participants = await BulkTransferService.getParticipantsById(bulkTransferId)
       if (![participants.payeeFsp, participants.payerFsp].includes(message.value.from)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}2`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}1`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         params.message.value.content.uriParams = { id: bulkTransferId }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
@@ -132,7 +132,7 @@ const bulkPrepare = async (error, messages) => {
         Enum.Transfers.BulkTransferState.EXPIRED
       ].includes(transferStateEnum)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'finalized'))
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callback--${actionLetter}1`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callback--${actionLetter}2`))
 
         let payload = {
           bulkTransferState: bulkTransfer.bulkTransferState
@@ -163,14 +163,14 @@ const bulkPrepare = async (error, messages) => {
         return true
       } else {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'inProgress'))
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}2`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
         return true
       }
     }
 
     if (hasDuplicateId && !hasDuplicateHash) { // handle modified request and produce error callback to payer
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}3`))
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}4`))
 
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
@@ -188,7 +188,7 @@ const bulkPrepare = async (error, messages) => {
         const participants = { payerParticipantId, payeeParticipantId }
         await BulkTransferService.bulkPrepare(payload, participants)
       } catch (err) { // handle insert error and produce error callback to payer
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}4`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
 
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
@@ -243,7 +243,7 @@ const bulkPrepare = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasons.toString(), false)
       } catch (err) { // handle insert error and produce error callback notification to payer
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}5`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
         Logger.isErrorEnabled && Logger.error(err)
 
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
@@ -254,7 +254,7 @@ const bulkPrepare = async (error, messages) => {
         throw fspiopError
       }
       // produce validation error callback notification to payer
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}6`))
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
 
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
