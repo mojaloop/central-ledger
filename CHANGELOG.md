@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.2.0](https://github.com/mojaloop/central-ledger/compare/v15.1.3...v15.2.0) (2022-08-01)
+
+
+### Features
+
+* add bulk error handling notification callbacks ([#911](https://github.com/mojaloop/central-ledger/issues/911)) ([9ac6e1a](https://github.com/mojaloop/central-ledger/commit/9ac6e1afe3a72cbad0c1b5fc2a7a559d6435ce63))
+
 ### [15.1.3](https://github.com/mojaloop/central-ledger/compare/v15.1.2...v15.1.3) (2022-07-12)
 
 
