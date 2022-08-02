@@ -156,6 +156,7 @@ const validateCompletedTimestamp = (payload) => {
   }
   return true
 }
+
 const validateParticipantBulkTransferId = async function (participantName, bulkTransferId) {
   const bulkTransferParticipant = await BulkTransferService.getBulkTransferParticipant(participantName, bulkTransferId)
   let validationPassed = false
