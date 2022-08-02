@@ -3,6 +3,7 @@ const RC = require('rc')('CLEDG', require('../../config/default.json'))
 module.exports = {
   HOSTNAME: RC.HOSTNAME.replace(/\/$/, ''),
   PORT: RC.PORT,
+  MAX_FULFIL_TIMEOUT_DURATION_SECONDS: RC.MAX_FULFIL_TIMEOUT_DURATION_SECONDS,
   MONGODB_URI: RC.MONGODB.URI,
   MONGODB_DEBUG: (RC.MONGODB.DEBUG === true || RC.MONGODB.DEBUG === 'true'),
   MONGODB_DISABLED: RC.MONGODB.DISABLED,

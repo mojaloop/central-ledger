@@ -36,9 +36,11 @@
 
 const Participant = require('../../../domain/participant')
 const BulkTransferService = require('../../../domain/bulkTransfer')
+const Config = require('../../../lib/config')
 const Enum = require('@mojaloop/central-services-shared').Enum
 
 const reasons = []
+const defaultLagSeconds = 300
 
 const validateDifferentFsp = (payload) => {
   const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
@@ -137,9 +139,23 @@ const validateBulkTransferFulfilment = async (payload, headers) => {
     return { isValid, reasons }
   }
   isValid = isValid && await validateFspiopSourceAndDestination(payload, headers)
+  isValid = isValid && validateCompletedTimestamp(payload)
   return { isValid, reasons }
 }
 
+const validateCompletedTimestamp = (payload) => {
+  const maxLag = (Config.MAX_FULFIL_TIMEOUT_DURATION_SECONDS || defaultLagSeconds) * 1000
+  const completedTimestamp = new Date(payload.completedTimestamp)
+  const now = new Date()
+  if (completedTimestamp > now) {
+    reasons.push('completedTimestamp fails because future timestamp was provided')
+    return false
+  } else if (completedTimestamp < now - maxLag) {
+    reasons.push('completedTimestamp fails because provided timestamp exceeded the maximum timeout duration')
+    return false
+  }
+  return true
+}
 const validateParticipantBulkTransferId = async function (participantName, bulkTransferId) {
   const bulkTransferParticipant = await BulkTransferService.getBulkTransferParticipant(participantName, bulkTransferId)
   let validationPassed = false
