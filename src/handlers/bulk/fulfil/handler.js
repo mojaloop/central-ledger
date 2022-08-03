@@ -173,8 +173,9 @@ const bulkFulfil = async (error, messages) => {
          */
         const state = await BulkTransferService.bulkFulfil(payload, reasons.toString(), false)
         const bulkTransfers = await BulkTransferService.getBulkTransferById(payload.bulkTransferId)
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Bulk fulfil failed validation')
         for (const individualTransferFulfil of bulkTransfers.payeeBulkTransfer.individualTransferResults) {
-          individualTransferFulfil.errorInformation = payload.errorInformation
+          individualTransferFulfil.errorInformation = fspiopError.toApiErrorObject().errorInformation
           await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd)
         }
       } catch (err) {
