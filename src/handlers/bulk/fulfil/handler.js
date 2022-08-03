@@ -171,7 +171,12 @@ const bulkFulfil = async (error, messages) => {
          * reason is "FSPIOP-Source header should match Payee". In this case we should not
          * abort the bulk as we would have accepted non-legitimate source.
          */
-        await BulkTransferService.bulkFulfil(payload, reasons.toString(), false)
+        const state = await BulkTransferService.bulkFulfil(payload, reasons.toString(), false)
+        const bulkTransfers = await BulkTransferService.getBulkTransferById(payload.bulkTransferId)
+        for (const individualTransferFulfil of bulkTransfers.payeeBulkTransfer.individualTransferResults) {
+          individualTransferFulfil.errorInformation = payload.errorInformation
+          await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd)
+        }
       } catch (err) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
         Logger.isErrorEnabled && Logger.error(err)
