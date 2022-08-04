@@ -118,12 +118,8 @@ const getBulkTransfer = async (error, messages) => {
       bulkTransferState: bulkTransfer.bulkTransferState
     }
     let fspiopError
-    if (bulkTransfer.bulkTransferState === Enum.Transfers.BulkTransferState.REJECTED) {
-      payload = {
-        errorInformation: bulkTransfer.individualTransferResults[0].errorInformation
-      }
-      fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(payload.errorInformation)
-    } else if (bulkTransfer.bulkTransferState !== Enum.Transfers.BulkTransferState.PROCESSING) {
+
+    if (bulkTransfer.bulkTransferState !== Enum.Transfers.BulkTransferState.PROCESSING) {
       payload = {
         ...payload,
         completedTimestamp: bulkTransfer.completedTimestamp,
