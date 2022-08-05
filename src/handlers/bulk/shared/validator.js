@@ -47,7 +47,7 @@ const validateDifferentFsp = (payload) => {
     reasons.push(
       ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'Payer and Payee should differ'
+        'Payer and Payee FSPs should be different'
       )
     )
     return false
@@ -72,7 +72,7 @@ const validateFspiopSourceMatchesPayer = (payload, headers) => {
     reasons.push(
       ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'FSPIOP-Source header should match Payer'
+        'FSPIOP-Source header should match Payer FSP'
       )
     )
     return false
@@ -87,7 +87,7 @@ const validateFspiopSourceAndDestination = async (payload, headers) => {
     reasons.push(
       ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'FSPIOP-Source header should match Payee'
+        'FSPIOP-Source header should match Payee FSP'
       )
     )
     return false
@@ -96,7 +96,7 @@ const validateFspiopSourceAndDestination = async (payload, headers) => {
     reasons.push(
       ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'FSPIOP-Destination header should match Payer'
+        'FSPIOP-Destination header should match Payer FSP'
       )
     )
     return false
@@ -147,7 +147,7 @@ const validateBulkTransfer = async (payload, headers) => {
     reasons.push(
       ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'Bulk transfer must be provided'
+        'A valid Bulk transfer message must be provided'
       )
     )
     isValid = false
@@ -192,7 +192,7 @@ const validateBulkTransferFulfilment = async (payload, headers) => {
     reasons.push(
       ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'Bulk transfer fulfilment payload must be provided'
+        'A valid Bulk transfer fulfilment message must be provided'
       )
     )
     isValid = false
