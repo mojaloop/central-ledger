@@ -107,7 +107,7 @@ const bulkPrepare = async (error, messages) => {
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) {
-      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
+      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: TransferEventAction.BULK_PREPARE_DUPLICATE }
       const bulkTransferResult = await BulkTransferService.getBulkTransferById(bulkTransferId)
       const bulkTransfer = bulkTransferResult.payerBulkTransfer
       const transferStateEnum = bulkTransfer && bulkTransfer.bulkTransferState

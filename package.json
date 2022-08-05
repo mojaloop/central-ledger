@@ -80,7 +80,7 @@
     "@mojaloop/central-services-health": "14.0.1",
     "@mojaloop/central-services-logger": "11.0.1",
     "@mojaloop/central-services-metrics": "12.0.5",
-    "@mojaloop/central-services-shared": "17.0.2",
+    "@mojaloop/central-services-shared": "git+ssh://git@github.com:mojaloop/central-services-shared.git#fix/%232796-Duplicate-transaction-not-getting-callback-for-post-bulkTransfers",
     "@mojaloop/central-services-stream": "11.0.0",
     "@mojaloop/event-sdk": "11.0.2",
     "@mojaloop/ml-number": "11.2.1",
