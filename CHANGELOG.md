@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.0.0](https://github.com/mojaloop/central-ledger/compare/v15.2.0...v16.0.0) (2022-08-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* rework bulk handler validation  (#913)
+
+### Refactors
+
+* rework bulk handler validation  ([#913](https://github.com/mojaloop/central-ledger/issues/913)) ([38d29fd](https://github.com/mojaloop/central-ledger/commit/38d29fde13128fa656b6a3cfd71c05ba52b92994))
+
 ## [15.2.0](https://github.com/mojaloop/central-ledger/compare/v15.1.3...v15.2.0) (2022-08-01)
 
 
