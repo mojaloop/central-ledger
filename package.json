@@ -62,7 +62,7 @@
     "docker:down": "docker-compose -f docker-compose.yml down -v",
     "docker:clean": "docker-compose -f docker-compose.yml down --rmi local",
     "generate-docs": "npx jsdoc -c jsdoc.json",
-    "audit:resolve": "npm audit fix",
+    "audit:fix": "npm audit fix",
     "audit:check": "npx audit-ci --config ./audit-ci.jsonc",
     "dep:check": "npx ncu -e 2",
     "dep:update": "npx ncu -u",
