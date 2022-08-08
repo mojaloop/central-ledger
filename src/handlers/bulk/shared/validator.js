@@ -38,6 +38,7 @@ const Participant = require('../../../domain/participant')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Config = require('../../../lib/config')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const reasons = []
 const defaultLagSeconds = 300
@@ -45,14 +46,24 @@ const defaultLagSeconds = 300
 const validateDifferentFsp = (payload) => {
   const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
   if (!isPayerAndPayeeDifferent) {
-    reasons.push('Payer and Payee should differ')
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'Payer and Payee FSPs should be different'
+      )
+    )
     return false
   }
   return true
 }
 const validateExpiration = (payload) => {
   if (Date.parse(payload.expiration) < Date.parse(new Date().toDateString())) {
-    reasons.push(`Expiration date ${new Date(payload.expiration.toString()).toISOString()} is already in the past`)
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        `Expiration date ${new Date(payload.expiration.toString()).toISOString()} is already in the past`
+      )
+    )
     return false
   }
   return true
@@ -60,7 +71,12 @@ const validateExpiration = (payload) => {
 const validateFspiopSourceMatchesPayer = (payload, headers) => {
   const matched = (headers && headers[Enum.Http.Headers.FSPIOP.SOURCE] === payload.payerFsp)
   if (!matched) {
-    reasons.push('FSPIOP-Source header should match Payer')
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'FSPIOP-Source header should match Payer FSP'
+      )
+    )
     return false
   }
   return true
@@ -70,24 +86,53 @@ const validateFspiopSourceAndDestination = async (payload, headers) => {
   const matchedPayee = (headers && headers[Enum.Http.Headers.FSPIOP.SOURCE] === participant.payeeFsp)
   const matchedPayer = (headers && headers[Enum.Http.Headers.FSPIOP.DESTINATION] === participant.payerFsp)
   if (!matchedPayee) {
-    reasons.push('FSPIOP-Source header should match Payee')
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'FSPIOP-Source header should match Payee FSP'
+      )
+    )
     return false
   }
   if (!matchedPayer) {
-    reasons.push('FSPIOP-Destination header should match Payer')
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'FSPIOP-Destination header should match Payer FSP'
+      )
+    )
     return false
   }
   return true
 }
-const validateParticipantByName = async (participantName) => {
+const validateParticipantByName = async (participantName, isPayer = null) => {
+  let fspiopErrorCode
+  if (isPayer == null) {
+    fspiopErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR
+  } else if (isPayer) {
+    fspiopErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND
+  } else {
+    fspiopErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_ID_NOT_FOUND
+  }
+
   const participant = await Participant.getByName(participantName)
   let isValid = false
   let participantId
   if (!participant) {
-    reasons.push(`Participant ${participantName} not found`)
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        fspiopErrorCode,
+        `Participant ${participantName} not found`
+      )
+    )
   } else if (!participant.isActive) {
     participantId = participant.participantId
-    reasons.push(`Participant ${participantName} is inactive`)
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        fspiopErrorCode,
+        `Participant ${participantName} is inactive`
+      )
+    )
   } else {
     participantId = participant.participantId
     isValid = true
@@ -101,7 +146,12 @@ const validateBulkTransfer = async (payload, headers) => {
   let payerParticipantId = null
   let payeeParticipantId = null
   if (!payload) {
-    reasons.push('Bulk transfer must be provided')
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'A valid Bulk transfer message must be provided'
+      )
+    )
     isValid = false
     return { isValid, reasons, payerParticipantId, payeeParticipantId }
   }
@@ -109,7 +159,7 @@ const validateBulkTransfer = async (payload, headers) => {
   isValid = isValid && validateExpiration(payload)
   isValid = isValid && validateDifferentFsp(payload)
   if (isValid) {
-    const result = await validateParticipantByName(payload.payerFsp)
+    const result = await validateParticipantByName(payload.payerFsp, true)
     isValid = result.isValid
     payerParticipantId = result.participantId
   }
@@ -122,9 +172,16 @@ const validateBulkTransfer = async (payload, headers) => {
     // and body may be different. So we can not enforce that check.
 
     // We validate that both these fspId's exist and and continue on.
-    const payloadResult = await validateParticipantByName(payload.payeeFsp)
-    const headerResult = await validateParticipantByName(headers[Enum.Http.Headers.FSPIOP.DESTINATION])
-    isValid = payloadResult.isValid && headerResult.isValid
+    // We check the body then the header only if the body is valid to avoid
+    // adding two errors to `reasons`
+    const payloadResult = await validateParticipantByName(payload.payeeFsp, false)
+    isValid = payloadResult.isValid
+
+    if (isValid) {
+      const headerResult = await validateParticipantByName(headers[Enum.Http.Headers.FSPIOP.DESTINATION], false)
+      isValid = headerResult.isValid
+    }
+
     payeeParticipantId = payloadResult.participantId
   }
   return { isValid, reasons, payerParticipantId, payeeParticipantId }
@@ -134,7 +191,12 @@ const validateBulkTransferFulfilment = async (payload, headers) => {
   reasons.length = 0
   let isValid = true
   if (!payload) {
-    reasons.push('Bulk transfer fulfilment payload must be provided')
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'A valid Bulk transfer fulfilment message must be provided'
+      )
+    )
     isValid = false
     return { isValid, reasons }
   }
