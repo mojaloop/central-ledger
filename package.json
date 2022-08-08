@@ -107,7 +107,7 @@
     "moment": "2.29.4",
     "rc": "1.2.8",
     "require-glob": "^4.1.0",
-    "uuid4": "2.0.2"
+    "uuid4": "2.0.3"
   },
   "optionalDependencies": {
     "mysql": "2.18.1"
