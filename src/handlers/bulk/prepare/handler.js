@@ -226,7 +226,12 @@ const bulkPrepare = async (error, messages) => {
 
       try { // save invalid request for auditing
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
-        await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasons.toString(), false)
+        // `bulkTransferStateChange.reason` has a 512 character limit, so we
+        // reduce the errors to just their message
+        const reasonsMessages = reasons.map(function (reason) {
+          return reason.message
+        })
+        await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasonsMessages.toString(), false)
       } catch (err) { // handle insert error and produce error callback notification to payer
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
         Logger.isErrorEnabled && Logger.error(err)
@@ -241,7 +246,19 @@ const bulkPrepare = async (error, messages) => {
       // produce validation error callback notification to payer
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
 
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
+      const fspiopError = reasons.shift()
+      if (reasons.length > 0) {
+        fspiopError.extensions = []
+        // If there are multiple validation errors attach them as extensions
+        // to the first error
+        reasons.forEach((reason, i) => {
+          fspiopError.extensions.push({
+            key: `additionalErrors${i}`,
+            value: reason.message
+          })
+        })
+      }
+
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       params.message.value.content.uriParams = { id: bulkTransferId }
 
