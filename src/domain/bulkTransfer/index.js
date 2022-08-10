@@ -98,7 +98,7 @@ const getBulkTransferById = async (id) => {
     }))
     const bulkResponse = {
       bulkTransferId: bulkTransfer.bulkTransferId,
-      bulkTransferState: bulkTransfer.bulkTransferStateEnumeration
+      bulkTransferState: bulkTransfer.bulkTransferStateId
     }
     if (bulkTransfer.completedTimestamp) {
       bulkResponse.completedTimestamp = bulkTransfer.completedTimestamp

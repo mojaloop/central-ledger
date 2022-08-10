@@ -244,7 +244,6 @@ const bulkPrepare = async (error, messages) => {
 
       try { // save invalid request for auditing
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
-
         await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasonsMessages.toString(), false)
       } catch (err) { // handle insert error and produce error callback notification to payer
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))

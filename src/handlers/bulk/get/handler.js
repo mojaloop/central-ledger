@@ -115,7 +115,7 @@ const getBulkTransfer = async (error, messages) => {
     const bulkTransferResult = await BulkTransferService.getBulkTransferById(bulkTransferId)
     const bulkTransfer = isPayeeRequest ? bulkTransferResult.payeeBulkTransfer : bulkTransferResult.payerBulkTransfer
     let payload = {
-      bulkTransferState: bulkTransfer.bulkTransferState
+      bulkTransferState: Enum.Transfers.BulkTransferStateEnum[bulkTransfer.bulkTransferState]
     }
     let fspiopError
 
