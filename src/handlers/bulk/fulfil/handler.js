@@ -162,7 +162,27 @@ const bulkFulfil = async (error, messages) => {
       }
     } else {
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
-      Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasons)}`)
+
+      const validationFspiopError = reasons.shift()
+      if (reasons.length > 0) {
+        validationFspiopError.extensions = []
+        // If there are multiple validation errors attach them as extensions
+        // to the first error
+        reasons.forEach((reason, i) => {
+          validationFspiopError.extensions.push({
+            key: `additionalErrors${i}`,
+            value: reason.message
+          })
+        })
+      }
+      // Converting FSPIOPErrors to strings is verbose, so we reduce the errors
+      // to just their message.
+      const reasonsMessages = reasons.map(function (reason) {
+        return reason.message
+      })
+
+      Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasonsMessages)}`)
+
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         /**
@@ -172,10 +192,8 @@ const bulkFulfil = async (error, messages) => {
          * abort the bulk as we would have accepted non-legitimate source.
          */
         const bulkTransfers = await BulkTransferService.getBulkTransferById(payload.bulkTransferId)
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Bulk fulfil failed validation')
         for (const individualTransferFulfil of bulkTransfers.payeeBulkTransfer.individualTransferResults) {
-          individualTransferFulfil.errorInformation = fspiopError.toApiErrorObject().errorInformation
-          Logger.info(individualTransferFulfil)
+          individualTransferFulfil.errorInformation = validationFspiopError.toApiErrorObject().errorInformation
           // Abort-Reject all individual transfers
           // The bulk processing handler will handle informing the payer
           await sendIndividualTransfer(
@@ -203,12 +221,11 @@ const bulkFulfil = async (error, messages) => {
       }
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
 
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       params.message.value.content.uriParams = { id: bulkTransferId }
 
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      throw fspiopError
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw validationFspiopError
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)

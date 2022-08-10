@@ -210,10 +210,20 @@ const validateCompletedTimestamp = (payload) => {
   const completedTimestamp = new Date(payload.completedTimestamp)
   const now = new Date()
   if (completedTimestamp > now) {
-    reasons.push('completedTimestamp fails because future timestamp was provided')
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'Bulk fulfil failed validation - completedTimestamp fails because future timestamp was provided'
+      )
+    )
     return false
   } else if (completedTimestamp < now - maxLag) {
-    reasons.push('completedTimestamp fails because provided timestamp exceeded the maximum timeout duration')
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'Bulk fulfil failed validation - completedTimestamp fails because provided timestamp exceeded the maximum timeout duration'
+      )
+    )
     return false
   }
   return true
