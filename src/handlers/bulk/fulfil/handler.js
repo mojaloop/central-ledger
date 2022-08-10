@@ -171,12 +171,24 @@ const bulkFulfil = async (error, messages) => {
          * reason is "FSPIOP-Source header should match Payee". In this case we should not
          * abort the bulk as we would have accepted non-legitimate source.
          */
-        const state = await BulkTransferService.bulkFulfil(payload, reasons.toString(), false)
         const bulkTransfers = await BulkTransferService.getBulkTransferById(payload.bulkTransferId)
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Bulk fulfil failed validation')
         for (const individualTransferFulfil of bulkTransfers.payeeBulkTransfer.individualTransferResults) {
           individualTransferFulfil.errorInformation = fspiopError.toApiErrorObject().errorInformation
-          await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd)
+          Logger.info(individualTransferFulfil)
+          // Abort-Reject all individual transfers
+          // The bulk processing handler will handle informing the payer
+          await sendIndividualTransfer(
+            message,
+            messageId,
+            kafkaTopic,
+            headers,
+            payload,
+            Enum.Transfers.TransferInternalState.ABORTED_REJECTED,
+            params,
+            individualTransferFulfil,
+            histTimerEnd
+          )
         }
       } catch (err) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))

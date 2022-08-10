@@ -161,6 +161,13 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
         errorCode = payload.errorInformation && payload.errorInformation.errorCode
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
+      } else if (action === Enum.Events.Event.Action.BULK_ABORT) {
+        criteriaState = Enum.Transfers.BulkTransferState.REJECTED
+        incompleteBulkState = Enum.Transfers.BulkTransferState.REJECTED
+        processingStateId = Enum.Transfers.BulkProcessingState.ACCEPTED
+        completedBulkState = Enum.Transfers.BulkTransferState.REJECTED
+        errorCode = payload.errorInformation && payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.ACCEPTED} state`)
         throw fspiopError
@@ -294,7 +301,14 @@ const bulkProcessing = async (error, messages) => {
           Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
           return true
         }
-      } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
+      } else if (
+        eventType === Enum.Events.Event.Type.BULK_PROCESSING &&
+        [
+          Enum.Events.Event.Action.BULK_COMMIT,
+          Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED,
+          Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED,
+          Enum.Events.Event.Action.BULK_ABORT
+        ].includes(action)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}3`))
         const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)
         const normalizedKeys = Object.keys(headers).reduce((keys, k) => { keys[k.toLowerCase()] = k; return keys }, {})
