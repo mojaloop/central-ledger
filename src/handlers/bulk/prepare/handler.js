@@ -106,7 +106,10 @@ const bulkPrepare = async (error, messages) => {
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
-    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck, bulkTransferHash)
+    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, bulkTransferHash, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck, {
+      hashOverride: true
+    })
+
     if (hasDuplicateId && hasDuplicateHash) {
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: TransferEventAction.BULK_PREPARE_DUPLICATE }
       const bulkTransferResult = await BulkTransferService.getBulkTransferById(bulkTransferId)
