@@ -202,7 +202,7 @@ const bulkFulfil = async (error, messages) => {
             kafkaTopic,
             headers,
             payload,
-            Enum.Transfers.TransferInternalState.ABORTED_REJECTED,
+            Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
             params,
             individualTransferFulfil,
             histTimerEnd

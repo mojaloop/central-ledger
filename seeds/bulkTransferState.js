@@ -41,6 +41,7 @@ const bulkTransferStates = [
     enumeration: 'PENDING',
     description: 'Validation of received bulk transfer is not successful'
   },
+  // ABORTING
   {
     bulkTransferStateId: 'ACCEPTED',
     enumeration: 'ACCEPTED',
