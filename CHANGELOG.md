@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.1.0](https://github.com/mojaloop/central-ledger/compare/v16.0.0...v16.1.0) (2022-08-11)
+
+
+### Bug Fixes
+
+* **mojaloop/#2796:** duplicate transaction not getting callback for post /bulkTransfers (not forked) ([#915](https://github.com/mojaloop/central-ledger/issues/915)) ([e520aa5](https://github.com/mojaloop/central-ledger/commit/e520aa5c5e748a051534f69f5734918f0e02f379)), closes [mojaloop/#2796](https://github.com/mojaloop/project/issues/2796)
+
 ## [16.0.0](https://github.com/mojaloop/central-ledger/compare/v15.2.0...v16.0.0) (2022-08-05)
 
 

@@ -96,6 +96,7 @@ const bulkPrepare = async (error, messages) => {
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
     const bulkTransferId = payload.bulkTransferId
+    const bulkTransferHash = payload.hash
     const kafkaTopic = message.topic
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkPrepare' }))
@@ -105,9 +106,12 @@ const bulkPrepare = async (error, messages) => {
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
-    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck)
+    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, bulkTransferHash, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck, {
+      hashOverride: true
+    })
+
     if (hasDuplicateId && hasDuplicateHash) {
-      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
+      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: TransferEventAction.BULK_PREPARE_DUPLICATE }
       const bulkTransferResult = await BulkTransferService.getBulkTransferById(bulkTransferId)
       const bulkTransfer = bulkTransferResult.payerBulkTransfer
       const transferStateEnum = bulkTransfer && bulkTransfer.bulkTransferState

@@ -56,6 +56,7 @@ const validateDifferentFsp = (payload) => {
   }
   return true
 }
+
 const validateExpiration = (payload) => {
   if (Date.parse(payload.expiration) < Date.parse(new Date().toDateString())) {
     reasons.push(
@@ -68,6 +69,7 @@ const validateExpiration = (payload) => {
   }
   return true
 }
+
 const validateFspiopSourceMatchesPayer = (payload, headers) => {
   const matched = (headers && headers[Enum.Http.Headers.FSPIOP.SOURCE] === payload.payerFsp)
   if (!matched) {
@@ -81,6 +83,7 @@ const validateFspiopSourceMatchesPayer = (payload, headers) => {
   }
   return true
 }
+
 const validateFspiopSourceAndDestination = async (payload, headers) => {
   const participant = await BulkTransferService.getParticipantsById(payload.bulkTransferId)
   const matchedPayee = (headers && headers[Enum.Http.Headers.FSPIOP.SOURCE] === participant.payeeFsp)
@@ -105,6 +108,7 @@ const validateFspiopSourceAndDestination = async (payload, headers) => {
   }
   return true
 }
+
 const validateParticipantByName = async (participantName, isPayer = null) => {
   let fspiopErrorCode
   if (isPayer == null) {
