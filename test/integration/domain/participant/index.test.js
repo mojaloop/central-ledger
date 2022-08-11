@@ -109,9 +109,12 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('create participants', async (assert) => {
     try {
+      console.info('JASON::: 1')
       let getByNameResult, result
       getByNameResult = await ParticipantService.getByName(testData.fsp1Name)
+      console.info('JASON::: 2')
       result = await ParticipantHelper.prepareData(testData.fsp1Name, testData.currency, !!getByNameResult)
+      console.info('JASON::: 3')
       participantFixtures.push(result.participant)
       getByNameResult = await ParticipantService.getByName(testData.fsp2Name)
       result = await ParticipantHelper.prepareData(testData.fsp2Name, testData.currency, !!getByNameResult)
@@ -122,6 +125,7 @@ Test('Participant service', async (participantTest) => {
       getByNameResult = await ParticipantService.getByName(testData.fsp4Name)
       result = await ParticipantHelper.prepareData(testData.fsp4Name, testData.currency, !!getByNameResult)
       participantFixtures.push(result.participant)
+      console.info('JASON::: 112')
       for (const participant of participantFixtures) {
         const read = await ParticipantService.getById(participant.participantId)
         participantMap.set(participant.participantId, read)

@@ -30,7 +30,7 @@
 
 const Test = require('tape')
 const Db = require('../../../../src/lib/db')
-const Tb = require('../../../../src/lib/tb')
+const Tb = require('../../../../src/lib/tb')//TODO @jason only req here...
 const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')

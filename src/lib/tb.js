@@ -66,14 +66,19 @@ const getTBClient = async () => {
 
 const tbCreateAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
   try {
+    console.info('JASON::: 0->> Creating Account    '+id)
+
     const client = await getTBClient()
     if (client == null) return {}
 
     //console.trace('Creating the account' + 'BOOM -> '+id +' - '+accountType+' - '+currencyTxt)
+    console.info('JASON::: 1.1 Creating Account    '+id)
 
     const userData = BigInt(id)
     const currencyU16 = obtainLedgerFromCurrency(currencyTxt)
     const tbId = tbIdFrom(userData, currencyU16, accountType)
+
+    console.info(`JASON::: 1.2 Creating Account ${util.inspect(currencyU16)} - ${tbId}   `)
 
     const account = {
       id: tbId, // u128 (137n)
@@ -88,8 +93,11 @@ const tbCreateAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
       credits_posted: 0n, // u64
       timestamp: 0n, // u64, Reserved: This will be set by the server.
     }
+    console.info(`JASON::: 1.3 Creating Account ${util.inspect(account)}`)
 
     const errors = await client.createAccounts([account])
+    console.info(`JASON::: 1.4 ERRORS ${util.inspect(errors)}.`)
+
     if (errors.length > 0) {
       Logger.error('CreateAccount-ERROR: '+enumLabelFromCode(TbNode.CreateAccountError, errors[0].code))
 
@@ -103,6 +111,8 @@ const tbCreateAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
     }
     return errors
   } catch (err) {
+    console.error(`TB: Unable to create account.`)
+    console.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -405,7 +415,6 @@ const enumLabelFromCode = (resultEnum, errCode) => {
   return errorEnum[errCode + ((errorEnum.length / 2) - 1)]
 }
 
-
 module.exports = {
   tbCreateAccount,
   tbTransfer,
@@ -415,4 +424,3 @@ module.exports = {
   tbLookupTransfer,
   tbDestroy
 }
-

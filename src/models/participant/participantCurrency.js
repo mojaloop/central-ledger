@@ -33,6 +33,7 @@ const Logger = require('@mojaloop/central-services-logger')
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
     if (Config.TIGERBEETLE.enabled) {
+      console.log(`JASON::: participantCurrency.create ${participantId} - ${currencyId} - ${ledgerAccountTypeId}`)
       await Tb.tbCreateAccount(participantId, ledgerAccountTypeId, currencyId)
     }
 

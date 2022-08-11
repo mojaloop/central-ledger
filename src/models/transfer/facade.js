@@ -570,6 +570,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         'facade_saveTransferPrepared_no_validation - Metrics for transfer model',
         ['success', 'queryName']
       ).startTimer()
+      //TODO @jason, need to also store in TB...
       await knex('transfer').insert(transferRecord)
       try {
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
