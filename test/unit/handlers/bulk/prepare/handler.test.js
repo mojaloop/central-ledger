@@ -404,7 +404,6 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
         Kafka.transformAccountToTopicName.returns(topicName)
         Kafka.proceed.returns(true)
 
-        // We are only validating duplicate checks here, so lets shortcut all the persistent stuff by failing on the validation check
         Validator.validateBulkTransfer.returns(
           {
             isValid: false,
