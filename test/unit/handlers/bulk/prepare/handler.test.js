@@ -444,12 +444,7 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
         const result = await allBulkTransferHandlers.bulkPrepare(null, localMessages)
 
         // Assert
-        test.equal(result, true)
-        test.equal(Kafka.proceed.lastCall.args[1]?.message?.value?.content?.payload?.bulkTransferState, Enum.Transfers.BulkTransferState.COMPLETED)
-        test.equal(Kafka.proceed.lastCall.args[1]?.message?.value?.content.uriParams.id, fspiopBulkTransferMsg.bulkTransferId)
-        test.equal(Kafka.proceed.lastCall.args[2]?.eventDetail?.action, Enum.Events.Event.Action.BULK_PREPARE_DUPLICATE)
-        test.equal(Kafka.proceed.lastCall.args[2]?.eventDetail?.functionality, Enum.Events.Event.Type.NOTIFICATION)
-        test.equal(Kafka.proceed.lastCall.args[2]?.fromSwitch, true)
+        test.equal(result, false)
         test.fail(`${ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR} should have been thrown!`)
         test.end()
       } catch (err) {
