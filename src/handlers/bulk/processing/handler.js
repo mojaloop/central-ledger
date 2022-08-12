@@ -161,13 +161,6 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
         errorCode = payload.errorInformation && payload.errorInformation.errorCode
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
-      } else if (action === Enum.Events.Event.Action.BULK_ABORT) {
-        criteriaState = Enum.Transfers.BulkTransferState.REJECTED
-        incompleteBulkState = Enum.Transfers.BulkTransferState.REJECTED
-        processingStateId = Enum.Transfers.BulkProcessingState.ACCEPTED
-        completedBulkState = Enum.Transfers.BulkTransferState.REJECTED
-        errorCode = payload.errorInformation && payload.errorInformation.errorCode
-        errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.ACCEPTED} state`)
         throw fspiopError
@@ -200,14 +193,18 @@ const bulkProcessing = async (error, messages) => {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`)
         throw fspiopError
       }
-    } else if ([Enum.Transfers.BulkTransferState.ABORTING].includes(bulkTransferInfo.bulkTransferStateId)) {
+    // Enum.Transfers.BulkTransferState.ABORTING
+    } else if (['ABORTING'].includes(bulkTransferInfo.bulkTransferStateId)) {
       if (action === Enum.Events.Event.Action.BULK_ABORT) {
-        // criteriaState = Enum.Transfers.BulkTransferState.REJECTED
-        // processingStateId = Enum.Transfers.BulkProcessingState.FULFIL_INVALID
-        // completedBulkState = Enum.Transfers.BulkTransferState.REJECTED
-        // incompleteBulkState = Enum.Transfers.BulkTransferState.ABORTING
-        // errorCode = payload.errorInformation && payload.errorInformation.errorCode
-        // errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
+        criteriaState = Enum.Transfers.BulkTransferState.REJECTED
+        processingStateId = Enum.Transfers.BulkProcessingState.FULFIL_INVALID
+        completedBulkState = Enum.Transfers.BulkTransferState.REJECTED
+        incompleteBulkState = 'ABORTING'
+        errorCode = payload.errorInformation && payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
+      } else {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid action for bulk in ABORTING state')
+        throw fspiopError
       }
     } else if (bulkTransferInfo.bulkTransferStateId === Enum.Transfers.BulkTransferState.COMPLETED && action === Enum.Events.Event.Action.FULFIL_DUPLICATE) {
       /**
@@ -229,7 +226,6 @@ const bulkProcessing = async (error, messages) => {
       }
       throw fspiopError
     } else { // ['PENDING_INVALID', 'COMPLETED', 'REJECTED', 'INVALID']
-
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Could not process transferId ${transferId} after bulk is finilized`)
       throw fspiopError
     }

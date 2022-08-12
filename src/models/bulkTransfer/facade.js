@@ -172,10 +172,54 @@ const saveBulkTransferErrorProcessing = async (payload, stateReason = null, isVa
   }
 }
 
+const saveBulkTransferAborting = async (payload, stateReason = null) => {
+  try {
+    const bulkTransferFulfilmentRecord = {
+      bulkTransferId: payload.bulkTransferId,
+      completedDate: Time.getUTCString(new Date(payload.completedTimestamp))
+    }
+
+    const state = 'ABORTING'
+    const bulkTransferStateChangeRecord = {
+      bulkTransferId: payload.bulkTransferId,
+      bulkTransferStateId: state,
+      reason: stateReason
+    }
+
+    const knex = await Db.getKnex()
+    return await knex.transaction(async (trx) => {
+      try {
+        await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
+        if (payload.extensionList && payload.extensionList.extension) {
+          const bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+            return {
+              bulkTransferId: payload.bulkTransferId,
+              isFulfilment: true,
+              key: ext.key,
+              value: ext.value
+            }
+          })
+          await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
+        }
+        await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
+        await trx.commit
+        return state
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    })
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
 const TransferFacade = {
   saveBulkTransferReceived,
   saveBulkTransferProcessing,
-  saveBulkTransferErrorProcessing
+  saveBulkTransferErrorProcessing,
+  saveBulkTransferAborting
 }
 
 module.exports = TransferFacade

@@ -34,11 +34,19 @@ const getById = async (id) => {
         .innerJoin('participant AS payee', 'payee.participantId', 'bulkTransfer.payeeParticipantId')
         .innerJoin('bulkTransferStateChange AS btsc', 'btsc.bulkTransferId', 'bulkTransfer.bulkTransferId')
         .leftJoin('bulkTransferFulfilment AS btf', 'btf.bulkTransferId', 'bulkTransfer.bulkTransferId')
+        .leftJoin('bulkTransferState AS bts', 'bts.bulkTransferStateId', 'btsc.bulkTransferStateId')
         .where({ 'bulkTransfer.bulkTransferId': id })
         .orderBy('btsc.bulkTransferStateChangeId', 'desc')
-        .select('bulkTransfer.bulkTransferId', 'btsc.bulkTransferStateId', 'btf.completedDate AS completedTimestamp',
-          'payer.name AS payerFsp', 'payee.name AS payeeFsp', 'bulkTransfer.bulkQuoteId', 'bulkTransfer.expirationDate')
-        .first()
+        .select(
+          'bulkTransfer.bulkTransferId',
+          'btsc.bulkTransferStateId',
+          'btf.completedDate AS completedTimestamp',
+          'bts.enumeration AS bulkTransferStateEnumeration',
+          'payer.name AS payerFsp',
+          'payee.name AS payeeFsp',
+          'bulkTransfer.bulkQuoteId',
+          'bulkTransfer.expirationDate'
+        ).first()
       return result
     })
   } catch (err) {
@@ -55,13 +63,19 @@ const getByTransferId = async (id) => {
         .innerJoin('participant AS payer', 'payer.participantId', 'bulkTransfer.payerParticipantId')
         .innerJoin('participant AS payee', 'payee.participantId', 'bulkTransfer.payeeParticipantId')
         .innerJoin('bulkTransferStateChange AS btsc', 'btsc.bulkTransferId', 'bulkTransfer.bulkTransferId')
+        .leftJoin('bulkTransferState AS bts', 'bts.bulkTransferStateId', 'btsc.bulkTransferStateId')
         .leftJoin('bulkTransferFulfilment AS btf', 'btf.bulkTransferId', 'bulkTransfer.bulkTransferId')
         .where({ 'bta.transferId': id })
         .orderBy('btsc.bulkTransferStateChangeId', 'desc')
-        .select('bulkTransfer.bulkTransferId', 'btsc.bulkTransferStateId', 'btf.completedDate AS completedTimestamp',
-          'payer.name AS payerFsp', 'payee.name AS payeeFsp', 'bulkTransfer.bulkQuoteId',
-          'bulkTransfer.expirationDate AS expiration')
-        .first()
+        .select(
+          'bulkTransfer.bulkTransferId',
+          'btsc.bulkTransferStateId',
+          'btf.completedDate AS completedTimestamp',
+          'bts.enumeration AS bulkTransferStateEnumeration',
+          'payer.name AS payerFsp',
+          'payee.name AS payeeFsp',
+          'bulkTransfer.bulkQuoteId'
+        ).first()
       return result
     })
   } catch (err) {
