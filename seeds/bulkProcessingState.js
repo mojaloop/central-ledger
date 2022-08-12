@@ -27,44 +27,59 @@
 
 const bulkProcessingStates = [
   {
+    bulkProcessingStateId: 1,
     name: 'RECEIVED',
     description: 'The switch has received the individual transfer ids part of the bulk transfer'
   },
   {
+    bulkProcessingStateId: 2,
     name: 'RECEIVED_DUPLICATE',
     description: 'The switch has matched individual transfer as duplicate'
   },
   {
+    bulkProcessingStateId: 3,
     name: 'RECEIVED_INVALID',
     description: 'The switch has matched individual transfer as invalid within Prepare or Position Handler'
   },
   {
+    bulkProcessingStateId: 4,
     name: 'ACCEPTED',
     description: 'The switch has reserved the funds for the transfers in the bulk'
   },
   {
+    bulkProcessingStateId: 5,
     name: 'PROCESSING',
     description: 'Fulfilment request has been received for the individual transfer'
   },
   {
+    bulkProcessingStateId: 6,
     name: 'FULFIL_DUPLICATE',
     description: 'The switch has matched individual transfer fulfil as duplicate'
   },
   {
+    bulkProcessingStateId: 7,
     name: 'FULFIL_INVALID',
     description: 'The switch has matched individual transfer fulfilment as invalid within Fulfil or Position Handler'
   },
   {
+    bulkProcessingStateId: 8,
     name: 'COMPLETED',
     description: 'The switch has marked the individual transfer as committed'
   },
   {
+    bulkProcessingStateId: 9,
     name: 'REJECTED',
     description: 'The switch has marked the individual transfer as rejected'
   },
   {
+    bulkProcessingStateId: 10,
     name: 'EXPIRED',
     description: 'The switch has marked the individual transfer as timed out'
+  },
+  {
+    bulkProcessingStateId: 11,
+    name: 'ABORTING',
+    description:  'The switch has marked the individual transfer as aborting due to failed fulfil validation'
   }
 ]
 

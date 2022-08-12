@@ -144,14 +144,36 @@ const bulkFulfil = async (error, messages) => {
           const bulkTransfers = await BulkTransferService.getBulkTransferById(payload.bulkTransferId)
           for (const individualTransferFulfil of bulkTransfers.payeeBulkTransfer.individualTransferResults) {
             individualTransferFulfil.errorInformation = payload.errorInformation
-            await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd)
+            await sendIndividualTransfer(
+              message,
+              messageId,
+              kafkaTopic,
+              headers,
+              payload,
+              state,
+              params,
+              individualTransferFulfil,
+              histTimerEnd,
+              Enum.Transfers.BulkProcessingState.PROCESSING
+            )
           }
         } else {
           const IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
 
           // enable async/await operations for the stream
           for await (const doc of IndividualTransferFulfilModel.find({ messageId }).cursor()) {
-            await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, doc.payload, histTimerEnd)
+            await sendIndividualTransfer(
+              message,
+              messageId,
+              kafkaTopic,
+              headers,
+              payload,
+              state,
+              params,
+              doc.payload,
+              histTimerEnd,
+              Enum.Transfers.BulkProcessingState.PROCESSING
+            )
           }
         }
       } catch (err) { // TODO: handle individual transfers streaming error
@@ -206,7 +228,8 @@ const bulkFulfil = async (error, messages) => {
             state,
             params,
             individualTransferFulfil,
-            histTimerEnd
+            histTimerEnd,
+            Enum.Transfers.BulkProcessingState.ABORTING
           )
         }
       } catch (err) {
@@ -242,13 +265,13 @@ const bulkFulfil = async (error, messages) => {
  * @async
  * @description sends individual transfers to the fulfil handler
  */
-const sendIndividualTransfer = async (message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd) => {
+const sendIndividualTransfer = async (message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd, bulkProcessingStateId) => {
   const transferId = individualTransferFulfil.transferId
   delete individualTransferFulfil.transferId
   const bulkTransferAssociationRecord = {
     transferId,
     bulkTransferId: payload.bulkTransferId,
-    bulkProcessingStateId: Enum.Transfers.BulkProcessingState.PROCESSING,
+    bulkProcessingStateId,
     errorCode: payload.errorInformation ? payload.errorInformation.errorCode : undefined,
     errorDescription: payload.errorInformation ? payload.errorInformation.errorDescription : undefined
   }
