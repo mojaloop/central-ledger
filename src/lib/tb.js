@@ -296,7 +296,7 @@ const tbFulfilTransfer = async (
       id: uuidToBigInt(`${uuidv4Gen()}`),
       debit_account_id: 0n,
       credit_account_id: 0n,
-      user_data: 0n,
+      user_data: 0n,//TODO need to make use of the settlementWindow here.
       reserved: 0n,
       pending_id: uuidToBigInt(transferFulfilmentRecord.transferId), // u128
       timeout: 0n,
