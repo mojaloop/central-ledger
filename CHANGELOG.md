@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.2.0](https://github.com/mojaloop/central-ledger/compare/v16.1.0...v16.2.0) (2022-08-15)
+
+
+### Features
+
+* **mojaloop/#2801:** add fulfil timestamp validation and more error handling ([#916](https://github.com/mojaloop/central-ledger/issues/916)) ([336a0a2](https://github.com/mojaloop/central-ledger/commit/336a0a27e908eedeb0dcf8b171ad8c0edfb4c3d8)), closes [mojaloop/#2801](https://github.com/mojaloop/project/issues/2801)
+
 ## [16.1.0](https://github.com/mojaloop/central-ledger/compare/v16.0.0...v16.1.0) (2022-08-11)
 
 
