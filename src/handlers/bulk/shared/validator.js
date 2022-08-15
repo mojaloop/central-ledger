@@ -41,7 +41,6 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const reasons = []
-const defaultLagSeconds = 300
 
 const validateDifferentFsp = (payload) => {
   const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
@@ -210,7 +209,7 @@ const validateBulkTransferFulfilment = async (payload, headers) => {
 }
 
 const validateCompletedTimestamp = (payload) => {
-  const maxLag = (Config.MAX_FULFIL_TIMEOUT_DURATION_SECONDS || defaultLagSeconds) * 1000
+  const maxLag = Config.MAX_FULFIL_TIMEOUT_DURATION_SECONDS * 1000
   const completedTimestamp = new Date(payload.completedTimestamp)
   const now = new Date()
   if (completedTimestamp > now) {
