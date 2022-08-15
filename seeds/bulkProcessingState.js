@@ -79,7 +79,7 @@ const bulkProcessingStates = [
   {
     bulkProcessingStateId: 11,
     name: 'ABORTING',
-    description:  'The switch has marked the individual transfer as aborting due to failed fulfil validation'
+    description: 'The switch has marked the individual transfer as aborting due to failed validation'
   }
 ]
 
