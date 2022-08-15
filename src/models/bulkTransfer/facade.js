@@ -179,7 +179,7 @@ const saveBulkTransferAborting = async (payload, stateReason = null) => {
       completedDate: Time.getUTCString(new Date(payload.completedTimestamp))
     }
 
-    const state = 'ABORTING'
+    const state = Enum.Transfers.BulkTransferState.ABORTING
     const bulkTransferStateChangeRecord = {
       bulkTransferId: payload.bulkTransferId,
       bulkTransferStateId: state,
