@@ -150,7 +150,7 @@ const bulkProcessing = async (error, messages) => {
         errorCode = payload.errorInformation && payload.errorInformation.errorCode
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.RECEIVED} state`)
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action ${action} for bulk in ${Enum.Transfers.BulkTransferState.RECEIVED} state`)
         throw fspiopError
       }
     } else if ([Enum.Transfers.BulkTransferState.ACCEPTED].includes(bulkTransferInfo.bulkTransferStateId)) {
@@ -162,7 +162,7 @@ const bulkProcessing = async (error, messages) => {
         errorCode = payload.errorInformation && payload.errorInformation.errorCode
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.ACCEPTED} state`)
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action ${action} for bulk in ${Enum.Transfers.BulkTransferState.ACCEPTED} state`)
         throw fspiopError
       }
     } else if ([Enum.Transfers.BulkTransferState.PROCESSING, Enum.Transfers.BulkTransferState.PENDING_FULFIL, Enum.Transfers.BulkTransferState.EXPIRING].includes(bulkTransferInfo.bulkTransferStateId)) {
@@ -190,7 +190,19 @@ const bulkProcessing = async (error, messages) => {
         errorCode = payload.errorInformation && payload.errorInformation.errorCode
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`)
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action ${action} for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`)
+        throw fspiopError
+      }
+    } else if ([Enum.Transfers.BulkTransferState.ABORTING].includes(bulkTransferInfo.bulkTransferStateId)) {
+      if (action === Enum.Events.Event.Action.BULK_ABORT) {
+        criteriaState = Enum.Transfers.BulkTransferState.ABORTING
+        processingStateId = Enum.Transfers.BulkProcessingState.FULFIL_INVALID
+        completedBulkState = Enum.Transfers.BulkTransferState.REJECTED
+        incompleteBulkState = Enum.Transfers.BulkTransferState.ABORTING
+        errorCode = payload.errorInformation && payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
+      } else {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action ${action} for bulk in ${Enum.Transfers.BulkTransferState.ABORTING} state`)
         throw fspiopError
       }
     } else if (bulkTransferInfo.bulkTransferStateId === Enum.Transfers.BulkTransferState.COMPLETED && action === Enum.Events.Event.Action.FULFIL_DUPLICATE) {

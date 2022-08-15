@@ -30,5 +30,17 @@ Test('Config should', configTest => {
     test.end()
   })
 
+  configTest.test('MAX_FULFIL_TIMEOUT_DURATION_SECONDS has default value if config file value is falsy', async function (test) {
+    console.log(Defaults)
+    const DefaultsStub = { ...Defaults }
+    DefaultsStub.MAX_FULFIL_TIMEOUT_DURATION_SECONDS = null
+    const Config = Proxyquire('../../../src/lib/config', {
+      '../../config/default.json': DefaultsStub
+    })
+
+    test.ok(Config.MAX_FULFIL_TIMEOUT_DURATION_SECONDS === 300)
+    test.end()
+  })
+
   configTest.end()
 })

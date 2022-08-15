@@ -226,15 +226,28 @@ const bulkPrepare = async (error, messages) => {
       }
     } else { // handle validation failure
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
-      Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasons)}`)
+      const validationFspiopError = reasons.shift()
+      if (reasons.length > 0) {
+        validationFspiopError.extensions = []
+        // If there are multiple validation errors attach them as extensions
+        // to the first error
+        reasons.forEach((reason, i) => {
+          validationFspiopError.extensions.push({
+            key: `additionalErrors${i}`,
+            value: reason.message
+          })
+        })
+      }
+      // Converting FSPIOPErrors to strings is verbose, so we reduce the errors
+      // to just their message.
+      // `bulkTransferStateChange.reason` also has a 512 character limit.
+      const reasonsMessages = reasons.map(function (reason) {
+        return reason.message
+      })
+      Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasonsMessages)}`)
 
       try { // save invalid request for auditing
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
-        // `bulkTransferStateChange.reason` has a 512 character limit, so we
-        // reduce the errors to just their message
-        const reasonsMessages = reasons.map(function (reason) {
-          return reason.message
-        })
         await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasonsMessages.toString(), false)
       } catch (err) { // handle insert error and produce error callback notification to payer
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
@@ -250,24 +263,11 @@ const bulkPrepare = async (error, messages) => {
       // produce validation error callback notification to payer
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
 
-      const fspiopError = reasons.shift()
-      if (reasons.length > 0) {
-        fspiopError.extensions = []
-        // If there are multiple validation errors attach them as extensions
-        // to the first error
-        reasons.forEach((reason, i) => {
-          fspiopError.extensions.push({
-            key: `additionalErrors${i}`,
-            value: reason.message
-          })
-        })
-      }
-
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       params.message.value.content.uriParams = { id: bulkTransferId }
 
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      throw fspiopError
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw validationFspiopError
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)

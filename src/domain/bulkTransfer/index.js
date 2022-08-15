@@ -126,7 +126,8 @@ const getBulkTransferById = async (id) => {
       expiration: bulkTransfer.expirationDate,
       completedDate: bulkTransfer.completedTimestamp,
       payerBulkTransfer,
-      payeeBulkTransfer
+      payeeBulkTransfer,
+      bulkTransferStateEnumeration: bulkTransfer.bulkTransferStateEnumeration
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
@@ -162,9 +163,19 @@ const getBulkTransferExtensionListById = async (id, completedTimestamp) => {
   }
 }
 
+const bulkFulfilTransitionToAborting = async (bulkFulfilPayload, stateReason = null) => {
+  try {
+    BulkTransferFacade.saveBulkTransferAborting(bulkFulfilPayload, stateReason)
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
 const BulkTransferService = {
   getBulkTransferById,
   getBulkTransferExtensionListById,
+  bulkFulfilTransitionToAborting,
   getBulkTransferByTransferId: BulkTransferModel.getByTransferId,
   getParticipantsById: BulkTransferModel.getParticipantsById,
   bulkPrepare: BulkTransferFacade.saveBulkTransferReceived,

@@ -80,6 +80,11 @@ const bulkTransferStates = [
     bulkTransferStateId: 'INVALID',
     enumeration: 'REJECTED',
     description: 'Final state when the switch has completed processing of pending invalid bulk transfer'
+  },
+  {
+    bulkTransferStateId: 'ABORTING',
+    enumeration: 'PROCESSING',
+    description: 'The switch is attempting to abort all individual transfers'
   }
 ]
 

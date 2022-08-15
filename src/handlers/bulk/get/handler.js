@@ -115,15 +115,11 @@ const getBulkTransfer = async (error, messages) => {
     const bulkTransferResult = await BulkTransferService.getBulkTransferById(bulkTransferId)
     const bulkTransfer = isPayeeRequest ? bulkTransferResult.payeeBulkTransfer : bulkTransferResult.payerBulkTransfer
     let payload = {
-      bulkTransferState: bulkTransfer.bulkTransferState
+      bulkTransferState: bulkTransferResult.bulkTransferStateEnumeration
     }
     let fspiopError
-    if (bulkTransfer.bulkTransferState === Enum.Transfers.BulkTransferState.REJECTED) {
-      payload = {
-        errorInformation: bulkTransfer.individualTransferResults[0].errorInformation
-      }
-      fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(payload.errorInformation)
-    } else if (bulkTransfer.bulkTransferState !== Enum.Transfers.BulkTransferState.PROCESSING) {
+
+    if (bulkTransfer.bulkTransferState !== Enum.Transfers.BulkTransferState.PROCESSING) {
       payload = {
         ...payload,
         completedTimestamp: bulkTransfer.completedTimestamp,
