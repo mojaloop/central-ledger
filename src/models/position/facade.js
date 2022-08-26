@@ -147,7 +147,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         const settlementParticipantPosition = participantPositions.find(position => position.participantCurrencyId === settlementParticipantCurrency.participantCurrencyId)
         const currentPosition = new MLNumber(initialParticipantPosition.value)
         const reservedPosition = new MLNumber(initialParticipantPosition.reservedValue)
-        const effectivePosition = currentPosition.add(reservedPosition).toFixed(Config.AMOUNT.SCALE)
+        const effectivePosition = currentPosition.add(reservedPosition).toFixed(Config.AMOUNT.SCALE) // MIG: WTF!
+        // const effectivePosition = currentPosition.toFixed(Config.AMOUNT.SCALE) // MIG: FIX!
         initialParticipantPosition.reservedValue = new MLNumber(initialParticipantPosition.reservedValue).add(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE)
         initialParticipantPosition.changedDate = transactionTimestamp
         await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update(initialParticipantPosition)
@@ -206,8 +207,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         const processedPositionValue = currentPosition.add(sumReserved)
         await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update({
           value: processedPositionValue.toFixed(Config.AMOUNT.SCALE),
-          reservedValue: reservedPosition.subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE),
-          changedDate: transactionTimestamp
+          // reservedValue: reservedPosition.subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE) // MIG: WTF! DONT DO THIS IS BAD
+          reservedValue: initialParticipantPosition.reservedPosition.subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE) // MIG: This is ok
         })
         // TODO this limit needs to be clarified
         if (processedPositionValue.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
