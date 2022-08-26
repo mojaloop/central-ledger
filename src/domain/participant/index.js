@@ -595,7 +595,7 @@ const getAccounts = async (name, query) => {
           currency: item.currencyId,
           isActive: item.isActive,
           value: item.value,
-          reservedValue: item.reservedValue, // TODO: This does not match the ADMIN API Spec
+          reservedValue: item.reservedValue,
           changedDate: item.changedDate
         })
       })

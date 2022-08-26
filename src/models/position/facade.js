@@ -208,7 +208,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update({
           value: processedPositionValue.toFixed(Config.AMOUNT.SCALE),
           // reservedValue: reservedPosition.subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE) // MIG: WTF! DONT DO THIS IS BAD
-          reservedValue: initialParticipantPosition.reservedPosition.subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE) // MIG: This is ok
+          reservedValue: new MLNumber(initialParticipantPosition.reservedPosition).subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE) // MIG: This is ok
         })
         // TODO this limit needs to be clarified
         if (processedPositionValue.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
