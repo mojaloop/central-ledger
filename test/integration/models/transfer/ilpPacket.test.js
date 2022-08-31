@@ -35,7 +35,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const Service = require('../../../../src/models/transfer/ilpPacket')
 const HelperModule = require('../../helpers')
-const Tb = require("../../../../src/lib/tb");
+const Tb = require('../../../../src/lib/tb')
 
 Test('Ilp service tests', async (ilpTest) => {
   const ilpTestValues = [

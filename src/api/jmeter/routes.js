@@ -26,7 +26,7 @@
 
 const Handler = require('./handler')
 const Joi = require('joi')
-const {currencyList} = require("../../../seeds/currency");
+const { currencyList } = require('../../../seeds/currency')
 const tags = ['api', 'jmeter']
 
 const nameValidator = Joi.string().alphanum().min(2).max(30).required().description('Name of the participant')
@@ -91,8 +91,8 @@ module.exports = [
         payload: Joi.object({
           name: Joi.string().required().description('Name is required'),
           currency: currencyValidator,
-          newlyCreated: Joi.boolean().required().description('is this a newly created participant.'),
-        }),
+          newlyCreated: Joi.boolean().required().description('is this a newly created participant.')
+        })
       }
     }
   },
@@ -126,7 +126,7 @@ module.exports = [
               value: Joi.string()
             })
           })
-        }),
+        })
       }
     }
   }

@@ -36,7 +36,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const TransferFacade = require('../../../../src/models/transfer/facade')
 const HelperModule = require('../../helpers')
-const Tb = require("../../../../src/lib/tb");
+const Tb = require('../../../../src/lib/tb')
 
 Test('Transfer read model test', async (transferReadModelTest) => {
   let transferPrepareResult = {}

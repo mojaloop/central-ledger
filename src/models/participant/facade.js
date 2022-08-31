@@ -370,9 +370,8 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
 const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     if (Config.TIGERBEETLE.enabled) {
-      //TODO return await Tb.tbLookupAccount(participantId, ledgerAccountTypeId, currencyId)
+      // TODO return await Tb.tbLookupAccount(participantId, ledgerAccountTypeId, currencyId)
     }
-
 
     return await Db.from('participant').query(async (builder) => {
       return builder

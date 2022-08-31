@@ -35,7 +35,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferExtension')
 const HelperModule = require('../../helpers')
-const Tb = require("../../../../src/lib/tb");
+const Tb = require('../../../../src/lib/tb')
 
 Test('Extension model test', async (extensionTest) => {
   let transferId

@@ -33,7 +33,7 @@
  */
 
 const Db = require('../../lib/db')
-const Tb = require("../../lib/tb")
+const Tb = require('../../lib/tb')
 const Crypto = require('crypto')
 const util = require('util')
 
@@ -340,11 +340,11 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
       ['success', 'queryName']
     ).startTimer()
 
-    const dbInsertTransferFulfilment = async (logHistogram, tbEnabled) => {
+    /* TODO const dbInsertTransferFulfilment = async (logHistogram, tbEnabled) => {
       await knex.transaction(async (trx) => {
 
       })
-    }
+    } */
 
     await knex.transaction(async (trx) => {
       try {
@@ -498,15 +498,15 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       const dbInsertTransfer = async (logHistogram, tbEnabled) => {
         await knex.transaction(async (trx) => {
           try {
-            if (false && tbEnabled) {
-              console.log(`JASON::: DUPL-CHECK-BEGIN`);
+            if (tbEnabled) {
+              console.log('JASON::: DUPL-CHECK-BEGIN')
               const hashSha256 = Crypto.createHash('sha256')
               let hash = JSON.stringify(payload)
               hash = hashSha256.update(hash)
               hash = hashSha256.digest(hash).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
-              const transferId = transferRecord.transferId;
+              const transferId = transferRecord.transferId
               await knex('transferDuplicateCheck').transacting(trx).insert({ transferId, hash })
-              console.log(`JASON::: DUPL-CHECK [${transferId}]:[${hash}]`);
+              console.log(`JASON::: DUPL-CHECK [${transferId}]:[${hash}]`)
             }
 
             await knex('transfer').transacting(trx).insert(transferRecord)
@@ -528,7 +528,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
             await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
             await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
             await trx.commit()
-            console.info(`JASON::: TB Prepared Transfer SUCCESS for DB!`)
+            console.info('JASON::: TB Prepared Transfer SUCCESS for DB!')
 
             logHistogram && histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
           } catch (errDB) {
@@ -550,7 +550,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
             participantCurrencyIds
           )
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
-          console.info(`JASON::: TB Prepared Transfer!`)
+          console.info('JASON::: TB Prepared Transfer!')
         } catch (errTB) {
           console.error('JASON::: Unable to store in TB!!!')
           console.error(errTB)
@@ -570,7 +570,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         'facade_saveTransferPrepared_no_validation - Metrics for transfer model',
         ['success', 'queryName']
       ).startTimer()
-      //TODO @jason, need to also store in TB...
+      // TODO @jason, need to also store in TB...
       await knex('transfer').insert(transferRecord)
       try {
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
@@ -647,10 +647,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
 const getTransferStateByTransferId = async (id) => {
   try {
-
     if (Config.TIGERBEETLE.enabled) {
-      //TODO lookup transfer in TB.. If found, we are good...
-      //TODO Need to update the node-js client to support fetching a transfer
+      // TODO lookup transfer in TB.. If found, we are good...
+      // TODO Need to update the node-js client to support fetching a transfer
     }
 
     /** @namespace Db.transferStateChange **/
@@ -957,32 +956,32 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Action not allowed for reconciliationTransferPrepare')
         }
 
-        //TODO @jason, store in TB -> [HUB] + [DFSP_SETTLEMENT]
+        // TODO @jason, store in TB -> [HUB] + [DFSP_SETTLEMENT]
         if (Config.TIGERBEETLE.enabled) {
-          //[HUB] Transfer
-          const transferRecord = {
+          // [HUB] Transfer
+          /* const transferRecord = {
             transferId: payload.transferId,
-            amount: amount,
+            amount
           }
           const payerTransferParticipantRecord = {
-            ledgerEntryTypeId: ledgerEntryTypeId,
+            ledgerEntryTypeId,
             participantCurrencyId: reconciliationAccountId
           }
           const payeeTransferParticipantRecord = {
             participantCurrencyId: payload.participantCurrencyId
           }
-          const participants = [];//TODO looukp
+          const participants = []// TODO looukp */
 
           Logger.info('--> reconciliation-Payload-reconciliation: ' + util.inspect(payload))
           Logger.info('--> reconciliation        : ' + util.inspect(reconciliationAccountId))
-          //TODO await Tb.tbTransfer(....)
-          /*TODO await Tb.tbPrepareTransfer(
+          // TODO await Tb.tbTransfer(....)
+          /* TODO await Tb.tbPrepareTransfer(
             transferRecord,
             payerTransferParticipantRecord,
             payeeTransferParticipantRecord,
             participants,
             null
-          )*/
+          ) */
         }
 
         // Insert transferParticipant records
@@ -1044,9 +1043,9 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           await trx.commit
         }
       } catch (err) {
-        console.error('JASON::: txFunction:::');
-        console.error(err);
-        console.error(payload);
+        console.error('JASON::: txFunction:::')
+        console.error(err)
+        console.error(payload)
 
         if (doCommit) {
           await trx.rollback
@@ -1062,8 +1061,8 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    console.error('JASON::: Fulfill');
-    console.error(err);
+    console.error('JASON::: Fulfill')
+    console.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -1241,9 +1240,9 @@ const getTransferParticipant = async (participantName, transferId) => {
     if (Config.TIGERBEETLE.enabled) {
       const tbLookup = await Tb.tbLookupTransfer(transferId)
       return [{
-        'transferId' : transferId,
-        'amount' : {
-          'amount' : Number(tbLookup.amount)
+        transferId,
+        amount: {
+          amount: Number(tbLookup.amount)
         }
       }]
     }

@@ -31,7 +31,7 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Config = require("../../lib/config");
+const Config = require('../../lib/config')
 
 /**
  * @function GetTransferFulfilmentDuplicateCheck
@@ -69,7 +69,7 @@ const saveTransferFulfilmentDuplicateCheck = async (transferId, hash) => {
   Logger.isDebugEnabled && Logger.debug(`save transferFulfilmentDuplicateCheck (transferId=${transferId}, hash=${hash})`)
 
   try {
-    var result = 0
+    let result = 0
     if (Config.TIGERBEETLE.enabled) {
       insertTransferFulfilmentDuplicateCheck(transferId, hash)
       result = 1

@@ -61,11 +61,11 @@ const getTransactionObject = async function (inputIlpPacket) {
 }
 
 const isBase64 = function (str) {
-  if (str ==='' || str.trim() ===''){ return false; }
+  if (str === '' || str.trim() === '') { return false }
   try {
-    return btoa(atob(str)) == str;
+    return btoa(atob(str)) === str
   } catch (err) {
-    return false;
+    return false
   }
 }
 

@@ -29,11 +29,11 @@
  */
 
 const Db = require('../../lib/db')
-const Tb = require('../../lib/tb')
+// TODO const Tb = require('../../lib/tb')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
-const Config = require("../../lib/config");
+const Config = require('../../lib/config')
 /**
  * @function GetTransferDuplicateCheck
  *
@@ -46,8 +46,8 @@ const Config = require("../../lib/config");
  */
 
 const getTransferDuplicateCheck = async (transferId) => {
-  //TODO @jason no need to perform duplicate check with TB enabled.
-  //TODO Tb
+  // TODO @jason no need to perform duplicate check with TB enabled.
+  // TODO Tb
 
   const histTimerGetTransferDuplicateCheckEnd = Metrics.getHistogram(
     'model_transfer',
@@ -86,12 +86,12 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
   Logger.isDebugEnabled && Logger.debug(`save transferDuplicateCheck (transferId=${transferId}, hash=${hash})`)
 
   try {
-    var result = 1
+    let result = 1
     console.info('JASON::: saveTransferDuplicateCheck')
     console.info(`${transferId} - ${hash}`)
     if (!Config.TIGERBEETLE.enabled) {
       result = await insertTransferDuplicateCheck(transferId, hash)
-      //TODO result = await 1
+      // TODO result = await 1
     } else {
       result = await insertTransferDuplicateCheck(transferId, hash)
     }

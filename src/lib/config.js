@@ -65,14 +65,14 @@ module.exports = {
   },
   API_DOC_ENDPOINTS_ENABLED: RC.API_DOC_ENDPOINTS_ENABLED || false,
   SETTLEMENT_MODELS: RC.SETTLEMENT_MODELS,
-  TIGERBEETLE : {
-    enabled: RC.TIGERBEETLE.ENABLED || false,
-    enableBatching: RC.TIGERBEETLE.ENABLE_BATCHING || false,
-    disableSQL: RC.TIGERBEETLE.DISABLE_SQL || false,
-    batchMaxSize: RC.TIGERBEETLE.BATCH_MAX_SIZE,
-    cluster: RC.TIGERBEETLE.CLUSTER,
-    replicaEndpoint01: RC.TIGERBEETLE.REPLICA_ENDPOINT_01,
-    replicaEndpoint02: RC.TIGERBEETLE.REPLICA_ENDPOINT_02,
-    replicaEndpoint03: RC.TIGERBEETLE.REPLICA_ENDPOINT_03
+  TIGERBEETLE: {
+    enabled: RC.TIGERBEETLE === undefined ? false : RC.TIGERBEETLE.ENABLED || false,
+    enableBatching: RC.TIGERBEETLE === undefined ? false : RC.TIGERBEETLE.ENABLE_BATCHING || false,
+    disableSQL: RC.TIGERBEETLE === undefined ? false : RC.TIGERBEETLE.DISABLE_SQL || false,
+    batchMaxSize: RC.TIGERBEETLE === undefined ? 0 : RC.TIGERBEETLE.BATCH_MAX_SIZE,
+    cluster: RC.TIGERBEETLE === undefined ? 0 : RC.TIGERBEETLE.CLUSTER,
+    replicaEndpoint01: RC.TIGERBEETLE === undefined ? '5001' : RC.TIGERBEETLE.REPLICA_ENDPOINT_01,
+    replicaEndpoint02: RC.TIGERBEETLE === undefined ? '5002' : RC.TIGERBEETLE.REPLICA_ENDPOINT_02,
+    replicaEndpoint03: RC.TIGERBEETLE === undefined ? '5003' : RC.TIGERBEETLE.REPLICA_ENDPOINT_03
   }
 }

@@ -28,38 +28,38 @@ const Transaction = require('../../domain/transactions')
 const Transfer = require('../../domain/transfer')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
-const Model = require("../../domain/participant");
-const ParticipantCurrencyModel = require("../../models/participant/participantCurrencyCached");
-const ParticipantService = require("../../domain/participant");
-const {saveTransferDuplicateCheck} = require("../../models/transfer/transferDuplicateCheck");
-const Config = require("../../lib/config");
+// TODO const Model = require('../../domain/participant')
+// TODO const ParticipantCurrencyModel = require('../../models/participant/participantCurrencyCached')
+const ParticipantService = require('../../domain/participant')
+const saveTransferDuplicateCheck = require('../../models/transfer/transferDuplicateCheck')
+const Config = require('../../lib/config')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
 const Crypto = require('crypto')
 
-const testParticipant = {
+/* const testParticipant = {
   name: 'fsp',
   currency: 'USD',
   isDisabled: 0,
   createdDate: new Date()
-}
+} */
 
 const createParticipantAccounts = async function (request, h) {
   try {
     const body = request.payload
     const getByNameResult = await ParticipantService.getByName(body.name)
-    if (!!getByNameResult) {
-      return {name : body.name, currency: body.currency, newlyCreated: false}
+    if (!getByNameResult) {
+      return { name: body.name, currency: body.currency, newlyCreated: false }
     }
 
-    const participantId = await Model.create(body)
-    const currencyId = body.currency
-    const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.POSITION, true)
-    const participantCurrencyId2 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.SETTLEMENT, true)
-    const participant = await Model.getById(participantId)
-    return {name : body.name, currency: body.currency, newlyCreated: true}
+    // TODO const participantId = await Model.create(body)
+    // TODO const currencyId = body.currency
+    // const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.POSITION, true)
+    // const participantCurrencyId2 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.SETTLEMENT, true)
+    // const participant = await Model.getById(participantId)
+    return { name: body.name, currency: body.currency, newlyCreated: true }
   } catch (err) {
-    console.log("ERROR!!!! : ")
+    console.log('ERROR!!!! : ')
     console.log(err)
     Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -82,12 +82,12 @@ const getIlpTransactionById = async function (request) {
 
 const getTransferById = async function (request) {
   try {
-    //http://localhost:3001/jmeter/participants/payeeFsp47384172/transfers/1a097f1f-e6aa-48ec-bcab-0dfce9cd25cf
-    //http://localhost:3001/jmeter/participants/payerFsp55863996/transfers/5447aa9c-9d8b-4962-b35d-55ad6e55f48c
+    // http://localhost:3001/jmeter/participants/payeeFsp47384172/transfers/1a097f1f-e6aa-48ec-bcab-0dfce9cd25cf
+    // http://localhost:3001/jmeter/participants/payerFsp55863996/transfers/5447aa9c-9d8b-4962-b35d-55ad6e55f48c
 
     const entity = await Transfer.getTransferParticipant(request.params.name, request.params.id)
     if (entity && entity.length > 0) {
-      //[
+      // [
       //   {
       //     "transferParticipantId": 1256,
       //     "transferId": "5447aa9c-9d8b-4962-b35d-55ad6e55f48c",
@@ -99,15 +99,15 @@ const getTransferById = async function (request) {
       //   }
       // ]
       const returnVal = {
-        'transferId' : entity[0].transferId,
-        'amount' : {
-          'amount' : entity[0].amount.amount
+        transferId: entity[0].transferId,
+        amount: {
+          amount: entity[0].amount.amount
         }
       }
       return returnVal
     }
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-      'The requested resource '+request.params.id+' for '+request.params.name+' could not be found.')
+      'The requested resource ' + request.params.id + ' for ' + request.params.name + ' could not be found.')
   } catch (err) {
     console.error(err)
     Logger.isErrorEnabled && Logger.error(err)
@@ -124,7 +124,7 @@ const prepareTransfer = async function (request, h) {
       let hash = JSON.stringify(body)
       hash = hashSha256.update(hash)
       hash = hashSha256.digest(hash).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
-      const transferId = body.transferId;
+      const transferId = body.transferId
       await saveTransferDuplicateCheck(transferId, hash)
     }
 
@@ -133,9 +133,9 @@ const prepareTransfer = async function (request, h) {
     if (body.fulfil) {
       return await fulfilTransfer(request)
     }
-    return {transferId : body.transferId}
+    return { transferId: body.transferId }
   } catch (err) {
-    console.log("ERROR!!!! : ")
+    console.log('ERROR!!!! : ')
     console.log(err)
     Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -145,11 +145,11 @@ const prepareTransfer = async function (request, h) {
 const fulfilTransfer = async function (request) {
   try {
     const body = request.payload
-    var eventAction = TransferEventAction.COMMIT
+    let eventAction = TransferEventAction.COMMIT
     if (body.reject) eventAction = TransferEventAction.REJECT
 
-    const transferId = body.transferId;
-    //TODO await Transfer.saveTransferFulfilmentDuplicateCheck(transferId, 'helper.hash')
+    const transferId = body.transferId
+    // TODO await Transfer.saveTransferFulfilmentDuplicateCheck(transferId, 'helper.hash')
     await Transfer.handlePayeeResponse(transferId, body, eventAction, null)
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
