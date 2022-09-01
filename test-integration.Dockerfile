@@ -1,29 +1,28 @@
-FROM node:14.15.0-alpine
+FROM node:16.15.0-alpine
 USER root
 
-WORKDIR /opt/central-ledger
+WORKDIR /opt/app
 
-RUN apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake \
-  && cd $(npm root -g)/npm \
-  && npm config set unsafe-perm true \
-  && npm install -g node-gyp tape tap-xunit \
-  && apk --no-cache add git \
-  && apk add wget
+RUN apk --no-cache add git
+RUN apk add --no-cache -t build-dependencies make gcc g++ python3 libtool libressl-dev openssl-dev autoconf automake wget \
+    && cd $(npm root -g)/npm \
+    && npm config set unsafe-perm true \
+    && npm install -g node-gyp
 
-COPY package.json package-lock.json* /opt/central-ledger/
+COPY package.json package-lock.json* /opt/app/
 RUN npm install
 
 RUN apk del build-dependencies
 
-COPY src /opt/central-ledger/src
-COPY config /opt/central-ledger/config
-COPY migrations /opt/central-ledger/migrations
-COPY seeds /opt/central-ledger/seeds
-COPY test /opt/central-ledger/test
-COPY tb /opt/central-ledger/tb
+COPY src /opt/app/src
+COPY config /opt/app/config
+COPY migrations /opt/app/migrations
+COPY seeds /opt/app/seeds
+COPY test /opt/app/test
+COPY tb /opt/app/tb
 
 # overwrite default.json with integration environment specific config
-RUN cp -f /opt/central-ledger/test/integration-config.json /opt/central-ledger/config/default.json
+RUN cp -f /opt/app/test/integration-config.json /opt/app/config/default.json
 
 EXPOSE 3001
-CMD ["/opt/central-ledger/server.sh"]
+CMD ["npm", "start"]

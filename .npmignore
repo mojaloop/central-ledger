@@ -1,0 +1,3 @@
+# Ignore for publishing
+test/*
+.circleci/*

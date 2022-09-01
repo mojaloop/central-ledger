@@ -2,6 +2,103 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.2.0](https://github.com/mojaloop/central-ledger/compare/v16.1.0...v16.2.0) (2022-08-15)
+
+
+### Features
+
+* **mojaloop/#2801:** add fulfil timestamp validation and more error handling ([#916](https://github.com/mojaloop/central-ledger/issues/916)) ([336a0a2](https://github.com/mojaloop/central-ledger/commit/336a0a27e908eedeb0dcf8b171ad8c0edfb4c3d8)), closes [mojaloop/#2801](https://github.com/mojaloop/project/issues/2801)
+
+## [16.1.0](https://github.com/mojaloop/central-ledger/compare/v16.0.0...v16.1.0) (2022-08-11)
+
+
+### Bug Fixes
+
+* **mojaloop/#2796:** duplicate transaction not getting callback for post /bulkTransfers (not forked) ([#915](https://github.com/mojaloop/central-ledger/issues/915)) ([e520aa5](https://github.com/mojaloop/central-ledger/commit/e520aa5c5e748a051534f69f5734918f0e02f379)), closes [mojaloop/#2796](https://github.com/mojaloop/project/issues/2796)
+
+## [16.0.0](https://github.com/mojaloop/central-ledger/compare/v15.2.0...v16.0.0) (2022-08-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* rework bulk handler validation  (#913)
+
+### Refactors
+
+* rework bulk handler validation  ([#913](https://github.com/mojaloop/central-ledger/issues/913)) ([38d29fd](https://github.com/mojaloop/central-ledger/commit/38d29fde13128fa656b6a3cfd71c05ba52b92994))
+
+## [15.2.0](https://github.com/mojaloop/central-ledger/compare/v15.1.3...v15.2.0) (2022-08-01)
+
+
+### Features
+
+* add bulk error handling notification callbacks ([#911](https://github.com/mojaloop/central-ledger/issues/911)) ([9ac6e1a](https://github.com/mojaloop/central-ledger/commit/9ac6e1afe3a72cbad0c1b5fc2a7a559d6435ce63))
+
+### [15.1.3](https://github.com/mojaloop/central-ledger/compare/v15.1.2...v15.1.3) (2022-07-12)
+
+
+### Chore
+
+* add ci to publish npm package ([#909](https://github.com/mojaloop/central-ledger/issues/909)) ([f0ac068](https://github.com/mojaloop/central-ledger/commit/f0ac068d1f689a650ac80cf9d8806dec1c64c59b))
+* fixed typo ([140ebdf](https://github.com/mojaloop/central-ledger/commit/140ebdfa7a8c0a36fb147191017b8714dc121a95))
+* updates to readme for header badges [skip ci] ([#910](https://github.com/mojaloop/central-ledger/issues/910)) ([c8b69b3](https://github.com/mojaloop/central-ledger/commit/c8b69b314e08eaa143d9e8a6fdc97b30e7387a5c))
+
+### [15.1.2](https://github.com/mojaloop/central-ledger/compare/v15.1.1...v15.1.2) (2022-07-05)
+
+
+### Bug Fixes
+
+* **mojaloop/#2810:** timeout evts are being prod for transfers with an int-state of ABORTED_ERROR ([#907](https://github.com/mojaloop/central-ledger/issues/907)) ([e77de0a](https://github.com/mojaloop/central-ledger/commit/e77de0a8e7dd473d3afbb27df464d27ff5ce98a7)), closes [mojaloop/#2810](https://github.com/mojaloop/project/issues/2810)
+
+
+### Chore
+
+* fix audit-resolve ([4e3a969](https://github.com/mojaloop/central-ledger/commit/4e3a969b9da78760540f375144bf25b347d0a8ae))
+
+### [15.1.1](https://github.com/mojaloop/central-ledger/compare/v15.1.0...v15.1.1) (2022-06-17)
+
+
+### Bug Fixes
+
+* set ttk func tests as dependency ([#906](https://github.com/mojaloop/central-ledger/issues/906)) ([a146431](https://github.com/mojaloop/central-ledger/commit/a1464312e5b39d564d3b89ad0f055ca54f897df1))
+
+## [15.1.0](https://github.com/mojaloop/central-ledger/compare/v15.0.2...v15.1.0) (2022-06-17)
+
+
+### Features
+
+* added functonal test pipline to circle-cicd ([#905](https://github.com/mojaloop/central-ledger/issues/905)) ([2dd0dae](https://github.com/mojaloop/central-ledger/commit/2dd0daef7aea4bc3694a21655105e6bd5f7d73db))
+
+### [15.0.2](https://github.com/mojaloop/central-ledger/compare/v15.0.1...v15.0.2) (2022-06-10)
+
+
+### Bug Fixes
+
+* docker file using ci instead of install ([#904](https://github.com/mojaloop/central-ledger/issues/904)) ([b01f079](https://github.com/mojaloop/central-ledger/commit/b01f0795f3fae5523ebc22ba740a90838c93f4bf))
+
+### [15.0.1](https://github.com/mojaloop/central-ledger/compare/v15.0.0...v15.0.1) (2022-05-26)
+
+
+### Bug Fixes
+
+* error codes for liquidity and ndc limit check ([#901](https://github.com/mojaloop/central-ledger/issues/901)) ([83a197c](https://github.com/mojaloop/central-ledger/commit/83a197cdded36f71c884104587cd67d2f494ce92))
+
+## [15.0.0](https://github.com/mojaloop/central-ledger/compare/v14.0.0...v15.0.0) (2022-05-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mojaloop/#2092:** Major version bump for node v16 LTS support, re-structuring of project directories to align to core Mojaloop repositories and docker image now uses `/opt/app` instead of `/opt/central-ledger` which will impact config mounts.
+
+### Features
+
+* **mojaloop/#2092:** upgrade nodeJS version for core services ([#902](https://github.com/mojaloop/central-ledger/issues/902)) ([defff30](https://github.com/mojaloop/central-ledger/commit/defff30b2bf29a74a4bb152e5fa4af00ae5b7463)), closes [mojaloop/#2092](https://github.com/mojaloop/project/issues/2092)
+
+
+### Bug Fixes
+
+* ci publish issue ([#903](https://github.com/mojaloop/central-ledger/issues/903)) ([49b3f06](https://github.com/mojaloop/central-ledger/commit/49b3f06b29a9b1ed52fa7431597bbf6637a99297))
+
 ## [14.0.0](https://github.com/mojaloop/central-ledger/compare/v13.16.3...v14.0.0) (2022-05-17)
 
 
@@ -32,14 +129,14 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* **mojaloop/#2719:** post quotes fails when transactionId does not equal transactionRequestId ([#887](https://github.com/mojaloop/central-ledger/issues/887)) ([b9944d1](https://github.com/mojaloop/central-ledger/commit/b9944d15c9486ffd62b968797fb79847a512a6c8)), closes [mojaloop/#2719](https://github.com/mojaloop/central-ledger/issues/2719) [mojaloop/#2719](https://github.com/mojaloop/central-ledger/issues/2719)
+* **mojaloop/#2719:** post quotes fails when transactionId does not equal transactionRequestId ([#887](https://github.com/mojaloop/central-ledger/issues/887)) ([b9944d1](https://github.com/mojaloop/central-ledger/commit/b9944d15c9486ffd62b968797fb79847a512a6c8)), closes [mojaloop/#2719](https://github.com/mojaloop/project/issues/2719)
 
 ## [13.16.0](https://github.com/mojaloop/central-ledger/compare/v13.15.4...v13.16.0) (2022-03-03)
 
 
 ### Features
 
-* **mojaloop/#2704:** core-services support for non-breaking backward api compatibility ([#884](https://github.com/mojaloop/central-ledger/issues/884)) ([02cf7c2](https://github.com/mojaloop/central-ledger/commit/02cf7c25b4071bb44f62271d7e9bdbc8674a1ee7)), closes [mojaloop/#2704](https://github.com/mojaloop/central-ledger/issues/2704) [mojaloop/#2704](https://github.com/mojaloop/central-ledger/issues/2704)
+* **mojaloop/#2704:** core-services support for non-breaking backward api compatibility ([#884](https://github.com/mojaloop/central-ledger/issues/884)) ([02cf7c2](https://github.com/mojaloop/central-ledger/commit/02cf7c25b4071bb44f62271d7e9bdbc8674a1ee7)), closes [mojaloop/#2704](https://github.com/mojaloop/project/issues/2704)
 
 ### [13.15.4](https://github.com/mojaloop/central-ledger/compare/v13.15.3...v13.15.4) (2022-02-25)
 
@@ -109,7 +206,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* **mojaloop/#2522:** cl-migration scripts should configure quoting tables to utf8 follow-up ([#865](https://github.com/mojaloop/central-ledger/issues/865)) ([dcc57b8](https://github.com/mojaloop/central-ledger/commit/dcc57b8f22bc66fa4e6ae35ce04cf095fce780c6)), closes [mojaloop/#2522](https://github.com/mojaloop/central-ledger/issues/2522) [mojaloop/#2522](https://github.com/mojaloop/central-ledger/issues/2522)
+* **mojaloop/#2522:** cl-migration scripts should configure quoting tables to utf8 follow-up ([#865](https://github.com/mojaloop/central-ledger/issues/865)) ([dcc57b8](https://github.com/mojaloop/central-ledger/commit/dcc57b8f22bc66fa4e6ae35ce04cf095fce780c6)), closes [mojaloop/#2522](https://github.com/mojaloop/project/issues/2522)
 
 ### [13.14.1](https://github.com/mojaloop/central-ledger/compare/v13.14.0...v13.14.1) (2021-09-17)
 
@@ -123,7 +220,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Features
 
-* **mojaloop/#2480:** central-ledger migration scripts to configure quote party table utf8 support ([#862](https://github.com/mojaloop/central-ledger/issues/862)) ([bf4da0e](https://github.com/mojaloop/central-ledger/commit/bf4da0e7645edf2e701b36b9f78c32c8783136b8)), closes [mojaloop/#2480](https://github.com/mojaloop/central-ledger/issues/2480) [mojaloop/#2480](https://github.com/mojaloop/central-ledger/issues/2480)
+* **mojaloop/#2480:** central-ledger migration scripts to configure quote party table utf8 support ([#862](https://github.com/mojaloop/central-ledger/issues/862)) ([bf4da0e](https://github.com/mojaloop/central-ledger/commit/bf4da0e7645edf2e701b36b9f78c32c8783136b8)), closes [mojaloop/#2480](https://github.com/mojaloop/project/issues/2480)
 
 ### [13.13.4](https://github.com/mojaloop/central-ledger/compare/v13.13.3...v13.13.4) (2021-08-24)
 

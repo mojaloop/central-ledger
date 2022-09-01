@@ -1,21 +1,22 @@
-FROM node:14.15.0-alpine AS builder
-WORKDIR /opt/central-ledger
+FROM node:16.15.0-alpine as builder
+WORKDIR /opt/app
 
-RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake wget \
+RUN apk --no-cache add git
+RUN apk add --no-cache -t build-dependencies make gcc g++ python3 libtool libressl-dev openssl-dev autoconf automake wget \
     && cd $(npm root -g)/npm \
     && npm config set unsafe-perm true \
     && npm install -g node-gyp
 
-COPY package.json package-lock.json* /opt/central-ledger/
+COPY package.json package-lock.json* /opt/app/
 
-RUN npm install
+RUN npm ci
 
-COPY src /opt/central-ledger/src
-COPY config /opt/central-ledger/config
-COPY migrations /opt/central-ledger/migrations
-COPY seeds /opt/central-ledger/seeds
-COPY test /opt/central-ledger/test
-COPY tb /opt/central-ledger/tb
+COPY src /opt/app/src
+COPY config /opt/app/config
+COPY migrations /opt/app/migrations
+COPY seeds /opt/app/seeds
+COPY test /opt/app/test
+COPY tb /opt/app/tb
 
 # TigerBeetle
 ## Init
@@ -26,9 +27,9 @@ COPY tb /opt/central-ledger/tb
 #RUN ./tb/tigerbeetle init --cluster=0 --replica=0 --directory=./tb
 #RUN ./tb/tigerbeetle init --cluster=0 --replica=1 --directory=./tb
 #RUN ./tb/tigerbeetle init --cluster=0 --replica=2 --directory=./tb
-RUN ls -ltra /opt/central-ledger/tb
-RUN ls -ltra /opt/central-ledger
-RUN cp /opt/central-ledger/test/run_test_integration.sh /opt/central-ledger/run_tests.sh
+RUN ls -ltra /opt/app/tb
+RUN ls -ltra /opt/app
+RUN cp /opt/app/test/run_test_integration.sh /opt/app/run_tests.sh
 RUN chmod 777 /opt/central-ledger/run_tests.sh
 
 #RUN chmod 777 *
@@ -38,8 +39,9 @@ RUN chmod 777 /opt/central-ledger/run_tests.sh
 
 #WORKDIR /opt/central-ledger
 
-FROM node:14.15.0-alpine
-WORKDIR /opt/central-ledger
+
+FROM node:16.15.0-alpine
+WORKDIR /opt/app
 
 # CL Core
 # Create empty log file & link stdout to the application log file
@@ -47,10 +49,10 @@ RUN mkdir ./logs && touch ./logs/combined.log
 RUN ln -sf /dev/stdout ./logs/combined.log
 
 # Create a non-root user: ml-user
-RUN adduser -D ml-user
+RUN adduser -D ml-user 
 USER ml-user
 
-COPY --chown=ml-user --from=builder /opt/central-ledger .
+COPY --chown=ml-user --from=builder /opt/app .
 RUN npm prune --production
 
 # Start TB

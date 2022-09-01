@@ -126,11 +126,16 @@ const bulkFulfil = async (error, messages) => {
         } else {
           state = await BulkTransferService.bulkFulfil(payload)
         }
-      } catch (err) { // TODO: handle insert errors
+      } catch (err) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
-        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
         Logger.isErrorEnabled && Logger.error(err)
-        return true
+
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+        const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+        params.message.value.content.uriParams = { id: bulkTransferId }
+
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        throw fspiopError
       }
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
@@ -139,14 +144,36 @@ const bulkFulfil = async (error, messages) => {
           const bulkTransfers = await BulkTransferService.getBulkTransferById(payload.bulkTransferId)
           for (const individualTransferFulfil of bulkTransfers.payeeBulkTransfer.individualTransferResults) {
             individualTransferFulfil.errorInformation = payload.errorInformation
-            await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd)
+            await sendIndividualTransfer(
+              message,
+              messageId,
+              kafkaTopic,
+              headers,
+              payload,
+              state,
+              params,
+              individualTransferFulfil,
+              histTimerEnd,
+              Enum.Transfers.BulkProcessingState.PROCESSING
+            )
           }
         } else {
           const IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
 
           // enable async/await operations for the stream
           for await (const doc of IndividualTransferFulfilModel.find({ messageId }).cursor()) {
-            await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, doc.payload, histTimerEnd)
+            await sendIndividualTransfer(
+              message,
+              messageId,
+              kafkaTopic,
+              headers,
+              payload,
+              state,
+              params,
+              doc.payload,
+              histTimerEnd,
+              Enum.Transfers.BulkProcessingState.PROCESSING
+            )
           }
         }
       } catch (err) { // TODO: handle individual transfers streaming error
@@ -155,9 +182,29 @@ const bulkFulfil = async (error, messages) => {
         Logger.isErrorEnabled && Logger.error(err)
         return true
       }
-    } else { // TODO: handle validation failure
+    } else {
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
-      Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasons)}`)
+
+      const validationFspiopError = reasons.shift()
+      if (reasons.length > 0) {
+        validationFspiopError.extensions = []
+        // If there are multiple validation errors attach them as extensions
+        // to the first error
+        reasons.forEach((reason, i) => {
+          validationFspiopError.extensions.push({
+            key: `additionalErrors${i}`,
+            value: reason.message
+          })
+        })
+      }
+      // Converting FSPIOPErrors to strings is verbose, so we reduce the errors
+      // to just their message.
+      const reasonsMessages = reasons.map(function (reason) {
+        return reason.message
+      })
+
+      Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasonsMessages)}`)
+
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         /**
@@ -166,16 +213,43 @@ const bulkFulfil = async (error, messages) => {
          * reason is "FSPIOP-Source header should match Payee". In this case we should not
          * abort the bulk as we would have accepted non-legitimate source.
          */
-        await BulkTransferService.bulkFulfil(payload, reasons.toString(), false)
-      } catch (err) { // TODO: handle insert error
+        const state = await BulkTransferService.bulkFulfilTransitionToAborting(payload)
+        const bulkTransfers = await BulkTransferService.getBulkTransferById(payload.bulkTransferId)
+        for (const individualTransferFulfil of bulkTransfers.payeeBulkTransfer.individualTransferResults) {
+          individualTransferFulfil.errorInformation = validationFspiopError.toApiErrorObject().errorInformation
+          // Abort-Reject all individual transfers
+          // The bulk processing handler will handle informing the payer
+          await sendIndividualTransfer(
+            message,
+            messageId,
+            kafkaTopic,
+            headers,
+            payload,
+            state,
+            params,
+            individualTransferFulfil,
+            histTimerEnd,
+            Enum.Transfers.BulkProcessingState.ABORTING
+          )
+        }
+      } catch (err) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
         Logger.isErrorEnabled && Logger.error(err)
-        return true
+
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+        const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+        params.message.value.content.uriParams = { id: bulkTransferId }
+
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        throw fspiopError
       }
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
-      return true // TODO: store invalid bulk transfer to database and produce callback notification to payer
+
+      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+      params.message.value.content.uriParams = { id: bulkTransferId }
+
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw validationFspiopError
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
@@ -191,13 +265,13 @@ const bulkFulfil = async (error, messages) => {
  * @async
  * @description sends individual transfers to the fulfil handler
  */
-const sendIndividualTransfer = async (message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd) => {
+const sendIndividualTransfer = async (message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd, bulkProcessingStateId) => {
   const transferId = individualTransferFulfil.transferId
   delete individualTransferFulfil.transferId
   const bulkTransferAssociationRecord = {
     transferId,
     bulkTransferId: payload.bulkTransferId,
-    bulkProcessingStateId: Enum.Transfers.BulkProcessingState.PROCESSING,
+    bulkProcessingStateId,
     errorCode: payload.errorInformation ? payload.errorInformation.errorCode : undefined,
     errorDescription: payload.errorInformation ? payload.errorInformation.errorDescription : undefined
   }

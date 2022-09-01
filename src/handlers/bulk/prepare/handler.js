@@ -38,6 +38,7 @@ const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Validator = require('../shared/validator')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const TransferEventAction = Enum.Events.Event.Action
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTransfer
@@ -95,7 +96,9 @@ const bulkPrepare = async (error, messages) => {
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
     const bulkTransferId = payload.bulkTransferId
+    const bulkTransferHash = payload.hash
     const kafkaTopic = message.topic
+
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkPrepare' }))
 
     const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare : Enum.Events.ActionLetter.unknown
@@ -103,17 +106,65 @@ const bulkPrepare = async (error, messages) => {
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
-    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck)
-    if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
-      return true
+    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, bulkTransferHash, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck, {
+      hashOverride: true
+    })
+
+    if (hasDuplicateId && hasDuplicateHash) {
+      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: TransferEventAction.BULK_PREPARE_DUPLICATE }
+      const bulkTransferResult = await BulkTransferService.getBulkTransferById(bulkTransferId)
+      const bulkTransfer = bulkTransferResult.payerBulkTransfer
+      const transferStateEnum = bulkTransfer && bulkTransfer.bulkTransferState
+      if ([
+        Enum.Transfers.BulkTransferState.COMPLETED,
+        Enum.Transfers.BulkTransferState.REJECTED,
+        Enum.Transfers.BulkTransferState.EXPIRED
+      ].includes(transferStateEnum)) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'finalized'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callback--${actionLetter}2`))
+
+        let payload = {
+          bulkTransferState: bulkTransfer.bulkTransferState
+        }
+        let fspiopError
+
+        if (bulkTransfer.bulkTransferState === Enum.Transfers.BulkTransferState.REJECTED) {
+          payload = {
+            errorInformation: bulkTransfer.individualTransferResults[0].errorInformation
+          }
+          fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(payload.errorInformation)
+        } else {
+          payload = {
+            ...payload,
+            completedTimestamp: bulkTransfer.completedTimestamp,
+            individualTransferResults: bulkTransfer.individualTransferResults,
+            extensionList: bulkTransfer.extensionList
+          }
+        }
+
+        params.message.value.content.payload = payload
+        params.message.value.content.uriParams = { id: bulkTransferId }
+        if (fspiopError) {
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        } else {
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+        }
+        return true
+      } else {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'inProgress'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+        return true
+      }
     }
-    if (hasDuplicateId && !hasDuplicateHash) { // TODO: handle modified request
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
+
+    if (hasDuplicateId && !hasDuplicateHash) { // handle modified request and produce error callback to payer
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}4`))
+
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       params.message.value.content.uriParams = { id: bulkTransferId }
+
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
@@ -125,11 +176,15 @@ const bulkPrepare = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
         const participants = { payerParticipantId, payeeParticipantId }
         await BulkTransferService.bulkPrepare(payload, participants)
-      } catch (err) { // TODO: handle insert error
+      } catch (err) { // handle insert error and produce error callback to payer
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
-        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
-        Logger.isErrorEnabled && Logger.error(err)
-        return true
+
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+        const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+        params.message.value.content.uriParams = { id: bulkTransferId }
+
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        throw fspiopError
       }
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransfers'))
@@ -160,27 +215,59 @@ const bulkPrepare = async (error, messages) => {
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
-      } catch (err) { // TODO: handle individual transfers streaming error
+      } catch (err) { // handle individual transfers streaming error
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
-        Logger.isErrorEnabled && Logger.error(err)
-        return true
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+        const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+        params.message.value.content.uriParams = { id: bulkTransferId }
+
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        throw fspiopError
       }
-    } else { // TODO: handle validation failure
+    } else { // handle validation failure
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
-      Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasons)}`)
-      try {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
-        await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasons.toString(), false)
-      } catch (err) { // TODO: handle insert error
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
-        Logger.isErrorEnabled && Logger.error(err)
-        return true
+      const validationFspiopError = reasons.shift()
+      if (reasons.length > 0) {
+        validationFspiopError.extensions = []
+        // If there are multiple validation errors attach them as extensions
+        // to the first error
+        reasons.forEach((reason, i) => {
+          validationFspiopError.extensions.push({
+            key: `additionalErrors${i}`,
+            value: reason.message
+          })
+        })
       }
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
-      return true // TODO: store invalid bulk transfer to database and produce callback notification to payer
+      // Converting FSPIOPErrors to strings is verbose, so we reduce the errors
+      // to just their message.
+      // `bulkTransferStateChange.reason` also has a 512 character limit.
+      const reasonsMessages = reasons.map(function (reason) {
+        return reason.message
+      })
+      Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasonsMessages)}`)
+
+      try { // save invalid request for auditing
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
+        await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasonsMessages.toString(), false)
+      } catch (err) { // handle insert error and produce error callback notification to payer
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+        Logger.isErrorEnabled && Logger.error(err)
+
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+        const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+        params.message.value.content.uriParams = { id: bulkTransferId }
+
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        throw fspiopError
+      }
+      // produce validation error callback notification to payer
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
+
+      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+      params.message.value.content.uriParams = { id: bulkTransferId }
+
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw validationFspiopError
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)

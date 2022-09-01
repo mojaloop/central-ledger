@@ -135,7 +135,7 @@ async function waitFor (func, name, retries = 5, increment = 2) {
   }, Promise.resolve(false))
 }
 
-async function wrapWithRetries (func, remainingRetries = 5, timeout = 2) {
+async function wrapWithRetries (func, remainingRetries = 10, timeout = 4) {
   Logger.warn(`wrapWithRetries remainingRetries:${remainingRetries}, timeout:${timeout}`)
 
   try {

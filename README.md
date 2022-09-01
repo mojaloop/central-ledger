@@ -1,7 +1,10 @@
 # central-ledger
+
 [![Git Commit](https://img.shields.io/github/last-commit/mojaloop/central-ledger.svg?style=flat)](https://github.com/mojaloop/central-ledger/commits/master)
 [![Git Releases](https://img.shields.io/github/release/mojaloop/central-ledger.svg?style=flat)](https://github.com/mojaloop/central-ledger/releases)
 [![Docker pulls](https://img.shields.io/docker/pulls/mojaloop/central-ledger.svg?style=flat)](https://hub.docker.com/r/mojaloop/central-ledger)
+[![Npm Version](https://img.shields.io/npm/v/@mojaloop/central-ledger.svg?style=flat)](https://www.npmjs.com/package/@mojaloop/central-ledger)
+[![NPM Vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@mojaloop/central-ledger.svg?style=flat)](https://www.npmjs.com/package/@mojaloop/central-ledger)
 [![CircleCI](https://circleci.com/gh/mojaloop/central-ledger.svg?style=svg)](https://app.circleci.com/pipelines/github/mojaloop/central-ledger)
 
 The central ledger is a series of services that facilitate clearing and settlement of transfers between DFSPs, including the following functions:
@@ -12,24 +15,29 @@ The central ledger is a series of services that facilitate clearing and settleme
 
 The following documentation represents the services, APIs and endpoints responsible for various ledger functions.
 
-## Contents:
+## Contents
 
-- [Running Locally](#running-locally)
-- [Configuration](#configuration)
-- [API](#api)
-- [Logging](#logging)
-- [Tests](#tests)
-- [Auditing Dependencies](#auditing-dependencies)
-- [Container Scans](#container-scans)
+- [central-ledger](#central-ledger)
+  - [Contents](#contents)
+  - [Running Locally](#running-locally)
+  - [Configuration](#configuration)
+    - [Environment variables](#environment-variables)
+  - [API](#api)
+  - [Logging](#logging)
+  - [Tests](#tests)
+    - [Running Integration Tests interactively](#running-integration-tests-interactively)
+  - [Container Scans](#container-scans)
+  - [Automated Releases](#automated-releases)
+    - [Potential problems](#potential-problems)
 
 ## Running Locally
 
 Please follow the instruction in [Onboarding Document](Onboarding.md) to setup and run the service locally.
 
-
 ## Configuration
 
 ### Environment variables
+
 The Central Ledger has many options that can be configured through environment variables.
 
 | Environment variable | Description | Example values |
@@ -49,7 +57,6 @@ The Central Ledger has many options that can be configured through environment v
 | CLEDG\_AMOUNT__PRECISION | Numeric value used to determine precision recorded for transfer amounts on this ledger. | 10 |
 | CLEDG\_AMOUNT__SCALE | Numeric value used to determine scale recorded for transfer amounts on this ledger. | 2 |
 
-
 ## API
 
 For endpoint documentation, see the [API documentation](API.md).
@@ -62,7 +69,7 @@ Logs are sent to standard output by default.
 
 ## Tests
 
-Tests include unit, functional, and integration. 
+Tests include unit, functional, and integration.
 
 Running the tests:
 
@@ -74,23 +81,42 @@ Tests include code coverage via istanbul. See the test/ folder for testing scrip
 
 ### Running Integration Tests interactively
 
-If you want to run integration tests in a repetitive manner, you can startup the test containers using `docker-compose`, login to running `central-ledger` container like so:
+If you want to run integration tests in a repetitive manner, you can startup the test containers using `docker-compose` via one of the following methods:
 
-```bash
-docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger
-```
+- Running locally
+
+    Start containers required for Integration Tests
+
+    ```bash
+    docker-compose -f docker-compose.yml up -d kafka mysql
+    ```
+
+    Run wait script which will report once all required containers are up and running
+
+    ```bash
+    npm run wait-4-docker
+    ```
+
+    Run the Integration Tests
+
+    ```bash
+    npm run test:int
+    ```
+
 - Running inside docker
-  ```bash
-  docker exec -it cl_central-ledger sh
-  export CL_DATABASE_HOST=mysql
-  npm run migrate #first time only
-  npm run test:int
-  ```
-- Running natively
-  ```bash
-  export CL_DATABASE_HOST=localhost
-  npm run migrate #first time only
-  npm run test:int
+
+    Start containers required for Integration Tests, including a `central-ledger` container which will be used as a proxy shell.
+
+    ```bash
+    docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger
+    ```
+
+    Run the Integration Tests from the `central-ledger` container
+
+    ```bash
+    docker exec -it cl_central-ledger sh
+    export CL_DATABASE_HOST=mysql
+    npm run test:int
   ```
 
 - Removing the CL Image
@@ -103,11 +129,13 @@ docker rmi central-ledger_central-ledger
 We use `npm-audit-resolver` along with `npm audit` to check dependencies for node vulnerabilities, and keep track of resolved dependencies with an `audit-resolve.json` file.
 
 To start a new resolution process, run:
+
 ```bash
 npm run audit:resolve
 ```
 
 You can then check to see if the CI will pass based on the current dependencies with:
+
 ```bash
 npm run audit:check
 ```
@@ -124,3 +152,32 @@ For more information on anchore and anchore-cli, refer to:
 - [Anchore CLI](https://github.com/anchore/anchore-cli)
 - [Circle Orb Registry](https://circleci.com/orbs/registry/orb/anchore/anchore-engine)
 
+## Automated Releases
+
+As part of our CI/CD process, we use a combination of CircleCI, standard-version
+npm package and github-release CircleCI orb to automatically trigger our releases
+and image builds. This process essentially mimics a manual tag and release.
+
+On a merge to master, CircleCI is configured to use the mojaloopci github account
+to push the latest generated CHANGELOG and package version number.
+
+Once those changes are pushed, CircleCI will pull the updated master, tag and
+push a release triggering another subsequent build that also publishes a docker image.
+
+### Potential problems
+
+- There is a case where the merge to master workflow will resolve successfully, triggering
+  a release. Then that tagged release workflow subsequently failing due to the image scan,
+  audit check, vulnerability check or other "live" checks.
+
+  This will leave master without an associated published build. Fixes that require
+  a new merge will essentially cause a skip in version number or require a clean up
+  of the master branch to the commit before the CHANGELOG and bump.
+
+  This may be resolved by relying solely on the previous checks of the
+  merge to master workflow to assume that our tagged release is of sound quality.
+  We are still mulling over this solution since catching bugs/vulnerabilities/etc earlier
+  is a boon.
+
+- It is unknown if a race condition might occur with multiple merges with master in
+  quick succession, but this is a suspected edge case.
