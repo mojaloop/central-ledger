@@ -1,0 +1,24 @@
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  // audit-ci supports reading JSON, JSONC, and JSON5 config files.
+  // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
+  "moderate": true,
+  "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
+    // Currently no fixes available for the following
+    "GHSA-v88g-cgmw-v5xw",
+    "GHSA-mg85-8mv5-ffjr",
+    "GHSA-phwq-j96m-2c2q",
+    "GHSA-7hx8-2rxv-66xv",
+    "GHSA-282f-qqgm-c34q",
+    "GHSA-6vfc-qv3f-vr6c",
+    "GHSA-wc69-rhjr-hc9g",
+    "GHSA-f825-f98c-gj3g",
+    "GHSA-g954-5hwp-pp24",
+    "GHSA-rjqq-98f6-6j3r",
+    "GHSA-mjxr-4v3x-q3m4",
+    "GHSA-g64q-3vg8-8f93",
+    "GHSA-5854-jvxx-2cg9",
+    "GHSA-w5p7-h5w8-2hfq",
+    "GHSA-p9pc-299p-vxgp"
+  ]
+}
