@@ -160,18 +160,11 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           ['success', 'queryName']
         ).startTimer()
         const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
-        // Calculate liquidity cover as per story OTC-651
-        let liquidityCover
-        let payerLimit
-        if (settlementModel.settlementDelayId === Enum.Settlements.SettlementDelay.IMMEDIATE) {
-          liquidityCover = new MLNumber(settlementParticipantPosition.value).add(new MLNumber(participantLimit.value))
-          payerLimit = new MLNumber(participantLimit.value)
-        } else {
-          liquidityCover = new MLNumber(settlementParticipantPosition.value).multiply(-1)
-          payerLimit = new MLNumber(participantLimit.value)
-        }
-        let availablePositionBasedOnLiquidityCover = liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
-        let availablePositionBasedOnPayerLimit = payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
+
+        const liquidityCover = new MLNumber(settlementParticipantPosition.value).multiply(-1)
+        const payerLimit = new MLNumber(participantLimit.value)
+        const availablePositionBasedOnLiquidityCover = liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
+        const availablePositionBasedOnPayerLimit = payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
         /* Validate entire batch if availablePosition >= sumTransfersInBatch - the impact is that applying per transfer rules would require to be handled differently
            since further rules are expected we do not do this at this point
            As we enter this next step the order in which the transfer is processed against the Position is critical.
@@ -192,8 +185,6 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             reservedTransfers[transferId].fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR, null, null, null, rawMessage.value.content.payload.extensionList)
             rawMessage.value.content.payload = reservedTransfers[transferId].fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
           } else {
-            availablePositionBasedOnLiquidityCover = new MLNumber(availablePositionBasedOnLiquidityCover).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
-            availablePositionBasedOnPayerLimit = new MLNumber(availablePositionBasedOnPayerLimit).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
             transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
             sumReserved = new MLNumber(sumReserved).add(transferAmount).toFixed(Config.AMOUNT.SCALE) /* actually used */
           }
@@ -212,7 +203,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           So the position moves forward by the sum of the transfers actually reserved (sumReserved)
           and the reserved amount is cleared of the we reserved in the first instance (sumTransfersInBatch)
         */
-        const processedPositionValue = new MLNumber(initialParticipantPosition.value).add(sumReserved)
+        const processedPositionValue = currentPosition.add(sumReserved)
         await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update({
           value: processedPositionValue.toFixed(Config.AMOUNT.SCALE),
           reservedValue: new MLNumber(initialParticipantPosition.reservedValue).subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE),
