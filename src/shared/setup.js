@@ -78,6 +78,7 @@ const connectMongoose = async () => {
       // return null
     }
   } else {
+    Logger.isWarnEnabled && Logger.warn('Mongo Database is disabled in configuration')
     return null
   }
 }
