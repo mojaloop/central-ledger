@@ -325,7 +325,7 @@ const fulfil = async (error, messages) => {
     const transferStateEnum = transfer && transfer.transferStateEnumeration
 
     // List of valid actions that Source & Destination headers should be checked
-    const validDestinationActions = [
+    const validActionsForRouteValidations = [
       TransferEventAction.COMMIT,
       TransferEventAction.RESERVE,
       TransferEventAction.REJECT,
@@ -346,10 +346,11 @@ const fulfil = async (error, messages) => {
 
       // Lets validate FSPIOP Source & Destination Headers
     } else if (
+      validActionsForRouteValidations.includes(action) && // Lets only check headers for specific actions that need checking (i.e. bulk should not since its already done elsewhere)
       (
         (headers[Enum.Http.Headers.FSPIOP.SOURCE] && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) ||
         (headers[Enum.Http.Headers.FSPIOP.DESTINATION] && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()))
-      ) && validDestinationActions.includes(action) // Lets only check headers for specific actions that need checking (i.e. bulk should not since its already done elsewhere)
+      )
     ) {
       /**
        * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
