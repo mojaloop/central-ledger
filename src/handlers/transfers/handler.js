@@ -324,6 +324,14 @@ const fulfil = async (error, messages) => {
     const transfer = await TransferService.getById(transferId)
     const transferStateEnum = transfer && transfer.transferStateEnumeration
 
+    // List of valid actions that Source & Destination headers should be checked
+    const validDestinationActions = [
+      TransferEventAction.COMMIT,
+      TransferEventAction.RESERVE,
+      TransferEventAction.REJECT,
+      TransferEventAction.ABORT
+    ]
+
     if (!transfer) {
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackInternalServerErrorNotFound--${actionLetter}1`))
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transfer not found')
@@ -337,7 +345,12 @@ const fulfil = async (error, messages) => {
       throw fspiopError
 
       // Lets validate FSPIOP Source & Destination Headers
-    } else if ((headers[Enum.Http.Headers.FSPIOP.SOURCE] && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) || (headers[Enum.Http.Headers.FSPIOP.DESTINATION] && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()))) {
+    } else if (
+      (
+        (headers[Enum.Http.Headers.FSPIOP.SOURCE] && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) ||
+        (headers[Enum.Http.Headers.FSPIOP.DESTINATION] && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()))
+      ) && validDestinationActions.includes(action) // Lets only check headers for specific actions that need checking (i.e. bulk should not since its already done elsewhere)
+    ) {
       /**
        * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
        */

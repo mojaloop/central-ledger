@@ -86,7 +86,19 @@ const validateFspiopSourceMatchesPayer = (payload, headers) => {
 const validateFspiopSourceAndDestination = async (payload, headers) => {
   const participant = await BulkTransferService.getParticipantsById(payload.bulkTransferId)
   const matchedPayee = (headers && headers[Enum.Http.Headers.FSPIOP.SOURCE] === participant.payeeFsp)
-  const matchedPayer = (headers && headers[Enum.Http.Headers.FSPIOP.DESTINATION] === participant.payerFsp)
+  const matchedPayer = (
+    headers &&
+    (
+      (headers[Enum.Http.Headers.FSPIOP.DESTINATION] === participant.payerFsp) ||
+      // The following was added for fix(mojaloop/##3024): [core bulk] POST /bulkTransfers from Switch --> PayeeFSP to use Switch as fspiop-source - https://github.com/mojaloop/project/issues/3024
+      // Notes:
+      //  Due to the Bulk [Design Considerations](https://docs.mojaloop.io/technical/central-bulk-transfers/#_2-design-considerations),
+      //  it is possible that the Switch may send a POST Request to the Payer with the Destination Header containing "Switch",
+      //  and the Payee thus responding with a PUT Callback Destination containing the same value.
+      (headers[Enum.Http.Headers.FSPIOP.DESTINATION] === Enum.Http.Headers.FSPIOP.SWITCH.value)
+    )
+  )
+
   if (!matchedPayee) {
     reasons.push(
       ErrorHandler.Factory.createFSPIOPError(
