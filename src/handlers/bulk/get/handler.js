@@ -37,10 +37,10 @@ const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Config = require('../../../lib/config')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const BulkTransferModel = require('../../../models/bulkTransfer/bulkTransfer')
 const Validator = require('../shared/validator')
-const Config = require('../../../lib/config')
 const { ERROR_HANDLING } = require('../../../lib/config')
 
 const location = { module: 'BulkGetHandler', method: '', path: '' }
@@ -184,6 +184,11 @@ const registerGetBulkTransferHandler = async () => {
  */
 const registerAllHandlers = async () => {
   try {
+    if (Config.MONGODB_DISABLED) {
+      throw ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SERVER_ERROR,
+        'Mongo Database is disabled in configuration')
+    }
     await registerGetBulkTransferHandler()
     return true
   } catch (err) {
