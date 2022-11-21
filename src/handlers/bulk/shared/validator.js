@@ -94,7 +94,7 @@ const validateFspiopSourceAndDestination = async (payload, headers) => {
       // Notes:
       //  Due to the Bulk [Design Considerations](https://docs.mojaloop.io/technical/central-bulk-transfers/#_2-design-considerations),
       //  it is possible that the Switch may send a POST Request to the Payer with the Source Header containing "Switch",
-      //  and the Payee thus responding with a PUT Callback Destination containing the same value.
+      //  and the Payee FSP thus responding with a PUT Callback and destination header containing the same value (Switch).
       (headers[Enum.Http.Headers.FSPIOP.DESTINATION] === Enum.Http.Headers.FSPIOP.SWITCH.value)
     )
   )
