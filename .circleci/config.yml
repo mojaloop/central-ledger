@@ -717,11 +717,11 @@ workflows:
             - setup
           filters:
             tags:
-              only: /.*/
+              ignore: /.*/
             branches:
               ignore:
-                - /feature*/
-                - /bugfix*/
+                - master
+                - main
       - test-lint:
           context: org-global
           requires:
@@ -855,7 +855,8 @@ workflows:
           context: org-global
           requires:
             - pr-tools/pr-title-check
-            - test-dependencies
+            ## Only do this check on PRs
+            # - test-dependencies
             - test-lint
             - test-unit
             - test-coverage
@@ -883,7 +884,8 @@ workflows:
           context: org-global
           requires:
             - pr-tools/pr-title-check
-            - test-dependencies
+            ## Only do this check on PRs
+            # - test-dependencies
             - test-lint
             - test-unit
             - build
@@ -904,7 +906,8 @@ workflows:
           context: org-global
           requires:
             - pr-tools/pr-title-check
-            - test-dependencies
+            ## Only do this check on PRs
+            # - test-dependencies
             - test-lint
             - test-unit
             - build
@@ -925,7 +928,8 @@ workflows:
           context: org-global
           requires:
             - pr-tools/pr-title-check
-            - test-dependencies
+            ## Only do this check on PRs
+            # - test-dependencies
             - test-lint
             - test-unit
             - test-coverage
@@ -945,7 +949,8 @@ workflows:
           context: org-global
           requires:
             - pr-tools/pr-title-check
-            - test-dependencies
+            ## Only do this check on PRs
+            # - test-dependencies
             - test-lint
             - test-unit
             - test-coverage
