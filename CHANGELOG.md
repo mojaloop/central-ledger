@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.3.1](https://github.com/mojaloop/central-ledger/compare/v16.3.0...v16.3.1) (2022-11-21)
+
+
+### Bug Fixes
+
+* **mojaloop/#3024:** post /bulkTransfers from Switch to PayeeFSP to use Switch as fspiop-source ([#926](https://github.com/mojaloop/central-ledger/issues/926)) ([bce2a23](https://github.com/mojaloop/central-ledger/commit/bce2a23b0e130f3ae3037ae5a31379237468fd23)), closes [mojaloop/#3024](https://github.com/mojaloop/project/issues/3024)
+
 ## [16.3.0](https://github.com/mojaloop/central-ledger/compare/v16.2.0...v16.3.0) (2022-09-08)
 
 
