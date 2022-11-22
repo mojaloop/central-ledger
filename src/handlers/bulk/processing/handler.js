@@ -390,6 +390,11 @@ const bulkProcessing = async (error, messages) => {
  */
 const registerBulkProcessingHandler = async () => {
   try {
+    if (Config.MONGODB_DISABLED) {
+      throw ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SERVER_ERROR,
+        'Mongo Database is disabled in configuration')
+    }
     const bulkProcessingHandler = {
       command: bulkProcessing,
       topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.BULK, Enum.Events.Event.Action.PROCESSING),
