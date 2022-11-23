@@ -256,6 +256,7 @@ jobs:
             docker logs ttk-func_ttk-tests_1 > ./reports/ttk-tests-console.log
             docker-compose -p ttk-func --ansi never down
             cat ./reports/ttk-tests-console.log
+          no_output_timeout: 15m
       - store_artifacts:
           path: /tmp/ml-core-test-harness/reports
           prefix: test
