@@ -316,11 +316,6 @@ const registerBulkPrepareHandler = async () => {
  */
 const registerAllHandlers = async () => {
   try {
-    if (Config.MONGODB_DISABLED) {
-      throw ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-        'Mongo Database is disabled in configuration')
-    }
     await registerBulkPrepareHandler()
     return true
   } catch (err) {
