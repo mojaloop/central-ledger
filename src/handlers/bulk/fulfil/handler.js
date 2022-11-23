@@ -309,7 +309,7 @@ const registerBulkFulfilHandler = async () => {
   try {
     if (Config.MONGODB_DISABLED) {
       throw ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SERVER_ERROR,
+        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
         'Mongo Database is disabled in configuration')
     }
     const bulkFulfilHandler = {
@@ -338,7 +338,7 @@ const registerAllHandlers = async () => {
   try {
     if (Config.MONGODB_DISABLED) {
       throw ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SERVER_ERROR,
+        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
         'Mongo Database is disabled in configuration')
     }
     await registerBulkFulfilHandler()
