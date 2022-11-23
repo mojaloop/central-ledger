@@ -28,7 +28,7 @@
     "SCALE": 4
   },
   "MONGODB": {
-    "DISABLED": true,
+    "DISABLED": false,
     "DEBUG": false,
     "URI": "mongodb://localhost:27017/mlos"
   },
