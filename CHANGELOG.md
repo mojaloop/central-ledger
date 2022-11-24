@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.3.2](https://github.com/mojaloop/central-ledger/compare/v16.3.1...v16.3.2) (2022-11-24)
+
+
+### Bug Fixes
+
+* **mojaloop/#3020:** add checks for when mongodb is disabled  ([#927](https://github.com/mojaloop/central-ledger/issues/927)) ([7461d9b](https://github.com/mojaloop/central-ledger/commit/7461d9bcd4341fbb37f32f42684108acef9ba0f4)), closes [mojaloop/#3020](https://github.com/mojaloop/project/issues/3020)
+
 ### [16.3.1](https://github.com/mojaloop/central-ledger/compare/v16.3.0...v16.3.1) (2022-11-21)
 
 
