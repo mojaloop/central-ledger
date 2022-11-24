@@ -163,7 +163,7 @@ const registerGetBulkTransferHandler = async () => {
     if (Config.MONGODB_DISABLED) {
       throw ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-        'Mongo Database is disabled in configuration')
+        'Cannot register GetBulkTransferHandler as Mongo Database is disabled in configuration')
     }
     const bulkGetHandler = {
       command: getBulkTransfer,

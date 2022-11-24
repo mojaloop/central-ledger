@@ -393,7 +393,7 @@ const registerBulkProcessingHandler = async () => {
     if (Config.MONGODB_DISABLED) {
       throw ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-        'Mongo Database is disabled in configuration')
+        'Cannot register BulkProcessingHandler as Mongo Database is disabled in configuration')
     }
     const bulkProcessingHandler = {
       command: bulkProcessing,

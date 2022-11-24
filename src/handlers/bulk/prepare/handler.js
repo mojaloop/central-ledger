@@ -290,7 +290,7 @@ const registerBulkPrepareHandler = async () => {
     if (Config.MONGODB_DISABLED) {
       throw ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-        'Mongo Database is disabled in configuration')
+        'Cannot register BulkPrepareHandler as Mongo Database is disabled in configuration')
     }
     const bulkPrepareHandler = {
       command: bulkPrepare,
