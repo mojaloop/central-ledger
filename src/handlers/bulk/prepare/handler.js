@@ -287,6 +287,11 @@ const bulkPrepare = async (error, messages) => {
  */
 const registerBulkPrepareHandler = async () => {
   try {
+    if (Config.MONGODB_DISABLED) {
+      throw ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+        'Cannot register BulkPrepareHandler as Mongo Database is disabled in configuration')
+    }
     const bulkPrepareHandler = {
       command: bulkPrepare,
       topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.BULK, Enum.Events.Event.Action.PREPARE),
@@ -297,7 +302,7 @@ const registerBulkPrepareHandler = async () => {
     return true
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -315,7 +320,7 @@ const registerAllHandlers = async () => {
     return true
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

@@ -37,10 +37,10 @@ const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Config = require('../../../lib/config')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const BulkTransferModel = require('../../../models/bulkTransfer/bulkTransfer')
 const Validator = require('../shared/validator')
-const Config = require('../../../lib/config')
 const { ERROR_HANDLING } = require('../../../lib/config')
 
 const location = { module: 'BulkGetHandler', method: '', path: '' }
@@ -160,6 +160,11 @@ const getBulkTransfer = async (error, messages) => {
  */
 const registerGetBulkTransferHandler = async () => {
   try {
+    if (Config.MONGODB_DISABLED) {
+      throw ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+        'Cannot register GetBulkTransferHandler as Mongo Database is disabled in configuration')
+    }
     const bulkGetHandler = {
       command: getBulkTransfer,
       topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.BULK, Enum.Events.Event.Action.GET),

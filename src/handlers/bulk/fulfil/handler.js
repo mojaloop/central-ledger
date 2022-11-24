@@ -307,6 +307,11 @@ const sendIndividualTransfer = async (message, messageId, kafkaTopic, headers, p
  */
 const registerBulkFulfilHandler = async () => {
   try {
+    if (Config.MONGODB_DISABLED) {
+      throw ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+        'Cannot register BulkFulfilHandler as Mongo Database is disabled in configuration')
+    }
     const bulkFulfilHandler = {
       command: bulkFulfil,
       topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.BULK, Enum.Events.Event.Action.FULFIL),
@@ -317,7 +322,7 @@ const registerBulkFulfilHandler = async () => {
     return true
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -335,7 +340,7 @@ const registerAllHandlers = async () => {
     return true
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
