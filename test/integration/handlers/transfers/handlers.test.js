@@ -1029,34 +1029,43 @@ Test('Handlers test', async handlersTest => {
       // Nothing to do here...
 
       // Act
+
+      // Re-try function with conditions
       const inspectTransferState = async () => {
         try {
+          // Fetch Transfer record
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          // console.dir(transfer)
 
+          // Check Transfer for correct state
           if (transfer.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
+            // We have a Transfer with the correct state, lets check if we can get the TransferError record
             try {
+              // Fetch the TransferError record
               const transferError = await TransferService.getTransferErrorByTransferId(td.messageProtocolPrepare.content.payload.transferId)
-              // console.dir(transferError)
+              // TransferError record found, so lets return it
               return {
                 transfer,
                 transferError
               }
             } catch (err) {
+              // NO TransferError record found, so lets return the transfer and the error
               return {
                 transfer,
                 err
               }
             }
           } else {
+            // NO Transfer with the correct state was found, so we return false
             return false
           }
         } catch (err) {
+          // NO Transfer with the correct state was found, so we return false
           Logger.error(err)
           return false
         }
       }
-      // wait until we know the position reset, or throw after 5 tries
+
+      // wait until we inspect a transfer with the correct status, or return false if all re-try attempts have failed
       const result = await wrapWithRetries(inspectTransferState, 10, 4)
 
       // Assert
@@ -1064,10 +1073,9 @@ Test('Handlers test', async handlersTest => {
         test.fail(`Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
         test.end()
       } else {
-        // console.dir(result)
-        test.equal(result.transfer.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
-        test.equal(result.transferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
-        test.equal(result.transferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
+        test.equal(result.transfer && result.transfer.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.equal(result.transferError && result.transferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
+        test.equal(result.transferError && result.transferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
         test.pass()
         test.end()
       }
