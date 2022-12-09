@@ -29,43 +29,43 @@ const Test = require('tape')
 const Uuid = require('uuid4')
 const retry = require('async-retry')
 const Logger = require('@mojaloop/central-services-logger')
-const Config = require('../../../src/lib/config')
+const Config = require('#src/lib/config')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const sleep = Time.sleep
 const Db = require('@mojaloop/central-services-database').Db
-const Cache = require('../../../src/lib/cache')
+const Cache = require('#src/lib/cache')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
-const ParticipantHelper = require('../helpers/participant')
-const ParticipantLimitHelper = require('../helpers/participantLimit')
-const ParticipantFundsInOutHelper = require('../helpers/participantFundsInOut')
-const ParticipantEndpointHelper = require('../helpers/participantEndpoint')
-const SettlementHelper = require('../helpers/settlementModels')
-const HubAccountsHelper = require('../helpers/hubAccounts')
-const TransferService = require('../../../src/domain/transfer')
-const ParticipantService = require('../../../src/domain/participant')
-const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
+const ParticipantHelper = require('#test/integration/helpers/participant')
+const ParticipantLimitHelper = require('#test/integration/helpers/participantLimit')
+const ParticipantFundsInOutHelper = require('#test/integration/helpers/participantFundsInOut')
+const ParticipantEndpointHelper = require('#test/integration/helpers/participantEndpoint')
+const SettlementHelper = require('#test/integration/helpers/settlementModels')
+const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
+const TransferService = require('#src/domain/transfer/index')
+const ParticipantService = require('#src/domain/participant/index')
+const TransferExtensionModel = require('#src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const {
   wrapWithRetries,
   getMessagePayloadOrThrow,
   sleepPromise
-} = require('../../util/helpers')
-const TestConsumer = require('../helpers/testConsumer')
+} = require('#test/util/helpers')
+const TestConsumer = require('#test/integration/helpers/testConsumer')
 
-const ParticipantCached = require('../../../src/models/participant/participantCached')
-const ParticipantCurrencyCached = require('../../../src/models/participant/participantCurrencyCached')
-const ParticipantLimitCached = require('../../../src/models/participant/participantLimitCached')
-const SettlementModelCached = require('../../../src/models/settlement/settlementModelCached')
+const ParticipantCached = require('#src/models/participant/participantCached')
+const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
+const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
+const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
 
 const Handlers = {
-  index: require('../../../src/handlers/register'),
-  positions: require('../../../src/handlers/positions/handler'),
-  transfers: require('../../../src/handlers/transfers/handler'),
-  timeouts: require('../../../src/handlers/timeouts/handler')
+  index: require('#src/handlers/register'),
+  positions: require('#src/handlers/positions/handler'),
+  transfers: require('#src/handlers/transfers/handler'),
+  timeouts: require('#src/handlers/timeouts/handler')
 }
 
 const TransferState = Enum.Transfers.TransferState
@@ -992,6 +992,7 @@ Test('Handlers test', async handlersTest => {
       config.logger = Logger
 
       const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
+      Logger.info(producerResponse)
 
       const tests = async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -1021,6 +1022,55 @@ Test('Handlers test', async handlersTest => {
       }
 
       test.end()
+    })
+
+    await timeoutTest.test('update transfer after timeout with timeout status & error', async (test) => {
+      // Arrange
+      // Nothing to do here...
+
+      // Act
+      const inspectTransferState = async () => {
+        try {
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+          // console.dir(transfer)
+
+          if (transfer.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
+            try {
+              const transferError = await TransferService.getTransferErrorByTransferId(td.messageProtocolPrepare.content.payload.transferId)
+              // console.dir(transferError)
+              return {
+                transfer,
+                transferError
+              }
+            } catch (err) {
+              return {
+                transfer,
+                err
+              }
+            }
+          } else {
+            return false
+          }
+        } catch (err) {
+          Logger.error(err)
+          return false
+        }
+      }
+      // wait until we know the position reset, or throw after 5 tries
+      const result = await wrapWithRetries(inspectTransferState, 10, 4)
+
+      // Assert
+      if (result === false) {
+        test.fail(`Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.end()
+      } else {
+        // console.dir(result)
+        test.equal(result.transfer.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.equal(result.transferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
+        test.equal(result.transferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
+        test.pass()
+        test.end()
+      }
     })
 
     await timeoutTest.test('position resets after a timeout', async (test) => {
