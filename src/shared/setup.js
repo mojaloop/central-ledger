@@ -70,7 +70,7 @@ const connectMongoose = async () => {
         Logger.isWarnEnabled && Logger.warn('Enabling debug for Mongoose...')
         ObjStoreDb.Mongoose.set('debug', Config.MONGODB_DEBUG) // enable debug
       }
-      return ObjStoreDb.connect(Config.MONGODB_URI)
+      return await ObjStoreDb.connect(Config.MONGODB_URI)
     } catch (err) {
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
       // TODO: review as code is being changed from returning null to returning a FSPIOPError
