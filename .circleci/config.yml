@@ -210,10 +210,10 @@ jobs:
             # docker-compose build
 
             ## Lets pull only the Services needed for the Integration Test
-            docker-compose pull mysql kafka
+            docker-compose pull mysql kafka init-kafka
 
             ## Lets startup only the Services needed for the Integration Test
-            docker-compose up -d mysql kafka
+            docker-compose up -d mysql kafka init-kafka
 
             ## Check straight away to see if any containers have exited
             docker-compose ps
