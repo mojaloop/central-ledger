@@ -598,6 +598,26 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
+        // const logger = Logger.child({
+        //   ctx: {
+        //     loc: 'models/transfers/facade.timeoutExpireReserved',
+        //     segmentId,
+        //     intervalMin,
+        //     intervalMax
+        //   }
+        // })
+
+        // logger.isDebugEnabled && logger.debug({
+        //   intervalMin,
+        //   intervalMax,
+        //   transferStateId: [
+        //     Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+        //     Enum.Transfers.TransferState.RESERVED
+        //   ]
+        // })
+
+        // Insert `transferTimeout` records for transfers found between the interval intervalMin <= intervalMax
+        // const q1 = await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
         await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('transfer AS t')
@@ -613,9 +633,19 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               .whereNull('tt.transferId')
               .whereIn('tsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, `${Enum.Transfers.TransferState.RESERVED}`])
               .select('t.transferId', 't.expirationDate')
-          })// .toSQL().sql
-        // console.log('SQL: ' + q)
+          }) // .toSQL().sql
+        // console.log('SQL: ' + q1)
+        // logger.isDebugEnabled && logger.debug(q1)
 
+        // logger.isDebugEnabled && logger.debug({
+        //   expirationDate: transactionTimestamp,
+        //   transferStateId: [
+        //     Enum.Transfers.TransferInternalState.RECEIVED_PREPARE
+        //   ]
+        // })
+
+        // Insert `transferStateChange` records for RECEIVED_PREPARE
+        // const q2 = await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
         await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
           .insert(function () {
             this.from('transferTimeout AS tt')
@@ -629,9 +659,19 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               .where('tt.expirationDate', '<', transactionTimestamp)
               .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
               .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
-          })// .toSQL().sql
-        // console.log('SQL: ' + q)
+          }) // .toSQL().sql
+        // console.log('SQL: ' + q2)
+        // logger.isDebugEnabled && logger.debug(q2)
 
+        // logger.isDebugEnabled && logger.debug({
+        //   expirationDate: transactionTimestamp,
+        //   transferStateId: [
+        //     Enum.Transfers.TransferInternalState.RESERVED
+        //   ]
+        // })
+
+        // Insert `transferStateChange` records for RESERVED
+        // const q3 = await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
         await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
           .insert(function () {
             this.from('transferTimeout AS tt')
@@ -645,8 +685,37 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               .where('tt.expirationDate', '<', transactionTimestamp)
               .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferState.RESERVED}`)
               .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
-          })// .toSQL().sql
-        // console.log('SQL: ' + q)
+          }) // .toSQL().sql
+        // console.log('SQL: ' + q3)
+        // logger.isDebugEnabled && logger.debug(q3)
+
+        // logger.isDebugEnabled && logger.debug({
+        //   expirationDate: transactionTimestamp,
+        //   transferStateId: [
+        //     Enum.Transfers.TransferInternalState.RESERVED
+        //   ],
+        //   errorCode: ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code,
+        //   errorDescription: ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message
+        // })
+
+        // Insert `transferError` records
+        // const q4 = await knex.from(knex.raw('transferError (transferId, transferStateChangeId, errorCode, errorDescription)')).transacting(trx)
+        await knex.from(knex.raw('transferError (transferId, transferStateChangeId, errorCode, errorDescription)')).transacting(trx)
+          .insert(function () {
+            this.from('transferTimeout AS tt')
+              .innerJoin(knex('transferStateChange AS tsc1')
+                .select('tsc1.transferId')
+                .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+                .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+                .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+              )
+              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+              .where('tt.expirationDate', '<', transactionTimestamp)
+              .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`)
+              .select('tt.transferId', 'tsc.transferStateChangeId', knex.raw('?', ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code), knex.raw('?', ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message))
+          }) // .toSQL().sql
+        // console.log('SQL: ' + q4)
+        // Logger.isDebugEnabled && Logger.debug(q4)
 
         if (segmentId === 0) {
           const segment = {
@@ -655,6 +724,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
             tableName: 'transferStateChange',
             value: intervalMax
           }
+          // logger.isDebugEnabled && logger.debug(segment)
           await knex('segment').transacting(trx).insert(segment)
         } else {
           await knex('segment').transacting(trx).where({ segmentId }).update({ value: intervalMax })
