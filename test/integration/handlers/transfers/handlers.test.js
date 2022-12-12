@@ -29,43 +29,43 @@ const Test = require('tape')
 const Uuid = require('uuid4')
 const retry = require('async-retry')
 const Logger = require('@mojaloop/central-services-logger')
-const Config = require('../../../src/lib/config')
+const Config = require('#src/lib/config')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const sleep = Time.sleep
 const Db = require('@mojaloop/central-services-database').Db
-const Cache = require('../../../src/lib/cache')
-const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
+const Cache = require('#src/lib/cache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
-const ParticipantHelper = require('../helpers/participant')
-const ParticipantLimitHelper = require('../helpers/participantLimit')
-const ParticipantFundsInOutHelper = require('../helpers/participantFundsInOut')
-const ParticipantEndpointHelper = require('../helpers/participantEndpoint')
-const SettlementHelper = require('../helpers/settlementModels')
-const HubAccountsHelper = require('../helpers/hubAccounts')
-const TransferService = require('../../../src/domain/transfer')
-const ParticipantService = require('../../../src/domain/participant')
-const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
+const ParticipantHelper = require('#test/integration/helpers/participant')
+const ParticipantLimitHelper = require('#test/integration/helpers/participantLimit')
+const ParticipantFundsInOutHelper = require('#test/integration/helpers/participantFundsInOut')
+const ParticipantEndpointHelper = require('#test/integration/helpers/participantEndpoint')
+const SettlementHelper = require('#test/integration/helpers/settlementModels')
+const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
+const TransferService = require('#src/domain/transfer/index')
+const ParticipantService = require('#src/domain/participant/index')
+const TransferExtensionModel = require('#src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const {
   wrapWithRetries,
   getMessagePayloadOrThrow,
   sleepPromise
-} = require('../../util/helpers')
-const TestConsumer = require('../helpers/testConsumer')
+} = require('#test/util/helpers')
+const TestConsumer = require('#test/integration/helpers/testConsumer')
+const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
 
-const ParticipantCached = require('../../../src/models/participant/participantCached')
-const ParticipantCurrencyCached = require('../../../src/models/participant/participantCurrencyCached')
-const ParticipantLimitCached = require('../../../src/models/participant/participantLimitCached')
-const SettlementModelCached = require('../../../src/models/settlement/settlementModelCached')
+const ParticipantCached = require('#src/models/participant/participantCached')
+const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
+const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
+const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
 
 const Handlers = {
-  index: require('../../../src/handlers/register'),
-  positions: require('../../../src/handlers/positions/handler'),
-  transfers: require('../../../src/handlers/transfers/handler'),
-  timeouts: require('../../../src/handlers/timeouts/handler')
+  index: require('#src/handlers/register'),
+  positions: require('#src/handlers/positions/handler'),
+  transfers: require('#src/handlers/transfers/handler'),
+  timeouts: require('#src/handlers/timeouts/handler')
 }
 
 const TransferState = Enum.Transfers.TransferState
@@ -127,6 +127,35 @@ const testDataZAR = {
 
 const prepareTestData = async (dataObj) => {
   try {
+    // Lets make sure that all existing producers are connected
+    await KafkaHelper.producers.connect()
+    // Lets make sure that all existing Consumers are connected
+    await KafkaHelper.consumers.connect()
+    // const topics = TestTopics.list
+
+    // // lets make sure all our Producers are already connected if they have already been defined.
+    // for (const topic of topics) {
+    //   try {
+    //     // lets make sure check if any of our Producers are already connected if they have already been defined.
+    //     console.log(`Producer[${topic}] checking connectivity!`)
+    //     const isConnected = await Producer.isConnected(topic)
+    //     if (!isConnected) {
+    //       try {
+    //         console.log(`Producer[${topic}] is connecting`)
+    //         await Producer.getProducer(topic).connect()
+    //         console.log(`Producer[${topic}] is connected`)
+    //       } catch (err) {
+    //         console.log(`Producer[${topic}] connection failed!`)
+    //       }
+    //     } else {
+    //       console.log(`Producer[${topic}] is ALREADY connected`)
+    //     }
+    //   } catch (err) {
+    //     console.log(`Producer[${topic}] has not been initialized`)
+    //     console.error(err)
+    //   }
+    // }
+
     const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
     const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
 
@@ -296,6 +325,11 @@ Test('Handlers test', async handlersTest => {
   await SettlementHelper.prepareData()
   await HubAccountsHelper.prepareData()
 
+  const wrapWithRetriesConf = {
+    remainingRetries: process.env.TST_RETRY_COUNT || 10, // default 10
+    timeout: process.env.TST_RETRY_TIMEOUT || 2 // default 2
+  }
+
   // Start a testConsumer to monitor events that our handlers emit
   const testConsumer = new TestConsumer([
     {
@@ -361,11 +395,12 @@ Test('Handlers test', async handlersTest => {
       const transfer = await wrapWithRetries(async () => {
         // lets fetch the transfer
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+        console.dir(transfer)
         // lets check its status, and if its what we expect return the result
         if (transfer.transferState === 'RESERVED') return transfer
         // otherwise lets return nothing
         return null
-      })
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
       test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
 
@@ -391,7 +426,7 @@ Test('Handlers test', async handlersTest => {
         await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
           action: 'reserved-aborted'
-        }))
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.notOk('Should not be executed')
       } catch (err) {
         console.log(err)
@@ -437,11 +472,11 @@ Test('Handlers test', async handlersTest => {
         if (transfer.transferState === 'RESERVED') return transfer
         // otherwise lets return nothing
         return null
-      })
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. sleep so that the RESERVED transfer expires
-      await sleepPromise(2)
+      await sleepPromise(wrapWithRetriesConf.timeout)
 
       // 3. send a RESERVED request from Payee
       td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
@@ -469,10 +504,12 @@ Test('Handlers test', async handlersTest => {
       // Assert
       // 5. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
       const payerAbortNotification = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }))
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }),
+        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       )[0]
       const payeeAbortNotification = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
+        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       )[0]
       test.ok(payerAbortNotification, 'Payer Abort notification sent')
       test.ok(payeeAbortNotification, 'Payee Abort notification sent')
@@ -507,7 +544,7 @@ Test('Handlers test', async handlersTest => {
         if (transfer.transferState === 'RESERVED') return transfer
         // otherwise lets return nothing
         return null
-      })
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. Modify the transfer in the DB
@@ -543,7 +580,8 @@ Test('Handlers test', async handlersTest => {
       // 5. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
       try {
         const payerAbortNotification = (await wrapWithRetries(
-          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }))
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         )[0]
         test.ok(payerAbortNotification, 'Payer Abort notification sent')
       } catch (err) {
@@ -551,7 +589,8 @@ Test('Handlers test', async handlersTest => {
       }
       try {
         const payeeAbortNotification = (await wrapWithRetries(
-          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         )[0]
         test.ok(payeeAbortNotification, 'Payee Abort notification sent')
         test.deepEqual(
@@ -587,7 +626,7 @@ Test('Handlers test', async handlersTest => {
         if (transfer.transferState === 'RESERVED') return transfer
         // otherwise lets return nothing
         return null
-      })
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. send a RESERVED request with an invalid validation(from Payee)
@@ -609,7 +648,7 @@ Test('Handlers test', async handlersTest => {
       await wrapWithRetries(async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
         return transfer.transferState === 'ABORTED_ERROR'
-      })
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
       test.equal(updatedTransfer.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
       const expectedAbortNotificationPayload = {
@@ -620,10 +659,12 @@ Test('Handlers test', async handlersTest => {
       // Assert
       // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
       const payerAbortNotificationEvent = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' }))
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' }),
+        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       )[0]
       const payeeAbortNotificationEvent = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }))
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
+        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       )[0]
       test.ok(payerAbortNotificationEvent, 'Payer Abort notification sent')
       test.ok(payeeAbortNotificationEvent, 'Payee Abort notification sent')
@@ -992,6 +1033,7 @@ Test('Handlers test', async handlersTest => {
       config.logger = Logger
 
       const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
+      Logger.info(producerResponse)
 
       const tests = async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -1023,6 +1065,63 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
+    await timeoutTest.test('update transfer after timeout with timeout status & error', async (test) => {
+      // Arrange
+      // Nothing to do here...
+
+      // Act
+
+      // Re-try function with conditions
+      const inspectTransferState = async () => {
+        try {
+          // Fetch Transfer record
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+
+          // Check Transfer for correct state
+          if (transfer.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
+            // We have a Transfer with the correct state, lets check if we can get the TransferError record
+            try {
+              // Fetch the TransferError record
+              const transferError = await TransferService.getTransferErrorByTransferId(td.messageProtocolPrepare.content.payload.transferId)
+              // TransferError record found, so lets return it
+              return {
+                transfer,
+                transferError
+              }
+            } catch (err) {
+              // NO TransferError record found, so lets return the transfer and the error
+              return {
+                transfer,
+                err
+              }
+            }
+          } else {
+            // NO Transfer with the correct state was found, so we return false
+            return false
+          }
+        } catch (err) {
+          // NO Transfer with the correct state was found, so we return false
+          Logger.error(err)
+          return false
+        }
+      }
+
+      // wait until we inspect a transfer with the correct status, or return false if all re-try attempts have failed
+      const result = await wrapWithRetries(inspectTransferState, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      // Assert
+      if (result === false) {
+        test.fail(`Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.end()
+      } else {
+        test.equal(result.transfer && result.transfer.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.equal(result.transferError && result.transferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
+        test.equal(result.transferError && result.transferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
+        test.pass()
+        test.end()
+      }
+    })
+
     await timeoutTest.test('position resets after a timeout', async (test) => {
       // Arrange
       const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
@@ -1033,7 +1132,7 @@ Test('Handlers test', async handlersTest => {
         return payerCurrentPosition.value === payerInitialPosition
       }
       // wait until we know the position reset, or throw after 5 tries
-      await wrapWithRetries(payerPositionDidReset, 10, 4)
+      await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
       // Assert
@@ -1052,28 +1151,30 @@ Test('Handlers test', async handlersTest => {
       assert.pass('database connection closed')
       await testConsumer.destroy()
 
-      const topics = [
-        'topic-transfer-prepare',
-        'topic-transfer-position',
-        'topic-transfer-fulfil',
-        'topic-notification-event'
-      ]
-      for (const topic of topics) {
-        try {
-          await Producer.getProducer(topic).disconnect()
-          assert.pass(`producer to ${topic} disconnected`)
-        } catch (err) {
-          assert.pass(err.message)
-        }
-      }
-      for (const topic of topics) {
-        try {
-          await Consumer.getConsumer(topic).disconnect()
-          assert.pass(`consumer to ${topic} disconnected`)
-        } catch (err) {
-          assert.pass(err.message)
-        }
-      }
+      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js - https://github.com/mojaloop/project/issues/3067
+      // const topics = KafkaHelper.topics
+      // for (const topic of topics) {
+      //   try {
+      //     await Producer.getProducer(topic).disconnect()
+      //     assert.pass(`producer to ${topic} disconnected`)
+      //   } catch (err) {
+      //     assert.pass(err.message)
+      //   }
+      // }
+      // Lets make sure that all existing Producers are disconnected
+      await KafkaHelper.producers.disconnect()
+
+      // TODO: Clean this up once the above issue has been resolved.
+      // for (const topic of topics) {
+      //   try {
+      //     await Consumer.getConsumer(topic).disconnect()
+      //     assert.pass(`consumer to ${topic} disconnected`)
+      //   } catch (err) {
+      //     assert.pass(err.message)
+      //   }
+      // }
+      // Lets make sure that all existing Consumers are disconnected
+      await KafkaHelper.consumers.disconnect()
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
