@@ -1163,7 +1163,7 @@ Test('Handlers test', async handlersTest => {
       // }
       // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js
       // Lets make sure that all existing Producers are disconnected
-      // await KafkaHelper.producers.disconnect()
+      await KafkaHelper.producers.disconnect()
 
       // for (const topic of topics) {
       //   try {
