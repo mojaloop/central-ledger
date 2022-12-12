@@ -395,6 +395,7 @@ Test('Handlers test', async handlersTest => {
       const transfer = await wrapWithRetries(async () => {
         // lets fetch the transfer
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+        console.dir(transfer)
         // lets check its status, and if its what we expect return the result
         if (transfer.transferState === 'RESERVED') return transfer
         // otherwise lets return nothing
@@ -475,7 +476,7 @@ Test('Handlers test', async handlersTest => {
       test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. sleep so that the RESERVED transfer expires
-      await sleepPromise(2)
+      await sleepPromise(wrapWithRetriesConf.timeout)
 
       // 3. send a RESERVED request from Payee
       td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
@@ -1160,8 +1161,9 @@ Test('Handlers test', async handlersTest => {
       //     assert.pass(err.message)
       //   }
       // }
+      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js
       // Lets make sure that all existing Producers are disconnected
-      await KafkaHelper.producers.disconnect()
+      // await KafkaHelper.producers.disconnect()
 
       // for (const topic of topics) {
       //   try {

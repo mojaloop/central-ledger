@@ -119,14 +119,17 @@ Test('Root handler test', async handlersTest => {
         'topic-transfer-fulfil',
         'topic-notification-event'
       ]
-      for (const topic of topics) {
-        try {
-          await Producer.getProducer(topic).disconnect()
-          assert.pass(`producer to ${topic} disconnected`)
-        } catch (err) {
-          assert.pass(err.message)
-        }
-      }
+
+      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js
+      // for (const topic of topics) {
+      //   try {
+      //     await Producer.getProducer(topic).disconnect()
+      //     assert.pass(`producer to ${topic} disconnected`)
+      //   } catch (err) {
+      //     assert.pass(err.message)
+      //   }
+      // }
+
       for (const topic of topics) {
         try {
           await Consumer.getConsumer(topic).disconnect()
