@@ -113,6 +113,7 @@ Test('Root handler test', async handlersTest => {
       await Db.disconnect()
       assert.pass('database connection closed')
 
+      // TODO: Replace this with KafkaHelper.topics
       const topics = [
         'topic-transfer-prepare',
         'topic-transfer-position',
@@ -120,7 +121,8 @@ Test('Root handler test', async handlersTest => {
         'topic-notification-event'
       ]
 
-      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js
+      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js - https://github.com/mojaloop/project/issues/3067
+      // TODO: Clean this up once the above issue has been resolved.
       // for (const topic of topics) {
       //   try {
       //     await Producer.getProducer(topic).disconnect()
@@ -130,6 +132,7 @@ Test('Root handler test', async handlersTest => {
       //   }
       // }
 
+      // TODO: Replace this with await KafkaHelper.consumers.disconnect() once the above issue is resolved.
       for (const topic of topics) {
         try {
           await Consumer.getConsumer(topic).disconnect()
