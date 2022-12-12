@@ -121,6 +121,7 @@ exports.transferFulfilReject = async (transferId) => {
   await Producer.produceMessage(fulfilRejectObj, topicConfTransferFulfil, config)
   return true
 }
+
 exports.transferReject = async (transferId) => {
   const config = Utility.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
   config.logger = Logger

@@ -60,6 +60,7 @@
     "docker:build:api": "docker build --no-cache -f Dockerfile -t $npm_package_config_images_api:latest .",
     "docker:up": "docker-compose -f docker-compose.yml up",
     "docker:up:backend": "docker-compose up -d ml-api-adapter mysql mockserver kafka kowl temp_curl",
+    "docker:up:int": "docker compose up -d kafka init-kafka objstore mysql",
     "docker:script:populateTestData": "sh ./test/util/scripts/populateTestData.sh",
     "docker:stop": "docker-compose -f docker-compose.yml stop",
     "docker:rm": "docker-compose -f docker-compose.yml rm -f -v",
