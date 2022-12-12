@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.3.3](https://github.com/mojaloop/central-ledger/compare/v16.3.2...v16.3.3) (2022-12-12)
+
+
+### Bug Fixes
+
+* **mojaloop/#2644:** missing error-code for the transfer in the central-ledger db ([#929](https://github.com/mojaloop/central-ledger/issues/929)) ([7e49456](https://github.com/mojaloop/central-ledger/commit/7e4945614224f4887cb0abd956faf51b804e3873)), closes [mojaloop/#2644](https://github.com/mojaloop/project/issues/2644)
+
 ### [16.3.2](https://github.com/mojaloop/central-ledger/compare/v16.3.1...v16.3.2) (2022-11-24)
 
 
