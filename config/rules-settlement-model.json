@@ -1,0 +1,17 @@
+[
+    {
+      "ruleId": 1,
+      "priority": 1,
+      "description": "Default settlement model",
+      "conditions": {
+        "all": []
+      },
+      "event": {
+        "type": "SELECT_SETTLEMENT_MODEL",
+        "params": {
+          "ledgerAccountType": "POSITION",
+          "settlementAccountType": "SETTLEMENT"
+        }
+      }
+    }
+  ]
