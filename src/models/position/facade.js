@@ -32,6 +32,7 @@
 
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const EnumCached = require('../../lib/enumCached')
 const participantFacade = require('../participant/facade')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Logger = require('@mojaloop/central-services-logger')
@@ -39,6 +40,9 @@ const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
+const SettlementModelRulesEngine = require('../../models/rules/settlement-model-rules-engine')
+
+const engine = new SettlementModelRulesEngine()
 
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -60,7 +64,13 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
       }
     }
-    const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+
+    let settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+    if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
+      const transactionObject = transferList[0].value.content.transaction
+      const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
+      settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
+    }
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
     const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
     const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
