@@ -40,7 +40,6 @@ const TransferObjectTransform = require('./transform')
 const TransferError = require('../../models/transfer/transferError')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
-const Logger = require('@mojaloop/central-services-logger')
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   const histTimerTransferServicePrepareEnd = Metrics.getHistogram(
@@ -71,7 +70,6 @@ const handlePayeeResponse = async (transferId, payload, action, fspiopError) => 
     histTimerTransferServiceHandlePayeeResponseEnd({ success: true, funcName: 'handlePayeeResponse' })
     return result
   } catch (err) {
-    Logger.warn(JSON.stringify(err))
     histTimerTransferServiceHandlePayeeResponseEnd({ success: false, funcName: 'handlePayeeResponse' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
