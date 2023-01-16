@@ -129,6 +129,7 @@ const transformTransferToFulfil = (transfer) => {
 
 const toTransfer = (t) => {
   // TODO: Validate 't' to confirm if its from the DB transferReadModel or from the saveTransferPrepare
+  Logger.warn(JSON.stringify(t))
   if (t.isTransferReadModel) {
     Logger.isDebugEnabled && Logger.debug('In aggregate transfer transform for isTransferReadModel')
     return Util.omitNil(fromTransferReadModel(t)) // TODO: Remove this once the DB validation is done for 't'
