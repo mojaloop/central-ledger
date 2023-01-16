@@ -56,6 +56,7 @@ const Config = require('../../lib/config')
 const decodePayload = Util.StreamingProtocol.decodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { Ilp } = require('@mojaloop/sdk-standard-components')
 
 const consumerCommit = true
 const fromSwitch = true
@@ -104,6 +105,12 @@ const prepare = async (error, messages) => {
   const span = EventSdk.Tracer.createChildSpanFromContext(parentSpanService, contextFromMessage)
   try {
     const payload = decodePayload(message.value.content.payload)
+
+    if (Config.INCLUDE_DECODED_TRANSACTION_OBJECT) {
+      const transactionObject = (new Ilp({ secret: null })).getTransactionObject(JSON.stringify(payload.ilpPacket))
+      message.value.content.transaction = transactionObject
+    }
+
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
     const transferId = payload.transferId
