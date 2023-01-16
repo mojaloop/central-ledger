@@ -52,6 +52,14 @@ const ledgerAccountTypes = [
   {
     name: 'INTERCHANGE_FEE_SETTLEMENT',
     description: null
+  },
+  {
+    name: 'POSITION_REMITTANCE',
+    description: null
+  },
+  {
+    name: 'SETTLEMENT_REMITTANCE',
+    description: null
   }
 ]
 
