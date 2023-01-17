@@ -107,7 +107,7 @@ const prepare = async (error, messages) => {
     const payload = decodePayload(message.value.content.payload)
 
     if (Config.INCLUDE_DECODED_TRANSACTION_OBJECT) {
-      const transactionObject = (new Ilp({ secret: null })).getTransactionObject(JSON.stringify(payload.ilpPacket))
+      const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
       message.value.content.transaction = transactionObject
     }
 
