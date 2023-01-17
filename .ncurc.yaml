@@ -5,9 +5,5 @@ reject: [
   # TODO: New versions from 2.2.0 onwards introduce a newer incompatible version of the ILP-Packet that is not compatible with the Mojaloop Specification
   "ilp-packet",
   # TODO: v6+ (ref: https://github.com/sindresorhus/get-port/releases/tag/v6.0.0) is an ESM library and thus not compatible with CommonJS. Future story needed to resolve.
-  "get-port",
-  # TODO: commander 9.5.0 or 10.0.0 seemed to introduce a change that breaks integration tests.
-  # More specifically in test/integration/handlers/transfers/handlers.test.js
-  # transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request')
-  "commander"
+  "get-port"
 ]

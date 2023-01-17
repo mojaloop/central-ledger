@@ -193,11 +193,8 @@ const prepareTestData = async (dataObj) => {
         currency: dataObj.amount.currency,
         amount: dataObj.amount.amount
       },
-      // ilpPacket does not accurately represent the test payload.
-      // Previous packet was invalid.
       ilpPacket: 'AYIDGQAAAAAAACcQHWcucGF5ZWVmc3AubXNpc2RuLjI3NzEzODAzOTEyggLvZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTVRoak1UTTFNell0TjJFeE55MDBOR0ZrTFdGaFkySXRNR001WkdGaFptRXlNVFE1SWl3aWNYVnZkR1ZKWkNJNklqWmhObVE1T1dOaExUUmhaVFF0TkdVeE9DMWlNR1k1TFRsak9Ua3dZall3TVRjMFlpSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpjM01UTTRNRE01TVRJaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpRME1USXpORFUyTnpnNUlpd2labk53U1dRaU9pSjBaWE4wYVc1bmRHOXZiR3RwZEdSbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJa1pwY25OMGJtRnRaUzFVWlhOMElpd2liR0Z6ZEU1aGJXVWlPaUpNWVhOMGJtRnRaUzFVWlhOMEluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazROQzB3TVMwd01TSjlmU3dpWVcxdmRXNTBJanA3SW1GdGIzVnVkQ0k2SWpFd01DSXNJbU4xY25KbGJtTjVJam9pVlZORUluMHNJblJ5WVc1ellXTjBhVzl1Vkhsd1pTSTZleUp6WTJWdVlYSnBieUk2SWxSU1FVNVRSa1ZTSWl3aWFXNXBkR2xoZEc5eUlqb2lVRUZaUlZJaUxDSnBibWwwYVdGMGIzSlVlWEJsSWpvaVEwOU9VMVZOUlZJaWZYMAA',
-      // wqMyoJvKgTYzo7Q0l_h8eJyYnt5GFA8VRZhzy1pemTY
-      condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
+      condition: 'wqMyoJvKgTYzo7Q0l_h8eJyYnt5GFA8VRZhzy1pemTY',
       expiration: dataObj.expiration,
       extensionList: {
         extension: [
@@ -225,8 +222,7 @@ const prepareTestData = async (dataObj) => {
     }
 
     const fulfilPayload = {
-      // EIvu10ISWSRPTJRnM-QI5u1oy01wvFty623kISXGYFU
-      fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
+      fulfilment: 'EIvu10ISWSRPTJRnM-QI5u1oy01wvFty623kISXGYFU',
       completedTimestamp: dataObj.now,
       transferState: 'COMMITTED',
       extensionList: {
