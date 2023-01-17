@@ -86,10 +86,10 @@ const retryOpts = {
 const testData = {
   amount: {
     currency: 'USD',
-    amount: 110
+    amount: 100
   },
   payer: {
-    name: 'payerFsp',
+    name: 'testingtoolkitdfsp',
     limit: 500
   },
   payee: {
@@ -193,8 +193,8 @@ const prepareTestData = async (dataObj) => {
         currency: dataObj.amount.currency,
         amount: dataObj.amount.amount
       },
-      ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
-      condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
+      ilpPacket: 'AYIDGQAAAAAAACcQHWcucGF5ZWVmc3AubXNpc2RuLjI3NzEzODAzOTEyggLvZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTVRoak1UTTFNell0TjJFeE55MDBOR0ZrTFdGaFkySXRNR001WkdGaFptRXlNVFE1SWl3aWNYVnZkR1ZKWkNJNklqWmhObVE1T1dOaExUUmhaVFF0TkdVeE9DMWlNR1k1TFRsak9Ua3dZall3TVRjMFlpSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpjM01UTTRNRE01TVRJaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpRME1USXpORFUyTnpnNUlpd2labk53U1dRaU9pSjBaWE4wYVc1bmRHOXZiR3RwZEdSbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJa1pwY25OMGJtRnRaUzFVWlhOMElpd2liR0Z6ZEU1aGJXVWlPaUpNWVhOMGJtRnRaUzFVWlhOMEluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazROQzB3TVMwd01TSjlmU3dpWVcxdmRXNTBJanA3SW1GdGIzVnVkQ0k2SWpFd01DSXNJbU4xY25KbGJtTjVJam9pVlZORUluMHNJblJ5WVc1ellXTjBhVzl1Vkhsd1pTSTZleUp6WTJWdVlYSnBieUk2SWxSU1FVNVRSa1ZTSWl3aWFXNXBkR2xoZEc5eUlqb2lVRUZaUlZJaUxDSnBibWwwYVdGMGIzSlVlWEJsSWpvaVEwOU9VMVZOUlZJaWZYMAA',
+      condition: 'wqMyoJvKgTYzo7Q0l_h8eJyYnt5GFA8VRZhzy1pemTY',
       expiration: dataObj.expiration,
       extensionList: {
         extension: [
@@ -222,7 +222,7 @@ const prepareTestData = async (dataObj) => {
     }
 
     const fulfilPayload = {
-      fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
+      fulfilment: 'EIvu10ISWSRPTJRnM-QI5u1oy01wvFty623kISXGYFU',
       completedTimestamp: dataObj.now,
       transferState: 'COMMITTED',
       extensionList: {
@@ -357,6 +357,19 @@ Test('Handlers test', async handlersTest => {
         Enum.Events.Event.Type.NOTIFICATION.toUpperCase(),
         Enum.Events.Event.Action.EVENT.toUpperCase()
       )
+    },
+    {
+      topicName: Utility.transformGeneralTopicName(
+        Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+        Enum.Events.Event.Type.TRANSFER,
+        Enum.Events.Event.Action.POSITION
+      ),
+      config: Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.CONSUMER,
+        Enum.Events.Event.Type.TRANSFER.toUpperCase(),
+        Enum.Events.Event.Action.POSITION.toUpperCase()
+      )
     }
   ])
 
@@ -377,6 +390,86 @@ Test('Handlers test', async handlersTest => {
     })
 
     await registerAllHandlers.end()
+  })
+
+  await handlersTest.test('transferPrepare should', async transferPrepare => {
+    await transferPrepare.test('include decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is true', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
+      // Arrange
+      testConsumer.clearEvents()
+      const td = await prepareTestData(testData)
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      const transfer = await wrapWithRetries(async () => {
+        // lets fetch the transfer
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+        console.dir(transfer)
+        // lets check its status, and if its what we expect return the result
+        if (transfer.transferState === 'RESERVED') return transfer
+        // otherwise lets return nothing
+        return null
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      try {
+        const positionPrepare = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-transfer-position', action: 'prepare' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+        test.ok(positionPrepare.value.content.transaction)
+      } catch (err) {
+        test.notOk('Decoded transaction is excluded')
+      }
+      test.end()
+    })
+
+    await transferPrepare.test('exclude decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is false', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = false
+      // Arrange
+      testConsumer.clearEvents()
+      const td = await prepareTestData(testData)
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      const transfer = await wrapWithRetries(async () => {
+        // lets fetch the transfer
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+        console.dir(transfer)
+        // lets check its status, and if its what we expect return the result
+        if (transfer.transferState === 'RESERVED') return transfer
+        // otherwise lets return nothing
+        return null
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      try {
+        const positionPrepare = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-transfer-position', action: 'prepare' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+        test.notOk(positionPrepare.value.content.transaction)
+      } catch (err) {
+        test.notOk('Decoded transaction is included')
+      }
+      test.end()
+    })
+
+    transferPrepare.end()
   })
 
   await handlersTest.test('transferFulfilReserve should', async transferFulfilReserve => {
@@ -777,7 +870,7 @@ Test('Handlers test', async handlersTest => {
     transferFulfilCommit.end()
   })
 
-  await handlersTest.test('tranferFulfilCommit with default settlement model should', async transferFulfilCommit => {
+  await handlersTest.test('transferFulfilCommit with default settlement model should', async transferFulfilCommit => {
     const td = await prepareTestData(testDataZAR)
     await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(

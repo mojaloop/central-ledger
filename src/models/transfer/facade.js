@@ -388,7 +388,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
       } catch (err) {
         await trx.rollback()
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-        Logger.isErrorEnabled && Logger.error('savePayeeTransferResponse::failure')
+        Logger.isErrorEnabled && Logger.error(`savePayeeTransferResponse::failure ${err.message}`)
         throw err
       }
     })
