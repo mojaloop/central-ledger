@@ -279,6 +279,7 @@ const destroyParticipantEndpointByName = async (name) => {
 
 const addLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj) => {
   try {
+    // TODO: The following lines are with hardcoded enums. Need to handle this.
     const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
     const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.SETTLEMENT)

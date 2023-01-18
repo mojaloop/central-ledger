@@ -33,17 +33,12 @@
 
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const EnumCached = require('../../lib/enumCached')
 const participantFacade = require('../participant/facade')
-const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Logger = require('@mojaloop/central-services-logger')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
-const SettlementModelRulesEngine = require('../../models/rules/settlement-model-rules-engine')
-
-const engine = new SettlementModelRulesEngine()
 
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -57,21 +52,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const knex = await Db.getKnex()
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
-    const allSettlementModels = await SettlementModelCached.getAll()
-    let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
-    if (settlementModels.length === 0) {
-      settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
-      if (settlementModels.length === 0) {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
-      }
-    }
 
-    let settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
-    if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
-      const transactionObject = transferList[0].value.content.transaction
-      const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
-      settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
-    }
+    const settlementModel =  transferList[0].value.content.settlementModel
+
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.ledgerAccountTypeId)
     const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
     const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position

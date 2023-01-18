@@ -411,7 +411,7 @@ Test('Handlers test', async handlersTest => {
 
       const tests = async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId3) || {}
         const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
         const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}

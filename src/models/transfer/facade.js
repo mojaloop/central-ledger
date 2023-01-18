@@ -39,6 +39,7 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
 const Time = require('@mojaloop/central-services-shared').Util.Time
+const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 const MLNumber = require('@mojaloop/ml-number')
 const Config = require('../../lib/config')
 const _ = require('lodash')
@@ -401,7 +402,10 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   }
 }
 
-const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
+const saveTransferPrepared = async (message, stateReason = null, hasPassedValidation = true) => {
+  // TODO: avoid decoding payload again. Pass settlementModel as an extra argument instead
+  const payload = decodePayload(message.value.content.payload)
+  const settlementModel =  message.value.content.settlementModel
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
     'facade_saveTransferPrepared - Metrics for transfer model',
@@ -411,15 +415,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const participants = []
     const names = [payload.payeeFsp, payload.payerFsp]
 
-    if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
-      // TODO: Get the transaction object from somewhere
-      const transactionObject = transferList[0].value.content.transaction
-      const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
-      settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
-    }
-
     for (const name of names) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, settlementModel.ledgerAccountTypeId)
       if (participant) {
         participants.push(participant)
       }
