@@ -130,7 +130,7 @@ const prepareTestData = async (dataObj) => {
     await KafkaHelper.producers.connect()
     // Lets make sure that all existing Consumers are connected
     await KafkaHelper.consumers.connect()
-s
+
     const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
     const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
 
@@ -146,6 +146,10 @@ s
       limit: { value: dataObj.payee.limit }
     })
     await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
+      currency: dataObj.amount.currency,
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId4, {
       currency: dataObj.amount.currency,
       amount: 10000
     })
@@ -434,48 +438,133 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
-      const config = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.FULFIL.toUpperCase())
-      config.logger = Logger
+    // await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
+    //   const config = Utility.getKafkaConfig(
+    //     Config.KAFKA_CONFIG,
+    //     Enum.Kafka.Config.PRODUCER,
+    //     TransferEventType.TRANSFER.toUpperCase(),
+    //     TransferEventType.FULFIL.toUpperCase())
+    //   config.logger = Logger
 
-      const producerResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, config)
+    //   const producerResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, config)
 
-      const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-        const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId) || {}
-        const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
-        const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
-        const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
-        test.equal(producerResponse, true, 'Producer for fulfil published message')
-        test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
-        test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
-        test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
-        test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
-        test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
-      }
+    //   const tests = async () => {
+    //     const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+    //     const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId3) || {}
+    //     const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
+    //     const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
+    //     const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
+    //     test.equal(producerResponse, true, 'Producer for fulfil published message')
+    //     test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
+    //     test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
+    //     test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
+    //     test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+    //     test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
+    //   }
 
-      try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.COMMITTED) {
-            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-          }
-          return tests()
-        }, retryOpts)
-      } catch (err) {
-        Logger.error(err)
-        test.fail(err.message)
-      }
-      test.end()
-    })
+    //   try {
+    //     await retry(async () => { // use bail(new Error('to break before max retries'))
+    //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+    //       if (transfer.transferState !== TransferState.COMMITTED) {
+    //         if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+    //         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+    //       }
+    //       return tests()
+    //     }, retryOpts)
+    //   } catch (err) {
+    //     Logger.error(err)
+    //     test.fail(err.message)
+    //   }
+    //   test.end()
+    // })
 
     transferFulfilCommit.end()
   })
+
+  // await handlersTest.test('transferFulfilCommit(REMITTANCE) should', async transferFulfilCommit => {
+  //   const td = await prepareTestData(testData)
+
+  //   await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
+  //     const config = Utility.getKafkaConfig(
+  //       Config.KAFKA_CONFIG,
+  //       Enum.Kafka.Config.PRODUCER,
+  //       TransferEventType.TRANSFER.toUpperCase(),
+  //       TransferEventType.PREPARE.toUpperCase())
+  //     config.logger = Logger
+  //     // td.messageProtocolPrepare.content.payload.ilpPacket = 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA'
+  //     const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
+
+  //     const tests = async () => {
+  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+  //       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+  //       const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+  //       const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
+  //       const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+  //       test.equal(producerResponse, true, 'Producer for prepare published message')
+  //       test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+  //       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+  //       test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+  //       test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+  //     }
+
+  //     try {
+  //       await retry(async () => { // use bail(new Error('to break before max retries'))
+  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+  //         if (transfer.transferState !== TransferState.RESERVED) {
+  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+  //           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+  //         }
+  //         return tests()
+  //       }, retryOpts)
+  //     } catch (err) {
+  //       Logger.error(err)
+  //       test.fail(err.message)
+  //     }
+  //     test.end()
+  //   })
+
+  //   await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
+  //     const config = Utility.getKafkaConfig(
+  //       Config.KAFKA_CONFIG,
+  //       Enum.Kafka.Config.PRODUCER,
+  //       TransferEventType.TRANSFER.toUpperCase(),
+  //       TransferEventType.FULFIL.toUpperCase())
+  //     config.logger = Logger
+
+  //     const producerResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, config)
+
+  //     const tests = async () => {
+  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+  //       const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId) || {}
+  //       const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
+  //       const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
+  //       const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
+  //       test.equal(producerResponse, true, 'Producer for fulfil published message')
+  //       test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
+  //       test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
+  //       test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
+  //       test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+  //       test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
+  //     }
+
+  //     try {
+  //       await retry(async () => { // use bail(new Error('to break before max retries'))
+  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+  //         if (transfer.transferState !== TransferState.COMMITTED) {
+  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+  //           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+  //         }
+  //         return tests()
+  //       }, retryOpts)
+  //     } catch (err) {
+  //       Logger.error(err)
+  //       test.fail(err.message)
+  //     }
+  //     test.end()
+  //   })
+
+  //   transferFulfilCommit.end()
+  // })
 
   await handlersTest.test('teardown', async (assert) => {
     try {

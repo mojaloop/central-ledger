@@ -45,6 +45,7 @@ const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
 const Metrics = require('@mojaloop/central-services-metrics')
+const EnumCached = require('../../lib/enumCached')
 
 // Alphabetically ordered list of error texts used below
 const UnsupportedActionText = 'Unsupported action'
@@ -409,6 +410,13 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
   try {
     const participants = []
     const names = [payload.payeeFsp, payload.payerFsp]
+
+    if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
+      // TODO: Get the transaction object from somewhere
+      const transactionObject = transferList[0].value.content.transaction
+      const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
+      settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
+    }
 
     for (const name of names) {
       const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)

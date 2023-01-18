@@ -61,6 +61,17 @@ const settlementModels = [
     ledgerAccountType: 'POSITION',
     autoPositionReset: true,
     requireLiquidityCheck: true
+  },
+  {
+    name: 'DEFERREDNETUSDREMITTANCE',
+    settlementGranularity: 'NET',
+    settlementInterchange: 'MULTILATERAL',
+    settlementAccountType: 'SETTLEMENT_REMITTANCE',
+    settlementDelay: 'DEFERRED',
+    ledgerAccountType: 'POSITION_REMITTANCE',
+    autoPositionReset: true,
+    currency: 'USD',
+    requireLiquidityCheck: true
   }
 ]
 
@@ -75,12 +86,16 @@ exports.prepareData = async () => {
 
   try {
     const settlementModelUSDExists = await Model.getByName(settlementModels[0].name)
-    const settlementModelDefaultExists = await Model.getByName(settlementModels[0].name)
+    const settlementModelDefaultExists = await Model.getByName(settlementModels[1].name)
+    const settlementModelRemittanceExists = await Model.getByName(settlementModels[2].name)
     if (!settlementModelUSDExists) {
       await Model.createSettlementModel(settlementModels[0])
     }
     if (!settlementModelDefaultExists) {
       await Model.createSettlementModel(settlementModels[1])
+    }
+    if (!settlementModelRemittanceExists) {
+      await Model.createSettlementModel(settlementModels[2])
     }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

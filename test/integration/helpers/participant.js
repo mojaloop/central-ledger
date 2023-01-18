@@ -53,11 +53,15 @@ exports.prepareData = async (name, currencyId = 'USD', isUnique = true) => {
     ))
     const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.POSITION, false)
     const participantCurrencyId2 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.SETTLEMENT, false)
+    const participantCurrencyId3 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.POSITION_REMITTANCE, false)
+    const participantCurrencyId4 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.SETTLEMENT_REMITTANCE, false)
     const participant = await Model.getById(participantId)
     return {
       participant,
       participantCurrencyId,
-      participantCurrencyId2
+      participantCurrencyId2,
+      participantCurrencyId3,
+      participantCurrencyId4
     }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

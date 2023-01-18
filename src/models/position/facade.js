@@ -21,6 +21,7 @@
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
+ * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
@@ -71,7 +72,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
       const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
       settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
     }
-    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
+    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.ledgerAccountTypeId)
     const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
     const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
     const reservedTransfers = []
@@ -169,7 +170,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           'facade_prepareChangeParticipantPositionTransaction_transaction_ValidatePositionBatch - Metrics for position model',
           ['success', 'queryName']
         ).startTimer()
-        const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
+        const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, settlementModel.ledgerAccountTypeId, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
 
         const liquidityCover = new MLNumber(settlementParticipantPosition.value).multiply(-1)
         const payerLimit = new MLNumber(participantLimit.value)
