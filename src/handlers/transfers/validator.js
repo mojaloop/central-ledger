@@ -48,6 +48,7 @@ const base64url = require('base64url')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
+const { Ilp } = require('@mojaloop/sdk-standard-components')
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
@@ -206,7 +207,8 @@ const validatePrepare = async (payload, headers) => {
     await validatePositionAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency) &&
     validateAmount(payload.amount) &&
     await validateConditionAndExpiration(payload) &&
-    validateDifferentDfsp(payload))
+    validateDifferentDfsp(payload) &&
+    validateIlpAgainstTransferRequest(payload))
   histTimerValidatePrepareEnd({ success: true, funcName: 'validatePrepare' })
   return {
     validationPassed,
@@ -241,11 +243,25 @@ const validateParticipantTransferId = async function (participantName, transferI
   return validationPassed
 }
 
+const validateIlpAgainstTransferRequest = function (payload) {
+  try {
+    const validationPassed = (new Ilp({ secret: null })).validateIlpAgainstTransferRequest(payload)
+    if (!validationPassed) {
+      reasons.push('Ilp packet is not valid against transfer request')
+    }
+    return validationPassed
+  } catch {
+    reasons.push('Ilp packet was unable to be decoded and is invalid')
+    return false
+  }
+}
+
 module.exports = {
   validatePrepare,
   validateById,
   validateFulfilCondition,
   validateParticipantByName,
   reasons,
-  validateParticipantTransferId
+  validateParticipantTransferId,
+  validateIlpAgainstTransferRequest
 }

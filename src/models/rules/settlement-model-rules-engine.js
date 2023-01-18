@@ -35,7 +35,7 @@ class SettlementModelRulesEngine {
   async obtainSettlementModelFrom (
     transactionObject,
     settlementModels,
-    ledgerAccountTypes,
+    ledgerAccountTypes
   ) {
     const facts = {
       transaction: transactionObject,
@@ -50,17 +50,16 @@ class SettlementModelRulesEngine {
       ) {
         selectedSettlementModel = settlementModels.find(sm => (sm.ledgerAccountTypeId === ledgerAccountTypes[events[0].params.ledgerAccountType] && sm.settlementAccountTypeId === ledgerAccountTypes[events[0].params.settlementAccountType]))
         if (!selectedSettlementModel) {
-          throw(new Error(`SettlementModel not found with ledgerAccountType = ${events[0].params.settlementAccountType} and settlementAccountType = ${events[0].params.settlementAccountType}`))
+          throw (new Error(`SettlementModel not found with ledgerAccountType = ${events[0].params.settlementAccountType} and settlementAccountType = ${events[0].params.settlementAccountType}`))
         }
       } else {
-        throw(new Error('Incorrect rule. Specify params ledgerAccountType and settlementAccountType'))
+        throw (new Error('Incorrect rule. Specify params ledgerAccountType and settlementAccountType'))
       }
     } else {
-      selectedSettlementModel = settlementModels.find(sm => (sm.ledgerAccountType === ledgerAccountTypes['POSITION'] && sm.settlementAccountType === ledgerAccountTypes['SETTLEMENT']))
+      selectedSettlementModel = settlementModels.find(sm => (sm.ledgerAccountType === ledgerAccountTypes.POSITION && sm.settlementAccountType === ledgerAccountTypes.SETTLEMENT))
     }
     return selectedSettlementModel
   }
-
 }
 
 module.exports = SettlementModelRulesEngine
