@@ -104,9 +104,9 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
     try {
       const engine = new SettlementModelRulesEngine()
       const result = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
-      assert.assert(result.hasOwnProperty('name'), true, 'result should contain field name')
-      assert.assert(result.hasOwnProperty('ledgerAccountTypeId'), true, 'result should contain field ledgerAccountTypeId')
-      assert.assert(result.hasOwnProperty('settlementAccountTypeId'), true, 'result should contain field settlementAccountTypeId')
+      assert.assert(result.hasOwnProperty('name'), true, 'result should contain field name') // eslint-disable-line
+      assert.assert(result.hasOwnProperty('ledgerAccountTypeId'), true, 'result should contain field ledgerAccountTypeId') // eslint-disable-line
+      assert.assert(result.hasOwnProperty('settlementAccountTypeId'), true, 'result should contain field settlementAccountTypeId') // eslint-disable-line
       assert.assert(result.name, 'DEFERREDNET', 'name should be DEFERREDNET')
       assert.end()
     } catch (err) {
