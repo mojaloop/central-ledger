@@ -53,7 +53,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
 
-    const settlementModel =  transferList[0].value.content.settlementModel
+    const settlementModel = transferList[0].value.content.settlementModel
 
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.ledgerAccountTypeId)
     const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)

@@ -39,14 +39,12 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
 const Time = require('@mojaloop/central-services-shared').Util.Time
-const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 const MLNumber = require('@mojaloop/ml-number')
 const Config = require('../../lib/config')
 const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
 const Metrics = require('@mojaloop/central-services-metrics')
-const EnumCached = require('../../lib/enumCached')
 
 // Alphabetically ordered list of error texts used below
 const UnsupportedActionText = 'Unsupported action'
@@ -402,10 +400,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   }
 }
 
-const saveTransferPrepared = async (message, stateReason = null, hasPassedValidation = true) => {
-  // TODO: avoid decoding payload again. Pass settlementModel as an extra argument instead
-  const payload = decodePayload(message.value.content.payload)
-  const settlementModel =  message.value.content.settlementModel
+const saveTransferPrepared = async (payload, settlementModel, stateReason = null, hasPassedValidation = true) => {
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
     'facade_saveTransferPrepared - Metrics for transfer model',

@@ -29,7 +29,6 @@ const Logger = require('@mojaloop/central-services-logger')
 const SettlementModelRulesEngine = require('../../../../src/models/rules/settlement-model-rules-engine')
 
 Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
-
   const ledgerAccountTypes = {
     POSITION: 1,
     SETTLEMENT: 2,
@@ -45,59 +44,59 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
     transactionId: '79d034ea-1cc1-40c0-a77d-9fbf8f5e0c5d',
     quoteId: '326b2586-9817-4857-a438-8042cc5598bf',
     payee: {
-        partyIdInfo: {
-          partyIdType: 'MSISDN',
-          partyIdentifier: '27713803912',
-          fspId: 'payeefsp'
-        }
+      partyIdInfo: {
+        partyIdType: 'MSISDN',
+        partyIdentifier: '27713803912',
+        fspId: 'payeefsp'
+      }
     },
     payer: {
-        partyIdInfo: {
-          partyIdType: 'MSISDN',
-          partyIdentifier: '44123456789',
-          fspId: 'testingtoolkitdfsp'
+      partyIdInfo: {
+        partyIdType: 'MSISDN',
+        partyIdentifier: '44123456789',
+        fspId: 'testingtoolkitdfsp'
+      },
+      personalInfo: {
+        complexName: {
+          firstName: 'Firstname-Test',
+          lastName: 'Lastname-Test'
         },
-        personalInfo: {
-          complexName: {
-            firstName: 'Firstname-Test',
-            lastName: 'Lastname-Test'
-          },
-          dateOfBirth: '1984-01-01'
-        }
+        dateOfBirth: '1984-01-01'
+      }
     },
     amount: {
-        amount: '100',
-        currency: 'USD'
+      amount: '100',
+      currency: 'USD'
     },
     transactionType: {
-        scenario: 'TRANSFER',
-        subScenario: 'REMITTANCE',
-        initiator: 'PAYER',
-        initiatorType: 'CONSUMER'
+      scenario: 'TRANSFER',
+      subScenario: 'REMITTANCE',
+      initiator: 'PAYER',
+      initiatorType: 'CONSUMER'
     },
     note: ''
   }
 
   const settlementModels = [
     {
-        name: 'DEFERREDNET',
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2,
-        requireLiquidityCheck: true,
-        ledgerAccountTypeId: 1,
-        autoPositionReset: true,
-        settlementAccountTypeId: 2
+      name: 'DEFERREDNET',
+      settlementGranularityId: 2,
+      settlementInterchangeId: 2,
+      settlementDelayId: 2,
+      requireLiquidityCheck: true,
+      ledgerAccountTypeId: 1,
+      autoPositionReset: true,
+      settlementAccountTypeId: 2
     },
     {
-        name: 'DEFERREDNET_REMITTANCE',
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2,
-        requireLiquidityCheck: true,
-        ledgerAccountTypeId: 7,
-        autoPositionReset: true,
-        settlementAccountTypeId: 8
+      name: 'DEFERREDNET_REMITTANCE',
+      settlementGranularityId: 2,
+      settlementInterchangeId: 2,
+      settlementDelayId: 2,
+      requireLiquidityCheck: true,
+      ledgerAccountTypeId: 7,
+      autoPositionReset: true,
+      settlementAccountTypeId: 8
     }
   ]
 
@@ -105,8 +104,11 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
     try {
       const engine = new SettlementModelRulesEngine()
       const result = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
+      // eslint-disable-next-line
       assert.assert(result.hasOwnProperty('name'), true, 'result should contain field name')
+      // eslint-disable-next-line
       assert.assert(result.hasOwnProperty('ledgerAccountTypeId'), true, 'result should contain field ledgerAccountTypeId')
+      // eslint-disable-next-line
       assert.assert(result.hasOwnProperty('settlementAccountTypeId'), true, 'result should contain field settlementAccountTypeId')
       assert.assert(result.name, 'DEFERREDNET', 'name should be DEFERREDNET')
       assert.end()

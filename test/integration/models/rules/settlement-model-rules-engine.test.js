@@ -222,35 +222,35 @@ const prepareTestData = async (dataObj) => {
       transactionId: Uuid(),
       quoteId: Uuid(),
       payee: {
-          partyIdInfo: {
-            partyIdType: 'MSISDN',
-            partyIdentifier: '27713803912',
-            fspId: payee.participant.name
-          }
+        partyIdInfo: {
+          partyIdType: 'MSISDN',
+          partyIdentifier: '27713803912',
+          fspId: payee.participant.name
+        }
       },
       payer: {
-          partyIdInfo: {
-            partyIdType: 'MSISDN',
-            partyIdentifier: '44123456789',
-            fspId: payer.participant.name
+        partyIdInfo: {
+          partyIdType: 'MSISDN',
+          partyIdentifier: '44123456789',
+          fspId: payer.participant.name
+        },
+        personalInfo: {
+          complexName: {
+            firstName: 'Firstname-Test',
+            lastName: 'Lastname-Test'
           },
-          personalInfo: {
-            complexName: {
-              firstName: 'Firstname-Test',
-              lastName: 'Lastname-Test'
-            },
-            dateOfBirth: '1984-01-01'
-          }
+          dateOfBirth: '1984-01-01'
+        }
       },
       amount: {
-          amount: dataObj.amount.amount,
-          currency: dataObj.amount.currency
+        amount: dataObj.amount.amount,
+        currency: dataObj.amount.currency
       },
       transactionType: {
-          scenario: 'TRANSFER',
-          subScenario: 'REMITTANCE',
-          initiator: 'PAYER',
-          initiatorType: 'CONSUMER'
+        scenario: 'TRANSFER',
+        subScenario: 'REMITTANCE',
+        initiator: 'PAYER',
+        initiatorType: 'CONSUMER'
       },
       note: ''
     }

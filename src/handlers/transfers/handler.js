@@ -110,28 +110,6 @@ const prepare = async (error, messages) => {
   const span = EventSdk.Tracer.createChildSpanFromContext(parentSpanService, contextFromMessage)
   try {
     const payload = decodePayload(message.value.content.payload)
-
-    if (Config.INCLUDE_DECODED_TRANSACTION_OBJECT) {
-      const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
-      message.value.content.transaction = transactionObject
-    }
-
-    // Select settlement model here
-    const allSettlementModels = await SettlementModelCached.getAll()
-    let settlementModels = allSettlementModels.filter(model => model.currencyId === message.value.content.payload.amount.currency)
-    if (settlementModels.length === 0) {
-      settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
-      if (settlementModels.length === 0) {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
-      }
-    }
-    let settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
-    if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE && message.value.content.transaction) {
-      const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
-      settlementModel = await engine.obtainSettlementModelFrom(message.value.content.transaction, settlementModels, ledgerAccountTypes)
-    }
-    message.value.content.settlementModel = settlementModel
-
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
     const transferId = payload.transferId
@@ -208,7 +186,24 @@ const prepare = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         try {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveTransfer'))
-          await TransferService.prepare(message)
+          // Select settlement model here
+          const allSettlementModels = await SettlementModelCached.getAll()
+          let settlementModels = allSettlementModels.filter(model => model.currencyId === message.value.content.payload.amount.currency)
+          if (settlementModels.length === 0) {
+            settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+            if (settlementModels.length === 0) {
+              throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
+            }
+          }
+          let settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+          if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
+            const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
+            const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
+            settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
+          }
+          message.value.content.settlementModel = settlementModel
+
+          await TransferService.prepare(payload, settlementModel)
         } catch (err) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}6`))
           Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
