@@ -50,19 +50,20 @@ const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const Proxyquire = require('proxyquire')
+const Config = require('../../../../src/lib/config')
 const { getMessagePayloadOrThrow } = require('../../../util/helpers')
 
 const transfer = {
-  transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
-  payerFsp: 'dfsp1',
-  payeeFsp: 'dfsp2',
+  transferId: '18c13536-7a17-44ad-aacb-0c9daafa2149',
+  payerFsp: 'testingtoolkitdfsp',
+  payeeFsp: 'payeefsp',
   amount: {
-    currency: 'USD',
-    amount: '433.88'
+    amount: '100',
+    currency: 'USD'
   },
-  ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
-  condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-  expiration: '2016-05-24T08:38:08.699-04:00',
+  ilpPacket: 'AYIDGQAAAAAAACcQHWcucGF5ZWVmc3AubXNpc2RuLjI3NzEzODAzOTEyggLvZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTVRoak1UTTFNell0TjJFeE55MDBOR0ZrTFdGaFkySXRNR001WkdGaFptRXlNVFE1SWl3aWNYVnZkR1ZKWkNJNklqWmhObVE1T1dOaExUUmhaVFF0TkdVeE9DMWlNR1k1TFRsak9Ua3dZall3TVRjMFlpSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpjM01UTTRNRE01TVRJaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpRME1USXpORFUyTnpnNUlpd2labk53U1dRaU9pSjBaWE4wYVc1bmRHOXZiR3RwZEdSbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJa1pwY25OMGJtRnRaUzFVWlhOMElpd2liR0Z6ZEU1aGJXVWlPaUpNWVhOMGJtRnRaUzFVWlhOMEluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazROQzB3TVMwd01TSjlmU3dpWVcxdmRXNTBJanA3SW1GdGIzVnVkQ0k2SWpFd01DSXNJbU4xY25KbGJtTjVJam9pVlZORUluMHNJblJ5WVc1ellXTjBhVzl1Vkhsd1pTSTZleUp6WTJWdVlYSnBieUk2SWxSU1FVNVRSa1ZTSWl3aWFXNXBkR2xoZEc5eUlqb2lVRUZaUlZJaUxDSnBibWwwYVdGMGIzSlVlWEJsSWpvaVEwOU9VMVZOUlZJaWZYMAA',
+  condition: 'wqMyoJvKgTYzo7Q0l_h8eJyYnt5GFA8VRZhzy1pemTY',
+  expiration: '2023-01-10T14:38:08.497Z',
   extensionList: {
     extension: [
       {
@@ -78,18 +79,18 @@ const transfer = {
 }
 
 const transferReturn = {
-  transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+  transferId: '18c13536-7a17-44ad-aacb-0c9daafa2149',
   amount: {
-    currency: 'USD',
-    amount: '433.88'
+    amount: '100',
+    currency: 'USD'
   },
   transferState: 'COMMITTED',
   transferStateEnumeration: 'COMMITTED',
-  completedTimestamp: '2016-05-15T18:44:38.000Z',
-  ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
-  condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-  expiration: '2016-05-24T08:38:08.699-04:00',
-  fulfilment: 'uz0FAeutW6o8Mz7OmJh8ALX6mmsZCcIDOqtE01eo4uI',
+  completedTimestamp: '2023-01-10T14:37:08.698Z',
+  ilpPacket: 'AYIDGQAAAAAAACcQHWcucGF5ZWVmc3AubXNpc2RuLjI3NzEzODAzOTEyggLvZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTVRoak1UTTFNell0TjJFeE55MDBOR0ZrTFdGaFkySXRNR001WkdGaFptRXlNVFE1SWl3aWNYVnZkR1ZKWkNJNklqWmhObVE1T1dOaExUUmhaVFF0TkdVeE9DMWlNR1k1TFRsak9Ua3dZall3TVRjMFlpSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpjM01UTTRNRE01TVRJaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpRME1USXpORFUyTnpnNUlpd2labk53U1dRaU9pSjBaWE4wYVc1bmRHOXZiR3RwZEdSbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJa1pwY25OMGJtRnRaUzFVWlhOMElpd2liR0Z6ZEU1aGJXVWlPaUpNWVhOMGJtRnRaUzFVWlhOMEluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazROQzB3TVMwd01TSjlmU3dpWVcxdmRXNTBJanA3SW1GdGIzVnVkQ0k2SWpFd01DSXNJbU4xY25KbGJtTjVJam9pVlZORUluMHNJblJ5WVc1ellXTjBhVzl1Vkhsd1pTSTZleUp6WTJWdVlYSnBieUk2SWxSU1FVNVRSa1ZTSWl3aWFXNXBkR2xoZEc5eUlqb2lVRUZaUlZJaUxDSnBibWwwYVdGMGIzSlVlWEJsSWpvaVEwOU9VMVZOUlZJaWZYMAA',
+  condition: 'wqMyoJvKgTYzo7Q0l_h8eJyYnt5GFA8VRZhzy1pemTY',
+  expiration: '2023-01-10T14:38:08.497Z',
+  fulfilment: 'EIvu10ISWSRPTJRnM-QI5u1oy01wvFty623kISXGYFU',
   extensionList: [{
     key: 'key1',
     value: 'value1'
@@ -779,6 +780,46 @@ Test('Transfer handler', transferHandlerTest => {
         test.pass('Error Thrown')
         test.end()
       }
+    })
+
+    prepareTest.test('include decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is true', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
+      const localMessages = MainUtil.clone(messages)
+      // here copy
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      test.equal(result, true)
+      test.ok(Kafka.proceed.getCall(0).args[1].message.value.content.transaction)
+      test.end()
+    })
+
+    prepareTest.test('exclude decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is false', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = false
+      const localMessages = MainUtil.clone(messages)
+      // here copy
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      test.equal(result, true)
+      test.notOk(Kafka.proceed.getCall(0).args[1].message.value.content.transaction)
+      test.end()
     })
 
     prepareTest.end()
