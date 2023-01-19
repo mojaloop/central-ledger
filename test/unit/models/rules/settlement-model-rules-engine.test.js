@@ -27,6 +27,8 @@
 const Test = require('tapes')(require('tape'))
 const Logger = require('@mojaloop/central-services-logger')
 const SettlementModelRulesEngine = require('../../../../src/models/rules/settlement-model-rules-engine')
+const sinon = require('sinon');
+const remittanceRules = require('../../../data/rules-settlement-model-remittance.json')
 
 Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
   const ledgerAccountTypes = {
@@ -110,7 +112,27 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
       assert.assert(result.hasOwnProperty('ledgerAccountTypeId'), true, 'result should contain field ledgerAccountTypeId')
       // eslint-disable-next-line
       assert.assert(result.hasOwnProperty('settlementAccountTypeId'), true, 'result should contain field settlementAccountTypeId')
-      assert.assert(result.name, 'DEFERREDNET', 'name should be DEFERREDNET')
+      assert.equal(result.name, 'DEFERREDNET', 'name should be DEFERREDNET')
+      assert.end()
+    } catch (err) {
+      Logger.error(`obtainSettlementModelFrom failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await obtainSettlementModelFromTest.test('should select remittance settlement model', async (assert) => {
+    try {
+      sinon.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules);
+      const engine = new SettlementModelRulesEngine()
+      const result = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
+      // eslint-disable-next-line
+      assert.assert(result.hasOwnProperty('name'), true, 'result should contain field name')
+      // eslint-disable-next-line
+      assert.assert(result.hasOwnProperty('ledgerAccountTypeId'), true, 'result should contain field ledgerAccountTypeId')
+      // eslint-disable-next-line
+      assert.assert(result.hasOwnProperty('settlementAccountTypeId'), true, 'result should contain field settlementAccountTypeId')
+      assert.equal(result.name, 'DEFERREDNET_REMITTANCE', 'name should be DEFERREDNET_REMITTANCE')
       assert.end()
     } catch (err) {
       Logger.error(`obtainSettlementModelFrom failed with error - ${err}`)
