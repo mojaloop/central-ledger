@@ -44,14 +44,8 @@ const SettlementHelper = require('#test/integration/helpers/settlementModels')
 const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
 const TransferService = require('#src/domain/transfer/index')
 const ParticipantService = require('#src/domain/participant/index')
-const TransferExtensionModel = require('#src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const {
-  wrapWithRetries,
-  getMessagePayloadOrThrow,
-  sleepPromise
-} = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
 const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
 
@@ -59,6 +53,7 @@ const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
+const { Ilp } = require('@mojaloop/sdk-standard-components');
 
 const Handlers = {
   index: require('#src/handlers/register'),
@@ -85,27 +80,6 @@ const retryOpts = {
 const testData = {
   amount: {
     currency: 'USD',
-    amount: 110
-  },
-  payer: {
-    name: 'payerFsp',
-    limit: 500
-  },
-  payee: {
-    name: 'payeeFsp',
-    limit: 300
-  },
-  endpoint: {
-    base: 'http://localhost:1080',
-    email: 'test@example.com'
-  },
-  now: new Date(),
-  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
-}
-
-const testDataZAR = {
-  amount: {
-    currency: 'ZAR',
     amount: 110
   },
   payer: {
@@ -164,60 +138,7 @@ const prepareTestData = async (dataObj) => {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_QUOTES', `${dataObj.endpoint.base}`)
     }
 
-    const transferPayload = {
-      transferId: Uuid(),
-      payerFsp: payer.participant.name,
-      payeeFsp: payee.participant.name,
-      amount: {
-        currency: dataObj.amount.currency,
-        amount: dataObj.amount.amount
-      },
-      ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
-      condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
-      expiration: dataObj.expiration,
-      extensionList: {
-        extension: [
-          {
-            key: 'key1',
-            value: 'value1'
-          },
-          {
-            key: 'key2',
-            value: 'value2'
-          }
-        ]
-      }
-    }
-
-    const prepareHeaders = {
-      'fspiop-source': payer.participant.name,
-      'fspiop-destination': payee.participant.name,
-      'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
-    }
-    const fulfilAbortRejectHeaders = {
-      'fspiop-source': payee.participant.name,
-      'fspiop-destination': payer.participant.name,
-      'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
-    }
-
-    const fulfilPayload = {
-      fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
-      completedTimestamp: dataObj.now,
-      transferState: 'COMMITTED',
-      extensionList: {
-        extension: [
-          {
-            key: 'key1',
-            value: 'value1'
-          },
-          {
-            key: 'key2',
-            value: 'value2'
-          }
-        ]
-      }
-    }
-
+    // Generate ILP packet
     const transactionObject = {
       transactionId: Uuid(),
       quoteId: Uuid(),
@@ -254,6 +175,65 @@ const prepareTestData = async (dataObj) => {
       },
       note: ''
     }
+    const _ilp = new Ilp({
+      secret: 'asdf',
+      logger: null,
+    });
+    const { ilpPacket, fulfilment, condition } = _ilp.getResponseIlp(transactionObject)
+
+    const transferPayload = {
+      transferId: Uuid(),
+      payerFsp: payer.participant.name,
+      payeeFsp: payee.participant.name,
+      amount: {
+        currency: dataObj.amount.currency,
+        amount: dataObj.amount.amount
+      },
+      ilpPacket: ilpPacket,
+      condition: condition,
+      expiration: dataObj.expiration,
+      extensionList: {
+        extension: [
+          {
+            key: 'key1',
+            value: 'value1'
+          },
+          {
+            key: 'key2',
+            value: 'value2'
+          }
+        ]
+      }
+    }
+
+    const prepareHeaders = {
+      'fspiop-source': payer.participant.name,
+      'fspiop-destination': payee.participant.name,
+      'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
+    }
+    const fulfilAbortRejectHeaders = {
+      'fspiop-source': payee.participant.name,
+      'fspiop-destination': payer.participant.name,
+      'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
+    }
+
+    const fulfilPayload = {
+      fulfilment: fulfilment,
+      completedTimestamp: dataObj.now,
+      transferState: 'COMMITTED',
+      extensionList: {
+        extension: [
+          {
+            key: 'key1',
+            value: 'value1'
+          },
+          {
+            key: 'key2',
+            value: 'value2'
+          }
+        ]
+      }
+    }
 
     const rejectPayload = Object.assign({}, fulfilPayload, { transferState: TransferInternalState.ABORTED_REJECTED })
 
@@ -267,8 +247,7 @@ const prepareTestData = async (dataObj) => {
       type: 'application/json',
       content: {
         headers: prepareHeaders,
-        payload: transferPayload,
-        transaction: transactionObject
+        payload: transferPayload
       },
       metadata: {
         event: {
@@ -438,133 +417,48 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    // await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
-    //   const config = Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.PRODUCER,
-    //     TransferEventType.TRANSFER.toUpperCase(),
-    //     TransferEventType.FULFIL.toUpperCase())
-    //   config.logger = Logger
+    await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
+      const config = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      config.logger = Logger
 
-    //   const producerResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, config)
+      const producerResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, config)
 
-    //   const tests = async () => {
-    //     const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-    //     const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId3) || {}
-    //     const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
-    //     const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
-    //     const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
-    //     test.equal(producerResponse, true, 'Producer for fulfil published message')
-    //     test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
-    //     test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
-    //     test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
-    //     test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
-    //     test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
-    //   }
+      const tests = async () => {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId3) || {}
+        const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
+        const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
+        const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
+        test.equal(producerResponse, true, 'Producer for fulfil published message')
+        test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
+        test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
+        test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
+        test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+        test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
+      }
 
-    //   try {
-    //     await retry(async () => { // use bail(new Error('to break before max retries'))
-    //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-    //       if (transfer.transferState !== TransferState.COMMITTED) {
-    //         if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-    //         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-    //       }
-    //       return tests()
-    //     }, retryOpts)
-    //   } catch (err) {
-    //     Logger.error(err)
-    //     test.fail(err.message)
-    //   }
-    //   test.end()
-    // })
+      try {
+        await retry(async () => { // use bail(new Error('to break before max retries'))
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer.transferState !== TransferState.COMMITTED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          return tests()
+        }, retryOpts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      test.end()
+    })
 
     transferFulfilCommit.end()
   })
-
-  // await handlersTest.test('transferFulfilCommit(REMITTANCE) should', async transferFulfilCommit => {
-  //   const td = await prepareTestData(testData)
-
-  //   await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
-  //     const config = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     config.logger = Logger
-  //     // td.messageProtocolPrepare.content.payload.ilpPacket = 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA'
-  //     const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
-
-  //     const tests = async () => {
-  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
-  //       const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
-  //       const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
-  //       const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-  //       test.equal(producerResponse, true, 'Producer for prepare published message')
-  //       test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-  //       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-  //       test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
-  //       test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
-  //     }
-
-  //     try {
-  //       await retry(async () => { // use bail(new Error('to break before max retries'))
-  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //         if (transfer.transferState !== TransferState.RESERVED) {
-  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-  //           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-  //         }
-  //         return tests()
-  //       }, retryOpts)
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-  //     test.end()
-  //   })
-
-  //   await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
-  //     const config = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.FULFIL.toUpperCase())
-  //     config.logger = Logger
-
-  //     const producerResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, config)
-
-  //     const tests = async () => {
-  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //       const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId) || {}
-  //       const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
-  //       const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
-  //       const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
-  //       test.equal(producerResponse, true, 'Producer for fulfil published message')
-  //       test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
-  //       test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
-  //       test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
-  //       test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
-  //       test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
-  //     }
-
-  //     try {
-  //       await retry(async () => { // use bail(new Error('to break before max retries'))
-  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //         if (transfer.transferState !== TransferState.COMMITTED) {
-  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-  //           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-  //         }
-  //         return tests()
-  //       }, retryOpts)
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-  //     test.end()
-  //   })
-
-  //   transferFulfilCommit.end()
-  // })
 
   await handlersTest.test('teardown', async (assert) => {
     try {
@@ -573,30 +467,7 @@ Test('Handlers test', async handlersTest => {
       await Db.disconnect()
       assert.pass('database connection closed')
       await testConsumer.destroy()
-
-      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js - https://github.com/mojaloop/project/issues/3067
-      // const topics = KafkaHelper.topics
-      // for (const topic of topics) {
-      //   try {
-      //     await Producer.getProducer(topic).disconnect()
-      //     assert.pass(`producer to ${topic} disconnected`)
-      //   } catch (err) {
-      //     assert.pass(err.message)
-      //   }
-      // }
-      // Lets make sure that all existing Producers are disconnected
       await KafkaHelper.producers.disconnect()
-
-      // TODO: Clean this up once the above issue has been resolved.
-      // for (const topic of topics) {
-      //   try {
-      //     await Consumer.getConsumer(topic).disconnect()
-      //     assert.pass(`consumer to ${topic} disconnected`)
-      //   } catch (err) {
-      //     assert.pass(err.message)
-      //   }
-      // }
-      // Lets make sure that all existing Consumers are disconnected
       await KafkaHelper.consumers.disconnect()
 
       if (debug) {
