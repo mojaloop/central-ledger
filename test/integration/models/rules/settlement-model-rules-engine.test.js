@@ -53,7 +53,11 @@ const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
-const { Ilp } = require('@mojaloop/sdk-standard-components');
+const { Ilp } = require('@mojaloop/sdk-standard-components')
+const SettlementModelRulesEngine = require('../../../../src/models/rules/settlement-model-rules-engine')
+const sinon = require('sinon')
+const remittanceRules = require('../../../data/rules-settlement-model-remittance.json')
+sinon.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules)
 
 const Handlers = {
   index: require('#src/handlers/register'),
@@ -177,8 +181,8 @@ const prepareTestData = async (dataObj) => {
     }
     const _ilp = new Ilp({
       secret: 'asdf',
-      logger: null,
-    });
+      logger: null
+    })
     const { ilpPacket, fulfilment, condition } = _ilp.getResponseIlp(transactionObject)
 
     const transferPayload = {
@@ -189,8 +193,8 @@ const prepareTestData = async (dataObj) => {
         currency: dataObj.amount.currency,
         amount: dataObj.amount.amount
       },
-      ilpPacket: ilpPacket,
-      condition: condition,
+      ilpPacket,
+      condition,
       expiration: dataObj.expiration,
       extensionList: {
         extension: [
@@ -218,7 +222,7 @@ const prepareTestData = async (dataObj) => {
     }
 
     const fulfilPayload = {
-      fulfilment: fulfilment,
+      fulfilment,
       completedTimestamp: dataObj.now,
       transferState: 'COMMITTED',
       extensionList: {
@@ -320,11 +324,6 @@ Test('Handlers test', async handlersTest => {
   await Cache.initCache()
   await SettlementHelper.prepareData()
   await HubAccountsHelper.prepareData()
-
-  const wrapWithRetriesConf = {
-    remainingRetries: process.env.TST_RETRY_COUNT || 10, // default 10
-    timeout: process.env.TST_RETRY_TIMEOUT || 2 // default 2
-  }
 
   // Start a testConsumer to monitor events that our handlers emit
   const testConsumer = new TestConsumer([

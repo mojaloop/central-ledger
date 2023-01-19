@@ -27,7 +27,7 @@
 const Test = require('tapes')(require('tape'))
 const Logger = require('@mojaloop/central-services-logger')
 const SettlementModelRulesEngine = require('../../../../src/models/rules/settlement-model-rules-engine')
-const sinon = require('sinon');
+const sinon = require('sinon')
 const remittanceRules = require('../../../data/rules-settlement-model-remittance.json')
 
 Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
@@ -123,7 +123,7 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
 
   await obtainSettlementModelFromTest.test('should select remittance settlement model', async (assert) => {
     try {
-      sinon.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules);
+      sinon.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules)
       const engine = new SettlementModelRulesEngine()
       const result = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
       // eslint-disable-next-line
