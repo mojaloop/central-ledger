@@ -29,7 +29,11 @@ class SettlementModelRulesEngine {
   constructor (config) {
     this.config = config
     this.engine = new RulesEngine(config)
-    this.engine.loadRules(rules)
+    this.engine.loadRules(this.getRules())
+  }
+
+  getRules () {
+    return rules
   }
 
   async obtainSettlementModelFrom (
