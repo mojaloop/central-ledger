@@ -182,27 +182,26 @@ const prepare = async (error, messages) => {
       throw fspiopError
     } else { // !hasDuplicateId
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
+      // Select settlement model here
+      const allSettlementModels = await SettlementModelCached.getAll()
+      let settlementModels = allSettlementModels.filter(model => model.currencyId === message.value.content.payload.amount.currency)
+      if (settlementModels.length === 0) {
+        settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+        if (settlementModels.length === 0) {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
+        }
+      }
+      let settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+      if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
+        const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
+        const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
+        settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
+      }
+      message.value.content.settlementModel = settlementModel
       if (validationPassed) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         try {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveTransfer'))
-          // Select settlement model here
-          const allSettlementModels = await SettlementModelCached.getAll()
-          let settlementModels = allSettlementModels.filter(model => model.currencyId === message.value.content.payload.amount.currency)
-          if (settlementModels.length === 0) {
-            settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
-            if (settlementModels.length === 0) {
-              throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
-            }
-          }
-          let settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
-          if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
-            const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
-            const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
-            settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
-          }
-          message.value.content.settlementModel = settlementModel
-
           await TransferService.prepare(payload, settlementModel)
         } catch (err) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}6`))
@@ -228,7 +227,7 @@ const prepare = async (error, messages) => {
         Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
         try {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
-          await TransferService.prepare(message, reasons.toString(), false)
+          await TransferService.prepare(payload, settlementModel, reasons.toString(), false)
         } catch (err) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}8`))
           Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
