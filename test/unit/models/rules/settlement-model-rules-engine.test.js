@@ -80,6 +80,42 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
     note: ''
   }
 
+  const transactionObjectWithoutRemittance = {
+    transactionId: '79d034ea-1cc1-40c0-a77d-9fbf8f5e0c5d',
+    quoteId: '326b2586-9817-4857-a438-8042cc5598bf',
+    payee: {
+        partyIdInfo: {
+          partyIdType: 'MSISDN',
+          partyIdentifier: '27713803912',
+          fspId: 'payeefsp'
+        }
+    },
+    payer: {
+        partyIdInfo: {
+          partyIdType: 'MSISDN',
+          partyIdentifier: '44123456789',
+          fspId: 'testingtoolkitdfsp'
+        },
+        personalInfo: {
+          complexName: {
+            firstName: 'Firstname-Test',
+            lastName: 'Lastname-Test'
+          },
+          dateOfBirth: '1984-01-01'
+        }
+    },
+    amount: {
+        amount: '100',
+        currency: 'USD'
+    },
+    transactionType: {
+        scenario: 'TRANSFER',
+        initiator: 'PAYER',
+        initiatorType: 'CONSUMER'
+    },
+    note: ''
+  }
+
   const settlementModels = [
     {
         name: 'DEFERREDNET',
@@ -128,9 +164,34 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
       assert.assert(result.hasOwnProperty('name'), true, 'result should contain field name')
       // eslint-disable-next-line
       assert.assert(result.hasOwnProperty('ledgerAccountTypeId'), true, 'result should contain field ledgerAccountTypeId')
+      assert.equal(result.ledgerAccountTypeId,7,'ledgerAccountTypeId should be 7')
       // eslint-disable-next-line
       assert.assert(result.hasOwnProperty('settlementAccountTypeId'), true, 'result should contain field settlementAccountTypeId')
+      assert.equal(result.settlementAccountTypeId,8,'settlementAccountTypeId should be 8')
       assert.equal(result.name, 'DEFERREDNET_REMITTANCE', 'name should be DEFERREDNET_REMITTANCE')
+      assert.end()
+    } catch (err) {
+      Logger.error(`obtainSettlementModelFrom failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await obtainSettlementModelFromTest.test('should select default settlement model when subscenario is missing', async (assert) => {
+    try {
+      // Stubbing here is not needed as it was already stubbed above
+      // sinon.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules);
+      const engine = new SettlementModelRulesEngine()
+      const result = await engine.obtainSettlementModelFrom(transactionObjectWithoutRemittance, settlementModels, ledgerAccountTypes)
+      // eslint-disable-next-line
+      assert.assert(result.hasOwnProperty('name'), true, 'result should contain field name')
+      // eslint-disable-next-line
+      assert.assert(result.hasOwnProperty('ledgerAccountTypeId'), true, 'result should contain field ledgerAccountTypeId')
+      assert.equal(result.ledgerAccountTypeId,1,'ledgerAccountTypeId should be 1')
+      // eslint-disable-next-line
+      assert.assert(result.hasOwnProperty('settlementAccountTypeId'), true, 'result should contain field settlementAccountTypeId')
+      assert.equal(result.settlementAccountTypeId,2,'settlementAccountTypeId should be 1')
+      assert.equal(result.name, 'DEFERREDNET', 'name should be DEFERREDNET')
       assert.end()
     } catch (err) {
       Logger.error(`obtainSettlementModelFrom failed with error - ${err}`)
