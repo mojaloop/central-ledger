@@ -184,7 +184,7 @@ const prepare = async (error, messages) => {
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       // Select settlement model here
       const allSettlementModels = await SettlementModelCached.getAll()
-      let settlementModels = allSettlementModels.filter(model => model.currencyId === message.value.content.payload.amount.currency)
+      let settlementModels = allSettlementModels.filter(model => model.currencyId === payload.amount.currency)
       if (settlementModels.length === 0) {
         settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
         if (settlementModels.length === 0) {

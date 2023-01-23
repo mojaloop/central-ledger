@@ -704,7 +704,7 @@ const recordFundsInOut = async (payload, params, enums) => {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantAccountCurrencyMismatchText)
     } else if (!accountMatched.accountIsActive) {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountInactiveErrorText)
-    } else if (accountMatched.ledgerAccountTypeId !== enums.ledgerAccountType.SETTLEMENT) {
+    } else if (accountMatched.ledgerAccountTypeId !== enums.ledgerAccountType.SETTLEMENT && accountMatched.ledgerAccountTypeId !== enums.ledgerAccountType.SETTLEMENT_REMITTANCE) {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountNotSettlementTypeErrorText)
     }
     transferId && (payload.transferId = transferId)
