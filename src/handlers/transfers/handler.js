@@ -831,6 +831,7 @@ const getTransfer = async (error, messages) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerPrepareHandler = async () => {
+  await SettlementModelCached.initialize()
   try {
     const prepareHandler = {
       command: prepare,
