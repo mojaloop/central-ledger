@@ -41,14 +41,6 @@ class RulesEngine {
   }
 
   _addCustomOperators () {
-    this.engine.addOperator('numberStringLessThanInclusive', (a, b) => Number(a) <= b)
-    this.engine.addOperator('numberStringGreaterThanInclusive', (a, b) => Number(a) >= b)
-    this.engine.addOperator('numericEqual', (a, b) => Number(a) === Number(b))
-    this.engine.addOperator('numericNotEqual', (a, b) => Number(a) !== Number(b))
-    this.engine.addOperator('numericLessThan', (a, b) => Number(a) < Number(b))
-    this.engine.addOperator('numericGreaterThan', (a, b) => Number(a) > Number(b))
-    this.engine.addOperator('numericLessThanInclusive', (a, b) => Number(a) <= Number(b))
-    this.engine.addOperator('numericGreaterThanInclusive', (a, b) => Number(a) >= Number(b))
   }
 
   /**

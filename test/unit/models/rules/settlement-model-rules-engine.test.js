@@ -19,6 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
+ * Sridevi Miriyala <sridevi.miriyala@infitx.com>
  --------------
  ******/
 
@@ -31,7 +32,7 @@ const sinon = require('sinon')
 const remittanceRules = require('../../../data/rules-settlement-model-remittance.json')
 
 Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
-  const ledgerAccountTypes = {
+  let ledgerAccountTypes = {
     POSITION: 1,
     SETTLEMENT: 2,
     HUB_RECONCILIATION: 3,
@@ -79,7 +80,7 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
     note: ''
   }
 
-  const settlementModels = [
+  let settlementModels = [
     {
       name: 'DEFERREDNET',
       settlementGranularityId: 2,
@@ -101,6 +102,19 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
       settlementAccountTypeId: 8
     }
   ]
+
+  await obtainSettlementModelFromTest.test('should return rules', async (t) => {
+    try {
+      const engine = new SettlementModelRulesEngine({})
+      const rules = engine.getRules()
+      t.equal(rules[0].event.type, 'SELECT_SETTLEMENT_MODEL', 'event type should be SELECT_SETTLEMENT_MODEL')
+      t.end()
+    } catch (err) {
+      Logger.error(`obtainSettlementModelFrom failed with error - ${err}`)
+      t.fail()
+      t.end()
+    }
+  })
 
   await obtainSettlementModelFromTest.test('should select default settlement model', async (assert) => {
     try {
@@ -254,6 +268,208 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
       assert.assert(result.hasOwnProperty('settlementAccountTypeId'), true, 'result should contain field settlementAccountTypeId')
       assert.equal(result.settlementAccountTypeId, 2, 'settlementAccountTypeId should be 1')
       assert.equal(result.name, 'DEFERREDNET', 'name should be DEFERREDNET')
+      assert.end()
+    } catch (err) {
+      Logger.error(`obtainSettlementModelFrom failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await obtainSettlementModelFromTest.test('missing settlement model', async (assert) => {
+    try {
+      const transactionObjectOtherThanRemittance = {
+        transactionId: '79d034ea-1cc1-40c0-a77d-9fbf8f5e0c5d',
+        quoteId: '326b2586-9817-4857-a438-8042cc5598bf',
+        payee: {
+          partyIdInfo: {
+            partyIdType: 'MSISDN',
+            partyIdentifier: '27713803912',
+            fspId: 'payeefsp'
+          }
+        },
+        payer: {
+          partyIdInfo: {
+            partyIdType: 'MSISDN',
+            partyIdentifier: '44123456789',
+            fspId: 'testingtoolkitdfsp'
+          },
+          personalInfo: {
+            complexName: {
+              firstName: 'Firstname-Test',
+              lastName: 'Lastname-Test'
+            },
+            dateOfBirth: '1984-01-01'
+          }
+        },
+        amount: {
+          amount: '100',
+          currency: 'USD'
+        },
+        transactionType: {
+          scenario: 'TRANSFER',
+          initiator: 'PAYER',
+          subScenario: 'REMITTANCE',
+          initiatorType: 'CONSUMER'
+        },
+        note: ''
+      }
+
+      settlementModels = [
+        {
+          name: 'DEFERREDNET',
+          settlementGranularityId: 2,
+          settlementInterchangeId: 2,
+          settlementDelayId: 2,
+          requireLiquidityCheck: true,
+          ledgerAccountTypeId: 1,
+          autoPositionReset: true,
+          settlementAccountTypeId: 2
+        }
+      ]
+
+      // Stubbing here is not needed as it was already stubbed above
+      // sinon.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules);
+      const engine = new SettlementModelRulesEngine()
+      await engine.obtainSettlementModelFrom(transactionObjectOtherThanRemittance, settlementModels, ledgerAccountTypes)
+
+      assert.end()
+    } catch (err) {
+      Logger.error(`obtainSettlementModelFrom failed with error - ${err}`)
+      assert.equal(err.message, 'SettlementModel not found with ledgerAccountType = SETTLEMENT_REMITTANCE and settlementAccountType = SETTLEMENT_REMITTANCE', 'settlementAccountTypeId should be 1')
+      assert.end()
+    }
+  })
+
+  await obtainSettlementModelFromTest.test('missing settlement model', async (assert) => {
+    try {
+      const transactionObjectOtherThanRemittance = {
+        transactionId: '79d034ea-1cc1-40c0-a77d-9fbf8f5e0c5d',
+        quoteId: '326b2586-9817-4857-a438-8042cc5598bf',
+        payee: {
+          partyIdInfo: {
+            partyIdType: 'MSISDN',
+            partyIdentifier: '27713803912',
+            fspId: 'payeefsp'
+          }
+        },
+        payer: {
+          partyIdInfo: {
+            partyIdType: 'MSISDN',
+            partyIdentifier: '44123456789',
+            fspId: 'testingtoolkitdfsp'
+          },
+          personalInfo: {
+            complexName: {
+              firstName: 'Firstname-Test',
+              lastName: 'Lastname-Test'
+            },
+            dateOfBirth: '1984-01-01'
+          }
+        },
+        amount: {
+          amount: '100',
+          currency: 'USD'
+        },
+        transactionType: {
+          scenario: 'TRANSFER',
+          initiator: 'PAYER',
+          subScenario: 'MISSING_LEDGER_TYPE_MODEL',
+          initiatorType: 'CONSUMER'
+        },
+        note: ''
+      }
+
+      // Stubbing here is not needed as it was already stubbed above
+      // sinon.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules);
+      const engine = new SettlementModelRulesEngine()
+      await engine.obtainSettlementModelFrom(transactionObjectOtherThanRemittance, settlementModels, ledgerAccountTypes)
+
+      assert.end()
+    } catch (err) {
+      Logger.error(`obtainSettlementModelFrom failed with error - ${err}`)
+      assert.equal(err.message, 'Incorrect rule. Specify params ledgerAccountType and settlementAccountType', 'Missing Ledger Account Type')
+      assert.end()
+    }
+  })
+
+  await obtainSettlementModelFromTest.test('should select dummy settlement model when subscenario is DUMMY_MODEL', async (assert) => {
+    try {
+      ledgerAccountTypes = {
+        POSITION: 9,
+        SETTLEMENT: 10,
+        HUB_RECONCILIATION: 3,
+        HUB_MULTILATERAL_SETTLEMENT: 4,
+        INTERCHANGE_FEE: 5,
+        INTERCHANGE_FEE_SETTLEMENT: 6,
+        POSITION_REMITTANCE: 7,
+        SETTLEMENT_REMITTANCE: 8
+      }
+
+      settlementModels = [
+        {
+          name: 'DUMMY_MODEL',
+          settlementGranularityId: 2,
+          settlementInterchangeId: 2,
+          settlementDelayId: 2,
+          requireLiquidityCheck: true,
+          ledgerAccountTypeId: 9,
+          autoPositionReset: true,
+          settlementAccountTypeId: 10
+        }
+      ]
+
+      const transactionObjectWithDummyModel = {
+        transactionId: '79d034ea-1cc1-40c0-a77d-9fbf8f5e0c5d',
+        quoteId: '326b2586-9817-4857-a438-8042cc5598bf',
+        payee: {
+          partyIdInfo: {
+            partyIdType: 'MSISDN',
+            partyIdentifier: '27713803912',
+            fspId: 'payeefsp'
+          }
+        },
+        payer: {
+          partyIdInfo: {
+            partyIdType: 'MSISDN',
+            partyIdentifier: '44123456789',
+            fspId: 'testingtoolkitdfsp'
+          },
+          personalInfo: {
+            complexName: {
+              firstName: 'Firstname-Test',
+              lastName: 'Lastname-Test'
+            },
+            dateOfBirth: '1984-01-01'
+          }
+        },
+        amount: {
+          amount: '100',
+          currency: 'USD'
+        },
+        transactionType: {
+          scenario: 'TRANSFER',
+          initiator: 'PAYER',
+          subScenario: 'DUMMY_MODEL',
+          initiatorType: 'CONSUMER'
+        },
+        note: ''
+      }
+
+      // Stubbing here is not needed as it was already stubbed above
+      // sinon.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules);
+      const engine = new SettlementModelRulesEngine()
+      const result = await engine.obtainSettlementModelFrom(transactionObjectWithDummyModel, settlementModels, ledgerAccountTypes)
+      // eslint-disable-next-line
+      assert.assert(result.hasOwnProperty('name'), true, 'result should contain field name')
+      assert.equal(result.name, 'DUMMY_MODEL', 'name should be DUMMY_MODEL')
+      // eslint-disable-next-line
+      assert.assert(result.hasOwnProperty('ledgerAccountTypeId'), true, 'result should contain field ledgerAccountTypeId')
+      assert.equal(result.ledgerAccountTypeId, 9, 'ledgerAccountTypeId should be 9')
+      // eslint-disable-next-line
+      assert.assert(result.hasOwnProperty('settlementAccountTypeId'), true, 'result should contain field settlementAccountTypeId')
+      assert.equal(result.settlementAccountTypeId, 10, 'settlementAccountTypeId should be 10')
+
       assert.end()
     } catch (err) {
       Logger.error(`obtainSettlementModelFrom failed with error - ${err}`)
