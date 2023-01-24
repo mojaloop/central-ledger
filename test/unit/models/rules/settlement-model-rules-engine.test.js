@@ -465,7 +465,6 @@ Test('obtainSettlementModelFromTest', async (obtainSettlementModelFromTest) => {
       // sinon.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules);
       const engine = new SettlementModelRulesEngine()
       const result = await engine.obtainSettlementModelFrom(transactionObjectWithDummyModel, settlementModels, ledgerAccountTypes)
-      console.log('result: ',result)
       // eslint-disable-next-line
       assert.assert(result.hasOwnProperty('name'), true, 'result should contain field name')
       assert.equal(result.name, 'DUMMY_MODEL', 'name should be DUMMY_MODEL')
