@@ -183,21 +183,33 @@ const prepare = async (error, messages) => {
     } else { // !hasDuplicateId
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       // Select settlement model here
-      const allSettlementModels = await SettlementModelCached.getAll()
-      let settlementModels = allSettlementModels.filter(model => model.currencyId === payload.amount.currency)
-      if (settlementModels.length === 0) {
-        settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+      let settlementModel
+      try {
+        const allSettlementModels = await SettlementModelCached.getAll()
+        let settlementModels = allSettlementModels.filter(model => model.currencyId === payload.amount.currency)
         if (settlementModels.length === 0) {
-          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
+          settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+          if (settlementModels.length === 0) {
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
+          }
         }
+        settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+        if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
+          const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
+          const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
+          settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
+        }
+        message.value.content.settlementModel = settlementModel
+      } catch (err) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal3--${actionLetter}10`))
+        Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+        const eventDetail = { functionality, action: TransferEventAction.PREPARE }
+        Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        throw fspiopError
       }
-      let settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
-      if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
-        const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
-        const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
-        settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
-      }
-      message.value.content.settlementModel = settlementModel
+
       if (validationPassed) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         try {

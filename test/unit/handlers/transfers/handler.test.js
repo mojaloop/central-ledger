@@ -913,6 +913,62 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    prepareTest.test('no matching settlement model throws an error and sends error notification', async (test) => {
+      Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE = true
+      const localMessages = MainUtil.clone(messages)
+      // here copy
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      SettlementModelCached.getAll.returns(Promise.resolve([
+      ]))
+      EnumCached.getEnums.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      await allTransferHandlers.prepare(null, localMessages)
+
+      const kafkaCall = Kafka.proceed.getCall(0)
+      test.equal(kafkaCall.args[2].fspiopError.errorInformation.errorCode, '6000')
+      test.equal(kafkaCall.args[2].fspiopError.errorInformation.errorDescription, 'Generic Settlement Error - Unable to find a matching or default, Settlement Model')
+      test.equal(kafkaCall.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCall.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.end()
+    })
+
+    prepareTest.test('prepare failing validation throws error and produces error notification', async (test) => {
+      Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE = true
+      const localMessages = MainUtil.clone(messages)
+      // here copy
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      SettlementModelCached.getAll.returns(Promise.resolve([
+        settlementModel1,
+        settlementModel2
+      ]))
+      EnumCached.getEnums.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      await allTransferHandlers.prepare(null, localMessages)
+
+      const kafkaCall = Kafka.proceed.getCall(0)
+      test.equal(kafkaCall.args[2].fspiopError.errorInformation.errorCode, '3100')
+      test.equal(kafkaCall.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error')
+      test.equal(kafkaCall.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCall.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.end()
+    })
+
     prepareTest.end()
   })
 
