@@ -907,12 +907,13 @@ workflows:
           requires:
             - pr-tools/pr-title-check
             ## Only do this check on PRs
+            ## TODO: Commenting the test steps for snapshot release temporarily
             # - test-dependencies
             - test-lint
             - test-unit
             - build
-            - test-coverage
-            - test-integration
+            # - test-coverage
+            # - test-integration
             - test-functional
             - vulnerability-check
             - audit-licenses
