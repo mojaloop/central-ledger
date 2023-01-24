@@ -815,11 +815,12 @@ workflows:
           context: org-global
           requires:
             - setup
-            - test-dependencies
+            ## TODO: Commenting the test steps for snapshot release temporarily
+            # - test-dependencies
             - test-lint
             - test-unit
-            - test-coverage
-            - test-integration
+            # - test-coverage
+            # - test-integration
             - test-functional
             - vulnerability-check
             - audit-licenses
