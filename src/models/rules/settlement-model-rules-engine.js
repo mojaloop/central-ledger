@@ -60,7 +60,7 @@ class SettlementModelRulesEngine {
         throw (new Error('Incorrect rule. Specify params ledgerAccountType and settlementAccountType'))
       }
     } else {
-      selectedSettlementModel = settlementModels.find(sm => (sm.ledgerAccountType === ledgerAccountTypes.POSITION && sm.settlementAccountType === ledgerAccountTypes.SETTLEMENT))
+      selectedSettlementModel = settlementModels.find(sm => (sm.ledgerAccountTypeId === ledgerAccountTypes.POSITION && sm.settlementAccountTypeId === ledgerAccountTypes.SETTLEMENT))
     }
     return selectedSettlementModel
   }
