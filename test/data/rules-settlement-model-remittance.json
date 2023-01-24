@@ -1,39 +1,82 @@
 [
-    {
-      "ruleId": 1,
-      "priority": 1,
-      "description": "REMITTANCE settlement model",
-      "conditions": {
-        "all": [
-          {
-            "fact": "transaction",
-            "operator": "equal",
-            "value": "REMITTANCE",
-            "path": "transactionType.subScenario"
-          }
-        ]
-      },
-      "event": {
-        "type": "SELECT_SETTLEMENT_MODEL",
-        "params": {
-          "ledgerAccountType": "POSITION_REMITTANCE",
-          "settlementAccountType": "SETTLEMENT_REMITTANCE"
+  {
+    "ruleId": 1,
+    "priority": 1,
+    "description": "DUMMY_MODEL settlement model",
+    "conditions": {
+      "all": [
+        {
+          "fact": "transaction",
+          "operator": "equal",
+          "value": "DUMMY_MODEL",
+          "path": "transactionType.subScenario"
         }
-      }
+      ]
     },
-    {
-      "ruleId": 2,
-      "priority": 2,
-      "description": "Default settlement model",
-      "conditions": {
-        "all": []
-      },
-      "event": {
-        "type": "SELECT_SETTLEMENT_MODEL",
-        "params": {
-          "ledgerAccountType": "POSITION",
-          "settlementAccountType": "SETTLEMENT"
-        }
+    "event": {
+      "type": "DUMMY_MODEL",
+      "params": {
+        "ledgerAccountType": "POSITION",
+        "settlementAccountType": "SETTLEMENT"
       }
     }
-  ]
+  },
+  {
+    "ruleId": 2,
+    "priority": 1,
+    "description": "MISSING_LEDGER_TYPE_MODEL settlement model",
+    "conditions": {
+      "all": [
+        {
+          "fact": "transaction",
+          "operator": "equal",
+          "value": "MISSING_LEDGER_TYPE_MODEL",
+          "path": "transactionType.subScenario"
+        }
+      ]
+    },
+    "event": {
+      "type": "SELECT_SETTLEMENT_MODEL",
+      "params": {
+        "settlementAccountType": "SETTLEMENT"
+      }
+    }
+  },
+  {
+    "ruleId": 3,
+    "priority": 1,
+    "description": "REMITTANCE settlement model",
+    "conditions": {
+      "all": [
+        {
+          "fact": "transaction",
+          "operator": "equal",
+          "value": "REMITTANCE",
+          "path": "transactionType.subScenario"
+        }
+      ]
+    },
+    "event": {
+      "type": "SELECT_SETTLEMENT_MODEL",
+      "params": {
+        "ledgerAccountType": "POSITION_REMITTANCE",
+        "settlementAccountType": "SETTLEMENT_REMITTANCE"
+      }
+    }
+  },
+  {
+    "ruleId": 4,
+    "priority": 2,
+    "description": "Default settlement model",
+    "conditions": {
+      "all": []
+    },
+    "event": {
+      "type": "SELECT_SETTLEMENT_MODEL",
+      "params": {
+        "ledgerAccountType": "POSITION",
+        "settlementAccountType": "SETTLEMENT"
+      }
+    }
+  }
+]
