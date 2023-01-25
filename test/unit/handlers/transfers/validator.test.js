@@ -16,15 +16,15 @@ Test('transfer validator', validatorTest => {
 
   validatorTest.beforeEach(test => {
     payload = {
-      transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
-      payerFsp: 'dfsp1',
-      payeeFsp: 'dfsp2',
+      transferId: '18c13536-7a17-44ad-aacb-0c9daafa2149',
+      payerFsp: 'testingtoolkitdfsp',
+      payeeFsp: 'payeefsp',
       amount: {
         currency: 'USD',
-        amount: '433.88'
+        amount: '100'
       },
-      ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
-      condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+      ilpPacket: 'AYIDGQAAAAAAACcQHWcucGF5ZWVmc3AubXNpc2RuLjI3NzEzODAzOTEyggLvZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTVRoak1UTTFNell0TjJFeE55MDBOR0ZrTFdGaFkySXRNR001WkdGaFptRXlNVFE1SWl3aWNYVnZkR1ZKWkNJNklqWmhObVE1T1dOaExUUmhaVFF0TkdVeE9DMWlNR1k1TFRsak9Ua3dZall3TVRjMFlpSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpjM01UTTRNRE01TVRJaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpRME1USXpORFUyTnpnNUlpd2labk53U1dRaU9pSjBaWE4wYVc1bmRHOXZiR3RwZEdSbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJa1pwY25OMGJtRnRaUzFVWlhOMElpd2liR0Z6ZEU1aGJXVWlPaUpNWVhOMGJtRnRaUzFVWlhOMEluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazROQzB3TVMwd01TSjlmU3dpWVcxdmRXNTBJanA3SW1GdGIzVnVkQ0k2SWpFd01DSXNJbU4xY25KbGJtTjVJam9pVlZORUluMHNJblJ5WVc1ellXTjBhVzl1Vkhsd1pTSTZleUp6WTJWdVlYSnBieUk2SWxSU1FVNVRSa1ZTSWl3aWFXNXBkR2xoZEc5eUlqb2lVRUZaUlZJaUxDSnBibWwwYVdGMGIzSlVlWEJsSWpvaVEwOU9VMVZOUlZJaWZYMAA',
+      condition: 'wqMyoJvKgTYzo7Q0l_h8eJyYnt5GFA8VRZhzy1pemTY',
       expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)), // tomorrow
       extensionList: {
         extension: [
@@ -40,8 +40,8 @@ Test('transfer validator', validatorTest => {
       }
     }
     headers = {
-      'fspiop-source': 'dfsp1',
-      'fspiop-destination': 'dfsp2'
+      'fspiop-source': 'testingtoolkitdfsp',
+      'fspiop-destination': 'payeefsp'
     }
     sandbox = Sinon.createSandbox()
     sandbox.stub(Participant)
@@ -74,7 +74,7 @@ Test('transfer validator', validatorTest => {
     })
 
     validatePrepareTest.test('fail validation when FSPIOP-Source doesnt match Payer', async (test) => {
-      const headersModified = { 'fspiop-source': 'dfsp2' }
+      const headersModified = { 'fspiop-source': 'payeefsp' }
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headersModified)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['FSPIOP-Source header should match Payer'])
@@ -103,7 +103,7 @@ Test('transfer validator', validatorTest => {
       test.end()
     })
 
-    validatePrepareTest.test('Fail validation for invalid expiration date', async (test) => {
+    validatePrepareTest.test('fail validation for invalid expiration date', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
@@ -128,56 +128,56 @@ Test('transfer validator', validatorTest => {
     })
 
     validatePrepareTest.test('fail validation for invalid participant', async (test) => {
-      Participant.getByName.withArgs('dfsp1').returns(Promise.resolve({ isActive: true }))
-      Participant.getByName.withArgs('dfsp2').returns(Promise.resolve(null))
+      Participant.getByName.withArgs('testingtoolkitdfsp').returns(Promise.resolve({ isActive: true }))
+      Participant.getByName.withArgs('payeefsp').returns(Promise.resolve(null))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
 
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['Participant dfsp2 not found'])
+      test.deepEqual(reasons, ['Participant payeefsp not found'])
       test.end()
     })
 
     validatePrepareTest.test('fail validation for inactive participant', async (test) => {
-      Participant.getByName.withArgs('dfsp1').returns(Promise.resolve({ isActive: true }))
-      Participant.getByName.withArgs('dfsp2').returns(Promise.resolve({ isActive: false }))
+      Participant.getByName.withArgs('testingtoolkitdfsp').returns(Promise.resolve({ isActive: true }))
+      Participant.getByName.withArgs('payeefsp').returns(Promise.resolve({ isActive: false }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
 
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['Participant dfsp2 is inactive'])
+      test.deepEqual(reasons, ['Participant payeefsp is inactive'])
       test.end()
     })
 
     validatePrepareTest.test('fail validation for invalid account', async (test) => {
-      Participant.getByName.withArgs('dfsp1').returns(Promise.resolve({ isActive: true }))
-      Participant.getByName.withArgs('dfsp2').returns(Promise.resolve({ isActive: true }))
-      Participant.getAccountByNameAndCurrency.withArgs('dfsp1', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: true }))
-      Participant.getAccountByNameAndCurrency.withArgs('dfsp2', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve(null))
+      Participant.getByName.withArgs('testingtoolkitdfsp').returns(Promise.resolve({ isActive: true }))
+      Participant.getByName.withArgs('payeefsp').returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.withArgs('testingtoolkitdfsp', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: true }))
+      Participant.getAccountByNameAndCurrency.withArgs('payeefsp', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve(null))
       CryptoConditions.validateCondition.returns(true)
 
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['Participant dfsp2 USD account not found'])
+      test.deepEqual(reasons, ['Participant payeefsp USD account not found'])
       test.end()
     })
 
     validatePrepareTest.test('fail validation for inactive account', async (test) => {
-      Participant.getByName.withArgs('dfsp1').returns(Promise.resolve({ isActive: true }))
-      Participant.getByName.withArgs('dfsp2').returns(Promise.resolve({ isActive: true }))
-      Participant.getAccountByNameAndCurrency.withArgs('dfsp1', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: true }))
-      Participant.getAccountByNameAndCurrency.withArgs('dfsp2', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: false }))
+      Participant.getByName.withArgs('testingtoolkitdfsp').returns(Promise.resolve({ isActive: true }))
+      Participant.getByName.withArgs('payeefsp').returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.withArgs('testingtoolkitdfsp', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: true }))
+      Participant.getAccountByNameAndCurrency.withArgs('payeefsp', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: false }))
       CryptoConditions.validateCondition.returns(true)
 
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['Participant dfsp2 USD account is inactive'])
+      test.deepEqual(reasons, ['Participant payeefsp USD account is inactive'])
       test.end()
     })
 
-    validatePrepareTest.test('pass validation for valid payload', async (test) => {
+    validatePrepareTest.test('fail validation decimal currency exceeding 4 maximum digits', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
@@ -201,7 +201,7 @@ Test('transfer validator', validatorTest => {
       test.end()
     })
 
-    validatePrepareTest.test('pass validation for valid payload', async (test) => {
+    validatePrepareTest.test('fail validation for amounts containing more than 18 digits', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
@@ -213,6 +213,76 @@ Test('transfer validator', validatorTest => {
       test.end()
     })
 
+    validatePrepareTest.test('validate ilppacket with correct corresponding transfer request', async (test) => {
+      Participant.getByName.returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+
+      const { validationPassed } = await Validator.validatePrepare(payload, headers)
+      test.equal(validationPassed, true, 'Ilp packet should be valid')
+      test.end()
+    })
+
+    validatePrepareTest.test('fail when ilp packet payee does not match transfer', async (test) => {
+      Participant.getByName.returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+
+      payload.payeeFsp = 'INCORRECTdfsp'
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
+      test.equal(validationPassed, false, 'Ilp packet should not be valid')
+      test.deepEqual(reasons, ['Ilp packet is not valid against transfer request'])
+      test.end()
+    })
+
+    validatePrepareTest.test('fail when ilp packet payer does not match transfer', async (test) => {
+      Participant.getByName.returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+
+      payload.payerFsp = 'INCORRECTdfsp'
+      headers['fspiop-source'] = 'INCORRECTdfsp'
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
+      test.equal(validationPassed, false, 'Ilp packet should not be valid')
+      test.deepEqual(reasons, ['Ilp packet is not valid against transfer request'])
+      test.end()
+    })
+
+    validatePrepareTest.test('fail when ilp packet amount.amount does not match transfer', async (test) => {
+      Participant.getByName.returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+
+      payload.amount.amount = '101'
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
+      test.equal(validationPassed, false, 'Ilp packet should not be valid')
+      test.deepEqual(reasons, ['Ilp packet is not valid against transfer request'])
+      test.end()
+    })
+
+    validatePrepareTest.test('fail when ilp packet amount.currency does not match transfer', async (test) => {
+      Participant.getByName.returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+
+      payload.amount.currency = 'EEE'
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
+      test.equal(validationPassed, false, 'Ilp packet should not be valid')
+      test.deepEqual(reasons, ['Ilp packet is not valid against transfer request'])
+      test.end()
+    })
+
+    validatePrepareTest.test('fail when ilp packet is unabled to be decoded', async (test) => {
+      Participant.getByName.returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+
+      payload.ilpPacket = 'INVALID_AYIDGQAAAAAAACcQHWcucGF'
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
+      test.equal(validationPassed, false, 'Ilp packet should not be valid')
+      test.deepEqual(reasons, ['Ilp packet was unable to be decoded and is invalid'])
+      test.end()
+    })
     validatePrepareTest.end()
   })
 
@@ -234,13 +304,13 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByIdTest.test('fail validation for invalid participant', async (test) => {
-      Participant.getById.withArgs('dfsp1').returns(Promise.resolve({}))
-      Participant.getById.withArgs('dfsp2').returns(Promise.resolve(null))
+      Participant.getById.withArgs('testingtoolkitdfsp').returns(Promise.resolve({}))
+      Participant.getById.withArgs('payeefsp').returns(Promise.resolve(null))
       CryptoConditions.validateCondition.returns(true)
 
       const { validationPassed, reasons } = await Validator.validateById(payload)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['Participant dfsp2 not found'])
+      test.deepEqual(reasons, ['Participant payeefsp not found'])
       test.end()
     })
 

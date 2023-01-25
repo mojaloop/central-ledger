@@ -105,12 +105,6 @@ const prepare = async (error, messages) => {
   const span = EventSdk.Tracer.createChildSpanFromContext(parentSpanService, contextFromMessage)
   try {
     const payload = decodePayload(message.value.content.payload)
-
-    if (Config.INCLUDE_DECODED_TRANSACTION_OBJECT) {
-      const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
-      message.value.content.transaction = transactionObject
-    }
-
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
     const transferId = payload.transferId
@@ -183,6 +177,16 @@ const prepare = async (error, messages) => {
       throw fspiopError
     } else { // !hasDuplicateId
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
+
+      if (Config.INCLUDE_DECODED_TRANSACTION_OBJECT) {
+        try {
+          const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
+          message.value.content.transaction = transactionObject
+        } catch {
+          Logger.info('Ilp failed to decode. Error notification will be handled by validation check.')
+        }
+      }
+
       if (validationPassed) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         try {
