@@ -167,11 +167,11 @@ If you want to run functional tests locally utilizing the [ml-core-test-harness]
   sh ./test/util/scripts/populateTestData.sh
   ```
   
-  View Logs:
+  View Logs for Mockserver (i.e. Payee Receiver) and ML-API-Adapter:
 
   ```bash
   docker logs -f mockserver
-  docker logs -f cl_central-ledger
+  docker logs -f cl_ml-api-adapter
   ```
 
   Postman Test Collection: [./test/util/postman/CL-Local Docker Test.postman_collection.json](./test/util/postman/CL-Local%20Docker%20Test.postman_collection.json)
