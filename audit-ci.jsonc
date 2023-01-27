@@ -19,6 +19,18 @@
     "GHSA-g64q-3vg8-8f93",
     "GHSA-5854-jvxx-2cg9",
     "GHSA-w5p7-h5w8-2hfq",
-    "GHSA-p9pc-299p-vxgp"
+    "GHSA-p9pc-299p-vxgp",
+    // TODO: Investigate issue with json5 lib as this is due to an underlying dependant lib dependency.
+    "GHSA-9c47-m6qq-7p4h", // https://github.com/advisories/GHSA-9c47-m6qq-7p4h
+    // TODO: Upgrade jsonwebtoken in the central-services-shared lib --> https://github.com/mojaloop/project/issues/3097
+    "GHSA-qwph-4952-7xr6", // https://github.com/advisories/GHSA-qwph-4952-7xr6
+    "GHSA-27h2-hvpr-p74q", // https://github.com/advisories/GHSA-27h2-hvpr-p74q
+    // Unable to upgrade Knex due to the following issue:
+    // # There seems to be an issue with seeding or migration with integration tests
+    // # that lead to some tests failing down the line.
+    // # Specifically test case "update transfer state to COMMITTED by FULFIL request"
+    // # "savePayeeTransferResponse::failure Cannot read properties of undefined (reading 'settlementWindowId')"
+    // TODO: More investigation --> https://github.com/mojaloop/project/issues/3096
+    "GHSA-4jv9-3563-23j3" // https://github.com/advisories/GHSA-4jv9-3563-23j3
   ]
 }

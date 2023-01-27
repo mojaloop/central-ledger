@@ -1,0 +1,63 @@
+version: "3.7"
+services:
+  ## startup central-ledger to run any migrations. You will need to manually start central-ledger using `npm start`
+  central-ledger:
+    image: mojaloop/central-ledger:local
+    deploy:
+      replicas: 1
+    user: root
+    build:
+      context: .
+      cache_from:
+        - mojaloop/central-ledger
+        - central-ledger
+    container_name: cl_central-ledger
+    command:
+      - "sh"
+      - "-c"
+      - "sh /opt/wait-for/wait-for-central-ledger.sh && npm run migrate"
+    ports:
+      - "3001:3001"
+    volumes:
+       - ./docker/central-ledger/default.json:/opt/app/config/default.json
+       - ./docker/wait-for:/opt/wait-for
+    environment:
+      - LOG_LEVEL=info
+      - CSL_LOG_TRANSPORT=file
+      - CLEDG_MONGODB__DISABLED=false
+    networks:
+      - cl-mojaloop-net
+    depends_on:
+      - mysql
+      - kafka
+      - objstore
+    healthcheck:
+      test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", "&&", "curl", "http://localhost:3001/health"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+
+  ## override ml-api-adapter to ignore health checks for central-ledger
+  ml-api-adapter:
+    image: mojaloop/ml-api-adapter:latest
+    container_name: cl_ml-api-adapter
+    deploy:
+      replicas: 1
+    user: root
+    command:
+      - "sh"
+      - "-c"
+      - "sh /opt/wait-for/wait-for-ml-api-adapter.sh && node src/api/index.js"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./docker/ml-api-adapter/default.json:/opt/app/config/default.json
+      - ./docker/wait-for:/opt/wait-for
+    environment:
+      - LOG_LEVEL=info
+    networks:
+      - cl-mojaloop-net
+    depends_on:
+      - kafka
+    ## We override the healthcheck here so we can start ml-api-adapter without the central-ledger running in docker, so we can start it locally
+    healthcheck: {}

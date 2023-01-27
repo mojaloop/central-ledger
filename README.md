@@ -26,6 +26,8 @@ The following documentation represents the services, APIs and endpoints responsi
   - [Logging](#logging)
   - [Tests](#tests)
     - [Running Integration Tests interactively](#running-integration-tests-interactively)
+  - [Development environment](#development-environment)
+  - [Auditing Dependencies](#auditing-dependencies)
   - [Container Scans](#container-scans)
   - [Automated Releases](#automated-releases)
     - [Potential problems](#potential-problems)
@@ -45,7 +47,7 @@ The Central Ledger has many options that can be configured through environment v
 | CLEDG\_DATABASE_URI   | The connection string for the database the central ledger will use. Postgres is currently the only supported database. | postgres://\<username>:\<password>@localhost:5432/central_ledger |
 | CLEDG\_PORT | The port the API server will run on. | 3000 |
 | CLEDG\_ADMIN_PORT | The port the Admin server will run on. | 3001 |
-| CLEDG\_HOSTNAME | The URI that will be used to create and validate links to resources on the central ledger.  | http://central-ledger |
+| CLEDG\_HOSTNAME | The URI that will be used to create and validate links to resources on the central ledger.  | <http://central-ledger> |
 | CLEDG\_ENABLE\_BASIC_AUTH | Flag to enable basic auth protection on endpoints that require authorization. Username and password would be the account name and password. | false |
 | CLEDG\_ENABLE\_TOKEN_AUTH | Flag to enable token protection on endpoints that require authorization. To create a token, reference the [API documentation](API.md). | false |
 | CLEDG\_LEDGER\_ACCOUNT_NAME | Name of the account setup to receive fees owed to the central ledger. If the account doesn't exist, it will be created on start up. | LedgerName |
@@ -119,6 +121,61 @@ If you want to run integration tests in a repetitive manner, you can startup the
     npm run test:int
   ```
 
+### Running Functional Tests
+
+If you want to run functional tests locally utilizing the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness), you can run the following commands:
+
+  ```bash
+  git clone --depth 1 --branch v0.0.2 https://github.com/mojaloop/ml-core-test-harness.git ./IGNORE/ml-core-test-harness
+  ```
+
+  ```bash
+  docker build -t mojaloop/central-ledger:local .
+  ```
+
+  ```bash
+  cd IGNORE/ml-core-test-harness
+  export CENTRAL_LEDGER_VERSION=local
+  docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
+  ```
+
+  Check test container logs for test results
+
+  Or access TTK UI using the following URI: <http://localhost:9660>
+
+  TTK Test files:
+      - Test Collection: ./IGNORE/ml-core-test-harness/docker/ml-testing-toolkit/test-cases/collections/tests/p2p.json
+      - Env Config: ./IGNORE/ml-core-test-harness/docker/ml-testing-toolkit/test-cases/environments/default-env.json
+
+## Development environment
+
+  Start Docker dependant Services
+
+  ```bash
+  docker compose -f ./docker-compose.yml -f docker-compose.dev.yml up -d
+  ```
+
+  Start local Central-Ledger Service
+
+  ```bash
+  npm start
+  ```
+
+  Populate Test Data
+
+  ```bash
+  sh ./test/util/scripts/populateTestData.sh
+  ```
+  
+  View Logs for Mockserver (i.e. Payee Receiver) and ML-API-Adapter:
+
+  ```bash
+  docker logs -f mockserver
+  docker logs -f cl_ml-api-adapter
+  ```
+
+  Postman Test Collection: [./test/util/postman/CL-Local Docker Test.postman_collection.json](./test/util/postman/CL-Local%20Docker%20Test.postman_collection.json)
+
 ## Auditing Dependencies
 
 We use `npm-audit-resolver` along with `npm audit` to check dependencies for node vulnerabilities, and keep track of resolved dependencies with an `audit-resolve.json` file.
@@ -144,8 +201,8 @@ As part of our CI/CD process, we use anchore-cli to scan our built docker contai
 If you find your release builds are failing, refer to the [container scanning](https://github.com/mojaloop/ci-config#container-scanning) in our shared Mojaloop CI config repo. There is a good chance you simply need to update the `mojaloop-policy-generator.js` file and re-run the circleci workflow.
 
 For more information on anchore and anchore-cli, refer to:
-- [Anchore CLI](https://github.com/anchore/anchore-cli)
-- [Circle Orb Registry](https://circleci.com/orbs/registry/orb/anchore/anchore-engine)
+    - [Anchore CLI](https://github.com/anchore/anchore-cli)
+    - [Circle Orb Registry](https://circleci.com/orbs/registry/orb/anchore/anchore-engine)
 
 ## Automated Releases
 

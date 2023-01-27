@@ -316,7 +316,13 @@ const registerBulkPrepareHandler = async () => {
  */
 const registerAllHandlers = async () => {
   try {
-    await registerBulkPrepareHandler()
+    // Lets check if MongoDB is disabled, and print a warning that we are unable to register the handler.
+    // This can only happen if you are running all Central-Ledger's services as a single mono-app which is ok for development purposes.
+    if (Config.MONGODB_DISABLED) {
+      Logger.isWarnEnabled && Logger.warn('Skipping registration of BulkPrepareHandler as Mongo Database is disabled in configuration')
+    } else {
+      await registerBulkPrepareHandler()
+    }
     return true
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
