@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.4.0](https://github.com/mojaloop/central-ledger/compare/v16.3.3...v16.4.0) (2023-01-27)
+
+
+### Features
+
+* **mojaloop/#3078:** get /trans callback is wrong for exp trans ([#938](https://github.com/mojaloop/central-ledger/issues/938)) ([70bdf18](https://github.com/mojaloop/central-ledger/commit/70bdf18c45fd7dd9fcc8a4e91a8b5a1e83f7c5d8)), closes [mojaloop/#3078](https://github.com/mojaloop/project/issues/3078)
+
 ### [16.3.3](https://github.com/mojaloop/central-ledger/compare/v16.3.2...v16.3.3) (2022-12-12)
 
 
