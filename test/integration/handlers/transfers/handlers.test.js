@@ -56,6 +56,7 @@ const {
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
 const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
+const { Ilp } = require('@mojaloop/sdk-standard-components')
 
 const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
@@ -107,7 +108,12 @@ const testData = {
     email: 'test@example.com'
   },
   now: new Date(),
-  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
+  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)), // tomorrow
+  validIlpPacket: true,
+  ilpPacketPayerOverride: null,
+  ilpPacketPayeeOverride: null,
+  ilpPacketCurrencyOverride: null,
+  ilpPacketAmountOverride: null
 }
 
 const testDataZAR = {
@@ -128,7 +134,12 @@ const testDataZAR = {
     email: 'test@example.com'
   },
   now: new Date(),
-  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
+  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)), // tomorrow
+  validIlpPacket: true,
+  ilpPacketPayerOverride: null,
+  ilpPacketPayeeOverride: null,
+  ilpPacketCurrencyOverride: null,
+  ilpPacketAmountOverride: null
 }
 
 const prepareTestData = async (dataObj, fundsInToRemittanceAccount = false) => {
@@ -197,48 +208,38 @@ const prepareTestData = async (dataObj, fundsInToRemittanceAccount = false) => {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_QUOTES', `${dataObj.endpoint.base}`)
     }
 
-    // Generate ILP packet
-    const transactionObject = {
+    const testTransactionObject = {
       transactionId: Uuid(),
       quoteId: Uuid(),
-      payee: {
-        partyIdInfo: {
-          partyIdType: 'MSISDN',
-          partyIdentifier: '27713803912',
-          fspId: payee.participant.name
-        }
-      },
       payer: {
         partyIdInfo: {
+          fspId: dataObj.ilpPacketPayerOverride || payer.participant.name,
           partyIdType: 'MSISDN',
-          partyIdentifier: '44123456789',
-          fspId: payer.participant.name
-        },
-        personalInfo: {
-          complexName: {
-            firstName: 'Firstname-Test',
-            lastName: 'Lastname-Test'
-          },
-          dateOfBirth: '1984-01-01'
+          partyIdentifier: '44123456789'
+        }
+      },
+      payee: {
+        partyIdInfo: {
+          fspId: dataObj.ilpPacketPayeeOverride || payee.participant.name,
+          partyIdType: 'MSISDN',
+          partyIdentifier: '27713803912'
         }
       },
       amount: {
-        amount: dataObj.amount.amount,
-        currency: dataObj.amount.currency
+        amount: dataObj.ilpPacketAmountOverride || dataObj.amount.amount,
+        currency: dataObj.ilpPacketCurrencyOverride || dataObj.amount.currency
       },
       transactionType: {
-        scenario: 'TRANSFER',
-        subScenario: 'REMITTANCE',
         initiator: 'PAYER',
-        initiatorType: 'CONSUMER'
-      },
-      note: ''
+        initiatorType: 'CONSUMER',
+        scenario: 'TRANSFER',
+        subScenario: 'REMITTANCE'
+      }
     }
-    const _ilp = new Ilp({
-      secret: 'asdf',
-      logger: null
-    })
-    const { ilpPacket, fulfilment, condition } = _ilp.getResponseIlp(transactionObject)
+    // Create new fulfilment, ilpPacket and condition because test helpers
+    // create new fsps with time suffixes and new transfer requests every time test
+    // data is prepared.
+    const { fulfilment, ilpPacket, condition } = (new Ilp({ secret: Buffer.from('abc') })).getResponseIlp(testTransactionObject)
 
     const transferPayload = {
       transferId: Uuid(),
@@ -248,7 +249,7 @@ const prepareTestData = async (dataObj, fundsInToRemittanceAccount = false) => {
         currency: dataObj.amount.currency,
         amount: dataObj.amount.amount
       },
-      ilpPacket,
+      ilpPacket: dataObj.validIlpPacket ? ilpPacket : 'INVALID_ilpPacket',
       condition,
       expiration: dataObj.expiration,
       extensionList: {
@@ -449,6 +450,237 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferPrepare should', async transferPrepare => {
+    await transferPrepare.test('include decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is true', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
+      // Arrange
+      testConsumer.clearEvents()
+      const td = await prepareTestData(testData)
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      const transfer = await wrapWithRetries(async () => {
+        // lets fetch the transfer
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+        console.dir(transfer)
+        // lets check its status, and if its what we expect return the result
+        if (transfer.transferState === 'RESERVED') return transfer
+        // otherwise lets return nothing
+        return null
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      try {
+        const positionPrepare = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-transfer-position', action: 'prepare' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+        test.ok(positionPrepare.value.content.transaction)
+      } catch (err) {
+        test.notOk('Decoded transaction is excluded')
+      }
+      test.end()
+    })
+
+    await transferPrepare.test('exclude decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is false', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = false
+      // Arrange
+      testConsumer.clearEvents()
+      const td = await prepareTestData(testData)
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      const transfer = await wrapWithRetries(async () => {
+        // lets fetch the transfer
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+        console.dir(transfer)
+        // lets check its status, and if its what we expect return the result
+        if (transfer.transferState === 'RESERVED') return transfer
+        // otherwise lets return nothing
+        return null
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      try {
+        const positionPrepare = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-transfer-position', action: 'prepare' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+        test.notOk(positionPrepare.value.content.transaction)
+      } catch (err) {
+        test.notOk('Decoded transaction is included')
+      }
+      test.end()
+    })
+
+    await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details payerFsp', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
+      // Arrange
+      testConsumer.clearEvents()
+      const td = await prepareTestData({
+        ...testData,
+        ilpPacketPayerOverride: 'INCORRECTdfsp'
+      })
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      const payerAbortNotificationEvent = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'prepare' }),
+        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      )[0]
+      test.equal(payerAbortNotificationEvent.value.content.payload.errorInformation.errorCode, '3100', 'Error code is correct')
+      test.equal(
+        payerAbortNotificationEvent.value.content.payload.errorInformation.errorDescription,
+        'Generic validation error - Ilp packet is not valid against transfer request',
+        'Error description is correct'
+      )
+      test.end()
+    })
+
+    await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details payeeFsp', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
+      // Arrange
+      testConsumer.clearEvents()
+      const td = await prepareTestData({
+        ...testData,
+        ilpPacketPayeeOverride: 'INCORRECTdfsp'
+      })
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      const payerAbortNotificationEvent = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'prepare' }),
+        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      )[0]
+      test.equal(payerAbortNotificationEvent.value.content.payload.errorInformation.errorCode, '3100', 'Error code is correct')
+      test.equal(
+        payerAbortNotificationEvent.value.content.payload.errorInformation.errorDescription,
+        'Generic validation error - Ilp packet is not valid against transfer request',
+        'Error description is correct'
+      )
+      test.end()
+    })
+
+    await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details amount.amount', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
+      // Arrange
+      testConsumer.clearEvents()
+      const td = await prepareTestData({
+        ...testData,
+        ilpPacketAmountOverride: 101
+      })
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      const payerAbortNotificationEvent = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'prepare' }),
+        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      )[0]
+      test.equal(payerAbortNotificationEvent.value.content.payload.errorInformation.errorCode, '3100', 'Error code is correct')
+      test.equal(
+        payerAbortNotificationEvent.value.content.payload.errorInformation.errorDescription,
+        'Generic validation error - Ilp packet is not valid against transfer request',
+        'Error description is correct'
+      )
+      test.end()
+    })
+
+    await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details amount.currency', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
+      // Arrange
+      testConsumer.clearEvents()
+      const td = await prepareTestData({
+        ...testData,
+        ilpPacketCurrencyOverride: 'XXX'
+      })
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      const payerAbortNotificationEvent = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'prepare' }),
+        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      )[0]
+      test.equal(payerAbortNotificationEvent.value.content.payload.errorInformation.errorCode, '3100', 'Error code is correct')
+      test.equal(
+        payerAbortNotificationEvent.value.content.payload.errorInformation.errorDescription,
+        'Generic validation error - Ilp packet is not valid against transfer request',
+        'Error description is correct'
+      )
+      test.end()
+    })
+
+    await transferPrepare.test('produce a validation error when ilpPacket is invalid and can not be decoded', async (test) => {
+      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
+      // Arrange
+      testConsumer.clearEvents()
+      const td = await prepareTestData({
+        ...testData,
+        validIlpPacket: false
+      })
+
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      const payerAbortNotificationEvent = (await wrapWithRetries(
+        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'prepare' }),
+        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      )[0]
+      test.equal(payerAbortNotificationEvent.value.content.payload.errorInformation.errorCode, '3100', 'Error code is correct')
+      test.equal(
+        payerAbortNotificationEvent.value.content.payload.errorInformation.errorDescription,
+        'Generic validation error - Ilp packet was unable to be decoded and is invalid',
+        'Error description is correct'
+      )
+      test.end()
+    })
+
     transferPrepare.end()
   })
 

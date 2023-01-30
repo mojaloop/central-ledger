@@ -196,9 +196,17 @@ const prepare = async (error, messages) => {
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
         }
         settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+        if (Config.INCLUDE_DECODED_TRANSACTION_OBJECT) {
+          try {
+            const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
+            message.value.content.transaction = transactionObject
+          } catch {
+            Logger.info('Ilp failed to decode. Error notification will be handled by validation check.')
+          }
+        }
         if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
           const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
-          const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
+          const transactionObject = message.value.content.transaction ? message.value.content.transaction : (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
           settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
         }
         message.value.content.settlementModel = settlementModel
