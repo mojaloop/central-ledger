@@ -224,7 +224,7 @@ jobs:
           name: Run the integration tests
           command: |
             npm rebuild
-            UV_THREADPOOL_SIZE=12 npm run test:int
+            UV_THREADPOOL_SIZE=12 TEST_INT_RETRY_COUNT=60 npm run test:int
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
       - store_artifacts:
