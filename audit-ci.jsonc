@@ -22,6 +22,8 @@
     "GHSA-p9pc-299p-vxgp",
     "GHSA-qwph-4952-7xr6",
     "GHSA-27h2-hvpr-p74q",
-    "GHSA-4jv9-3563-23j3"
+    "GHSA-4jv9-3563-23j3",
+    // Can not fix it with audit fix. jsonwebtoken related.
+    "GHSA-hjrf-2m68-5959"
   ]
 }
