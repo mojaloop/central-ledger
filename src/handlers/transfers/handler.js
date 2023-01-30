@@ -191,7 +191,7 @@ const prepare = async (error, messages) => {
       let settlementModel
       try {
         const allSettlementModels = await SettlementModelCached.getAll()
-        let settlementModels = allSettlementModels.filter(model => !model.currencyId || model.currencyId === payload.amount.currency)
+        const settlementModels = allSettlementModels.filter(model => !model.currencyId || model.currencyId === payload.amount.currency)
         if (settlementModels.length === 0) {
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
         }

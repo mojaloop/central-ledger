@@ -62,7 +62,6 @@ const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
-const { Ilp } = require('@mojaloop/sdk-standard-components')
 const SettlementModelRulesEngine = require('../../../../src/models/rules/settlement-model-rules-engine')
 const sinon = require('sinon')
 const remittanceRules = require('../../../data/rules-settlement-model-remittance.json')
@@ -1452,9 +1451,8 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferFulfilCommit with SETTLEMENT_MODEL_RULES_ENGINE enabled should', async transferFulfilCommit => {
-    
-    sandbox.stub(Config, 'ENABLED_SETTLEMENT_MODEL_RULES_ENGINE').get(() => true);
-    sandbox.stub(Config, 'ENABLED_SETTLEMENT_MODEL_RULES_ENGINE').set(() => {});
+    sandbox.stub(Config, 'ENABLED_SETTLEMENT_MODEL_RULES_ENGINE').get(() => true)
+    sandbox.stub(Config, 'ENABLED_SETTLEMENT_MODEL_RULES_ENGINE').set(() => {})
     const td = await prepareTestData(testData, true)
 
     await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
