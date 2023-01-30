@@ -426,7 +426,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
         participantLimit.participantLimitId = result[0]
 
         const allSettlementModels = await SettlementModelModel.getAll()
-        const settlementModels = allSettlementModels.filter(model => model.currencyId === limitPositionObj.currency)
+        const settlementModels = allSettlementModels.filter(model => !model.currencyId || model.currencyId === limitPositionObj.currency)
         if (Array.isArray(settlementModels) && settlementModels.length > 0) {
           for (const settlementModel of settlementModels) {
             const positionAccount = await getByNameAndCurrency(limitPositionObj.name, limitPositionObj.currency, settlementModel.ledgerAccountTypeId)

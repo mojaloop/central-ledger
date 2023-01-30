@@ -65,7 +65,8 @@ const consumerCommit = true
 const fromSwitch = true
 const toDestination = true
 
-const engine = new SettlementModelRulesEngine()
+let engine
+// const engine = new SettlementModelRulesEngine()
 
 /**
  * @function TransferPrepareHandler
@@ -98,6 +99,10 @@ const prepare = async (error, messages) => {
   if (error) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
+  }
+
+  if (!engine) {
+    engine = new SettlementModelRulesEngine()
   }
   let message = {}
   if (Array.isArray(messages)) {
@@ -186,12 +191,9 @@ const prepare = async (error, messages) => {
       let settlementModel
       try {
         const allSettlementModels = await SettlementModelCached.getAll()
-        let settlementModels = allSettlementModels.filter(model => model.currencyId === payload.amount.currency)
+        let settlementModels = allSettlementModels.filter(model => !model.currencyId || model.currencyId === payload.amount.currency)
         if (settlementModels.length === 0) {
-          settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
-          if (settlementModels.length === 0) {
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
-          }
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
         }
         settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
         if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
@@ -844,6 +846,7 @@ const getTransfer = async (error, messages) => {
  */
 const registerPrepareHandler = async () => {
   await SettlementModelCached.initialize()
+  engine = new SettlementModelRulesEngine()
   try {
     const prepareHandler = {
       command: prepare,

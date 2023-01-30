@@ -20,6 +20,7 @@
 
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Vijaya Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  **********/
 
@@ -60,6 +61,11 @@ const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
+const { Ilp } = require('@mojaloop/sdk-standard-components')
+const SettlementModelRulesEngine = require('../../../../src/models/rules/settlement-model-rules-engine')
+const sinon = require('sinon')
+const remittanceRules = require('../../../data/rules-settlement-model-remittance.json')
+const sandbox = sinon.createSandbox()
 
 const Handlers = {
   index: require('#src/handlers/register'),
@@ -125,7 +131,7 @@ const testDataZAR = {
   expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
 }
 
-const prepareTestData = async (dataObj) => {
+const prepareTestData = async (dataObj, fundsInToRemittanceAccount = false) => {
   try {
     // Lets make sure that all existing producers are connected
     await KafkaHelper.producers.connect()
@@ -174,6 +180,12 @@ const prepareTestData = async (dataObj) => {
       currency: dataObj.amount.currency,
       amount: 10000
     })
+    if (fundsInToRemittanceAccount) {
+      await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId4, {
+        currency: dataObj.amount.currency,
+        amount: 10000
+      })
+    }
 
     for (const name of [payer.participant.name, payee.participant.name]) {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
@@ -185,6 +197,49 @@ const prepareTestData = async (dataObj) => {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_QUOTES', `${dataObj.endpoint.base}`)
     }
 
+    // Generate ILP packet
+    const transactionObject = {
+      transactionId: Uuid(),
+      quoteId: Uuid(),
+      payee: {
+        partyIdInfo: {
+          partyIdType: 'MSISDN',
+          partyIdentifier: '27713803912',
+          fspId: payee.participant.name
+        }
+      },
+      payer: {
+        partyIdInfo: {
+          partyIdType: 'MSISDN',
+          partyIdentifier: '44123456789',
+          fspId: payer.participant.name
+        },
+        personalInfo: {
+          complexName: {
+            firstName: 'Firstname-Test',
+            lastName: 'Lastname-Test'
+          },
+          dateOfBirth: '1984-01-01'
+        }
+      },
+      amount: {
+        amount: dataObj.amount.amount,
+        currency: dataObj.amount.currency
+      },
+      transactionType: {
+        scenario: 'TRANSFER',
+        subScenario: 'REMITTANCE',
+        initiator: 'PAYER',
+        initiatorType: 'CONSUMER'
+      },
+      note: ''
+    }
+    const _ilp = new Ilp({
+      secret: 'asdf',
+      logger: null
+    })
+    const { ilpPacket, fulfilment, condition } = _ilp.getResponseIlp(transactionObject)
+
     const transferPayload = {
       transferId: Uuid(),
       payerFsp: payer.participant.name,
@@ -193,8 +248,8 @@ const prepareTestData = async (dataObj) => {
         currency: dataObj.amount.currency,
         amount: dataObj.amount.amount
       },
-      ilpPacket: 'AYIDGQAAAAAAACcQHWcucGF5ZWVmc3AubXNpc2RuLjI3NzEzODAzOTEyggLvZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTVRoak1UTTFNell0TjJFeE55MDBOR0ZrTFdGaFkySXRNR001WkdGaFptRXlNVFE1SWl3aWNYVnZkR1ZKWkNJNklqWmhObVE1T1dOaExUUmhaVFF0TkdVeE9DMWlNR1k1TFRsak9Ua3dZall3TVRjMFlpSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpjM01UTTRNRE01TVRJaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpRME1USXpORFUyTnpnNUlpd2labk53U1dRaU9pSjBaWE4wYVc1bmRHOXZiR3RwZEdSbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJa1pwY25OMGJtRnRaUzFVWlhOMElpd2liR0Z6ZEU1aGJXVWlPaUpNWVhOMGJtRnRaUzFVWlhOMEluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazROQzB3TVMwd01TSjlmU3dpWVcxdmRXNTBJanA3SW1GdGIzVnVkQ0k2SWpFd01DSXNJbU4xY25KbGJtTjVJam9pVlZORUluMHNJblJ5WVc1ellXTjBhVzl1Vkhsd1pTSTZleUp6WTJWdVlYSnBieUk2SWxSU1FVNVRSa1ZTSWl3aWFXNXBkR2xoZEc5eUlqb2lVRUZaUlZJaUxDSnBibWwwYVdGMGIzSlVlWEJsSWpvaVEwOU9VMVZOUlZJaWZYMAA',
-      condition: 'wqMyoJvKgTYzo7Q0l_h8eJyYnt5GFA8VRZhzy1pemTY',
+      ilpPacket,
+      condition,
       expiration: dataObj.expiration,
       extensionList: {
         extension: [
@@ -222,7 +277,7 @@ const prepareTestData = async (dataObj) => {
     }
 
     const fulfilPayload = {
-      fulfilment: 'EIvu10ISWSRPTJRnM-QI5u1oy01wvFty623kISXGYFU',
+      fulfilment,
       completedTimestamp: dataObj.now,
       transferState: 'COMMITTED',
       extensionList: {
@@ -375,6 +430,7 @@ Test('Handlers test', async handlersTest => {
 
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
+      sandbox.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules)
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
@@ -1038,8 +1094,11 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('timeout should', async timeoutTest => {
-    testData.expiration = new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
-    const td = await prepareTestData(testData)
+    const customTestData = {
+      ...testData,
+      expiration: new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
+    }
+    const td = await prepareTestData(customTestData)
 
     await timeoutTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
@@ -1160,6 +1219,94 @@ Test('Handlers test', async handlersTest => {
     timeoutTest.end()
   })
 
+  await handlersTest.test('transferFulfilCommit with SETTLEMENT_MODEL_RULES_ENGINE enabled should', async transferFulfilCommit => {
+    
+    sandbox.stub(Config, 'ENABLED_SETTLEMENT_MODEL_RULES_ENGINE').get(() => true);
+    sandbox.stub(Config, 'ENABLED_SETTLEMENT_MODEL_RULES_ENGINE').set(() => {});
+    const td = await prepareTestData(testData, true)
+
+    await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
+      const config = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      config.logger = Logger
+
+      const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
+
+      const tests = async () => {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId3) || {}
+        const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+        const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
+        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+        test.equal(producerResponse, true, 'Producer for prepare published message')
+        test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+      }
+
+      try {
+        await retry(async () => { // use bail(new Error('to break before max retries'))
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          return tests()
+        }, retryOpts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      test.end()
+    })
+
+    await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
+      const config = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      config.logger = Logger
+
+      const producerResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, config)
+
+      const tests = async () => {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId3) || {}
+        const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
+        const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
+        const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
+        test.equal(producerResponse, true, 'Producer for fulfil published message')
+        test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
+        test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
+        test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
+        test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+        test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
+      }
+
+      try {
+        await retry(async () => { // use bail(new Error('to break before max retries'))
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+          console.log(transfer)
+          if (transfer.transferState !== TransferState.COMMITTED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          return tests()
+        }, retryOpts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      test.end()
+    })
+    transferFulfilCommit.end()
+  })
+
   await handlersTest.test('teardown', async (assert) => {
     try {
       await Handlers.timeouts.stop()
@@ -1192,6 +1339,7 @@ Test('Handlers test', async handlersTest => {
       // }
       // Lets make sure that all existing Consumers are disconnected
       await KafkaHelper.consumers.disconnect()
+      sandbox.reset()
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
