@@ -196,9 +196,6 @@ jobs:
   test-integration:
     executor: default-machine
     steps:
-      - run:
-          name: Install general dependencies
-          command: *defaults_Dependencies
       - checkout
       - run:
           <<: *defaults_configure_nvm
@@ -224,6 +221,10 @@ jobs:
 
             ## wait for services to be up and running
             npm run wait-4-docker
+      - run:
+          name: Install dependencies to check health services
+          command: |
+            apt install curl
       - run:
           name: Start up Service
           command: |
