@@ -228,6 +228,7 @@ jobs:
             npm start > ./cl-service.log &
             echo $! > /tmp/int-test-service.pid
             sh .circleci/curl-retry-cl-health.sh
+            sleep 10
           environment:
             UV_THREADPOOL_SIZE: 12
       - run:
