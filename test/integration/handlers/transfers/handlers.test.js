@@ -449,84 +449,8 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferPrepare should', async transferPrepare => {
-    await transferPrepare.test('include decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is true', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
-      // Arrange
-      testConsumer.clearEvents()
-      const td = await prepareTestData(testData)
-
-      // 1. send a PREPARE request (from Payer)
-      const prepareConfig = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.PREPARE.toUpperCase())
-      prepareConfig.logger = Logger
-      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        console.dir(transfer)
-        // lets check its status, and if its what we expect return the result
-        if (transfer.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-
-      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
-
-      try {
-        const positionPrepare = (await wrapWithRetries(
-          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-transfer-position', action: 'prepare' }),
-          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        )[0]
-        test.ok(positionPrepare.value.content.transaction)
-      } catch (err) {
-        test.notOk('Decoded transaction is excluded')
-      }
-      test.end()
-    })
-
-    await transferPrepare.test('exclude decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is false', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = false
-      // Arrange
-      testConsumer.clearEvents()
-      const td = await prepareTestData(testData)
-
-      // 1. send a PREPARE request (from Payer)
-      const prepareConfig = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.PREPARE.toUpperCase())
-      prepareConfig.logger = Logger
-      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        console.dir(transfer)
-        // lets check its status, and if its what we expect return the result
-        if (transfer.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-
-      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
-
-      try {
-        const positionPrepare = (await wrapWithRetries(
-          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-transfer-position', action: 'prepare' }),
-          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        )[0]
-        test.notOk(positionPrepare.value.content.transaction)
-      } catch (err) {
-        test.notOk('Decoded transaction is included')
-      }
-      test.end()
-    })
 
     await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details payerFsp', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
       // Arrange
       testConsumer.clearEvents()
       const td = await prepareTestData({
@@ -557,7 +481,6 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details payeeFsp', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
       // Arrange
       testConsumer.clearEvents()
       const td = await prepareTestData({
@@ -588,7 +511,6 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details amount.amount', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
       // Arrange
       testConsumer.clearEvents()
       const td = await prepareTestData({
@@ -619,7 +541,6 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details amount.currency', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
       // Arrange
       testConsumer.clearEvents()
       const td = await prepareTestData({
@@ -650,7 +571,6 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferPrepare.test('produce a validation error when ilpPacket is invalid and can not be decoded', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
       // Arrange
       testConsumer.clearEvents()
       const td = await prepareTestData({
