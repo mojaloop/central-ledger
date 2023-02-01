@@ -226,12 +226,13 @@ jobs:
             npm rebuild
             npm start > ./cl-service.log &
             echo $! > /tmp/int-test-service.pid
+            sh .circleci/curl-retry-cl-health.sh
           environment:
             UV_THREADPOOL_SIZE: 12
       - run:
           name: Run the integration tests
           command: |
-            UV_THREADPOOL_SIZE=12 TEST_INT_RETRY_COUNT=80 TEST_INT_RETRY_DELAY=800 npm run test:int
+            npm run test:int:noMigrate
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
             UV_THREADPOOL_SIZE: 12
