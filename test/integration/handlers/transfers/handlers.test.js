@@ -449,7 +449,6 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferPrepare should', async transferPrepare => {
-
     await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details payerFsp', async (test) => {
       // Arrange
       testConsumer.clearEvents()
