@@ -25,6 +25,7 @@ defaults_Dependencies: &defaults_Dependencies |
   apk --no-cache add openssh-client
   apk add --no-cache -t build-dependencies make gcc g++ python3 libtool autoconf automake jq
   apk add --no-cache -t openssl ncurses coreutils libgcc linux-headers grep util-linux binutils findutils
+  apk add --no-cache curl
   npm config set unsafe-perm true
   npm install -g node-gyp
 

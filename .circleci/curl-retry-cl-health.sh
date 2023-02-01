@@ -1,5 +1,8 @@
 #!/bin/bash
 
+## Script is to wait-retry with a number of retries to determine if the Central Ledger health end-point is healthy or not
+
+# Central Ledger Health end-point for integration tests
 url="http://localhost:3001/health"
 
 # Number of retries
