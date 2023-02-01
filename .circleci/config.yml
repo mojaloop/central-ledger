@@ -221,12 +221,26 @@ jobs:
             ## wait for services to be up and running
             npm run wait-4-docker
       - run:
+          name: Start up Service
+          command: |
+            npm start & echo $! > /tmp/int-test-service.pid
+          environment:
+            UV_THREADPOOL_SIZE: 12
+      - run:
           name: Run the integration tests
           command: |
             npm rebuild
             UV_THREADPOOL_SIZE=12 TEST_INT_RETRY_COUNT=80 TEST_INT_RETRY_DELAY=800 npm run test:int
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
+            UV_THREADPOOL_SIZE: 12
+            TEST_INT_RETRY_COUNT: 80
+            TEST_INT_RETRY_DELAY: 800
+      - run:
+          name: Cleanup
+          command: |
+            docker compose down -v
+            kill $(cat /tmp/int-test-service.pid)
       - store_artifacts:
           path: ./test/results
           prefix: test
