@@ -226,20 +226,33 @@ jobs:
           command: |
             sudo apt install curl
       - run:
+          name: Create directory to store test results
+          command: |
+            mkdir ./test/results
+      - run:
           name: Start up Service
           command: |
+            ## Rebuild any dependencies
             npm rebuild
-            mkdir ./test/results
-            # npm start > ./test/results/cl-service.log &
-            # echo $! > /tmp/int-test-service.pid
-            # bash .circleci/curl-retry-cl-health.sh
-            # sleep 10
-            exit 1
+
+            ## Run migration scripts
+            npm run migrate
+
+            ## Run Service in background
+            npm start > ./test/results/cl-service.log &
+
+            ## Store PID for cleanup
+            echo $! > /tmp/int-test-service.pid
+            bash .circleci/curl-retry-cl-health.sh
+            
+            ## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
+            sleep 10
           environment:
             UV_THREADPOOL_SIZE: 12
       - run:
           name: Run the integration tests
           command: |
+            ## Start integration tests
             npm run test:int:noMigrate
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
@@ -249,7 +262,10 @@ jobs:
       - run:
           name: Cleanup
           command: |
+            ## Shutdown Docker containers
             docker compose down -v
+
+            ## Kill service
             kill $(cat /tmp/int-test-service.pid)
       - store_artifacts:
           path: ./test/results
