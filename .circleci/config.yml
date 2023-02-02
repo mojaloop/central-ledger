@@ -226,10 +226,6 @@ jobs:
           command: |
             sudo apt install curl
       - run:
-          name: Create directory to store test results
-          command: |
-            mkdir ./test/results
-      - run:
           name: Start up Service
           command: |
             ## Rebuild any dependencies
