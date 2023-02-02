@@ -226,14 +226,16 @@ jobs:
           command: |
             sudo apt install curl
       - run:
+          name: Rebuild any dependencies
+          command: |
+            npm rebuild
+      - run:
+          name: Run migration scripts
+          command: |
+            npm run migrate
+      - run:
           name: Start up Service
           command: |
-            ## Rebuild any dependencies
-            npm rebuild
-
-            ## Run migration scripts
-            npm run migrate
-
             ## Run Service in background
             npm start > ./test/results/cl-service.log &
 
