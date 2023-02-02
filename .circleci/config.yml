@@ -251,8 +251,7 @@ jobs:
           name: Run the integration tests
           command: |
             ## Start integration tests
-            # npm run test:int:noMigrate
-            exit 1
+            npm run test:int:noMigrate
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
             UV_THREADPOOL_SIZE: 12
