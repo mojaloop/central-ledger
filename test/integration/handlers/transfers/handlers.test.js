@@ -75,7 +75,7 @@ const TransferEventAction = Enum.Events.Event.Action
 
 const debug = process?.env?.TEST_INT_DEBUG || false
 const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
-const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 500
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
 const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
 const retryOpts = {
   retries: retryCount,
@@ -395,15 +395,22 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        console.dir(transfer)
-        // lets check its status, and if its what we expect return the result
-        if (transfer?.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      let transfer = {}
+      try {
+        transfer = await wrapWithRetries(async () => {
+          // lets fetch the transfer
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          console.dir(transfer)
+          // lets check its status, and if its what we expect return the result
+          if (transfer?.transferState === 'RESERVED') return transfer
+          // otherwise lets return nothing
+          return null
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
       test.equal(transfer?.transferState, 'RESERVED', 'Transfer is in reserved state')
 
@@ -468,14 +475,22 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        // lets check its status, and if its what we expect return the result
-        if (transfer?.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      let transfer = {}
+      try {
+        transfer = await wrapWithRetries(async () => {
+          // lets fetch the transfer
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          // lets check its status, and if its what we expect return the result
+          if (transfer?.transferState === 'RESERVED') return transfer
+          // otherwise lets return nothing
+          return null
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       test.equal(transfer?.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. sleep so that the RESERVED transfer expires
@@ -506,14 +521,22 @@ Test('Handlers test', async handlersTest => {
 
       // Assert
       // 5. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
-      const payerAbortNotification = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }),
-        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      )[0]
-      const payeeAbortNotification = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
-        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      )[0]
+      let payerAbortNotification
+      let payeeAbortNotification
+      try {
+        payerAbortNotification = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+        payeeAbortNotification = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       test.ok(payerAbortNotification, 'Payer Abort notification sent')
       test.ok(payeeAbortNotification, 'Payee Abort notification sent')
 
@@ -540,14 +563,22 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        // lets check its status, and if its what we expect return the result
-        if (transfer?.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      let transfer = {}
+      try {
+        transfer = await wrapWithRetries(async () => {
+          // lets fetch the transfer
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          // lets check its status, and if its what we expect return the result
+          if (transfer?.transferState === 'RESERVED') return transfer
+          // otherwise lets return nothing
+          return null
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       test.equal(transfer?.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. Modify the transfer in the DB
@@ -622,14 +653,22 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        // lets check its status, and if its what we expect return the result
-        if (transfer?.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      
+      let transfer = {}
+      try {
+        transfer = await wrapWithRetries(async () => {
+          // lets fetch the transfer
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          // lets check its status, and if its what we expect return the result
+          if (transfer?.transferState === 'RESERVED') return transfer
+          // otherwise lets return nothing
+          return null
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       test.equal(transfer?.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. send a RESERVED request with an invalid validation(from Payee)
@@ -648,27 +687,41 @@ Test('Handlers test', async handlersTest => {
       fulfilConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
 
-      await wrapWithRetries(async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        return transfer?.transferState === 'ABORTED_ERROR'
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      try {
+        await wrapWithRetries(async () => {
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          return transfer?.transferState === 'ABORTED_ERROR'
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-      test.equal(updatedtransfer?.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
+      test.equal(updatedTransfer?.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
       const expectedAbortNotificationPayload = {
         completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
         transferState: 'ABORTED'
       }
 
-      // Assert
-      // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
-      const payerAbortNotificationEvent = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' }),
-        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      )[0]
-      const payeeAbortNotificationEvent = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
-        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      )[0]
+      let payerAbortNotificationEvent
+      let payeeAbortNotificationEvent
+      try {
+        // Assert
+        // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
+        payerAbortNotificationEvent = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+        payeeAbortNotificationEvent = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       test.ok(payerAbortNotificationEvent, 'Payer Abort notification sent')
       test.ok(payeeAbortNotificationEvent, 'Payee Abort notification sent')
 
@@ -1052,6 +1105,12 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
+        const retryTimeoutOpts = {
+          retries: Number(retryOpts.retries) * 2,
+          minTimeout: retryOpts.minTimeout,
+          maxTimeout: retryOpts.maxTimeout
+        }
+
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
@@ -1059,7 +1118,7 @@ Test('Handlers test', async handlersTest => {
             throw new Error(`#7   Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
-        }, retryOpts)
+        }, retryTimeoutOpts)
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)

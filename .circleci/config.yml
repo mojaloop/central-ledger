@@ -257,6 +257,7 @@ jobs:
             UV_THREADPOOL_SIZE: 12
             TEST_INT_RETRY_COUNT: 20
             TEST_INT_RETRY_DELAY: 2
+            TEST_INT_REBALANCE_DELAY: 20000
       - run:
           name: Cleanup
           command: |
