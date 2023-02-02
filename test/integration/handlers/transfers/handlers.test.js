@@ -514,9 +514,12 @@ Test('Handlers test', async handlersTest => {
 
       // 4. Get the updated transfer since the completedTimestamp may have changed
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-      const expectedAbortNotificationPayload = {
-        completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
-        transferState: 'ABORTED'
+      let expectedAbortNotificationPayload = {}
+      if (updatedTransfer) {
+        expectedAbortNotificationPayload = {
+          completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
+          transferState: 'ABORTED'
+        }
       }
 
       // Assert
