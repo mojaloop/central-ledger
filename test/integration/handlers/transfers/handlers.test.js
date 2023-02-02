@@ -327,8 +327,8 @@ Test('Handlers test', async handlersTest => {
   await HubAccountsHelper.prepareData()
 
   const wrapWithRetriesConf = {
-    remainingRetries: retryOpts.retries || 10, // default 10
-    timeout: retryOpts.maxTimeout || 2 // default 2
+    remainingRetries: retryOpts?.retries || 10, // default 10
+    timeout: retryOpts?.maxTimeout || 2 // default 2
   }
 
   // Start a testConsumer to monitor events that our handlers emit
