@@ -229,10 +229,12 @@ jobs:
           name: Start up Service
           command: |
             npm rebuild
-            npm start > ./cl-service.log &
-            echo $! > /tmp/int-test-service.pid
-            bash .circleci/curl-retry-cl-health.sh
-            sleep 10
+            mkdir ./test/results
+            # npm start > ./test/results/cl-service.log &
+            # echo $! > /tmp/int-test-service.pid
+            # bash .circleci/curl-retry-cl-health.sh
+            # sleep 10
+            exit 1
           environment:
             UV_THREADPOOL_SIZE: 12
       - run:
