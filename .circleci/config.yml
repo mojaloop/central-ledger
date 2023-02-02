@@ -255,8 +255,8 @@ jobs:
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
             UV_THREADPOOL_SIZE: 12
-            TEST_INT_RETRY_COUNT: 80
-            TEST_INT_RETRY_DELAY: 800
+            TEST_INT_RETRY_COUNT: 20
+            TEST_INT_RETRY_DELAY: 2
       - run:
           name: Cleanup
           command: |
