@@ -49,7 +49,7 @@
     "test:coverage": "npx nyc --reporter=lcov --reporter=text-summary tapes -- 'test/unit/**/**.test.js'",
     "test:coverage-check": "npm run test:coverage && nyc check-coverage",
     "test:int": "npm run migrate && npx tape 'test/integration/**/*.test.js' | tap-spec",
-    "test:int:noMigrate": "npx tape 'test/integration/**/*.test.js' | tap-spec",
+    "test:int:skipMigrate": "npx tape 'test/integration/**/*.test.js' | tap-spec",
     "migrate": "npm run migrate:latest && npm run seed:run",
     "migrate:latest": "npx knex $npm_package_config_knex migrate:latest",
     "migrate:create": "npx knex migrate:make $npm_package_config_knex",
