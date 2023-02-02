@@ -608,9 +608,13 @@ Test('Handlers test', async handlersTest => {
 
       // 4. Get the updated transfer since the completedTimestamp may have changed
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-      const expectedAbortNotificationPayload = {
-        completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
-        transferState: 'ABORTED'
+
+      let expectedAbortNotificationPayload = {}
+      if (updatedTransfer) {
+        expectedAbortNotificationPayload = {
+          completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
+          transferState: 'ABORTED'
+        }
       }
 
       // Assert
@@ -656,7 +660,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      
+
       let transfer = {}
       try {
         transfer = await wrapWithRetries(async () => {
@@ -702,9 +706,13 @@ Test('Handlers test', async handlersTest => {
 
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
       test.equal(updatedTransfer?.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
-      const expectedAbortNotificationPayload = {
-        completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
-        transferState: 'ABORTED'
+
+      let expectedAbortNotificationPayload = {}
+      if (updatedTransfer) {
+        expectedAbortNotificationPayload = {
+          completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
+          transferState: 'ABORTED'
+        }
       }
 
       let payerAbortNotificationEvent
