@@ -514,6 +514,7 @@ Test('Handlers test', async handlersTest => {
 
       // 4. Get the updated transfer since the completedTimestamp may have changed
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+
       let expectedAbortNotificationPayload = {}
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
