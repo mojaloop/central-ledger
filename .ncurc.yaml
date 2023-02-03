@@ -5,11 +5,5 @@ reject: [
   # TODO: New versions from 2.2.0 onwards introduce a newer incompatible version of the ILP-Packet that is not compatible with the Mojaloop Specification
   "ilp-packet",
   # TODO: v6+ (ref: https://github.com/sindresorhus/get-port/releases/tag/v6.0.0) is an ESM library and thus not compatible with CommonJS. Future story needed to resolve.
-  "get-port",
-  # There seems to be an issue with seeding or migration with integration tests
-  # that lead to some tests failing down the line.
-  # Specifically test case "update transfer state to COMMITTED by FULFIL request"
-  # "savePayeeTransferResponse::failure Cannot read properties of undefined (reading 'settlementWindowId')"
-  # TODO: More investigation
-  "knex"
+  "get-port"
 ]

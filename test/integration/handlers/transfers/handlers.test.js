@@ -73,10 +73,10 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
-const debug = false
-const rebalanceDelay = 10000
-const retryDelay = 500
-const retryCount = 40
+const debug = process?.env?.TEST_INT_DEBUG || false
+const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
+const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
 const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
@@ -127,11 +127,14 @@ const testDataZAR = {
 
 const prepareTestData = async (dataObj) => {
   try {
-    // Lets make sure that all existing producers are connected
-    await KafkaHelper.producers.connect()
-    // Lets make sure that all existing Consumers are connected
-    await KafkaHelper.consumers.connect()
+    // TODO: START - Disabling these handlers to test running the CL as a separate service independently.
+    //       The following issue https://github.com/mojaloop/project/issues/3112 was created to investigate as to why the Integration Tests are so unstable when then Event Handlers are executing in-line. For the time being the above PR clearly separates the process which resolves the stability issue for the time being.
+    // // Lets make sure that all existing producers are connected
+    // await KafkaHelper.producers.connect()
+    // // Lets make sure that all existing Consumers are connected
+    // await KafkaHelper.consumers.connect()
     // const topics = TestTopics.list
+    // TODO: END - Disabling these handlers to test running the CL as a separate service independently.
 
     // // lets make sure all our Producers are already connected if they have already been defined.
     // for (const topic of topics) {
@@ -326,8 +329,8 @@ Test('Handlers test', async handlersTest => {
   await HubAccountsHelper.prepareData()
 
   const wrapWithRetriesConf = {
-    remainingRetries: process.env.TST_RETRY_COUNT || 10, // default 10
-    timeout: process.env.TST_RETRY_TIMEOUT || 2 // default 2
+    remainingRetries: retryOpts?.retries || 10, // default 10
+    timeout: retryOpts?.maxTimeout || 2 // default 2
   }
 
   // Start a testConsumer to monitor events that our handlers emit
@@ -362,14 +365,18 @@ Test('Handlers test', async handlersTest => {
 
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
-      await Handlers.transfers.registerPrepareHandler()
-      await Handlers.positions.registerPositionHandler()
-      await Handlers.transfers.registerFulfilHandler()
-      await Handlers.timeouts.registerTimeoutHandler()
+      // TODO: START - Disabling these handlers to test running the CL as a separate service independently.
+      //       The following issue https://github.com/mojaloop/project/issues/3112 was created to investigate as to why the Integration Tests are so unstable when then Event Handlers are executing in-line. For the time being the above PR clearly separates the process which resolves the stability issue for the time being.
+      // await Handlers.transfers.registerPrepareHandler()
+      // await Handlers.positions.registerPositionHandler()
+      // await Handlers.transfers.registerFulfilHandler()
+      // await Handlers.timeouts.registerTimeoutHandler()
+      // TODO: END - Disabling these handlers to test running the CL as a separate service independently.
 
       // Set up the testConsumer here
       await testConsumer.startListening()
 
+      // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
       sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
 
       test.pass('done')
@@ -392,17 +399,24 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        console.dir(transfer)
-        // lets check its status, and if its what we expect return the result
-        if (transfer.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
-      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+      let transfer = {}
+      try {
+        transfer = await wrapWithRetries(async () => {
+          // lets fetch the transfer
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          console.dir(transfer)
+          // lets check its status, and if its what we expect return the result
+          if (transfer?.transferState === 'RESERVED') return transfer
+          // otherwise lets return nothing
+          return null
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      test.equal(transfer?.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. send an ABORTED request from Payee
       td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
@@ -432,7 +446,7 @@ Test('Handlers test', async handlersTest => {
         console.log(err)
         test.ok('No payee abort notification sent')
       }
-      console.log(JSON.stringify(testConsumer.getAllEvents()))
+      if (debug) console.log(JSON.stringify(testConsumer.getAllEvents()))
 
       // TODO: I can't seem to find the payer abort notification in the log
       // is there something I'm missing here? Does it go to a different handler?
@@ -465,15 +479,23 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        // lets check its status, and if its what we expect return the result
-        if (transfer.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      let transfer = {}
+      try {
+        transfer = await wrapWithRetries(async () => {
+          // lets fetch the transfer
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          // lets check its status, and if its what we expect return the result
+          if (transfer?.transferState === 'RESERVED') return transfer
+          // otherwise lets return nothing
+          return null
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      test.equal(transfer?.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. sleep so that the RESERVED transfer expires
       await sleepPromise(wrapWithRetriesConf.timeout)
@@ -496,29 +518,46 @@ Test('Handlers test', async handlersTest => {
 
       // 4. Get the updated transfer since the completedTimestamp may have changed
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-      const expectedAbortNotificationPayload = {
-        completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
-        transferState: 'ABORTED'
+
+      let expectedAbortNotificationPayload = {}
+      if (updatedTransfer) {
+        expectedAbortNotificationPayload = {
+          completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
+          transferState: 'ABORTED'
+        }
       }
 
       // Assert
       // 5. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
-      const payerAbortNotification = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }),
-        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      )[0]
-      const payeeAbortNotification = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
-        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      )[0]
+      let payerAbortNotification
+      let payeeAbortNotification
+      try {
+        payerAbortNotification = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'commit' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+        payeeAbortNotification = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       test.ok(payerAbortNotification, 'Payer Abort notification sent')
       test.ok(payeeAbortNotification, 'Payee Abort notification sent')
 
-      test.deepEqual(
-        getMessagePayloadOrThrow(payeeAbortNotification),
-        expectedAbortNotificationPayload,
-        'Abort notification should be sent with the correct values'
-      )
+      try {
+        test.deepEqual(
+          getMessagePayloadOrThrow(payeeAbortNotification),
+          expectedAbortNotificationPayload,
+          'Abort notification should be sent with the correct values'
+        )
+      } catch (err) {
+        test.notOk('Error should not be thrown - getMessagePayloadOrThrow(payeeAbortNotification) failed!')
+        console.error(err)
+      }
 
       // Cleanup
       testConsumer.clearEvents()
@@ -537,15 +576,23 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        // lets check its status, and if its what we expect return the result
-        if (transfer.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      let transfer = {}
+      try {
+        transfer = await wrapWithRetries(async () => {
+          // lets fetch the transfer
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          // lets check its status, and if its what we expect return the result
+          if (transfer?.transferState === 'RESERVED') return transfer
+          // otherwise lets return nothing
+          return null
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      test.equal(transfer?.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. Modify the transfer in the DB
       await TransferService.saveTransferStateChange({
@@ -571,9 +618,13 @@ Test('Handlers test', async handlersTest => {
 
       // 4. Get the updated transfer since the completedTimestamp may have changed
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-      const expectedAbortNotificationPayload = {
-        completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
-        transferState: 'ABORTED'
+
+      let expectedAbortNotificationPayload = {}
+      if (updatedTransfer) {
+        expectedAbortNotificationPayload = {
+          completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
+          transferState: 'ABORTED'
+        }
       }
 
       // Assert
@@ -619,15 +670,23 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        // lets check its status, and if its what we expect return the result
-        if (transfer.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
+
+      let transfer = {}
+      try {
+        transfer = await wrapWithRetries(async () => {
+          // lets fetch the transfer
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          // lets check its status, and if its what we expect return the result
+          if (transfer?.transferState === 'RESERVED') return transfer
+          // otherwise lets return nothing
+          return null
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      test.equal(transfer?.transferState, 'RESERVED', 'Transfer is in reserved state')
 
       // 2. send a RESERVED request with an invalid validation(from Payee)
       td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
@@ -645,27 +704,45 @@ Test('Handlers test', async handlersTest => {
       fulfilConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
 
-      await wrapWithRetries(async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        return transfer.transferState === 'ABORTED_ERROR'
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-      test.equal(updatedTransfer.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
-      const expectedAbortNotificationPayload = {
-        completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
-        transferState: 'ABORTED'
+      try {
+        await wrapWithRetries(async () => {
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          return transfer?.transferState === 'ABORTED_ERROR'
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
       }
 
-      // Assert
-      // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
-      const payerAbortNotificationEvent = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' }),
-        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      )[0]
-      const payeeAbortNotificationEvent = (await wrapWithRetries(
-        () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
-        wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      )[0]
+      const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+      test.equal(updatedTransfer?.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
+
+      let expectedAbortNotificationPayload = {}
+      if (updatedTransfer) {
+        expectedAbortNotificationPayload = {
+          completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
+          transferState: 'ABORTED'
+        }
+      }
+
+      let payerAbortNotificationEvent
+      let payeeAbortNotificationEvent
+      try {
+        // Assert
+        // 3. Check that we sent 2 notifications to kafka - one for the Payee, one for the Payer
+        payerAbortNotificationEvent = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'abort-validation' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+        payeeAbortNotificationEvent = (await wrapWithRetries(
+          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-notification-event', action: 'reserved-aborted' }),
+          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        )[0]
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       test.ok(payerAbortNotificationEvent, 'Payer Abort notification sent')
       test.ok(payeeAbortNotificationEvent, 'Payee Abort notification sent')
 
@@ -712,16 +789,16 @@ Test('Handlers test', async handlersTest => {
         const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+        test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
         test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
         test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
-        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+        test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.RESERVED) {
+          if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -751,17 +828,17 @@ Test('Handlers test', async handlersTest => {
         const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
         const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for fulfil published message')
-        test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
+        test.equal(transfer?.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
         test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
         test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
         test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
-        test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
+        test.equal(payeePositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
       }
 
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.COMMITTED) {
+          if (transfer?.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -796,16 +873,16 @@ Test('Handlers test', async handlersTest => {
         const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+        test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
         test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
         test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
-        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+        test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.RESERVED) {
+          if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -833,17 +910,17 @@ Test('Handlers test', async handlersTest => {
         const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
         const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for fulfil published message')
-        test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
+        test.equal(transfer?.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
         test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
         test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
         test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
-        test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
+        test.equal(payeePositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
       }
 
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.COMMITTED) {
+          if (transfer?.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -875,13 +952,13 @@ Test('Handlers test', async handlersTest => {
       const tests = async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+        test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
       }
 
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.RESERVED) {
+          if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#3 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -912,13 +989,13 @@ Test('Handlers test', async handlersTest => {
       const tests = async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(transfer.transferState, TransferInternalState.ABORTED_REJECTED, `Transfer state changed to ${TransferInternalState.ABORTED_REJECTED}`)
+        test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, `Transfer state changed to ${TransferInternalState.ABORTED_REJECTED}`)
       }
 
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferInternalState.ABORTED_REJECTED) {
+          if (transfer?.transferState !== TransferInternalState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#4 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -951,13 +1028,13 @@ Test('Handlers test', async handlersTest => {
       const tests = async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+        test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
       }
 
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.RESERVED) {
+          if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#5 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -989,14 +1066,14 @@ Test('Handlers test', async handlersTest => {
         const transferError = await TransferService.getTransferErrorByTransferId(transfer.transferId)
         const transferExtension = await TransferExtensionModel.getByTransferId(transfer.transferId, false, true)
         test.equal(producerResponse, true, 'Producer for fulfil published message')
-        test.equal(transfer.transferState, TransferInternalState.ABORTED_ERROR, `Transfer state changed to ${TransferInternalState.ABORTED_ERROR}`)
+        test.equal(transfer?.transferState, TransferInternalState.ABORTED_ERROR, `Transfer state changed to ${TransferInternalState.ABORTED_ERROR}`)
         test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
         test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
-        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+        test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
         test.ok(transferError, 'A transfer error has been recorded')
         test.equal(transferError.errorCode, td.errorPayload.errorInformation.errorCode, 'Transfer error code matches')
         test.equal(transferError.errorDescription, expectedErrorDescription, 'Transfer error description matches')
-        test.notEqual(transferError.transferStateChangeId, transfer.transferStateChangeId, 'Transfer error record is bound to previous state of transfer')
+        test.notEqual(transferError.transferStateChangeId, transfer?.transferStateChangeId, 'Transfer error record is bound to previous state of transfer')
         test.ok(transferExtension, 'A transfer extension has been recorded')
         test.equal(transferExtension[0].transferId, transfer.transferId, 'Transfer extension recorded with transferErrorId key')
       }
@@ -1004,7 +1081,7 @@ Test('Handlers test', async handlersTest => {
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferInternalState.ABORTED_ERROR) {
+          if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#6 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -1042,21 +1119,27 @@ Test('Handlers test', async handlersTest => {
         const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+        test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
         test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
         test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
-        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+        test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 
       try {
+        const retryTimeoutOpts = {
+          retries: Number(retryOpts.retries) * 2,
+          minTimeout: retryOpts.minTimeout,
+          maxTimeout: retryOpts.maxTimeout
+        }
+
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.RESERVED) {
+          if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw new Error(`#7   Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
-        }, retryOpts)
+        }, retryTimeoutOpts)
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1078,7 +1161,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
 
           // Check Transfer for correct state
-          if (transfer.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
+          if (transfer?.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
             // We have a Transfer with the correct state, lets check if we can get the TransferError record
             try {
               // Fetch the TransferError record
@@ -1114,7 +1197,7 @@ Test('Handlers test', async handlersTest => {
         test.fail(`Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
         test.end()
       } else {
-        test.equal(result.transfer && result.transfer.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.equal(result.transfer && result.transfer?.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
         test.equal(result.transferError && result.transferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
         test.equal(result.transferError && result.transferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
         test.pass()

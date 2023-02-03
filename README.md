@@ -99,10 +99,25 @@ If you want to run integration tests in a repetitive manner, you can startup the
     npm run wait-4-docker
     ```
 
+    Start the Central-Ledger Service in the background, capturing the Process ID, so we can kill it when we are done. Alternatively you could also start the process in a separate terminal. This is a temporary work-around until the following issue can be addressed: https://github.com/mojaloop/project/issues/3112.
+
+    ```bash
+    npm start > cl-service.log &
+    echo $! > /tmp/int-test-service.pid
+    ```
+
+    You can access the Central-Ledger Service log in another terminal with `tail -f cl-service.log`.
+
     Run the Integration Tests
 
     ```bash
     npm run test:int
+    ```
+
+    Kill the background Central-Ledger Service
+
+    ```bash
+    kill $(cat /tmp/int-test-service.pid)
     ```
 
 - Running inside docker
