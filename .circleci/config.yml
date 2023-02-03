@@ -233,8 +233,23 @@ jobs:
           name: Run migration scripts
           command: |
             npm run migrate
+      # - run:
+      #     name: Start up Service
+      #     command: |
+      #       ## Run Service in background
+      #       npm start > ./test/results/cl-service.log &
+
+      #       ## Store PID for cleanup
+      #       echo $! > /tmp/int-test-service.pid
+      #       bash .circleci/curl-retry-cl-health.sh
+            
+      #       ## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
+      #       sleep $WAIT_FOR_REBALANCE
+      #     environment:
+      #       UV_THREADPOOL_SIZE: 12
+      #       WAIT_FOR_REBALANCE: 20
       - run:
-          name: Start up Service
+          name: Run the integration tests
           command: |
             ## Run Service in background
             npm start > ./test/results/cl-service.log &
@@ -244,17 +259,14 @@ jobs:
             bash .circleci/curl-retry-cl-health.sh
             
             ## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
-            sleep 10
-          environment:
-            UV_THREADPOOL_SIZE: 12
-      - run:
-          name: Run the integration tests
-          command: |
+            sleep $WAIT_FOR_REBALANCE
+
             ## Start integration tests
             npm run test:int:skipMigrate
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
             UV_THREADPOOL_SIZE: 12
+            WAIT_FOR_REBALANCE: 20
             TEST_INT_RETRY_COUNT: 20
             TEST_INT_RETRY_DELAY: 2
             TEST_INT_REBALANCE_DELAY: 20000
