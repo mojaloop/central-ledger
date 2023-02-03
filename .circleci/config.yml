@@ -233,38 +233,31 @@ jobs:
           name: Run migration scripts
           command: |
             npm run migrate
-      # - run:
-      #     name: Start up Service
-      #     command: |
-      #       ## Run Service in background
-      #       npm start > ./test/results/cl-service.log &
-
-      #       ## Store PID for cleanup
-      #       echo $! > /tmp/int-test-service.pid
-      #       bash .circleci/curl-retry-cl-health.sh
-            
-      #       ## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
-      #       sleep $WAIT_FOR_REBALANCE
-      #     environment:
-      #       UV_THREADPOOL_SIZE: 12
-      #       WAIT_FOR_REBALANCE: 20
       - run:
           name: Run the integration tests
           command: |
             ## Run Service in background
+            echo "Starting Service in the background"
             npm start > ./test/results/cl-service.log &
 
             ## Store PID for cleanup
             echo $! > /tmp/int-test-service.pid
+            PID=$((cat /tmp/int-test-service.pid))
+            echo "Service started with Process ID=$PID"
+            
+            ## Check Service Health
+            echo "Waiting for Service to be healthy"
             bash .circleci/curl-retry-cl-health.sh
             
             ## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
-            sleep $WAIT_FOR_REBALANCE
+            echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_FOR_REBALANCE
 
             ## Start integration tests
+            echo "Running Integration Tests"
             npm run test:int:skipMigrate
 
             ## Kill service
+            echo "Stopping Service with Process ID=$PID"
             kill $(cat /tmp/int-test-service.pid)
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
@@ -274,13 +267,10 @@ jobs:
             TEST_INT_RETRY_DELAY: 2
             TEST_INT_REBALANCE_DELAY: 20000
       - run:
-          name: Cleanup
+          name: Cleanup Docker
           command: |
             ## Shutdown Docker containers
             docker compose down -v
-
-            # ## Kill service
-            # kill $(cat /tmp/int-test-service.pid)
       - store_artifacts:
           path: ./test/results
           prefix: test
