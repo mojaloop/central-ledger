@@ -242,7 +242,7 @@ jobs:
 
             ## Store PID for cleanup
             echo $! > /tmp/int-test-service.pid
-            PID=$((cat /tmp/int-test-service.pid))
+            PID=$(cat /tmp/int-test-service.pid)
             echo "Service started with Process ID=$PID"
             
             ## Check Service Health
