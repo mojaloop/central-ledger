@@ -544,11 +544,16 @@ Test('Handlers test', async handlersTest => {
       test.ok(payerAbortNotification, 'Payer Abort notification sent')
       test.ok(payeeAbortNotification, 'Payee Abort notification sent')
 
-      test.deepEqual(
-        getMessagePayloadOrThrow(payeeAbortNotification),
-        expectedAbortNotificationPayload,
-        'Abort notification should be sent with the correct values'
-      )
+      try {
+        test.deepEqual(
+          getMessagePayloadOrThrow(payeeAbortNotification),
+          expectedAbortNotificationPayload,
+          'Abort notification should be sent with the correct values'
+        )
+      } catch (err) {
+        test.notOk('Error should not be thrown - getMessagePayloadOrThrow(payeeAbortNotification) failed!')
+        console.error(err)
+      }
 
       // Cleanup
       testConsumer.clearEvents()
