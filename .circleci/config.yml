@@ -237,6 +237,7 @@ jobs:
           name: Run the integration tests
           command: |
             ## Run Service in background
+            ## This is a temporary work-around until the following issue can be addressed: https://github.com/mojaloop/project/issues/3112
             echo "Starting Service in the background"
             npm start > ./test/results/cl-service.log &
 

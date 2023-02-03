@@ -127,12 +127,14 @@ const testDataZAR = {
 
 const prepareTestData = async (dataObj) => {
   try {
-    // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
+    // TODO: START - Disabling these handlers to test running the CL as a separate service independently.
+    //       The following issue https://github.com/mojaloop/project/issues/3112 was created to investigate as to why the Integration Tests are so unstable when then Event Handlers are executing in-line. For the time being the above PR clearly separates the process which resolves the stability issue for the time being.
     // // Lets make sure that all existing producers are connected
     // await KafkaHelper.producers.connect()
     // // Lets make sure that all existing Consumers are connected
     // await KafkaHelper.consumers.connect()
     // const topics = TestTopics.list
+    // TODO: END - Disabling these handlers to test running the CL as a separate service independently.
 
     // // lets make sure all our Producers are already connected if they have already been defined.
     // for (const topic of topics) {
@@ -363,11 +365,13 @@ Test('Handlers test', async handlersTest => {
 
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
-      // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
+      // TODO: START - Disabling these handlers to test running the CL as a separate service independently.
+      //       The following issue https://github.com/mojaloop/project/issues/3112 was created to investigate as to why the Integration Tests are so unstable when then Event Handlers are executing in-line. For the time being the above PR clearly separates the process which resolves the stability issue for the time being.
       // await Handlers.transfers.registerPrepareHandler()
       // await Handlers.positions.registerPositionHandler()
       // await Handlers.transfers.registerFulfilHandler()
       // await Handlers.timeouts.registerTimeoutHandler()
+      // TODO: END - Disabling these handlers to test running the CL as a separate service independently.
 
       // Set up the testConsumer here
       await testConsumer.startListening()
