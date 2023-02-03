@@ -263,6 +263,9 @@ jobs:
 
             ## Start integration tests
             npm run test:int:skipMigrate
+
+            ## Kill service
+            kill $(cat /tmp/int-test-service.pid)
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
             UV_THREADPOOL_SIZE: 12
@@ -276,8 +279,8 @@ jobs:
             ## Shutdown Docker containers
             docker compose down -v
 
-            ## Kill service
-            kill $(cat /tmp/int-test-service.pid)
+            # ## Kill service
+            # kill $(cat /tmp/int-test-service.pid)
       - store_artifacts:
           path: ./test/results
           prefix: test
