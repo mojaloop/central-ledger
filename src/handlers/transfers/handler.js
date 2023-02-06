@@ -57,10 +57,16 @@ const decodePayload = Util.StreamingProtocol.decodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Ilp } = require('@mojaloop/sdk-standard-components')
+const SettlementModelRulesEngine = require('../../models/rules/settlement-model-rules-engine')
+const EnumCached = require('../../lib/enumCached')
+const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 
 const consumerCommit = true
 const fromSwitch = true
 const toDestination = true
+
+let engine
+// const engine = new SettlementModelRulesEngine()
 
 /**
  * @function TransferPrepareHandler
@@ -93,6 +99,10 @@ const prepare = async (error, messages) => {
   if (error) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
+  }
+
+  if (!engine) {
+    engine = new SettlementModelRulesEngine()
   }
   let message = {}
   if (Array.isArray(messages)) {
@@ -177,21 +187,41 @@ const prepare = async (error, messages) => {
       throw fspiopError
     } else { // !hasDuplicateId
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
-
-      if (Config.INCLUDE_DECODED_TRANSACTION_OBJECT) {
-        try {
-          const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
-          message.value.content.transaction = transactionObject
-        } catch {
-          Logger.info('Ilp failed to decode. Error notification will be handled by validation check.')
+      // Select settlement model here
+      let settlementModel
+      try {
+        const allSettlementModels = await SettlementModelCached.getAll()
+        const settlementModels = allSettlementModels.filter(model => !model.currencyId || model.currencyId === payload.amount.currency)
+        if (settlementModels.length === 0) {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
         }
+        settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+        if (Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE) {
+          try {
+            const transactionObject = (new Ilp({ secret: null })).getTransactionObject(payload.ilpPacket)
+            message.value.content.transaction = transactionObject
+            const ledgerAccountTypes = await EnumCached.getEnums('ledgerAccountType')
+            settlementModel = await engine.obtainSettlementModelFrom(transactionObject, settlementModels, ledgerAccountTypes)
+          } catch {
+            Logger.info('Ilp failed to decode. Error notification will be handled by validation check.')
+          }
+        }
+        message.value.content.settlementModel = settlementModel
+      } catch (err) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal3--${actionLetter}10`))
+        Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+        const eventDetail = { functionality, action: TransferEventAction.PREPARE }
+        Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        throw fspiopError
       }
 
       if (validationPassed) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         try {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveTransfer'))
-          await TransferService.prepare(payload)
+          await TransferService.prepare(payload, settlementModel)
         } catch (err) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}6`))
           Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
@@ -216,7 +246,7 @@ const prepare = async (error, messages) => {
         Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
         try {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
-          await TransferService.prepare(payload, reasons.toString(), false)
+          await TransferService.prepare(payload, settlementModel, reasons.toString(), false)
         } catch (err) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}8`))
           Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
@@ -820,6 +850,8 @@ const getTransfer = async (error, messages) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerPrepareHandler = async () => {
+  await SettlementModelCached.initialize()
+  engine = new SettlementModelRulesEngine()
   try {
     const prepareHandler = {
       command: prepare,

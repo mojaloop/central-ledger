@@ -88,7 +88,7 @@ If you want to run integration tests in a repetitive manner, you can startup the
     Start containers required for Integration Tests
 
     ```bash
-    docker-compose -f docker-compose.yml up -d kafka mysql
+    docker-compose -f docker-compose.yml up -d kafka mysql init-kafka
     ```
 
     Run wait script which will report once all required containers are up and running

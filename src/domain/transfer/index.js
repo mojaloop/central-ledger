@@ -41,14 +41,14 @@ const TransferError = require('../../models/transfer/transferError')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
 
-const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
+const prepare = async (payload, settlementModel, stateReason = null, hasPassedValidation = true) => {
   const histTimerTransferServicePrepareEnd = Metrics.getHistogram(
     'domain_transfer',
     'prepare - Metrics for transfer domain',
     ['success', 'funcName']
   ).startTimer()
   try {
-    const result = await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
+    const result = await TransferFacade.saveTransferPrepared(payload, settlementModel, stateReason, hasPassedValidation)
     histTimerTransferServicePrepareEnd({ success: true, funcName: 'prepare' })
     return result
   } catch (err) {

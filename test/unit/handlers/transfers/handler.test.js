@@ -52,17 +52,56 @@ const Comparators = require('@mojaloop/central-services-shared').Util.Comparator
 const Proxyquire = require('proxyquire')
 const Config = require('../../../../src/lib/config')
 const { getMessagePayloadOrThrow } = require('../../../util/helpers')
+const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
+const SettlementModelRulesEngine = require('../../../../src/models/rules/settlement-model-rules-engine')
+const EnumCached = require('../../../../src/lib/enumCached')
+const { Ilp } = require('@mojaloop/sdk-standard-components')
 
-const transfer = {
-  transferId: '18c13536-7a17-44ad-aacb-0c9daafa2149',
-  payerFsp: 'testingtoolkitdfsp',
-  payeeFsp: 'payeefsp',
-  amount: {
-    amount: '100',
-    currency: 'USD'
+const payerFsp = 'testingtoolkitdfsp'
+const payeeFsp = 'payeefsp'
+const amount = 100
+const currency = 'USD'
+
+const testTransactionObject = {
+  transactionId: Uuid(),
+  quoteId: Uuid(),
+  payer: {
+    partyIdInfo: {
+      fspId: payerFsp,
+      partyIdType: 'MSISDN',
+      partyIdentifier: '44123456789'
+    }
   },
-  ilpPacket: 'AYIDGQAAAAAAACcQHWcucGF5ZWVmc3AubXNpc2RuLjI3NzEzODAzOTEyggLvZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTVRoak1UTTFNell0TjJFeE55MDBOR0ZrTFdGaFkySXRNR001WkdGaFptRXlNVFE1SWl3aWNYVnZkR1ZKWkNJNklqWmhObVE1T1dOaExUUmhaVFF0TkdVeE9DMWlNR1k1TFRsak9Ua3dZall3TVRjMFlpSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpjM01UTTRNRE01TVRJaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpRME1USXpORFUyTnpnNUlpd2labk53U1dRaU9pSjBaWE4wYVc1bmRHOXZiR3RwZEdSbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJa1pwY25OMGJtRnRaUzFVWlhOMElpd2liR0Z6ZEU1aGJXVWlPaUpNWVhOMGJtRnRaUzFVWlhOMEluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazROQzB3TVMwd01TSjlmU3dpWVcxdmRXNTBJanA3SW1GdGIzVnVkQ0k2SWpFd01DSXNJbU4xY25KbGJtTjVJam9pVlZORUluMHNJblJ5WVc1ellXTjBhVzl1Vkhsd1pTSTZleUp6WTJWdVlYSnBieUk2SWxSU1FVNVRSa1ZTSWl3aWFXNXBkR2xoZEc5eUlqb2lVRUZaUlZJaUxDSnBibWwwYVdGMGIzSlVlWEJsSWpvaVEwOU9VMVZOUlZJaWZYMAA',
-  condition: 'wqMyoJvKgTYzo7Q0l_h8eJyYnt5GFA8VRZhzy1pemTY',
+  payee: {
+    partyIdInfo: {
+      fspId: payeeFsp,
+      partyIdType: 'MSISDN',
+      partyIdentifier: '27713803912'
+    }
+  },
+  amount: {
+    amount,
+    currency
+  },
+  transactionType: {
+    initiator: 'PAYER',
+    initiatorType: 'CONSUMER',
+    scenario: 'TRANSFER'
+  }
+}
+
+const { fulfilment, ilpPacket, condition } = (new Ilp({ secret: Buffer.from('abc') })).getResponseIlp(testTransactionObject)
+const transferId = Uuid()
+const transfer = {
+  transferId,
+  payerFsp,
+  payeeFsp,
+  amount: {
+    amount,
+    currency
+  },
+  ilpPacket,
+  condition,
   expiration: '2023-01-10T14:38:08.497Z',
   extensionList: {
     extension: [
@@ -79,18 +118,18 @@ const transfer = {
 }
 
 const transferReturn = {
-  transferId: '18c13536-7a17-44ad-aacb-0c9daafa2149',
+  transferId,
   amount: {
-    amount: '100',
-    currency: 'USD'
+    amount,
+    currency
   },
   transferState: 'COMMITTED',
   transferStateEnumeration: 'COMMITTED',
   completedTimestamp: '2023-01-10T14:37:08.698Z',
-  ilpPacket: 'AYIDGQAAAAAAACcQHWcucGF5ZWVmc3AubXNpc2RuLjI3NzEzODAzOTEyggLvZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTVRoak1UTTFNell0TjJFeE55MDBOR0ZrTFdGaFkySXRNR001WkdGaFptRXlNVFE1SWl3aWNYVnZkR1ZKWkNJNklqWmhObVE1T1dOaExUUmhaVFF0TkdVeE9DMWlNR1k1TFRsak9Ua3dZall3TVRjMFlpSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpjM01UTTRNRE01TVRJaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpRME1USXpORFUyTnpnNUlpd2labk53U1dRaU9pSjBaWE4wYVc1bmRHOXZiR3RwZEdSbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJa1pwY25OMGJtRnRaUzFVWlhOMElpd2liR0Z6ZEU1aGJXVWlPaUpNWVhOMGJtRnRaUzFVWlhOMEluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazROQzB3TVMwd01TSjlmU3dpWVcxdmRXNTBJanA3SW1GdGIzVnVkQ0k2SWpFd01DSXNJbU4xY25KbGJtTjVJam9pVlZORUluMHNJblJ5WVc1ellXTjBhVzl1Vkhsd1pTSTZleUp6WTJWdVlYSnBieUk2SWxSU1FVNVRSa1ZTSWl3aWFXNXBkR2xoZEc5eUlqb2lVRUZaUlZJaUxDSnBibWwwYVdGMGIzSlVlWEJsSWpvaVEwOU9VMVZOUlZJaWZYMAA',
-  condition: 'wqMyoJvKgTYzo7Q0l_h8eJyYnt5GFA8VRZhzy1pemTY',
+  ilpPacket,
+  condition,
   expiration: '2023-01-10T14:38:08.497Z',
-  fulfilment: 'EIvu10ISWSRPTJRnM-QI5u1oy01wvFty623kISXGYFU',
+  fulfilment,
   extensionList: [{
     key: 'key1',
     value: 'value1'
@@ -98,7 +137,7 @@ const transferReturn = {
 }
 
 const fulfil = {
-  fulfilment: 'oAKAAA',
+  fulfilment,
   completedTimestamp: '2018-10-24T08:38:08.699-04:00',
   transferState: 'COMMITTED',
   extensionList: {
@@ -179,8 +218,8 @@ const fulfilMessages = [
         payload: fulfil,
         uriParams: { id: messageProtocol.content.uriParams.id },
         headers: {
-          'fspiop-source': 'dfsp1',
-          'fspiop-destination': 'dfsp2',
+          'fspiop-source': payerFsp,
+          'fspiop-destination': payeeFsp,
           'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
         }
       },
@@ -199,8 +238,8 @@ const fulfilMessages = [
         payload: fulfil,
         uriParams: { id: messageProtocolBulkCommit.content.uriParams.id },
         headers: {
-          'fspiop-source': 'dfsp1',
-          'fspiop-destination': 'dfsp2',
+          'fspiop-source': payerFsp,
+          'fspiop-destination': payeeFsp,
           'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
         }
       },
@@ -268,6 +307,8 @@ const participants = ['testName1', 'testName2']
 
 Test('Transfer handler', transferHandlerTest => {
   let sandbox
+  let settlementModel1
+  let settlementModel2
 
   transferHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
@@ -294,6 +335,36 @@ Test('Transfer handler', transferHandlerTest => {
       Tracer: TracerStub
     }
 
+    settlementModel1 = {
+      settlementModelId: 1,
+      name: 'DEFERREDNET',
+      isActive: 1,
+      settlementGranularityId: 2,
+      settlementInterchangeId: 2,
+      settlementDelayId: 2,
+      currencyId: null,
+      requireLiquidityCheck: 1,
+      ledgerAccountTypeId: 1,
+      autoPositionReset: 1,
+      adjustPosition: 0,
+      settlementAccountTypeId: 2
+    }
+
+    settlementModel2 = {
+      settlementModelId: 2,
+      name: 'DEFERREDNET',
+      isActive: 1,
+      settlementGranularityId: 2,
+      settlementInterchangeId: 2,
+      settlementDelayId: 2,
+      currencyId: null,
+      requireLiquidityCheck: 2,
+      ledgerAccountTypeId: 2,
+      autoPositionReset: 2,
+      adjustPosition: 0,
+      settlementAccountTypeId: 2
+    }
+
     allTransferHandlers = Proxyquire('../../../../src/handlers/transfers/handler', {
       '@mojaloop/event-sdk': EventSdkStub
     })
@@ -305,6 +376,8 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(Comparators)
     sandbox.stub(Validator)
     sandbox.stub(TransferService)
+    sandbox.stub(SettlementModelCached)
+    sandbox.stub(EnumCached)
     sandbox.stub(Consumer, 'getConsumer').returns({
       commitMessageSync: async function () {
         return true
@@ -782,8 +855,8 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    prepareTest.test('include decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is true', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
+    prepareTest.test('decoded transaction is passed to rules engine when ENABLED_SETTLEMENT_MODEL_RULES_ENGINE is true', async (test) => {
+      Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE = true
       const localMessages = MainUtil.clone(messages)
       // here copy
       await Consumer.createHandler(topicName, config, command)
@@ -792,18 +865,31 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      SettlementModelCached.getAll.returns(Promise.resolve([
+        settlementModel1,
+        settlementModel2
+      ]))
+      Sinon.stub(SettlementModelRulesEngine.prototype, 'obtainSettlementModelFrom').returns(Promise.resolve(settlementModel2))
+      EnumCached.getEnums.returns(Promise.resolve({
+        ledgerAccountType: {
+          POSITION: 1,
+          SETTLEMENT: 2,
+          HUB_SETTLEMENT: 3
+        }
+      }))
+
       Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
-      test.ok(Kafka.proceed.getCall(0).args[1].message.value.content.transaction)
+      test.deepEqual(SettlementModelRulesEngine.prototype.obtainSettlementModelFrom.getCall(0).args[0], testTransactionObject, 'Decoded object matches original')
       test.end()
     })
 
-    prepareTest.test('exclude decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is false', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = false
+    prepareTest.test('decoded transaction is not passed to rules engine when ENABLED_SETTLEMENT_MODEL_RULES_ENGINE is false', async (test) => {
+      Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE = false
       const localMessages = MainUtil.clone(messages)
       // here copy
       await Consumer.createHandler(topicName, config, command)
@@ -812,13 +898,74 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      SettlementModelCached.getAll.returns(Promise.resolve([
+        settlementModel1,
+        settlementModel2
+      ]))
+      EnumCached.getEnums.returns(Promise.resolve(null))
       Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
-      test.notOk(Kafka.proceed.getCall(0).args[1].message.value.content.transaction)
+      test.ok(Kafka.proceed.getCall(0).args[1].message.value.content.settlementModel)
+      test.end()
+    })
+
+    prepareTest.test('no matching settlement model throws an error and sends error notification', async (test) => {
+      Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE = true
+      const localMessages = MainUtil.clone(messages)
+      // here copy
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      SettlementModelCached.getAll.returns(Promise.resolve([
+      ]))
+      EnumCached.getEnums.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      await allTransferHandlers.prepare(null, localMessages)
+
+      const kafkaCall = Kafka.proceed.getCall(0)
+      test.equal(kafkaCall.args[2].fspiopError.errorInformation.errorCode, '6000')
+      test.equal(kafkaCall.args[2].fspiopError.errorInformation.errorDescription, 'Generic Settlement Error - Unable to find a matching or default, Settlement Model')
+      test.equal(kafkaCall.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCall.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.end()
+    })
+
+    prepareTest.test('prepare failing validation throws error and produces error notification', async (test) => {
+      Config.ENABLED_SETTLEMENT_MODEL_RULES_ENGINE = true
+      const localMessages = MainUtil.clone(messages)
+      // here copy
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      SettlementModelCached.getAll.returns(Promise.resolve([
+        settlementModel1,
+        settlementModel2
+      ]))
+      EnumCached.getEnums.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      await allTransferHandlers.prepare(null, localMessages)
+
+      const kafkaCall = Kafka.proceed.getCall(0)
+      test.equal(kafkaCall.args[2].fspiopError.errorInformation.errorCode, '3100')
+      test.equal(kafkaCall.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error')
+      test.equal(kafkaCall.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCall.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
       test.end()
     })
 
@@ -1033,8 +1180,8 @@ Test('Transfer handler', transferHandlerTest => {
       // mock out validation calls
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp1',
-        payerFsp: 'dfsp2',
+        payeeFsp: payerFsp,
+        payerFsp: payeeFsp,
         transferState: TransferState.RESERVED,
         id: Uuid(),
         completedTimestamp: Time.getUTCString(new Date()),
@@ -1072,8 +1219,8 @@ Test('Transfer handler', transferHandlerTest => {
       // mock out validation calls
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp1',
-        payerFsp: 'dfsp2',
+        payeeFsp: payerFsp,
+        payerFsp: payeeFsp,
         transferState: TransferState.ABORTED,
         id: Uuid(),
         completedTimestamp: Time.getUTCString(new Date())
@@ -1111,8 +1258,8 @@ Test('Transfer handler', transferHandlerTest => {
       // mock out validation calls
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp1',
-        payerFsp: 'dfsp2',
+        payeeFsp: payerFsp,
+        payerFsp: payeeFsp,
         transferState: TransferState.RESERVED,
         id: Uuid(),
         completedTimestamp: Time.getUTCString(new Date())
@@ -1199,10 +1346,10 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1'
+        payeeFsp,
+        payerFsp
       }))
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'fspdoesnotexist'
       Kafka.proceed.returns(true)
 
@@ -1223,7 +1370,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].toDestination, 'dfsp1')
+      test.equal(kafkaCallOne.args[2].toDestination, payerFsp)
 
       test.end()
     })
@@ -1234,11 +1381,11 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1'
+        payeeFsp,
+        payerFsp
       }))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       Kafka.proceed.returns(true)
 
       // Act
@@ -1257,7 +1404,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].toDestination, 'dfsp1')
+      test.equal(kafkaCallOne.args[2].toDestination, payerFsp)
 
       test.end()
     })
@@ -1269,11 +1416,11 @@ Test('Transfer handler', transferHandlerTest => {
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1'
+        payeeFsp,
+        payerFsp
       }))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       Kafka.proceed.returns(true)
 
       // Act
@@ -1292,7 +1439,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].toDestination, 'dfsp1')
+      test.equal(kafkaCallOne.args[2].toDestination, payerFsp)
 
       test.end()
     })
@@ -1303,10 +1450,10 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1'
+        payeeFsp,
+        payerFsp
       }))
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'fspdoesnotexist'
       localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.1'
       localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
@@ -1331,14 +1478,14 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].toDestination, 'dfsp1')
+      test.equal(kafkaCallOne.args[2].toDestination, payerFsp)
 
       // lets check if the outbound event is sent to the notifications with the correct status
       test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
       test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
       test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
       test.equal(kafkaCallTwo.args[2].fromSwitch, true)
-      test.equal(kafkaCallTwo.args[2].toDestination, 'dfsp2')
+      test.equal(kafkaCallTwo.args[2].toDestination, payeeFsp)
 
       test.end()
     })
@@ -1349,11 +1496,11 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1'
+        payeeFsp,
+        payerFsp
       }))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.1'
       localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
       localfulfilMessages[0].value.metadata.event.action = Enum.Events.Event.Action.RESERVE
@@ -1376,14 +1523,14 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].toDestination, 'dfsp1')
+      test.equal(kafkaCallOne.args[2].toDestination, payerFsp)
 
       // lets check if the outbound event is sent to the notifications with the correct status
       test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
       test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
       test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
       test.equal(kafkaCallTwo.args[2].fromSwitch, true)
-      test.equal(kafkaCallTwo.args[2].toDestination, 'dfsp2')
+      test.equal(kafkaCallTwo.args[2].toDestination, payeeFsp)
 
       test.end()
     })
@@ -1394,11 +1541,11 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1'
+        payeeFsp,
+        payerFsp
       }))
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
       Kafka.proceed.returns(true)
 
@@ -1421,11 +1568,11 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1'
+        payeeFsp,
+        payerFsp
       }))
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
       Kafka.proceed.returns(true)
 
@@ -1447,13 +1594,13 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferState.RECEIVED_PREPARE
       }))
       Validator.validateFulfilCondition.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       Kafka.proceed.returns(true)
 
@@ -1475,14 +1622,14 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferState.RESERVED
       }))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       Kafka.proceed.returns(true)
 
@@ -1505,14 +1652,14 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferState.RESERVED
       }))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       Kafka.proceed.returns(true)
 
@@ -1534,14 +1681,14 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferState.RESERVED
       }))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
-      localfulfilMessages[1].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[1].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[1].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[1].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[1].value.content.payload.fulfilment = 'condition'
       Kafka.proceed.returns(true)
 
@@ -1563,14 +1710,14 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferState.RESERVED
       }))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
-      localfulfilMessages[1].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[1].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[1].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[1].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[1].value.content.payload = errInfo
       localfulfilMessages[1].value.metadata.event.action = 'bulk-abort'
       Kafka.proceed.returns(true)
@@ -1595,14 +1742,14 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferState.RESERVED
       }))
       ilp.update.returns(Promise.resolve())
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1623,15 +1770,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.RESERVED
       }))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       Kafka.proceed.returns(true)
 
@@ -1654,16 +1801,16 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.RESERVED
       }))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1703,7 +1850,7 @@ Test('Transfer handler', transferHandlerTest => {
     //   Kafka.transformGeneralTopicName.returns(topicName)
     //   TransferService.getById.returns(Promise.resolve({
     //     condition: 'condition',
-    //     payeeFsp: 'dfsp2',
+    //     payeeFsp: payeeFsp,
     //     expirationDate: new Date('1900-01-01'),
     //     transferState: TransferState.RESERVED
     //   }))
@@ -1713,7 +1860,7 @@ Test('Transfer handler', transferHandlerTest => {
     //   ilp.update.returns(Promise.resolve())
     //   Validator.validateFulfilCondition.returns(true)
     //   Kafka.proceed.returns(true)
-    //   localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+    //   localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
     //   localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
     //   TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1735,8 +1882,8 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.RESERVED
       }))
@@ -1744,8 +1891,8 @@ Test('Transfer handler', transferHandlerTest => {
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payerFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
@@ -1760,15 +1907,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.COMMITTED,
         transferStateEnumeration: TransferState.COMMITTED
       }))
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1790,15 +1937,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.COMMITTED,
         transferStateEnumeration: TransferState.COMMITTED
       }))
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1820,15 +1967,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferInternalState.RECEIVED_FULFIL,
         transferStateEnumeration: TransferState.RECEIVED
       }))
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1850,15 +1997,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1880,15 +2027,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferInternalState.ABORTED_REJECTED,
         transferStateEnumeration: TransferState.ABORTED
       }))
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1910,15 +2057,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: undefined,
         transferStateEnumeration: undefined
       }))
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1940,15 +2087,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1970,15 +2117,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferInternalState.ABORTED_ERROR,
         transferStateEnumeration: TransferState.ABORTED
       }))
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       localfulfilMessages[0].value.metadata.event.action = 'abort'
 
@@ -2001,15 +2148,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferInternalState.ABORTED_ERROR,
         transferStateEnumeration: TransferState.ABORTED
       }))
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       localfulfilMessages[0].value.metadata.event.action = 'abort'
 
@@ -2032,15 +2179,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         expirationDate: new Date('1900-01-01'),
         transferState: TransferInternalState.ABORTED_ERROR,
         transferStateEnumeration: TransferState.ABORTED
       }))
       Kafka.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = payeeFsp
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = payerFsp
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       localfulfilMessages[0].value.metadata.event.action = 'abort'
 
@@ -2063,13 +2210,13 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferInternalState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))
-      invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
-      invalidEventMessage.value.content.headers['fspiop-destination'] = 'dfsp1'
+      invalidEventMessage.value.content.headers['fspiop-source'] = payeeFsp
+      invalidEventMessage.value.content.headers['fspiop-destination'] = payerFsp
       invalidEventMessage.value.metadata.event.action = 'reject'
       Kafka.proceed.returns(true)
 
@@ -2093,13 +2240,13 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferInternalState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))
-      invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
-      invalidEventMessage.value.content.headers['fspiop-destination'] = 'dfsp1'
+      invalidEventMessage.value.content.headers['fspiop-source'] = payeeFsp
+      invalidEventMessage.value.content.headers['fspiop-destination'] = payerFsp
       invalidEventMessage.value.metadata.event.action = 'reject'
       Kafka.proceed.returns(true)
 
@@ -2122,8 +2269,8 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferInternalState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))
@@ -2135,7 +2282,7 @@ Test('Transfer handler', transferHandlerTest => {
           errorDescription: 'generic'
         }
       })
-      invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
+      invalidEventMessage.value.content.headers['fspiop-source'] = payeeFsp
       Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -2157,14 +2304,14 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferState.RESERVED
       }))
       TransferService.handlePayeeResponse.returns(Promise.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
       invalidEventMessage.value.metadata.event.action = 'abort'
-      invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
-      invalidEventMessage.value.content.headers['fspiop-destination'] = 'dfsp1'
+      invalidEventMessage.value.content.headers['fspiop-source'] = payeeFsp
+      invalidEventMessage.value.content.headers['fspiop-destination'] = payerFsp
       Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -2186,15 +2333,15 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1',
+        payeeFsp,
+        payerFsp,
         transferState: TransferState.RESERVED
       }))
       TransferService.handlePayeeResponse.returns(Promise.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
       invalidEventMessage.value.metadata.event.action = 'abort'
       invalidEventMessage.value.content.payload = errInfo
-      invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
-      invalidEventMessage.value.content.headers['fspiop-destination'] = 'dfsp1'
+      invalidEventMessage.value.content.headers['fspiop-source'] = payeeFsp
+      invalidEventMessage.value.content.headers['fspiop-destination'] = payerFsp
       Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -2214,7 +2361,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.throws(new Error())
-      invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
+      invalidEventMessage.value.content.headers['fspiop-source'] = payeeFsp
       invalidEventMessage.value.metadata.event.action = 'reject'
 
       try {
@@ -2236,8 +2383,8 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.proceed.returns(true)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
-        payeeFsp: 'dfsp1',
-        payerFsp: 'dfsp1',
+        payeeFsp: payerFsp,
+        payerFsp,
         transferState: TransferState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))

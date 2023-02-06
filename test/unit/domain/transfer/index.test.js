@@ -63,6 +63,18 @@ const payload = {
   }
 }
 
+const settlementModel = {
+  settlementModelId: 106,
+  name: 'DEFERRED_NET',
+  isActive: 1,
+  settlementGranularityId: 1,
+  settlementInterchangeId: 1,
+  settlementDelayId: 2,
+  currencyId: null,
+  requireLiquidityCheck: 1,
+  ledgerAccountTypeId: 6
+}
+
 const transferStateChangeRecord = {
   transferId: payload.transferId,
   transferStateId: TransferInternalState.RECEIVED_PREPARE,
@@ -121,7 +133,7 @@ Test('Transfer Service', transferIndexTest => {
     preparedTest.test('prepare transfer payload that passed validation', async (test) => {
       try {
         TransferFacade.saveTransferPrepared.returns(Promise.resolve())
-        await TransferService.prepare(payload)
+        await TransferService.prepare(payload, settlementModel)
         test.pass('Error not thrown')
         test.end()
       } catch (e) {
@@ -133,7 +145,7 @@ Test('Transfer Service', transferIndexTest => {
     preparedTest.test('prepare transfer throws error', async (test) => {
       TransferFacade.saveTransferPrepared.throws(new Error())
       try {
-        await TransferService.prepare(payload)
+        await TransferService.prepare(payload, settlementModel)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {

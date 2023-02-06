@@ -400,7 +400,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   }
 }
 
-const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
+const saveTransferPrepared = async (payload, settlementModel, stateReason = null, hasPassedValidation = true) => {
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
     'facade_saveTransferPrepared - Metrics for transfer model',
@@ -411,7 +411,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const names = [payload.payeeFsp, payload.payerFsp]
 
     for (const name of names) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, settlementModel.ledgerAccountTypeId)
       if (participant) {
         participants.push(participant)
       }
@@ -746,9 +746,9 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           .join('participantPosition AS crp', 'crp.participantCurrencyId', 'cr.participantCurrencyId')
           .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
           .where('t.transferId', param1.transferId)
-          .whereIn('drpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
+          .whereIn('drpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT, enums.ledgerAccountType.POSITION_REMITTANCE, enums.ledgerAccountType.SETTLEMENT_REMITTANCE,
             enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
-          .whereIn('crpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
+          .whereIn('crpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT, enums.ledgerAccountType.POSITION_REMITTANCE, enums.ledgerAccountType.SETTLEMENT_REMITTANCE,
             enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
           .select('dr.participantCurrencyId AS drAccountId', 'dr.amount AS drAmount', 'drp.participantPositionId AS drPositionId',
             'drp.value AS drPositionValue', 'drp.reservedValue AS drReservedValue', 'cr.participantCurrencyId AS crAccountId',

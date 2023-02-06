@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "16.3.3",
+  "version": "16.4.0-snapshot.3",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -77,7 +77,7 @@
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
-    "@hapi/hapi": "21.2.0",
+    "@hapi/hapi": "21.2.1",
     "@hapi/inert": "7.0.0",
     "@hapi/joi": "17.1.1",
     "@hapi/vision": "7.0.0",

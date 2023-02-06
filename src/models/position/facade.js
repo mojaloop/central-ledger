@@ -21,6 +21,7 @@
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
+ * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
@@ -33,7 +34,6 @@
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const participantFacade = require('../participant/facade')
-const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Logger = require('@mojaloop/central-services-logger')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
@@ -52,16 +52,10 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const knex = await Db.getKnex()
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
-    const allSettlementModels = await SettlementModelCached.getAll()
-    let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
-    if (settlementModels.length === 0) {
-      settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
-      if (settlementModels.length === 0) {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
-      }
-    }
-    const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
-    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
+
+    const settlementModel = transferList[0].value.content.settlementModel
+
+    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.ledgerAccountTypeId)
     const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
     const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
     const reservedTransfers = []
@@ -159,12 +153,15 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           'facade_prepareChangeParticipantPositionTransaction_transaction_ValidatePositionBatch - Metrics for position model',
           ['success', 'queryName']
         ).startTimer()
-        const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
+        const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, settlementModel.ledgerAccountTypeId, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
+        let availablePositionBasedOnPayerLimit = null
+        if (participantLimit) {
+          const payerLimit = new MLNumber(participantLimit.value)
+          availablePositionBasedOnPayerLimit = payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
+        }
 
         const liquidityCover = new MLNumber(settlementParticipantPosition.value).multiply(-1)
-        const payerLimit = new MLNumber(participantLimit.value)
         const availablePositionBasedOnLiquidityCover = liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
-        const availablePositionBasedOnPayerLimit = payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
         /* Validate entire batch if availablePosition >= sumTransfersInBatch - the impact is that applying per transfer rules would require to be handled differently
            since further rules are expected we do not do this at this point
            As we enter this next step the order in which the transfer is processed against the Position is critical.
@@ -179,7 +176,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
             reservedTransfers[transferId].fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList)
             rawMessage.value.content.payload = reservedTransfers[transferId].fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
-          } else if (new MLNumber(availablePositionBasedOnPayerLimit).toNumber() < transferAmount.toNumber()) {
+          } else if (availablePositionBasedOnPayerLimit && new MLNumber(availablePositionBasedOnPayerLimit).toNumber() < transferAmount.toNumber()) {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
             reservedTransfers[transferId].fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR, null, null, null, rawMessage.value.content.payload.extensionList)
@@ -210,7 +207,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           changedDate: transactionTimestamp
         })
         // TODO this limit needs to be clarified
-        if (processedPositionValue.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
+        if (participantLimit && processedPositionValue.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
           limitAlarms.push(participantLimit)
         }
         histTimerUpdateParticipantPositionEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateParticipantPosition' })

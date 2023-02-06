@@ -92,6 +92,21 @@ Test('Transfer facade', async (transferFacadeTest) => {
     extensionList: { extension: transferExtensions }
   }
 
+  const settlementModel = [
+    {
+      settlementModelId: 106,
+      name: 'DEFERRED_NET',
+      isActive: true,
+      settlementGranularity: 'GROSS',
+      settlementInterchange: 'BILATERAL',
+      settlementDelay: 'DEFERRED',
+      currency: null,
+      requireLiquidityCheck: true,
+      ledgerAccountTypeId: 'SETTLEMENT',
+      autoPositionReset: true
+    }
+  ]
+
   transferFacadeTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     Db.transfer = {
@@ -1127,7 +1142,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         })
       })
 
-      const result = await TransferFacade.saveTransferPrepared(payloadFixture, null, true)
+      const result = await TransferFacade.saveTransferPrepared(payloadFixture, settlementModel, null, true)
       test.equal(result, undefined, 'result matches expected result')
       test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transfer once')
       test.ok(knexStub.withArgs('transferParticipant').calledTwice, 'knex called with transferParticipant twice')
@@ -1160,7 +1175,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         })
       })
 
-      const result = await TransferFacade.saveTransferPrepared(payloadFixture)
+      const result = await TransferFacade.saveTransferPrepared(payloadFixture, settlementModel)
       test.equal(result, undefined, 'result matches expected result')
       test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transfer once')
       test.ok(knexStub.withArgs('transferParticipant').calledTwice, 'knex called with transferParticipant twice')
@@ -1196,7 +1211,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const payload = Object.assign({}, payloadFixture)
       delete payload.extensionList
 
-      const result = await TransferFacade.saveTransferPrepared(payload, null, true)
+      const result = await TransferFacade.saveTransferPrepared(payload, settlementModel, null, true)
       test.equal(result, undefined, 'result matches expected result')
       test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transfer once')
       test.ok(knexStub.withArgs('transferParticipant').calledTwice, 'knex called with transferParticipant twice')
@@ -1227,7 +1242,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         })
       })
 
-      await TransferFacade.saveTransferPrepared(payloadFixture, null, true)
+      await TransferFacade.saveTransferPrepared(payloadFixture, settlementModel, null, true)
       test.fail(' should throw')
       test.end()
       test.end()
@@ -1254,7 +1269,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         insert: sandbox.stub().returns(1)
       })
 
-      const result = await TransferFacade.saveTransferPrepared(payloadFixture, 'Invalid Payee', false)
+      const result = await TransferFacade.saveTransferPrepared(payloadFixture, settlementModel, 'Invalid Payee', false)
       test.equal(result, undefined, 'result matches expected result')
       test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transfer once')
       test.ok(knexStub.withArgs('transferParticipant').calledTwice, 'knex called with transferParticipant twice')
@@ -1288,7 +1303,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         insert: sandbox.stub().returns(1)
       })
 
-      const result = await TransferFacade.saveTransferPrepared(payloadFixture, 'Invalid Payee', false)
+      const result = await TransferFacade.saveTransferPrepared(payloadFixture, settlementModel, 'Invalid Payee', false)
       test.equal(result, undefined, 'result matches expected result')
       test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transfer once')
       test.ok(knexStub.withArgs('transferParticipant').calledTwice, 'knex called with transferParticipant twice')
@@ -1320,7 +1335,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       })
 
       delete payloadFixture.extensionList
-      const result = await TransferFacade.saveTransferPrepared(payloadFixture, 'Invalid Payee', false)
+      const result = await TransferFacade.saveTransferPrepared(payloadFixture, settlementModel, 'Invalid Payee', false)
       test.equal(result, undefined, 'result matches expected result')
       test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transfer once')
       test.ok(knexStub.withArgs('transferParticipant').calledTwice, 'knex called with transferParticipant twice')
@@ -1348,7 +1363,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       Db.getKnex.returns(knexStub)
       knexStub.throws(new Error())
 
-      await TransferFacade.saveTransferPrepared(payloadFixture, 'Invalid Payee', false)
+      await TransferFacade.saveTransferPrepared(payloadFixture, settlementModel, 'Invalid Payee', false)
       test.fail(' should throw')
       test.end()
       test.end()
@@ -1372,7 +1387,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       Db.getKnex.returns(knexStub)
       knexStub.throws(new Error())
 
-      await TransferFacade.saveTransferPrepared(payloadFixture, 'Invalid Payee', false)
+      await TransferFacade.saveTransferPrepared(payloadFixture, settlementModel, 'Invalid Payee', false)
       test.fail(' should throw')
       test.end()
       test.end()

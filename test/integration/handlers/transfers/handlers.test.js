@@ -20,6 +20,7 @@
 
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Vijaya Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  **********/
 
@@ -61,6 +62,10 @@ const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
+const SettlementModelRulesEngine = require('../../../../src/models/rules/settlement-model-rules-engine')
+const sinon = require('sinon')
+const remittanceRules = require('../../../data/rules-settlement-model-remittance.json')
+const sandbox = sinon.createSandbox()
 
 const Handlers = {
   index: require('#src/handlers/register'),
@@ -136,7 +141,7 @@ const testDataZAR = {
   ilpPacketAmountOverride: null
 }
 
-const prepareTestData = async (dataObj) => {
+const prepareTestData = async (dataObj, fundsInToRemittanceAccount = false) => {
   try {
     // Lets make sure that all existing producers are connected
     await KafkaHelper.producers.connect()
@@ -185,6 +190,12 @@ const prepareTestData = async (dataObj) => {
       currency: dataObj.amount.currency,
       amount: 10000
     })
+    if (fundsInToRemittanceAccount) {
+      await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId4, {
+        currency: dataObj.amount.currency,
+        amount: 10000
+      })
+    }
 
     for (const name of [payer.participant.name, payee.participant.name]) {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
@@ -220,7 +231,8 @@ const prepareTestData = async (dataObj) => {
       transactionType: {
         initiator: 'PAYER',
         initiatorType: 'CONSUMER',
-        scenario: 'TRANSFER'
+        scenario: 'TRANSFER',
+        subScenario: 'REMITTANCE'
       }
     }
     // Create new fulfilment, ilpPacket and condition because test helpers
@@ -418,6 +430,7 @@ Test('Handlers test', async handlersTest => {
 
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
+      sandbox.stub(SettlementModelRulesEngine.prototype, 'getRules').returns(remittanceRules)
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
@@ -436,84 +449,7 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferPrepare should', async transferPrepare => {
-    await transferPrepare.test('include decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is true', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
-      // Arrange
-      testConsumer.clearEvents()
-      const td = await prepareTestData(testData)
-
-      // 1. send a PREPARE request (from Payer)
-      const prepareConfig = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.PREPARE.toUpperCase())
-      prepareConfig.logger = Logger
-      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        console.dir(transfer)
-        // lets check its status, and if its what we expect return the result
-        if (transfer.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-
-      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
-
-      try {
-        const positionPrepare = (await wrapWithRetries(
-          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-transfer-position', action: 'prepare' }),
-          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        )[0]
-        test.ok(positionPrepare.value.content.transaction)
-      } catch (err) {
-        test.notOk('Decoded transaction is excluded')
-      }
-      test.end()
-    })
-
-    await transferPrepare.test('exclude decoded transaction object in Kafka messages when INCLUDE_DECODED_TRANSACTION_OBJECT is false', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = false
-      // Arrange
-      testConsumer.clearEvents()
-      const td = await prepareTestData(testData)
-
-      // 1. send a PREPARE request (from Payer)
-      const prepareConfig = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.PREPARE.toUpperCase())
-      prepareConfig.logger = Logger
-      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      const transfer = await wrapWithRetries(async () => {
-        // lets fetch the transfer
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-        console.dir(transfer)
-        // lets check its status, and if its what we expect return the result
-        if (transfer.transferState === 'RESERVED') return transfer
-        // otherwise lets return nothing
-        return null
-      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-
-      test.equal(transfer.transferState, 'RESERVED', 'Transfer is in reserved state')
-
-      try {
-        const positionPrepare = (await wrapWithRetries(
-          () => testConsumer.getEventsForFilter({ topicFilter: 'topic-transfer-position', action: 'prepare' }),
-          wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        )[0]
-        test.notOk(positionPrepare.value.content.transaction)
-      } catch (err) {
-        test.notOk('Decoded transaction is included')
-      }
-      test.end()
-    })
-
     await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details payerFsp', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
       // Arrange
       testConsumer.clearEvents()
       const td = await prepareTestData({
@@ -544,7 +480,6 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details payeeFsp', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
       // Arrange
       testConsumer.clearEvents()
       const td = await prepareTestData({
@@ -575,7 +510,6 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details amount.amount', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
       // Arrange
       testConsumer.clearEvents()
       const td = await prepareTestData({
@@ -606,7 +540,6 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferPrepare.test('produce a validation error when ilpPacket does not match against transfer details amount.currency', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
       // Arrange
       testConsumer.clearEvents()
       const td = await prepareTestData({
@@ -637,7 +570,6 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferPrepare.test('produce a validation error when ilpPacket is invalid and can not be decoded', async (test) => {
-      Config.INCLUDE_DECODED_TRANSACTION_OBJECT = true
       // Arrange
       testConsumer.clearEvents()
       const td = await prepareTestData({
@@ -1312,8 +1244,11 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('timeout should', async timeoutTest => {
-    testData.expiration = new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
-    const td = await prepareTestData(testData)
+    const customTestData = {
+      ...testData,
+      expiration: new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
+    }
+    const td = await prepareTestData(customTestData)
 
     await timeoutTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
@@ -1434,6 +1369,92 @@ Test('Handlers test', async handlersTest => {
     timeoutTest.end()
   })
 
+  await handlersTest.test('transferFulfilCommit with SETTLEMENT_MODEL_RULES_ENGINE enabled should', async transferFulfilCommit => {
+    sandbox.stub(Config, 'ENABLED_SETTLEMENT_MODEL_RULES_ENGINE').get(() => true)
+    sandbox.stub(Config, 'ENABLED_SETTLEMENT_MODEL_RULES_ENGINE').set(() => {})
+    const td = await prepareTestData(testData, true)
+
+    await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
+      const config = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      config.logger = Logger
+
+      const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
+
+      const tests = async () => {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId3) || {}
+        const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+        const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
+        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+        test.equal(producerResponse, true, 'Producer for prepare published message')
+        test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+      }
+
+      try {
+        await retry(async () => { // use bail(new Error('to break before max retries'))
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          return tests()
+        }, retryOpts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      test.end()
+    })
+
+    await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
+      const config = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      config.logger = Logger
+
+      const producerResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, config)
+
+      const tests = async () => {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId3) || {}
+        const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
+        const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
+        const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
+        test.equal(producerResponse, true, 'Producer for fulfil published message')
+        test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
+        test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
+        test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
+        test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+        test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
+      }
+
+      try {
+        await retry(async () => { // use bail(new Error('to break before max retries'))
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer.transferState !== TransferState.COMMITTED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          return tests()
+        }, retryOpts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      test.end()
+    })
+    transferFulfilCommit.end()
+  })
+
   await handlersTest.test('teardown', async (assert) => {
     try {
       await Handlers.timeouts.stop()
@@ -1466,6 +1487,7 @@ Test('Handlers test', async handlersTest => {
       // }
       // Lets make sure that all existing Consumers are disconnected
       await KafkaHelper.consumers.disconnect()
+      sandbox.reset()
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10

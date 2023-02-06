@@ -217,7 +217,21 @@ Test('Position facade', async (positionFacadeTest) => {
         type: 'application/json',
         content: {
           header: '',
-          payload: transfer
+          payload: transfer,
+          settlementModel: {
+            settlementModelId: 1,
+            name: 'DEFERREDNET',
+            isActive: 1,
+            settlementGranularityId: 2,
+            settlementInterchangeId: 2,
+            settlementDelayId: 2,
+            currencyId: null,
+            requireLiquidityCheck: 1,
+            ledgerAccountTypeId: 1,
+            autoPositionReset: 1,
+            adjustPosition: 0,
+            settlementAccountTypeId: 2
+          }
         },
         metadata: {
           event: {
@@ -375,6 +389,7 @@ Test('Position facade', async (positionFacadeTest) => {
           test.end()
         } catch (err) {
           Logger.error(`prepareChangeParticipantPositionTransaction failed with error - ${err}`)
+          Logger.error(JSON.stringify(err))
           test.fail()
           test.end()
         }

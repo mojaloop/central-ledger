@@ -279,6 +279,7 @@ const destroyParticipantEndpointByName = async (name) => {
 
 const addLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj) => {
   try {
+    // TODO: The following lines are with hardcoded enums. Need to handle this.
     const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
     const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.SETTLEMENT)
@@ -703,7 +704,7 @@ const recordFundsInOut = async (payload, params, enums) => {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantAccountCurrencyMismatchText)
     } else if (!accountMatched.accountIsActive) {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountInactiveErrorText)
-    } else if (accountMatched.ledgerAccountTypeId !== enums.ledgerAccountType.SETTLEMENT) {
+    } else if (accountMatched.ledgerAccountTypeId !== enums.ledgerAccountType.SETTLEMENT && accountMatched.ledgerAccountTypeId !== enums.ledgerAccountType.SETTLEMENT_REMITTANCE) {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountNotSettlementTypeErrorText)
     }
     transferId && (payload.transferId = transferId)
