@@ -28,7 +28,7 @@
   },
   "MONGODB": {
     "DISABLED": false,
-    "HOST": "localhost",
+    "HOST": "objstore",
     "PORT": "27017",
     "USER": "",
     "PASSWORD": "",
