@@ -30,7 +30,11 @@
   "MONGODB": {
     "DISABLED": true,
     "DEBUG": false,
-    "URI": "mongodb://localhost:27017/mlos"
+    "HOST": "localhost",
+    "PORT": "27017",
+    "USER": "",
+    "PASSWORD": "",
+    "DATABASE": "mlos"
   },
   "ERROR_HANDLING": {
     "includeCauseExtension": true,
