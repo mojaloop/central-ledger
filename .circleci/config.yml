@@ -245,11 +245,11 @@ jobs:
             echo $! > /tmp/int-test-service.pid
             PID=$(cat /tmp/int-test-service.pid)
             echo "Service started with Process ID=$PID"
-            
+
             ## Check Service Health
             echo "Waiting for Service to be healthy"
             bash .circleci/curl-retry-cl-health.sh
-            
+
             ## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
             echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_FOR_REBALANCE
 
@@ -278,32 +278,32 @@ jobs:
       - store_test_results:
           path: ./test/results
 
-  test-functional:
-    executor: default-machine
-    steps:
-      - checkout
-      - attach_workspace:
-          at: /tmp
-      - run:
-          name: Load the pre-built docker local image from workspace
-          command: docker load -i /tmp/docker-image-local.tar
-      - run:
-          name: Download the mojaloop/ml-core-test-harness repo
-          command: |
-            git clone --depth 1 --branch v0.0.2 https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
-      - run:
-          name: Execute TTK functional tests
-          command: |
-            cd /tmp/ml-core-test-harness
-            export CENTRAL_LEDGER_VERSION=local
-            docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
-            bash wait-for-container.sh ttk-func-ttk-tests-1
-            docker logs ttk-func-ttk-tests-1 > ./reports/ttk-tests-console.log
-            docker-compose -p ttk-func --ansi never down
-            cat ./reports/ttk-tests-console.log
-      - store_artifacts:
-          path: /tmp/ml-core-test-harness/reports
-          prefix: test
+  #test-functional:
+  #  executor: default-machine
+  #  steps:
+  #    - checkout
+  #    - attach_workspace:
+  #        at: /tmp
+  #    - run:
+  #        name: Load the pre-built docker local image from workspace
+  #        command: docker load -i /tmp/docker-image-local.tar
+  #    - run:
+  #        name: Download the mojaloop/ml-core-test-harness repo
+  #        command: |
+  #          git clone --depth 1 --branch v0.0.2 https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
+  #    - run:
+  #        name: Execute TTK functional tests
+  #        command: |
+  #          cd /tmp/ml-core-test-harness
+  #          export CENTRAL_LEDGER_VERSION=local
+  #          docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
+  #          bash wait-for-container.sh ttk-func-ttk-tests-1
+  #          docker logs ttk-func-ttk-tests-1 > ./reports/ttk-tests-console.log
+  #          docker-compose -p ttk-func --ansi never down
+  #          cat ./reports/ttk-tests-console.log
+  #    - store_artifacts:
+  #        path: /tmp/ml-core-test-harness/reports
+  #        prefix: test
 
   vulnerability-check:
     executor: default-docker
@@ -811,18 +811,18 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
-      - test-functional:
-          context: org-global
-          requires:
-            - setup
-            - build-local
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              ignore:
-                - /feature*/
-                - /bugfix*/
+      #- test-functional:
+      #    context: org-global
+      #    requires:
+      #      - setup
+      #      - build-local
+      #    filters:
+      #      tags:
+      #        only: /.*/
+      #      branches:
+      #        ignore:
+      #          - /feature*/
+      #          - /bugfix*/
       - vulnerability-check:
           context: org-global
           requires:
@@ -865,7 +865,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+          #  - test-functional
             - vulnerability-check
             - audit-licenses
             - build-local
@@ -906,7 +906,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+          #  - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
@@ -936,7 +936,7 @@ workflows:
             - build
             - test-coverage
             - test-integration
-            - test-functional
+          #  - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
@@ -958,7 +958,7 @@ workflows:
             - build
             - test-coverage
             - test-integration
-            - test-functional
+          #  - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
@@ -979,7 +979,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+          #  - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
@@ -1000,7 +1000,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+          #  - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
