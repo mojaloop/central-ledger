@@ -294,6 +294,7 @@ jobs:
       - run:
           name: Execute TTK functional tests
           command: |
+            cp ./docker/config-modifier/configs/central-ledger.js /tmp/ml-core-test-harness/docker/config-modifier/configs/central-ledger.js
             cd /tmp/ml-core-test-harness
             export CENTRAL_LEDGER_VERSION=local
             docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
