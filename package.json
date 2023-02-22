@@ -127,7 +127,7 @@
     "jsdoc": "4.0.2",
     "jsonpath": "1.1.1",
     "nodemon": "2.0.20",
-    "npm-check-updates": "16.7.5",
+    "npm-check-updates": "16.7.7",
     "nyc": "15.1.0",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",
