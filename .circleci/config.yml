@@ -958,7 +958,7 @@ workflows:
             - build
             - test-coverage
             - test-integration
-          #  - test-functional
+            - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
