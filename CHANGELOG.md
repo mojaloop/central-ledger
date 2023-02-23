@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.0.0](https://github.com/mojaloop/central-ledger/compare/v16.4.0...v17.0.0) (2023-02-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mojaloop/#3129:** seperate mongodb uri config (#945)
+
+### Features
+
+* **mojaloop/#3129:** seperate mongodb uri config ([#945](https://github.com/mojaloop/central-ledger/issues/945)) ([fc34231](https://github.com/mojaloop/central-ledger/commit/fc34231f8d4219502bb64aadf788a2ad874bb1d7)), closes [mojaloop/#3129](https://github.com/mojaloop/project/issues/3129)
+
+
+### Bug Fixes
+
+* **mojaloop/#3096:** unable to upgrade knex dependency on centralLedger ([#939](https://github.com/mojaloop/central-ledger/issues/939)) ([c376af8](https://github.com/mojaloop/central-ledger/commit/c376af89a2e4a90e53e07136685e2e694851e9a0)), closes [mojaloop/#3096](https://github.com/mojaloop/project/issues/3096)
+
 ## [16.4.0](https://github.com/mojaloop/central-ledger/compare/v16.3.3...v16.4.0) (2023-01-27)
 
 
