@@ -245,11 +245,11 @@ jobs:
             echo $! > /tmp/int-test-service.pid
             PID=$(cat /tmp/int-test-service.pid)
             echo "Service started with Process ID=$PID"
-            
+
             ## Check Service Health
             echo "Waiting for Service to be healthy"
             bash .circleci/curl-retry-cl-health.sh
-            
+
             ## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
             echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_FOR_REBALANCE
 
@@ -290,10 +290,11 @@ jobs:
       - run:
           name: Download the mojaloop/ml-core-test-harness repo
           command: |
-            git clone --depth 1 --branch v0.0.2 https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
+            git clone --depth 1 --branch v0.0.3 https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
       - run:
           name: Execute TTK functional tests
           command: |
+            cp ./docker/config-modifier/configs/central-ledger.js /tmp/ml-core-test-harness/docker/config-modifier/configs/central-ledger.js
             cd /tmp/ml-core-test-harness
             export CENTRAL_LEDGER_VERSION=local
             docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d

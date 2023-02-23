@@ -4,14 +4,19 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
+const MongoUriBuilder = require('mongo-uri-builder')
 
 Test('setup', setupTest => {
   let sandbox
   let uuidStub
   let oldHostName
-  let oldMongoDbUri
+  let oldMongoDbUsername
+  let oldMongoDbPassword
+  let oldMongoDbHost
+  let oldMongoDbPort
+  let oldMongoDbDatabase
+  let mongoDbUri
   const hostName = 'http://test.com'
-  const mongoDbUri = 'mongo-db-uri'
   let Setup
   let DbStub
   let CacheStub
@@ -132,9 +137,24 @@ Test('setup', setupTest => {
     })
 
     oldHostName = Config.HOSTNAME
-    oldMongoDbUri = Config.MONGODB_URI
+    oldMongoDbUsername = Config.MONGODB_USER
+    oldMongoDbPassword = Config.MONGODB_PASSWORD
+    oldMongoDbHost = Config.MONGODB_HOST
+    oldMongoDbPort = Config.MONGODB_PORT
+    oldMongoDbDatabase = Config.MONGODB_DATABASE
     Config.HOSTNAME = hostName
-    Config.MONGODB_URI = mongoDbUri
+    Config.MONGODB_HOST = 'testhost'
+    Config.MONGODB_PORT = '1111'
+    Config.MONGODB_USER = 'user'
+    Config.MONGODB_PASSWORD = 'pass'
+    Config.MONGODB_DATABASE = 'mlos'
+    mongoDbUri = MongoUriBuilder({
+      username: Config.MONGODB_USER,
+      password: Config.MONGODB_PASSWORD,
+      host: Config.MONGODB_HOST,
+      port: Config.MONGODB_PORT,
+      database: Config.MONGODB_DATABASE
+    })
 
     test.end()
   })
@@ -143,7 +163,11 @@ Test('setup', setupTest => {
     sandbox.restore()
 
     Config.HOSTNAME = oldHostName
-    Config.MONGODB_URI = oldMongoDbUri
+    Config.MONGODB_HOST = oldMongoDbHost
+    Config.MONGODB_PORT = oldMongoDbPort
+    Config.MONGODB_USER = oldMongoDbUsername
+    Config.MONGODB_PASSWORD = oldMongoDbPassword
+    Config.MONGODB_DATABASE = oldMongoDbDatabase
 
     test.end()
   })

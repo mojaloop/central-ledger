@@ -28,7 +28,12 @@
   },
   "MONGODB": {
     "DISABLED": false,
-    "URI": "mongodb://objstore:27017/mlos"
+    "DEBUG": false,
+    "HOST": "objstore",
+    "PORT": 27017,
+    "USER": "",
+    "PASSWORD": "",
+    "DATABASE": "mlos"
   },
   "ERROR_HANDLING": {
     "includeCauseExtension": true,
