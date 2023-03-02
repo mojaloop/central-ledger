@@ -45,7 +45,7 @@ Test('Settlement Window2 Open', async (settlementWindow2OpenTest) => {
   await settlementWindow2OpenTest.test('seed should', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
-      insert: sandbox.stub().returns(true),
+      insert: sandbox.stub().returns([1]), // we return a single row id on a successful insert
       select: sandbox.stub().returns({
         leftJoin: sandbox.stub().returns({
           where: sandbox.stub().returns([])
