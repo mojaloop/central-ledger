@@ -143,7 +143,7 @@ Test('Settlement Window2 Open seed should', async (settlementWindow2OpenTest) =>
     }
   })
 
-  await settlementWindow2OpenTest.test('fail completely if no result is return on the first insert', async (test) => {
+  await settlementWindow2OpenTest.test('fail completely if no result is returned on the first insert', async (test) => {
     const knexStub = sandbox.stub()
 
     knexStub.returns({
