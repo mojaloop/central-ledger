@@ -48,9 +48,19 @@ exports.seed = async function (knex) {
       .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'sw.currentStateChangeId')
       .where('swsc.settlementWindowStateId', '=', settlementWindowState)
     if (settlementWindowStateChangeList.length < 1) {
-      const settlementWindowId = await knex('settlementWindow').insert(initialSettlementWindow)
+      const insertInitialSettlementWindowResult = await knex('settlementWindow').insert(initialSettlementWindow)
+      if (!insertInitialSettlementWindowResult || (insertInitialSettlementWindowResult?.length !== 1)) {
+        throw Error('insertInitialSettlementWindowResult undefined')
+      }
+      const settlementWindowId = insertInitialSettlementWindowResult[0]
+
       initialSettlementWindowStateChange.settlementWindowId = settlementWindowId
-      const settlementWindowStateChangeId = await knex('settlementWindowStateChange').insert(initialSettlementWindowStateChange)
+      const insertInitialSettlementWindowStateChangeResult = await knex('settlementWindowStateChange').insert(initialSettlementWindowStateChange)
+      if (!insertInitialSettlementWindowStateChangeResult || (insertInitialSettlementWindowStateChangeResult?.length !== 1)) {
+        throw Error('insertInitialSettlementWindowStateChangeResult undefined')
+      }
+      const settlementWindowStateChangeId = insertInitialSettlementWindowStateChangeResult[0]
+
       await knex('settlementWindow')
         .where('settlementWindowId', '=', settlementWindowId)
         .update({
