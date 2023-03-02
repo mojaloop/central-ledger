@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.1](https://github.com/mojaloop/central-ledger/compare/v17.0.0...v17.0.1) (2023-03-02)
+
+
+### Bug Fixes
+
+* **mojaloop/#3152:** initial open settlementWindow is failing on clean install ([#946](https://github.com/mojaloop/central-ledger/issues/946)) ([111d393](https://github.com/mojaloop/central-ledger/commit/111d3935d113f2a50a4188ce4375e7706ceba08c)), closes [mojaloop/#3152](https://github.com/mojaloop/project/issues/3152)
+
 ## [17.0.0](https://github.com/mojaloop/central-ledger/compare/v16.4.0...v17.0.0) (2023-02-23)
 
 
