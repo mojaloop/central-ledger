@@ -1,13 +1,11 @@
 'use strict'
 
-const {
-  globSync
-} = require('glob')
+const Glob = require('glob')
 
 exports.plugin = {
   name: 'api routes',
   register: function (server) {
-    globSync('**/routes.js', { cwd: __dirname, ignore: 'routes.js' })
+    Glob.sync('**/routes.js', { cwd: __dirname, ignore: 'routes.js' })
       .forEach(x => server.route(require('./' + x)))
   }
 }
