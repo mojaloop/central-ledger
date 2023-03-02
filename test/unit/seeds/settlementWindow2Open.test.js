@@ -29,7 +29,7 @@ const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../seeds/settlementWindow2Open')
 
-Test('Settlement Window2 Open', async (settlementWindow2OpenTest) => {
+Test('Settlement Window2 Open seed should', async (settlementWindow2OpenTest) => {
   let sandbox
 
   settlementWindow2OpenTest.beforeEach(t => {
@@ -42,10 +42,10 @@ Test('Settlement Window2 Open', async (settlementWindow2OpenTest) => {
     t.end()
   })
 
-  await settlementWindow2OpenTest.test('seed should', async (test) => {
+  await settlementWindow2OpenTest.test('create an "OPEN" settlementWindow', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
-      insert: sandbox.stub().returns(true),
+      insert: sandbox.stub().returns([1]), // we return a single row id on a successful insert
       select: sandbox.stub().returns({
         leftJoin: sandbox.stub().returns({
           where: sandbox.stub().returns([])
@@ -68,10 +68,10 @@ Test('Settlement Window2 Open', async (settlementWindow2OpenTest) => {
     }
   })
 
-  await settlementWindow2OpenTest.test('seed should', async (test) => {
+  await settlementWindow2OpenTest.test('skip creating a new settlementWindow as an "OPEN" settlementWindow already exists', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
-      insert: sandbox.stub().returns(true),
+      insert: sandbox.stub().returns([1]), // we return a single row id on a successful insert
       select: sandbox.stub().returns({
         leftJoin: sandbox.stub().returns({
           where: sandbox.stub().returns([1])
@@ -94,7 +94,7 @@ Test('Settlement Window2 Open', async (settlementWindow2OpenTest) => {
     }
   })
 
-  await settlementWindow2OpenTest.test('seed should', async (test) => {
+  await settlementWindow2OpenTest.test('handle a DuplicateEntryError when creating a settlementWindow', async (test) => {
     function DuplicateEntryError (message) {
       this.name = 'DuplicateEntryError'
       this.message = message || ''
@@ -115,18 +115,56 @@ Test('Settlement Window2 Open', async (settlementWindow2OpenTest) => {
     }
   })
 
-  await settlementWindow2OpenTest.test('seed should', async (test) => {
+  await settlementWindow2OpenTest.test('fail completely if an unknown error is thrown', async (test) => {
     const knexStub = sandbox.stub()
+
+    const errorMessage = 'test error'
+
     knexStub.returns({
-      insert: sandbox.stub().throws(new Error())
+      insert: sandbox.stub().throws(new Error(errorMessage)), // we return a single row id on a successful insert
+      select: sandbox.stub().returns({
+        leftJoin: sandbox.stub().returns({
+          where: sandbox.stub().returns([])
+        })
+      }),
+      where: sandbox.stub().returns({
+        update: sandbox.stub()
+      })
     })
+
     try {
-      const result = await Model.seed(knexStub)
-      test.equal(result, -1000, 'Generic error intercepted and logged')
-      test.end()
+      await Model.seed(knexStub)
+      test.fail('an error should have been thrown')
     } catch (err) {
       Logger.error(`settlementWindow2Open seed failed with error - ${err}`)
-      test.fail()
+      test.equal(err.message, errorMessage, 'Test error intercepted, logged and re-thrown')
+      test.pass()
+      test.end()
+    }
+  })
+
+  await settlementWindow2OpenTest.test('fail completely if no result is returned on the first insert', async (test) => {
+    const knexStub = sandbox.stub()
+
+    knexStub.returns({
+      insert: sandbox.stub().returns([]), // we return a single row id on a successful insert
+      select: sandbox.stub().returns({
+        leftJoin: sandbox.stub().returns({
+          where: sandbox.stub().returns([])
+        })
+      }),
+      where: sandbox.stub().returns({
+        update: sandbox.stub()
+      })
+    })
+
+    try {
+      await Model.seed(knexStub)
+      test.fail('an error should have been thrown')
+    } catch (err) {
+      Logger.error(`settlementWindow2Open seed failed with error - ${err}`)
+      test.equal(err.message, 'insertInitialSettlementWindowResult undefined', 'Test error intercepted, logged and re-thrown')
+      test.pass()
       test.end()
     }
   })
