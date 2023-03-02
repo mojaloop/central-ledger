@@ -72,7 +72,7 @@ exports.seed = async function (knex) {
     if (err.code === 'ER_DUP_ENTRY') return -1001
     else {
       console.log(`Uploading seeds for initial settlementWindow has failed with the following error: ${err}`)
-      return -1000
+      throw err
     }
   }
 }
