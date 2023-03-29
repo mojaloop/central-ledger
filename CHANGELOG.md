@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.2](https://github.com/mojaloop/central-ledger/compare/v17.0.1...v17.0.2) (2023-03-29)
+
+
+### Bug Fixes
+
+* **mojaloop/#3254:** mongoDB connection uRI failing when auth details contain special chars ([#951](https://github.com/mojaloop/central-ledger/issues/951)) ([48d1a05](https://github.com/mojaloop/central-ledger/commit/48d1a05be24618603603ffa66f6a3247d1de766e)), closes [mojaloop/#3254](https://github.com/mojaloop/project/issues/3254)
+
 ### [17.0.1](https://github.com/mojaloop/central-ledger/compare/v17.0.0...v17.0.1) (2023-03-02)
 
 
