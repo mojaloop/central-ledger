@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.3](https://github.com/mojaloop/central-ledger/compare/v17.0.2...v17.0.3) (2023-03-29)
+
+
+### Bug Fixes
+
+* removed connection string for mongodb being logged to log ([#952](https://github.com/mojaloop/central-ledger/issues/952)) ([c3c45b9](https://github.com/mojaloop/central-ledger/commit/c3c45b99939964a1aefd6bc4f6020312bb204867))
+
 ### [17.0.2](https://github.com/mojaloop/central-ledger/compare/v17.0.1...v17.0.2) (2023-03-29)
 
 
