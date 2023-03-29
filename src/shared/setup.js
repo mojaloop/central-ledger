@@ -72,8 +72,8 @@ const connectMongoose = async () => {
         ObjStoreDb.Mongoose.set('debug', Config.MONGODB_DEBUG) // enable debug
       }
       const connectionString = MongoUriBuilder({
-        username: Config.MONGODB_USER,
-        password: Config.MONGODB_PASSWORD,
+        username: encodeURIComponent(Config.MONGODB_USER),
+        password: encodeURIComponent(Config.MONGODB_PASSWORD),
         host: Config.MONGODB_HOST,
         port: Config.MONGODB_PORT,
         database: Config.MONGODB_DATABASE
