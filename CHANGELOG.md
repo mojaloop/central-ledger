@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.3](https://github.com/mojaloop/central-ledger/compare/v17.0.2...v17.0.3) (2023-03-29)
+
+
+### Bug Fixes
+
+* removed connection string for mongodb being logged to log ([#952](https://github.com/mojaloop/central-ledger/issues/952)) ([c3c45b9](https://github.com/mojaloop/central-ledger/commit/c3c45b99939964a1aefd6bc4f6020312bb204867))
+
+### [17.0.2](https://github.com/mojaloop/central-ledger/compare/v17.0.1...v17.0.2) (2023-03-29)
+
+
+### Bug Fixes
+
+* **mojaloop/#3254:** mongoDB connection uRI failing when auth details contain special chars ([#951](https://github.com/mojaloop/central-ledger/issues/951)) ([48d1a05](https://github.com/mojaloop/central-ledger/commit/48d1a05be24618603603ffa66f6a3247d1de766e)), closes [mojaloop/#3254](https://github.com/mojaloop/project/issues/3254)
+
+### [17.0.1](https://github.com/mojaloop/central-ledger/compare/v17.0.0...v17.0.1) (2023-03-02)
+
+
+### Bug Fixes
+
+* **mojaloop/#3152:** initial open settlementWindow is failing on clean install ([#946](https://github.com/mojaloop/central-ledger/issues/946)) ([111d393](https://github.com/mojaloop/central-ledger/commit/111d3935d113f2a50a4188ce4375e7706ceba08c)), closes [mojaloop/#3152](https://github.com/mojaloop/project/issues/3152)
+
+## [17.0.0](https://github.com/mojaloop/central-ledger/compare/v16.4.0...v17.0.0) (2023-02-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mojaloop/#3129:** seperate mongodb uri config (#945)
+
+### Features
+
+* **mojaloop/#3129:** seperate mongodb uri config ([#945](https://github.com/mojaloop/central-ledger/issues/945)) ([fc34231](https://github.com/mojaloop/central-ledger/commit/fc34231f8d4219502bb64aadf788a2ad874bb1d7)), closes [mojaloop/#3129](https://github.com/mojaloop/project/issues/3129)
+
+
+### Bug Fixes
+
+* **mojaloop/#3096:** unable to upgrade knex dependency on centralLedger ([#939](https://github.com/mojaloop/central-ledger/issues/939)) ([c376af8](https://github.com/mojaloop/central-ledger/commit/c376af89a2e4a90e53e07136685e2e694851e9a0)), closes [mojaloop/#3096](https://github.com/mojaloop/project/issues/3096)
+
+## [16.4.0](https://github.com/mojaloop/central-ledger/compare/v16.3.3...v16.4.0) (2023-01-27)
+
+
+### Features
+
+* **mojaloop/#3078:** get /trans callback is wrong for exp trans ([#938](https://github.com/mojaloop/central-ledger/issues/938)) ([70bdf18](https://github.com/mojaloop/central-ledger/commit/70bdf18c45fd7dd9fcc8a4e91a8b5a1e83f7c5d8)), closes [mojaloop/#3078](https://github.com/mojaloop/project/issues/3078)
+
+### [16.3.3](https://github.com/mojaloop/central-ledger/compare/v16.3.2...v16.3.3) (2022-12-12)
+
+
+### Bug Fixes
+
+* **mojaloop/#2644:** missing error-code for the transfer in the central-ledger db ([#929](https://github.com/mojaloop/central-ledger/issues/929)) ([7e49456](https://github.com/mojaloop/central-ledger/commit/7e4945614224f4887cb0abd956faf51b804e3873)), closes [mojaloop/#2644](https://github.com/mojaloop/project/issues/2644)
+
 ### [16.3.2](https://github.com/mojaloop/central-ledger/compare/v16.3.1...v16.3.2) (2022-11-24)
 
 

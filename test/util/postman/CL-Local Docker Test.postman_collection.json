@@ -1,0 +1,542 @@
+{
+	"info": {
+		"_postman_id": "16de24be-47d1-421a-baab-9f95ed003a22",
+		"name": "CL-Local Docker Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "218620"
+	},
+	"item": [
+		{
+			"name": "POST /transfers",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var uuid = require('uuid');",
+							"var generatedUUID = uuid.v4();",
+							"pm.environment.set('transfer_ID', generatedUUID);",
+							"pm.variables.set('transferDate', (new Date()).toUTCString());",
+							"pm.environment.set(\"transferExpiration\",new Date(new Date().getTime() + 60000))",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "accept",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "date",
+						"value": "{{transferDate}}"
+					},
+					{
+						"key": "fspiop-source",
+						"value": "payerfsp"
+					},
+					{
+						"key": "authorization",
+						"value": "{$inputs.TTK_BEARER_TOKEN}",
+						"disabled": true
+					},
+					{
+						"key": "fspiop-destination",
+						"value": "payeefsp"
+					},
+					{
+						"key": "traceparent",
+						"value": "00-aabbdc548c2bc6426484fe5e4c466448-0123456789abcdef0-00",
+						"disabled": true
+					},
+					{
+						"key": "user-agent",
+						"value": "axios/0.27.2",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"transferId\": \"{{transfer_ID}}\",\n    \"payerFsp\": \"payerfsp\",\n    \"payeeFsp\": \"payeefsp\",\n    \"amount\": {\n        \"currency\": \"USD\",\n        \"amount\": \"1\"\n    },\n    \"ilpPacket\": \"AYIDBQAAAAAAACcQJGcucGF5ZWVmc3AubXNpc2RuLnt7cmVjZWl2ZXJtc2lzZG59fYIC1GV5SjBjbUZ1YzJGamRHbHZia2xrSWpvaVptVXhNREU0Wm1NdE1EaGxZeTAwWWpJM0xUbGpZalF0TnpjMk9URTFNR00zT1dKaklpd2ljWFZ2ZEdWSlpDSTZJbVpsTVRBeE9HWmpMVEE0WldNdE5HSXlOeTA1WTJJMExUYzNOamt4TlRCak56bGlZeUlzSW5CaGVXVmxJanA3SW5CaGNuUjVTV1JKYm1adklqcDdJbkJoY25SNVNXUlVlWEJsSWpvaVRWTkpVMFJPSWl3aWNHRnlkSGxKWkdWdWRHbG1hV1Z5SWpvaWUzdHlaV05sYVhabGNrMVRTVk5FVG4xOUlpd2labk53U1dRaU9pSndZWGxsWldaemNDSjlmU3dpY0dGNVpYSWlPbnNpY0dGeWRIbEpaRWx1Wm04aU9uc2ljR0Z5ZEhsSlpGUjVjR1VpT2lKTlUwbFRSRTRpTENKd1lYSjBlVWxrWlc1MGFXWnBaWElpT2lJeU56Y3hNemd3TXprd05TSXNJbVp6Y0Vsa0lqb2ljR0Y1WlhKbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJazFoZEhNaUxDSnNZWE4wVG1GdFpTSTZJa2hoWjIxaGJpSjlMQ0prWVhSbFQyWkNhWEowYUNJNklqRTVPRE10TVRBdE1qVWlmWDBzSW1GdGIzVnVkQ0k2ZXlKaGJXOTFiblFpT2lJeE1EQWlMQ0pqZFhKeVpXNWplU0k2SWxWVFJDSjlMQ0owY21GdWMyRmpkR2x2YmxSNWNHVWlPbnNpYzJObGJtRnlhVzhpT2lKVVVrRk9VMFpGVWlJc0ltbHVhWFJwWVhSdmNpSTZJbEJCV1VWU0lpd2lhVzVwZEdsaGRHOXlWSGx3WlNJNklrTlBUbE5WVFVWU0luMTkA\",\n    \"condition\": \"GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM\",\n    \"expiration\": \"{{transferExpiration}}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/transfers",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"transfers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST /transfers Timeout",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var uuid = require('uuid');",
+							"var generatedUUID = uuid.v4();",
+							"pm.environment.set('transfer_ID', generatedUUID);",
+							"pm.variables.set('transferDate', (new Date()).toUTCString());",
+							"pm.environment.set(\"transferExpiration\",new Date(new Date().getTime() + 60000))",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "accept",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "date",
+						"value": "{{transferDate}}"
+					},
+					{
+						"key": "fspiop-source",
+						"value": "payerfsp"
+					},
+					{
+						"key": "authorization",
+						"value": "{$inputs.TTK_BEARER_TOKEN}",
+						"disabled": true
+					},
+					{
+						"key": "fspiop-destination",
+						"value": "payeefsp"
+					},
+					{
+						"key": "traceparent",
+						"value": "00-aabbdc548c2bc6426484fe5e4c466448-0123456789abcdef0-00",
+						"disabled": true
+					},
+					{
+						"key": "user-agent",
+						"value": "axios/0.27.2",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"transferId\": \"{{transfer_ID}}\",\n    \"payerFsp\": \"payerfsp\",\n    \"payeeFsp\": \"payeefsp\",\n    \"amount\": {\n        \"currency\": \"USD\",\n        \"amount\": \"1\"\n    },\n    \"ilpPacket\": \"AYIDBQAAAAAAACcQJGcucGF5ZWVmc3AubXNpc2RuLnt7cmVjZWl2ZXJtc2lzZG59fYIC1GV5SjBjbUZ1YzJGamRHbHZia2xrSWpvaVptVXhNREU0Wm1NdE1EaGxZeTAwWWpJM0xUbGpZalF0TnpjMk9URTFNR00zT1dKaklpd2ljWFZ2ZEdWSlpDSTZJbVpsTVRBeE9HWmpMVEE0WldNdE5HSXlOeTA1WTJJMExUYzNOamt4TlRCak56bGlZeUlzSW5CaGVXVmxJanA3SW5CaGNuUjVTV1JKYm1adklqcDdJbkJoY25SNVNXUlVlWEJsSWpvaVRWTkpVMFJPSWl3aWNHRnlkSGxKWkdWdWRHbG1hV1Z5SWpvaWUzdHlaV05sYVhabGNrMVRTVk5FVG4xOUlpd2labk53U1dRaU9pSndZWGxsWldaemNDSjlmU3dpY0dGNVpYSWlPbnNpY0dGeWRIbEpaRWx1Wm04aU9uc2ljR0Z5ZEhsSlpGUjVjR1VpT2lKTlUwbFRSRTRpTENKd1lYSjBlVWxrWlc1MGFXWnBaWElpT2lJeU56Y3hNemd3TXprd05TSXNJbVp6Y0Vsa0lqb2ljR0Y1WlhKbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJazFoZEhNaUxDSnNZWE4wVG1GdFpTSTZJa2hoWjIxaGJpSjlMQ0prWVhSbFQyWkNhWEowYUNJNklqRTVPRE10TVRBdE1qVWlmWDBzSW1GdGIzVnVkQ0k2ZXlKaGJXOTFiblFpT2lJeE1EQWlMQ0pqZFhKeVpXNWplU0k2SWxWVFJDSjlMQ0owY21GdWMyRmpkR2x2YmxSNWNHVWlPbnNpYzJObGJtRnlhVzhpT2lKVVVrRk9VMFpGVWlJc0ltbHVhWFJwWVhSdmNpSTZJbEJCV1VWU0lpd2lhVzVwZEdsaGRHOXlWSGx3WlNJNklrTlBUbE5WVFVWU0luMTkA\",\n    \"condition\": \"GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM\",\n    \"expiration\": \"{{transferExpiration}}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/transfers",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"transfers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST /transfers Invalid Condition",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var uuid = require('uuid');",
+							"var generatedUUID = uuid.v4();",
+							"pm.environment.set('transfer_ID', generatedUUID);",
+							"pm.variables.set('transferDate', (new Date()).toUTCString());",
+							"pm.environment.set(\"transferExpiration\",new Date(new Date().getTime() + 60000))",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "accept",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "date",
+						"value": "{{transferDate}}"
+					},
+					{
+						"key": "fspiop-source",
+						"value": "payerfsp"
+					},
+					{
+						"key": "authorization",
+						"value": "{$inputs.TTK_BEARER_TOKEN}",
+						"disabled": true
+					},
+					{
+						"key": "fspiop-destination",
+						"value": "payeefsp"
+					},
+					{
+						"key": "traceparent",
+						"value": "00-aabbdc548c2bc6426484fe5e4c466448-0123456789abcdef0-00",
+						"disabled": true
+					},
+					{
+						"key": "user-agent",
+						"value": "axios/0.27.2",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"transferId\": \"{{transfer_ID}}\",\n    \"payerFsp\": \"payerfsp\",\n    \"payeeFsp\": \"payeefsp\",\n    \"amount\": {\n        \"currency\": \"USD\",\n        \"amount\": \"1\"\n    },\n    \"ilpPacket\": \"AYIDBQAAAAAAACcQJGcucGF5ZWVmc3AubXNpc2RuLnt7cmVjZWl2ZXJtc2lzZG59fYIC1GV5SjBjbUZ1YzJGamRHbHZia2xrSWpvaVptVXhNREU0Wm1NdE1EaGxZeTAwWWpJM0xUbGpZalF0TnpjMk9URTFNR00zT1dKaklpd2ljWFZ2ZEdWSlpDSTZJbVpsTVRBeE9HWmpMVEE0WldNdE5HSXlOeTA1WTJJMExUYzNOamt4TlRCak56bGlZeUlzSW5CaGVXVmxJanA3SW5CaGNuUjVTV1JKYm1adklqcDdJbkJoY25SNVNXUlVlWEJsSWpvaVRWTkpVMFJPSWl3aWNHRnlkSGxKWkdWdWRHbG1hV1Z5SWpvaWUzdHlaV05sYVhabGNrMVRTVk5FVG4xOUlpd2labk53U1dRaU9pSndZWGxsWldaemNDSjlmU3dpY0dGNVpYSWlPbnNpY0dGeWRIbEpaRWx1Wm04aU9uc2ljR0Z5ZEhsSlpGUjVjR1VpT2lKTlUwbFRSRTRpTENKd1lYSjBlVWxrWlc1MGFXWnBaWElpT2lJeU56Y3hNemd3TXprd05TSXNJbVp6Y0Vsa0lqb2ljR0Y1WlhKbWMzQWlmU3dpY0dWeWMyOXVZV3hKYm1adklqcDdJbU52YlhCc1pYaE9ZVzFsSWpwN0ltWnBjbk4wVG1GdFpTSTZJazFoZEhNaUxDSnNZWE4wVG1GdFpTSTZJa2hoWjIxaGJpSjlMQ0prWVhSbFQyWkNhWEowYUNJNklqRTVPRE10TVRBdE1qVWlmWDBzSW1GdGIzVnVkQ0k2ZXlKaGJXOTFiblFpT2lJeE1EQWlMQ0pqZFhKeVpXNWplU0k2SWxWVFJDSjlMQ0owY21GdWMyRmpkR2x2YmxSNWNHVWlPbnNpYzJObGJtRnlhVzhpT2lKVVVrRk9VMFpGVWlJc0ltbHVhWFJwWVhSdmNpSTZJbEJCV1VWU0lpd2lhVzVwZEdsaGRHOXlWSGx3WlNJNklrTlBUbE5WVFVWU0luMTkA\",\n    \"condition\": \"XRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfX\",\n    \"expiration\": \"{{transferExpiration}}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/transfers",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"transfers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT /transfers/{{ID}}",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.variables.set('transferComplete', (new Date()).toUTCString());",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true,
+					"content-type": true
+				}
+			},
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "date",
+						"value": "Tue, 24 Jan 2023 10:34:27 GMT"
+					},
+					{
+						"key": "fspiop-source",
+						"value": "payeefsp"
+					},
+					{
+						"key": "authorization",
+						"value": "{$inputs.NORESPONSE_BEARER_TOKEN}",
+						"disabled": true
+					},
+					{
+						"key": "fspiop-destination",
+						"value": "payerfsp"
+					},
+					{
+						"key": "traceparent",
+						"value": "00-aabbdc548c2bc6426484fe5e4c466448-0123456789abcdef0-00",
+						"disabled": true
+					},
+					{
+						"key": "user-agent",
+						"value": "axios/0.27.2",
+						"disabled": true
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"transferState\": \"RESERVED\",\n    \"fulfilment\": \"UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/transfers/{{transfer_ID}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"transfers",
+						"{{transfer_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT /transfers/{{ID}} Invalid Fulfilment",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.variables.set('transferComplete', (new Date()).toUTCString());",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true,
+					"content-type": true
+				}
+			},
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "date",
+						"value": "Tue, 24 Jan 2023 10:34:27 GMT"
+					},
+					{
+						"key": "fspiop-source",
+						"value": "payeefsp"
+					},
+					{
+						"key": "authorization",
+						"value": "{$inputs.NORESPONSE_BEARER_TOKEN}",
+						"disabled": true
+					},
+					{
+						"key": "fspiop-destination",
+						"value": "payerfsp"
+					},
+					{
+						"key": "traceparent",
+						"value": "00-aabbdc548c2bc6426484fe5e4c466448-0123456789abcdef0-00",
+						"disabled": true
+					},
+					{
+						"key": "user-agent",
+						"value": "axios/0.27.2",
+						"disabled": true
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"transferState\": \"RESERVED\",\n    \"fulfilment\": \"XNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFX\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/transfers/{{transfer_ID}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"transfers",
+						"{{transfer_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT /transfers/{{ID}} Invalid Fulfilment Error Callback",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.variables.set('transferComplete', (new Date()).toUTCString());",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true,
+					"content-type": true
+				}
+			},
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "date",
+						"value": "Tue, 24 Jan 2023 10:34:27 GMT"
+					},
+					{
+						"key": "fspiop-source",
+						"value": "payeefsp"
+					},
+					{
+						"key": "authorization",
+						"value": "{$inputs.NORESPONSE_BEARER_TOKEN}",
+						"disabled": true
+					},
+					{
+						"key": "fspiop-destination",
+						"value": "payerfsp"
+					},
+					{
+						"key": "traceparent",
+						"value": "00-aabbdc548c2bc6426484fe5e4c466448-0123456789abcdef0-00",
+						"disabled": true
+					},
+					{
+						"key": "user-agent",
+						"value": "axios/0.27.2",
+						"disabled": true
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"transferState\": \"RESERVED\",\n    \"fulfilment\": \"XNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFX\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/transfers/{{transfer_ID}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"transfers",
+						"{{transfer_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET /transfers/{{ID}}",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"",
+							"pm.variables.set('transferDate', (new Date()).toUTCString());",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "accept",
+						"value": "application/vnd.interoperability.transfers+json;version=1.1"
+					},
+					{
+						"key": "date",
+						"value": "{{transferDate}}"
+					},
+					{
+						"key": "fspiop-source",
+						"value": "payerfsp"
+					},
+					{
+						"key": "authorization",
+						"value": "{$inputs.TTK_BEARER_TOKEN}",
+						"disabled": true
+					},
+					{
+						"key": "fspiop-destination",
+						"value": "payee",
+						"disabled": true
+					},
+					{
+						"key": "traceparent",
+						"value": "00-aabbdc548c2bc6426484fe5e4c466448-0123456789abcdef0-00",
+						"disabled": true
+					},
+					{
+						"key": "user-agent",
+						"value": "axios/0.27.2",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/transfers/{{transfer_ID}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"transfers",
+						"{{transfer_ID}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -51,6 +51,7 @@ const EnumCached = require('../lib/enumCached')
 const ParticipantCached = require('../models/participant/participantCached')
 const ParticipantCurrencyCached = require('../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
+const MongoUriBuilder = require('mongo-uri-builder')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
@@ -70,7 +71,15 @@ const connectMongoose = async () => {
         Logger.isWarnEnabled && Logger.warn('Enabling debug for Mongoose...')
         ObjStoreDb.Mongoose.set('debug', Config.MONGODB_DEBUG) // enable debug
       }
-      return await ObjStoreDb.connect(Config.MONGODB_URI)
+      const connectionString = MongoUriBuilder({
+        username: encodeURIComponent(Config.MONGODB_USER),
+        password: encodeURIComponent(Config.MONGODB_PASSWORD),
+        host: Config.MONGODB_HOST,
+        port: Config.MONGODB_PORT,
+        database: Config.MONGODB_DATABASE
+      })
+
+      return await ObjStoreDb.connect(connectionString)
     } catch (err) {
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
       // TODO: review as code is being changed from returning null to returning a FSPIOPError

@@ -25,6 +25,7 @@ defaults_Dependencies: &defaults_Dependencies |
   apk --no-cache add openssh-client
   apk add --no-cache -t build-dependencies make gcc g++ python3 libtool autoconf automake jq
   apk add --no-cache -t openssl ncurses coreutils libgcc linux-headers grep util-linux binutils findutils
+  apk add --no-cache curl
   npm config set unsafe-perm true
   npm install -g node-gyp
 
@@ -210,10 +211,10 @@ jobs:
             # docker-compose build
 
             ## Lets pull only the Services needed for the Integration Test
-            docker-compose pull mysql kafka
+            docker-compose pull mysql kafka init-kafka
 
             ## Lets startup only the Services needed for the Integration Test
-            docker-compose up -d mysql kafka
+            docker-compose up -d mysql kafka init-kafka
 
             ## Check straight away to see if any containers have exited
             docker-compose ps
@@ -221,12 +222,56 @@ jobs:
             ## wait for services to be up and running
             npm run wait-4-docker
       - run:
-          name: Run the integration tests
+          name: Install dependencies to check health services
+          command: |
+            sudo apt install curl
+      - run:
+          name: Rebuild any dependencies
           command: |
             npm rebuild
-            npm run test:int
+      - run:
+          name: Run migration scripts
+          command: |
+            npm run migrate
+      - run:
+          name: Run the integration tests
+          command: |
+            ## Run Service in background
+            ## This is a temporary work-around until the following issue can be addressed: https://github.com/mojaloop/project/issues/3112
+            echo "Starting Service in the background"
+            npm start > ./test/results/cl-service.log &
+
+            ## Store PID for cleanup
+            echo $! > /tmp/int-test-service.pid
+            PID=$(cat /tmp/int-test-service.pid)
+            echo "Service started with Process ID=$PID"
+
+            ## Check Service Health
+            echo "Waiting for Service to be healthy"
+            bash .circleci/curl-retry-cl-health.sh
+
+            ## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
+            echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_FOR_REBALANCE
+
+            ## Start integration tests
+            echo "Running Integration Tests"
+            npm run test:int:skipMigrate
+
+            ## Kill service
+            echo "Stopping Service with Process ID=$PID"
+            kill $(cat /tmp/int-test-service.pid)
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
+            UV_THREADPOOL_SIZE: 12
+            WAIT_FOR_REBALANCE: 20
+            TEST_INT_RETRY_COUNT: 20
+            TEST_INT_RETRY_DELAY: 2
+            TEST_INT_REBALANCE_DELAY: 20000
+      - run:
+          name: Cleanup Docker
+          command: |
+            ## Shutdown Docker containers
+            docker compose down -v
       - store_artifacts:
           path: ./test/results
           prefix: test
@@ -245,10 +290,11 @@ jobs:
       - run:
           name: Download the mojaloop/ml-core-test-harness repo
           command: |
-            git clone --depth 1 --branch v0.0.2 https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
+            git clone --depth 1 --branch v0.0.3 https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
       - run:
           name: Execute TTK functional tests
           command: |
+            cp ./docker/config-modifier/configs/central-ledger.js /tmp/ml-core-test-harness/docker/config-modifier/configs/central-ledger.js
             cd /tmp/ml-core-test-harness
             export CENTRAL_LEDGER_VERSION=local
             docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d

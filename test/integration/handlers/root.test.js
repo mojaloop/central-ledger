@@ -32,7 +32,7 @@ const Tb = require('../../../src/lib/tb')
 
 const Config = require('../../../src/lib/config')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
-const Producer = require('@mojaloop/central-services-stream').Util.Producer
+// const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const rootApiHandler = require('../../../src/api/root/handler')
 const {
   createRequest,
@@ -115,20 +115,26 @@ Test('Root handler test', async handlersTest => {
       await Db.disconnect()
       assert.pass('database connection closed')
 
+      // TODO: Replace this with KafkaHelper.topics
       const topics = [
         'topic-transfer-prepare',
         'topic-transfer-position',
         'topic-transfer-fulfil',
         'topic-notification-event'
       ]
-      for (const topic of topics) {
-        try {
-          await Producer.getProducer(topic).disconnect()
-          assert.pass(`producer to ${topic} disconnected`)
-        } catch (err) {
-          assert.pass(err.message)
-        }
-      }
+
+      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js - https://github.com/mojaloop/project/issues/3067
+      // TODO: Clean this up once the above issue has been resolved.
+      // for (const topic of topics) {
+      //   try {
+      //     await Producer.getProducer(topic).disconnect()
+      //     assert.pass(`producer to ${topic} disconnected`)
+      //   } catch (err) {
+      //     assert.pass(err.message)
+      //   }
+      // }
+
+      // TODO: Replace this with await KafkaHelper.consumers.disconnect() once the above issue is resolved.
       for (const topic of topics) {
         try {
           await Consumer.getConsumer(topic).disconnect()
