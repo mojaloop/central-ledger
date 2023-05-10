@@ -18,26 +18,30 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Coil
- - Jason Bruwer <jason.bruwer@coil.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('tigerBeetleIlpPacket').then(function(exists) {
+  return await knex.schema.hasTable('tigerBeetleTransferExtension').then(function(exists) {
     if (!exists) {
-      return knex.schema.createTable('tigerBeetleIlpPacket', (t) => {
-        t.string('transferId', 36).primary().notNullable()
+      return knex.schema.createTable('tigerBeetleTransferExtension', (t) => {
+        t.bigIncrements('transferExtensionId').primary().notNullable()
+        t.string('transferId', 36).notNullable()
+        t.string('transferFulfilmentId', 36).defaultTo(null).nullable()
+        t.string('key', 128).notNullable()
         t.text('value').notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
         t.index('transferId')
+        t.index('transferFulfilmentId')
       })
     }
   })
 }
 
 exports.down = function (knex) {
-  return knex.schema.dropTableIfExists('tigerBeetleIlpPacket')
+  return knex.schema.dropTableIfExists('tigerBeetleTransferExtension')
 }
