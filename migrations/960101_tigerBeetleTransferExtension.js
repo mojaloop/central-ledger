@@ -18,8 +18,8 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * ModusBox
- - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Coil
+ *  - Jason Bruwer <jason.bruwer@coil.com>
  --------------
  ******/
 

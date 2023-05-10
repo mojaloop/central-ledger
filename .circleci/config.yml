@@ -353,7 +353,7 @@ jobs:
           name: Build Docker local image
           command: |
             echo "Building Docker image: local"
-            docker build -t $DOCKER_ORGmojaloop/$CIRCLE_PROJECT_REPONAME:local .
+            docker build -t mojaloop/$CIRCLE_PROJECT_REPONAME:local .
       - run:
           name: Save docker image to workspace
           command: docker save -o /tmp/docker-image-local.tar $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:local

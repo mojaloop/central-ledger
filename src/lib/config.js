@@ -71,6 +71,7 @@ module.exports = {
   API_DOC_ENDPOINTS_ENABLED: RC.API_DOC_ENDPOINTS_ENABLED || false,
   SETTLEMENT_MODELS: RC.SETTLEMENT_MODELS,
   TIGERBEETLE: {
+    /* istanbul ignore next */
     enabled: RC.TIGERBEETLE === undefined ? false : RC.TIGERBEETLE.ENABLED || false,
     enableBatching: RC.TIGERBEETLE === undefined ? false : RC.TIGERBEETLE.ENABLE_BATCHING || false,
     disableSQL: RC.TIGERBEETLE === undefined ? false : RC.TIGERBEETLE.DISABLE_SQL || false,
