@@ -83,7 +83,7 @@ Tests include code coverage via istanbul. See the test/ folder for testing scrip
 
 ### Running Integration Tests interactively
 
-If you want to run integration tests in a repetitive manner, you can startup the test containers using `docker-compose` via one of the following methods:
+If you want to run integration tests in a repetitive manner, you can start-up the test containers using `docker-compose` via one of the following methods:
 
 - Running locally
 

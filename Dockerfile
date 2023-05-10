@@ -30,7 +30,7 @@ COPY tb /opt/app/tb
 RUN ls -ltra /opt/app/tb
 RUN ls -ltra /opt/app
 RUN cp /opt/app/test/run_test_integration.sh /opt/app/run_tests.sh
-RUN chmod 777 /opt/central-ledger/run_tests.sh
+RUN chmod 777 /opt/app/run_tests.sh
 
 #RUN chmod 777 *
 

@@ -49,26 +49,12 @@ const decodeIlpPacket = async (inputIlpPacket) => {
 const getTransactionObject = async function (inputIlpPacket) {
   try {
     const jsonPacket = await decodeIlpPacket(inputIlpPacket)
-    if (!isBase64(jsonPacket.data.toString())) {
-      jsonPacket.data = jsonPacket.data.toString()
-      return jsonPacket
-    }
     const decodedData = base64url.decode(jsonPacket.data.toString())
     return JSON.parse(decodedData)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
-const isBase64 = function (str) {
-  if (str === '' || str.trim() === '') { return false }
-  try {
-    return btoa(atob(str)) === str
-  } catch (err) {
-    return false
-  }
-}
-
 module.exports = {
   getById,
   getTransactionObject
