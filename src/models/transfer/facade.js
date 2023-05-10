@@ -565,6 +565,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         await dbInsertTransfer(true, false)
       }
     } else {
+      // transfer in error state:
       const histTimerSaveTranferNoValidationEnd = Metrics.getHistogram(
         'model_transfer',
         'facade_saveTransferPrepared_no_validation - Metrics for transfer model',
