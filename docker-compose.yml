@@ -113,6 +113,8 @@ services:
       - IPC_LOCK
     volumes:
       - ./docker/tigerbeetle:/data
+    networks:
+      - cl-mojaloop-net
     ports:
       - 5001:5001
     depends_on:
