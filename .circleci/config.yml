@@ -211,10 +211,10 @@ jobs:
             # docker-compose build
 
             ## Lets pull only the Services needed for the Integration Test
-            docker-compose pull mysql kafka init-kafka
+            docker-compose pull mysql tigerbeetle kafka init-kafka
 
             ## Lets startup only the Services needed for the Integration Test
-            docker-compose up -d mysql kafka init-kafka
+            docker-compose up -d mysql tigerbeetle kafka init-kafka
 
             ## Check straight away to see if any containers have exited
             docker-compose ps
