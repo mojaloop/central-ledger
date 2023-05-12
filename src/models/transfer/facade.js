@@ -558,6 +558,37 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           throw errTB
         }
 
+        // transfer is stored, now we store the ilpPacket and extensions:
+        await knex.transaction(async (trx) => {
+          try {
+            let transferExtensionsRecordList = []
+            if (payload.extensionList && payload.extensionList.extension) {
+              transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+                return {
+                  transferId: payload.transferId,
+                  key: ext.key,
+                  value: ext.value
+                }
+              })
+              await knex.batchInsert('tigerBeetleTransferExtension', transferExtensionsRecordList).transacting(trx)
+            }
+            await knex('tigerBeetleIlpPacket').transacting(trx).insert(ilpPacketRecord)
+          } catch (errDB) {
+            console.error(errDB)
+            await trx.rollback()
+            try {
+              await Tb.tbVoidTransfer(payload.transferId)
+            } catch (errTB) {
+              console.error(errTB)
+              histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction_rollback_tb' })
+              throw errTB
+            }
+
+            histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
+            throw errDB
+          }
+        })
+
         if (!Config.TIGERBEETLE.disableSQL) {
           await dbInsertTransfer(false, true)
         }

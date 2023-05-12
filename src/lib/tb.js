@@ -32,6 +32,8 @@ const Config = require('../lib/config')
 const util = require('util')
 const crypto = require('crypto')
 const uuidv4Gen = require('uuid4')
+const net = require('net')
+const dns = require('dns')
 
 let tbCachedClient
 
@@ -48,20 +50,62 @@ const getTBClient = async () => {
       Logger.info('TB-Client-Enabled. Connecting to R-02 ' + Config.TIGERBEETLE.replicaEndpoint02)
       Logger.info('TB-Client-Enabled. Connecting to R-03 ' + Config.TIGERBEETLE.replicaEndpoint03)
 
+      const addresses = []
+      if (Config.TIGERBEETLE.replicaEndpoint01 !== undefined && Config.TIGERBEETLE.replicaEndpoint01.length > 0) {
+        addresses.push(Config.TIGERBEETLE.replicaEndpoint01)
+      }
+      if (Config.TIGERBEETLE.replicaEndpoint02 !== undefined && Config.TIGERBEETLE.replicaEndpoint02.length > 0) {
+        addresses.push(Config.TIGERBEETLE.replicaEndpoint02)
+      }
+      if (Config.TIGERBEETLE.replicaEndpoint03 !== undefined && Config.TIGERBEETLE.replicaEndpoint03.length > 0) {
+        addresses.push(Config.TIGERBEETLE.replicaEndpoint03)
+      }
+      if (addresses.length === 0) return null
+
+      const mappedAddresses = await _parseAndLookupReplicaAddresses(addresses)
       tbCachedClient = await createClient({
         cluster_id: Config.TIGERBEETLE.cluster,
-        replica_addresses:
-          [
-            Config.TIGERBEETLE.replicaEndpoint01,
-            Config.TIGERBEETLE.replicaEndpoint02,
-            Config.TIGERBEETLE.replicaEndpoint03
-          ]
+        replica_addresses: mappedAddresses
       })
     }
     return tbCachedClient
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
+}
+
+// check if addresses are IPs or names, resolve if names
+const _parseAndLookupReplicaAddresses = async (addressesToParse) => {
+  console.table(addressesToParse)
+
+  const replicaIpAddresses = []
+  for (const addr of addressesToParse) {
+    Logger.info(`Parsing addr: ${addr}`)
+    const parts = addr.split(':')
+    if (!parts) {
+      const err = new Error(`Cannot parse replicaAddresses in TigerBeetleAdapter.init() - value: "${addr}"`)
+      Logger.error(err.message)
+      throw err
+    }
+    Logger.info(`\t addr parts are: ${parts[0]} and ${parts[1]}`)
+
+    if (net.isIP(parts[0]) === 0) {
+      Logger.debug('\t addr part[0] is not an IP address, looking it up..')
+      await dns.promises.lookup(parts[0], { family: 4 }).then((resp) => {
+        Logger.debug(`\t lookup result is: ${resp.address}`)
+        replicaIpAddresses.push(`${resp.address}:${parts[1]}`)
+      }).catch((error) => {
+        const err = new Error(`Lookup error while parsing replicaAddresses in TigerBeetleAdapter.init() - cannot resolve: "${addr[0]}" of "${addr}": ${error}`)
+        Logger.error(err.message)
+        throw err
+      })
+    } else {
+      Logger.debug('\t lookup not necessary, adding addr directly')
+      replicaIpAddresses.push(addr)
+    }
+  }
+  console.table(replicaIpAddresses)
+  return replicaIpAddresses
 }
 
 const tbCreateAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
@@ -71,7 +115,6 @@ const tbCreateAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
     const client = await getTBClient()
     if (client == null) return {}
 
-    // console.trace('Creating the account' + 'BOOM -> '+id +' - '+accountType+' - '+currencyTxt)
     console.info('JASON::: 1.1 Creating Account    ' + id)
 
     const userData = BigInt(id)
@@ -311,6 +354,15 @@ const tbFulfilTransfer = async (
   }
 }
 
+const tbVoidTransfer = async (transferId) => {
+  try {
+    // TODO need to rollback transfer here...
+    Logger.info(transferId)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 const tbDestroy = async () => {
   try {
     const client = await getTBClient()
@@ -412,5 +464,6 @@ module.exports = {
   tbFulfilTransfer,
   tbLookupAccount,
   tbLookupTransfer,
+  tbVoidTransfer,
   tbDestroy
 }

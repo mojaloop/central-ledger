@@ -90,7 +90,7 @@ If you want to run integration tests in a repetitive manner, you can start-up th
     Start containers required for Integration Tests
 
     ```bash
-    docker-compose -f docker-compose.yml up -d kafka mysql
+    docker-compose -f docker-compose.yml up -d kafka mysql tigerbeetle
     ```
 
     Run wait script which will report once all required containers are up and running

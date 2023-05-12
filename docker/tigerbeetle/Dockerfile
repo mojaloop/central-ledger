@@ -1,14 +1,36 @@
-FROM tb:latest AS init
+# Since we support arm64, take advantage of Docker and Zig's cross
+# compilation, rather than running under qemu.
+# https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
+FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS build
 
-RUN ./tigerbeetle init --cluster=1 --replica=0 --directory=.
-RUN ./tigerbeetle init --cluster=1 --replica=1 --directory=.
-RUN ./tigerbeetle init --cluster=1 --replica=2 --directory=.
+RUN  apt-get update \
+  && apt-get install -y wget xz-utils
 
-EXPOSE 5001
-EXPOSE 5002
-EXPOSE 5003
+WORKDIR /opt/beta-beetle
 
-FROM init AS release
+# Copy install_zig by itself, to try and keep cache hits as high as possible.
+RUN mkdir scripts
+COPY scripts/install_zig.sh ./scripts
 
-#docker build . -t tb_moja:latest
-#docker run tb_moja:latest start --cluster=1 --replica=0 --directory=. --addresses=5001,5002,5003
+ENV PATH="${PATH}:/opt/beta-beetle/zig"
+
+# Allows passing in --build-arg DEBUG=true during builds (needed by Github CI for generating debug image)
+ARG DEBUG=false
+
+# With our multiplatform builds, Docker will only repeat steps after the ARG TARGETPLATFORM.
+# So, explicitly install zig before then, to not need to do it twice.
+RUN ./scripts/install_zig.sh
+
+COPY scripts ./scripts
+COPY src ./src
+COPY build.zig ./build.zig
+
+ARG TARGETPLATFORM
+RUN test ${TARGETPLATFORM} = "linux/arm64" && CPU="baseline+aes+neon" || CPU="x86_64_v3+aes"; CI=true ./scripts/install.sh
+
+FROM alpine:3.17 AS release
+WORKDIR /
+
+COPY --from=build /opt/beta-beetle/tigerbeetle ./tigerbeetle
+
+ENTRYPOINT ["/tigerbeetle"]
