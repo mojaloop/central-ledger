@@ -151,8 +151,7 @@
   },
   "standard": {
     "ignore": [
-      "/migrations/**",
-      "/src/api/jmeter/**"
+      "/migrations/**"
     ]
   },
   "standard-version": {

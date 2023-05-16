@@ -43,7 +43,12 @@ const secret = 'This is a secret 🤫'
 
 const getTBClient = async () => {
   try {
-    if (!Config.TIGERBEETLE.enabled) return null
+    if (!Config.TIGERBEETLE.enabled) {
+      console.info('TB-Client-Disabled')
+      return null
+    }
+
+    console.log('TB-Client-Enabled')
 
     if (tbCachedClient == null) {
       Logger.info('TB-Client-Enabled. Connecting to R-01 ' + Config.TIGERBEETLE.replicaEndpoint01)
@@ -63,6 +68,8 @@ const getTBClient = async () => {
       if (addresses.length === 0) return null
 
       const mappedAddresses = await _parseAndLookupReplicaAddresses(addresses)
+      console.info('mappedAddresses:')
+      console.info(mappedAddresses)
       tbCachedClient = await createClient({
         cluster_id: Config.TIGERBEETLE.cluster,
         replica_addresses: mappedAddresses

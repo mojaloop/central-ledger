@@ -367,6 +367,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
         }
         if (isFulfilment) {
           if (Config.TIGERBEETLE.enabled) {
+            console.log('TB performing - tbFulfilTransfer!')
             await Tb.tbFulfilTransfer(transferFulfilmentRecord)
           }
           console.log('TB is done!')
