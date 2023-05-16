@@ -119,6 +119,12 @@ services:
       - 5001:5001
     depends_on:
       - tigerbeetle-setup
+    healthcheck:
+      test: ["CMD", "tigerbeetle" ,"version"]
+      timeout: 20s
+      retries: 10
+      start_period: 40s
+      interval: 30s
 
   mockserver:
     image: jamesdbloom/mockserver
