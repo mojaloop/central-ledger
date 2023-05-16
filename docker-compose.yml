@@ -120,7 +120,7 @@ services:
     depends_on:
       - tigerbeetle-setup
     healthcheck:
-      test: ["CMD", "tigerbeetle" ,"version"]
+      test: ["CMD", "/tigerbeetle" ,"version"]
       timeout: 20s
       retries: 10
       start_period: 40s
