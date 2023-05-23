@@ -109,12 +109,9 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('create participants', async (assert) => {
     try {
-      console.info('JASON::: 1')
       let getByNameResult, result
       getByNameResult = await ParticipantService.getByName(testData.fsp1Name)
-      console.info('JASON::: 2')
       result = await ParticipantHelper.prepareData(testData.fsp1Name, testData.currency, !!getByNameResult)
-      console.info('JASON::: 3')
       participantFixtures.push(result.participant)
       getByNameResult = await ParticipantService.getByName(testData.fsp2Name)
       result = await ParticipantHelper.prepareData(testData.fsp2Name, testData.currency, !!getByNameResult)

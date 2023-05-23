@@ -330,7 +330,7 @@ Test('Handlers test', async handlersTest => {
   await HubAccountsHelper.prepareData()
 
   const wrapWithRetriesConf = {
-    remainingRetries: retryOpts?.retries || 10, // default 10
+    remainingRetries: retryOpts?.retries || 15, // default 10
     timeout: retryOpts?.maxTimeout || 2 // default 2
   }
 
