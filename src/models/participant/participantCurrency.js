@@ -32,18 +32,18 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
-    if (Config.TIGERBEETLE.enabled) {
-      console.log(`JASON::: participantCurrency.create ${participantId} - ${currencyId} - ${ledgerAccountTypeId}`)
-      await Tb.tbCreateAccount(participantId, ledgerAccountTypeId, currencyId)
-    }
-
-    return await Db.from('participantCurrency').insert({
+    const createdPartCurrency = await Db.from('participantCurrency').insert({
       participantId,
       currencyId,
       ledgerAccountTypeId,
       isActive,
       createdBy: 'unknown'
     })
+    if (Config.TIGERBEETLE.enabled) {
+      console.log(`JASON::: participantCurrency.create ${participantId} - ${currencyId} - ${ledgerAccountTypeId} - ${createdPartCurrency}`)
+      await Tb.tbCreateAccount(participantId, createdPartCurrency, ledgerAccountTypeId, currencyId)
+    }
+    return createdPartCurrency
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

@@ -34,7 +34,6 @@
 
 const Db = require('../../lib/db')
 const Tb = require('../../lib/tb')
-const Crypto = require('crypto')
 const util = require('util')
 
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -55,6 +54,13 @@ const UnsupportedActionText = 'Unsupported action'
 
 const getById = async (id) => {
   try {
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const transfer = await Tb.tbLookupTransferMapped(id)
+      if (transfer) {
+        // TODO fetch the extension and ILP packet.
+      }
+    }
+
     /** @namespace Db.transfer **/
     return await Db.from('transfer').query(async (builder) => {
       const transferResult = await builder
@@ -499,17 +505,6 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       const dbInsertTransfer = async (logHistogram, tbEnabled) => {
         await knex.transaction(async (trx) => {
           try {
-            if (tbEnabled) {
-              console.log('JASON::: DUPL-CHECK-BEGIN')
-              const hashSha256 = Crypto.createHash('sha256')
-              let hash = JSON.stringify(payload)
-              hash = hashSha256.update(hash)
-              hash = hashSha256.digest(hash).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
-              const transferId = transferRecord.transferId
-              await knex('transferDuplicateCheck').transacting(trx).insert({ transferId, hash })
-              console.log(`JASON::: DUPL-CHECK [${transferId}]:[${hash}]`)
-            }
-
             await knex('transfer').transacting(trx).insert(transferRecord)
             await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
             await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
@@ -547,8 +542,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
             transferRecord,
             payerTransferParticipantRecord,
             payeeTransferParticipantRecord,
-            participants,
-            participantCurrencyIds
+            participants
           )
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
           console.info('JASON::: TB Prepared Transfer!')
@@ -1290,14 +1284,9 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
 
 const getTransferParticipant = async (participantName, transferId) => {
   try {
-    if (Config.TIGERBEETLE.enabled) {
-      const tbLookup = await Tb.tbLookupTransfer(transferId)
-      return [{
-        transferId,
-        amount: {
-          amount: Number(tbLookup.amount)
-        }
-      }]
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const tbLookup = await Tb.tbLookupTransferMapped(transferId)
+      return tbLookup
     }
 
     return Db.from('participant').query(async (builder) => {

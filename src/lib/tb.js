@@ -30,7 +30,6 @@ const TbNode = require('tigerbeetle-node')
 const createClient = TbNode.createClient
 const Config = require('../lib/config')
 const util = require('util')
-const crypto = require('crypto')
 const uuidv4Gen = require('uuid4')
 const net = require('net')
 const dns = require('dns')
@@ -39,7 +38,13 @@ let tbCachedClient
 
 let inFlight = []
 
-const secret = 'This is a secret 🤫'
+const currencyMapping = [
+  { currency: 'ZAR', code: 710 },
+  { currency: 'KES', code: 404 },
+  { currency: 'USD', code: 840 },
+  { currency: 'EUR', code: 978 },
+  { currency: 'GBP', code: 826 }
+]
 
 const getTBClient = async () => {
   try {
@@ -115,18 +120,16 @@ const _parseAndLookupReplicaAddresses = async (addressesToParse) => {
   return replicaIpAddresses
 }
 
-const tbCreateAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
+const tbCreateAccount = async (participantId, participantCurrencyId, accountType = 1, currencyTxt = 'USD') => {
   try {
-    console.info('JASON::: 0->> Creating Account    ' + id)
-
     const client = await getTBClient()
     if (client == null) return {}
 
-    console.info('JASON::: 1.1 Creating Account    ' + id)
+    console.info('JASON::: 0->> Creating Account    ' + participantId + ':' + participantCurrencyId)
 
-    const userData = BigInt(id)
+    const userData = BigInt(participantId)
     const currencyU16 = obtainLedgerFromCurrency(currencyTxt)
-    const tbId = tbIdFrom(userData, currencyU16, accountType)
+    const tbId = tbIdFrom(participantCurrencyId)
 
     console.info(`JASON::: 1.2 Creating Account ${util.inspect(currencyU16)} - ${tbId}   `)
 
@@ -149,13 +152,16 @@ const tbCreateAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
     console.info(`JASON::: 1.4 ERRORS ${util.inspect(errors)}.`)
 
     if (errors.length > 0) {
-      Logger.error('CreateAccount-ERROR: ' + enumLabelFromCode(TbNode.CreateAccountError, errors[0].code))
+      if (errors[0].result === TbNode.CreateAccountError.exists ||
+        errors[0].result === TbNode.CreateAccountError.exists_with_different_user_data) return []
+
+      Logger.error('CreateAccount-ERROR: CRITICAL! ' + enumLabelFromCode(TbNode.CreateAccountError, errors[0].code))
 
       for (let i = 0; i < errors.length; i++) {
         Logger.error('CreateAccErrors -> ' + errors[i].code)
       }
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-        'TB-Account entry failed for [' + id + ':' +
+        'TB-Account entry failed for [' + tbId + ':' +
         enumLabelFromCode(TbNode.CreateAccountError, errors[0].code) + '] : ' + util.inspect(errors))
       throw fspiopError
     }
@@ -167,15 +173,12 @@ const tbCreateAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
   }
 }
 
-const tbLookupAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
+const tbLookupAccount = async (participantCurrencyId) => {
   try {
     const client = await getTBClient()
     if (client == null) return {}
 
-    const userData = BigInt(id)
-    const currencyU16 = obtainLedgerFromCurrency(currencyTxt)
-    const tbId = tbIdFrom(userData, currencyU16, accountType)
-
+    const tbId = tbIdFrom(participantCurrencyId)
     const accounts = await client.lookupAccounts([tbId])
     if (accounts.length > 0) return accounts[0]
     return {}
@@ -187,12 +190,50 @@ const tbLookupAccount = async (id, accountType = 1, currencyTxt = 'USD') => {
 const tbLookupTransfer = async (id) => {
   try {
     const client = await getTBClient()
-    if (client == null) return {}
+    if (client == null) return null
 
     const tranId = uuidToBigInt(id)
     const transfers = await client.lookupTransfers([tranId])
     if (transfers.length > 0) return transfers[0]
+    return null
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const tbLookupTransferMapped = async (id) => {
+  try {
+    const tbTransfer = await tbLookupTransfer(id)
+    if (tbTransfer) {
+      let isOrgPending = TbNode.TransferFlags.pending === tbTransfer.flags
+      if (isOrgPending) isOrgPending = await tbIsPendingTransferPosted(id)
+
+      const returnVal = {
+        transferId: bigIntToUuid(tbTransfer.id),
+        payerParticipantCurrencyId: Number(tbTransfer.debit_account_id),
+        payeeParticipantCurrencyId: Number(tbTransfer.credit_account_id),
+        payeeAmount: Number(tbTransfer.amount),
+        currency: obtainCurrencyFromLedger(tbTransfer.ledger),
+        // TODO this only tells us the original is a 2phase transfer, we still need to perform a lookup based on pending_id
+        transferState: isOrgPending ? 'RESERVED' : 'ACCEPTED'
+      }
+      return returnVal
+    }
     return {}
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const tbIsPendingTransferPosted = async (id) => {
+  try {
+    const client = await getTBClient()
+    if (client == null) return false
+
+    // TODO const tranId = uuidToBigInt(id)
+    const transfers = [1, 2, 3]// TODO await client.lookupBasedOnPendingId([tranId])
+    if (transfers.length > 0) return true
+    return false
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -202,8 +243,7 @@ const tbTransfer = async (
   transferRecord,
   payerTransferParticipantRecord,
   payeeTransferParticipantRecord,
-  participants,
-  participantCurrencyIds
+  participants
 ) => {
   try {
     const client = await getTBClient()
@@ -213,12 +253,11 @@ const tbTransfer = async (
     Logger.info('1.2 Creating Payer       ' + util.inspect(payerTransferParticipantRecord))
     Logger.info('1.3 Creating Payee       ' + util.inspect(payeeTransferParticipantRecord))
     Logger.info('1.4 Participants         ' + util.inspect(participants))
-    Logger.info('1.5 Participant Currency ' + util.inspect(participantCurrencyIds))
 
     const tranId = uuidToBigInt(transferRecord.transferId)
     const accountTypeNumeric = payerTransferParticipantRecord.ledgerEntryTypeId
-    const payer = obtainTBAccountFrom(payerTransferParticipantRecord, participants, accountTypeNumeric)
-    const payee = obtainTBAccountFrom(payeeTransferParticipantRecord, participants, accountTypeNumeric)
+    const payer = obtainTBAccountFrom(payerTransferParticipantRecord)
+    const payee = obtainTBAccountFrom(payeeTransferParticipantRecord)
     const ledgerPayer = obtainLedgerFrom(payerTransferParticipantRecord, participants)
 
     Logger.info('(tbTransfer) Making use of id ' + uuidToBigInt(transferRecord.transferId) + ' [' + payer + ':::' + payee + ']')
@@ -258,23 +297,16 @@ const tbPrepareTransfer = async (
   payerTransferParticipantRecord,
   payeeTransferParticipantRecord,
   participants,
-  participantCurrencyIds,
   timeoutSeconds = 30
 ) => {
   try {
     const client = await getTBClient()
     if (client == null) return {}
 
-    // Logger.info('1.1 Creating Transfer    '+util.inspect(transferRecord))
-    // Logger.info('1.2 Payer                '+util.inspect(payerTransferParticipantRecord))
-    // Logger.info('1.3 Payee                '+util.inspect(payeeTransferParticipantRecord))
-    // Logger.info('1.4 Participants         '+util.inspect(participants))
-    // Logger.info('1.5 Participant Currency '+util.inspect(participantCurrencyIds))
-
     const tranId = uuidToBigInt(transferRecord.transferId)
     const accountTypeNumeric = payerTransferParticipantRecord.ledgerEntryTypeId// Enum.Accounts.LedgerAccountType.POSITION
-    const payer = obtainTBAccountFrom(payerTransferParticipantRecord, participants, accountTypeNumeric)
-    const payee = obtainTBAccountFrom(payeeTransferParticipantRecord, participants, accountTypeNumeric)
+    const payer = obtainTBAccountFrom(payerTransferParticipantRecord)
+    const payee = obtainTBAccountFrom(payeeTransferParticipantRecord)
     const ledgerPayer = obtainLedgerFrom(payerTransferParticipantRecord, participants)
 
     let flags = 0
@@ -332,13 +364,14 @@ const tbFulfilTransfer = async (
     let flags = 0
     flags |= TbNode.TransferFlags.post_pending_transfer
 
+    const orgTransferId = uuidToBigInt(transferFulfilmentRecord.transferId)
     const postTransfer = {
       id: uuidToBigInt(`${uuidv4Gen()}`),
-      debit_account_id: 0n,
-      credit_account_id: 0n,
-      user_data: BigInt(transferFulfilmentRecord.settlementWindowId),
+      debit_account_id: 0n, // use org.
+      credit_account_id: 0n, // use org.
+      user_data: orgTransferId,
       reserved: 0n,
-      pending_id: uuidToBigInt(transferFulfilmentRecord.transferId), // u128
+      pending_id: orgTransferId, // u128
       timeout: 0n,
       ledger: 0, // Use ledger from pending transfer.
       code: ledgerEntryTypeId,
@@ -349,7 +382,7 @@ const tbFulfilTransfer = async (
 
     const errors = await client.createTransfers([postTransfer])
     if (errors.length > 0) {
-      const errorTxt = errorsToString(TbNode.CommitTransferError, errors)
+      const errorTxt = errorsToString(TbNode.CreateTransferError, errors)
       Logger.error('FulfilTransfer-ERROR: ' + errorTxt)
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
         `TB-TransferFulfil entry failed for [${transferFulfilmentRecord.transferId}:${errorTxt}:${util.inspect(errors)}`)
@@ -382,26 +415,8 @@ const tbDestroy = async () => {
   }
 }
 
-const obtainTBAccountFrom = (
-  account,
-  participants,
-  accountTypeNumeric
-) => {
-  const partCurrencyId = account.participantCurrencyId
-  for (let i = 0; i < participants.length; i++) {
-    const itemAtIndex = participants[i]
-    if (itemAtIndex.participantCurrencyId === partCurrencyId) {
-      return tbIdFrom(
-        itemAtIndex.participantId,
-        obtainLedgerFromCurrency(itemAtIndex.currencyId),
-        accountTypeNumeric
-      )
-    }
-  }
-
-  const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-    'TB-Participant-NotFound ' + partCurrencyId + ' : ' + util.inspect(account) + ' : ' + util.inspect(participants))
-  throw fspiopError
+const obtainTBAccountFrom = (account) => {
+  return tbIdFrom(account.participantCurrencyId)
 }
 
 const obtainLedgerFrom = (
@@ -422,11 +437,15 @@ const obtainLedgerFrom = (
 }
 
 const obtainLedgerFromCurrency = (currencyTxt) => {
-  switch (currencyTxt) {
-    case 'KES' : return 404
-    case 'ZAR' : return 710
-    default : return 840// USD
-  }
+  const returnVal = currencyMapping.find(itm => itm.currency === currencyTxt)
+  if (returnVal) return returnVal.code
+  return null
+}
+
+const obtainCurrencyFromLedger = (ledgerVal) => {
+  const returnVal = currencyMapping.find(itm => itm.code === ledgerVal)
+  if (returnVal) return returnVal.currency
+  return null
 }
 
 const errorsToString = (resultEnum, errors) => {
@@ -437,26 +456,25 @@ const errorsToString = (resultEnum, errors) => {
   return errorListing
 }
 
-const tbIdFrom = (userData, currencyTxt, accountTypeNumeric) => {
-  const combined = '' + userData + '-' + currencyTxt + '-' + accountTypeNumeric
-  Logger.info('-------------__>   ' + combined)
-  // TODO @jason Replace md5 with SHA-256
-  // TODO @jason, perhaps replace the hashing completely...
-
-  const md5Hasher = crypto.createHmac('md5', secret)
-  const hash = md5Hasher.update(combined).digest('hex')
-  return BigInt('0x' + hash)
+const tbIdFrom = (participantCurrencyId) => {
+  if (participantCurrencyId === undefined) return 0n
+  return BigInt(participantCurrencyId)
 }
 
 const uuidToBigInt = (uuid) => {
-  // const buffer = Buffer.from(uuidNoDashes, 'hex')
-  // Logger.info('UUID-Buff-1: ' + BigInt("0x"+uuid.replace(/-/g, '')))
-  // Logger.info('UUID-Buff-2: ' + buffer.readBigInt64BE())
-  // Logger.info('UUID-Buff: ' + BigInt(buffer))
-
-  // const uuidBin = hex2bin(uuidNoDashes)
-  // Logger.info('UUID: '+uuidBin)
   return BigInt('0x' + uuid.replace(/-/g, ''))
+}
+
+const bigIntToUuid = (bi) => {
+  let str = bi.toString(16)
+  while (str.length < 32) str = '0' + str
+
+  if (str.length !== 32) {
+    Logger.warn(`_bigIntToUuid() got string that is not 32 chars long: "${str}"`)
+  } else {
+    str = `${str.substring(0, 8)}-${str.substring(8, 12)}-${str.substring(12, 16)}-${str.substring(16, 20)}-${str.substring(20)}`
+  }
+  return str
 }
 
 const enumLabelFromCode = (resultEnum, errCode) => {
@@ -470,7 +488,8 @@ module.exports = {
   tbPrepareTransfer, // TODO @jason: Need to add the rollback functions here...
   tbFulfilTransfer,
   tbLookupAccount,
-  tbLookupTransfer,
+  tbLookupTransferMapped,
+  tbIsPendingTransferPosted,
   tbVoidTransfer,
   tbDestroy
 }

@@ -647,11 +647,6 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       try {
-        if (Config.TIGERBEETLE.enabled) {
-          Logger.info('Creating HUB Account ' + participantId + ':' + currencyId + ':' + ledgerAccountTypeId)
-          await Tb.tbCreateAccount(participantId, ledgerAccountTypeId, currencyId)
-        }
-
         let result
         const participantCurrency = {
           participantId,
@@ -664,6 +659,12 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
         result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
         await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
         participantCurrency.participantCurrencyId = result[0]
+
+        if (Config.TIGERBEETLE.enabled) {
+          Logger.info('Creating HUB Account ' + participantId + ':' + currencyId + ':' + ledgerAccountTypeId)
+          await Tb.tbCreateAccount(participantId, participantCurrency.participantCurrencyId, ledgerAccountTypeId, currencyId)
+        }
+
         const participantPosition = {
           participantCurrencyId: participantCurrency.participantCurrencyId,
           value: 0,
