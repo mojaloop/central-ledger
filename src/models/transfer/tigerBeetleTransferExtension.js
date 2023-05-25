@@ -18,29 +18,50 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Coil
- - Jason Bruwer <jason.bruwer@coil.com>
+ * Jason Bruwer <jason.bruwer@coil.com>
  --------------
  ******/
 
 'use strict'
 
-exports.up = async (knex) => {
-  return await knex.schema.hasTable('tigerBeetleIlpPacket').then(function(exists) {
-    if (!exists) {
-      return knex.schema.createTable('tigerBeetleIlpPacket', (t) => {
-        t.string('transferId', 36).primary().notNullable()
-        t.text('value').notNullable()
-        t.string('ilpCondition', 256).notNullable()
-        t.string('ilpFulfilment', 256).nullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-        t.dateTime('createdDateIlpFulfilment').nullable()
-        t.index('transferId')
-      })
-    }
-  })
+const Db = require('../../lib/db')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+
+const saveTransferExtension = async (extension) => {
+  try {
+    return await Db.from('tigerBeetleTransferExtension').insert(extension)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
 }
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists('tigerBeetleIlpPacket')
+const getByTransferId = async (transferId) => {
+  try {
+    return await Db.from('tigerBeetleTransferExtension').find({ transferId })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const getByTransferExtensionId = async (transferExtensionId) => {
+  try {
+    return await Db.from('tigerBeetleTransferExtension').findOne({ transferExtensionId })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const destroyByTransferId = async (transferId) => {
+  try {
+    return await Db.from('tigerBeetleTransferExtension').destroy({ transferId })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+module.exports = {
+  saveTransferExtension,
+  getByTransferId,
+  getByTransferExtensionId,
+  destroyByTransferId
 }

@@ -49,11 +49,9 @@ const currencyMapping = [
 const getTBClient = async () => {
   try {
     if (!Config.TIGERBEETLE.enabled) {
-      console.info('TB-Client-Disabled')
+      console.log('TB-Client-Disabled')
       return null
     }
-
-    console.log('TB-Client-Enabled')
 
     if (tbCachedClient == null) {
       Logger.info('TB-Client-Enabled. Connecting to R-01 ' + Config.TIGERBEETLE.replicaEndpoint01)
@@ -125,13 +123,9 @@ const tbCreateAccount = async (participantId, participantCurrencyId, accountType
     const client = await getTBClient()
     if (client == null) return {}
 
-    console.info('JASON::: 0->> Creating Account    ' + participantId + ':' + participantCurrencyId)
-
     const userData = BigInt(participantId)
     const currencyU16 = obtainLedgerFromCurrency(currencyTxt)
     const tbId = tbIdFrom(participantCurrencyId)
-
-    console.info(`JASON::: 1.2 Creating Account ${util.inspect(currencyU16)} - ${tbId}   `)
 
     const account = {
       id: tbId, // u128 (137n)
@@ -149,8 +143,6 @@ const tbCreateAccount = async (participantId, participantCurrencyId, accountType
     console.info(`JASON::: 1.3 Creating Account ${util.inspect(account)}`)
 
     const errors = await client.createAccounts([account])
-    console.info(`JASON::: 1.4 ERRORS ${util.inspect(errors)}.`)
-
     if (errors.length > 0) {
       if (errors[0].result === TbNode.CreateAccountError.exists ||
         errors[0].result === TbNode.CreateAccountError.exists_with_different_user_data) return []
@@ -215,7 +207,10 @@ const tbLookupTransferMapped = async (id) => {
         payeeAmount: Number(tbTransfer.amount),
         currency: obtainCurrencyFromLedger(tbTransfer.ledger),
         // TODO this only tells us the original is a 2phase transfer, we still need to perform a lookup based on pending_id
-        transferState: isOrgPending ? 'RESERVED' : 'ACCEPTED'
+        transferState: isOrgPending ? 'RESERVED' : 'ACCEPTED',
+        completedTimestamp: Number(tbTransfer.timestamp / 1000000n), // convert from nanoseconds to milliseconds
+        errorCode: '',
+        errorDescription: ''
       }
       return returnVal
     }
@@ -266,7 +261,7 @@ const tbTransfer = async (
       id: tranId, // u128
       debit_account_id: payer, // u128
       credit_account_id: payee, // u128
-      user_data: tranId, // TODO u128, opaque third-party identifier to link this transfer (many-to-one) to an external entity
+      user_data: tranId, // u128, opaque third-party identifier to link this transfer (many-to-one) to an external entity
       reserved: BigInt(0), // two-phase condition can go in here / Buffer.alloc(32, 0)
       pending_id: 0,
       timeout: 0n, // u64, in nano-seconds.

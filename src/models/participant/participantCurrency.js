@@ -40,7 +40,6 @@ exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive
       createdBy: 'unknown'
     })
     if (Config.TIGERBEETLE.enabled) {
-      console.log(`JASON::: participantCurrency.create ${participantId} - ${currencyId} - ${ledgerAccountTypeId} - ${createdPartCurrency}`)
       await Tb.tbCreateAccount(participantId, createdPartCurrency, ledgerAccountTypeId, currencyId)
     }
     return createdPartCurrency

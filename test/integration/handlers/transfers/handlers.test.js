@@ -638,6 +638,7 @@ Test('Handlers test', async handlersTest => {
         test.ok(payerAbortNotification, 'Payer Abort notification sent')
       } catch (err) {
         test.notOk('No payerAbortNotification was sent')
+        console.error(err)
       }
       try {
         const payeeAbortNotification = (await wrapWithRetries(

@@ -40,6 +40,8 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferExtensionModel = require('./transferExtension')
+const TBTransferExtensionModel = require('./tigerBeetleTransferExtension')
+const TBIlp = require('./tigerBeetleIlpPacket')
 const ParticipantFacade = require('../participant/facade')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
@@ -55,9 +57,13 @@ const UnsupportedActionText = 'Unsupported action'
 const getById = async (id) => {
   try {
     if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
-      const transfer = await Tb.tbLookupTransferMapped(id)
-      if (transfer) {
-        // TODO fetch the extension and ILP packet.
+      const transferResult = await Tb.tbLookupTransferMapped(id)
+      if (transferResult) {
+        transferResult.extensionList = await TBTransferExtensionModel.getByTransferId(id)
+        const ilpPacket = await TBIlp.getByTransferId(id)
+        if (ilpPacket) transferResult.ilpPacket = ilpPacket.value
+        transferResult.isTransferReadModel = true
+        return transferResult
       }
     }
 
@@ -132,6 +138,16 @@ const getById = async (id) => {
 
 const getByIdLight = async (id) => {
   try {
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const transferResult = await Tb.tbLookupTransferMapped(id)
+      if (transferResult) {
+        transferResult.extensionList = await TBTransferExtensionModel.getByTransferId(id)
+        const ilpPacket = await TBIlp.getByTransferId(id)
+        if (ilpPacket) transferResult.ilpPacket = ilpPacket.value
+        return transferResult
+      }
+    }
+
     /** @namespace Db.transfer **/
     return await Db.from('transfer').query(async (builder) => {
       const transferResult = await builder
@@ -184,6 +200,8 @@ const getByIdLight = async (id) => {
 
 const getAll = async () => {
   try {
+    // TODO need the TB user-query engine to be completed.
+
     return await Db.from('transfer').query(async (builder) => {
       const transferResultList = await builder
         .where({
@@ -567,7 +585,12 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
               })
               await knex.batchInsert('tigerBeetleTransferExtension', transferExtensionsRecordList).transacting(trx)
             }
-            await knex('tigerBeetleIlpPacket').transacting(trx).insert(ilpPacketRecord)
+            const ilpPacketRecordTB = {
+              transferId: payload.transferId,
+              value: payload.ilpPacket,
+              ilpCondition: payload.condition
+            }
+            await knex('tigerBeetleIlpPacket').transacting(trx).insert(ilpPacketRecordTB)
           } catch (errDB) {
             console.error(errDB)
             await trx.rollback()
