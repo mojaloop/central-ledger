@@ -56,7 +56,7 @@ const UnsupportedActionText = 'Unsupported action'
 
 const getById = async (id) => {
   try {
-    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+    if (Config.TIGERBEETLE.enabled /* && Config.TIGERBEETLE.disableSQL */) {
       const transferResult = await Tb.tbLookupTransferMapped(id)
       if (transferResult) {
         transferResult.extensionList = await TBTransferExtensionModel.getByTransferId(id)
