@@ -56,13 +56,43 @@ const UnsupportedActionText = 'Unsupported action'
 
 const getById = async (id) => {
   try {
-    if (Config.TIGERBEETLE.enabled /* && Config.TIGERBEETLE.disableSQL */) {
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
       const transferResult = await Tb.tbLookupTransferMapped(id)
       if (transferResult) {
         transferResult.extensionList = await TBTransferExtensionModel.getByTransferId(id)
         const ilpPacket = await TBIlp.getByTransferId(id)
         if (ilpPacket) transferResult.ilpPacket = ilpPacket.value
         transferResult.isTransferReadModel = true
+
+        // Debit and Credit Accounts:
+        const payerAcc = await Tb.tbLookupAccountMapped(transferResult.payerParticipantCurrencyId)
+        if (payerAcc && payerAcc.participantId) {
+          const res = await Db.from('participant').query(async builder => {
+            return builder
+              .where({
+                'participant.participantId': payerAcc.participantId
+              })
+              .select('participant.*')
+              .first()
+          })
+          transferResult.payerParticipantId = payerAcc.participantId
+          transferResult.payerFsp = res.name
+        }
+
+        const payeeAcc = await Tb.tbLookupAccountMapped(transferResult.payeeParticipantCurrencyId)
+        if (payeeAcc && payeeAcc.participantId) {
+          const res = await Db.from('participant').query(async builder => {
+            return builder
+              .where({
+                'participant.participantId': payeeAcc.participantId
+              })
+              .select('participant.*')
+              .first()
+          })
+          transferResult.payeeParticipantId = payeeAcc.participantId
+          transferResult.payeeFsp = res.name
+        }
+
         return transferResult
       }
     }
@@ -1040,10 +1070,10 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           const payeeTransferParticipantRecord = {
             participantCurrencyId: payload.participantCurrencyId
           }
-          const participants = []// TODO looukp */
+          const participants = []// TODO lookup */
 
-          Logger.info('--> reconciliation-Payload-reconciliation: ' + util.inspect(payload))
-          Logger.info('--> reconciliation        : ' + util.inspect(reconciliationAccountId))
+          Logger.info('--> JASON reconciliation-Payload-reconciliation: ' + util.inspect(payload))
+          Logger.info('--> JASON reconciliation        : ' + util.inspect(reconciliationAccountId))
           // TODO await Tb.tbTransfer(....)
           /* TODO await Tb.tbPrepareTransfer(
             transferRecord,

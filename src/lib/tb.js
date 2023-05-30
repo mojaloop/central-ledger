@@ -33,6 +33,7 @@ const util = require('util')
 const uuidv4Gen = require('uuid4')
 const net = require('net')
 const dns = require('dns')
+const { Enum } = require('@mojaloop/central-services-shared')
 
 let tbCachedClient
 
@@ -45,6 +46,8 @@ const currencyMapping = [
   { currency: 'EUR', code: 978 },
   { currency: 'GBP', code: 826 }
 ]
+
+const postVoidCacheTBHack = []
 
 const getTBClient = async () => {
   try {
@@ -123,7 +126,7 @@ const tbCreateAccount = async (participantId, participantCurrencyId, accountType
     const client = await getTBClient()
     if (client == null) return {}
 
-    const userData = BigInt(participantId)
+    const userData = tbIdFrom(participantId)
     const currencyU16 = obtainLedgerFromCurrency(currencyTxt)
     const tbId = tbIdFrom(participantCurrencyId)
 
@@ -168,11 +171,36 @@ const tbCreateAccount = async (participantId, participantCurrencyId, accountType
 const tbLookupAccount = async (participantCurrencyId) => {
   try {
     const client = await getTBClient()
-    if (client == null) return {}
+    if (client == null) return null
 
     const tbId = tbIdFrom(participantCurrencyId)
     const accounts = await client.lookupAccounts([tbId])
     if (accounts.length > 0) return accounts[0]
+    return null
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const tbLookupAccountMapped = async (id) => {
+  try {
+    const tbAccount = await tbLookupAccount(id)
+    if (tbAccount) {
+      const returnVal = {
+        participantCurrencyId: Number(tbAccount.id),
+        participantId: Number(tbAccount.user_data),
+        currency: obtainCurrencyFromLedger(tbAccount.ledger),
+        timestamp: Number(tbAccount.timestamp / 1000000n), // convert from nanoseconds to milliseconds
+        debitsPending: Number(tbAccount.debits_pending),
+        debitsPosted: Number(tbAccount.debits_posted),
+        creditsPending: Number(tbAccount.credits_pending),
+        creditsPosted: Number(tbAccount.credits_posted),
+        accountType: Number(tbAccount.code),
+        errorCode: '',
+        errorDescription: ''
+      }
+      return returnVal
+    }
     return {}
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -197,8 +225,17 @@ const tbLookupTransferMapped = async (id) => {
   try {
     const tbTransfer = await tbLookupTransfer(id)
     if (tbTransfer) {
-      let isOrgPending = TbNode.TransferFlags.pending === tbTransfer.flags
-      if (isOrgPending) isOrgPending = await tbIsPendingTransferPosted(id)
+      let transferState = Enum.Transfers.TransferState.RESERVED
+      let completedTimestamp = new Date(Number(tbTransfer.timestamp / 1000000n))
+      if (TbNode.TransferFlags.pending === tbTransfer.flags) {
+        const revPostedTbTransfer = await tbLookupTransferByPendingId(id)
+        if (revPostedTbTransfer) {
+          transferState = (TbNode.TransferFlags.post_pending_transfer === revPostedTbTransfer.flags)
+            ? Enum.Transfers.TransferState.COMMITTED
+            : Enum.Transfers.TransferState.ABORTED
+          completedTimestamp = new Date(Number(revPostedTbTransfer.timestamp / 1000000n))
+        }
+      }
 
       const returnVal = {
         transferId: bigIntToUuid(tbTransfer.id),
@@ -207,8 +244,11 @@ const tbLookupTransferMapped = async (id) => {
         payeeAmount: Number(tbTransfer.amount),
         currency: obtainCurrencyFromLedger(tbTransfer.ledger),
         // TODO this only tells us the original is a 2phase transfer, we still need to perform a lookup based on pending_id
-        transferState: isOrgPending ? 'RESERVED' : 'ACCEPTED',
-        completedTimestamp: Number(tbTransfer.timestamp / 1000000n), // convert from nanoseconds to milliseconds
+        transferState,
+        // TODO need to get the from the posted transfer
+        completedTimestamp,
+        createdDate: new Date(Number(tbTransfer.timestamp / 1000000n)), // convert from nanoseconds to milliseconds
+        expirationDate: new Date(Number((tbTransfer.timestamp + tbTransfer.timeout) / 1000000n)),
         errorCode: '',
         errorDescription: ''
       }
@@ -220,15 +260,14 @@ const tbLookupTransferMapped = async (id) => {
   }
 }
 
-const tbIsPendingTransferPosted = async (id) => {
+const tbLookupTransferByPendingId = async (pendingId) => {
   try {
     const client = await getTBClient()
-    if (client == null) return false
+    if (client == null) return null
 
-    // TODO const tranId = uuidToBigInt(id)
-    const transfers = [1, 2, 3]// TODO await client.lookupBasedOnPendingId([tranId])
-    if (transfers.length > 0) return true
-    return false
+    // TODO Remove the hack:
+    const pendIdBI = uuidToBigInt(pendingId)
+    return postVoidCacheTBHack.find(itm => itm.pending_id === pendIdBI)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -375,6 +414,10 @@ const tbFulfilTransfer = async (
       timestamp: 0n // this will be set correctly by the TigerBeetle server
     }
 
+    // TODO need to remove:
+    postVoidCacheTBHack.push(postTransfer)
+    // TODO stop - need to remove.
+
     const errors = await client.createTransfers([postTransfer])
     if (errors.length > 0) {
       const errorTxt = errorsToString(TbNode.CreateTransferError, errors)
@@ -391,7 +434,29 @@ const tbFulfilTransfer = async (
 
 const tbVoidTransfer = async (transferId) => {
   try {
+    let flags = 0
+    flags |= TbNode.TransferFlags.void_pending_transfer
+
+    const voidTransfer = {
+      id: uuidToBigInt(`${uuidv4Gen()}`),
+      debit_account_id: 0n, // use org.
+      credit_account_id: 0n, // use org.
+      user_data: transferId,
+      reserved: 0n,
+      pending_id: transferId, // u128
+      timeout: 0n,
+      ledger: 0, // Use ledger from pending transfer.
+      code: 0,
+      flags,
+      amount: 0n, // Amount from org transfer
+      timestamp: 0n // this will be set correctly by the TigerBeetle server
+    }
+
     // TODO need to rollback transfer here...
+    // TODO need to remove:
+    postVoidCacheTBHack.push(voidTransfer)
+    // TODO stop - need to remove.
+
     Logger.info(transferId)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -482,9 +547,8 @@ module.exports = {
   tbTransfer,
   tbPrepareTransfer, // TODO @jason: Need to add the rollback functions here...
   tbFulfilTransfer,
-  tbLookupAccount,
+  tbLookupAccountMapped,
   tbLookupTransferMapped,
-  tbIsPendingTransferPosted,
   tbVoidTransfer,
   tbDestroy
 }

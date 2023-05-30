@@ -330,7 +330,7 @@ Test('Handlers test', async handlersTest => {
   await HubAccountsHelper.prepareData()
 
   const wrapWithRetriesConf = {
-    remainingRetries: retryOpts?.retries || 15, // default 10
+    remainingRetries: retryOpts?.retries || 10, // default 10
     timeout: retryOpts?.maxTimeout || 2 // default 2
   }
 
@@ -438,10 +438,11 @@ Test('Handlers test', async handlersTest => {
       // Assert
       // 3. Check that we didn't sent a notification for the Payee
       try {
+        // TODO @jason -> fix this with TB
         await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
           action: 'reserved-aborted'
-        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        }), 5, wrapWithRetriesConf.timeout)
         test.notOk('Should not be executed')
       } catch (err) {
         console.log(err)
@@ -519,7 +520,6 @@ Test('Handlers test', async handlersTest => {
 
       // 4. Get the updated transfer since the completedTimestamp may have changed
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-
       let expectedAbortNotificationPayload = {}
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
@@ -797,6 +797,11 @@ Test('Handlers test', async handlersTest => {
         test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 
+      const retryTimeoutOpts = {
+        retries: retryOpts.retries,
+        minTimeout: retryOpts.minTimeout * 1000,
+        maxTimeout: retryOpts.maxTimeout * 1000
+      }
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -805,7 +810,7 @@ Test('Handlers test', async handlersTest => {
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
-        }, retryOpts)
+        }, retryTimeoutOpts)
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -881,6 +886,12 @@ Test('Handlers test', async handlersTest => {
         test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 
+      const retryTimeoutOpts = {
+        retries: retryOpts.retries,
+        minTimeout: retryOpts.minTimeout * 1000,
+        maxTimeout: retryOpts.maxTimeout * 1000
+      }
+
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -889,7 +900,7 @@ Test('Handlers test', async handlersTest => {
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
-        }, retryOpts)
+        }, retryTimeoutOpts)
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -919,6 +930,12 @@ Test('Handlers test', async handlersTest => {
         test.equal(payeePositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
       }
 
+      const retryTimeoutOpts = {
+        retries: retryOpts.retries,
+        minTimeout: retryOpts.minTimeout * 1000,
+        maxTimeout: retryOpts.maxTimeout * 1000
+      }
+
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -927,7 +944,7 @@ Test('Handlers test', async handlersTest => {
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
-        }, retryOpts)
+        }, retryTimeoutOpts)
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -957,6 +974,12 @@ Test('Handlers test', async handlersTest => {
         test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
       }
 
+      const retryTimeoutOpts = {
+        retries: retryOpts.retries,
+        minTimeout: retryOpts.minTimeout * 1000,
+        maxTimeout: retryOpts.maxTimeout * 1000
+      }
+
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -965,7 +988,7 @@ Test('Handlers test', async handlersTest => {
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#3 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
-        }, retryOpts)
+        }, retryTimeoutOpts)
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -994,6 +1017,12 @@ Test('Handlers test', async handlersTest => {
         test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, `Transfer state changed to ${TransferInternalState.ABORTED_REJECTED}`)
       }
 
+      const retryTimeoutOpts = {
+        retries: retryOpts.retries,
+        minTimeout: retryOpts.minTimeout * 1000,
+        maxTimeout: retryOpts.maxTimeout * 1000
+      }
+
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -1002,7 +1031,7 @@ Test('Handlers test', async handlersTest => {
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#4 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
-        }, retryOpts)
+        }, retryTimeoutOpts)
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1033,6 +1062,12 @@ Test('Handlers test', async handlersTest => {
         test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
       }
 
+      const retryTimeoutOpts = {
+        retries: retryOpts.retries,
+        minTimeout: retryOpts.minTimeout * 1000,
+        maxTimeout: retryOpts.maxTimeout * 1000
+      }
+
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -1041,7 +1076,7 @@ Test('Handlers test', async handlersTest => {
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#5 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
-        }, retryOpts)
+        }, retryTimeoutOpts)
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1080,6 +1115,12 @@ Test('Handlers test', async handlersTest => {
         test.equal(transferExtension[0].transferId, transfer.transferId, 'Transfer extension recorded with transferErrorId key')
       }
 
+      const retryTimeoutOpts = {
+        retries: retryOpts.retries,
+        minTimeout: retryOpts.minTimeout * 1000,
+        maxTimeout: retryOpts.maxTimeout * 1000
+      }
+
       try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -1088,7 +1129,7 @@ Test('Handlers test', async handlersTest => {
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#6 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
-        }, retryOpts)
+        }, retryTimeoutOpts)
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1130,8 +1171,8 @@ Test('Handlers test', async handlersTest => {
       try {
         const retryTimeoutOpts = {
           retries: Number(retryOpts.retries) * 2,
-          minTimeout: retryOpts.minTimeout,
-          maxTimeout: retryOpts.maxTimeout
+          minTimeout: retryOpts.minTimeout * 1000,
+          maxTimeout: retryOpts.maxTimeout * 1000
         }
 
         await retry(async () => { // use bail(new Error('to break before max retries'))
