@@ -92,8 +92,7 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
 
   try {
     let result = 1
-    console.info('JASON::: saveTransferDuplicateCheck')
-    console.info(`${transferId} - ${hash}`)
+    console.info(`JASON-saveTransferDuplicateCheck::: ${transferId} - ${hash}`)
     if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
       result = 0
     } else {

@@ -34,7 +34,6 @@
 
 const Db = require('../../lib/db')
 const Tb = require('../../lib/tb')
-const util = require('util')
 
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
@@ -421,15 +420,10 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
         }
         if (isFulfilment) {
           if (Config.TIGERBEETLE.enabled) {
-            console.log('TB performing - tbFulfilTransfer!')
             await Tb.tbFulfilTransfer(transferFulfilmentRecord)
           }
-          console.log('TB is done!')
-          console.log(transferFulfilmentRecord)
 
           await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
-          console.log('Here it is.')
-          console.log(transferFulfilmentRecord)
           result.transferFulfilmentRecord = transferFulfilmentRecord
           Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferFulfilment')
         }
@@ -589,8 +583,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           await Tb.tbPrepareTransfer(
             transferRecord,
             payerTransferParticipantRecord,
-            payeeTransferParticipantRecord,
-            participants
+            payeeTransferParticipantRecord
           )
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
           console.info('JASON::: TB Prepared Transfer!')
@@ -1056,32 +1049,31 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Action not allowed for reconciliationTransferPrepare')
         }
 
-        // TODO @jason, store in TB -> [HUB] + [DFSP_SETTLEMENT]
         if (Config.TIGERBEETLE.enabled) {
           // [HUB] Transfer
-          /* const transferRecord = {
+          const transferRecord = {
             transferId: payload.transferId,
-            amount
+            amount: ledgerEntryTypeId === enums.ledgerEntryType.RECORD_FUNDS_IN ? amount : amount * -1,
+            currencyId: payload.amount.currency
           }
           const payerTransferParticipantRecord = {
             ledgerEntryTypeId,
-            participantCurrencyId: reconciliationAccountId
+            participantCurrencyId: (ledgerEntryTypeId === enums.ledgerEntryType.RECORD_FUNDS_IN)
+              ? reconciliationAccountId
+              : payload.participantCurrencyId
           }
           const payeeTransferParticipantRecord = {
-            participantCurrencyId: payload.participantCurrencyId
+            ledgerEntryTypeId,
+            participantCurrencyId: (ledgerEntryTypeId === enums.ledgerEntryType.RECORD_FUNDS_IN)
+              ? payload.participantCurrencyId
+              : reconciliationAccountId
           }
-          const participants = []// TODO lookup */
-
-          Logger.info('--> JASON reconciliation-Payload-reconciliation: ' + util.inspect(payload))
-          Logger.info('--> JASON reconciliation        : ' + util.inspect(reconciliationAccountId))
-          // TODO await Tb.tbTransfer(....)
-          /* TODO await Tb.tbPrepareTransfer(
+          await Tb.tbPrepareTransfer(
             transferRecord,
             payerTransferParticipantRecord,
             payeeTransferParticipantRecord,
-            participants,
-            null
-          ) */
+            Number(Config.INTERNAL_TRANSFER_VALIDITY_SECONDS)
+          )
         }
 
         // Insert transferParticipant records
@@ -1137,6 +1129,10 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         }
         for (const transferExtension of transferExtensions) {
           await knex('transferExtension').insert(transferExtension).transacting(trx)
+
+          if (Config.TIGERBEETLE.enabled) {
+            await knex('tigerBeetleTransferExtension').insert(transferExtension).transacting(trx)
+          }
         }
 
         if (doCommit) {
@@ -1268,6 +1264,11 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     } else {
       await knex.transaction(trxFunction)
     }
+
+    if (Config.TIGERBEETLE.enabled) {
+      await Tb.tbFulfilTransfer(payload)
+    }
+
     return 0
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -1329,6 +1330,11 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     } else {
       await knex.transaction(trxFunction)
     }
+
+    if (Config.TIGERBEETLE.enabled) {
+      await Tb.tbVoidTransfer(payload.transferId)
+    }
+
     return 0
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -1375,6 +1381,9 @@ const recordFundsIn = async (payload, transactionTimestamp, enums) => {
     } catch (err) {
       Logger.isErrorEnabled && Logger.error(err)
       await trx.rollback
+      if (Config.TIGERBEETLE.enabled) {
+        await Tb.tbVoidTransfer(payload.transferId)
+      }
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   })

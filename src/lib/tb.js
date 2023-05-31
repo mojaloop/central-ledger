@@ -52,15 +52,11 @@ const postVoidCacheTBHack = []
 const getTBClient = async () => {
   try {
     if (!Config.TIGERBEETLE.enabled) {
-      console.log('TB-Client-Disabled')
+      Logger.info('TB-Client-Disabled')
       return null
     }
 
     if (tbCachedClient == null) {
-      Logger.info('TB-Client-Enabled. Connecting to R-01 ' + Config.TIGERBEETLE.replicaEndpoint01)
-      Logger.info('TB-Client-Enabled. Connecting to R-02 ' + Config.TIGERBEETLE.replicaEndpoint02)
-      Logger.info('TB-Client-Enabled. Connecting to R-03 ' + Config.TIGERBEETLE.replicaEndpoint03)
-
       const addresses = []
       if (Config.TIGERBEETLE.replicaEndpoint01 !== undefined && Config.TIGERBEETLE.replicaEndpoint01.length > 0) {
         addresses.push(Config.TIGERBEETLE.replicaEndpoint01)
@@ -74,8 +70,7 @@ const getTBClient = async () => {
       if (addresses.length === 0) return null
 
       const mappedAddresses = await _parseAndLookupReplicaAddresses(addresses)
-      console.info('mappedAddresses:')
-      console.info(mappedAddresses)
+      Logger.info(`TB-Client-Enabled. ${mappedAddresses}`)
       tbCachedClient = await createClient({
         cluster_id: Config.TIGERBEETLE.cluster,
         replica_addresses: mappedAddresses
@@ -100,7 +95,6 @@ const _parseAndLookupReplicaAddresses = async (addressesToParse) => {
       Logger.error(err.message)
       throw err
     }
-    Logger.info(`\t addr parts are: ${parts[0]} and ${parts[1]}`)
 
     if (net.isIP(parts[0]) === 0) {
       Logger.debug('\t addr part[0] is not an IP address, looking it up..')
@@ -143,7 +137,7 @@ const tbCreateAccount = async (participantId, participantCurrencyId, accountType
       credits_posted: 0n, // u64
       timestamp: 0n // u64, Reserved: This will be set by the server.
     }
-    console.info(`JASON::: 1.3 Creating Account ${util.inspect(account)}`)
+    // console.info(`JASON::: 1.3 Creating Account ${util.inspect(account)}`)
 
     const errors = await client.createAccounts([account])
     if (errors.length > 0) {
@@ -243,9 +237,7 @@ const tbLookupTransferMapped = async (id) => {
         payeeParticipantCurrencyId: Number(tbTransfer.credit_account_id),
         payeeAmount: Number(tbTransfer.amount),
         currency: obtainCurrencyFromLedger(tbTransfer.ledger),
-        // TODO this only tells us the original is a 2phase transfer, we still need to perform a lookup based on pending_id
         transferState,
-        // TODO need to get the from the posted transfer
         completedTimestamp,
         createdDate: new Date(Number(tbTransfer.timestamp / 1000000n)), // convert from nanoseconds to milliseconds
         expirationDate: new Date(Number((tbTransfer.timestamp + tbTransfer.timeout) / 1000000n)),
@@ -276,8 +268,7 @@ const tbLookupTransferByPendingId = async (pendingId) => {
 const tbTransfer = async (
   transferRecord,
   payerTransferParticipantRecord,
-  payeeTransferParticipantRecord,
-  participants
+  payeeTransferParticipantRecord
 ) => {
   try {
     const client = await getTBClient()
@@ -286,13 +277,12 @@ const tbTransfer = async (
     Logger.info('1.1 Creating Transfer    ' + util.inspect(transferRecord))
     Logger.info('1.2 Creating Payer       ' + util.inspect(payerTransferParticipantRecord))
     Logger.info('1.3 Creating Payee       ' + util.inspect(payeeTransferParticipantRecord))
-    Logger.info('1.4 Participants         ' + util.inspect(participants))
 
     const tranId = uuidToBigInt(transferRecord.transferId)
     const accountTypeNumeric = payerTransferParticipantRecord.ledgerEntryTypeId
     const payer = obtainTBAccountFrom(payerTransferParticipantRecord)
     const payee = obtainTBAccountFrom(payeeTransferParticipantRecord)
-    const ledgerPayer = obtainLedgerFrom(payerTransferParticipantRecord, participants)
+    const ledgerPayer = obtainLedgerFromCurrency(transferRecord.currencyId)
 
     Logger.info('(tbTransfer) Making use of id ' + uuidToBigInt(transferRecord.transferId) + ' [' + payer + ':::' + payee + ']')
 
@@ -330,7 +320,6 @@ const tbPrepareTransfer = async (
   transferRecord,
   payerTransferParticipantRecord,
   payeeTransferParticipantRecord,
-  participants,
   timeoutSeconds = 30
 ) => {
   try {
@@ -341,7 +330,7 @@ const tbPrepareTransfer = async (
     const accountTypeNumeric = payerTransferParticipantRecord.ledgerEntryTypeId// Enum.Accounts.LedgerAccountType.POSITION
     const payer = obtainTBAccountFrom(payerTransferParticipantRecord)
     const payee = obtainTBAccountFrom(payeeTransferParticipantRecord)
-    const ledgerPayer = obtainLedgerFrom(payerTransferParticipantRecord, participants)
+    const ledger = obtainLedgerFromCurrency(transferRecord.currencyId)
 
     let flags = 0
     flags |= TbNode.TransferFlags.pending
@@ -355,7 +344,7 @@ const tbPrepareTransfer = async (
       reserved: BigInt(0),
       pending_id: BigInt(0),
       timeout: timeoutNanoseconds, // u64, in nano-seconds.
-      ledger: ledgerPayer, // Currency
+      ledger, // Currency
       code: accountTypeNumeric, // u32, a chart of accounts code describing the reason for the transfer (e.g. deposit, settlement)
       flags, // u32
       amount: BigInt(transferRecord.amount), // u64
@@ -387,28 +376,25 @@ const tbPrepareTransfer = async (
   }
 }
 
-const tbFulfilTransfer = async (
-  transferFulfilmentRecord,
-  ledgerEntryTypeId = 1// Enum.Accounts.LedgerAccountType.POSITION
-) => {
+const tbFulfilTransfer = async (transferFulfilment) => {
   try {
     const client = await getTBClient()
-    if (client == null) return {}
+    if (client == null) return []
 
     let flags = 0
     flags |= TbNode.TransferFlags.post_pending_transfer
 
-    const orgTransferId = uuidToBigInt(transferFulfilmentRecord.transferId)
+    const orgTransferId = uuidToBigInt(transferFulfilment.transferId)
     const postTransfer = {
       id: uuidToBigInt(`${uuidv4Gen()}`),
       debit_account_id: 0n, // use org.
       credit_account_id: 0n, // use org.
-      user_data: orgTransferId,
+      user_data: 0n,
       reserved: 0n,
       pending_id: orgTransferId, // u128
       timeout: 0n,
       ledger: 0, // Use ledger from pending transfer.
-      code: ledgerEntryTypeId,
+      code: 0,
       flags,
       amount: 0n, // Amount from pending transfer
       timestamp: 0n // this will be set correctly by the TigerBeetle server
@@ -421,9 +407,9 @@ const tbFulfilTransfer = async (
     const errors = await client.createTransfers([postTransfer])
     if (errors.length > 0) {
       const errorTxt = errorsToString(TbNode.CreateTransferError, errors)
-      Logger.error('FulfilTransfer-ERROR: ' + errorTxt)
+      Logger.error(`FulfilTransfer-ERROR: ${util.inspect(errors)}`)
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-        `TB-TransferFulfil entry failed for [${transferFulfilmentRecord.transferId}:${errorTxt}:${util.inspect(errors)}`)
+        `TB-TransferFulfil entry failed for [${transferFulfilment.transferId}:${errorTxt}:${util.inspect(errors)}`)
       throw fspiopError
     }
     return errors
@@ -434,6 +420,10 @@ const tbFulfilTransfer = async (
 
 const tbVoidTransfer = async (transferId) => {
   try {
+    const client = await getTBClient()
+    if (client == null) return []
+
+    const orgTransferId = uuidToBigInt(transferId)
     let flags = 0
     flags |= TbNode.TransferFlags.void_pending_transfer
 
@@ -441,9 +431,9 @@ const tbVoidTransfer = async (transferId) => {
       id: uuidToBigInt(`${uuidv4Gen()}`),
       debit_account_id: 0n, // use org.
       credit_account_id: 0n, // use org.
-      user_data: transferId,
+      user_data: 0n,
       reserved: 0n,
-      pending_id: transferId, // u128
+      pending_id: orgTransferId, // u128
       timeout: 0n,
       ledger: 0, // Use ledger from pending transfer.
       code: 0,
@@ -457,7 +447,15 @@ const tbVoidTransfer = async (transferId) => {
     postVoidCacheTBHack.push(voidTransfer)
     // TODO stop - need to remove.
 
-    Logger.info(transferId)
+    const errors = await client.createTransfers([voidTransfer])
+    if (errors.length > 0) {
+      const errorTxt = errorsToString(TbNode.CreateTransferError, errors)
+      Logger.error('VoidTransfer-ERROR: ' + errorTxt)
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
+        `TB-TransferVoid entry failed for [${voidTransfer.transferId}:${errorTxt}:${util.inspect(errors)}`)
+      throw fspiopError
+    }
+    return errors
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -477,23 +475,6 @@ const tbDestroy = async () => {
 
 const obtainTBAccountFrom = (account) => {
   return tbIdFrom(account.participantCurrencyId)
-}
-
-const obtainLedgerFrom = (
-  account,
-  participants
-) => {
-  const partCurrencyId = account.participantCurrencyId
-  for (let i = 0; i < participants.length; i++) {
-    const itemAtIndex = participants[i]
-    if (itemAtIndex.participantCurrencyId === partCurrencyId) {
-      return obtainLedgerFromCurrency(itemAtIndex.currencyId)
-    }
-  }
-
-  const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-    'TB-Participant-NotFound ' + partCurrencyId + ' : ' + util.inspect(account) + ' : ' + util.inspect(participants))
-  throw fspiopError
 }
 
 const obtainLedgerFromCurrency = (currencyTxt) => {
@@ -545,7 +526,7 @@ const enumLabelFromCode = (resultEnum, errCode) => {
 module.exports = {
   tbCreateAccount,
   tbTransfer,
-  tbPrepareTransfer, // TODO @jason: Need to add the rollback functions here...
+  tbPrepareTransfer,
   tbFulfilTransfer,
   tbLookupAccountMapped,
   tbLookupTransferMapped,
