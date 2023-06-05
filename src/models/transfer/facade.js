@@ -998,10 +998,20 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       }
     }
 
-    if (trx) {
-      return await trxFunction(trx, false)
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const tbLookup = await Tb.tbLookupTransferMapped(param1.transferId)
+      const payerAcc = await Tb.tbLookupAccountMapped(tbLookup.payerParticipantCurrencyId)
+      return {
+        transferStateChangeId: '',
+        drPositionValue: new MLNumber(payerAcc.debitsPosted).toFixed(Config.AMOUNT.SCALE),
+        crPositionValue: new MLNumber(payerAcc.creditsPosted).toFixed(Config.AMOUNT.SCALE)
+      }
     } else {
-      return await knex.transaction(trxFunction)
+      if (trx) {
+        return await trxFunction(trx, false)
+      } else {
+        return await knex.transaction(trxFunction)
+      }
     }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
