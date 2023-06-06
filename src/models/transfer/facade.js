@@ -285,6 +285,15 @@ const getAll = async () => {
 
 const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
   try {
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const tbLookup = await Tb.tbLookupTransferMapped(id)
+      if (transferParticipantRoleTypeId === 1) { // <- PAYER_DFSP
+        return await Tb.tbLookupAccountMapped(tbLookup.payerParticipantCurrencyId)
+      } else { // 2 = <- PAYEE_DFSP
+        return await Tb.tbLookupAccountMapped(tbLookup.payeeParticipantCurrencyId)
+      }
+    }
+
     /** @namespace Db.transferParticipant **/
     return await Db.from('transferParticipant').query(async builder => {
       return builder
