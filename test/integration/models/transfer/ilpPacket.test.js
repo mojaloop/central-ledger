@@ -35,6 +35,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const Service = require('../../../../src/models/transfer/ilpPacket')
 const HelperModule = require('../../helpers')
+const Tb = require('../../../../src/lib/tb')
 
 Test('Ilp service tests', async (ilpTest) => {
   const ilpTestValues = [
@@ -178,6 +179,7 @@ Test('Ilp service tests', async (ilpTest) => {
     try {
       await Cache.destroyCache()
       await Db.disconnect()
+      await Tb.tbDestroy()
       assert.pass('database connection closed')
       assert.end()
     } catch (err) {

@@ -69,5 +69,23 @@ module.exports = {
     debug: RC.DATABASE.DEBUG
   },
   API_DOC_ENDPOINTS_ENABLED: RC.API_DOC_ENDPOINTS_ENABLED || false,
-  SETTLEMENT_MODELS: RC.SETTLEMENT_MODELS
+  SETTLEMENT_MODELS: RC.SETTLEMENT_MODELS,
+  TIGERBEETLE: {
+    /* istanbul ignore next */
+    enabled: RC.TIGERBEETLE === undefined ? false : RC.TIGERBEETLE.ENABLED || false,
+    /* istanbul ignore next */
+    enableBatching: RC.TIGERBEETLE === undefined ? false : RC.TIGERBEETLE.ENABLE_BATCHING || false,
+    /* istanbul ignore next */
+    disableSQL: RC.TIGERBEETLE === undefined ? false : RC.TIGERBEETLE.DISABLE_SQL || false,
+    /* istanbul ignore next */
+    batchMaxSize: RC.TIGERBEETLE === undefined ? 0 : RC.TIGERBEETLE.BATCH_MAX_SIZE,
+    /* istanbul ignore next */
+    cluster: RC.TIGERBEETLE === undefined ? 0 : RC.TIGERBEETLE.CLUSTER,
+    /* istanbul ignore next */
+    replicaEndpoint01: RC.TIGERBEETLE === undefined ? '5001' : RC.TIGERBEETLE.REPLICA_ENDPOINT_01,
+    /* istanbul ignore next */
+    replicaEndpoint02: RC.TIGERBEETLE === undefined ? '5002' : RC.TIGERBEETLE.REPLICA_ENDPOINT_02,
+    /* istanbul ignore next */
+    replicaEndpoint03: RC.TIGERBEETLE === undefined ? '5003' : RC.TIGERBEETLE.REPLICA_ENDPOINT_03
+  }
 }

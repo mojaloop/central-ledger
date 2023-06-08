@@ -32,6 +32,7 @@ const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Cache = require('../../../../src/lib/cache')
+const Tb = require('../../../../src/lib/tb')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const ParticipantService = require('../../../../src/domain/participant')
@@ -121,6 +122,7 @@ Test('Participant service', async (participantTest) => {
       getByNameResult = await ParticipantService.getByName(testData.fsp4Name)
       result = await ParticipantHelper.prepareData(testData.fsp4Name, testData.currency, !!getByNameResult)
       participantFixtures.push(result.participant)
+      console.info('JASON::: 112')
       for (const participant of participantFixtures) {
         const read = await ParticipantService.getById(participant.participantId)
         participantMap.set(participant.participantId, read)
@@ -424,6 +426,7 @@ Test('Participant service', async (participantTest) => {
           assert.ok(result, `destroy ${participant.name} success`)
         }
       }
+      await Tb.tbDestroy()
       await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')

@@ -18,6 +18,7 @@ services:
       - ./docker/central-ledger/default.json:/opt/app/config/default.json
       - ./test:/opt/app/test
       - ./src:/opt/app/src
+      # - ./tb:/opt/central-ledger/tb
       # - ./node_modules:/opt/app/node_modules
     environment:
       - CLEDG_MONGODB__DISABLED=true

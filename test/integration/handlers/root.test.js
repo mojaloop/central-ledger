@@ -28,6 +28,7 @@ const Test = require('tape')
 const Joi = require('joi')
 const Logger = require('@mojaloop/central-services-logger')
 const Db = require('@mojaloop/central-services-database').Db
+const Tb = require('../../../src/lib/tb')
 
 const Config = require('../../../src/lib/config')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
@@ -110,6 +111,7 @@ Test('Root handler test', async handlersTest => {
 
   await handlersTest.test('teardown', async (assert) => {
     try {
+      await Tb.tbDestroy()
       await Db.disconnect()
       assert.pass('database connection closed')
 

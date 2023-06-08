@@ -29,6 +29,8 @@
  */
 
 const Db = require('../../lib/db')
+const Tb = require('../../lib/tb')
+const Logger = require('@mojaloop/central-services-logger')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -54,7 +56,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
       /* find paricipant id by name */
       participant = await ParticipantModelCached.getByName(name)
       if (participant) {
-        /* use the paricipant id and incoming params to prepare the filter */
+        /* use the participant id and incoming params to prepare the filter */
         const searchFilter = {
           participantId: participant.participantId,
           currencyId,
@@ -367,6 +369,26 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
 
 const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const participantCurrencyId = await Db.from('participantCurrency').query(builder => {
+        return builder.innerJoin('participant AS p', 'participantCurrency.participantId', 'p.participantId')
+          .where({
+            'p.participantId': participantId,
+            'p.isActive': 1,
+            'pc.isActive': 1,
+            'pc.ledgerAccountTypeId': ledgerAccountTypeId
+          })
+          .where(q => {
+            if (currencyId !== null) {
+              return q.where('pc.currencyId', currencyId)
+            }
+          })
+          .select('participantCurrency.participantCurrencyId')
+      })
+      if (participantCurrencyId) return await Tb.tbLookupAccountMapped(participantCurrencyId)
+      else return {}
+    }
+
     return await Db.from('participant').query(async (builder) => {
       return builder
         .where({
@@ -653,6 +675,12 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
         result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
         await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
         participantCurrency.participantCurrencyId = result[0]
+
+        if (Config.TIGERBEETLE.enabled) {
+          Logger.info('Creating HUB Account ' + participantId + ':' + currencyId + ':' + ledgerAccountTypeId)
+          await Tb.tbCreateAccount(participantId, participantCurrency.participantCurrencyId, ledgerAccountTypeId, currencyId)
+        }
+
         const participantPosition = {
           participantCurrencyId: participantCurrency.participantCurrencyId,
           value: 0,

@@ -76,21 +76,21 @@ Tests include unit, functional, and integration.
 Running the tests:
 
 ```bash
-    npm run test:all
+npm run test:all
 ```
 
 Tests include code coverage via istanbul. See the test/ folder for testing scripts.
 
 ### Running Integration Tests interactively
 
-If you want to run integration tests in a repetitive manner, you can startup the test containers using `docker-compose` via one of the following methods:
+If you want to run integration tests in a repetitive manner, you can start-up the test containers using `docker-compose` via one of the following methods:
 
 - Running locally
 
     Start containers required for Integration Tests
 
     ```bash
-    docker-compose -f docker-compose.yml up -d kafka mysql
+    docker-compose -f docker-compose.yml up -d kafka mysql tigerbeetle
     ```
 
     Run wait script which will report once all required containers are up and running
@@ -135,6 +135,11 @@ If you want to run integration tests in a repetitive manner, you can startup the
     export CL_DATABASE_HOST=mysql
     npm run test:int
   ```
+
+- Removing the CL Image
+```shell
+docker rmi central-ledger_central-ledger
+```
 
 ### Running Functional Tests
 

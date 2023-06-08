@@ -77,6 +77,16 @@
   },
   "INTERNAL_TRANSFER_VALIDITY_SECONDS": "432000",
   "ENABLE_ON_US_TRANSFERS": false,
+  "TIGERBEETLE" : {
+    "ENABLED" : true,
+    "ENABLE_BATCHING" : false,
+    "DISABLE_SQL" : false,
+    "BATCH_MAX_SIZE" : 2048,
+    "CLUSTER" : 0,
+    "REPLICA_ENDPOINT_01" : "tigerbeetle:5001",
+    "REPLICA_ENDPOINT_02" : "",
+    "REPLICA_ENDPOINT_03" : ""
+  },
   "CACHE": {
     "CACHE_ENABLED": false,
     "MAX_BYTE_SIZE": 10000000,

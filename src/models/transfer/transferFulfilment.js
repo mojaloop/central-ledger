@@ -29,6 +29,8 @@ const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getByTransferId = async (transferId) => {
+  // TODO @jason, bring in TB here...
+
   Logger.isDebugEnabled && Logger.debug('getByTransferId ' + transferId.toString())
   try {
     return await Db.from('transferFulfilment').find({ transferId })

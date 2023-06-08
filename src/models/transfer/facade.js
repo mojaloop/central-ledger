@@ -33,10 +33,14 @@
  */
 
 const Db = require('../../lib/db')
+const Tb = require('../../lib/tb')
+
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferExtensionModel = require('./transferExtension')
+const TBTransferExtensionModel = require('./tigerBeetleTransferExtension')
+const TBIlp = require('./tigerBeetleIlpPacket')
 const ParticipantFacade = require('../participant/facade')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
@@ -51,6 +55,47 @@ const UnsupportedActionText = 'Unsupported action'
 
 const getById = async (id) => {
   try {
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const transferResult = await Tb.tbLookupTransferMapped(id)
+      if (transferResult) {
+        transferResult.extensionList = await TBTransferExtensionModel.getByTransferId(id)
+        const ilpPacket = await TBIlp.getByTransferId(id)
+        if (ilpPacket) transferResult.ilpPacket = ilpPacket.value
+        transferResult.isTransferReadModel = true
+
+        // Debit and Credit Accounts:
+        const payerAcc = await Tb.tbLookupAccountMapped(transferResult.payerParticipantCurrencyId)
+        if (payerAcc && payerAcc.participantId) {
+          const res = await Db.from('participant').query(async builder => {
+            return builder
+              .where({
+                'participant.participantId': payerAcc.participantId
+              })
+              .select('participant.*')
+              .first()
+          })
+          transferResult.payerParticipantId = payerAcc.participantId
+          transferResult.payerFsp = res.name
+        }
+
+        const payeeAcc = await Tb.tbLookupAccountMapped(transferResult.payeeParticipantCurrencyId)
+        if (payeeAcc && payeeAcc.participantId) {
+          const res = await Db.from('participant').query(async builder => {
+            return builder
+              .where({
+                'participant.participantId': payeeAcc.participantId
+              })
+              .select('participant.*')
+              .first()
+          })
+          transferResult.payeeParticipantId = payeeAcc.participantId
+          transferResult.payeeFsp = res.name
+        }
+
+        return transferResult
+      }
+    }
+
     /** @namespace Db.transfer **/
     return await Db.from('transfer').query(async (builder) => {
       const transferResult = await builder
@@ -122,6 +167,16 @@ const getById = async (id) => {
 
 const getByIdLight = async (id) => {
   try {
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const transferResult = await Tb.tbLookupTransferMapped(id)
+      if (transferResult) {
+        transferResult.extensionList = await TBTransferExtensionModel.getByTransferId(id)
+        const ilpPacket = await TBIlp.getByTransferId(id)
+        if (ilpPacket) transferResult.ilpPacket = ilpPacket.value
+        return transferResult
+      }
+    }
+
     /** @namespace Db.transfer **/
     return await Db.from('transfer').query(async (builder) => {
       const transferResult = await builder
@@ -174,6 +229,8 @@ const getByIdLight = async (id) => {
 
 const getAll = async () => {
   try {
+    // TODO need the TB user-query engine to be completed.
+
     return await Db.from('transfer').query(async (builder) => {
       const transferResultList = await builder
         .where({
@@ -228,6 +285,15 @@ const getAll = async () => {
 
 const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
   try {
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const tbLookup = await Tb.tbLookupTransferMapped(id)
+      if (transferParticipantRoleTypeId === 1) { // <- PAYER_DFSP
+        return await Tb.tbLookupAccountMapped(tbLookup.payerParticipantCurrencyId)
+      } else { // 2 = <- PAYEE_DFSP
+        return await Tb.tbLookupAccountMapped(tbLookup.payeeParticipantCurrencyId)
+      }
+    }
+
     /** @namespace Db.transferParticipant **/
     return await Db.from('transferParticipant').query(async builder => {
       return builder
@@ -336,6 +402,12 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
       ['success', 'queryName']
     ).startTimer()
 
+    /* TODO const dbInsertTransferFulfilment = async (logHistogram, tbEnabled) => {
+      await knex.transaction(async (trx) => {
+
+      })
+    } */
+
     await knex.transaction(async (trx) => {
       try {
         if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT, TransferEventAction.RESERVE].includes(action)) {
@@ -356,6 +428,10 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::settlementWindowId')
         }
         if (isFulfilment) {
+          if (Config.TIGERBEETLE.enabled) {
+            await Tb.tbFulfilTransfer(transferFulfilmentRecord)
+          }
+
           await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
           result.transferFulfilmentRecord = transferFulfilmentRecord
           Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferFulfilment')
@@ -369,9 +445,13 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           result.transferExtensionRecordsList = transferExtensionRecordsList
           Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
         }
+
+        console.log('Now for state change.')
         await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
         result.transferStateChangeRecord = transferStateChangeRecord
         Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferStateChange')
+
+        console.log('Here it is state has changed.')
         if (fspiopError) {
           const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
             .where({ transferId })
@@ -386,6 +466,9 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
         result.savePayeeTransferResponseExecuted = true
         Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::success')
       } catch (err) {
+        console.log('ERROR!')
+        console.log(err)
+
         await trx.rollback()
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
         Logger.isErrorEnabled && Logger.error('savePayeeTransferResponse::failure')
@@ -401,6 +484,8 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
 }
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
+  console.info('JASON::: TB saveTransferPrepared BEGIN -> ')
+
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
     'facade_saveTransferPrepared - Metrics for transfer model',
@@ -459,46 +544,115 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
 
     const knex = await Db.getKnex()
+    console.info(`JASON::: TB Prepared Transfer Validation -> ${hasPassedValidation}!`)
+
     if (hasPassedValidation) {
       const histTimerSaveTranferTransactionValidationPassedEnd = Metrics.getHistogram(
         'model_transfer',
         'facade_saveTransferPrepared_transaction - Metrics for transfer model',
         ['success', 'queryName']
       ).startTimer()
-      return await knex.transaction(async (trx) => {
-        try {
-          await knex('transfer').transacting(trx).insert(transferRecord)
-          await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
-          await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
-          payerTransferParticipantRecord.name = payload.payerFsp
-          payeeTransferParticipantRecord.name = payload.payeeFsp
-          let transferExtensionsRecordList = []
-          if (payload.extensionList && payload.extensionList.extension) {
-            transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
-              return {
-                transferId: payload.transferId,
-                key: ext.key,
-                value: ext.value
-              }
-            })
-            await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+
+      const dbInsertTransfer = async (logHistogram, tbEnabled) => {
+        await knex.transaction(async (trx) => {
+          try {
+            await knex('transfer').transacting(trx).insert(transferRecord)
+            await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
+            await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
+            payerTransferParticipantRecord.name = payload.payerFsp
+            payeeTransferParticipantRecord.name = payload.payeeFsp
+            let transferExtensionsRecordList = []
+            if (payload.extensionList && payload.extensionList.extension) {
+              transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+                return {
+                  transferId: payload.transferId,
+                  key: ext.key,
+                  value: ext.value
+                }
+              })
+              await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+            }
+            await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
+            await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+            await trx.commit()
+            console.info('JASON::: TB Prepared Transfer SUCCESS for DB!')
+
+            logHistogram && histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
+          } catch (errDB) {
+            console.error(errDB)
+            await trx.rollback()
+            logHistogram && histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
+            throw errDB
           }
-          await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
-          await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-          await trx.commit()
+        })
+      }
+
+      if (Config.TIGERBEETLE.enabled) {
+        try {
+          await Tb.tbPrepareTransfer(
+            transferRecord,
+            payerTransferParticipantRecord,
+            payeeTransferParticipantRecord
+          )
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
-        } catch (err) {
-          await trx.rollback()
+          console.info('JASON::: TB Prepared Transfer!')
+        } catch (errTB) {
+          console.error('JASON::: Unable to store in TB!!!')
+          console.error(errTB)
           histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-          throw err
+          throw errTB
         }
-      })
+
+        // transfer is stored, now we store the ilpPacket and extensions:
+        await knex.transaction(async (trx) => {
+          try {
+            let transferExtensionsRecordList = []
+            if (payload.extensionList && payload.extensionList.extension) {
+              transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+                return {
+                  transferId: payload.transferId,
+                  key: ext.key,
+                  value: ext.value
+                }
+              })
+              await knex.batchInsert('tigerBeetleTransferExtension', transferExtensionsRecordList).transacting(trx)
+            }
+            const ilpPacketRecordTB = {
+              transferId: payload.transferId,
+              value: payload.ilpPacket,
+              ilpCondition: payload.condition
+            }
+            await knex('tigerBeetleIlpPacket').transacting(trx).insert(ilpPacketRecordTB)
+          } catch (errDB) {
+            console.error(errDB)
+            await trx.rollback()
+            try {
+              await Tb.tbVoidTransfer(payload.transferId)
+            } catch (errTB) {
+              console.error(errTB)
+              histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction_rollback_tb' })
+              throw errTB
+            }
+
+            histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
+            throw errDB
+          }
+        })
+
+        if (!Config.TIGERBEETLE.disableSQL) {
+          await dbInsertTransfer(false, true)
+        }
+      } else {
+        await dbInsertTransfer(true, false)
+      }
     } else {
+      // transfer in error state:
       const histTimerSaveTranferNoValidationEnd = Metrics.getHistogram(
         'model_transfer',
         'facade_saveTransferPrepared_no_validation - Metrics for transfer model',
         ['success', 'queryName']
       ).startTimer()
+      // TODO @jason, need to also store in TB...
       await knex('transfer').insert(transferRecord)
       try {
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
@@ -575,6 +729,11 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
 const getTransferStateByTransferId = async (id) => {
   try {
+    if (Config.TIGERBEETLE.enabled) {
+      // TODO lookup transfer in TB.. If found, we are good...
+      // TODO Need to update the node-js client to support fetching a transfer
+    }
+
     /** @namespace Db.transferStateChange **/
     return await Db.from('transferStateChange').query(async (builder) => {
       return builder
@@ -848,10 +1007,20 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       }
     }
 
-    if (trx) {
-      return await trxFunction(trx, false)
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const tbLookup = await Tb.tbLookupTransferMapped(param1.transferId)
+      const payerAcc = await Tb.tbLookupAccountMapped(tbLookup.payerParticipantCurrencyId)
+      return {
+        transferStateChangeId: '',
+        drPositionValue: new MLNumber(payerAcc.debitsPosted).toFixed(Config.AMOUNT.SCALE),
+        crPositionValue: new MLNumber(payerAcc.creditsPosted).toFixed(Config.AMOUNT.SCALE)
+      }
     } else {
-      return await knex.transaction(trxFunction)
+      if (trx) {
+        return await trxFunction(trx, false)
+      } else {
+        return await knex.transaction(trxFunction)
+      }
     }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -897,6 +1066,33 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           amount = -payload.amount.amount
         } else {
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Action not allowed for reconciliationTransferPrepare')
+        }
+
+        if (Config.TIGERBEETLE.enabled) {
+          // [HUB] Transfer
+          const transferRecord = {
+            transferId: payload.transferId,
+            amount: ledgerEntryTypeId === enums.ledgerEntryType.RECORD_FUNDS_IN ? amount : amount * -1,
+            currencyId: payload.amount.currency
+          }
+          const payerTransferParticipantRecord = {
+            ledgerEntryTypeId,
+            participantCurrencyId: (ledgerEntryTypeId === enums.ledgerEntryType.RECORD_FUNDS_IN)
+              ? reconciliationAccountId
+              : payload.participantCurrencyId
+          }
+          const payeeTransferParticipantRecord = {
+            ledgerEntryTypeId,
+            participantCurrencyId: (ledgerEntryTypeId === enums.ledgerEntryType.RECORD_FUNDS_IN)
+              ? payload.participantCurrencyId
+              : reconciliationAccountId
+          }
+          await Tb.tbPrepareTransfer(
+            transferRecord,
+            payerTransferParticipantRecord,
+            payeeTransferParticipantRecord,
+            Number(Config.INTERNAL_TRANSFER_VALIDITY_SECONDS)
+          )
         }
 
         // Insert transferParticipant records
@@ -952,12 +1148,20 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         }
         for (const transferExtension of transferExtensions) {
           await knex('transferExtension').insert(transferExtension).transacting(trx)
+
+          if (Config.TIGERBEETLE.enabled) {
+            await knex('tigerBeetleTransferExtension').insert(transferExtension).transacting(trx)
+          }
         }
 
         if (doCommit) {
           await trx.commit
         }
       } catch (err) {
+        console.error('JASON::: txFunction:::')
+        console.error(err)
+        console.error(payload)
+
         if (doCommit) {
           await trx.rollback
         }
@@ -972,6 +1176,8 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
+    console.error('JASON::: Fulfill')
+    console.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -1077,6 +1283,11 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     } else {
       await knex.transaction(trxFunction)
     }
+
+    if (Config.TIGERBEETLE.enabled) {
+      await Tb.tbFulfilTransfer(payload)
+    }
+
     return 0
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -1138,6 +1349,11 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     } else {
       await knex.transaction(trxFunction)
     }
+
+    if (Config.TIGERBEETLE.enabled) {
+      await Tb.tbVoidTransfer(payload.transferId)
+    }
+
     return 0
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -1146,6 +1362,11 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
 
 const getTransferParticipant = async (participantName, transferId) => {
   try {
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const tbLookup = await Tb.tbLookupTransferMapped(transferId)
+      return tbLookup
+    }
+
     return Db.from('participant').query(async (builder) => {
       return builder
         .where({
@@ -1161,6 +1382,8 @@ const getTransferParticipant = async (participantName, transferId) => {
         )
     })
   } catch (err) {
+    console.error('ERROR with Transfer lookup!')
+    console.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -1177,6 +1400,9 @@ const recordFundsIn = async (payload, transactionTimestamp, enums) => {
     } catch (err) {
       Logger.isErrorEnabled && Logger.error(err)
       await trx.rollback
+      if (Config.TIGERBEETLE.enabled) {
+        await Tb.tbVoidTransfer(payload.transferId)
+      }
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   })

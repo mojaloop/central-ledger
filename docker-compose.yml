@@ -95,6 +95,37 @@ services:
       start_period: 40s
       interval: 30s
 
+  tigerbeetle-setup:
+    image: ghcr.io/tigerbeetledb/tigerbeetle:debug
+    container_name: cl_tigerbeetle_setup
+    command: "format --cluster=0 --replica=0 --replica-count=1 /data/0_0.tigerbeetle"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ./docker/tigerbeetle:/data
+
+  tigerbeetle:
+    image: ghcr.io/tigerbeetledb/tigerbeetle:debug
+    container_name: cl_tigerbeetle
+    command: "start --addresses=0.0.0.0:5001 /data/0_0.tigerbeetle"
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ./docker/tigerbeetle:/data
+    networks:
+      - cl-mojaloop-net
+    ports:
+      - 5001:5001
+    depends_on:
+      - tigerbeetle-setup
+    healthcheck:
+      test: ["CMD", "/tigerbeetle" ,"version"]
+      timeout: 20s
+      retries: 10
+      start_period: 40s
+      interval: 30s
+
   mockserver:
     image: jamesdbloom/mockserver
     container_name: mockserver

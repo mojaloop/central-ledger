@@ -31,6 +31,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferError')
 const HelperModule = require('../../helpers')
+const Tb = require('../../../../src/lib/tb')
 
 Test('Transfer Error model test', async (transferErrorTest) => {
   let transferErrorPrepareResult = {}
@@ -90,6 +91,7 @@ Test('Transfer Error model test', async (transferErrorTest) => {
     try {
       await Cache.destroyCache()
       await Db.disconnect()
+      await Tb.tbDestroy()
       assert.pass('database connection closed')
       assert.end()
     } catch (err) {

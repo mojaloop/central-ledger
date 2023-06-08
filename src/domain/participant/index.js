@@ -719,6 +719,10 @@ const recordFundsInOut = async (payload, params, enums) => {
 }
 
 const validateHubAccounts = async (currency) => {
+  // TODO @jason need to create these two accounts in TigerBeetle...
+  // TODO 1. We need to use the [participantId] as user-data
+  // TODO 2. Id's should be random
+
   const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
   const hubReconciliationAccountExists = await ParticipantCurrencyModel.hubAccountExists(currency, ledgerAccountTypes.HUB_RECONCILIATION)
   if (!hubReconciliationAccountExists) {

@@ -211,10 +211,10 @@ jobs:
             # docker-compose build
 
             ## Lets pull only the Services needed for the Integration Test
-            docker-compose pull mysql kafka init-kafka
+            docker-compose pull mysql tigerbeetle kafka init-kafka
 
             ## Lets startup only the Services needed for the Integration Test
-            docker-compose up -d mysql kafka init-kafka
+            docker-compose up -d mysql tigerbeetle kafka init-kafka
 
             ## Check straight away to see if any containers have exited
             docker-compose ps
@@ -353,10 +353,10 @@ jobs:
           name: Build Docker local image
           command: |
             echo "Building Docker image: local"
-            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:local .
+            docker build -t mojaloop/$CIRCLE_PROJECT_REPONAME:local .
       - run:
           name: Save docker image to workspace
-          command: docker save -o /tmp/docker-image-local.tar $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:local
+          command: docker save -o /tmp/docker-image-local.tar mojaloop/$CIRCLE_PROJECT_REPONAME:local
       - persist_to_workspace:
           root: /tmp
           paths:

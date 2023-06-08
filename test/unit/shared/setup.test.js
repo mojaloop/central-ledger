@@ -3,6 +3,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Config = require('../../../src/lib/config')
+const Tb = require('../../../src/lib/tb')
 const Proxyquire = require('proxyquire')
 const MongoUriBuilder = require('mongo-uri-builder')
 
@@ -19,6 +20,7 @@ Test('setup', setupTest => {
   const hostName = 'http://test.com'
   let Setup
   let DbStub
+  let TbStub
   let CacheStub
   let ObjStoreStub
   // let ObjStoreStubThrows
@@ -66,6 +68,10 @@ Test('setup', setupTest => {
     DbStub = {
       connect: sandbox.stub().returns(Promise.resolve()),
       disconnect: sandbox.stub().returns(Promise.resolve())
+    }
+
+    TbStub = {
+      tbDestroy: sandbox.stub().returns(Promise.resolve())
     }
 
     CacheStub = {
@@ -126,6 +132,7 @@ Test('setup', setupTest => {
       '../handlers/register': RegisterHandlersStub,
       '../lib/db': DbStub,
       '../lib/cache': CacheStub,
+      '../lib/tb': TbStub,
       '@mojaloop/object-store-lib': ObjStoreStub,
       '../lib/migrator': MigratorStub,
       '../lib/requestLogger': requestLoggerStub,
@@ -187,6 +194,7 @@ Test('setup', setupTest => {
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
+        '../lib/tb': TbStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -237,6 +245,7 @@ Test('setup', setupTest => {
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
+        '../lib/tb': TbStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -351,6 +360,7 @@ Test('setup', setupTest => {
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
+        '../lib/tb': TbStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -382,6 +392,7 @@ Test('setup', setupTest => {
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
+        '../lib/tb': TbStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -414,6 +425,7 @@ Test('setup', setupTest => {
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
+        '../lib/tb': TbStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -448,6 +460,7 @@ Test('setup', setupTest => {
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
+        '../lib/tb': TbStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -680,6 +693,7 @@ Test('setup', setupTest => {
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
+        '../lib/tb': TbStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -729,6 +743,7 @@ Test('setup', setupTest => {
         test.fail(`Should have not received an error: ${err}`)
         test.end()
       })
+      Tb.tbDestroy()
     })
 
     initializeTest.end()

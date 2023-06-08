@@ -31,6 +31,7 @@
  */
 
 const Db = require('../../lib/db')
+const Tb = require('../../lib/tb')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const participantFacade = require('../participant/facade')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
@@ -43,6 +44,10 @@ const Config = require('../../lib/config')
 const Metrics = require('@mojaloop/central-services-metrics')
 
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
+  if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+    return
+  }
+
   const histTimerChangeParticipantPositionEnd = Metrics.getHistogram(
     'model_position',
     'facade_prepareChangeParticipantPositionTransaction - Metrics for position model',
@@ -265,6 +270,10 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
 }
 
 const changeParticipantPositionTransaction = async (participantCurrencyId, isReversal, amount, transferStateChange) => {
+  if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+    return
+  }
+
   const histTimerChangeParticipantPositionTransactionEnd = Metrics.getHistogram(
     'model_position',
     'facade_changeParticipantPositionTransaction - Metrics for position model',
@@ -329,6 +338,26 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
 
 const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null) => {
   try {
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const participantCurrencyId = await Db.from('participantCurrency').query(builder => {
+        return builder.innerJoin('participant AS p', 'participantCurrency.participantId', 'p.participantId')
+          .where({
+            'p.name': name,
+            'p.isActive': 1,
+            'pc.isActive': 1,
+            'pc.ledgerAccountTypeId': ledgerAccountTypeId
+          })
+          .where(q => {
+            if (currencyId !== null) {
+              return q.where('pc.currencyId', currencyId)
+            }
+          })
+          .select('participantCurrency.participantCurrencyId')
+      })
+      if (participantCurrencyId) return await Tb.tbLookupAccountMapped(participantCurrencyId)
+      else return {}
+    }
+
     return Db.from('participantPosition').query(builder => {
       return builder.innerJoin('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId')
         .innerJoin('participant AS p', 'pc.participantId', 'p.participantId')
@@ -343,8 +372,7 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
             return q.where('pc.currencyId', currencyId)
           }
         })
-        .select('participantPosition.*',
-          'pc.currencyId')
+        .select('participantPosition.*', 'pc.currencyId')
     })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
