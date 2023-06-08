@@ -369,8 +369,24 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
 
 const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
-    if (Config.TIGERBEETLE.enabled) {
-      // TODO return await Tb.tbLookupAccount(participantId, ledgerAccountTypeId, currencyId)
+    if (Config.TIGERBEETLE.enabled && Config.TIGERBEETLE.disableSQL) {
+      const participantCurrencyId = await Db.from('participantCurrency').query(builder => {
+        return builder.innerJoin('participant AS p', 'participantCurrency.participantId', 'p.participantId')
+          .where({
+            'p.participantId': participantId,
+            'p.isActive': 1,
+            'pc.isActive': 1,
+            'pc.ledgerAccountTypeId': ledgerAccountTypeId
+          })
+          .where(q => {
+            if (currencyId !== null) {
+              return q.where('pc.currencyId', currencyId)
+            }
+          })
+          .select('participantCurrency.participantCurrencyId')
+      })
+      if (participantCurrencyId) return await Tb.tbLookupAccountMapped(participantCurrencyId)
+      else return {}
     }
 
     return await Db.from('participant').query(async (builder) => {
