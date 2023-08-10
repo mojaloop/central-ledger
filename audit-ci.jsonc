@@ -31,5 +31,8 @@
     "GHSA-4jv9-3563-23j3", // https://github.com/advisories/GHSA-4jv9-3563-23j3
     // TODO: To be investigated
     "GHSA-rc47-6667-2j5j", // https://github.com/advisories/GHSA-rc47-6667-2j5j
+    "GHSA-8cf7-32gw-wr33", // https://github.com/advisories/GHSA-8cf7-32gw-wr33
+    "GHSA-h755-8qp9-cq85", // https://github.com/advisories/GHSA-h755-8qp9-cq85
+    "GHSA-2mvq-xp48-4c77" // https://github.com/advisories/GHSA-2mvq-xp48-4c77
   ]
 }
