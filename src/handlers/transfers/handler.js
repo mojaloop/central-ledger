@@ -43,6 +43,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const TransferService = require('../../domain/transfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Validator = require('./validator')
@@ -124,7 +125,7 @@ const prepare = async (error, messages) => {
           ? TransferEventType.BULK_PROCESSING
           : Enum.Events.ActionLetter.unknown)
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
-
+    
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const histTimerDuplicateCheckEnd = Metrics.getHistogram(
       'handler_transfers',
@@ -180,7 +181,8 @@ const prepare = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         try {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveTransfer'))
-          await TransferService.prepare(payload)
+          const context = await TransferService.prepare(payload)
+          message.value.content.context = context
         } catch (err) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}6`))
           Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
@@ -205,7 +207,8 @@ const prepare = async (error, messages) => {
         Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
         try {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
-          await TransferService.prepare(payload, reasons.toString(), false)
+          const context = await TransferService.prepare(payload, reasons.toString(), false)
+          message.value.content.context = context
         } catch (err) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}8`))
           Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
@@ -804,6 +807,7 @@ const getTransfer = async (error, messages) => {
  */
 const registerPrepareHandler = async () => {
   try {
+    await SettlementModelCached.initialize()
     const prepareHandler = {
       command: prepare,
       topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventAction.PREPARE),

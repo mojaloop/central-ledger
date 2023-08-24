@@ -37,6 +37,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferExtensionModel = require('./transferExtension')
+const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const ParticipantFacade = require('../participant/facade')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
@@ -407,47 +408,58 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     ['success', 'queryName']
   ).startTimer()
   try {
-    const participants = []
-    const names = [payload.payeeFsp, payload.payerFsp]
 
-    for (const name of names) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
-      if (participant) {
-        participants.push(participant)
+    // const participantName = payload.payerFsp
+    const currencyId = payload.amount.currency
+    const allSettlementModels = await SettlementModelCached.getAll()
+    let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
+    if (settlementModels.length === 0) {
+      settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+      if (settlementModels.length === 0) {
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
       }
     }
-    // TODO: Get Settlement Model and fetch the settlement accounts for the payer
-    // Add the following information to kafka message
-    // "context": {
-    //   "participants": { // The participants in the transfer
-    //       "payer": {
-    //           "id": "",
-    //           "accounts": {
-    //               "POSITION": {
-    //                   "id": "",
-    //                   "currency": ""
-    //               },
-    //               "SETTLEMENT": {
-    //                   "id": "",
-    //                   "currency": ""
-    //               }
-    //           }
-    //       },
-    //       "payee": {
-    //           "id": "",
-    //           "accounts": {
-    //               "POSITION": {
-    //                   "id": "",
-    //                   "currency": ""
-    //               }
-    //           }
-    //       }
-    //   },
-    //   "settlementModel": {},
-    //   "transactionObject": {} // Add if neccessary
+    const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+
+    const payerPositionCurrency = await ParticipantFacade.getByNameAndCurrency(payload.payerFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+    const payerSettlementCurrency = await ParticipantFacade.getByNameAndCurrency(payload.payerFsp, payload.amount.currency, settlementModel.settlementAccountTypeId)
+    const payeePositionCurrency = await ParticipantFacade.getByNameAndCurrency(payload.payeeFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+    // const payeeSettlementCurrency = await ParticipantFacade.getByNameAndCurrency(payload.payeeFsp, payload.amount.currency, settlementModel.settlementAccountTypeId)
+    const context = {}
+    context.settlementModel = settlementModel
+    context.participants = {
+      payer: {
+        id: payload.payerFsp,
+        accounts: {
+          POSITION: payerPositionCurrency,
+          SETTLEMENT: payerSettlementCurrency
+        }
+      },
+      payee: {
+        id: payload.payeeFsp,
+        accounts: {
+          POSITION: payeePositionCurrency,
+          // SETTLEMENT: payeeSettlementCurrency
+        }
+      }
+    }
+    // context.transactionObject = {} // Add if neccessary
+
+    const participantCurrencyIds = {}
+    participantCurrencyIds[payload.payerFsp] = payerPositionCurrency.participantCurrencyId
+    participantCurrencyIds[payload.payeeFsp] = payeePositionCurrency.participantCurrencyId
+
+    // const names = [payload.payeeFsp, payload.payerFsp]
+    // const participants = []
+    // for (const name of names) {
+    //   const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+    //   if (participant) {
+    //     participants.push(participant)
+    //   }
     // }
-    const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
-      _.set(m, acct.name, acct.participantCurrencyId), {})
+
+    // const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
+    //   _.set(m, acct.name, acct.participantCurrencyId), {})
 
     const transferRecord = {
       transferId: payload.transferId,
@@ -494,7 +506,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         'facade_saveTransferPrepared_transaction - Metrics for transfer model',
         ['success', 'queryName']
       ).startTimer()
-      return await knex.transaction(async (trx) => {
+      await knex.transaction(async (trx) => {
         try {
           await knex('transfer').transacting(trx).insert(transferRecord)
           await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
@@ -574,6 +586,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       }
     }
     histTimerSaveTransferPreparedEnd({ success: true, queryName: 'transfer_model_facade_saveTransferPrepared' })
+    return context
   } catch (err) {
     histTimerSaveTransferPreparedEnd({ success: false, queryName: 'transfer_model_facade_saveTransferPrepared' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
