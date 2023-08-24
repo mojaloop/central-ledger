@@ -416,7 +416,36 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         participants.push(participant)
       }
     }
-
+    // TODO: Get Settlement Model and fetch the settlement accounts for the payer
+    // Add the following information to kafka message
+    // "context": {
+    //   "participants": { // The participants in the transfer
+    //       "payer": {
+    //           "id": "",
+    //           "accounts": {
+    //               "POSITION": {
+    //                   "id": "",
+    //                   "currency": ""
+    //               },
+    //               "SETTLEMENT": {
+    //                   "id": "",
+    //                   "currency": ""
+    //               }
+    //           }
+    //       },
+    //       "payee": {
+    //           "id": "",
+    //           "accounts": {
+    //               "POSITION": {
+    //                   "id": "",
+    //                   "currency": ""
+    //               }
+    //           }
+    //       }
+    //   },
+    //   "settlementModel": {},
+    //   "transactionObject": {} // Add if neccessary
+    // }
     const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
       _.set(m, acct.name, acct.participantCurrencyId), {})
 
