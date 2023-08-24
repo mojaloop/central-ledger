@@ -114,7 +114,7 @@ const positions = async (error, messages) => {
       throw fspiopError
     }
     const kafkaTopic = message.topic
-    Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { method: 'positions' }))
+    Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, { method: 'positions' }))
 
     const actionLetter = action === Enum.Events.Event.Action.PREPARE
       ? Enum.Events.ActionLetter.prepare
@@ -146,23 +146,23 @@ const positions = async (error, messages) => {
     }
 
     if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.PREPARE, Enum.Events.Event.Action.BULK_PREPARE].includes(action)) {
-      Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'prepare' }))
+      Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, { path: 'prepare' }))
       const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
       for (const limit of limitAlarms) {
         // Publish alarm message to KafkaTopic for the Hub to consume as it is the Hub
         // rather than the switch to manage this (the topic is an participantEndpoint)
-        Logger.isInfoEnabled && Logger.info(`Limit alarm should be sent with ${limit}`)
+        Logger.isDebugEnabled && Logger.debug(`Limit alarm should be sent with ${limit}`)
       }
       if (Array.isArray(preparedMessagesList) && preparedMessagesList.length > 0) {
         const prepareMessage = preparedMessagesList[0]
         const { transferState, fspiopError } = prepareMessage
         if (transferState.transferStateId === Enum.Transfers.TransferState.RESERVED) {
-          Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payer--${actionLetter}1`))
+          Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, `payer--${actionLetter}1`))
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
           return true
         } else {
-          Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payerNotifyInsufficientLiquidity--${actionLetter}2`))
+          Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, `payerNotifyInsufficientLiquidity--${actionLetter}2`))
           const responseFspiopError = fspiopError || ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
           const fspiopApiError = responseFspiopError.toApiErrorObject(Config.ERROR_HANDLING)
           await TransferService.logTransferError(transferId, fspiopApiError.errorInformation.errorCode, fspiopApiError.errorInformation.errorDescription)
@@ -171,15 +171,15 @@ const positions = async (error, messages) => {
         }
       }
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
-      Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
+      Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, { path: 'commit' }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
-        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
+        Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid State: ${transferInfo.transferStateId} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
       } else {
-        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payee--${actionLetter}4`))
+        Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, `payee--${actionLetter}4`))
         const isReversal = false
         const transferStateChange = {
           transferId: transferInfo.transferId,
@@ -195,15 +195,15 @@ const positions = async (error, messages) => {
         return true
       }
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.REJECT, Enum.Events.Event.Action.ABORT, Enum.Events.Event.Action.ABORT_VALIDATION, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
-      Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: action }))
+      Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, { path: action }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       let transferStateId
 
       if (action === Enum.Events.Event.Action.REJECT) {
-        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `receivedReject--${actionLetter}5`))
+        Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, `receivedReject--${actionLetter}5`))
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
       } else { // action === Enum.Events.Event.Action.ABORT || action === Enum.Events.Event.Action.BULK_ABORT
-        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `receivedError--${actionLetter}5`))
+        Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, `receivedError--${actionLetter}5`))
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_ERROR
       }
       const isReversal = true
@@ -217,14 +217,14 @@ const positions = async (error, messages) => {
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
       return true
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
-      Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'timeout' }))
+      Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, { path: 'timeout' }))
       span.setTags({ transactionId: transferId })
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
-        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
+        Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
         throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
       } else {
-        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationPassed2--${actionLetter}7`))
+        Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, `validationPassed2--${actionLetter}7`))
         const isReversal = true
         const transferStateChange = {
           transferId: transferInfo.transferId,
@@ -237,7 +237,7 @@ const positions = async (error, messages) => {
         throw fspiopError
       }
     } else {
-      Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}8`))
+      Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}8`))
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${eventType})`)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.POSITION }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
