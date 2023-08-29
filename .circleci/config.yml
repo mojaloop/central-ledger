@@ -297,14 +297,14 @@ jobs:
           name: Install general dependencies
           command: *defaults_machine_Dependencies
       - checkout
-      - run:
-          <<: *defaults_configure_nvm
-      - run:
-          <<: *defaults_display_versions
       - restore_cache:
           key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - attach_workspace:
           at: /tmp
+      - run:
+          <<: *defaults_configure_nvm
+      - run:
+          <<: *defaults_display_versions
       - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
