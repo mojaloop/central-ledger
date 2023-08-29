@@ -112,10 +112,6 @@ defaults_configure_nvm: &defaults_configure_nvm
 
       echo "3. Executing $NVM_DIR/nvm.sh"
       [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-      # echo "4. Update $ENV_DOT_PROFILE"
-      # echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $ENV_DOT_PROFILE
-      # echo "export NVM_DIR=$NVM_DIR" >> $ENV_DOT_PROFILE
     fi
 
     ## Ref: https://github.com/nvm-sh/nvm/issues/1102#issuecomment-550572252
@@ -297,6 +293,9 @@ jobs:
     environment:
       <<: *defaults_environment
     steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_machine_Dependencies
       - checkout
       - run:
           <<: *defaults_configure_nvm
@@ -304,6 +303,8 @@ jobs:
           <<: *defaults_display_versions
       - restore_cache:
           key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+      - attach_workspace:
+          at: /tmp
       - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
