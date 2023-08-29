@@ -6,30 +6,24 @@
   "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
     // Currently no fixes available for the following
     "GHSA-v88g-cgmw-v5xw",
-    "GHSA-mg85-8mv5-ffjr",
-    "GHSA-phwq-j96m-2c2q",
-    "GHSA-7hx8-2rxv-66xv",
+    "GHSA-mg85-8mv5-ffjr",    
+    "GHSA-phwq-j96m-2c2q",    
+    "GHSA-7hx8-2rxv-66xv",    
     "GHSA-282f-qqgm-c34q",
     "GHSA-6vfc-qv3f-vr6c",
-    "GHSA-wc69-rhjr-hc9g",
-    "GHSA-f825-f98c-gj3g",
-    "GHSA-g954-5hwp-pp24",
-    "GHSA-rjqq-98f6-6j3r",
+    "GHSA-rjqq-98f6-6j3r",  
     "GHSA-mjxr-4v3x-q3m4",
     "GHSA-g64q-3vg8-8f93",
     "GHSA-5854-jvxx-2cg9",
     "GHSA-w5p7-h5w8-2hfq",
     "GHSA-p9pc-299p-vxgp",
-    // TODO: Investigate issue with json5 lib as this is due to an underlying dependant lib dependency.
-    "GHSA-9c47-m6qq-7p4h", // https://github.com/advisories/GHSA-9c47-m6qq-7p4h
     // TODO: Upgrade jsonwebtoken in the central-services-shared lib --> https://github.com/mojaloop/project/issues/3097
     "GHSA-qwph-4952-7xr6", // https://github.com/advisories/GHSA-qwph-4952-7xr6
     "GHSA-hjrf-2m68-5959", // https://github.com/advisories/GHSA-hjrf-2m68-5959
-    "GHSA-27h2-hvpr-p74q", // https://github.com/advisories/GHSA-27h2-hvpr-p74q
     // Knex dependency has been upgraded to v2.4x as advised by this advisory. Not sure why its still reporting it as an issue?
     // TODO: Investigate as to why this is still being reported even though Knex was upgraded! :(
     "GHSA-4jv9-3563-23j3", // https://github.com/advisories/GHSA-4jv9-3563-23j3
-    // TODO: To be investigated
-    "GHSA-rc47-6667-2j5j", // https://github.com/advisories/GHSA-rc47-6667-2j5j
+    "GHSA-8cf7-32gw-wr33",
+    "GHSA-2mvq-xp48-4c77"
   ]
 }
