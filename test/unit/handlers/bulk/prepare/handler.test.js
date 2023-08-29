@@ -43,6 +43,7 @@ const BulkTransferService = require('#src/domain/bulkTransfer/index')
 const BulkTransferModel = require('#src/models/bulkTransfer/bulkTransfer')
 const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTransfer
 const ilp = require('#src/models/transfer/ilpPacket')
+const KafkaLib = require('#src/lib/kafka')
 
 // Sample Bulk Transfer Message received by the Bulk API Adapter
 const fspiopBulkTransferMsg = {
@@ -204,6 +205,7 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
     sandbox.stub(Consumer, 'isConsumerAutoCommitEnabled').returns(false)
     sandbox.stub(ilp)
     sandbox.stub(Kafka)
+    sandbox.stub(KafkaLib)
     sandbox.stub(MainUtil.StreamingProtocol)
     Kafka.produceGeneralMessage.returns(Promise.resolve())
     test.end()
@@ -219,7 +221,7 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
       // Arrange
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      Kafka.proceed.returns(true)
+      KafkaLib.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
 
       // Act
@@ -258,7 +260,7 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
       // Arrange
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      Kafka.proceed.returns(true)
+      KafkaLib.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
 
       // Act
@@ -301,7 +303,7 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
 
         await Consumer.createHandler(topicName, config, command)
         Kafka.transformAccountToTopicName.returns(topicName)
-        Kafka.proceed.returns(true)
+        KafkaLib.proceed.returns(true)
 
         BulkTransferService.getBulkTransferDuplicateCheck.onCall(0).resolves({ id: bulkTransferPrepareMsg.bulkTransferId, hash: bulkTransferPrepareMsg.hash })
         BulkTransferService.saveBulkTransferDuplicateCheck.onCall(0).resolves(true)
@@ -331,11 +333,11 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
 
         // Assert
         test.equal(result, true)
-        test.equal(Kafka.proceed.lastCall.args[1]?.message?.value?.content?.payload?.bulkTransferState, Enum.Transfers.BulkTransferState.COMPLETED)
-        test.equal(Kafka.proceed.lastCall.args[1]?.message?.value?.content.uriParams.id, fspiopBulkTransferMsg.bulkTransferId)
-        test.equal(Kafka.proceed.lastCall.args[2]?.eventDetail?.action, Enum.Events.Event.Action.BULK_PREPARE_DUPLICATE)
-        test.equal(Kafka.proceed.lastCall.args[2]?.eventDetail?.functionality, Enum.Events.Event.Type.NOTIFICATION)
-        test.equal(Kafka.proceed.lastCall.args[2]?.fromSwitch, true)
+        test.equal(KafkaLib.proceed.lastCall.args[1]?.message?.value?.content?.payload?.bulkTransferState, Enum.Transfers.BulkTransferState.COMPLETED)
+        test.equal(KafkaLib.proceed.lastCall.args[1]?.message?.value?.content.uriParams.id, fspiopBulkTransferMsg.bulkTransferId)
+        test.equal(KafkaLib.proceed.lastCall.args[2]?.eventDetail?.action, Enum.Events.Event.Action.BULK_PREPARE_DUPLICATE)
+        test.equal(KafkaLib.proceed.lastCall.args[2]?.eventDetail?.functionality, Enum.Events.Event.Type.NOTIFICATION)
+        test.equal(KafkaLib.proceed.lastCall.args[2]?.fromSwitch, true)
         test.end()
       } catch (err) {
         // Assert
@@ -352,7 +354,7 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
 
         await Consumer.createHandler(topicName, config, command)
         Kafka.transformAccountToTopicName.returns(topicName)
-        Kafka.proceed.returns(true)
+        KafkaLib.proceed.returns(true)
 
         BulkTransferService.getBulkTransferDuplicateCheck.onCall(0).resolves({ id: bulkTransferPrepareMsg.bulkTransferId, hash: 'DO-NOT-MATCH-HASH' })
         BulkTransferService.saveBulkTransferDuplicateCheck.onCall(0).returns(Promise.resolve(true))
@@ -387,9 +389,9 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
       } catch (err) {
         // Assert
         console.log(err)
-        test.equal(Kafka.proceed.lastCall.args[2].fspiopError.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code)
-        test.equal(Kafka.proceed.lastCall.args[2].fspiopError.errorInformation.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.message)
-        test.equal(Kafka.proceed.lastCall.args[2]?.fromSwitch, true)
+        test.equal(KafkaLib.proceed.lastCall.args[2].fspiopError.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code)
+        test.equal(KafkaLib.proceed.lastCall.args[2].fspiopError.errorInformation.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.message)
+        test.equal(KafkaLib.proceed.lastCall.args[2]?.fromSwitch, true)
         test.same(err.apiErrorCode, ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
         test.end()
       }
@@ -402,7 +404,7 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
 
         await Consumer.createHandler(topicName, config, command)
         Kafka.transformAccountToTopicName.returns(topicName)
-        Kafka.proceed.returns(true)
+        KafkaLib.proceed.returns(true)
 
         Validator.validateBulkTransfer.returns(
           {

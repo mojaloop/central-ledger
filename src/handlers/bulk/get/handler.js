@@ -42,6 +42,7 @@ const BulkTransferService = require('../../../domain/bulkTransfer')
 const BulkTransferModel = require('../../../models/bulkTransfer/bulkTransfer')
 const Validator = require('../shared/validator')
 const { ERROR_HANDLING } = require('../../../lib/config')
+const KafkaLib = require('../../../lib/kafka')
 
 const location = { module: 'BulkGetHandler', method: '', path: '' }
 const consumerCommit = true
@@ -88,7 +89,7 @@ const getBulkTransfer = async (error, messages) => {
 
     if (!(await Validator.validateParticipantByName(message.value.from)).isValid) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd })
+      await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
@@ -97,7 +98,7 @@ const getBulkTransfer = async (error, messages) => {
     if (!bulkTransferLight) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorBulkTransferNotFound--${actionLetter}3`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.BULK_TRANSFER_ID_NOT_FOUND, 'Provided Bulk Transfer ID was not found on the server.')
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
     // The SD says this should be 404 response which I think will not be constent with single transfers
@@ -106,7 +107,7 @@ const getBulkTransfer = async (error, messages) => {
     if (![participants.payeeFsp, participants.payerFsp].includes(message.value.from)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
     const isPayeeRequest = participants.payeeFsp === message.value.from
@@ -129,9 +130,9 @@ const getBulkTransfer = async (error, messages) => {
     }
     message.value.content.payload = payload
     if (fspiopError) {
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(ERROR_HANDLING), eventDetail, fromSwitch })
+      await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(ERROR_HANDLING), eventDetail, fromSwitch })
     } else {
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+      await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
     }
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     return true

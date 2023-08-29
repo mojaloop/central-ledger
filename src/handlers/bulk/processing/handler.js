@@ -41,6 +41,7 @@ const Config = require('../../../lib/config')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTransfer
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const KafkaLib = require('../../../lib/kafka')
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
 
@@ -295,7 +296,7 @@ const bulkProcessing = async (error, messages) => {
           })
           const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, params.message.value.metadata.type, params.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
           params.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, payeeBulkResponse.destination, payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE], metadata, payeeBulkResponse.headers, payload)
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
+          await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         } else {
@@ -350,16 +351,16 @@ const bulkProcessing = async (error, messages) => {
         } else if ([Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
           eventDetail.action = Enum.Events.Event.Action.BULK_ABORT
         }
-        await Kafka.proceed(Config.KAFKA_CONFIG, payerParams, { consumerCommit, eventDetail })
+        await KafkaLib.proceed(Config.KAFKA_CONFIG, payerParams, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        await Kafka.proceed(Config.KAFKA_CONFIG, payeeParams, { consumerCommit, eventDetail })
+        await KafkaLib.proceed(Config.KAFKA_CONFIG, payeeParams, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED, null, null, null, payload.extensionList)
         eventDetail.action = Enum.Events.Event.Action.BULK_ABORT
         params.message.value.content.uriParams.id = bulkTransferInfo.bulkTransferId
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail })
+        await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail })
         throw fspiopError
       } else {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
@@ -367,7 +368,7 @@ const bulkProcessing = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}4`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${eventType})`).toApiErrorObject(Config.ERROR_HANDLING)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.BULK_PROCESSING }
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch })
+        await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
