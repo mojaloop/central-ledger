@@ -393,7 +393,7 @@ jobs:
           at: /tmp
       - run:
           name: Load the pre-built docker local image from workspace
-          command: docker load -i /tmp/docker-image-local.tar
+          command: docker load -i /tmp/docker-image.tar
       - run:
           name: Download the mojaloop/ml-core-test-harness repo
           command: |
@@ -491,7 +491,7 @@ jobs:
           at: /tmp
       - run:
           name: Load the pre-built docker local image from workspace
-          command: docker load -i /tmp/docker-image-local.tar
+          command: docker load -i /tmp/docker-image.tar
       - run:
           name: Re-tag the image
           command: |
