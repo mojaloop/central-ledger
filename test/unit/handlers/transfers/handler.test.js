@@ -1462,6 +1462,9 @@ Test('Transfer handler', transferHandlerTest => {
       }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].messageKey, 1)
       test.equal(result, true)
       test.end()
     })
