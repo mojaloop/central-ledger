@@ -42,7 +42,6 @@ const Validator = require('../../../../../src/handlers/bulk/shared/validator')
 const BulkTransferService = require('../../../../../src/domain/bulkTransfer')
 const BulkTransferModel = require('../../../../../src/models/bulkTransfer/bulkTransfer')
 const ilp = require('../../../../../src/models/transfer/ilpPacket')
-
 // const TransferState = Enum.Transfers.TransferState
 // const TransferInternalState = Enum.Transfers.TransferInternalState
 

@@ -20,7 +20,6 @@ const Clone = require('lodash').clone
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const Proxyquire = require('proxyquire')
-const Participant = require('../../../../src/domain/participant')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -173,18 +172,6 @@ Test('Position handler', transferHandlerTest => {
     sandbox.stub(KafkaConsumer.prototype, 'commitMessageSync').resolves()
     sandbox.stub(Consumer, 'getConsumer').returns({
       commitMessageSync: async function () { return true }
-    })
-    sandbox.stub(Participant, 'getAccountByNameAndCurrency').callsFake((...args) => {
-      if (args[0] === transfer.payerFsp) {
-        return {
-          participantCurrencyId: 0
-        }
-      }
-      if (args[0] === transfer.payeeFsp) {
-        return {
-          participantCurrencyId: 1
-        }
-      }
     })
     sandbox.stub(Validator)
     sandbox.stub(TransferService)
