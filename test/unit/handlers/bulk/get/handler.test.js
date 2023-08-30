@@ -38,11 +38,11 @@ const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consume
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
-const Validator = require('#src/handlers/bulk/shared/validator')
-const BulkTransferService = require('#src/domain/bulkTransfer')
-const BulkTransferModel = require('#src/models/bulkTransfer/bulkTransfer')
-const ilp = require('#src/models/transfer/ilpPacket')
-const KafkaLib = require('#src/lib/kafka')
+const Validator = require('../../../../../src/handlers/bulk/shared/validator')
+const BulkTransferService = require('../../../../../src/domain/bulkTransfer')
+const BulkTransferModel = require('../../../../../src/models/bulkTransfer/bulkTransfer')
+const ilp = require('../../../../../src/models/transfer/ilpPacket')
+const KafkaLib = require('../../../../../src/lib/kafka')
 
 // const TransferState = Enum.Transfers.TransferState
 // const TransferInternalState = Enum.Transfers.TransferInternalState

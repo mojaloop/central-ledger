@@ -388,7 +388,7 @@ const fulfil = async (error, messages) => {
        */
 
       // Publish message to Position Handler
-      const account = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+      const account = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
       await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, messageKey: account.participantCurrencyId })
 
       /**
@@ -419,6 +419,7 @@ const fulfil = async (error, messages) => {
           }
         }
         message.value.content.payload = reservedAbortedPayload
+        const account = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail: reserveAbortedEventDetail, messageKey: account.participantCurrencyId, fromSwitch: true })
       }
 
@@ -445,7 +446,7 @@ const fulfil = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'handleResend'))
 
       // This is a duplicate message for a transfer that is already in a finalized state
-      // respond as if we recieved a GET /transfers/{ID} from the client
+      // respond as if we received a GET /transfers/{ID} from the client
       if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
         message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
         const eventDetail = { functionality, action }
@@ -555,7 +556,7 @@ const fulfil = async (error, messages) => {
       /**
        * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
        */
-      const account = await Participant.getAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+      const account = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
       await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, messageKey: account.participantCurrencyId })
 
       // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
@@ -586,6 +587,7 @@ const fulfil = async (error, messages) => {
           }
         }
         message.value.content.payload = reservedAbortedPayload
+        const account = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: account.participantCurrencyId, fromSwitch: true })
       }
       throw fspiopError
@@ -614,7 +616,7 @@ const fulfil = async (error, messages) => {
           transferState: TransferState.ABORTED
         }
         message.value.content.payload = reservedAbortedPayload
-        const account = await Participant.getAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+        const account = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: account.participantCurrencyId, fromSwitch: true })
       }
       throw fspiopError
@@ -643,7 +645,7 @@ const fulfil = async (error, messages) => {
           transferState: TransferState.ABORTED
         }
         message.value.content.payload = reservedAbortedPayload
-        const account = await Participant.getAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+        const account = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: account.participantCurrencyId, fromSwitch: true })
       }
       throw fspiopError
@@ -658,7 +660,7 @@ const fulfil = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
         await TransferService.handlePayeeResponse(transferId, payload, action)
         const eventDetail = { functionality: TransferEventType.POSITION, action }
-        const account = await Participant.getAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+        const account = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: account.participantCurrencyId })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
@@ -690,13 +692,13 @@ const fulfil = async (error, messages) => {
           fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
           await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
           const eventDetail = { functionality: TransferEventType.POSITION, action }
-          const account = await Participant.getAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+          const account = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
           await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, messageKey: account.participantCurrencyId })
           throw fspiopError
         }
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
         const eventDetail = { functionality: TransferEventType.POSITION, action }
-        const account = await Participant.getAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+        const account = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, messageKey: account.participantCurrencyId })
         // TODO(2556): I don't think we should emit an extra notification here
         // this is the case where the Payee sent an ABORT, so we don't need to tell them to abort
