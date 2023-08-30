@@ -81,7 +81,7 @@
     "@hapi/vision": "7.0.3",
     "@mojaloop/central-services-database": "10.7.0",
     "@mojaloop/central-services-error-handling": "12.0.7",
-    "@mojaloop/central-services-health": "14.0.2",
+    "@mojaloop/central-services-health": "14.0.1",
     "@mojaloop/central-services-logger": "11.2.2",
     "@mojaloop/central-services-metrics": "12.0.8",
     "@mojaloop/central-services-shared": "17.5.1",
