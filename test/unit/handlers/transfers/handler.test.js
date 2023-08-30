@@ -51,7 +51,6 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const Proxyquire = require('proxyquire')
 const { getMessagePayloadOrThrow } = require('../../../util/helpers')
-const KafkaLib = require('../../../../src/lib/kafka')
 const Participant = require('../../../../src/domain/participant')
 
 const transfer = {
@@ -314,7 +313,6 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(Consumer, 'isConsumerAutoCommitEnabled').returns(false)
     sandbox.stub(ilp)
     sandbox.stub(Kafka)
-    sandbox.stub(KafkaLib)
     sandbox.stub(MainUtil.StreamingProtocol)
     sandbox.stub(TransferObjectTransform, 'toTransfer')
     sandbox.stub(TransferObjectTransform, 'toFulfil')
@@ -345,7 +343,7 @@ Test('Transfer handler', transferHandlerTest => {
       // here copy
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -354,7 +352,7 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
-      const kafkaCallOne = KafkaLib.proceed.getCall(0)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
       test.equal(kafkaCallOne.args[2].messageKey, 0)
       test.equal(result, true)
       test.end()
@@ -374,7 +372,7 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
-      const kafkaCallOne = KafkaLib.proceed.getCall(0)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
       test.equal(kafkaCallOne.args[2].messageKey, 0)
       test.equal(result, true)
       test.end()
@@ -384,7 +382,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.getByIdLight.returns(Promise.resolve(null))
       TransferService.prepare.returns(Promise.resolve(true))
@@ -405,7 +403,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.getByIdLight.returns(Promise.resolve(null))
       TransferService.prepare.returns(Promise.resolve(true))
@@ -425,7 +423,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.getByIdLight.returns(Promise.resolve(null))
       TransferService.prepare.returns(Promise.resolve(true))
@@ -445,7 +443,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -466,7 +464,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -489,7 +487,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -509,7 +507,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -530,7 +528,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -550,7 +548,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -570,7 +568,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, configAutocommit, command)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -589,7 +587,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -607,7 +605,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -626,7 +624,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -644,7 +642,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -662,7 +660,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.throws(new Error())
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -681,7 +679,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, configAutocommit, command)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.throws(new Error())
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -699,7 +697,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
       Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
@@ -719,7 +717,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, configAutocommit, command)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
       Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
@@ -739,7 +737,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
       TransferService.prepare.throws(new Error())
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -758,7 +756,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, configAutocommit, command)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
       TransferService.prepare.throws(new Error())
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -808,7 +806,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
       const result = await allTransferHandlers.registerGetTransferHandler(null, localMessages)
       test.equal(result, true)
@@ -836,7 +834,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
       const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
@@ -847,7 +845,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
@@ -884,7 +882,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
@@ -898,7 +896,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
@@ -913,7 +911,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(false)
@@ -928,7 +926,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(false)
@@ -943,7 +941,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
@@ -957,7 +955,7 @@ Test('Transfer handler', transferHandlerTest => {
     transformTransfer.test('log an error when the transfer state is EXPIRED_RESERVED', async (test) => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
-      KafkaLib.proceed.returns(Promise.resolve(true))
+      Kafka.proceed.returns(Promise.resolve(true))
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
       const transferResult = MainUtil.clone(transferReturn)
@@ -973,7 +971,7 @@ Test('Transfer handler', transferHandlerTest => {
     transformTransfer.test('log an error when general message cannot be produced', async (test) => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
-      KafkaLib.proceed.throws(new Error())
+      Kafka.proceed.throws(new Error())
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
       const transferResult = MainUtil.clone(transferReturn)
@@ -1020,14 +1018,14 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       Validator.validateFulfilCondition.returns(true)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
       // Assert
-      test.ok(KafkaLib.proceed.calledTwice, 'KafkaLib.proceed was called twice')
-      const reservedAbortedPayload = getMessagePayloadOrThrow(KafkaLib.proceed.getCall(1).args[1].message)
+      test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
+      const reservedAbortedPayload = getMessagePayloadOrThrow(Kafka.proceed.getCall(1).args[1].message)
       test.equal(reservedAbortedPayload.transferState, 'ABORTED')
       test.ok(reservedAbortedPayload.transferId, 'payload.transferId is defined')
       test.ok(reservedAbortedPayload.completedTimestamp, 'payload.completedTimestamp is defined')
@@ -1059,14 +1057,14 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       Validator.validateFulfilCondition.returns(true)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
       // Assert
-      test.ok(KafkaLib.proceed.calledTwice, 'KafkaLib.proceed was called twice')
-      const reservedAbortedPayload = getMessagePayloadOrThrow(KafkaLib.proceed.getCall(1).args[1].message)
+      test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
+      const reservedAbortedPayload = getMessagePayloadOrThrow(Kafka.proceed.getCall(1).args[1].message)
       test.equal(reservedAbortedPayload.transferState, 'ABORTED')
       test.ok(reservedAbortedPayload.transferId, 'payload.transferId is defined')
       test.ok(reservedAbortedPayload.completedTimestamp, 'payload.completedTimestamp is defined')
@@ -1098,14 +1096,14 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       Validator.validateFulfilCondition.returns(false)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
       // Assert
-      test.ok(KafkaLib.proceed.calledTwice, 'KafkaLib.proceed was called twice')
-      const reservedAbortedPayload = getMessagePayloadOrThrow(KafkaLib.proceed.getCall(1).args[1].message)
+      test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
+      const reservedAbortedPayload = getMessagePayloadOrThrow(Kafka.proceed.getCall(1).args[1].message)
       test.equal(reservedAbortedPayload.transferState, 'ABORTED')
       test.ok(reservedAbortedPayload.transferId, 'payload.transferId is defined')
       test.ok(reservedAbortedPayload.completedTimestamp, 'payload.completedTimestamp is defined')
@@ -1120,7 +1118,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve(null))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1132,7 +1130,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve(null))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1145,7 +1143,7 @@ Test('Transfer handler', transferHandlerTest => {
       Consumer.getConsumer.throws(new Error())
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve(null))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1158,7 +1156,7 @@ Test('Transfer handler', transferHandlerTest => {
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve(null))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1176,7 +1174,7 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'fspdoesnotexist'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
@@ -1184,10 +1182,10 @@ Test('Transfer handler', transferHandlerTest => {
       // Assert
 
       test.equal(result, true)
-      test.ok(KafkaLib.proceed.calledOnce, 'KafkaLib.proceed was called once')
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
 
       // fetch kafka proceed arguments
-      const kafkaCallOne = KafkaLib.proceed.getCall(0)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
 
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
@@ -1211,17 +1209,17 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
       // Assert
       test.equal(result, true)
-      test.ok(KafkaLib.proceed.calledOnce, 'KafkaLib.proceed was called once')
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
 
       // fetch kafka proceed arguments
-      const kafkaCallOne = KafkaLib.proceed.getCall(0)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
 
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
@@ -1246,17 +1244,17 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
       // Assert
       test.equal(result, true)
-      test.ok(KafkaLib.proceed.calledOnce, 'KafkaLib.proceed was called once')
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
 
       // fetch kafka proceed arguments
-      const kafkaCallOne = KafkaLib.proceed.getCall(0)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
 
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
@@ -1283,7 +1281,7 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.1'
       localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
       localfulfilMessages[0].value.metadata.event.action = Enum.Events.Event.Action.RESERVE
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
@@ -1291,11 +1289,11 @@ Test('Transfer handler', transferHandlerTest => {
       // Assert
 
       test.equal(result, true)
-      test.ok(KafkaLib.proceed.calledTwice, 'KafkaLib.proceed was called twice')
+      test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
 
       // fetch kafka proceed arguments
-      const kafkaCallOne = KafkaLib.proceed.getCall(0)
-      const kafkaCallTwo = KafkaLib.proceed.getCall(1)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      const kafkaCallTwo = Kafka.proceed.getCall(1)
 
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
@@ -1328,18 +1326,18 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.1'
       localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
       localfulfilMessages[0].value.metadata.event.action = Enum.Events.Event.Action.RESERVE
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
       // Assert
       test.equal(result, true)
-      test.ok(KafkaLib.proceed.calledTwice, 'KafkaLib.proceed was called twice')
+      test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
 
       // fetch kafka proceed arguments
-      const kafkaCallOne = KafkaLib.proceed.getCall(0)
-      const kafkaCallTwo = KafkaLib.proceed.getCall(1)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      const kafkaCallTwo = Kafka.proceed.getCall(1)
 
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
@@ -1370,7 +1368,7 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1397,7 +1395,7 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1425,7 +1423,7 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1454,7 +1452,7 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1484,7 +1482,7 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1513,7 +1511,7 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[1].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[1].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[1].value.content.payload.fulfilment = 'condition'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1543,7 +1541,7 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[1].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[1].value.content.payload = errInfo
       localfulfilMessages[1].value.metadata.event.action = 'bulk-abort'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1570,7 +1568,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferState.RESERVED
       }))
       ilp.update.returns(Promise.resolve())
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1603,7 +1601,7 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -1631,7 +1629,7 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1682,7 +1680,7 @@ Test('Transfer handler', transferHandlerTest => {
     //   }))
     //   ilp.update.returns(Promise.resolve())
     //   Validator.validateFulfilCondition.returns(true)
-    //   KafkaLib.proceed.returns(true)
+    //   Kafka.proceed.returns(true)
     //   localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
     //   localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
@@ -1713,7 +1711,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferState.COMMITTED })
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1736,7 +1734,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferState.COMMITTED,
         transferStateEnumeration: TransferState.COMMITTED
       }))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1766,7 +1764,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferState.COMMITTED,
         transferStateEnumeration: TransferState.COMMITTED
       }))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1796,7 +1794,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferInternalState.RECEIVED_FULFIL,
         transferStateEnumeration: TransferState.RECEIVED
       }))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1826,7 +1824,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1856,7 +1854,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferInternalState.ABORTED_REJECTED,
         transferStateEnumeration: TransferState.ABORTED
       }))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1886,7 +1884,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: undefined,
         transferStateEnumeration: undefined
       }))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1916,7 +1914,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1946,7 +1944,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferInternalState.ABORTED_ERROR,
         transferStateEnumeration: TransferState.ABORTED
       }))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1977,7 +1975,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferInternalState.ABORTED_ERROR,
         transferStateEnumeration: TransferState.ABORTED
       }))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -2008,7 +2006,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferInternalState.ABORTED_ERROR,
         transferStateEnumeration: TransferState.ABORTED
       }))
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -2041,7 +2039,7 @@ Test('Transfer handler', transferHandlerTest => {
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       invalidEventMessage.value.content.headers['fspiop-destination'] = 'dfsp1'
       invalidEventMessage.value.metadata.event.action = 'reject'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -2071,7 +2069,7 @@ Test('Transfer handler', transferHandlerTest => {
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       invalidEventMessage.value.content.headers['fspiop-destination'] = 'dfsp1'
       invalidEventMessage.value.metadata.event.action = 'reject'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -2106,7 +2104,7 @@ Test('Transfer handler', transferHandlerTest => {
         }
       })
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -2135,7 +2133,7 @@ Test('Transfer handler', transferHandlerTest => {
       invalidEventMessage.value.metadata.event.action = 'abort'
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       invalidEventMessage.value.content.headers['fspiop-destination'] = 'dfsp1'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -2165,7 +2163,7 @@ Test('Transfer handler', transferHandlerTest => {
       invalidEventMessage.value.content.payload = errInfo
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       invalidEventMessage.value.content.headers['fspiop-destination'] = 'dfsp1'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
@@ -2203,7 +2201,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       invalidEventMessage.value.metadata.event.action = 'invalid event'
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
         payeeFsp: 'dfsp1',
@@ -2231,7 +2229,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformGeneralTopicName.returns(topicName)
       invalidEventMessage.value.metadata.event.action = 'invalid event'
       invalidEventMessage.value.content.payload = { extensionList: {} }
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, [invalidEventMessage])
       test.equal(result, true)
@@ -2271,7 +2269,7 @@ Test('Transfer handler', transferHandlerTest => {
     registerHandlersTest.test('register all consumers on Kafka', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       const result = await allTransferHandlers.registerAllHandlers()
@@ -2282,7 +2280,7 @@ Test('Transfer handler', transferHandlerTest => {
     registerHandlersTest.test('register a consumer on Kafka', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       const result = await allTransferHandlers.registerAllHandlers()
@@ -2294,7 +2292,7 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Kafka.transformAccountToTopicName.returns(topicName)
-        KafkaLib.proceed.returns(true)
+        Kafka.proceed.returns(true)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.throws(new Error())
 
@@ -2311,7 +2309,7 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Kafka.transformAccountToTopicName.returns(topicName)
-        KafkaLib.proceed.returns(true)
+        Kafka.proceed.returns(true)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.throws(new Error())
 

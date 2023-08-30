@@ -20,7 +20,6 @@ const Clone = require('lodash').clone
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const Proxyquire = require('proxyquire')
-const KafkaLib = require('../../../../src/lib/kafka')
 const Participant = require('../../../../src/domain/participant')
 
 const transfer = {
@@ -175,7 +174,6 @@ Test('Position handler', transferHandlerTest => {
     sandbox.stub(Consumer, 'getConsumer').returns({
       commitMessageSync: async function () { return true }
     })
-    sandbox.stub(KafkaLib)
     sandbox.stub(Participant, 'getAccountByNameAndCurrency').callsFake((...args) => {
       if (args[0] === transfer.payerFsp) {
         return {
@@ -284,7 +282,7 @@ Test('Position handler', transferHandlerTest => {
       const message = { ...MainUtil.clone(messages[0]) }
       message.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
       delete message.value.content.uriParams
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       // Act
       try {
@@ -307,7 +305,7 @@ Test('Position handler', transferHandlerTest => {
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
         const m = Object.assign({}, MainUtil.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
-        KafkaLib.proceed.returns(true)
+        Kafka.proceed.returns(true)
 
         const result = await allTransferHandlers.positions(null, [m])
         Logger.info(result)
@@ -336,7 +334,7 @@ Test('Position handler', transferHandlerTest => {
         }],
         limitAlarms: []
       })
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, Object.assign({}, messages[1]))
       Logger.info(result)
@@ -359,7 +357,7 @@ Test('Position handler', transferHandlerTest => {
       })
       const message = MainUtil.clone(messages[0])
       message.value.content.payload = {}
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, Object.assign({}, message))
       Logger.info(result)
@@ -379,7 +377,7 @@ Test('Position handler', transferHandlerTest => {
         }],
         limitAlarms: [participantLimit]
       })
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
       Logger.info(result)
@@ -399,7 +397,7 @@ Test('Position handler', transferHandlerTest => {
         }],
         limitAlarms: []
       })
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
       Logger.info(result)
@@ -419,7 +417,7 @@ Test('Position handler', transferHandlerTest => {
         }],
         limitAlarms: []
       })
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, messages)
       Logger.info(result)
@@ -441,7 +439,7 @@ Test('Position handler', transferHandlerTest => {
         }],
         limitAlarms: []
       })
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
       Logger.info(result)
@@ -465,7 +463,7 @@ Test('Position handler', transferHandlerTest => {
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
       m.value.metadata.event.action = transferEventAction.COMMIT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -491,7 +489,7 @@ Test('Position handler', transferHandlerTest => {
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
       m.value.metadata.event.action = transferEventAction.COMMIT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -511,7 +509,7 @@ Test('Position handler', transferHandlerTest => {
         TransferStateChange.saveTransferStateChange.resolves(true)
 
         m.value.metadata.event.action = transferEventAction.REJECT
-        KafkaLib.proceed.returns(true)
+        Kafka.proceed.returns(true)
 
         const result = await allTransferHandlers.positions(null, m)
         Logger.info(result)
@@ -533,7 +531,7 @@ Test('Position handler', transferHandlerTest => {
         .returns(Object.assign({}, transferInfo, { transferStateId: 'RECEIVED_ERROR' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       m.value.metadata.event.action = transferEventAction.ABORT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -550,7 +548,7 @@ Test('Position handler', transferHandlerTest => {
         .returns(Object.assign({}, transferInfo, { transferStateId: 'REJECT' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       m.value.metadata.event.action = transferEventAction.REJECT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -575,7 +573,7 @@ Test('Position handler', transferHandlerTest => {
         .returns(Object.assign({}, transferInfo, { transferStateId: TransferInternalState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       m.value.metadata.event.action = transferEventAction.REJECT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -601,7 +599,7 @@ Test('Position handler', transferHandlerTest => {
         .returns(Object.assign({}, transferInfo, { transferStateId: TransferInternalState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       m.value.metadata.event.action = transferEventAction.REJECT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -621,7 +619,7 @@ Test('Position handler', transferHandlerTest => {
         .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       m.value.metadata.event.action = transferEventAction.COMMIT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, [m])
       Logger.info(result)
@@ -638,7 +636,7 @@ Test('Position handler', transferHandlerTest => {
         .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       m.value.metadata.event.action = transferEventAction.REJECT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -665,7 +663,7 @@ Test('Position handler', transferHandlerTest => {
         .returns(Object.assign({}, transferInfo, { transferStateId: TransferInternalState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       m.value.metadata.event.action = transferEventAction.REJECT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -682,7 +680,7 @@ Test('Position handler', transferHandlerTest => {
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
         const m = Object.assign({}, MainUtil.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
-        KafkaLib.proceed.returns(true)
+        Kafka.proceed.returns(true)
 
         const result = await allTransferHandlers.positions(null, [m])
         Logger.info(result)
@@ -706,7 +704,7 @@ Test('Position handler', transferHandlerTest => {
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
         const m = Object.assign({}, MainUtil.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
-        KafkaLib.proceed.returns(true)
+        Kafka.proceed.returns(true)
 
         const result = await allTransferHandlers.positions(null, [m])
         Logger.info(result)
@@ -729,7 +727,7 @@ Test('Position handler', transferHandlerTest => {
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
         const m = Object.assign({}, MainUtil.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
-        KafkaLib.proceed.returns(true)
+        Kafka.proceed.returns(true)
 
         const result = await allTransferHandlers.positions(null, [m])
         Logger.info(result)
@@ -777,7 +775,7 @@ Test('Position handler', transferHandlerTest => {
       })
       const m = Object.assign({}, MainUtil.clone(messages[1]))
       m.value.metadata.event.action = transferEventAction.BULK_PREPARE
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, Object.assign({}, m))
       Logger.info(result)
@@ -801,7 +799,7 @@ Test('Position handler', transferHandlerTest => {
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
       m.value.metadata.event.action = transferEventAction.BULK_COMMIT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -825,7 +823,7 @@ Test('Position handler', transferHandlerTest => {
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange).resolves(true)
       m.value.metadata.event.action = transferEventAction.BULK_ABORT
-      KafkaLib.proceed.returns(true)
+      Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -840,7 +838,7 @@ Test('Position handler', transferHandlerTest => {
         Kafka.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         messages[0].value.metadata.event.action = 'invalid'
-        KafkaLib.proceed.returns(true)
+        Kafka.proceed.returns(true)
 
         const result = await allTransferHandlers.positions(null, messages)
         Logger.info(result)
@@ -861,7 +859,7 @@ Test('Position handler', transferHandlerTest => {
         Kafka.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         messages[0].value.metadata.event.action = 'invalid'
-        KafkaLib.proceed.returns(true)
+        Kafka.proceed.returns(true)
 
         const result = await allTransferHandlers.positions(null, messages)
         Logger.info(result)

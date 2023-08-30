@@ -45,7 +45,6 @@ const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTran
 const encodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.encodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const KafkaLib = require('../../../lib/kafka')
 
 const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var object used as pointer
 
@@ -146,15 +145,15 @@ const bulkPrepare = async (error, messages) => {
         params.message.value.content.payload = payload
         params.message.value.content.uriParams = { id: bulkTransferId }
         if (fspiopError) {
-          await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         } else {
-          await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
         }
         return true
       } else {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'inProgress'))
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
-        await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
         return true
       }
     }
@@ -166,7 +165,7 @@ const bulkPrepare = async (error, messages) => {
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       params.message.value.content.uriParams = { id: bulkTransferId }
 
-      await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
 
@@ -184,7 +183,7 @@ const bulkPrepare = async (error, messages) => {
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
         params.message.value.content.uriParams = { id: bulkTransferId }
 
-        await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
       }
       try {
@@ -213,7 +212,7 @@ const bulkPrepare = async (error, messages) => {
           }
           params = { message: msg, kafkaTopic, consumer: Consumer, producer: Producer }
           const eventDetail = { functionality: Enum.Events.Event.Type.PREPARE, action: Enum.Events.Event.Action.BULK_PREPARE }
-          await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
       } catch (err) { // handle individual transfers streaming error
@@ -222,7 +221,7 @@ const bulkPrepare = async (error, messages) => {
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
         params.message.value.content.uriParams = { id: bulkTransferId }
 
-        await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
       }
     } else { // handle validation failure
@@ -258,7 +257,7 @@ const bulkPrepare = async (error, messages) => {
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
         params.message.value.content.uriParams = { id: bulkTransferId }
 
-        await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
       }
       // produce validation error callback notification to payer
@@ -267,7 +266,7 @@ const bulkPrepare = async (error, messages) => {
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       params.message.value.content.uriParams = { id: bulkTransferId }
 
-      await KafkaLib.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw validationFspiopError
     }
   } catch (err) {
