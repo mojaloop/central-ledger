@@ -1195,7 +1195,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].messageKey, 1)
+      test.equal(kafkaCallOne.args[2].messageKey, 0)
 
       test.end()
     })
@@ -1229,7 +1229,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].messageKey, 1)
+      test.equal(kafkaCallOne.args[2].messageKey, 0)
 
       test.end()
     })
@@ -1264,7 +1264,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].messageKey, 1)
+      test.equal(kafkaCallOne.args[2].messageKey, 0)
 
       test.end()
     })
@@ -1303,14 +1303,13 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].messageKey, 1)
+      test.equal(kafkaCallOne.args[2].messageKey, 0)
 
       // lets check if the outbound event is sent to the notifications with the correct status
       test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
       test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
       test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
       test.equal(kafkaCallTwo.args[2].fromSwitch, true)
-      test.equal(kafkaCallTwo.args[2].messageKey, 1)
 
       test.end()
     })
@@ -1348,14 +1347,13 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].messageKey, 1)
+      test.equal(kafkaCallOne.args[2].messageKey, 0)
 
       // lets check if the outbound event is sent to the notifications with the correct status
       test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
       test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
       test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
       test.equal(kafkaCallTwo.args[2].fromSwitch, true)
-      test.equal(kafkaCallTwo.args[2].messageKey, 1)
 
       test.end()
     })
