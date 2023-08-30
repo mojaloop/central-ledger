@@ -101,7 +101,7 @@
     "commander": "11.0.0",
     "cron": "2.4.3",
     "decimal.js": "10.4.3",
-    "docdash": "2.0.1",
+    "docdash": "2.0.2",
     "event-stream": "4.0.1",
     "five-bells-condition": "5.0.1",
     "glob": "8.1.0",

@@ -26,7 +26,7 @@ const proceed = async (defaultKafkaConfig, params, opts) => {
   }
 
   if (eventDetail && producer) {
-    await Kafka.produceGeneralMessage(defaultKafkaConfig, producer, eventDetail.functionality, eventDetail.action, message.value, metadataState, messageKey.toString(), span)
+    await Kafka.produceGeneralMessage(defaultKafkaConfig, producer, eventDetail.functionality, eventDetail.action, message.value, metadataState, messageKey?.toString(), span)
   }
   return true
 }
