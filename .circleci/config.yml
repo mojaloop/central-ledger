@@ -398,7 +398,7 @@ jobs:
       - run:
           name: Download the mojaloop/ml-core-test-harness repo
           command: |
-            git clone --depth 1 --branch v0.0.3 https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
+            git clone --depth 1 --branch main https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
       - run:
           name: Execute TTK functional tests
           command: |
