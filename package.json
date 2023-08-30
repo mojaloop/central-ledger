@@ -85,7 +85,7 @@
     "@mojaloop/central-services-logger": "11.2.2",
     "@mojaloop/central-services-metrics": "12.0.8",
     "@mojaloop/central-services-shared": "17.5.1",
-    "@mojaloop/central-services-stream": "11.1.1",
+    "@mojaloop/central-services-stream": "11.0.0",
     "@mojaloop/event-sdk": "11.0.2",
     "@mojaloop/ml-number": "11.2.3",
     "@mojaloop/object-store-lib": "12.0.0",
