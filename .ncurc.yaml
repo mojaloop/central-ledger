@@ -6,6 +6,6 @@ reject: [
   "ilp-packet",
   # TODO: v6+ (ref: https://github.com/sindresorhus/get-port/releases/tag/v6.0.0) is an ESM library and thus not compatible with CommonJS. Future story needed to resolve.
   "get-port",
-  # TODO: Glob v9.x introducing a dependency Package "path-scurry@1.6.1" which is licensed under "BlueOak-1.0.0" which is not permitted by the Mojaloop License Policy
-  "glob"
+  # TODO: v11.1.1 introduces a bug in functional test. Future story needed to resolve.
+  "@mojaloop/central-services-stream"
 ]
