@@ -390,6 +390,8 @@ jobs:
       - checkout
       - run:
           <<: *defaults_configure_nvmrc
+      - run:
+          <<: *defaults_display_versions
       - attach_workspace:
           at: /tmp
       - run:
@@ -468,6 +470,8 @@ jobs:
       - run:
           <<: *defaults_configure_nvmrc
       - run:
+          <<: *defaults_display_versions
+      - run:
           name: Build Docker local image
           command: |
             source ~/.profile
@@ -490,6 +494,8 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp
+      - run:
+          <<: *defaults_display_versions
       - run:
           name: Load the pre-built docker local image from workspace
           command: docker load -i /tmp/docker-image.tar
