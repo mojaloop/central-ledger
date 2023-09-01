@@ -140,7 +140,7 @@ class TestConsumer {
     }
 
     if (keyFilter !== undefined) {
-      events = events.filter(e => e.key === keyFilter)
+      events = events.filter(e => e.key.toString() === keyFilter)
     }
 
     if (events.length === 0) {
