@@ -8,8 +8,8 @@ ML_CORE_TEST_HARNESS_VERSION=${ML_CORE_TEST_HARNESS_VERSION:-"v1.1.1"}
 ML_CORE_TEST_HARNESS_GIT=${ML_CORE_TEST_HARNESS_GIT:-"https://github.com/mojaloop/ml-core-test-harness.git"}
 ML_CORE_TEST_HARNESS_TEST_PROV_CONT_NAME=${ML_CORE_TEST_HARNESS_TEST_PROV_CONT_NAME:-"ttk-func-ttk-provisioning-1"}
 ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME=${ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME:-"ttk-func-ttk-tests-1"}
-ML_CORE_TEST_HARNESS_DIR=${ML_CORE_TEST_HARNESS_DIR:-"/tmp/ml-central-ledger-core-test-harness"}
-ML_CORE_TEST_SHUTDOWN=${ML_CORE_TEST_SHUTDOWN:-"true"}
+ML_CORE_TEST_HARNESS_DIR=${ML_CORE_TEST_HARNESS_DIR:-"/tmp/ml-api-adapter-core-test-harness"}
+ML_CORE_TEST_SKIP_SHUTDOWN=${ML_CORE_TEST_SKIP_SHUTDOWN:-false}
 
 echo "==> Variables:"
 echo "====> ML_API_ADAPTER_VERSION=$ML_API_ADAPTER_VERSION"
@@ -18,7 +18,7 @@ echo "====> ML_CORE_TEST_HARNESS_GIT=$ML_CORE_TEST_HARNESS_GIT"
 echo "====> ML_CORE_TEST_HARNESS_TEST_PROV_CONT_NAME=$ML_CORE_TEST_HARNESS_TEST_PROV_CONT_NAME"
 echo "====> ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME=$ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME"
 echo "====> ML_CORE_TEST_HARNESS_DIR=$ML_CORE_TEST_HARNESS_DIR"
-echo "====> ML_CORE_TEST_SHUTDOWN=$ML_CORE_TEST_SHUTDOWN"
+echo "====> ML_CORE_TEST_SKIP_SHUTDOWN=$ML_CORE_TEST_SKIP_SHUTDOWN"
 
 echo "==> Cloning $ML_CORE_TEST_HARNESS_GIT:$ML_CORE_TEST_HARNESS_VERSION into dir=$ML_CORE_TEST_HARNESS_DIR"
 git clone --depth 1 --branch $ML_CORE_TEST_HARNESS_VERSION $ML_CORE_TEST_HARNESS_GIT $ML_CORE_TEST_HARNESS_DIR
@@ -36,12 +36,15 @@ pushd $ML_CORE_TEST_HARNESS_DIR
   mkdir ./reports
 
   ## Start the test harness
-  docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
+  echo "==> Starting Docker compose"
+  docker compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
 
+  echo "==> Running wait-for-container.sh $ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME"
   ## Wait for the test harness to complete, and capture the exit code
   bash wait-for-container.sh $ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME
   ## Capture exit code for test harness
   TTK_FUNC_TEST_EXIT_CODE="$?"
+  echo "==> wait-for-container.sh exited with code: $TTK_FUNC_TEST_EXIT_CODE"
 
   ## Copy the test results
   docker logs $ML_CORE_TEST_HARNESS_TEST_PROV_CONT_NAME > ./reports/ttk-provisioning-console.log
@@ -52,11 +55,11 @@ pushd $ML_CORE_TEST_HARNESS_DIR
   # export TTK_FUNC_TEST_EXIT_CODE=$(docker inspect $ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME --format='{{.State.ExitCode}}')
 
   ## Shutdown the test harness
-  if [ $ML_CORE_TEST_SHUTDOWN -eq "true" ]; then
-    echo "==> Shutting down test harness"
-    docker-compose -p ttk-func --ansi never down
-  else
+  if [ $ML_CORE_TEST_SKIP_SHUTDOWN ]; then
     echo "==> Skipping test harness shutdown"
+  else
+    echo "==> Shutting down test harness"
+    docker compose -p ttk-func --ansi never down
   fi
 
   ## Dump log to console
