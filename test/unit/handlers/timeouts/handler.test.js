@@ -135,6 +135,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
 
       for (const message of produceGeneralMessageCalls) {
         if (message.args[2] === 'position') {
+          // Check message key matches payer account id
           test.equal(message.args[6], '0')
         }
       }
