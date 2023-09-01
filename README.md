@@ -159,8 +159,9 @@ If you want to run functional tests locally utilizing the [ml-core-test-harness]
   Or access TTK UI using the following URI: <http://localhost:9660>
 
   TTK Test files:
-      - Test Collection: ./IGNORE/ml-core-test-harness/docker/ml-testing-toolkit/test-cases/collections/tests/p2p.json
-      - Env Config: ./IGNORE/ml-core-test-harness/docker/ml-testing-toolkit/test-cases/environments/default-env.json
+
+  - Test Collection: ./IGNORE/ml-core-test-harness/docker/ml-testing-toolkit/test-cases/collections/tests/p2p.json
+  - Env Config: ./IGNORE/ml-core-test-harness/docker/ml-testing-toolkit/test-cases/environments/default-env.json
 
 ## Development environment
 

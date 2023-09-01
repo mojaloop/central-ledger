@@ -7,5 +7,5 @@ reject: [
   # TODO: v6+ (ref: https://github.com/sindresorhus/get-port/releases/tag/v6.0.0) is an ESM library and thus not compatible with CommonJS. Future story needed to resolve.
   "get-port",
   # TODO: v11.1.1 introduces a bug in functional test. Future story needed to resolve.
-  "@mojaloop/central-services-stream"
+  #"@mojaloop/central-services-stream"
 ]
