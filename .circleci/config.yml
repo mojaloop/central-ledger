@@ -482,31 +482,6 @@ jobs:
           paths:
             - ./docker-image.tar
 
-  build:
-    executor: default-machine
-    environment:
-      <<: *defaults_environment
-    steps:
-      - attach_workspace:
-          at: /tmp
-      - run:
-          <<: *defaults_display_versions
-      - run:
-          name: Load the pre-built docker local image from workspace
-          command: docker load -i /tmp/docker-image.tar
-      - run:
-          name: Re-tag the image
-          command: |
-            echo "Re-tagging Docker image: $CIRCLE_TAG"
-            docker tag ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
-      - run:
-          name: Save the new docker image to workspace
-          command: docker save -o /tmp/docker-image.tar ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
-      - persist_to_workspace:
-          root: /tmp
-          paths:
-            - ./docker-image.tar
-
   license-scan:
     executor: default-machine
     environment:
@@ -521,7 +496,7 @@ jobs:
           <<: *defaults_license_scanner
       - run:
           name: Run the license-scanner
-          command: cd /tmp/license-scanner && mode=docker dockerImages=${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG make run
+          command: cd /tmp/license-scanner && mode=docker dockerImages=${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local make run
       - store_artifacts:
           path: /tmp/license-scanner/results
           destination: licenses
@@ -582,7 +557,7 @@ jobs:
       - anchore/analyze_local_image:
           # Force the older version, version 0.7.0 was just published, and is broken
           anchore_version: v0.6.1
-          image_name: "docker.io/node:${NVMRC_VERSION}-alpine ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+          image_name: "docker.io/node:${NVMRC_VERSION}-alpine ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local"
           policy_failure: false
           timeout: '500'
           # Note: if the generated policy is invalid, this will fallback to the default policy, which we don't want!
@@ -1002,29 +977,10 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
-      - build:
-          context: org-global
-          requires:
-            - setup
-            - test-dependencies
-            - test-lint
-            - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
-            - vulnerability-check
-            - audit-licenses
-            - build-local
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
-            branches:
-              ignore:
-                - /.*/
       - license-scan:
           context: org-global
           requires:
-            - build
+            - build-local
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
@@ -1034,7 +990,7 @@ workflows:
       - image-scan:
           context: org-global
           requires:
-            - build
+            - build-local
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
@@ -1074,12 +1030,12 @@ workflows:
       - publish-docker:
           context: org-global
           requires:
+            - build-local
             - pr-tools/pr-title-check
             ## Only do this check on PRs
             # - test-dependencies
             - test-lint
             - test-unit
-            - build
             - test-coverage
             - test-integration
             - test-functional
@@ -1096,12 +1052,12 @@ workflows:
       - publish-docker-snapshot:
           context: org-global
           requires:
+            - build-local
             - pr-tools/pr-title-check
             ## Only do this check on PRs
             # - test-dependencies
             - test-lint
             - test-unit
-            - build
             - test-coverage
             - test-integration
             - test-functional
