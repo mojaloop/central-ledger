@@ -419,6 +419,8 @@ jobs:
 
   test-functional:
     executor: default-machine
+    environment:
+      ML_CORE_TEST_HARNESS_DIR: /tmp/ml-core-test-harness
     steps:
       - checkout
       - attach_workspace:
@@ -430,7 +432,7 @@ jobs:
           name: Execute TTK functional tests
           command: bash ./test/scripts/test-functional.sh
       - store_artifacts:
-          path: /tmp/ml-central-ledger-core-test-harness/reports
+          path: /tmp/ml-core-test-harness/reports
           destination: test
 
   vulnerability-check:
