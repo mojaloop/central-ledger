@@ -8,7 +8,7 @@ version: 2.1
 ##
 orbs:
   anchore: anchore/anchore-engine@1.9.0
-  slack: circleci/slack@4.12.5 # Ref: https://github.com/mojaloop/ci-config/tree/master/slack-templates
+  slack: circleci/slack@4.12.5 # Ref: https://github.com/mojaloop/ci-config/tree/main/slack-templates
   pr-tools: mojaloop/pr-tools@0.1.10 # Ref: https://github.com/mojaloop/ci-config/
   gh: circleci/github-cli@2.2.0
 
@@ -62,7 +62,7 @@ defaults_npm_publish_release: &defaults_npm_publish_release
 defaults_export_version_from_package: &defaults_export_version_from_package
   name: Format the changelog into the github release body and get release tag
   command: |
-    git diff --no-indent-heuristic master~1 HEAD CHANGELOG.md | sed -n '/^+[^+]/ s/^+//p' > /tmp/changes
+    git diff --no-indent-heuristic main~1 HEAD CHANGELOG.md | sed -n '/^+[^+]/ s/^+//p' > /tmp/changes
     echo 'export RELEASE_CHANGES=`cat /tmp/changes`' >> $BASH_ENV
     echo 'export RELEASE_TAG=`cat package-lock.json | jq -r .version`' >> $BASH_ENV
 
@@ -140,7 +140,7 @@ defaults_display_versions: &defaults_display_versions
 
 defaults_environment: &defaults_environment
   ## env var for nx to set main branch
-  MAIN_BRANCH_NAME: master
+  MAIN_BRANCH_NAME: main
   ## Disable LIBRDKAFKA build since we install it via general dependencies
   BUILD_LIBRDKAFKA: 0
 
@@ -895,7 +895,6 @@ workflows:
               ignore: /.*/
             branches:
               ignore:
-                - master
                 - main
       - test-lint:
           context: org-global
@@ -1026,7 +1025,7 @@ workflows:
             branches:
               ignore:
                 - /.*/
-      # New commits to master release automatically
+      # New commits to main release automatically
       - release:
           context: org-global
           requires:
@@ -1045,7 +1044,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
                 - /release\/v.*/
       - github-release:
           context: org-global
@@ -1054,7 +1053,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
                 - /release\/v.*/
       - publish-docker:
           context: org-global

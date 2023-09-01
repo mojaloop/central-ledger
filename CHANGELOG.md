@@ -72,7 +72,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Features
 
-* **mojaloop/#2880:** simplify liquidity cover check and fix issue with validation (for master) ([#918](https://github.com/mojaloop/central-ledger/issues/918)) ([825faf7](https://github.com/mojaloop/central-ledger/commit/825faf7c1c918b12eddedeb97eea0a2d563457e4))
+* **mojaloop/#2880:** simplify liquidity cover check and fix issue with validation (for main) ([#918](https://github.com/mojaloop/central-ledger/issues/918)) ([825faf7](https://github.com/mojaloop/central-ledger/commit/825faf7c1c918b12eddedeb97eea0a2d563457e4))
 
 ## [16.2.0](https://github.com/mojaloop/central-ledger/compare/v16.1.0...v16.2.0) (2022-08-15)
 
