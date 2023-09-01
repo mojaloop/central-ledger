@@ -32,6 +32,35 @@ The following documentation represents the services, APIs and endpoints responsi
   - [Automated Releases](#automated-releases)
     - [Potential problems](#potential-problems)
 
+## Docker Image
+
+### Official Packaged Release
+
+This package is available as a pre-built docker image on Docker Hub: [https://hub.docker.com/r/mojaloop/central-ledger](https://hub.docker.com/r/mojaloop/central-ledger)
+
+### Build from Source
+
+You can also build it directly from source: [https://github.com/mojaloop/central-ledger](hhttps://github.com/mojaloop/central-ledger)
+
+However, take note of the default argument in the [Dockerfile](./Dockerfile) for `NODE_VERSION`:
+
+```dockerfile
+ARG NODE_VERSION=lts-alpine
+```
+
+It is recommend that you set the `NODE_VERSION` argument against the version set in the local [.nvmrc](./.nvmrc).
+
+This can be done using the following command:
+
+```bash
+export NODE_VERSION="$(cat .nvmrc)-alpine"
+
+docker build \
+   --build-arg NODE_VERSION=$NODE_VERSION \
+   -t mojaloop/central-ledger:local \
+   .
+```
+
 ## Running Locally
 
 Please follow the instruction in [Onboarding Document](Onboarding.md) to setup and run the service locally.
@@ -140,28 +169,38 @@ If you want to run integration tests in a repetitive manner, you can startup the
 
 If you want to run functional tests locally utilizing the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness), you can run the following commands:
 
-  ```bash
-  git clone --depth 1 --branch v0.0.2 https://github.com/mojaloop/ml-core-test-harness.git ./IGNORE/ml-core-test-harness
-  ```
+```bash
+docker build -t mojaloop/central-ledger:local .
+```
 
-  ```bash
-  docker build -t mojaloop/central-ledger:local .
-  ```
+```bash
+npm run test:functional
+```
 
-  ```bash
-  cd IGNORE/ml-core-test-harness
-  export CENTRAL_LEDGER_VERSION=local
-  docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
-  ```
+By default this will clone the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness) into `$ML_CORE_TEST_HARNESS_DIR`.
 
-  Check test container logs for test results
+See default values as specified in the [test-functional.sh](./test/scripts/test-functional.sh) script.
 
-  Or access TTK UI using the following URI: <http://localhost:9660>
+Check test container logs for test results into `$ML_CORE_TEST_HARNESS_DIR` directory.
 
-  TTK Test files:
+If you want to not have the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness) shutdown automatically by the script, make sure you set the following env var `export ML_CORE_TEST_SKIP_SHUTDOWN=true`.
 
-  - Test Collection: ./IGNORE/ml-core-test-harness/docker/ml-testing-toolkit/test-cases/collections/tests/p2p.json
-  - Env Config: ./IGNORE/ml-core-test-harness/docker/ml-testing-toolkit/test-cases/environments/default-env.json
+By doing so, you are then able access TTK UI using the following URI: <http://localhost:9660>.
+
+Or alternatively, you can monitor the `ttk-func-ttk-tests-1` (See `ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME` in the [test-functional.sh](./test/scripts/test-functional.sh) script) container for test results with the following command:
+
+```bash
+docker logs -f ttk-func-ttk-tests-1
+```
+
+TTK Test files:
+
+- **Test Collection**: `$ML_CORE_TEST_HARNESS_DIR/docker/ml-testing-toolkit/test-cases/collections/tests/p2p.json`
+- **Env Config**: `$ML_CORE_TEST_HARNESS_DIR//docker/ml-testing-toolkit/test-cases/environments/default-env.json`
+
+Configuration modifiers:
+
+- **central-ledger**: [./docker/config-modifier/configs/central-ledger.js](./docker/config-modifier/configs/central-ledger.js)
 
 ## Development environment
 
