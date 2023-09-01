@@ -50,15 +50,15 @@ ARG NODE_VERSION=lts-alpine
 
 It is recommend that you set the `NODE_VERSION` argument against the version set in the local [.nvmrc](./.nvmrc).
 
-This can be done using the following command:
+This can be done using the following command: `npm run docker:build`
+
+Or via docker build directly:
 
 ```bash
-export NODE_VERSION="$(cat .nvmrc)-alpine"
-
 docker build \
-   --build-arg NODE_VERSION=$NODE_VERSION \
-   -t mojaloop/central-ledger:local \
-   .
+  --build-arg NODE_VERSION="$(cat .nvmrc)-alpine" \
+  -t mojaloop/ml-api-adapter:local \
+  .
 ```
 
 ## Running Locally
