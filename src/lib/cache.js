@@ -1,6 +1,6 @@
 'use strict'
 
-const CatboxMemory = require('catbox-memory')
+const CatboxMemory = require('@hapi/catbox-memory')
 const Config = require('../lib/config')
 
 let enabled = true
@@ -31,7 +31,7 @@ class CacheClient {
   }
 
   set (key, value) {
-    catboxMemoryClient.set(key, value, ttl)
+    catboxMemoryClient.set(key, value, parseInt(ttl))
   }
 
   drop (key) {
@@ -62,9 +62,7 @@ const initCache = async function () {
   enabled = Config.CACHE_CONFIG.CACHE_ENABLED
 
   // Init catbox.
-  // Note: The strange looking "module.exports.CatboxMemory" reference
-  // simplifies the setup of tests.
-  catboxMemoryClient = new module.exports.CatboxMemory({
+  catboxMemoryClient = new CatboxMemory.Engine({
     maxByteSize: Config.CACHE_CONFIG.MAX_BYTE_SIZE
   })
   catboxMemoryClient.start()

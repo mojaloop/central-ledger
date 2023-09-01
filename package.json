@@ -17,7 +17,8 @@
     "Sam Kummary <sam@modusbox.com>",
     "Shashikant Hirugade <shashikant.hirugade@modusbox.com>",
     "Steven Oderayi <steven.oderayi@modusbox.com>",
-    "Valentin Genev <valentin.genev@modusbox.com>"
+    "Valentin Genev <valentin.genev@modusbox.com>",
+    "Aaron Reynoza <aaron.reynoza@infitx.com"
   ],
   "repository": {
     "type": "git",
@@ -79,7 +80,8 @@
     "@hapi/hapi": "21.3.2",
     "@hapi/inert": "7.1.0",
     "@hapi/joi": "17.1.1",
-    "@hapi/vision": "7.0.3",
+    "@hapi/vision": "7.0.1",
+    "@hapi/catbox-memory": "6.0.1",
     "@mojaloop/central-services-database": "10.7.0",
     "@mojaloop/central-services-error-handling": "12.0.7",
     "@mojaloop/central-services-health": "14.0.2",
@@ -95,9 +97,8 @@
     "ajv-keywords": "5.1.0",
     "base64url": "3.0.1",
     "blipp": "4.0.2",
-    "catbox-memory": "4.0.1",
-    "commander": "11.0.0",
-    "cron": "2.4.3",
+    "commander": "10.0.0",
+    "cron": "2.3.0",
     "decimal.js": "10.4.3",
     "docdash": "2.0.2",
     "event-stream": "4.0.1",
