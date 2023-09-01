@@ -361,45 +361,6 @@ Test('Handlers test', async handlersTest => {
         Enum.Events.Event.Action.EVENT.toUpperCase()
       )
     }
-    // {
-    //   topicName: Utility.transformGeneralTopicName(
-    //     Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
-    //     Enum.Events.Event.Type.POSITION,
-    //     Enum.Events.Event.Action.PREPARE
-    //   ),
-    //   config: Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.CONSUMER,
-    //     Enum.Events.Event.Type.TRANSFER.toUpperCase(),
-    //     Enum.Events.Event.Action.POSITION.toUpperCase()
-    //   )
-    // },
-    // {
-    //   topicName: Utility.transformGeneralTopicName(
-    //     Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
-    //     Enum.Events.Event.Type.POSITION,
-    //     Enum.Events.Event.Action.FULFIL
-    //   ),
-    //   config: Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.CONSUMER,
-    //     Enum.Events.Event.Type.TRANSFER.toUpperCase(),
-    //     Enum.Events.Event.Action.POSITION.toUpperCase()
-    //   )
-    // },
-    // {
-    //   topicName: Utility.transformGeneralTopicName(
-    //     Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
-    //     Enum.Events.Event.Type.POSITION,
-    //     Enum.Events.Event.Action.TIMEOUT_RESERVED
-    //   ),
-    //   config: Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.CONSUMER,
-    //     Enum.Events.Event.Type.TRANSFER.toUpperCase(),
-    //     Enum.Events.Event.Action.POSITION.toUpperCase()
-    //   )
-    // }
   ])
 
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
@@ -426,7 +387,7 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferPrepare should', async transferPrepare => {
-    await transferPrepare.test('Should create transfer position prepare message with payer currency account id', async (test) => {
+    await transferPrepare.test('should create position prepare message keyed with payer account id', async (test) => {
       // Arrange
       const td = await prepareTestData(testData)
       // 1. send a PREPARE request (from Payer)
@@ -526,6 +487,18 @@ Test('Handlers test', async handlersTest => {
       //   action: 'abort'
       // })))[0]
       // test.ok(payerAbortNotification, 'Payer Abort notification sent')
+
+      try {
+        const positionAbort = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'abort',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionAbort[0], 'Position abort message with key found')
+      } catch (err) {
+        console.log(err)
+        test.ok('No payee abort notification sent')
+      }
 
       // Cleanup
       testConsumer.clearEvents()
@@ -628,6 +601,18 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
 
+      try {
+        const positionAbort = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'abort',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionAbort[0], 'Position abort message with key found')
+      } catch (err) {
+        console.log(err)
+        test.ok('No payee abort notification sent')
+      }
+
       // Cleanup
       testConsumer.clearEvents()
       test.end()
@@ -720,6 +705,17 @@ Test('Handlers test', async handlersTest => {
         )
       } catch (err) {
         test.notOk('No payeeAbortNotification was sent')
+      }
+      try {
+        const positionAbort = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'abort',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionAbort[0], 'Position abort message with key found')
+      } catch (err) {
+        console.log(err)
+        test.ok('No payee abort notification sent')
       }
 
       // Cleanup
@@ -929,7 +925,10 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      test.end()
+    })
 
+    await transferFulfilCommit.test('position fulfil should be keyed with payer account id', async (test) => {
       try {
         const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-transfer-position',
@@ -941,7 +940,6 @@ Test('Handlers test', async handlersTest => {
         console.log(err)
         test.ok('No payee abort notification sent')
       }
-
       test.end()
     })
 
@@ -1173,18 +1171,6 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        const positionTimeout = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-          topicFilter: 'topic-transfer-position',
-          action: 'abort',
-          keyFilter: td.payer.participantCurrencyId.toString()
-        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionTimeout[0], 'Position abort message with key found')
-      } catch (err) {
-        console.log(err)
-        test.ok('No payee abort notification sent')
-      }
-
-      try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
@@ -1196,6 +1182,21 @@ Test('Handlers test', async handlersTest => {
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
+      }
+      test.end()
+    })
+
+    await transferAbort.test('transfer position abort should be keyed with payer account id', async (test) => {
+      try {
+        const positionTimeout = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'abort',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionTimeout[0], 'Position abort message with key found')
+      } catch (err) {
+        console.log(err)
+        test.ok('No position abort sent')
       }
       test.end()
     })
@@ -1295,18 +1296,6 @@ Test('Handlers test', async handlersTest => {
         }
       }
 
-      try {
-        const positionTimeout = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-          topicFilter: 'topic-transfer-position',
-          action: 'timeout-reserved',
-          keyFilter: td.payer.participantCurrencyId.toString()
-        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionTimeout[0], 'Position timeout message with key found')
-      } catch (err) {
-        console.log(err)
-        test.ok('No payee abort notification sent')
-      }
-
       // wait until we inspect a transfer with the correct status, or return false if all re-try attempts have failed
       const result = await wrapWithRetries(inspectTransferState, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
@@ -1321,6 +1310,21 @@ Test('Handlers test', async handlersTest => {
         test.pass()
         test.end()
       }
+    })
+
+    await timeoutTest.test('position timeout should be keyed with payer account id', async (test) => {
+      try {
+        const positionTimeout = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'timeout-reserved',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionTimeout[0], 'Position timeout message with key found')
+      } catch (err) {
+        console.log(err)
+        test.ok('No position timeout sent')
+      }
+      test.end()
     })
 
     await timeoutTest.test('position resets after a timeout', async (test) => {
