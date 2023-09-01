@@ -55,7 +55,7 @@ pushd $ML_CORE_TEST_HARNESS_DIR
   # export TTK_FUNC_TEST_EXIT_CODE=$(docker inspect $ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME --format='{{.State.ExitCode}}')
 
   ## Shutdown the test harness
-  if [ $ML_CORE_TEST_SKIP_SHUTDOWN ]; then
+  if [ $ML_CORE_TEST_SKIP_SHUTDOWN == true ]; then
     echo "==> Skipping test harness shutdown"
   else
     echo "==> Shutting down test harness"
