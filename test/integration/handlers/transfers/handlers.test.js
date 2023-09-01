@@ -73,10 +73,10 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
-const debug = process?.env?.TEST_INT_DEBUG || false
-const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
-const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
-const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
+const debug = process?.env?.test_INT_DEBUG || false
+const rebalanceDelay = process?.env?.test_INT_REBALANCE_DELAY || 10000
+const retryDelay = process?.env?.test_INT_RETRY_DELAY || 2
+const retryCount = process?.env?.test_INT_RETRY_COUNT || 40
 const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
@@ -361,6 +361,45 @@ Test('Handlers test', async handlersTest => {
         Enum.Events.Event.Action.EVENT.toUpperCase()
       )
     }
+    // {
+    //   topicName: Utility.transformGeneralTopicName(
+    //     Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+    //     Enum.Events.Event.Type.POSITION,
+    //     Enum.Events.Event.Action.PREPARE
+    //   ),
+    //   config: Utility.getKafkaConfig(
+    //     Config.KAFKA_CONFIG,
+    //     Enum.Kafka.Config.CONSUMER,
+    //     Enum.Events.Event.Type.TRANSFER.toUpperCase(),
+    //     Enum.Events.Event.Action.POSITION.toUpperCase()
+    //   )
+    // },
+    // {
+    //   topicName: Utility.transformGeneralTopicName(
+    //     Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+    //     Enum.Events.Event.Type.POSITION,
+    //     Enum.Events.Event.Action.FULFIL
+    //   ),
+    //   config: Utility.getKafkaConfig(
+    //     Config.KAFKA_CONFIG,
+    //     Enum.Kafka.Config.CONSUMER,
+    //     Enum.Events.Event.Type.TRANSFER.toUpperCase(),
+    //     Enum.Events.Event.Action.POSITION.toUpperCase()
+    //   )
+    // },
+    // {
+    //   topicName: Utility.transformGeneralTopicName(
+    //     Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+    //     Enum.Events.Event.Type.POSITION,
+    //     Enum.Events.Event.Action.TIMEOUT_RESERVED
+    //   ),
+    //   config: Utility.getKafkaConfig(
+    //     Config.KAFKA_CONFIG,
+    //     Enum.Kafka.Config.CONSUMER,
+    //     Enum.Events.Event.Type.TRANSFER.toUpperCase(),
+    //     Enum.Events.Event.Action.POSITION.toUpperCase()
+    //   )
+    // }
   ])
 
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
@@ -384,6 +423,36 @@ Test('Handlers test', async handlersTest => {
     })
 
     await registerAllHandlers.end()
+  })
+
+  await handlersTest.test('transferPrepare should', async transferPrepare => {
+    await transferPrepare.test('Should create transfer position prepare message with payer currency account id', async (test) => {
+      // Arrange
+      const td = await prepareTestData(testData)
+      // 1. send a PREPARE request (from Payer)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        console.log(err)
+        test.ok('No payee abort notification sent')
+      }
+      test.end()
+    })
+
+    transferPrepare.end()
   })
 
   await handlersTest.test('transferFulfilReserve should', async transferFulfilReserve => {
@@ -714,6 +783,18 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
 
+      try {
+        const positionAbortValidation = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'abort-validation',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionAbortValidation[0], 'Position abort message with key found')
+      } catch (err) {
+        console.log(err)
+        test.ok('No payee abort notification sent')
+      }
+
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
       test.equal(updatedTransfer?.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
 
@@ -848,13 +929,26 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'fulfil',
+          keyFilter: td.payee.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        console.log(err)
+        test.ok('No payee abort notification sent')
+      }
+
       test.end()
     })
 
     transferFulfilCommit.end()
   })
 
-  await handlersTest.test('tranferFulfilCommit with default settlement model should', async transferFulfilCommit => {
+  await handlersTest.test('transferFulfilCommit with default settlement model should', async transferFulfilCommit => {
     const td = await prepareTestData(testDataZAR)
     await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
@@ -1079,6 +1173,18 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
+        const positionTimeout = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'abort',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionTimeout[0], 'Position abort message with key found')
+      } catch (err) {
+        console.log(err)
+        test.ok('No payee abort notification sent')
+      }
+
+      try {
         await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
@@ -1187,6 +1293,18 @@ Test('Handlers test', async handlersTest => {
           Logger.error(err)
           return false
         }
+      }
+
+      try {
+        const positionTimeout = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'timeout-reserved',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionTimeout[0], 'Position timeout message with key found')
+      } catch (err) {
+        console.log(err)
+        test.ok('No payee abort notification sent')
       }
 
       // wait until we inspect a transfer with the correct status, or return false if all re-try attempts have failed
