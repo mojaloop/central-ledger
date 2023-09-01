@@ -57,7 +57,7 @@ pushd $ML_CORE_TEST_HARNESS_DIR
     docker-compose -p ttk-func --ansi never down
   else
     echo "==> Skipping test harness shutdown"
-  if
+  fi
 
   ## Dump log to console
   cat ./reports/ttk-tests-console.log
