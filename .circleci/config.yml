@@ -25,9 +25,7 @@ defaults_docker_Dependencies: &defaults_docker_Dependencies |
   apk --no-cache add openssh-client
   apk --no-cache add -t build-dependencies make gcc g++ python3 libtool autoconf automake jq
   apk --no-cache add -t openssl ncurses coreutils libgcc linux-headers grep util-linux binutils findutils
-  apk --no-cache add curl
   apk --no-cache add librdkafka-dev
-  npm install -g node-gyp
 
 ## Default 'default-machine' executor dependencies
 defaults_machine_Dependencies: &defaults_machine_Dependencies |
@@ -37,7 +35,7 @@ defaults_machine_Dependencies: &defaults_machine_Dependencies |
   sudo add-apt-repository -y "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
 
   ## Install deps
-  sudo apt install -y librdkafka-dev
+  sudo apt install -y librdkafka-dev curl bash
 
 defaults_awsCliDependencies: &defaults_awsCliDependencies |
     apk --no-cache add aws-cli
@@ -150,7 +148,7 @@ defaults_environment: &defaults_environment
   ## env var for nx to set main branch
   MAIN_BRANCH_NAME: main
   ## Disable LIBRDKAFKA build since we install it via general dependencies
-  BUILD_LIBRDKAFKA: 0
+  # BUILD_LIBRDKAFKA: 0
 
 ##
 # Executors
@@ -295,6 +293,32 @@ jobs:
           destination: test
       - store_test_results:
           path: coverage
+
+  build-local:
+    executor: default-machine
+    environment:
+      <<: *defaults_environment
+    steps:
+      - checkout
+      - run:
+          <<: *defaults_configure_nvmrc
+      - run:
+          <<: *defaults_display_versions
+      - run:
+          name: Build Docker local image
+          command: |
+            source ~/.profile
+            export DOCKER_NODE_VERSION="$NVMRC_VERSION-alpine"
+            echo "export DOCKER_NODE_VERSION=$NVMRC_VERSION-alpine" >> $BASH_ENV
+            echo "Building Docker image: ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local --build-arg NODE_VERSION=$DOCKER_NODE_VERSION"
+            docker build -t ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local --build-arg NODE_VERSION=$DOCKER_NODE_VERSION .
+      - run:
+          name: Save docker image to workspace
+          command: docker save -o /tmp/docker-image.tar ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - ./docker-image.tar
 
   test-integration:
     executor: default-machine
@@ -456,32 +480,6 @@ jobs:
           path: /tmp/license-scanner/results
           destination: licenses
 
-  build-local:
-    executor: default-machine
-    environment:
-      <<: *defaults_environment
-    steps:
-      - checkout
-      - run:
-          <<: *defaults_configure_nvmrc
-      - run:
-          <<: *defaults_display_versions
-      - run:
-          name: Build Docker local image
-          command: |
-            source ~/.profile
-            export DOCKER_NODE_VERSION="$NVMRC_VERSION-alpine"
-            echo "export DOCKER_NODE_VERSION=$NVMRC_VERSION-alpine" >> $BASH_ENV
-            echo "Building Docker image: ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local --build-arg NODE_VERSION=$DOCKER_NODE_VERSION"
-            docker build -t ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local --build-arg NODE_VERSION=$DOCKER_NODE_VERSION .
-      - run:
-          name: Save docker image to workspace
-          command: docker save -o /tmp/docker-image.tar ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local
-      - persist_to_workspace:
-          root: /tmp
-          paths:
-            - ./docker-image.tar
-
   license-scan:
     executor: default-machine
     environment:
@@ -503,15 +501,25 @@ jobs:
 
   image-scan:
     executor: anchore/anchore_engine
+    shell: /bin/sh -leo pipefail ## Ref: https://circleci.com/docs/env-vars/#alpine-linux
     environment:
       <<: *defaults_environment
+      BASH_ENV: /etc/profile ## Ref: https://circleci.com/docs/env-vars/#alpine-linux
+      ENV: ~/.profile
+      NVM_ARCH_UNOFFICIAL_OVERRIDE: x64-musl ## Ref: https://github.com/nvm-sh/nvm/issues/1102#issuecomment-550572252
+    working_directory: *WORKING_DIR
     steps:
       - setup_remote_docker
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Install docker dependencies for anchore
+          command: |
+            apk add --update py-pip docker python3-dev libffi-dev openssl-dev gcc libc-dev make jq curl bash
+      - run:
+          name: Install AWS CLI dependencies
+          command: *defaults_awsCliDependencies
       - checkout
-      - run:
-          <<: *defaults_configure_nvm
-      - run:
-          <<: *defaults_display_versions
       - run:
           name: Setup Slack config
           command: |
@@ -522,23 +530,12 @@ jobs:
             echo "export SLACK_CI_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV
             echo "export SLACK_CUSTOM_MSG='Anchore Image Scan failed for: \`${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}\`'" >> $BASH_ENV
       - run:
-          name: Install docker dependencies for anchore
-          command: |
-            apk add --update py-pip docker python3-dev libffi-dev openssl-dev gcc libc-dev make jq npm
+          <<: *defaults_configure_nvm
+      - run:
+          <<: *defaults_display_versions
       - run:
           name: Install general dependencies
-          command: |
-            apk --no-cache add git
-            apk --no-cache add ca-certificates
-            apk --no-cache add curl
-            apk --no-cache add openssh-client
-            apk add --no-cache -t build-dependencies make gcc g++ python3 libtool autoconf automake
-            npm install -g node-gyp
-      - run:
-          name: Install AWS CLI dependencies
-          command: *defaults_awsCliDependencies
-      - attach_workspace:
-          at: /tmp
+          command: *defaults_docker_Dependencies
       - run:
           name: Load the pre-built docker image from workspace
           command: docker load -i /tmp/docker-image.tar
@@ -551,13 +548,14 @@ jobs:
       - run:
           name: Pull base image locally
           command: |
-            docker pull node:${NVMRC_VERSION}-alpine
-      # Analyze the base and derived image
-      # Note: It seems images are scanned in parallel, so preloading the base image result doesn't give us any real performance gain
+            echo "Pulling docker image: node:$NVMRC_VERSION-alpine"
+            docker pull node:$NVMRC_VERSION-alpine
+      ## Analyze the base and derived image
+      ## Note: It seems images are scanned in parallel, so preloading the base image result doesn't give us any real performance gain
       - anchore/analyze_local_image:
           # Force the older version, version 0.7.0 was just published, and is broken
           anchore_version: v0.6.1
-          image_name: "docker.io/node:${NVMRC_VERSION}-alpine ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local"
+          image_name: "docker.io/node:$NVMRC_VERSION-alpine $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:local"
           policy_failure: false
           timeout: '500'
           # Note: if the generated policy is invalid, this will fallback to the default policy, which we don't want!
