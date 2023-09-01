@@ -407,6 +407,7 @@ jobs:
             cp ./docker/config-modifier/configs/central-ledger.js /tmp/ml-core-test-harness/docker/config-modifier/configs/central-ledger.js
             cd /tmp/ml-core-test-harness
             export CENTRAL_LEDGER_VERSION=local
+            mkdir reports
             docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
             bash wait-for-container.sh ttk-func-ttk-tests-1
             docker logs ttk-func-ttk-tests-1 > ./reports/ttk-tests-console.log
