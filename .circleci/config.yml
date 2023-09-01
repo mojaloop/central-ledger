@@ -354,27 +354,34 @@ jobs:
 
             ## Check straight away to see if any containers have exited
             docker-compose ps
-
+      - run:
+          name: Wait 4 Health Services
+          command: |
             # Set Node version to default (Note: this is needed on Ubuntu)
             nvm use default
 
             ## wait for services to be up and running
             npm run wait-4-docker
       - run:
-          name: Install dependencies to check health services
-          command: |
-            sudo apt install curl
-      - run:
           name: Rebuild any dependencies
           command: |
+            # Set Node version to default (Note: this is needed on Ubuntu)
+            nvm use default
+
             npm rebuild
       - run:
           name: Run migration scripts
           command: |
+            # Set Node version to default (Note: this is needed on Ubuntu)
+            nvm use default
+
             npm run migrate
       - run:
           name: Run the integration tests
           command: |
+            # Set Node version to default (Note: this is needed on Ubuntu)
+            nvm use default
+
             ## Run Service in background
             ## This is a temporary work-around until the following issue can be addressed: https://github.com/mojaloop/project/issues/3112
             echo "Starting Service in the background"
