@@ -1,18 +1,19 @@
-FROM node:18.17.1-alpine as builder
+# Arguments
+ARG NODE_VERSION=lts-alpine
+
+# NOTE: Ensure you set NODE_VERSION Build Argument as follows...
+#
+#  export NODE_VERSION="$(cat .nvmrc)-alpine" \
+#  docker build \
+#    --build-arg NODE_VERSION=$NODE_VERSION \
+#    -t mojaloop/central-ledger:local \
+#    . \
+#
+
+# Build Image
+FROM node:${NODE_VERSION} as builder
+
 WORKDIR /opt/app
-
-# RUN apk --no-cache add \
-#       bash \
-#       g++ \
-#       ca-certificates \
-#       lz4-dev \
-#       musl-dev \
-#       cyrus-sasl-dev \
-#       openssl-dev \
-#       make \
-#       python3
-
-# RUN apk add --no-cache --virtual .build-deps gcc zlib-dev libc-dev bsd-compat-headers py-setuptools
 
 RUN apk --no-cache add git
 RUN apk add --no-cache -t build-dependencies make gcc g++ python3 libtool openssl-dev autoconf automake bash \
@@ -23,7 +24,7 @@ COPY package.json package-lock.json* /opt/app/
 
 RUN npm ci
 
-FROM node:18.17.1-alpine
+FROM node:${NODE_VERSION}
 WORKDIR /opt/app
 
 # Create empty log file & link stdout to the application log file

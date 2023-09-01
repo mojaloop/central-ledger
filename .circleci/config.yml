@@ -382,41 +382,6 @@ jobs:
       - store_test_results:
           path: ./test/results
 
-  # test-functional:
-  #   executor: default-machine
-  #   environment:
-  #     <<: *defaults_environment
-  #   steps:
-  #     - checkout
-  #     - run:
-  #         <<: *defaults_configure_nvmrc
-  #     - run:
-  #         <<: *defaults_display_versions
-  #     - attach_workspace:
-  #         at: /tmp
-  #     - run:
-  #         name: Load the pre-built docker local image from workspace
-  #         command: docker load -i /tmp/docker-image.tar
-  #     - run:
-  #         name: Download the mojaloop/ml-core-test-harness repo
-  #         command: |
-  #           git clone --depth 1 --branch main https://github.com/mojaloop/ml-core-test-harness.git /tmp/ml-core-test-harness
-  #     - run:
-  #         name: Execute TTK functional tests
-  #         command: |
-  #           cp ./docker/config-modifier/configs/central-ledger.js /tmp/ml-core-test-harness/docker/config-modifier/configs/central-ledger.js
-  #           cd /tmp/ml-core-test-harness
-  #           export CENTRAL_LEDGER_VERSION=local
-  #           mkdir reports
-  #           docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
-  #           bash wait-for-container.sh ttk-func-ttk-tests-1
-  #           docker logs ttk-func-ttk-tests-1 > ./reports/ttk-tests-console.log
-  #           docker-compose -p ttk-func --ansi never down
-  #           cat ./reports/ttk-tests-console.log
-  #     - store_artifacts:
-  #         path: /tmp/ml-core-test-harness/reports
-  #         destination: test
-
   test-functional:
     executor: default-machine
     environment:
