@@ -28,8 +28,8 @@ Test('Cache test', async (cacheTest) => {
 
   await cacheTest.test('Cache should', async (initTest) => {
     await initTest.test('call constructor of CatboxMemory', async (test) => {
-      sandbox.stub(Cache.CatboxMemory)
-      const catboxMemoryConstructorSpy = sandbox.spy(Cache, 'CatboxMemory')
+      sandbox.stub(Cache.CatboxMemory.Engine)
+      const catboxMemoryConstructorSpy = sandbox.spy(Cache.CatboxMemory, 'Engine')
       await Cache.initCache()
       test.ok(catboxMemoryConstructorSpy.calledOnce)
       await Cache.destroyCache()
@@ -37,14 +37,14 @@ Test('Cache test', async (cacheTest) => {
     })
 
     await initTest.test('init+start and then stop CatboxMemory', async (test) => {
-      sandbox.spy(Cache.CatboxMemory.prototype, 'start')
-      sandbox.spy(Cache.CatboxMemory.prototype, 'stop')
+      sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'start')
+      sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'stop')
       await Cache.initCache()
-      test.ok(Cache.CatboxMemory.prototype.start.calledOnce)
-      test.notOk(Cache.CatboxMemory.prototype.stop.calledOnce)
+      test.ok(Cache.CatboxMemory.Engine.prototype.start.calledOnce)
+      test.notOk(Cache.CatboxMemory.Engine.prototype.stop.calledOnce)
       await Cache.destroyCache()
-      test.ok(Cache.CatboxMemory.prototype.start.calledOnce)
-      test.ok(Cache.CatboxMemory.prototype.stop.calledOnce)
+      test.ok(Cache.CatboxMemory.Engine.prototype.start.calledOnce)
+      test.ok(Cache.CatboxMemory.Engine.prototype.stop.calledOnce)
       test.end()
     })
     initTest.end()
@@ -72,7 +72,7 @@ Test('Cache test', async (cacheTest) => {
 
     await cacheClientTest.test('get() should call Catbox Memory get()', async (test) => {
       Config.CACHE_CONFIG.CACHE_ENABLED = true
-      const getSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'get')
+      const getSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'get')
 
       const cacheClient = Cache.registerCacheClient({
         id: 'testCacheClient',
@@ -93,7 +93,7 @@ Test('Cache test', async (cacheTest) => {
 
     await cacheClientTest.test('get() should NOT call Catbox Memory get() when cache is disabled', async (test) => {
       Config.CACHE_CONFIG.CACHE_ENABLED = false
-      const getSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'get')
+      const getSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'get')
 
       const cacheClient = Cache.registerCacheClient({
         id: 'testCacheClient',
@@ -114,8 +114,8 @@ Test('Cache test', async (cacheTest) => {
 
     await cacheClientTest.test('set() should call Catbox Memory set() and should work', async (test) => {
       Config.CACHE_CONFIG.CACHE_ENABLED = true
-      const getSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'get')
-      const setSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'set')
+      const getSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'get')
+      const setSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'set')
       const cacheClient = Cache.registerCacheClient({
         id: 'testCacheClient',
         preloadCache: async () => {}
@@ -145,9 +145,9 @@ Test('Cache test', async (cacheTest) => {
 
     await cacheClientTest.test('drop() works', async (test) => {
       Config.CACHE_CONFIG.CACHE_ENABLED = true
-      const getSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'get')
-      const setSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'set')
-      const dropSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'drop')
+      const getSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'get')
+      const setSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'set')
+      const dropSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'drop')
       const cacheClient = Cache.registerCacheClient({
         id: 'testCacheClient',
         preloadCache: async () => {}
