@@ -73,7 +73,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
         transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED,
-        payerParticipantId: 0
+        payerParticipantCurrencyId: 0
       },
       {
         transferId: Uuid(),
@@ -81,7 +81,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
         transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT,
-        payerParticipantId: 0
+        payerParticipantCurrencyId: 0
       },
       {
         transferId: Uuid(),
@@ -89,7 +89,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
         payerFsp: 'dfsp2',
         payeeFsp: 'dfsp1',
         transferStateId: Enum.Transfers.TransferState.COMMITTED,
-        payerParticipantId: 0
+        payerParticipantCurrencyId: 0
       },
       {
         transferId: Uuid(),
@@ -97,7 +97,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
         transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED,
-        payerParticipantId: 0
+        payerParticipantCurrencyId: 0
       },
       {
         transferId: Uuid(),
@@ -105,7 +105,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
         transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT,
-        payerParticipantId: 0
+        payerParticipantCurrencyId: 0
       },
       {
         transferId: Uuid(),
@@ -113,7 +113,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
         payerFsp: 'dfsp2',
         payeeFsp: 'dfsp1',
         transferStateId: Enum.Transfers.TransferState.COMMITTED,
-        payerParticipantId: 0
+        payerParticipantCurrencyId: 0
       }
     ]
     let expected = {
