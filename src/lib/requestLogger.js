@@ -13,8 +13,8 @@ const logRequest = function (request) {
 }
 
 const logResponse = function (request) {
-  const traceId = request.headers.traceid
-  if (request.response) {
+  if (Logger.isDebugEnabled && request.response) {
+    const traceId = request.headers.traceid
     let response
     try {
       response = JSON.stringify(request.response, null, 2)
