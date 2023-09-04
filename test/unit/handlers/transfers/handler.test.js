@@ -51,6 +51,7 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const Proxyquire = require('proxyquire')
 const { getMessagePayloadOrThrow } = require('../../../util/helpers')
+const Participant = require('../../../../src/domain/participant')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -315,6 +316,18 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(MainUtil.StreamingProtocol)
     sandbox.stub(TransferObjectTransform, 'toTransfer')
     sandbox.stub(TransferObjectTransform, 'toFulfil')
+    sandbox.stub(Participant, 'getAccountByNameAndCurrency').callsFake((...args) => {
+      if (args[0] === transfer.payerFsp) {
+        return {
+          participantCurrencyId: 0
+        }
+      }
+      if (args[0] === transfer.payeeFsp) {
+        return {
+          participantCurrencyId: 1
+        }
+      }
+    })
     Kafka.produceGeneralMessage.returns(Promise.resolve())
     test.end()
   })
@@ -339,6 +352,10 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
       test.equal(result, true)
       test.end()
     })
@@ -357,6 +374,10 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
       test.equal(result, true)
       test.end()
     })
@@ -1176,7 +1197,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].toDestination, 'dfsp1')
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
 
       test.end()
     })
@@ -1210,7 +1231,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].toDestination, 'dfsp1')
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
 
       test.end()
     })
@@ -1245,7 +1266,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].toDestination, 'dfsp1')
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
 
       test.end()
     })
@@ -1284,14 +1305,13 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].toDestination, 'dfsp1')
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
 
       // lets check if the outbound event is sent to the notifications with the correct status
       test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
       test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
       test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
       test.equal(kafkaCallTwo.args[2].fromSwitch, true)
-      test.equal(kafkaCallTwo.args[2].toDestination, 'dfsp2')
 
       test.end()
     })
@@ -1329,14 +1349,13 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].toDestination, 'dfsp1')
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
 
       // lets check if the outbound event is sent to the notifications with the correct status
       test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
       test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
       test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
       test.equal(kafkaCallTwo.args[2].fromSwitch, true)
-      test.equal(kafkaCallTwo.args[2].toDestination, 'dfsp2')
 
       test.end()
     })
@@ -1447,6 +1466,11 @@ Test('Transfer handler', transferHandlerTest => {
       }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
+      test.equal(kafkaCallOne.args[2].messageKey, '1')
       test.equal(result, true)
       test.end()
     })

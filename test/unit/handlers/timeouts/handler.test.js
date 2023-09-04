@@ -72,42 +72,48 @@ Test('Timeout handler', TimeoutHandlerTest => {
         bulkTransferId: null,
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
-        transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED
+        transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED,
+        payerParticipantCurrencyId: 0
       },
       {
         transferId: Uuid(),
         bulkTransferId: null,
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
-        transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
+        transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT,
+        payerParticipantCurrencyId: 0
       },
       {
         transferId: Uuid(),
         bulkTransferId: null,
         payerFsp: 'dfsp2',
         payeeFsp: 'dfsp1',
-        transferStateId: Enum.Transfers.TransferState.COMMITTED
+        transferStateId: Enum.Transfers.TransferState.COMMITTED,
+        payerParticipantCurrencyId: 0
       },
       {
         transferId: Uuid(),
         bulkTransferId: Uuid(),
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
-        transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED
+        transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED,
+        payerParticipantCurrencyId: 0
       },
       {
         transferId: Uuid(),
         bulkTransferId: Uuid(),
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
-        transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
+        transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT,
+        payerParticipantCurrencyId: 0
       },
       {
         transferId: Uuid(),
         bulkTransferId: Uuid(),
         payerFsp: 'dfsp2',
         payeeFsp: 'dfsp1',
-        transferStateId: Enum.Transfers.TransferState.COMMITTED
+        transferStateId: Enum.Transfers.TransferState.COMMITTED,
+        payerParticipantCurrencyId: 0
       }
     ]
     let expected = {
@@ -125,6 +131,14 @@ Test('Timeout handler', TimeoutHandlerTest => {
       Utility.produceGeneralMessage = sandbox.stub()
 
       const result = await TimeoutHandler.timeout()
+      const produceGeneralMessageCalls = Utility.produceGeneralMessage.getCalls()
+
+      for (const message of produceGeneralMessageCalls) {
+        if (message.args[2] === 'position') {
+          // Check message key matches payer account id
+          test.equal(message.args[6], '0')
+        }
+      }
       test.deepEqual(result, expected, 'Expected result is returned')
       test.equal(Utility.produceGeneralMessage.callCount, 4, 'Four different messages were produced')
       test.end()

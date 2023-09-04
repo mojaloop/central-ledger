@@ -715,8 +715,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       .leftJoin('bulkTransferAssociation AS bta', 'bta.transferId', 'tt.transferId')
 
       .where('tt.expirationDate', '<', transactionTimestamp)
-      .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantId',
-        'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId',
+      .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantCurrencyId',
+        'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
         'bta.bulkTransferId')
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

@@ -173,7 +173,6 @@ Test('Position handler', transferHandlerTest => {
     sandbox.stub(Consumer, 'getConsumer').returns({
       commitMessageSync: async function () { return true }
     })
-
     sandbox.stub(Validator)
     sandbox.stub(TransferService)
     sandbox.stub(PositionService)
