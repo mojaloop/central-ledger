@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.1.0](https://github.com/mojaloop/central-ledger/compare/v17.0.5...v17.1.0) (2023-09-04)
+
+
+### Features
+
+* **mojaloop/#3498:** alter message keys for prepare, fulfil and timeout ([#965](https://github.com/mojaloop/central-ledger/issues/965)) ([db3e3b2](https://github.com/mojaloop/central-ledger/commit/db3e3b2f0450f1093f1f20eb4f49b4f4de53ddd0)), closes [mojaloop/#3498](https://github.com/mojaloop/project/issues/3498)
+
 ### [17.0.5](https://github.com/mojaloop/central-ledger/compare/v17.0.4...v17.0.5) (2023-09-04)
 
 
