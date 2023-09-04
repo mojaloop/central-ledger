@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.5](https://github.com/mojaloop/central-ledger/compare/v17.0.4...v17.0.5) (2023-09-04)
+
+
+### Bug Fixes
+
+* json stringify on every response ([#961](https://github.com/mojaloop/central-ledger/issues/961)) ([6798bfd](https://github.com/mojaloop/central-ledger/commit/6798bfda51be18c2d44c22e10ef67bc76c8b2195))
+
 ### [17.0.4](https://github.com/mojaloop/central-ledger/compare/v17.0.3...v17.0.4) (2023-09-04)
 
 
