@@ -401,7 +401,7 @@ jobs:
 
             ## Start integration tests
             echo "Running Integration Tests"
-            npm run test:int:skipMigrate
+            npm run test:xint
 
             ## Kill service
             echo "Stopping Service with Process ID=$PID"
