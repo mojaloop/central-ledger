@@ -1,6 +1,6 @@
 # central-ledger
 
-[![Git Commit](https://img.shields.io/github/last-commit/mojaloop/central-ledger.svg?style=flat)](https://github.com/mojaloop/central-ledger/commits/master)
+[![Git Commit](https://img.shields.io/github/last-commit/mojaloop/central-ledger.svg?style=flat)](https://github.com/mojaloop/central-ledger/commits/main)
 [![Git Releases](https://img.shields.io/github/release/mojaloop/central-ledger.svg?style=flat)](https://github.com/mojaloop/central-ledger/releases)
 [![Docker pulls](https://img.shields.io/docker/pulls/mojaloop/central-ledger.svg?style=flat)](https://hub.docker.com/r/mojaloop/central-ledger)
 [![Npm Version](https://img.shields.io/npm/v/@mojaloop/central-ledger.svg?style=flat)](https://www.npmjs.com/package/@mojaloop/central-ledger)
@@ -31,6 +31,35 @@ The following documentation represents the services, APIs and endpoints responsi
   - [Container Scans](#container-scans)
   - [Automated Releases](#automated-releases)
     - [Potential problems](#potential-problems)
+
+## Docker Image
+
+### Official Packaged Release
+
+This package is available as a pre-built docker image on Docker Hub: [https://hub.docker.com/r/mojaloop/central-ledger](https://hub.docker.com/r/mojaloop/central-ledger)
+
+### Build from Source
+
+You can also build it directly from source: [https://github.com/mojaloop/central-ledger](hhttps://github.com/mojaloop/central-ledger)
+
+However, take note of the default argument in the [Dockerfile](./Dockerfile) for `NODE_VERSION`:
+
+```dockerfile
+ARG NODE_VERSION=lts-alpine
+```
+
+It is recommend that you set the `NODE_VERSION` argument against the version set in the local [.nvmrc](./.nvmrc).
+
+This can be done using the following command: `npm run docker:build`
+
+Or via docker build directly:
+
+```bash
+docker build \
+  --build-arg NODE_VERSION="$(cat .nvmrc)-alpine" \
+  -t mojaloop/ml-api-adapter:local \
+  .
+```
 
 ## Running Locally
 
@@ -140,27 +169,38 @@ If you want to run integration tests in a repetitive manner, you can startup the
 
 If you want to run functional tests locally utilizing the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness), you can run the following commands:
 
-  ```bash
-  git clone --depth 1 --branch v0.0.2 https://github.com/mojaloop/ml-core-test-harness.git ./IGNORE/ml-core-test-harness
-  ```
+```bash
+docker build -t mojaloop/central-ledger:local .
+```
 
-  ```bash
-  docker build -t mojaloop/central-ledger:local .
-  ```
+```bash
+npm run test:functional
+```
 
-  ```bash
-  cd IGNORE/ml-core-test-harness
-  export CENTRAL_LEDGER_VERSION=local
-  docker-compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
-  ```
+By default this will clone the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness) into `$ML_CORE_TEST_HARNESS_DIR`.
 
-  Check test container logs for test results
+See default values as specified in the [test-functional.sh](./test/scripts/test-functional.sh) script.
 
-  Or access TTK UI using the following URI: <http://localhost:9660>
+Check test container logs for test results into `$ML_CORE_TEST_HARNESS_DIR` directory.
 
-  TTK Test files:
-      - Test Collection: ./IGNORE/ml-core-test-harness/docker/ml-testing-toolkit/test-cases/collections/tests/p2p.json
-      - Env Config: ./IGNORE/ml-core-test-harness/docker/ml-testing-toolkit/test-cases/environments/default-env.json
+If you want to not have the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness) shutdown automatically by the script, make sure you set the following env var `export ML_CORE_TEST_SKIP_SHUTDOWN=true`.
+
+By doing so, you are then able access TTK UI using the following URI: <http://localhost:9660>.
+
+Or alternatively, you can monitor the `ttk-func-ttk-tests-1` (See `ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME` in the [test-functional.sh](./test/scripts/test-functional.sh) script) container for test results with the following command:
+
+```bash
+docker logs -f ttk-func-ttk-tests-1
+```
+
+TTK Test files:
+
+- **Test Collection**: `$ML_CORE_TEST_HARNESS_DIR/docker/ml-testing-toolkit/test-cases/collections/tests/p2p.json`
+- **Env Config**: `$ML_CORE_TEST_HARNESS_DIR//docker/ml-testing-toolkit/test-cases/environments/default-env.json`
+
+Configuration modifiers:
+
+- **central-ledger**: [./docker/config-modifier/configs/central-ledger.js](./docker/config-modifier/configs/central-ledger.js)
 
 ## Development environment
 
@@ -193,12 +233,12 @@ If you want to run functional tests locally utilizing the [ml-core-test-harness]
 
 ## Auditing Dependencies
 
-We use `npm-audit-resolver` along with `npm audit` to check dependencies for node vulnerabilities, and keep track of resolved dependencies with an `audit-resolve.json` file.
+We use `audit-ci` along with `npm audit` to check dependencies for node vulnerabilities, and keep track of resolved dependencies with an `audit-ci.jsonc` file.
 
 To start a new resolution process, run:
 
 ```bash
-npm run audit:resolve
+npm run audit:fix
 ```
 
 You can then check to see if the CI will pass based on the current dependencies with:
@@ -207,7 +247,7 @@ You can then check to see if the CI will pass based on the current dependencies 
 npm run audit:check
 ```
 
-And commit the changed `audit-resolve.json` to ensure that CircleCI will build correctly.
+The [audit-ci.jsonc](./audit-ci.jsonc) contains any audit-exceptions that cannot be fixed to ensure that CircleCI will build correctly.
 
 ## Container Scans
 
@@ -225,26 +265,26 @@ As part of our CI/CD process, we use a combination of CircleCI, standard-version
 npm package and github-release CircleCI orb to automatically trigger our releases
 and image builds. This process essentially mimics a manual tag and release.
 
-On a merge to master, CircleCI is configured to use the mojaloopci github account
+On a merge to main, CircleCI is configured to use the mojaloopci github account
 to push the latest generated CHANGELOG and package version number.
 
-Once those changes are pushed, CircleCI will pull the updated master, tag and
+Once those changes are pushed, CircleCI will pull the updated main, tag and
 push a release triggering another subsequent build that also publishes a docker image.
 
 ### Potential problems
 
-- There is a case where the merge to master workflow will resolve successfully, triggering
+- There is a case where the merge to main workflow will resolve successfully, triggering
   a release. Then that tagged release workflow subsequently failing due to the image scan,
   audit check, vulnerability check or other "live" checks.
 
-  This will leave master without an associated published build. Fixes that require
+  This will leave main without an associated published build. Fixes that require
   a new merge will essentially cause a skip in version number or require a clean up
-  of the master branch to the commit before the CHANGELOG and bump.
+  of the main branch to the commit before the CHANGELOG and bump.
 
   This may be resolved by relying solely on the previous checks of the
-  merge to master workflow to assume that our tagged release is of sound quality.
+  merge to main workflow to assume that our tagged release is of sound quality.
   We are still mulling over this solution since catching bugs/vulnerabilities/etc earlier
   is a boon.
 
-- It is unknown if a race condition might occur with multiple merges with master in
+- It is unknown if a race condition might occur with multiple merges with main in
   quick succession, but this is a suspected edge case.

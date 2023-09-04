@@ -1,6 +1,6 @@
 # Onboarding
 
->*Note:* Before completing this guide, make sure you have completed the _general_ onboarding guide in the [base mojaloop repository](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#mojaloop-onboarding).
+>*Note:* Before completing this guide, make sure you have completed the _general_ onboarding guide in the [base mojaloop repository](https://github.com/mojaloop/mojaloop/blob/main/onboarding.md#mojaloop-onboarding).
 
 ## Contents
 
@@ -21,7 +21,7 @@
 
 #  1. <a name='Prerequisites'></a>Prerequisites
 
-If you have followed the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#mojaloop-onboarding), you should already have the following cli tools installed:
+If you have followed the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/main/onboarding.md#mojaloop-onboarding), you should already have the following cli tools installed:
 
 * `brew` (macOS), [todo: windows package manager]
 * `curl`, `wget`
@@ -179,7 +179,7 @@ docker-compose down -v
 
 ## 6. (Optional) Connecting MySQLWorkbench to MySQL inside Docker
 
-If you installed MySQLWorkbench from the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#5-mysqlworkbench-optional), follow these instructions to get MySQLWorkbench connected to the `mysql` container running in docker.
+If you installed MySQLWorkbench from the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/main/onboarding.md#5-mysqlworkbench-optional), follow these instructions to get MySQLWorkbench connected to the `mysql` container running in docker.
 
 Please follow the below instructions:
 
@@ -237,12 +237,12 @@ npm run test:integration
 ### 8. Testing the `central-ledger` API with Postman
 
 <!-- TODO: Verify if this link is still useful and applicable.
->Note: Check the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#2-postman) for additional information.
+>Note: Check the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/main/onboarding.md#2-postman) for additional information.
 -->
 
 #### 8.1 Prerequisites:
 
-1. Follow the steps as described in [`5.2. Verifying Mojaloop Deployment` from the Deployment Guide](https://github.com/mojaloop/documentation/tree/master/deployment-guide#52-verifying-mojaloop-deployment).
+1. Follow the steps as described in [`5.2. Verifying Mojaloop Deployment` from the Deployment Guide](https://github.com/mojaloop/documentation/tree/main/deployment-guide#52-verifying-mojaloop-deployment).
 2. Clone the [Postman Collection repo](https://github.com/mojaloop/postman): 
     ```bash
     # Clone Mojaloop Postman repo

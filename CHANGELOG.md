@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.5](https://github.com/mojaloop/central-ledger/compare/v17.0.4...v17.0.5) (2023-09-04)
+
+
+### Bug Fixes
+
+* json stringify on every response ([#961](https://github.com/mojaloop/central-ledger/issues/961)) ([6798bfd](https://github.com/mojaloop/central-ledger/commit/6798bfda51be18c2d44c22e10ef67bc76c8b2195))
+
+### [17.0.4](https://github.com/mojaloop/central-ledger/compare/v17.0.3...v17.0.4) (2023-09-04)
+
+
+### Chore
+
+* **mojaloop/#3433:** nodejs upgrade ([#964](https://github.com/mojaloop/central-ledger/issues/964)) ([1ed817a](https://github.com/mojaloop/central-ledger/commit/1ed817ac1b9f70b558fa81dfc355a439168e0b26)), closes [mojaloop/#3433](https://github.com/mojaloop/project/issues/3433)
+
 ### [17.0.3](https://github.com/mojaloop/central-ledger/compare/v17.0.2...v17.0.3) (2023-03-29)
 
 
@@ -72,7 +86,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Features
 
-* **mojaloop/#2880:** simplify liquidity cover check and fix issue with validation (for master) ([#918](https://github.com/mojaloop/central-ledger/issues/918)) ([825faf7](https://github.com/mojaloop/central-ledger/commit/825faf7c1c918b12eddedeb97eea0a2d563457e4))
+* **mojaloop/#2880:** simplify liquidity cover check and fix issue with validation (for main) ([#918](https://github.com/mojaloop/central-ledger/issues/918)) ([825faf7](https://github.com/mojaloop/central-ledger/commit/825faf7c1c918b12eddedeb97eea0a2d563457e4))
 
 ## [16.2.0](https://github.com/mojaloop/central-ledger/compare/v16.1.0...v16.2.0) (2022-08-15)
 
