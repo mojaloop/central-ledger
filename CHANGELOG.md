@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.4](https://github.com/mojaloop/central-ledger/compare/v17.0.3...v17.0.4) (2023-09-04)
+
+
+### Chore
+
+* **mojaloop/#3433:** nodejs upgrade ([#964](https://github.com/mojaloop/central-ledger/issues/964)) ([1ed817a](https://github.com/mojaloop/central-ledger/commit/1ed817ac1b9f70b558fa81dfc355a439168e0b26)), closes [mojaloop/#3433](https://github.com/mojaloop/project/issues/3433)
+
 ### [17.0.3](https://github.com/mojaloop/central-ledger/compare/v17.0.2...v17.0.3) (2023-03-29)
 
 
