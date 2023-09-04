@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.1.1](https://github.com/mojaloop/central-ledger/compare/v17.1.0...v17.1.1) (2023-09-04)
+
+
+### Bug Fixes
+
+* **mojaloop/#3474:** correct caching TTL and upgrade library ([#966](https://github.com/mojaloop/central-ledger/issues/966)) ([b24497e](https://github.com/mojaloop/central-ledger/commit/b24497eaeaf7b8bfb0531ed5692576b5319076ad)), closes [mojaloop/#3474](https://github.com/mojaloop/project/issues/3474)
+
 ## [17.1.0](https://github.com/mojaloop/central-ledger/compare/v17.0.5...v17.1.0) (2023-09-04)
 
 
