@@ -205,18 +205,17 @@ services:
       retries: 10
       interval: 30s
 
-  kowl:
-    image: quay.io/cloudhut/kowl:v1.4.0
-    container_name: cl_kowl
+  ## Debug utilities
+  kafka-debug-console:
+    # image: quay.io/cloudhut/kowl:v1.4.0
+    image: docker.redpanda.com/redpandadata/console:latest
     deploy:
       replicas: 1
     restart: on-failure
-    hostname: kowl
+    hostname: kafka-debug-console
     ports:
-    - "8080:8080"
+    - "9080:8080"
     networks:
       - cl-mojaloop-net
     environment:
       - KAFKA_BROKERS=kafka:29092
-    depends_on:
-      - kafka
