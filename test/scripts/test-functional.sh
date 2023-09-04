@@ -59,7 +59,7 @@ pushd $ML_CORE_TEST_HARNESS_DIR
     echo "==> Skipping test harness shutdown"
   else
     echo "==> Shutting down test harness"
-    docker compose -p ttk-func --ansi never down
+    docker compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests down -v
   fi
 
   ## Dump log to console
