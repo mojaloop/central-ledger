@@ -13,11 +13,13 @@ const processBins = async (bins, trx) => {
     // TODO: Implement binProcessor
     // 1. Pre fetch all transferStateChanges for all the transferIds in the account-bin
     // 2. Pre fetch all position and settlement account balances for the account-bin and acquire lock on position
-    // 2. Pre fetch NDC limit of all participants
     // 3. For each account-bin in the list
     //   3.1. If non-prepare action found, log error
-    //   3.2. If prepare action found, then call processPositionPrepareBin function with:
-    //          messages, positionValue, positionReservedValue, settlementPositionValue, participantLimitValue, transferStateChanges
+    //   3.2. If prepare action found
+    //      3.2.1. Pre fetch NDC limit of participant
+    //      3.2.2. Pre fetch settlementModelDelay
+    //      3.2.3. then call processPositionPrepareBin function with:
+    //          messages, positionValue, positionReservedValue, settlementPositionValue, settlementModelDelay, participantLimitValue, transferStateChanges
     //        Output: accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges
     //   3.3. Insert accumulated transferStateChanges by calling a facade function
     //   3.4. Update accumulated position value by calling a facade function
