@@ -47,7 +47,7 @@
     "test:xunit": "npm run test:unit | tap-xunit > ./test/results/xunit.xml",
     "test:coverage": "npx nyc --reporter=lcov --reporter=text-summary tapes -- 'test/unit/**/**.test.js'",
     "test:coverage-check": "npm run test:coverage && nyc check-coverage",
-    "test:int": "npx tape 'test/integration/**/*.test.js' -i 'test/integration/**/handlers-override.test.js'",
+    "test:int": "npx tape 'test/integration/**/*.test.js' --ignore-pattern 'test/integration/**/handlers-override.test.js'",
     "test:int-override": "npx tape 'test/integration/**/handlers-override.test.js'",
     "test:int:spec": "npm run test:int | tap-spec",
     "test:xint": "npm run test:int | tap-xunit > ./test/results/xunit-integration.xml",
