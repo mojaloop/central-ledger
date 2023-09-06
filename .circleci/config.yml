@@ -406,6 +406,7 @@ jobs:
             ## Kill service
             echo "Stopping Service with Process ID=$PID"
             kill $(cat /tmp/int-test-service.pid)
+            kill $(lsof -t -i:3001)
 
             ## Restart service with topic name override
             echo "Starting Service in the background"
