@@ -85,6 +85,14 @@
   },
   "API_DOC_ENDPOINTS_ENABLED": true,
   "KAFKA": {
+    "EVENT_TYPE_ACTION_TOPIC_MAP" : {
+      "POSITION":{
+        "PREPARE": "topic-transfer-position",
+        "FULFIL": "topic-transfer-position",
+        "TIMEOUT": "topic-transfer-position",
+        "ABORT": "topic-transfer-position"
+      }
+    },
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {
         "TEMPLATE": "topic-{{participantName}}-{{functionality}}-{{action}}",
