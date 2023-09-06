@@ -26,7 +26,7 @@
 
 const Uuid = require('uuid4')
 const Config = require('../../src/lib/config')
-const Db = require('@mojaloop/central-services-database').Db
+const Db = require('@mojaloop/database-lib').Db
 const Enum = require('../../src/lib/enum')
 const TS = Enum.TransferState
 

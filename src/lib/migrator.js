@@ -1,7 +1,7 @@
 'use strict'
 
 const Path = require('path')
-const Migrations = require('@mojaloop/central-services-database').Migrations
+const Migrations = require('@mojaloop/database-lib').Migrations
 const Knexfile = require('../../config/knexfile')
 
 exports.migrate = function () {
