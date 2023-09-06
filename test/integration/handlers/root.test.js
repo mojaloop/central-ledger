@@ -27,7 +27,7 @@
 const Test = require('tape')
 const Joi = require('joi')
 const Logger = require('@mojaloop/central-services-logger')
-const Db = require('@mojaloop/central-services-database').Db
+const Db = require('@mojaloop/database-lib').Db
 
 const Config = require('../../../src/lib/config')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
