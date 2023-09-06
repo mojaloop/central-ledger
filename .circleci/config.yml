@@ -406,6 +406,27 @@ jobs:
             ## Kill service
             echo "Stopping Service with Process ID=$PID"
             kill $(cat /tmp/int-test-service.pid)
+
+            ## Restart service with topic name override
+            echo "Starting Service in the background"
+            export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE='topic-transfer-position-batch'
+            npm start > ./test/results/cl-service.log &
+
+            ## Store PID for cleanup
+            echo $! > /tmp/int-test-service.pid
+            PID=$(cat /tmp/int-test-service.pid)
+            echo "Service started with Process ID=$PID"
+
+            ## Check Service Health
+            echo "Waiting for Service to be healthy"
+            bash .circleci/curl-retry-cl-health.sh
+
+            ## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
+            echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_FOR_REBALANCE
+
+            ## Start integration tests
+            echo "Running Override Integration Tests"
+            npm run test:xint-override
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
             UV_THREADPOOL_SIZE: 12
