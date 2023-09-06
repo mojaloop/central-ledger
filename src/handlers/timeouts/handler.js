@@ -97,7 +97,7 @@ const timeout = async () => {
             message.metadata.event.type = Enum.Events.Event.Type.POSITION
             message.metadata.event.action = Enum.Events.Event.Action.TIMEOUT_RESERVED
             // Key position timeouts with payer account id
-            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerParticipantCurrencyId?.toString(), span, Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP.POSITION.TIMEOUT)
+            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerParticipantCurrencyId?.toString(), span)
           }
         } else { // individual transfer from a bulk
           if (result[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
@@ -110,7 +110,7 @@ const timeout = async () => {
             message.metadata.event.type = Enum.Events.Event.Type.POSITION
             message.metadata.event.action = Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED
             // Key position timeouts with payer account id
-            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, message, state, result[i].payerParticipantCurrencyId?.toString(), span, Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP.POSITION.TIMEOUT)
+            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, message, state, result[i].payerParticipantCurrencyId?.toString(), span)
           }
         }
       } catch (err) {
