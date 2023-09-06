@@ -3,7 +3,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Path = require('path')
-const Migrations = require('@mojaloop/central-services-database').Migrations
+const Migrations = require('@mojaloop/database-lib').Migrations
 const Proxyquire = require('proxyquire')
 
 Test('migrator', migratorTest => {
