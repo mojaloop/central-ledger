@@ -78,20 +78,6 @@ const fromSwitch = true
  */
 
 const positions = async (error, messages) => {
-  // TODO: Iterate through all messages in the array and do following
-  // 1. Assign message to account-bin by accountID and child action-bin by event-action
-  //    (References to the messagses to be stored in bins, no duplication of messages)
-  // 2. Audit message
-  // 3. Start DB Transaction
-  // 4. Call Bin Processor with the list of account-bins and trx
-  // 5. If Bin Processor returns success
-  //   - 5.1. Commit Kafka offset
-  //   - 5.2. Commit DB transaction
-  //   - 5.3. Loop through results and produce notification messages and audit messages
-  // 6. If Bin Processor returns failure
-  //   - 6.1. Rollback DB transaction
-  //   - 6.2. Audit Error
-
   const histTimerEnd = Metrics.getHistogram(
     'transfer_position',
     'Consume a prepare transfer message from the kafka topic and process it accordingly',

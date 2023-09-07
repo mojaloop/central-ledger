@@ -50,6 +50,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const requireGlob = require('require-glob')
 const TransferHandlers = require('./transfers/handler')
 const PositionHandlers = require('./positions/handler')
+const PositionHandlersV2 = require('./positions/handlerV2')
 const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
 const BulkHandlers = require('./bulk')
@@ -89,6 +90,10 @@ module.exports = {
   positions: {
     registerAllHandlers: PositionHandlers.registerAllHandlers,
     registerPositionHandler: PositionHandlers.registerPositionHandler
+  },
+  positionsV2: {
+    registerAllHandlers: PositionHandlersV2.registerAllHandlers,
+    registerPositionHandler: PositionHandlersV2.registerPositionHandler,
   },
   timeouts: {
     registerAllHandlers: TimeoutHandlers.registerAllHandlers,

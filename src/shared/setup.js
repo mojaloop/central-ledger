@@ -175,6 +175,10 @@ const createHandlers = async (handlers) => {
           // }
           break
         }
+        case 'positionv2': {
+          await RegisterHandlers.positionsV2.registerPositionHandler()
+          break
+        }
         case 'fulfil': {
           await RegisterHandlers.transfers.registerFulfilHandler()
           break
