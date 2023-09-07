@@ -51,6 +51,8 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const Proxyquire = require('proxyquire')
 const { getMessagePayloadOrThrow } = require('../../../util/helpers')
+const Participant = require('../../../../src/domain/participant')
+const Config = require('../../../../src/lib/config')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -339,7 +341,61 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
+      test.equal(kafkaCallOne.args[2].topicNameOverride, null)
       test.equal(result, true)
+      test.end()
+    })
+
+    prepareTest.test('use topic name override if specified in config', async (test) => {
+      Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP.POSITION.PREPARE = 'topic-test-override'
+      const localMessages = MainUtil.clone(messages)
+      // here copy
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
+      test.equal(kafkaCallOne.args[2].topicNameOverride, 'topic-test-override')
+      test.equal(result, true)
+      delete Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP.POSITION.PREPARE
+      test.end()
+    })
+
+    prepareTest.test('use topic name override if specified in config', async (test) => {
+      Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP.POSITION.PREPARE = 'topic-test-override'
+      const localMessages = MainUtil.clone(messages)
+      // here copy
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
+      test.equal(result, true)
+      delete Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP.POSITION.PREPARE
       test.end()
     })
 

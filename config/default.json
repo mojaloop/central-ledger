@@ -85,6 +85,11 @@
   },
   "API_DOC_ENDPOINTS_ENABLED": true,
   "KAFKA": {
+    "EVENT_TYPE_ACTION_TOPIC_MAP" : {
+      "POSITION":{
+        "PREPARE": null
+      }
+    },
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {
         "TEMPLATE": "topic-{{participantName}}-{{functionality}}-{{action}}",
