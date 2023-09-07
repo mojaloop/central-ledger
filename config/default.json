@@ -87,10 +87,7 @@
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
-        "PREPARE": null,
-        "FULFIL": null,
-        "TIMEOUT": null,
-        "ABORT": null
+        "PREPARE": null
       }
     },
     "TOPIC_TEMPLATES": {

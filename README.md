@@ -100,10 +100,7 @@ refers to position messages with associated actions.
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
-        "PREPARE": "topic-transfer-position-batch",
-        "FULFIL": "topic-transfer-position-batch",
-        "TIMEOUT": "topic-transfer-position-batch",
-        "ABORT": "topic-transfer-position-batch"
+        "PREPARE": "topic-transfer-position-batch"
       }
     }
   }
