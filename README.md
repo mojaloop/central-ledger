@@ -183,6 +183,11 @@ If you want to run integration tests in a repetitive manner, you can startup the
     npm run test:int
   ```
 
+If you want to run override position topic tests you can repeat the above and use `npm run test:int-override`
+
+If you want to just run all of the integration suite non-interactively then use npm run `test:integration`.
+It will handle docker start up, migration, service starting and testing. Be sure to exit any previously ran handlers or docker commands.
+
 ### Running Functional Tests
 
 If you want to run functional tests locally utilizing the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness), you can run the following commands:
