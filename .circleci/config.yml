@@ -342,7 +342,12 @@ jobs:
           command: mkdir -p ./test/results
       - run:
           name: Execute integration tests
-          command: bash ./test/scripts/test-integration.sh
+          command: |
+              # Set Node version to default (Note: this is needed on Ubuntu)
+              nvm use default
+
+              echo "Running integration tests...."
+              bash ./test/scripts/test-integration.sh
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
             UV_THREADPOOL_SIZE: 12
