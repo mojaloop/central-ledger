@@ -43,6 +43,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const TransferService = require('../../domain/transfer')
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const PositionService = require('../../domain/position')
+const BinProcessor = require('../../domain/position/binProcessor')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
@@ -93,23 +94,38 @@ const positions = async (error, messages) => {
     consumedMessages = [Object.assign({}, Utility.clone(messages))]
   }
 
+  const firstMessageOffset = consumedMessages[0]?.offset
+  const lastMessageOffset = consumedMessages[consumedMessages.length - 1]?.offset
+  const binId = `${firstMessageOffset}-${lastMessageOffset}`
+
+  // TODO: How to handle spans and audits for batch of messages ??
+  // Currently we have to create a span and do and audit for each message
+
   // Iterate through consumedMessages
   const bins = {};
   for (const message of consumedMessages) {
-    // 1. Assign message to account-bin by accountID and child action-bin by event-action
+    // Create a span for each message
+    const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
+    const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_position', contextFromMessage)
+    span.setTags({
+      processedAsBatch: true,
+      binId,
+    })
+    // 1. Assign message to account-bin by accountID and child action-bin by action
     //    (References to the messagses to be stored in bins, no duplication of messages)
     const accountID = message.key.toString();
     const action = message.value.metadata.event.action
 
     const accountBin = bins[accountID] || (bins[accountID] = {});
-    const eventActionBin = accountBin[action] || (accountBin[action] = []);
-    eventActionBin.push(message);
+    const actionBin = accountBin[action] || (accountBin[action] = []);
+    actionBin.push({
+      message,
+      span,
+      // If we need anything We mutate the following object to store the result
+      result: {}
+    });
 
-    // 2. Audit message
-    const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
-    const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_position', contextFromMessage)
     await span.audit(message, EventSdk.AuditEventAction.start)
-    await span.finish() // TODO: Need to confirm when to call this ??
   }
   
   // 3. Start DB Transaction
@@ -118,28 +134,51 @@ const positions = async (error, messages) => {
 
   try {
 
-    // 4. TODO: Call Bin Processor with the list of account-bins and trx
+    // 4. Call Bin Processor with the list of account-bins and trx
     // const decodedMessages = decodeMessages(consumedMessages)
+    await BinProcessor.processBins(bins, trx)
 
-    // 5. If Bin Processor returns success
+    // 5. If Bin Processor processed bins successfully
     //   - 5.1. Commit Kafka offset
     // Commit the offset of last message in the array
     const lastMessageToCommit = consumedMessages[consumedMessages.length - 1] 
     const params = { message: lastMessageToCommit, kafkaTopic: lastMessageToCommit.topic, consumer: Consumer }
+    // We are using Kafka.proceed() to just commit the offset of the last message in the array
     await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
 
     //   - 5.2. Commit DB transaction
     await trx.commit();
 
-    //   - 5.3. TODO: Loop through results and produce notification messages and audit messages
+    //   - 5.3. Loop through results and produce notification messages and audit messages
+    for (const accountID in bins) {
+      const accountBin = bins[accountID];
+      for (const action in accountBin) {
+        const actionBin = accountBin[action];
+        for (const bin of actionBin) {
+          const message = bin.message;
+          const result = bin.result;
+
+          // 5.3.1. TODO: Produce notification message
+
+          // 5.3.2. TODO: Audit notification message
+
+        }
+      }
+    }
+
 
   } catch(err) {
     // 6. If Bin Processor returns failure
     // 6.1. Rollback DB transaction
     await trx.rollback();
 
-    // 6.2. TODO: Audit Error
+    // 6.2. TODO: Audit Error for each message
 
+  } finally {
+    // TODO: finish span for each message
+    // if (!span.isFinished) {
+    //   await span.finish()
+    // }
   }
 
   histTimerEnd({ success: true })
