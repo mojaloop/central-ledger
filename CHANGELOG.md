@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.2.0](https://github.com/mojaloop/central-ledger/compare/v17.1.2...v17.2.0) (2023-09-07)
+
+
+### Features
+
+* **mojaloop/#3519:** add topic name override config map logic ([#969](https://github.com/mojaloop/central-ledger/issues/969)) ([b99d091](https://github.com/mojaloop/central-ledger/commit/b99d09129f328aab60e4059035be4d263ecd9f98)), closes [mojaloop/#3519](https://github.com/mojaloop/project/issues/3519)
+
 ### [17.1.2](https://github.com/mojaloop/central-ledger/compare/v17.1.1...v17.1.2) (2023-09-06)
 
 
