@@ -343,11 +343,11 @@ jobs:
       - run:
           name: Execute integration tests
           command: |
-              # Set Node version to default (Note: this is needed on Ubuntu)
-              nvm use default
+            # Set Node version to default (Note: this is needed on Ubuntu)
+            nvm use default
 
-              echo "Running integration tests...."
-              bash ./test/scripts/test-integration.sh
+            echo "Running integration tests...."
+            bash ./test/scripts/test-integration.sh
           environment:
             ENDPOINT_URL: http://localhost:4545/notification
             UV_THREADPOOL_SIZE: 12
