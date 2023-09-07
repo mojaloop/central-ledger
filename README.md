@@ -96,6 +96,8 @@ diverges from the defaults.
 You can configure the customized topic names in the config. Each position action key
 refers to position messages with associated actions.
 
+NOTE: Only POSITION.PREPARE is supported at this time, with additional event-type-actions being added later when required.
+
 ```
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
