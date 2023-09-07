@@ -88,6 +88,27 @@ The Central Ledger has many options that can be configured through environment v
 | CLEDG\_AMOUNT__PRECISION | Numeric value used to determine precision recorded for transfer amounts on this ledger. | 10 |
 | CLEDG\_AMOUNT__SCALE | Numeric value used to determine scale recorded for transfer amounts on this ledger. | 2 |
 
+### Kafka Position EVENT_TYPE_ACTION_TOPIC_MAP
+
+In some cases, you might want to publish position type messages onto a customized topic name that
+diverges from the defaults.
+
+You can configure the customized topic names in the config. Each position action key
+refers to position messages with associated actions.
+
+```
+  "KAFKA": {
+    "EVENT_TYPE_ACTION_TOPIC_MAP" : {
+      "POSITION":{
+        "PREPARE": "topic-transfer-position-batch",
+        "FULFIL": "topic-transfer-position-batch",
+        "TIMEOUT": "topic-transfer-position-batch",
+        "ABORT": "topic-transfer-position-batch"
+      }
+    }
+  }
+```
+
 ## API
 
 For endpoint documentation, see the [API documentation](API.md).
@@ -221,7 +242,7 @@ Configuration modifiers:
   ```bash
   sh ./test/util/scripts/populateTestData.sh
   ```
-  
+
   View Logs for Mockserver (i.e. Payee Receiver) and ML-API-Adapter:
 
   ```bash
