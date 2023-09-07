@@ -88,7 +88,7 @@ The Central Ledger has many options that can be configured through environment v
 | CLEDG\_AMOUNT__PRECISION | Numeric value used to determine precision recorded for transfer amounts on this ledger. | 10 |
 | CLEDG\_AMOUNT__SCALE | Numeric value used to determine scale recorded for transfer amounts on this ledger. | 2 |
 
-### Kafka Position EVENT_TYPE_ACTION_TOPIC_MAP
+### Kafka Position Event Type Action Topic Map
 
 In some cases, you might want to publish position type messages onto a customized topic name that
 diverges from the defaults.
@@ -183,7 +183,7 @@ If you want to run integration tests in a repetitive manner, you can startup the
     npm run test:int
   ```
 
-If you want to run override position topic tests you can repeat the above and use `npm run test:int-override`
+If you want to run override position topic tests you can repeat the above and use `npm run test:int-override` after configuring settings found [here](#kafka-position-event-type-action-topic-map)
 
 If you want to just run all of the integration suite non-interactively then use npm run `test:integration`.
 It will handle docker start up, migration, service starting and testing. Be sure to exit any previously ran handlers or docker commands.
