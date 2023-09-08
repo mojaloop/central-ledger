@@ -23,9 +23,40 @@ const processBins = async (bins, trx) => {
   //        Output: accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges
   //   3.3. Insert accumulated transferStateChanges by calling a facade function
   //   3.4. Update accumulated position value by calling a facade function
-  // 4. Return bins with results
+  // 4. Return results
+  // {
+  //   accumulatedPosition,
+  //   transferStateChanges,
+  //   participantPositionChanges,
+  //   notifyMessages
+  // }
+}
+
+/**
+ * @function iterateThroughBins
+ *
+ * @async
+ * @description Helper function to iterate though all messages in bins.
+ *
+ * @param {array} bins - a list of account-bins to iterate
+ * @param {async function} cb - callback function to call for each item
+ *
+ * @returns {void} - Doesn't return anything
+ */
+
+const iterateThroughBins = async (bins, cb) => {
+  for (const accountID in bins) {
+    const accountBin = bins[accountID]
+    for (const action in accountBin) {
+      const actionBin = accountBin[action]
+      for (const item of actionBin) {
+        await cb(item)
+      }
+    }
+  }
 }
 
 module.exports = {
-  processBins
+  processBins,
+  iterateThroughBins
 }

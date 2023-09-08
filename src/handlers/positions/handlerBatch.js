@@ -121,7 +121,7 @@ const positions = async (error, messages) => {
     actionBin.push({
       message,
       span,
-      // If we need anything We mutate the following object to store the result
+      // If we need anything We mutate the following object to store the result at message level. This may not be needed, but just in case.
       result: {}
     })
 
@@ -135,7 +135,7 @@ const positions = async (error, messages) => {
   try {
     // 4. Call Bin Processor with the list of account-bins and trx
     // const decodedMessages = decodeMessages(consumedMessages)
-    await BinProcessor.processBins(bins, trx)
+    const result = await BinProcessor.processBins(bins, trx)
 
     // 5. If Bin Processor processed bins successfully
     //   - 5.1. Commit Kafka offset
@@ -149,20 +149,11 @@ const positions = async (error, messages) => {
     await trx.commit()
 
     //   - 5.3. Loop through results and produce notification messages and audit messages
-    for (const accountID in bins) {
-      const accountBin = bins[accountID]
-      for (const action in accountBin) {
-        const actionBin = accountBin[action]
-        for (const bin of actionBin) {
-          const message = bin.message
-          const result = bin.result
-
-          // 5.3.1. TODO: Produce notification message
-
-          // 5.3.2. TODO: Audit notification message
-        }
-      }
-    }
+    result.notifyMessages.foreach(async (message) => {
+      // 5.3.1. Produce notification message
+      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, message, Enum.Events.EventStatus.SUCCESS) 
+      // 5.3.2. TODO: Audit notification message
+    })
   } catch (err) {
     // 6. If Bin Processor returns failure
     // 6.1. Rollback DB transaction
@@ -170,10 +161,13 @@ const positions = async (error, messages) => {
 
     // 6.2. TODO: Audit Error for each message
   } finally {
-    // TODO: finish span for each message
-    // if (!span.isFinished) {
-    //   await span.finish()
-    // }
+    // Finish span for each message
+    await BinProcessor.iterateThroughBins(bins, async (item) => {
+      const span = item.span
+      if (!span.isFinished) {
+        await span.finish()
+      }
+    })
   }
 
   histTimerEnd({ success: true })
