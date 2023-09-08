@@ -34,6 +34,7 @@ const processPositionPrepareBin = async (messages, accumulatedPositionValue, acc
   }
 
   for (const message of messages) {
+    // object key is transfer id, transfer state change
     // Validate current state (transferStateChange.transferStateId == 'RECEIVED_PREPARE')
     // Is this accumulatedTransferStateChanges? Am I to check the same index as the messages array?
     let transferStateId
@@ -117,13 +118,14 @@ const processPositionPrepareBin = async (messages, accumulatedPositionValue, acc
     }
     participantPositionChanges.push(participantPositionChange)
 
-    // 8 Assess any limit thresholds on the position adding to alarm list if triggered
+    // Look @ prepare 8 Assess any limit thresholds on the position adding to alarm list if triggered
   }
   return {
     accumulatedPosition: availablePosition,
     transferStateChanges,
     participantPositionChanges,
-    resultMessages
+    resultMessages,
+    accumulatedTransferStateChanges
   }
 }
 
