@@ -22,13 +22,9 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * ModusBox
- - Georgi Georgiev <georgi.georgiev@modusbox.com>
- - Lazola Lucas <lazola.lucas@modusbox.com>
- - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- - Miguel de Barros <miguel.debarros@modusbox.com>
- - Valentin Genev <valentin.genev@modusbox.com>
- - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ * INFITX
+ - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
+
 
  --------------
  ******/
