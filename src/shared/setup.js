@@ -175,7 +175,7 @@ const createHandlers = async (handlers) => {
           // }
           break
         }
-        case 'positionv2': {
+        case 'positionbatch': {
           await RegisterHandlers.positionsV2.registerPositionHandler()
           break
         }
