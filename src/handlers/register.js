@@ -93,7 +93,7 @@ module.exports = {
   },
   positionsV2: {
     registerAllHandlers: PositionHandlersV2.registerAllHandlers,
-    registerPositionHandler: PositionHandlersV2.registerPositionHandler,
+    registerPositionHandler: PositionHandlersV2.registerPositionHandler
   },
   timeouts: {
     registerAllHandlers: TimeoutHandlers.registerAllHandlers,
