@@ -52,7 +52,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .description('Start a specified Handler') // command description
   .option('--prepare', 'Start the Prepare Handler')
   .option('--position', 'Start the Position Handler')
-  .option('--positionv2', 'Start the Position Handler V2')
+  .option('--positionbatch', 'Start the Position Handler V2')
   .option('--get', 'Start the Transfer Get Handler')
   .option('--fulfil', 'Start the Fulfil Handler')
   .option('--timeout', 'Start the Timeout Handler')
@@ -82,10 +82,10 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       }
       handlerList.push(handler)
     }
-    if (args.positionv2) {
-      Logger.isDebugEnabled && Logger.debug('CLI: Executing --positionv2')
+    if (args.positionbatch) {
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --positionbatch')
       const handler = {
-        type: 'positionv2',
+        type: 'positionbatch',
         enabled: true
       }
       handlerList.push(handler)
