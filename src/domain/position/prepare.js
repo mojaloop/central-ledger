@@ -15,9 +15,9 @@
  * @returns {object} - Returns an object containing  accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges or throws an error if failed
  */
 const processPositionPrepareBin = async (messages, accumulatedPositionValue, accumulatedPositionReservedValue, settlementPositionValue, settlementModelDelay, participantLimitValue, accumulatedTransferStateChanges) => {
-    // TODO: Implement processPositionPrepareBin
+  // TODO: Implement processPositionPrepareBin
 }
 
 module.exports = {
-    processPositionPrepareBin,
+  processPositionPrepareBin
 }

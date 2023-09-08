@@ -102,38 +102,37 @@ const positions = async (error, messages) => {
   // Currently we have to create a span and do and audit for each message
 
   // Iterate through consumedMessages
-  const bins = {};
+  const bins = {}
   for (const message of consumedMessages) {
     // Create a span for each message
     const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
     const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_position', contextFromMessage)
     span.setTags({
       processedAsBatch: true,
-      binId,
+      binId
     })
     // 1. Assign message to account-bin by accountID and child action-bin by action
     //    (References to the messagses to be stored in bins, no duplication of messages)
-    const accountID = message.key.toString();
+    const accountID = message.key.toString()
     const action = message.value.metadata.event.action
 
-    const accountBin = bins[accountID] || (bins[accountID] = {});
-    const actionBin = accountBin[action] || (accountBin[action] = []);
+    const accountBin = bins[accountID] || (bins[accountID] = {})
+    const actionBin = accountBin[action] || (accountBin[action] = [])
     actionBin.push({
       message,
       span,
       // If we need anything We mutate the following object to store the result
       result: {}
-    });
+    })
 
     await span.audit(message, EventSdk.AuditEventAction.start)
   }
-  
+
   // 3. Start DB Transaction
   const knex = await Db.getKnex()
-  const trx = await knex.transaction();
+  const trx = await knex.transaction()
 
   try {
-
     // 4. Call Bin Processor with the list of account-bins and trx
     // const decodedMessages = decodeMessages(consumedMessages)
     await BinProcessor.processBins(bins, trx)
@@ -141,39 +140,35 @@ const positions = async (error, messages) => {
     // 5. If Bin Processor processed bins successfully
     //   - 5.1. Commit Kafka offset
     // Commit the offset of last message in the array
-    const lastMessageToCommit = consumedMessages[consumedMessages.length - 1] 
+    const lastMessageToCommit = consumedMessages[consumedMessages.length - 1]
     const params = { message: lastMessageToCommit, kafkaTopic: lastMessageToCommit.topic, consumer: Consumer }
     // We are using Kafka.proceed() to just commit the offset of the last message in the array
     await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
 
     //   - 5.2. Commit DB transaction
-    await trx.commit();
+    await trx.commit()
 
     //   - 5.3. Loop through results and produce notification messages and audit messages
     for (const accountID in bins) {
-      const accountBin = bins[accountID];
+      const accountBin = bins[accountID]
       for (const action in accountBin) {
-        const actionBin = accountBin[action];
+        const actionBin = accountBin[action]
         for (const bin of actionBin) {
-          const message = bin.message;
-          const result = bin.result;
+          const message = bin.message
+          const result = bin.result
 
           // 5.3.1. TODO: Produce notification message
 
           // 5.3.2. TODO: Audit notification message
-
         }
       }
     }
-
-
-  } catch(err) {
+  } catch (err) {
     // 6. If Bin Processor returns failure
     // 6.1. Rollback DB transaction
-    await trx.rollback();
+    await trx.rollback()
 
     // 6.2. TODO: Audit Error for each message
-
   } finally {
     // TODO: finish span for each message
     // if (!span.isFinished) {
@@ -182,7 +177,6 @@ const positions = async (error, messages) => {
   }
 
   histTimerEnd({ success: true })
-
 }
 
 /**
