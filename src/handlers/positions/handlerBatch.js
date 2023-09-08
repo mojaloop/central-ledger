@@ -40,9 +40,6 @@
 
 const Logger = require('@mojaloop/central-services-logger')
 const EventSdk = require('@mojaloop/event-sdk')
-const TransferService = require('../../domain/transfer')
-const TransferObjectTransform = require('../../domain/transfer/transform')
-const PositionService = require('../../domain/position')
 const BinProcessor = require('../../domain/position/binProcessor')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Utility = require('@mojaloop/central-services-shared').Util
@@ -54,14 +51,14 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Db = require('../../lib/db')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
-const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
-const decodeMessages = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodeMessages
+// const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
+// const decodeMessages = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodeMessages
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
+// const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
 
 const consumerCommit = true
-const fromSwitch = true
+// const fromSwitch = true
 
 /**
  * @function positions
@@ -151,7 +148,7 @@ const positions = async (error, messages) => {
     //   - 5.3. Loop through results and produce notification messages and audit messages
     result.notifyMessages.foreach(async (message) => {
       // 5.3.1. Produce notification message
-      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, message, Enum.Events.EventStatus.SUCCESS) 
+      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, message, Enum.Events.EventStatus.SUCCESS)
       // 5.3.2. TODO: Audit notification message
     })
   } catch (err) {
