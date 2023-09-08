@@ -130,5 +130,5 @@ const processPositionPrepareBin = async (messages, accumulatedPositionValue, acc
 }
 
 module.exports = {
-    processPositionPrepareBin,
+  processPositionPrepareBin
 }
