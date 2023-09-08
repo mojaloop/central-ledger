@@ -25,12 +25,11 @@
  * INFITX
  - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
 
-
  --------------
  ******/
 'use strict'
 
-const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
+// const BatchPositionModel = require('../../models/position/batch')
 
 /**
  * @function processBins
@@ -52,7 +51,7 @@ const processBins = async (bins, trx) => {
     }
   })
   // 1. Pre fetch all transferStateChanges for all the transferIds in the account-bin
-  const latestTransferStates = await TransferStateChangeModel.getLatestByTransferIdList(transferIdList)
+  // const latestTransferStates = await TransferStateChangeModel.getLatestByTransferIdList(transferIdList)
   // 2. Pre fetch all position and settlement account balances for the account-bin and acquire lock on position
   // 3. For each account-bin in the list
   //   3.1. If non-prepare action found, log error

@@ -25,7 +25,6 @@
  * INFITX
  - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
 
-
  --------------
  ******/
 
@@ -34,19 +33,21 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 
+const knex = await Db.getKnex()
+
 const getLatestByTransferIdList = async (transfersIdList) => {
   try {
     const latestTransferStateChanges = {}
     const results = await Db.from('transferStateChange').query(async (builder) => {
-    const result = builder
-      .whereIn('transferStateChange.transferId', transfersIdList)
-      .orderBy('transferStateChangeId', 'desc')
-    return result
+      const result = builder
+        .whereIn('transferStateChange.transferId', transfersIdList)
+        .orderBy('transferStateChangeId', 'desc')
+      return result
     })
     results.forEach((result) => {
-    if (!latestTransferStateChanges[result.transferId]) {
-      latestTransferStateChanges[result.transferId] = result
-    }
+      if (!latestTransferStateChanges[result.transferId]) {
+        latestTransferStateChanges[result.transferId] = result
+      }
     })
     return latestTransferStateChanges
   } catch (err) {
@@ -57,10 +58,10 @@ const getLatestByTransferIdList = async (transfersIdList) => {
 
 const getPositionsByAccountIds = async (trx, accountIds) => {
   const participantPositions = await knex('participantPosition')
-  .transacting(trx)
-  .whereIn('participantCurrencyId', accountIds)
-  .forUpdate()
-  .select('*')
+    .transacting(trx)
+    .whereIn('participantCurrencyId', accountIds)
+    .forUpdate()
+    .select('*')
   const positions = {}
   participantPositions.forEach((position) => {
     positions[position.participantCurrencyId] = position
@@ -72,4 +73,3 @@ module.exports = {
   getLatestByTransferIdList,
   getPositionsByAccountIds
 }
-  
