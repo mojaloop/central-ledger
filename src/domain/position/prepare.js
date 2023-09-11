@@ -4,61 +4,92 @@ const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
 const resourceVersions = require('@mojaloop/central-services-shared').Util.resourceVersions
 const MLNumber = require('@mojaloop/ml-number')
-
+const SettlementModelCached = require('../../models/settlement/settlementModelCached')
+const ParticipantFacade = require('../../models/participant/facade')
+const BatchModel = require('../../models/position/batch')
 /**
  * @function processPositionPrepareBin
  *
  * @async
  * @description This is the domain function to process a bin of position-prepare messages of a single participant account.
  *
- * @param {array} messages - a list of messages to consume for the relevant topic
- * @param {object} initialTransferStateChangeList - A list of initial transfer state changes for the transferIds in the bin
- * @param {number} accumulatedPositionValue - value of position accumulated so far
- * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far
- * @param {number} settlementPositionValue - value of settlement position to be used for liquidity check
- * @param {number} settlementModelDelay - settlement model delay (IMMEDIATE or DEFERRED)
- * @param {number} participantLimitValue - NDC limit of participant
- * @param {array} accumulatedTransferStateChanges - list of accumulated transfer state changes
+ * @param {array} binItems - an array of objects that contain a position prepare message and its span. {message, span}
+ * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
+ * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
+ * @param {object} accumulatedTransferState - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
  *
- * @returns {object} - Returns an object containing  accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, resultMessages, limitAlarms or throws an error if failed
+ * @returns {object} - Returns an object containing accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, accumulatedTransferState, resultMessages, limitAlarms or throws an error if failed
  */
 const processPositionPrepareBin = async (
-  messages,
-  initialTransferStateChangeList,
+  binItems,
   accumulatedPositionValue,
   accumulatedPositionReservedValue,
-  settlementPositionValue,
-  settlementModelDelay,
-  participantLimit,
-  participantLimitValue,
-  accumulatedTransferStateChanges
+  accumulatedTransferState
 ) => {
   let availablePosition
   const transferStateChanges = []
   const participantPositionChanges = []
   const resultMessages = []
   const limitAlarms = []
+  const accumulatedTransferStateCopy = Object.assign({}, accumulatedTransferState)
   const effectivePosition = new MLNumber(accumulatedPositionValue + accumulatedPositionReservedValue)
-  const liquidityCover = new MLNumber(settlementPositionValue).multiply(-1)
 
-  // Enum.Settlements.SettlementDelay.IMMEDIATE or SettlementDelayName.IMMEDIATE. 0/1 or string?
-  if (settlementModelDelay === Enum.Settlements.SettlementDelay.IMMEDIATE) {
-    availablePosition = new MLNumber(settlementPositionValue + participantLimitValue - effectivePosition)
+  // Bin items should be grouped by participant currency id so lets use the first one
+  const participantName = binItems[0].message.payload.payerFsp
+  const currencyId = binItems[0].message.payload.amount.currency
+
+  // This most likely is a shared query that should be moved to the bin processor
+  const participantCurrency = await ParticipantFacade.getByNameAndCurrency(
+    participantName,
+    currencyId,
+    Enum.Accounts.LedgerAccountType.POSITION
+  )
+  const participantLimit = await ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit(
+    participantCurrency.participantId,
+    participantCurrency.currencyId,
+    Enum.Accounts.LedgerAccountType.POSITION,
+    Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP
+  )
+
+  // Query the settlement models to get the settlement delay
+  const allSettlementModels = await SettlementModelCached.getAll()
+  let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
+  if (settlementModels.length === 0) {
+    settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+    if (settlementModels.length === 0) {
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
+    }
+  }
+  const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+  const settlementParticipantCurrency = await ParticipantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
+
+  const participantPositions = await BatchModel.getPositionsByAccountIdsNonTrx(
+    [participantCurrency.participantCurrencyId, settlementParticipantCurrency.participantCurrencyId]
+  )
+
+  const settlementParticipantPosition = participantPositions[settlementParticipantCurrency.participantCurrencyId]
+  const liquidityCover = new MLNumber(settlementParticipantPosition).multiply(-1)
+
+  // Calculate the available position, how much funds the payer participant can move, based on the settlement model delay
+  if (settlementModel.settlementDelayId === Enum.Settlements.SettlementDelay.IMMEDIATE) {
+    availablePosition = new MLNumber(settlementParticipantPosition + participantLimit.value - effectivePosition)
   } else {
-    availablePosition = new MLNumber(participantLimitValue - effectivePosition)
+    availablePosition = new MLNumber(participantLimit.value - effectivePosition)
   }
 
-  for (const message of messages) {
+  for (const binItem of binItems) {
     let transferStateId
     let reason
     let resultMessage
+    const transfer = binItem.message.payload
 
-    if (initialTransferStateChangeList[message.transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
-      transferStateId = Enum.Transfers.TransferState.ABORTED_REJECTED
+    // Check if transfer is in correct state for processing, produce an internal error message
+    if (accumulatedTransferState[transfer.transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
+      transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
       reason = 'Transfer in incorrect state'
 
       const headers = Utility.Http.SwitchDefaultHeaders(
-        message.payerFsp,
+        transfer.payerFsp,
         Enum.Http.HeaderResources.TRANSFERS,
         Enum.Http.Headers.FSPIOP.SWITCH.value,
         resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
@@ -72,25 +103,26 @@ const processPositionPrepareBin = async (
         fspiopError.errorInformation.errorDescription
       )
       const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-        message.transferId,
+        transfer.transferId,
         Enum.Kafka.Topics.NOTIFICATION,
         Enum.Events.Event.Action.PREPARE,
         state
       )
 
       resultMessage = Utility.StreamingProtocol.createMessage(
-        message.transferId,
-        message.payeeFsp,
-        message.payerFsp,
+        transfer.transferId,
+        transfer.payeeFsp,
+        transfer.payerFsp,
         metadata,
         headers,
         fspiopError,
-        { id: message.transferId },
+        { id: transfer.transferId },
         'application/json'
       )
-    } else if (availablePosition >= message.payload.amount.amount) {
+    // Check if payer participant has sufficient liquidity to process the transfer, produce success message
+    } else if (availablePosition >= transfer.amount.amount) {
       transferStateId = Enum.Transfers.TransferState.RESERVED
-      availablePosition = availablePosition - message.payload.amount.amount
+      availablePosition = availablePosition.subtract(transfer.amount.amount)
 
       const headers = null // ?
       const state = Utility.StreamingProtocol.createEventState(
@@ -99,28 +131,29 @@ const processPositionPrepareBin = async (
         null
       )
       const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-        message.transferId,
+        transfer.transferId,
         Enum.Kafka.Topics.TRANSFER,
         Enum.Events.Event.Action.PREPARE,
         state
       )
 
       resultMessage = Utility.StreamingProtocol.createMessage(
-        message.transferId,
-        message.payeeFsp,
-        message.payerFsp,
+        transfer.transferId,
+        transfer.payeeFsp,
+        transfer.payerFsp,
         metadata,
         headers,
         null,
-        { id: message.transferId },
+        { id: transfer.transferId },
         'application/json'
       )
+    // Payer participant has insufficient liquidity to process the transfer, produce an abort message
     } else {
       transferStateId = Enum.Transfers.TransferState.ABORTED
-      reason = 'Net Debit Cap exceeded by this request at this time, please try again later'
+      reason = 'Payer FSP insufficient liquidity'
 
       const headers = Utility.Http.SwitchDefaultHeaders(
-        message.payerFsp,
+        transfer.payerFsp,
         Enum.Http.HeaderResources.TRANSFERS,
         Enum.Http.Headers.FSPIOP.SWITCH.value,
         resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
@@ -134,25 +167,25 @@ const processPositionPrepareBin = async (
         fspiopError.errorInformation.errorDescription
       )
       const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-        message.transferId,
+        transfer.transferId,
         Enum.Kafka.Topics.NOTIFICATION,
         Enum.Events.Event.Action.PREPARE,
         state
       )
 
       resultMessage = Utility.StreamingProtocol.createMessage(
-        message.transferId,
-        message.payeeFsp,
-        message.payerFsp,
+        transfer.transferId,
+        transfer.payeeFsp,
+        transfer.payerFsp,
         metadata,
         headers,
         fspiopError,
-        { id: message.transferId },
+        { id: transfer.transferId },
         'application/json'
       )
     }
 
-    resultMessages.push(resultMessage)
+    resultMessages.push({ binItem, message: resultMessage })
 
     const transferStateChange = {
       transferStateId,
@@ -162,7 +195,7 @@ const processPositionPrepareBin = async (
 
     const participantPositionChange = {
       transferStateChangeId: null, // Need to update this in bin processor while executing queries
-      value: availablePosition,
+      value: availablePosition.toNumber(),
       reservedValue: accumulatedPositionReservedValue
     }
     participantPositionChanges.push(participantPositionChange)
@@ -170,13 +203,16 @@ const processPositionPrepareBin = async (
     if (availablePosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
       limitAlarms.push(participantLimit)
     }
+
+    accumulatedTransferStateCopy[transfer.transferId] = transferStateId
   }
+
   return {
-    accumulatedPosition: availablePosition,
-    transferStateChanges,
+    accumulatedPosition: availablePosition.toNumber(),
     participantPositionChanges,
     resultMessages,
-    accumulatedTransferStateChanges,
+    accumulatedTransferStateChanges: transferStateChanges,
+    accumulatedTransferState: accumulatedTransferStateCopy,
     limitAlarms
   }
 }
