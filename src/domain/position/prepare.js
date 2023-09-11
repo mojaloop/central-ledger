@@ -12,6 +12,7 @@ const MLNumber = require('@mojaloop/ml-number')
  * @description This is the domain function to process a bin of position-prepare messages of a single participant account.
  *
  * @param {array} messages - a list of messages to consume for the relevant topic
+ * @param {object} initialTransferStateChangeList - A list of initial transfer state changes for the transferIds in the bin
  * @param {number} accumulatedPositionValue - value of position accumulated so far
  * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far
  * @param {number} settlementPositionValue - value of settlement position to be used for liquidity check
@@ -19,7 +20,7 @@ const MLNumber = require('@mojaloop/ml-number')
  * @param {number} participantLimitValue - NDC limit of participant
  * @param {array} accumulatedTransferStateChanges - list of accumulated transfer state changes
  *
- * @returns {object} - Returns an object containing  accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, resultMessages or throws an error if failed
+ * @returns {object} - Returns an object containing  accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, resultMessages, limitAlarms or throws an error if failed
  */
 const processPositionPrepareBin = async (
   messages,
