@@ -29,6 +29,8 @@
  ******/
 'use strict'
 
+// const BatchPositionModel = require('../../models/position/batch')
+
 /**
  * @function processBins
  *
@@ -42,7 +44,14 @@
  */
 const processBins = async (bins, trx) => {
   // TODO: Implement binProcessor
+  const transferIdList = []
+  iterateThroughBins(bins, (item) => {
+    if (item.message.value.id) {
+      transferIdList.push(item.message.value.id)
+    }
+  })
   // 1. Pre fetch all transferStateChanges for all the transferIds in the account-bin
+  // const latestTransferStates = await TransferStateChangeModel.getLatestByTransferIdList(transferIdList)
   // 2. Pre fetch all position and settlement account balances for the account-bin and acquire lock on position
   // 3. For each account-bin in the list
   //   3.1. If non-prepare action found, log error
