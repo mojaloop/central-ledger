@@ -36,7 +36,7 @@ const Logger = require('@mojaloop/central-services-logger')
 let knex
 
 const _initKnex = async () => {
-  if(!knex) {
+  if (!knex) {
     knex = await Db.getKnex()
   }
 }
