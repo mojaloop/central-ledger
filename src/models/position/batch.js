@@ -33,7 +33,19 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 
-const knex = await Db.getKnex()
+let knex
+
+const _initKnex = async () => {
+  if(!knex) {
+    knex = await Db.getKnex()
+  }
+}
+
+const startDbTransaction = async () => {
+  _initKnex()
+  const trx = await knex.transaction()
+  return trx
+}
 
 const getLatestByTransferIdList = async (transfersIdList) => {
   try {
@@ -57,6 +69,7 @@ const getLatestByTransferIdList = async (transfersIdList) => {
 }
 
 const getPositionsByAccountIds = async (trx, accountIds) => {
+  _initKnex()
   const participantPositions = await knex('participantPosition')
     .transacting(trx)
     .whereIn('participantCurrencyId', accountIds)
@@ -70,6 +83,7 @@ const getPositionsByAccountIds = async (trx, accountIds) => {
 }
 
 module.exports = {
+  startDbTransaction,
   getLatestByTransferIdList,
   getPositionsByAccountIds
 }

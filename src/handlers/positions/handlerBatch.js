@@ -43,14 +43,13 @@ const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
-const Db = require('../../lib/db')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 // const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 // const decodeMessages = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodeMessages
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-
 // const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
+const BatchPositionModel = require('../../models/position/batch')
 
 const consumerCommit = true
 // const fromSwitch = true
@@ -113,16 +112,13 @@ const positions = async (error, messages) => {
     actionBin.push({
       message,
       span,
-      // If we need anything We mutate the following object to store the result at message level. This may not be needed, but just in case.
-      result: {}
     })
 
     await span.audit(message, EventSdk.AuditEventAction.start)
   }
 
   // 3. Start DB Transaction
-  const knex = await Db.getKnex()
-  const trx = await knex.transaction()
+  const trx = await BatchPositionModel.startDbTransaction()
 
   try {
     // 4. Call Bin Processor with the list of account-bins and trx
@@ -141,17 +137,22 @@ const positions = async (error, messages) => {
     await trx.commit()
 
     //   - 5.3. Loop through results and produce notification messages and audit messages
-    result.notifyMessages.foreach(async (message) => {
-      // 5.3.1. Produce notification message
-      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, message, Enum.Events.EventStatus.SUCCESS)
-      // 5.3.2. TODO: Audit notification message
+    result.notifyMessages.forEach(async (item) => {
+      // 5.3.1. Produce notification message and audit message
+      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, item.notificationMessages, Enum.Events.EventStatus.SUCCESS, null, item.message)
     })
   } catch (err) {
     // 6. If Bin Processor returns failure
     // 6.1. Rollback DB transaction
     await trx.rollback()
 
-    // 6.2. TODO: Audit Error for each message
+    // 6.2. Audit Error for each message
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
+    await BinProcessor.iterateThroughBins(bins, async (item) => {
+      const span = item.span
+      await span.error(fspiopError, state)
+    })
   } finally {
     // Finish span for each message
     await BinProcessor.iterateThroughBins(bins, async (item) => {
