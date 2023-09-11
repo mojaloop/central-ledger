@@ -68,7 +68,12 @@ const processBins = async (bins, trx) => {
   //   accumulatedPosition,
   //   transferStateChanges,
   //   participantPositionChanges,
-  //   notifyMessages
+  //   notifyMessages: [
+  //     {
+  //       binItem: {},
+  //       message: {}
+  //     }
+  //   ]
   // }
 }
 

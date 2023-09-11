@@ -112,8 +112,6 @@ const positions = async (error, messages) => {
     actionBin.push({
       message,
       span,
-      // If we need anything We mutate the following object to store the result at message level. This may not be needed, but just in case.
-      // result: {}
     })
 
     await span.audit(message, EventSdk.AuditEventAction.start)
@@ -139,11 +137,9 @@ const positions = async (error, messages) => {
     await trx.commit()
 
     //   - 5.3. Loop through results and produce notification messages and audit messages
-    result.notifyMessages.forEach(async (message) => {
-      // 5.3.1. Produce notification message
-      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, message, Enum.Events.EventStatus.SUCCESS)
-      // 5.3.2. TODO: Audit notification message - We need to get span of the original message to audit the notification message. How to do that ??
-      // Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, message, Enum.Events.EventStatus.SUCCESS, null, span)
+    result.notifyMessages.forEach(async (item) => {
+      // 5.3.1. Produce notification message and audit message
+      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, item.notificationMessages, Enum.Events.EventStatus.SUCCESS, null, item.message)
     })
   } catch (err) {
     // 6. If Bin Processor returns failure
