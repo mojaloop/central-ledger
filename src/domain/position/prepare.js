@@ -233,7 +233,7 @@ const processPositionPrepareBin = async (
 
     // Logic here seems to be faulty.
     if (availablePosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
-      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::availablePosition: ${availablePosition} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
+      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::limitAlarm: ${availablePosition} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
       limitAlarms.push(participantLimit)
     }
 
