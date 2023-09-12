@@ -47,7 +47,7 @@ const startDbTransaction = async () => {
   return trx
 }
 
-const getLatestByTransferIdList = async (transfersIdList) => {
+const getLatestTransferStatesByTransferIdList = async (transfersIdList) => {
   try {
     const latestTransferStateChanges = {}
     const results = await Db.from('transferStateChange').query(async (builder) => {
@@ -58,7 +58,7 @@ const getLatestByTransferIdList = async (transfersIdList) => {
     })
     results.forEach((result) => {
       if (!latestTransferStateChanges[result.transferId]) {
-        latestTransferStateChanges[result.transferId] = result
+        latestTransferStateChanges[result.transferId] = result.transferStateId
       }
     })
     return latestTransferStateChanges
@@ -68,7 +68,7 @@ const getLatestByTransferIdList = async (transfersIdList) => {
   }
 }
 
-const getPositionsByAccountIds = async (trx, accountIds) => {
+const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
   _initKnex()
   const participantPositions = await knex('participantPosition')
     .transacting(trx)
@@ -82,8 +82,24 @@ const getPositionsByAccountIds = async (trx, accountIds) => {
   return positions
 }
 
+const updateParticipantPosition = async (trx, participantPositionValue, participantPositionReservedValue = null) => {
+  _initKnex()
+  const optionalValues = {}
+  if (participantPositionReservedValue !== null) {
+    optionalValues.reservedValue = participantPositionReservedValue
+  }
+  return await knex('participantPosition').transacting(trx)
+    .where({ participantPositionId: initialParticipantPosition.participantPositionId })
+    .update({
+      value: participantPositionValue,
+      ...optionalValues,
+      changedDate: new Date()
+    })
+}
+
 module.exports = {
   startDbTransaction,
-  getLatestByTransferIdList,
-  getPositionsByAccountIds
+  getLatestTransferStatesByTransferIdList,
+  getPositionsByAccountIdsForUpdate,
+  updateParticipantPosition
 }

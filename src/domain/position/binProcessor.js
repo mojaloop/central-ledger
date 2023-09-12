@@ -29,7 +29,9 @@
  ******/
 'use strict'
 
-// const BatchPositionModel = require('../../models/position/batch')
+const Logger = require('@mojaloop/central-services-logger')
+const BatchPositionModel = require('../../models/position/batch')
+const PositionPrepareDomain = require('./prepare')
 
 /**
  * @function processBins
@@ -43,38 +45,76 @@
  * @returns {results} - Returns a list of bins with results or throws an error if failed
  */
 const processBins = async (bins, trx) => {
-  // TODO: Implement binProcessor
   const transferIdList = []
-  iterateThroughBins(bins, (item) => {
+  await iterateThroughBins(bins, async (item) => {
     if (item.message.value.id) {
       transferIdList.push(item.message.value.id)
     }
   })
-  // 1. Pre fetch all transferStateChanges for all the transferIds in the account-bin
-  // const latestTransferStates = await TransferStateChangeModel.getLatestByTransferIdList(transferIdList)
-  // 2. Pre fetch all position and settlement account balances for the account-bin and acquire lock on position
-  // 3. For each account-bin in the list
-  //   3.1. If non-prepare action found, log error
-  //   3.2. If prepare action found
-  //      3.2.1. Pre fetch NDC limit of participant
-  //      3.2.2. Pre fetch settlementModelDelay
-  //      3.2.3. then call processPositionPrepareBin function with:
-  //          messages, positionValue, positionReservedValue, settlementPositionValue, settlementModelDelay, participantLimitValue, transferStateChanges
-  //        Output: accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges
-  //   3.3. Insert accumulated transferStateChanges by calling a facade function
-  //   3.4. Update accumulated position value by calling a facade function
-  // 4. Return results
-  // {
-  //   accumulatedPosition,
-  //   transferStateChanges,
-  //   participantPositionChanges,
-  //   notifyMessages: [
-  //     {
-  //       binItem: {},
-  //       message: {}
-  //     }
-  //   ]
-  // }
+  // Pre fetch latest transferStates for all the transferIds in the account-bin
+  const latestTransferStates = await BatchPositionModel.getLatestTransferStatesByTransferIdList(transferIdList)
+
+  // Pre fetch all position account balances for the account-bin and acquire lock on position
+  const accountIds = Object.keys(bins)
+  const positions = await BatchPositionModel.getPositionsByAccountIdsForUpdate(trx, accountIds)
+
+  // For each account-bin in the list
+
+  let notifyMessages = []
+  let limitAlarms = []
+
+  for (const accountID in bins) {
+    const accountBin = bins[accountID]
+    const actions = Object.keys(accountBin)
+
+    // Initialize accumulated values
+    // These values will be passed across various actions in the bin
+    let accumulatedPositionValue = positions[accountID].value
+    let accumulatedPositionReservedValue = positions[accountID].reservedValue
+    let accumulatedTransferStates = latestTransferStates
+    let accumulatedTransferStateChanges = []
+    let accumulatedPositionChanges = []
+
+    // If non-prepare action found, log error
+    // We need to remove this once we implement all the actions
+    if (actions.length > 1 || (actions.length === 1 && actions[0] !== 'prepare')) {
+      Logger.isErrorEnabled && Logger.error('Only prepare action is allowed in a batch')
+      // throw new Error('Only prepare action is allowed in a batch')
+    }
+    // If prepare action found then call processPositionPrepareBin function
+    const prepareActionResult = await PositionPrepareDomain.processPositionPrepareBin(
+      accountBin.prepare,
+      accumulatedPositionValue,
+      accumulatedPositionReservedValue,
+      accumulatedTransferStates
+    )
+
+    // Update accumulated values
+    accumulatedPositionValue = prepareActionResult.accumulatedPositionValue
+    accumulatedPositionReservedValue = prepareActionResult.accumulatedPositionReservedValue
+    accumulatedTransferStates = prepareActionResult.accumulatedTransferStates
+    // Append accumulated arrays
+    accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(prepareActionResult.accumulatedTransferStateChanges)
+    accumulatedPositionChanges = accumulatedPositionChanges.concat(prepareActionResult.accumulatedPositionChanges)
+    notifyMessages = notifyMessages.concat(prepareActionResult.notifyMessages)
+
+    // TODO: Update accumulated position values by calling a facade function
+    await BatchPositionModel.updateParticipantPosition(trx, accumulatedPositionValue, accumulatedPositionReservedValue)
+
+    // TODO: Bulk insert accumulated transferStateChanges by calling a facade function
+    // TODO: Bulk get the transferStateChangeIds for transferids using select whereIn
+    // TODO: Mutate accumulated positionChanges with transferStateChangeIds
+    // TODO: Bulk insert accumulated positionChanges by calling a facade function
+    
+    limitAlarms = limitAlarms.concat(prepareActionResult.limitAlarms)
+  }
+
+  // Return results
+  return {
+    notifyMessages,
+    limitAlarms
+  }
+
 }
 
 /**
@@ -95,7 +135,9 @@ const iterateThroughBins = async (bins, cb) => {
     for (const action in accountBin) {
       const actionBin = accountBin[action]
       for (const item of actionBin) {
-        await cb(item)
+        try {
+          await cb(item)
+        } catch(err) {}
       }
     }
   }
