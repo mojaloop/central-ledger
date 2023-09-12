@@ -7,6 +7,8 @@ const MLNumber = require('@mojaloop/ml-number')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const ParticipantFacade = require('../../models/participant/facade')
 const BatchModel = require('../../models/position/batch')
+const Logger = require('@mojaloop/central-services-logger')
+
 /**
  * @function processPositionPrepareBin
  *
@@ -33,6 +35,7 @@ const processPositionPrepareBin = async (
   const limitAlarms = []
   const accumulatedTransferStateCopy = Object.assign({}, accumulatedTransferState)
   const effectivePosition = new MLNumber(accumulatedPositionValue + accumulatedPositionReservedValue)
+  Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::effectivePosition: ${effectivePosition}`)
 
   // Bin items should be grouped by participant currency id so lets use the first one
   const participantName = binItems[0].message.payload.payerFsp
@@ -44,15 +47,20 @@ const processPositionPrepareBin = async (
     currencyId,
     Enum.Accounts.LedgerAccountType.POSITION
   )
+  Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantCurrency: ${JSON.stringify(participantCurrency)}`)
+
   const participantLimit = await ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit(
     participantCurrency.participantId,
     participantCurrency.currencyId,
     Enum.Accounts.LedgerAccountType.POSITION,
     Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP
   )
+  Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantLimit: ${JSON.stringify(participantLimit)}`)
 
   // Query the settlement models to get the settlement delay
   const allSettlementModels = await SettlementModelCached.getAll()
+  Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::allSettlementModels: ${JSON.stringify(allSettlementModels)}`)
+
   let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
   if (settlementModels.length === 0) {
     settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
@@ -61,20 +69,28 @@ const processPositionPrepareBin = async (
     }
   }
   const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+  Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::settlementModel: ${JSON.stringify(settlementModel)}`)
+
   const settlementParticipantCurrency = await ParticipantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
+  Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::settlementParticipantCurrency: ${JSON.stringify(settlementParticipantCurrency)}`)
 
   const participantPositions = await BatchModel.getPositionsByAccountIdsNonTrx(
     [participantCurrency.participantCurrencyId, settlementParticipantCurrency.participantCurrencyId]
   )
+  Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositions: ${JSON.stringify(participantPositions)}`)
 
   const settlementParticipantPosition = participantPositions[settlementParticipantCurrency.participantCurrencyId]
+  Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::settlementParticipantPosition: ${settlementParticipantPosition}`)
+
   const liquidityCover = new MLNumber(settlementParticipantPosition).multiply(-1)
 
   // Calculate the available position, how much funds the payer participant can move, based on the settlement model delay
   if (settlementModel.settlementDelayId === Enum.Settlements.SettlementDelay.IMMEDIATE) {
     availablePosition = new MLNumber(settlementParticipantPosition + participantLimit.value - effectivePosition)
+    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::availablePosition: ${availablePosition} = ${settlementParticipantPosition} + ${participantLimit.value} - ${effectivePosition}`)
   } else {
     availablePosition = new MLNumber(participantLimit.value - effectivePosition)
+    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::availablePosition: ${availablePosition} = ${participantLimit.value} - ${effectivePosition}`)
   }
 
   for (const binItem of binItems) {
@@ -82,9 +98,13 @@ const processPositionPrepareBin = async (
     let reason
     let resultMessage
     const transfer = binItem.message.payload
+    Logger.isDebugEnabled && Logger.debug('-'.repeat(100))
+    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
 
     // Check if transfer is in correct state for processing, produce an internal error message
     if (accumulatedTransferState[transfer.transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
+      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferState: ${accumulatedTransferState[transfer.transferId]} !== ${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
+
       transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
       reason = 'Transfer in incorrect state'
 
@@ -120,11 +140,19 @@ const processPositionPrepareBin = async (
         'application/json'
       )
     // Check if payer participant has sufficient liquidity to process the transfer, produce success message
-    } else if (availablePosition >= transfer.amount.amount) {
+    } else if (availablePosition.toNumber() >= transfer.amount.amount) {
+      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::availablePosition: ${availablePosition} >= ${transfer.amount.amount}`)
+
       transferStateId = Enum.Transfers.TransferState.RESERVED
       availablePosition = availablePosition.subtract(transfer.amount.amount)
 
-      const headers = null // ?
+      // Are these the right headers?
+      const headers = Utility.Http.SwitchDefaultHeaders(
+        transfer.payeeFsp,
+        Enum.Http.HeaderResources.TRANSFERS,
+        transfer.payerFsp,
+        resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
+      )
       const state = Utility.StreamingProtocol.createEventState(
         Enum.Events.EventStatus.SUCCESS.status,
         null,
@@ -188,10 +216,12 @@ const processPositionPrepareBin = async (
     resultMessages.push({ binItem, message: resultMessage })
 
     const transferStateChange = {
+      transferId: transfer.transferId, //
       transferStateId,
       reason
     }
     transferStateChanges.push(transferStateChange)
+    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferStateChange: ${JSON.stringify(transferStateChange)}`)
 
     const participantPositionChange = {
       transferStateChangeId: null, // Need to update this in bin processor while executing queries
@@ -199,21 +229,26 @@ const processPositionPrepareBin = async (
       reservedValue: accumulatedPositionReservedValue
     }
     participantPositionChanges.push(participantPositionChange)
+    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
 
+    // Logic here seems to be faulty.
     if (availablePosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
+      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::availablePosition: ${availablePosition} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
       limitAlarms.push(participantLimit)
     }
 
     accumulatedTransferStateCopy[transfer.transferId] = transferStateId
+    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::accumulatedTransferStateCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)
+    Logger.isDebugEnabled && Logger.debug('-'.repeat(100))
   }
 
   return {
     accumulatedPosition: availablePosition.toNumber(),
-    participantPositionChanges,
-    resultMessages,
-    accumulatedTransferStateChanges: transferStateChanges,
-    accumulatedTransferState: accumulatedTransferStateCopy,
-    limitAlarms
+    accumulatedTransferState: accumulatedTransferStateCopy, // finalizes transfer state after prepare processing
+    accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
+    limitAlarms, // array of participant limits that have been breached
+    participantPositionChanges, // participant position changes to be persisted in order
+    resultMessages // array of objects containing bin item and result message. {binItem, message}
   }
 }
 
