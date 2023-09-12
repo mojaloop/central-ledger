@@ -82,8 +82,6 @@ const processPositionPrepareBin = async (
   const settlementParticipantPosition = participantPositions[settlementParticipantCurrency.participantCurrencyId]
   Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::settlementParticipantPosition: ${settlementParticipantPosition}`)
 
-  const liquidityCover = new MLNumber(settlementParticipantPosition).multiply(-1)
-
   // Calculate the available position, how much funds the payer participant can move, based on the settlement model delay
   if (settlementModel.settlementDelayId === Enum.Settlements.SettlementDelay.IMMEDIATE) {
     availablePosition = new MLNumber(settlementParticipantPosition + participantLimit.value - effectivePosition)
@@ -216,7 +214,7 @@ const processPositionPrepareBin = async (
     resultMessages.push({ binItem, message: resultMessage })
 
     const transferStateChange = {
-      transferId: transfer.transferId, //
+      transferId: transfer.transferId,
       transferStateId,
       reason
     }
@@ -231,7 +229,9 @@ const processPositionPrepareBin = async (
     participantPositionChanges.push(participantPositionChange)
     Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
 
-    // Logic here seems to be faulty.
+    // Logic here seems to be faulty. Pulled from position model.
+    // Think this should be a positive number?
+    const liquidityCover = new MLNumber(settlementParticipantPosition).multiply(-1)
     if (availablePosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
       Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::limitAlarm: ${availablePosition} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
       limitAlarms.push(participantLimit)
@@ -244,7 +244,7 @@ const processPositionPrepareBin = async (
 
   return {
     accumulatedPosition: availablePosition.toNumber(),
-    accumulatedTransferState: accumulatedTransferStateCopy, // finalizes transfer state after prepare processing
+    accumulatedTransferState: accumulatedTransferStateCopy, // finalized transfer state after prepare processing
     accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
     limitAlarms, // array of participant limits that have been breached
     participantPositionChanges, // participant position changes to be persisted in order
