@@ -99,13 +99,13 @@ const processBins = async (bins, trx) => {
     notifyMessages = notifyMessages.concat(prepareActionResult.notifyMessages)
 
     // TODO: Update accumulated position values by calling a facade function
-    await BatchPositionModel.updateParticipantPosition(trx, accumulatedPositionValue, accumulatedPositionReservedValue)
+    await BatchPositionModel.updateParticipantPosition(trx, positions[accountID].participantPositionId, accumulatedPositionValue, accumulatedPositionReservedValue)
 
     // TODO: Bulk insert accumulated transferStateChanges by calling a facade function
     // TODO: Bulk get the transferStateChangeIds for transferids using select whereIn
     // TODO: Mutate accumulated positionChanges with transferStateChangeIds
     // TODO: Bulk insert accumulated positionChanges by calling a facade function
-    
+
     limitAlarms = limitAlarms.concat(prepareActionResult.limitAlarms)
   }
 
@@ -114,7 +114,6 @@ const processBins = async (bins, trx) => {
     notifyMessages,
     limitAlarms
   }
-
 }
 
 /**
@@ -137,7 +136,7 @@ const iterateThroughBins = async (bins, cb) => {
       for (const item of actionBin) {
         try {
           await cb(item)
-        } catch(err) {}
+        } catch (err) {}
       }
     }
   }

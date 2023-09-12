@@ -71,8 +71,8 @@ const samplePrepareMessages = [
     key: '1002',
     value: prepareMessageValue,
     topic: topicName
-  },
-];
+  }
+]
 
 const sampleCommitMessages = [
   {
@@ -84,8 +84,8 @@ const sampleCommitMessages = [
     key: '1002',
     value: commitMessageValue,
     topic: topicName
-  },
-];
+  }
+]
 
 const config = {
   options: {
@@ -141,34 +141,34 @@ Test('Position handler', transferHandlerTest => {
         prepare: [
           {
             message: samplePrepareMessages[0],
-            span: SpanStub,
+            span: SpanStub
           },
           {
             message: samplePrepareMessages[1],
-            span: SpanStub,
-          },
+            span: SpanStub
+          }
         ],
         commit: [
           {
             message: sampleCommitMessages[0],
-            span: SpanStub,
-          },
-        ],
+            span: SpanStub
+          }
+        ]
       },
       1002: {
         prepare: [
           {
             message: samplePrepareMessages[2],
-            span: SpanStub,
-          },
+            span: SpanStub
+          }
         ],
         commit: [
           {
             message: sampleCommitMessages[1],
-            span: SpanStub,
-          },
-        ],
-      },
+            span: SpanStub
+          }
+        ]
+      }
     }
 
     const TracerStub = {
@@ -204,7 +204,7 @@ Test('Position handler', transferHandlerTest => {
     BatchPositionModel.startDbTransaction.returns(trxStub)
     sandbox.stub(BinProcessor)
     BinProcessor.processBins.resolves({
-      notifyMessages: messages.map((i) => ({binItem: {message: i, span: SpanStub}}))
+      notifyMessages: messages.map((i) => ({ binItem: { message: i, span: SpanStub } }))
     })
     BinProcessor.iterateThroughBins.restore()
 
@@ -253,7 +253,6 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-
     registerHandlersTest.test('registerPrepareHandler throw error when there is an error getting KafkaConfig', async (test) => {
       try {
         await Consumer.createHandler(topicName, config, command)
@@ -273,7 +272,6 @@ Test('Position handler', transferHandlerTest => {
   })
 
   transferHandlerTest.test('positions should', positionsTest => {
-    
     positionsTest.test('process messages and commit Kafka offset and DB transaction', async test => {
       // Arrange
       await Consumer.createHandler(topicName, config, command)
@@ -284,15 +282,15 @@ Test('Position handler', transferHandlerTest => {
       // Act
       try {
         await allTransferHandlers.positions(null, messages)
-        test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once');
-        test.ok(BinProcessor.processBins.calledOnceWithExactly(expectedBins, trxStub), 'processBins should be called once with bins and trx');
-        const expectedLastMessageToCommit = messages[messages.length - 1];
-        test.equal(Kafka.proceed.getCall(0).args[1].message.offset, expectedLastMessageToCommit.offset, 'kafkaProceed should be called with the correct offset');
-        test.equal(SpanStub.audit.callCount, 5, 'span.audit should be called five times');
-        test.equal(SpanStub.finish.callCount, 5, 'span.finish should be called five times');
-        test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once');
-        test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called');
-        test.equal(Kafka.produceGeneralMessage.callCount, 5, 'produceGeneralMessage should be five times to produce kafka notification events');
+        test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once')
+        test.ok(BinProcessor.processBins.calledOnceWithExactly(expectedBins, trxStub), 'processBins should be called once with bins and trx')
+        const expectedLastMessageToCommit = messages[messages.length - 1]
+        test.equal(Kafka.proceed.getCall(0).args[1].message.offset, expectedLastMessageToCommit.offset, 'kafkaProceed should be called with the correct offset')
+        test.equal(SpanStub.audit.callCount, 5, 'span.audit should be called five times')
+        test.equal(SpanStub.finish.callCount, 5, 'span.finish should be called five times')
+        test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
+        test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called')
+        test.equal(Kafka.produceGeneralMessage.callCount, 5, 'produceGeneralMessage should be five times to produce kafka notification events')
         test.end()
       } catch (err) {
         test.fail('Error should not be thrown')
@@ -311,15 +309,15 @@ Test('Position handler', transferHandlerTest => {
       // Act
       try {
         await allTransferHandlers.positions(null, messages)
-        test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once');
-        test.ok(BinProcessor.processBins.calledOnceWithExactly(expectedBins, trxStub), 'processBins should be called once with bins and trx');
-        test.ok(Kafka.proceed.notCalled, 'kafkaProceed should not be called');
-        test.equal(SpanStub.audit.callCount, 5, 'span.audit should be called five times');
-        test.equal(SpanStub.error.callCount, 5, 'span.error should be called five times');
-        test.equal(SpanStub.finish.callCount, 5, 'span.finish should be called five times');
-        test.ok(Kafka.produceGeneralMessage.notCalled, 'produceGeneralMessage should not be called');
-        test.ok(trxStub.rollback.calledOnce, 'trx.rollback should be called once');
-        test.ok(trxStub.commit.notCalled, 'trx.commit should not be called');
+        test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once')
+        test.ok(BinProcessor.processBins.calledOnceWithExactly(expectedBins, trxStub), 'processBins should be called once with bins and trx')
+        test.ok(Kafka.proceed.notCalled, 'kafkaProceed should not be called')
+        test.equal(SpanStub.audit.callCount, 5, 'span.audit should be called five times')
+        test.equal(SpanStub.error.callCount, 5, 'span.error should be called five times')
+        test.equal(SpanStub.finish.callCount, 5, 'span.finish should be called five times')
+        test.ok(Kafka.produceGeneralMessage.notCalled, 'produceGeneralMessage should not be called')
+        test.ok(trxStub.rollback.calledOnce, 'trx.rollback should be called once')
+        test.ok(trxStub.commit.notCalled, 'trx.commit should not be called')
         test.end()
       } catch (err) {
         test.fail('Error should not be thrown')

@@ -111,7 +111,7 @@ const positions = async (error, messages) => {
     const actionBin = accountBin[action] || (accountBin[action] = [])
     actionBin.push({
       message,
-      span,
+      span
     })
 
     await span.audit(message, EventSdk.AuditEventAction.start)

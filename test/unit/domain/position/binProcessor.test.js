@@ -31,14 +31,11 @@
 
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
-const Cache = require('../../../../src/lib/cache')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const BinProcessor = require('../../../../src/domain/position/binProcessor')
 const PositionPrepareDomain = require('../../../../src/domain/position/prepare')
 const BatchPositionModel = require('../../../../src/models/position/batch')
 const sampleBins = require('./sampleBins')
-
-const topicName = 'topic-transfer-position-batch'
 
 const trx = {}
 
@@ -46,24 +43,24 @@ const prepareTransfersBin1 = [
   '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e',
   '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf',
   '5dff336f-62c0-4619-92c6-9ccd7c8f0369',
-  'ccf68c01-fe1e-494e-8736-42a9107d3ba0',
+  'ccf68c01-fe1e-494e-8736-42a9107d3ba0'
 ]
 
 const prepareTransfersBin2 = [
   '605ce9e6-a320-4a25-a4c4-397ac6d2544b',
   '42da6ac4-6c42-469d-930a-1213149f41fe',
-  '64b91a07-99a7-4c68-b7dd-d6b3211ad09c',
+  '64b91a07-99a7-4c68-b7dd-d6b3211ad09c'
 ]
 
 const prepareTransfers = [
   ...prepareTransfersBin1,
-  ...prepareTransfersBin2,
+  ...prepareTransfersBin2
 ]
 
 const fulfillTransfers = [
   '4830fa00-0c2a-4de1-9640-5ad4e68f5f62',
   '33d42717-1dc9-4224-8c9b-45aab4fe6457',
-  'f33add51-38b1-4715-9876-83d8a08c485d',
+  'f33add51-38b1-4715-9876-83d8a08c485d'
 ]
 
 Test('BinProcessor', async (binProcessorTest) => {
@@ -76,24 +73,24 @@ Test('BinProcessor', async (binProcessorTest) => {
     const fulfillTransfersStates = Object.fromEntries(fulfillTransfers.map((transferId) => [transferId, Enum.Transfers.TransferInternalState.RECEIVED_FULFIL]))
     BatchPositionModel.getLatestTransferStatesByTransferIdList.returns({
       ...prepareTransfersStates,
-      ...fulfillTransfersStates,
+      ...fulfillTransfersStates
     })
 
     BatchPositionModel.getPositionsByAccountIdsForUpdate.returns({
-      "51": {
+      51: {
         participantPositionId: 51,
         participantCurrencyId: 51,
         value: 10,
         reservedValue: 0,
-        changedDate: "2023-08-17T09:37:22.000Z",
+        changedDate: '2023-08-17T09:37:22.000Z'
       },
-      "52": {
+      52: {
         participantPositionId: 52,
         participantCurrencyId: 52,
         value: 20,
         reservedValue: 0,
-        changedDate: "2023-08-17T09:37:22.000Z",
-      },
+        changedDate: '2023-08-17T09:37:22.000Z'
+      }
     })
 
     BatchPositionModel.updateParticipantPosition.returns(true)
@@ -108,14 +105,13 @@ Test('BinProcessor', async (binProcessorTest) => {
 
   binProcessorTest.test('binProcessor should', prepareActionTest => {
     prepareActionTest.test('processBins should process a bin of positions and return the expected results', async (test) => {
-
       const expectedPrepareBinResults = [
         {
           accumulatedPositionValue: 18,
           accumulatedPositionReservedValue: 0,
           accumulatedTransferStateChanges: prepareTransfersBin1.map((transferId) => ({
             transferId,
-            transferStateId: Enum.Transfers.TransferState.RESERVED,
+            transferStateId: Enum.Transfers.TransferState.RESERVED
           })),
           accumulatedPositionChanges: [
             {
@@ -133,13 +129,13 @@ Test('BinProcessor', async (binProcessorTest) => {
             {
               value: 18,
               reservedValue: 0
-            },
+            }
           ],
           notifyMessages: [
             { message: 'notify1' },
             { message: 'notify2' },
             { message: 'notify3' },
-            { message: 'notify4' },
+            { message: 'notify4' }
           ],
           limitAlarms: [{
             participantId: 1,
@@ -153,7 +149,7 @@ Test('BinProcessor', async (binProcessorTest) => {
           accumulatedPositionReservedValue: 0,
           accumulatedTransferStateChanges: prepareTransfersBin2.map((transferId) => ({
             transferId,
-            transferStateId: Enum.Transfers.TransferInternalState.RESERVED,
+            transferStateId: Enum.Transfers.TransferInternalState.RESERVED
           })),
           accumulatedPositionChanges: [
             {
@@ -167,24 +163,26 @@ Test('BinProcessor', async (binProcessorTest) => {
             {
               value: 26,
               reservedValue: 0
-            },
+            }
           ],
           notifyMessages: [
             { message: 'notify1' },
             { message: 'notify2' },
-            { message: 'notify3' },
+            { message: 'notify3' }
           ],
           limitAlarms: []
         }
       ]
 
       const positionPrepareBinStub = sandbox.stub(PositionPrepareDomain, 'processPositionPrepareBin').callsFake(
-        ( accountBin,
+        (accountBin,
           accumulatedPositionValue,
           accumulatedPositionReservedValue,
-          accumulatedTransferStates ) => { return expectedPrepareBinResults.shift() })
+          accumulatedTransferStates) => { return expectedPrepareBinResults.shift() })
 
       const result = await BinProcessor.processBins(sampleBins, trx)
+
+      test.ok(positionPrepareBinStub.calledTwice, 'processPositionPrepareBin should be called twice')
 
       // Assert on result.notifyMessages
       test.equal(result.notifyMessages.length, 7, 'processBins should return the expected number of notify messages')
@@ -193,15 +191,15 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.equal(result.limitAlarms.length, 1, 'processBin should return the expected number of limit alarms')
 
       // Assert on number of function calls for DB update on position value
-      test.ok(BatchPositionModel.updateParticipantPosition.calledTwice, 'updateParticipantPosition should be called twice');
+      test.ok(BatchPositionModel.updateParticipantPosition.calledTwice, 'updateParticipantPosition should be called twice')
 
       // TODO: Assert on number of function calls for DB bulk insert of transferStateChanges
       // TODO: Assert on number of function calls for DB bulk insert of positionChanges
 
       // Assert on DB update for position values of all accounts in each function call
       test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
-        [{}, 18, 0],
-        [{}, 26, 0],
+        [{}, 51, 18, 0],
+        [{}, 52, 26, 0]
       ], 'updateParticipantPosition should be called with the expected arguments')
 
       // TODO: Assert on DB bulk insert of transferStateChanges in each function call

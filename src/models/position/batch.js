@@ -36,7 +36,7 @@ const Logger = require('@mojaloop/central-services-logger')
 let knex
 
 const _initKnex = async () => {
-  if(!knex) {
+  if (!knex) {
     knex = await Db.getKnex()
   }
 }
@@ -82,14 +82,14 @@ const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
   return positions
 }
 
-const updateParticipantPosition = async (trx, participantPositionValue, participantPositionReservedValue = null) => {
+const updateParticipantPosition = async (trx, participantPositionId, participantPositionValue, participantPositionReservedValue = null) => {
   _initKnex()
   const optionalValues = {}
   if (participantPositionReservedValue !== null) {
     optionalValues.reservedValue = participantPositionReservedValue
   }
   return await knex('participantPosition').transacting(trx)
-    .where({ participantPositionId: initialParticipantPosition.participantPositionId })
+    .where({ participantPositionId })
     .update({
       value: participantPositionValue,
       ...optionalValues,
