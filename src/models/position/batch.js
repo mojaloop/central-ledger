@@ -111,8 +111,8 @@ const updateParticipantPosition = async (trx, participantPositionId, participant
 
 module.exports = {
   startDbTransaction,
-  getLatestByTransferIdList,
-  getPositionsByAccountIds,
+  getLatestTransferStatesByTransferIdList,
+  getPositionsByAccountIdsForUpdate,
   getPositionsByAccountIdsNonTrx,
   updateParticipantPosition
 }

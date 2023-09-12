@@ -8,6 +8,7 @@ const SettlementModelCached = require('../../models/settlement/settlementModelCa
 const ParticipantFacade = require('../../models/participant/facade')
 const BatchModel = require('../../models/position/batch')
 const Logger = require('@mojaloop/central-services-logger')
+const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 
 /**
  * @function processPositionPrepareBin
@@ -33,13 +34,15 @@ const processPositionPrepareBin = async (
   const participantPositionChanges = []
   const resultMessages = []
   const limitAlarms = []
-  const accumulatedTransferStateCopy = Object.assign({}, accumulatedTransferState)
+  const accumulatedTransferStatesCopy = Object.assign({}, accumulatedTransferState)
+  // for participantPosition values from database a negative position means the participant has funds to send
   const effectivePosition = new MLNumber(accumulatedPositionValue + accumulatedPositionReservedValue)
   Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::effectivePosition: ${effectivePosition}`)
 
   // Bin items should be grouped by participant currency id so lets use the first one
-  const participantName = binItems[0].message.payload.payerFsp
-  const currencyId = binItems[0].message.payload.amount.currency
+  const transfer = decodePayload(binItems[0].message.value.content.payload)
+  const participantName = binItems[0].message.value.from
+  const currencyId = transfer.amount.currency
 
   // This most likely is a shared query that should be moved to the bin processor
   const participantCurrency = await ParticipantFacade.getByNameAndCurrency(
@@ -51,7 +54,7 @@ const processPositionPrepareBin = async (
 
   const participantLimit = await ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit(
     participantCurrency.participantId,
-    participantCurrency.currencyId,
+    currencyId,
     Enum.Accounts.LedgerAccountType.POSITION,
     Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP
   )
@@ -75,7 +78,7 @@ const processPositionPrepareBin = async (
   Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::settlementParticipantCurrency: ${JSON.stringify(settlementParticipantCurrency)}`)
 
   const participantPositions = await BatchModel.getPositionsByAccountIdsNonTrx(
-    [participantCurrency.participantCurrencyId, settlementParticipantCurrency.participantCurrencyId]
+    [settlementParticipantCurrency.participantCurrencyId]
   )
   Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositions: ${JSON.stringify(participantPositions)}`)
 
@@ -95,7 +98,7 @@ const processPositionPrepareBin = async (
     let transferStateId
     let reason
     let resultMessage
-    const transfer = binItem.message.payload
+    const transfer = decodePayload(binItem.message.value.content.payload)
     Logger.isDebugEnabled && Logger.debug('-'.repeat(100))
     Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
 
@@ -229,26 +232,28 @@ const processPositionPrepareBin = async (
     participantPositionChanges.push(participantPositionChange)
     Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
 
+    // TODO: Discuss correct limit alarm implementation
     // Logic here seems to be faulty. Pulled from position model.
     // Think this should be a positive number?
-    const liquidityCover = new MLNumber(settlementParticipantPosition).multiply(-1)
-    if (availablePosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
-      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::limitAlarm: ${availablePosition} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
-      limitAlarms.push(participantLimit)
-    }
+    // const liquidityCover = new MLNumber(settlementParticipantPosition).multiply(-1)
+    // if (availablePosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
+    //   Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::limitAlarm: ${availablePosition} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
+    //   limitAlarms.push(participantLimit)
+    // }
 
-    accumulatedTransferStateCopy[transfer.transferId] = transferStateId
-    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::accumulatedTransferStateCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)
+    accumulatedTransferStatesCopy[transfer.transferId] = transferStateId
+    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::accumulatedTransferStatesCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)
     Logger.isDebugEnabled && Logger.debug('-'.repeat(100))
   }
 
   return {
-    accumulatedPosition: availablePosition.toNumber(),
-    accumulatedTransferState: accumulatedTransferStateCopy, // finalized transfer state after prepare processing
+    accumulatedPositionValue: availablePosition.toNumber(),
+    accumulatedTransferStates: accumulatedTransferStatesCopy, // finalized transfer state after prepare processing
+    accumulatedPositionReservedValue, // not used but kept for consistency
     accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
     limitAlarms, // array of participant limits that have been breached
-    participantPositionChanges, // participant position changes to be persisted in order
-    resultMessages // array of objects containing bin item and result message. {binItem, message}
+    accumulatedPositionChanges: participantPositionChanges, // participant position changes to be persisted in order
+    notifyMessages: resultMessages // array of objects containing bin item and result message. {binItem, message}
   }
 }
 
