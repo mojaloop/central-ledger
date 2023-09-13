@@ -29,12 +29,7 @@ const { Enum } = require('@mojaloop/central-services-shared')
 const Sinon = require('sinon')
 const { processPositionPrepareBin } = require('../../../../src/domain/position/prepare')
 const Logger = require('@mojaloop/central-services-logger')
-const ParticipantFacade = require('../../../../src/models/participant/facade')
-const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
-const BatchModel = require('../../../../src/models/position/batch')
 
-const payerFsp = 'perffsp1'
-const currency = 'USD'
 // Each transfer is for $2.00 USD
 const transferMessage1 = {
   value: {
@@ -262,10 +257,6 @@ Test('Prepare domain', positionIndexTest => {
 
   positionIndexTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
-    sandbox.stub(ParticipantFacade, 'getParticipantLimitByParticipantCurrencyLimit')
-    sandbox.stub(SettlementModelCached, 'getAll')
-    sandbox.stub(BatchModel, 'getPositionsByAccountIdsNonTrx')
     t.end()
   })
 
@@ -276,29 +267,16 @@ Test('Prepare domain', positionIndexTest => {
 
   positionIndexTest.test('processPositionPrepareBin should', changeParticipantPositionTest => {
     changeParticipantPositionTest.test('produce abort message for transfers not in the right transfer state', async (test) => {
-      const participant = {
-        participantId: 0,
-        name: 'perffsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date(),
-        participantCurrencyId: 1
-      }
-      const settlementAccount = {
-        participantCurrencyId: 2
-      }
       const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
-        value: 0,
+        value: 900, // Participant limit value
         isActive: 1,
         createdBy: 'unknown',
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      // Not sure of what should be the correctly structured model here.
-      // All I know is that the model should have the following properties: currencyId, the right settlementAccountId
-      const allSettlementModels = [{
+      const settlementModel = {
         settlementModelId: 1,
         name: 'DEFERREDNET',
         isActive: 1,
@@ -311,26 +289,19 @@ Test('Prepare domain', positionIndexTest => {
         autoPositionReset: 1,
         adjustPosition: 0,
         settlementAccountTypeId: 2
-      }]
-
-      SettlementModelCached.getAll.returns(allSettlementModels)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 1).returns(participant)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 2).returns(settlementAccount)
-      ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit.withArgs(0, 'USD').returns(Promise.resolve(participantLimit))
-      BatchModel.getPositionsByAccountIdsNonTrx.withArgs([2]).returns({
-        1: 0, // perffsp1 position for position account
-        2: 0 // perffsp1 position for settlement account
-      })
-
+      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        -10, // Accumulated position value should cover $4 in transfers
+        0, // Accumulated position value
         0,
         {
           '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
           '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
           '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        }
+        },
+        -1000, // Settlement participant position value
+        settlementModel,
+        participantLimit
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -365,22 +336,11 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
-      test.equal(processedMessages.accumulatedPositionValue, 6)
+      test.equal(processedMessages.accumulatedPositionValue, 4)
       test.end()
     })
 
     changeParticipantPositionTest.test('produce abort message for when payer does not have enough liquidity', async (test) => {
-      const participant = {
-        participantId: 0,
-        name: 'perffsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date(),
-        participantCurrencyId: 1
-      }
-      const settlementAccount = {
-        participantCurrencyId: 2
-      }
       const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
@@ -390,9 +350,7 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      // Not sure of what should be the correctly structured model here.
-      // All I know is that the model should have the following properties: currencyId, the right settlementAccountId
-      const allSettlementModels = [{
+      const settlementModel = {
         settlementModelId: 1,
         name: 'DEFERREDNET',
         isActive: 1,
@@ -405,17 +363,7 @@ Test('Prepare domain', positionIndexTest => {
         autoPositionReset: 1,
         adjustPosition: 0,
         settlementAccountTypeId: 2
-      }]
-
-      SettlementModelCached.getAll.returns(allSettlementModels)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 1).returns(participant)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 2).returns(settlementAccount)
-      ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit.withArgs(0, 'USD').returns(Promise.resolve(participantLimit))
-      BatchModel.getPositionsByAccountIdsNonTrx.returns({
-        1: 0, // perffsp1 position for position account
-        2: 0 // perffsp1 position for settelement account
-      })
-
+      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
         0, // No accumulated position value
@@ -424,7 +372,10 @@ Test('Prepare domain', positionIndexTest => {
           '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
           '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
           '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        }
+        },
+        0, // Settlement participant position value
+        settlementModel,
+        participantLimit
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -471,17 +422,6 @@ Test('Prepare domain', positionIndexTest => {
     })
 
     changeParticipantPositionTest.test('produce reserved messages for valid transfer messages', async (test) => {
-      const participant = {
-        participantId: 0,
-        name: 'perffsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date(),
-        participantCurrencyId: 1
-      }
-      const settlementAccount = {
-        participantCurrencyId: 2
-      }
       const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
@@ -491,9 +431,7 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      // Not sure of what should be the correctly structured model here.
-      // All I know is that the model should have the following properties: currencyId, the right settlementAccountId
-      const allSettlementModels = [{
+      const settlementModel = {
         settlementModelId: 1,
         name: 'DEFERREDNET',
         isActive: 1,
@@ -506,26 +444,19 @@ Test('Prepare domain', positionIndexTest => {
         autoPositionReset: 1,
         adjustPosition: 0,
         settlementAccountTypeId: 2
-      }]
-
-      SettlementModelCached.getAll.returns(allSettlementModels)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 1).returns(participant)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 2).returns(settlementAccount)
-      ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit.withArgs(0, 'USD').returns(Promise.resolve(participantLimit))
-      BatchModel.getPositionsByAccountIdsNonTrx.returns({
-        1: 100000,
-        2: 100000
-      })
-
+      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        0,
+        -4, // Accumulated position value
         0,
         {
           '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
           '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
           '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        }
+        },
+        0, // Settlement participant position value
+        settlementModel,
+        participantLimit
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -535,7 +466,7 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Destination'], 'perffsp2')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Source'], 'perffsp1')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
-      test.equal(processedMessages.accumulatedPositionChanges[0].value, 9998)
+      test.equal(processedMessages.accumulatedPositionChanges[0].value, -2)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferState.RESERVED)
 
       test.equal(processedMessages.notifyMessages[1].message.content.uriParams.id, '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e')
@@ -543,7 +474,7 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Destination'], 'perffsp2')
       test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Source'], 'perffsp1')
       test.equal(processedMessages.notifyMessages[1].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
-      test.equal(processedMessages.accumulatedPositionChanges[1].value, 9996)
+      test.equal(processedMessages.accumulatedPositionChanges[1].value, 0)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferState.RESERVED)
 
       test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, '5dff336f-62c0-4619-92c6-9ccd7c8f0369')
@@ -553,7 +484,7 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[2].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
       test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedPositionChanges[2].value, 9996)
+      test.equal(processedMessages.accumulatedPositionChanges[2].value, 0)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
@@ -564,170 +495,11 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
-      test.equal(processedMessages.accumulatedPositionValue, 9996)
-      test.end()
-    })
-
-    changeParticipantPositionTest.test('include settlementParticipantPosition in availablePosition calc when settlement model delay is IMMEDIATE', async (test) => {
-      const participant = {
-        participantId: 0,
-        name: 'perffsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date(),
-        participantCurrencyId: 1
-      }
-      const settlementAccount = {
-        participantCurrencyId: 2
-      }
-      const participantLimit = {
-        participantCurrencyId: 1,
-        participantLimitTypeId: 1,
-        value: 10000,
-        isActive: 1,
-        createdBy: 'unknown',
-        participantLimitId: 1,
-        thresholdAlarmPercentage: 0.5
-      }
-      // Not sure of what should be the correctly structured model here.
-      // All I know is that the model should have the following properties: currencyId, the right settlementAccountId
-      const allSettlementModels = [{
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 1, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }]
-
-      SettlementModelCached.getAll.returns(allSettlementModels)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 1).returns(participant)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 2).returns(settlementAccount)
-      ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit.withArgs(0, 'USD').returns(Promise.resolve(participantLimit))
-      BatchModel.getPositionsByAccountIdsNonTrx.returns({
-        1: 100000,
-        2: 100000
-      })
-
-      const processedMessages = await processPositionPrepareBin(
-        binItems,
-        0,
-        0,
-        {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        }
-      )
-      Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
-
-      test.equal(processedMessages.notifyMessages[0].message.content.uriParams.id, '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf')
-      test.equal(processedMessages.notifyMessages[0].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
-      test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Destination'], 'perffsp2')
-      test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Source'], 'perffsp1')
-      test.equal(processedMessages.notifyMessages[0].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
-      test.equal(processedMessages.accumulatedPositionChanges[0].value, 109998)
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferState.RESERVED)
-
-      test.equal(processedMessages.notifyMessages[1].message.content.uriParams.id, '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e')
-      test.equal(processedMessages.notifyMessages[1].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
-      test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Destination'], 'perffsp2')
-      test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Source'], 'perffsp1')
-      test.equal(processedMessages.notifyMessages[1].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
-      test.equal(processedMessages.accumulatedPositionChanges[1].value, 109996)
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferState.RESERVED)
-
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, '5dff336f-62c0-4619-92c6-9ccd7c8f0369')
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['FSPIOP-Destination'], 'perffsp1')
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['FSPIOP-Source'], 'switch')
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedPositionChanges[2].value, 109996)
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
-
-      test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
-      test.equal(processedMessages.accumulatedTransferStateChanges[1].transferId, transferMessage2.value.id)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferId, transferMessage3.value.id)
-
-      test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.RESERVED)
-      test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
-
-      test.equal(processedMessages.accumulatedPositionValue, 109996)
-      test.end()
-    })
-
-    changeParticipantPositionTest.test('produce error if no settlement models found', async (test) => {
-      const participant = {
-        participantId: 0,
-        name: 'perffsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date(),
-        participantCurrencyId: 1
-      }
-      const settlementAccount = {
-        participantCurrencyId: 2
-      }
-      const participantLimit = {
-        participantCurrencyId: 1,
-        participantLimitTypeId: 1,
-        value: 10000,
-        isActive: 1,
-        createdBy: 'unknown',
-        participantLimitId: 1,
-        thresholdAlarmPercentage: 0.5
-      }
-      const allSettlementModels = []
-
-      SettlementModelCached.getAll.returns(allSettlementModels)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 1).returns(participant)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 2).returns(settlementAccount)
-      ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit.withArgs(0, 'USD').returns(Promise.resolve(participantLimit))
-      BatchModel.getPositionsByAccountIdsNonTrx.returns({
-        1: 100000,
-        2: 100000
-      })
-      try {
-        await processPositionPrepareBin(
-          binItems,
-          0,
-          0,
-          {
-            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-          }
-        )
-        test.notOk('Should throw error')
-      } catch (error) {
-        test.ok(error)
-      }
-
+      test.equal(processedMessages.accumulatedPositionValue, 0)
       test.end()
     })
 
     changeParticipantPositionTest.test('produce reserved messages for valid transfer messages with default settlement model', async (test) => {
-      const participant = {
-        participantId: 0,
-        name: 'perffsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date(),
-        participantCurrencyId: 1
-      }
-      const settlementAccount = {
-        participantCurrencyId: 2
-      }
       const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
@@ -737,9 +509,7 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      // Not sure of what should be the correctly structured model here.
-      // All I know is that the model should have the following properties: currencyId, the right settlementAccountId
-      const allSettlementModels = [{
+      const settlementModel = {
         settlementModelId: 1,
         name: 'DEFERREDNET',
         isActive: 1,
@@ -752,26 +522,19 @@ Test('Prepare domain', positionIndexTest => {
         autoPositionReset: 1,
         adjustPosition: 0,
         settlementAccountTypeId: 2
-      }]
-
-      SettlementModelCached.getAll.returns(allSettlementModels)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 1).returns(participant)
-      ParticipantFacade.getByNameAndCurrency.withArgs(payerFsp, currency, 2).returns(settlementAccount)
-      ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit.withArgs(0, 'USD').returns(Promise.resolve(participantLimit))
-      BatchModel.getPositionsByAccountIdsNonTrx.returns({
-        1: 100000,
-        2: 100000
-      })
-
+      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        0,
+        -4,
         0,
         {
           '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
           '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
           '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        }
+        },
+        0,
+        settlementModel,
+        participantLimit
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -781,7 +544,7 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Destination'], 'perffsp2')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Source'], 'perffsp1')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
-      test.equal(processedMessages.accumulatedPositionChanges[0].value, 9998)
+      test.equal(processedMessages.accumulatedPositionChanges[0].value, -2)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferState.RESERVED)
 
       test.equal(processedMessages.notifyMessages[1].message.content.uriParams.id, '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e')
@@ -789,7 +552,7 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Destination'], 'perffsp2')
       test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Source'], 'perffsp1')
       test.equal(processedMessages.notifyMessages[1].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
-      test.equal(processedMessages.accumulatedPositionChanges[1].value, 9996)
+      test.equal(processedMessages.accumulatedPositionChanges[1].value, 0)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferState.RESERVED)
 
       test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, '5dff336f-62c0-4619-92c6-9ccd7c8f0369')
@@ -799,7 +562,7 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[2].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
       test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedPositionChanges[2].value, 9996)
+      test.equal(processedMessages.accumulatedPositionChanges[2].value, 0)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
@@ -810,11 +573,52 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
-      test.equal(processedMessages.accumulatedPositionValue, 9996)
+      test.equal(processedMessages.accumulatedPositionValue, 0)
       test.end()
     })
 
-    changeParticipantPositionTest.skip('produce proper limit alarms', async (test) => {
+    changeParticipantPositionTest.test('produce proper limit alarms', async (test) => {
+      const participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: 4,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 0.5
+      }
+      const settlementModel = {
+        settlementModelId: 1,
+        name: 'DEFERREDNET',
+        isActive: 1,
+        settlementGranularityId: 2,
+        settlementInterchangeId: 2,
+        settlementDelayId: 2, // 1 Immediate, 2 Deferred
+        currencyId: null, // Default settlement model is null currencyId
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
+        autoPositionReset: 1,
+        adjustPosition: 0,
+        settlementAccountTypeId: 2
+      }
+      const processedMessages = await processPositionPrepareBin(
+        binItems,
+        0,
+        0,
+        {
+          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+        },
+        -4,
+        settlementModel,
+        participantLimit
+      )
+      Logger.isInfoEnabled && Logger.info(processedMessages)
+      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.limitAlarms.length, 2)
+      test.equal(processedMessages.accumulatedPositionValue, 4)
+      test.end()
     })
 
     changeParticipantPositionTest.end()
