@@ -35,6 +35,8 @@ const PositionPrepareDomain = require('./prepare')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+// TODO: We may not need this if we optimize the participantLimit query
+const participantFacade = require('../../models/participant/facade')
 
 /**
  * @function processBins
@@ -112,6 +114,9 @@ const processBins = async (bins, trx) => {
 
     const settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
     const settlementModel = currencyIdMap[accountIdMap[accountID].currencyId].settlementModel
+
+    // TODO: Refactor the following SQL query to optimize the performance
+    const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(accountIdMap[accountID].participantId, accountIdMap[accountID].currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
     // Initialize accumulated values
     // These values will be passed across various actions in the bin
     let accumulatedPositionValue = positions[accountID].value
@@ -133,7 +138,8 @@ const processBins = async (bins, trx) => {
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
       settlementParticipantPosition,
-      settlementModel
+      settlementModel,
+      participantLimit
     )
 
     // Update accumulated values
