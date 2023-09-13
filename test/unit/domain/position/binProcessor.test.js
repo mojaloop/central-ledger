@@ -77,16 +77,16 @@ Test('BinProcessor', async (binProcessorTest) => {
     })
 
     BatchPositionModel.getPositionsByAccountIdsForUpdate.returns({
-      51: {
-        participantPositionId: 51,
-        participantCurrencyId: 51,
+      7: {
+        participantPositionId: 7,
+        participantCurrencyId: 7,
         value: 10,
         reservedValue: 0,
         changedDate: '2023-08-17T09:37:22.000Z'
       },
-      52: {
-        participantPositionId: 52,
-        participantCurrencyId: 52,
+      15: {
+        participantPositionId: 15,
+        participantCurrencyId: 15,
         value: 20,
         reservedValue: 0,
         changedDate: '2023-08-17T09:37:22.000Z'
@@ -198,8 +198,8 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       // Assert on DB update for position values of all accounts in each function call
       test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
-        [{}, 51, 18, 0],
-        [{}, 52, 26, 0]
+        [{}, 7, 18, 0],
+        [{}, 15, 26, 0]
       ], 'updateParticipantPosition should be called with the expected arguments')
 
       // TODO: Assert on DB bulk insert of transferStateChanges in each function call
