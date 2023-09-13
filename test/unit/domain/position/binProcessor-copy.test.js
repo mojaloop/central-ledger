@@ -34,9 +34,9 @@ const Test = require('tapes')(require('tape'))
 const Enum = require('@mojaloop/central-services-shared').Enum
 const BinProcessor = require('../../../../src/domain/position/binProcessor')
 const BatchPositionModel = require('../../../../src/models/position/batch')
-const sampleBins = require('./sampleBins')
-const ParticipantFacade = require('../../../../src/models/participant/facade')
 const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
+const participantFacade = require('../../../../src/models/participant/facade')
+const sampleBins = require('./sampleBins')
 
 const trx = {}
 
@@ -69,9 +69,8 @@ Test('BinProcessor', async (binProcessorTest) => {
   binProcessorTest.beforeEach(async test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(BatchPositionModel)
-    sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
-    sandbox.stub(ParticipantFacade, 'getParticipantLimitByParticipantCurrencyLimit')
-    sandbox.stub(SettlementModelCached, 'getAll')
+    sandbox.stub(SettlementModelCached)
+    sandbox.stub(participantFacade)
 
     const prepareTransfersStates = Object.fromEntries(prepareTransfers.map((transferId) => [transferId, Enum.Transfers.TransferInternalState.RECEIVED_PREPARE]))
     const fulfillTransfersStates = Object.fromEntries(fulfillTransfers.map((transferId) => [transferId, Enum.Transfers.TransferInternalState.RECEIVED_FULFIL]))
@@ -80,20 +79,261 @@ Test('BinProcessor', async (binProcessorTest) => {
       ...fulfillTransfersStates
     })
 
-    BatchPositionModel.getPositionsByAccountIdsForUpdate.returns({
-      51: {
-        participantPositionId: 51,
-        participantCurrencyId: 51,
-        value: -10, // A negative value indicates a account is able to send funds
-        reservedValue: 0,
-        changedDate: '2023-08-17T09:37:22.000Z'
+    BatchPositionModel.getParticipantCurrencyIds.returns([
+      {
+        participantCurrencyId: 7,
+        participantId: 2,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:27.000Z',
+        createdBy: 'unknown'
       },
-      52: {
-        participantPositionId: 52,
-        participantCurrencyId: 52,
-        value: -20, // A negative value indicates a account is able to send funds
+      {
+        participantCurrencyId: 15,
+        participantId: 3,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:37.000Z',
+        createdBy: 'unknown'
+      }
+    ])
+
+    SettlementModelCached.getAll.returns([
+      {
+        settlementModelId: 1,
+        name: 'DEFERREDNETUSD',
+        isActive: 1,
+        settlementGranularityId: 2,
+        settlementInterchangeId: 2,
+        settlementDelayId: 2,
+        currencyId: 'USD',
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 1,
+        autoPositionReset: 1,
+        adjustPosition: 0,
+        settlementAccountTypeId: 2
+      },
+      {
+        settlementModelId: 2,
+        name: 'DEFAULTDEFERREDNET',
+        isActive: 1,
+        settlementGranularityId: 2,
+        settlementInterchangeId: 2,
+        settlementDelayId: 2,
+        currencyId: null,
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 1,
+        autoPositionReset: 1,
+        adjustPosition: 0,
+        settlementAccountTypeId: 2
+      },
+      {
+        settlementModelId: 3,
+        name: 'CGS',
+        isActive: 1,
+        settlementGranularityId: 1,
+        settlementInterchangeId: 1,
+        settlementDelayId: 1,
+        currencyId: 'INR',
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 1,
+        autoPositionReset: 0,
+        adjustPosition: 0,
+        settlementAccountTypeId: 2
+      },
+      {
+        settlementModelId: 4,
+        name: 'INTERCHANGEFEE',
+        isActive: 1,
+        settlementGranularityId: 2,
+        settlementInterchangeId: 2,
+        settlementDelayId: 2,
+        currencyId: 'INR',
+        requireLiquidityCheck: 0,
+        ledgerAccountTypeId: 5,
+        autoPositionReset: 1,
+        adjustPosition: 0,
+        settlementAccountTypeId: 6
+      }
+    ])
+
+    BatchPositionModel.getParticipantCurrencyIdsByParticipantIds.returns([
+      {
+        participantCurrencyId: 9,
+        participantId: 2,
+        currencyId: 'BGN',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:31.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 10,
+        participantId: 2,
+        currencyId: 'BGN',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:31.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 11,
+        participantId: 2,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:32.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 12,
+        participantId: 2,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:32.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 13,
+        participantId: 2,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 5,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:32.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 14,
+        participantId: 2,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 6,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:32.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 7,
+        participantId: 2,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:27.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 8,
+        participantId: 2,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:27.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 17,
+        participantId: 3,
+        currencyId: 'BGN',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 18,
+        participantId: 3,
+        currencyId: 'BGN',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 19,
+        participantId: 3,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 20,
+        participantId: 3,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 21,
+        participantId: 3,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 5,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 22,
+        participantId: 3,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 6,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 15,
+        participantId: 3,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:37.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 16,
+        participantId: 3,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:37.000Z',
+        createdBy: 'unknown'
+      }
+    ])
+
+    BatchPositionModel.getPositionsByAccountIdsForUpdate.returns({
+      7: {
+        participantPositionId: 7,
+        participantCurrencyId: 7,
+        value: 0,
         reservedValue: 0,
-        changedDate: '2023-08-17T09:37:22.000Z'
+        changedDate: '2023-08-17T09:36:27.000Z'
+      },
+      8: {
+        participantPositionId: 8,
+        participantCurrencyId: 8,
+        value: -5000000,
+        reservedValue: 0,
+        changedDate: '2023-08-17T09:36:33.000Z'
+      },
+      15: {
+        participantPositionId: 15,
+        participantCurrencyId: 15,
+        value: 0,
+        reservedValue: 0,
+        changedDate: '2023-08-17T09:36:37.000Z'
+      },
+      16: {
+        participantPositionId: 16,
+        participantCurrencyId: 16,
+        value: -5000000,
+        reservedValue: 0,
+        changedDate: '2023-08-17T09:36:43.000Z'
       }
     })
 
@@ -109,82 +349,22 @@ Test('BinProcessor', async (binProcessorTest) => {
 
   binProcessorTest.test('binProcessor should', prepareActionTest => {
     prepareActionTest.test('processBins should process a bin of positions and return the expected results', async (test) => {
-      const participantPerffsp1 = {
-        participantId: 0,
-        name: 'perffsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date(),
-        participantCurrencyId: 1
-      }
-      const participantPerffsp2 = {
-        participantId: 1,
-        name: 'perffsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date(),
-        participantCurrencyId: 3
-      }
-      const settlementAccountPerffsp1 = {
-        participantCurrencyId: 2
-      }
-      const settlementAccountPerffsp2 = {
-        participantCurrencyId: 4
-      }
-      const participantLimitPerffsp1 = {
-        participantCurrencyId: 1,
-        participantLimitTypeId: 1,
-        value: 0,
-        isActive: 1,
-        createdBy: 'unknown',
-        participantLimitId: 1,
-        thresholdAlarmPercentage: 0.5
-      }
-      const participantLimitPerffsp2 = {
-        participantCurrencyId: 3,
-        participantLimitTypeId: 1,
-        value: 0,
-        isActive: 1,
-        createdBy: 'unknown',
-        participantLimitId: 1,
-        thresholdAlarmPercentage: 0.5
-      }
-      // Not sure of what should be the correctly structured model here.
-      // All I know is that the model should have the following properties: currencyId, the right settlementAccountId
-      const allSettlementModels = [{
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }]
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
 
-      SettlementModelCached.getAll.returns(allSettlementModels)
-      ParticipantFacade.getByNameAndCurrency.withArgs('perffsp1', 'USD', 1).returns(participantPerffsp1)
-      ParticipantFacade.getByNameAndCurrency.withArgs('perffsp1', 'USD', 2).returns(settlementAccountPerffsp1)
-
-      ParticipantFacade.getByNameAndCurrency.withArgs('perffsp2', 'USD', 1).returns(participantPerffsp2)
-      ParticipantFacade.getByNameAndCurrency.withArgs('perffsp2', 'USD', 2).returns(settlementAccountPerffsp2)
-
-      ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit.withArgs(0, 'USD').returns(Promise.resolve(participantLimitPerffsp1))
-      ParticipantFacade.getParticipantLimitByParticipantCurrencyLimit.withArgs(1, 'USD').returns(Promise.resolve(participantLimitPerffsp2))
-
-      BatchPositionModel.getPositionsByAccountIdsNonTrx.withArgs([2]).returns({
-        1: 0, // perffsp1 position for position account
-        2: 0 // perffsp1 position for settlement account
-      })
-
-      BatchPositionModel.getPositionsByAccountIdsNonTrx.withArgs([4]).returns({
-        3: 0, // perffsp2 position for position account
-        4: 0 // perffsp2 position for settlement account
-      })
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
 
       const result = await BinProcessor.processBins(sampleBins, trx)
 
@@ -202,8 +382,8 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       // Assert on DB update for position values of all accounts in each function call
       test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
-        [{}, 51, 2, 0],
-        [{}, 52, 14, 0]
+        [{}, 7, 8, 0],
+        [{}, 15, 6, 0]
       ], 'updateParticipantPosition should be called with the expected arguments')
 
       // TODO: Assert on DB bulk insert of transferStateChanges in each function call
