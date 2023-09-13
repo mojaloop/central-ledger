@@ -33,12 +33,10 @@ const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const Enum = require('@mojaloop/central-services-shared').Enum
 const BinProcessor = require('../../../../src/domain/position/binProcessor')
-const PositionPrepareDomain = require('../../../../src/domain/position/prepare')
 const BatchPositionModel = require('../../../../src/models/position/batch')
 const sampleBins = require('./sampleBins')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
 const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
-const Logger = require('@mojaloop/central-services-logger')
 
 const trx = {}
 
