@@ -32,6 +32,9 @@
 const Logger = require('@mojaloop/central-services-logger')
 const BatchPositionModel = require('../../models/position/batch')
 const PositionPrepareDomain = require('./prepare')
+const SettlementModelCached = require('../../models/settlement/settlementModelCached')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /**
  * @function processBins
@@ -54,19 +57,61 @@ const processBins = async (bins, trx) => {
   // Pre fetch latest transferStates for all the transferIds in the account-bin
   const latestTransferStates = await BatchPositionModel.getLatestTransferStatesByTransferIdList(transferIdList)
 
-  // Pre fetch all position account balances for the account-bin and acquire lock on position
   const accountIds = Object.keys(bins)
-  const positions = await BatchPositionModel.getPositionsByAccountIdsForUpdate(trx, accountIds)
 
-  // For each account-bin in the list
+  // Pre fetch all settlement accounts corresponding to the position accounts
+  // Get all participantIdMap for the accountIds
+  const participantCurrencyIds = await BatchPositionModel.getParticipantCurrencyIds(trx, accountIds)
+
+  const allSettlementModels = await SettlementModelCached.getAll()
+
+  // Construct an object participantIdMap, accountIdMap amd currencyIdMap
+  const participantIdMap = {}
+  const accountIdMap = {}
+  const currencyIdMap = {}
+  participantCurrencyIds.forEach(item => {
+    const { participantId, currencyId, participantCurrencyId } = item
+    if (!participantIdMap[participantId]) {
+      participantIdMap[participantId] = {}
+    }
+    if (!currencyIdMap[currencyId]) {
+      currencyIdMap[currencyId] = {
+        settlementModel: _getSettlementModelForCurrency(currencyId, allSettlementModels)
+      }
+    }
+    participantIdMap[participantId][currencyId] = participantCurrencyId
+    accountIdMap[participantCurrencyId] = { participantId, currencyId }
+  })
+  // Get all participantCurrencyIds for the participantIdMap
+  const allParticipantCurrencyIds = await BatchPositionModel.getParticipantCurrencyIdsByParticipantIds(trx, Object.keys(participantIdMap))
+  const settlementCurrencyIds = []
+  allParticipantCurrencyIds.forEach(pc => {
+    const correspondingParticipantCurrencyId = participantIdMap[pc.participantId][pc.currencyId]
+    if (correspondingParticipantCurrencyId) {
+      const settlementModel = currencyIdMap[pc.currencyId].settlementModel
+      if (pc.ledgerAccountTypeId === settlementModel.settlementAccountTypeId) {
+        settlementCurrencyIds.push(pc)
+        accountIdMap[correspondingParticipantCurrencyId].settlementCurrencyId = pc.participantCurrencyId
+      }
+    }
+  })
+
+  // Pre fetch all position account balances for the account-bin and acquire lock on position
+  const positions = await BatchPositionModel.getPositionsByAccountIdsForUpdate(trx, [
+    ...accountIds,
+    ...settlementCurrencyIds.map(pc => pc.participantCurrencyId)
+  ])
 
   let notifyMessages = []
   let limitAlarms = []
 
+  // For each account-bin in the list
   for (const accountID in bins) {
     const accountBin = bins[accountID]
     const actions = Object.keys(accountBin)
 
+    const settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
+    const settlementModel = currencyIdMap[accountIdMap[accountID].currencyId].settlementModel
     // Initialize accumulated values
     // These values will be passed across various actions in the bin
     let accumulatedPositionValue = positions[accountID].value
@@ -86,7 +131,9 @@ const processBins = async (bins, trx) => {
       accountBin.prepare,
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
-      accumulatedTransferStates
+      accumulatedTransferStates,
+      settlementParticipantPosition,
+      settlementModel
     )
 
     // Update accumulated values
@@ -98,7 +145,7 @@ const processBins = async (bins, trx) => {
     accumulatedPositionChanges = accumulatedPositionChanges.concat(prepareActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(prepareActionResult.notifyMessages)
 
-    // TODO: Update accumulated position values by calling a facade function
+    // Update accumulated position values by calling a facade function
     await BatchPositionModel.updateParticipantPosition(trx, positions[accountID].participantPositionId, accumulatedPositionValue, accumulatedPositionReservedValue)
 
     // TODO: Bulk insert accumulated transferStateChanges by calling a facade function
@@ -140,6 +187,17 @@ const iterateThroughBins = async (bins, cb) => {
       }
     }
   }
+}
+
+const _getSettlementModelForCurrency = (currencyId, allSettlementModels) => {
+  let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
+  if (settlementModels.length === 0) {
+    settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+    if (settlementModels.length === 0) {
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
+    }
+  }
+  return settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
 }
 
 module.exports = {

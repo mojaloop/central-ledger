@@ -1,5 +1,5 @@
 module.exports = {
-  51: {
+  7: {
     prepare: [
       {
         message: {
@@ -464,7 +464,7 @@ module.exports = {
       }
     ]
   },
-  52: {
+  15: {
     prepare: [
       {
         message: {

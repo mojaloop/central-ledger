@@ -68,8 +68,23 @@ const getLatestTransferStatesByTransferIdList = async (transfersIdList) => {
   }
 }
 
+const getParticipantCurrencyIds = async (trx, accountIds) => {
+  const participantCurrencies = await knex('participantCurrency')
+    .transacting(trx)
+    .whereIn('participantCurrencyId', accountIds)
+    .select('*')
+  return participantCurrencies
+}
+
+const getParticipantCurrencyIdsByParticipantIds = async (trx, participantIds) => {
+  const participantCurrencies = await knex('participantCurrency')
+    .transacting(trx)
+    .whereIn('participantId', participantIds)
+    .select('*')
+  return participantCurrencies
+}
+
 const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
-  _initKnex()
   const participantPositions = await knex('participantPosition')
     .transacting(trx)
     .whereIn('participantCurrencyId', accountIds)
@@ -83,7 +98,6 @@ const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
 }
 
 const updateParticipantPosition = async (trx, participantPositionId, participantPositionValue, participantPositionReservedValue = null) => {
-  _initKnex()
   const optionalValues = {}
   if (participantPositionReservedValue !== null) {
     optionalValues.reservedValue = participantPositionReservedValue
@@ -101,5 +115,7 @@ module.exports = {
   startDbTransaction,
   getLatestTransferStatesByTransferIdList,
   getPositionsByAccountIdsForUpdate,
+  getParticipantCurrencyIds,
+  getParticipantCurrencyIdsByParticipantIds,
   updateParticipantPosition
 }
