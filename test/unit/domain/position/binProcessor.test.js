@@ -35,6 +35,8 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const BinProcessor = require('../../../../src/domain/position/binProcessor')
 const PositionPrepareDomain = require('../../../../src/domain/position/prepare')
 const BatchPositionModel = require('../../../../src/models/position/batch')
+const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
+const participantFacade = require('../../../../src/models/participant/facade')
 const sampleBins = require('./sampleBins')
 
 const trx = {}
@@ -68,6 +70,8 @@ Test('BinProcessor', async (binProcessorTest) => {
   binProcessorTest.beforeEach(async test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(BatchPositionModel)
+    sandbox.stub(SettlementModelCached)
+    sandbox.stub(participantFacade)
 
     const prepareTransfersStates = Object.fromEntries(prepareTransfers.map((transferId) => [transferId, Enum.Transfers.TransferInternalState.RECEIVED_PREPARE]))
     const fulfillTransfersStates = Object.fromEntries(fulfillTransfers.map((transferId) => [transferId, Enum.Transfers.TransferInternalState.RECEIVED_FULFIL]))
@@ -76,20 +80,261 @@ Test('BinProcessor', async (binProcessorTest) => {
       ...fulfillTransfersStates
     })
 
+    BatchPositionModel.getParticipantCurrencyIds.returns([
+      {
+        participantCurrencyId: 7,
+        participantId: 2,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:27.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 15,
+        participantId: 3,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:37.000Z',
+        createdBy: 'unknown'
+      }
+    ])
+
+    SettlementModelCached.getAll.returns([
+      {
+        settlementModelId: 1,
+        name: 'DEFERREDNETUSD',
+        isActive: 1,
+        settlementGranularityId: 2,
+        settlementInterchangeId: 2,
+        settlementDelayId: 2,
+        currencyId: 'USD',
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 1,
+        autoPositionReset: 1,
+        adjustPosition: 0,
+        settlementAccountTypeId: 2
+      },
+      {
+        settlementModelId: 2,
+        name: 'DEFAULTDEFERREDNET',
+        isActive: 1,
+        settlementGranularityId: 2,
+        settlementInterchangeId: 2,
+        settlementDelayId: 2,
+        currencyId: null,
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 1,
+        autoPositionReset: 1,
+        adjustPosition: 0,
+        settlementAccountTypeId: 2
+      },
+      {
+        settlementModelId: 3,
+        name: 'CGS',
+        isActive: 1,
+        settlementGranularityId: 1,
+        settlementInterchangeId: 1,
+        settlementDelayId: 1,
+        currencyId: 'INR',
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 1,
+        autoPositionReset: 0,
+        adjustPosition: 0,
+        settlementAccountTypeId: 2
+      },
+      {
+        settlementModelId: 4,
+        name: 'INTERCHANGEFEE',
+        isActive: 1,
+        settlementGranularityId: 2,
+        settlementInterchangeId: 2,
+        settlementDelayId: 2,
+        currencyId: 'INR',
+        requireLiquidityCheck: 0,
+        ledgerAccountTypeId: 5,
+        autoPositionReset: 1,
+        adjustPosition: 0,
+        settlementAccountTypeId: 6
+      }
+    ])
+
+    BatchPositionModel.getParticipantCurrencyIdsByParticipantIds.returns([
+      {
+        participantCurrencyId: 9,
+        participantId: 2,
+        currencyId: 'BGN',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:31.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 10,
+        participantId: 2,
+        currencyId: 'BGN',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:31.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 11,
+        participantId: 2,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:32.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 12,
+        participantId: 2,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:32.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 13,
+        participantId: 2,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 5,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:32.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 14,
+        participantId: 2,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 6,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:32.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 7,
+        participantId: 2,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:27.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 8,
+        participantId: 2,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:27.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 17,
+        participantId: 3,
+        currencyId: 'BGN',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 18,
+        participantId: 3,
+        currencyId: 'BGN',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 19,
+        participantId: 3,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 20,
+        participantId: 3,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 21,
+        participantId: 3,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 5,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 22,
+        participantId: 3,
+        currencyId: 'INR',
+        ledgerAccountTypeId: 6,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:41.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 15,
+        participantId: 3,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:37.000Z',
+        createdBy: 'unknown'
+      },
+      {
+        participantCurrencyId: 16,
+        participantId: 3,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdDate: '2023-08-17T09:36:37.000Z',
+        createdBy: 'unknown'
+      }
+    ])
+
     BatchPositionModel.getPositionsByAccountIdsForUpdate.returns({
       7: {
         participantPositionId: 7,
         participantCurrencyId: 7,
-        value: 10,
+        value: 0,
         reservedValue: 0,
-        changedDate: '2023-08-17T09:37:22.000Z'
+        changedDate: '2023-08-17T09:36:27.000Z'
+      },
+      8: {
+        participantPositionId: 8,
+        participantCurrencyId: 8,
+        value: -5000000,
+        reservedValue: 0,
+        changedDate: '2023-08-17T09:36:33.000Z'
       },
       15: {
         participantPositionId: 15,
         participantCurrencyId: 15,
-        value: 20,
+        value: 0,
         reservedValue: 0,
-        changedDate: '2023-08-17T09:37:22.000Z'
+        changedDate: '2023-08-17T09:36:37.000Z'
+      },
+      16: {
+        participantPositionId: 16,
+        participantCurrencyId: 16,
+        value: -5000000,
+        reservedValue: 0,
+        changedDate: '2023-08-17T09:36:43.000Z'
       }
     })
 
@@ -173,12 +418,27 @@ Test('BinProcessor', async (binProcessorTest) => {
           limitAlarms: []
         }
       ]
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
 
       const positionPrepareBinStub = sandbox.stub(PositionPrepareDomain, 'processPositionPrepareBin').callsFake(
         (accountBin,
           accumulatedPositionValue,
           accumulatedPositionReservedValue,
           accumulatedTransferStates) => { return expectedPrepareBinResults.shift() })
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
 
       const result = await BinProcessor.processBins(sampleBins, trx)
 
