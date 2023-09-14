@@ -30,6 +30,7 @@ const processPositionPrepareBin = async (
   accumulatedTransferState
 ) => {
   let availablePosition
+  let accumulatedInvertedPositionValue = new MLNumber(accumulatedPositionValue).multiply(-1)
   const transferStateChanges = []
   const participantPositionChanges = []
   const resultMessages = []
@@ -146,6 +147,7 @@ const processPositionPrepareBin = async (
 
       transferStateId = Enum.Transfers.TransferState.RESERVED
       availablePosition = availablePosition.subtract(transfer.amount.amount)
+      accumulatedInvertedPositionValue = accumulatedInvertedPositionValue.subtract(transfer.amount.amount)
 
       // Are these the right headers?
       const headers = Utility.Http.SwitchDefaultHeaders(
@@ -226,7 +228,7 @@ const processPositionPrepareBin = async (
 
     const participantPositionChange = {
       transferStateChangeId: null, // Need to update this in bin processor while executing queries
-      value: availablePosition.toNumber(),
+      value: accumulatedInvertedPositionValue.multiply(-1).toNumber(),
       reservedValue: accumulatedPositionReservedValue
     }
     participantPositionChanges.push(participantPositionChange)
@@ -247,7 +249,7 @@ const processPositionPrepareBin = async (
   }
 
   return {
-    accumulatedPositionValue: availablePosition.toNumber(),
+    accumulatedPositionValue: accumulatedInvertedPositionValue.multiply(-1).toNumber(),
     accumulatedTransferStates: accumulatedTransferStatesCopy, // finalized transfer state after prepare processing
     accumulatedPositionReservedValue, // not used but kept for consistency
     accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order

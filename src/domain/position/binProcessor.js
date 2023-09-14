@@ -52,8 +52,8 @@ const participantFacade = require('../../models/participant/facade')
 const processBins = async (bins, trx) => {
   const transferIdList = []
   await iterateThroughBins(bins, async (item) => {
-    if (item.message.value.id) {
-      transferIdList.push(item.message.value.id)
+    if (item.message.value.content?.payload?.transferId) {
+      transferIdList.push(item.message.value.content.payload.transferId)
     }
   })
   // Pre fetch latest transferStates for all the transferIds in the account-bin
@@ -159,6 +159,7 @@ const processBins = async (bins, trx) => {
     // TODO: Mutate accumulated positionChanges with transferStateChangeIds
     // TODO: Bulk insert accumulated positionChanges by calling a facade function
 
+    // testing: await trx.rollback()
     limitAlarms = limitAlarms.concat(prepareActionResult.limitAlarms)
   }
 
