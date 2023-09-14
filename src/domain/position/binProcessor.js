@@ -57,7 +57,11 @@ const processBins = async (bins, trx) => {
     }
   })
   // Pre fetch latest transferStates for all the transferIds in the account-bin
-  const latestTransferStates = await BatchPositionModel.getLatestTransferStatesByTransferIdList(transferIdList)
+  const latestTransferStateChanges = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, transferIdList)
+  const latestTransferStates = {}
+  for (const key in latestTransferStateChanges) {
+    latestTransferStates[key] = latestTransferStateChanges[key].transferStateId
+  }
 
   const accountIds = Object.keys(bins)
 
@@ -154,10 +158,19 @@ const processBins = async (bins, trx) => {
     // Update accumulated position values by calling a facade function
     await BatchPositionModel.updateParticipantPosition(trx, positions[accountID].participantPositionId, accumulatedPositionValue, accumulatedPositionReservedValue)
 
-    // TODO: Bulk insert accumulated transferStateChanges by calling a facade function
-    // TODO: Bulk get the transferStateChangeIds for transferids using select whereIn
-    // TODO: Mutate accumulated positionChanges with transferStateChangeIds
-    // TODO: Bulk insert accumulated positionChanges by calling a facade function
+    // Bulk insert accumulated transferStateChanges by calling a facade function
+    await BatchPositionModel.bulkInsertTransferStateChanges(trx, accumulatedTransferStateChanges)
+
+    // Bulk get the transferStateChangeIds for transferids using select whereIn
+    const fetchedTransferStateChanges = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, accumulatedTransferStateChanges.map(item => item.transferId))
+    // Mutate accumulated positionChanges with transferStateChangeIds
+    accumulatedPositionChanges.forEach(positionChange => {
+      positionChange.transferStateChangeId = fetchedTransferStateChanges[positionChange.transferId].transferStateChangeId
+      positionChange.participantPositionId = positions[accountID].participantPositionId
+      delete positionChange.transferId
+    })
+    // Bulk insert accumulated positionChanges by calling a facade function
+    await BatchPositionModel.bulkInsertParticipantPositionChanges(trx, accumulatedPositionChanges)
 
     // testing: await trx.rollback()
     limitAlarms = limitAlarms.concat(prepareActionResult.limitAlarms)
