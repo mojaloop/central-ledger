@@ -31,7 +31,6 @@ const processPositionPrepareBin = async (
   settlementModel,
   participantLimit
 ) => {
-  let availablePosition
   const transferStateChanges = []
   const participantPositionChanges = []
   const resultMessages = []
@@ -167,8 +166,6 @@ const processPositionPrepareBin = async (
       )
     // Payer has sufficient liquidity and limit
     } else {
-      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::availablePosition: ${availablePosition} >= ${transfer.amount.amount}`)
-
       transferStateId = Enum.Transfers.TransferState.RESERVED
       currentPosition = currentPosition.add(transfer.amount.amount)
       availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transfer.amount.amount)
@@ -216,6 +213,7 @@ const processPositionPrepareBin = async (
     Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferStateChange: ${JSON.stringify(transferStateChange)}`)
 
     const participantPositionChange = {
+      transferId: transfer.transferId, // Need to delete this in bin processor while updating transferStateChangeId
       transferStateChangeId: null, // Need to update this in bin processor while executing queries
       value: currentPosition.toNumber(),
       reservedValue: accumulatedPositionReservedValue

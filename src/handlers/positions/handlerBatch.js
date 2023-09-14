@@ -139,7 +139,7 @@ const positions = async (error, messages) => {
     //   - 5.3. Loop through results and produce notification messages and audit messages
     result.notifyMessages.forEach(async (item) => {
       // 5.3.1. Produce notification message and audit message
-      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, item.notificationMessages, Enum.Events.EventStatus.SUCCESS, null, item.message)
+      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, item.message, Enum.Events.EventStatus.SUCCESS, null, item.binItem.span)
     })
   } catch (err) {
     // 6. If Bin Processor returns failure
@@ -179,8 +179,12 @@ const registerPositionHandler = async () => {
     await SettlementModelCached.initialize()
     const positionHandler = {
       command: positions,
-      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.POSITION, Enum.Events.Event.Action.PREPARE),
-      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.TRANSFER.toUpperCase(), Enum.Events.Event.Action.POSITION.toUpperCase())
+      // topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.POSITION, Enum.Events.Event.Action.PREPARE),
+      // TODO: If there is no mapping, use default transformGeneralTopicName
+      topicName: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE,
+      // config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.TRANSFER.toUpperCase(), Enum.Events.Event.Action.POSITION.toUpperCase())
+      // There is no corresponding action for POSITION_BATCH, so using straight value
+      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.TRANSFER.toUpperCase(), 'POSITION_BATCH')
     }
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${Uuid()}`
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)

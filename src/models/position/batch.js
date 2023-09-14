@@ -42,23 +42,23 @@ const _initKnex = async () => {
 }
 
 const startDbTransaction = async () => {
-  _initKnex()
+  await _initKnex()
   const trx = await knex.transaction()
   return trx
 }
 
-const getLatestTransferStatesByTransferIdList = async (transfersIdList) => {
+const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdList) => {
   try {
     const latestTransferStateChanges = {}
-    const results = await Db.from('transferStateChange').query(async (builder) => {
-      const result = builder
-        .whereIn('transferStateChange.transferId', transfersIdList)
-        .orderBy('transferStateChangeId', 'desc')
-      return result
-    })
+    const results = await knex('transferStateChange')
+      .transacting(trx)
+      .whereIn('transferStateChange.transferId', transfersIdList)
+      .orderBy('transferStateChangeId', 'desc')
+      .select('*')
+
     results.forEach((result) => {
       if (!latestTransferStateChanges[result.transferId]) {
-        latestTransferStateChanges[result.transferId] = result.transferStateId
+        latestTransferStateChanges[result.transferId] = result
       }
     })
     return latestTransferStateChanges
@@ -97,6 +97,18 @@ const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
   return positions
 }
 
+const getPositionsByAccountIdsNonTrx = async (accountIds) => {
+  _initKnex()
+  const participantPositions = await knex('participantPosition')
+    .whereIn('participantCurrencyId', accountIds)
+    .select('*')
+  const positions = {}
+  participantPositions.forEach((position) => {
+    positions[position.participantCurrencyId] = position
+  })
+  return positions
+}
+
 const updateParticipantPosition = async (trx, participantPositionId, participantPositionValue, participantPositionReservedValue = null) => {
   const optionalValues = {}
   if (participantPositionReservedValue !== null) {
@@ -111,11 +123,22 @@ const updateParticipantPosition = async (trx, participantPositionId, participant
     })
 }
 
+const bulkInsertTransferStateChanges = async (trx, transferStateChangeList) => {
+  return await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
+}
+
+const bulkInsertParticipantPositionChanges = async (trx, participantPositionChangeList) => {
+  return await knex.batchInsert('participantPositionChange', participantPositionChangeList).transacting(trx)
+}
+
 module.exports = {
   startDbTransaction,
-  getLatestTransferStatesByTransferIdList,
+  getLatestTransferStateChangesByTransferIdList,
   getPositionsByAccountIdsForUpdate,
+  getPositionsByAccountIdsNonTrx,
   getParticipantCurrencyIds,
   getParticipantCurrencyIdsByParticipantIds,
-  updateParticipantPosition
+  updateParticipantPosition,
+  bulkInsertTransferStateChanges,
+  bulkInsertParticipantPositionChanges
 }
