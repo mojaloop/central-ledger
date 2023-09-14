@@ -85,6 +85,11 @@
   },
   "API_DOC_ENDPOINTS_ENABLED": true,
   "KAFKA": {
+    "EVENT_TYPE_ACTION_TOPIC_MAP" : {
+      "POSITION":{
+        "PREPARE": null
+      }
+    },
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {
         "TEMPLATE": "topic-{{participantName}}-{{functionality}}-{{action}}",
@@ -285,6 +290,31 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        },
+        "POSITION_BATCH": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 10,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-transfer-position",
+              "group.id": "cl-group-transfer-position",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true,
+              "enable.auto.commit": false
             },
             "topicConf": {
               "auto.offset.reset": "earliest"

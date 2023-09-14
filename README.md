@@ -88,6 +88,26 @@ The Central Ledger has many options that can be configured through environment v
 | CLEDG\_AMOUNT__PRECISION | Numeric value used to determine precision recorded for transfer amounts on this ledger. | 10 |
 | CLEDG\_AMOUNT__SCALE | Numeric value used to determine scale recorded for transfer amounts on this ledger. | 2 |
 
+### Kafka Position Event Type Action Topic Map
+
+In some cases, you might want to publish position type messages onto a customized topic name that
+diverges from the defaults.
+
+You can configure the customized topic names in the config. Each position action key
+refers to position messages with associated actions.
+
+NOTE: Only POSITION.PREPARE is supported at this time, with additional event-type-actions being added later when required.
+
+```
+  "KAFKA": {
+    "EVENT_TYPE_ACTION_TOPIC_MAP" : {
+      "POSITION":{
+        "PREPARE": "topic-transfer-position-batch"
+      }
+    }
+  }
+```
+
 ## API
 
 For endpoint documentation, see the [API documentation](API.md).
@@ -165,6 +185,30 @@ If you want to run integration tests in a repetitive manner, you can startup the
     npm run test:int
   ```
 
+If you want to run override position topic tests you can repeat the above and use `npm run test:int-override` after configuring settings found [here](#kafka-position-event-type-action-topic-map)
+
+For running integration tests for batch processing interactively
+- Run dependecies
+```
+docker-compose up -d mysql kafka init-kafka
+npm run wait-4-docker
+```
+- Run central-ledger services
+```
+nvm use
+npm run migrate
+env "CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch" npm start
+```
+- Additionally, run position batch handler in a new terminal
+```
+env "CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch" "CLEDG_HANDLERS__API__DISABLED=true" node src/handlers/index.js handler --positionbatch
+```
+- Run tests using `npx tape 'test/integration-override/**/handlerBatch.test.js'`
+
+
+If you want to just run all of the integration suite non-interactively then use npm run `test:integration`.
+It will handle docker start up, migration, service starting and testing. Be sure to exit any previously ran handlers or docker commands.
+
 ### Running Functional Tests
 
 If you want to run functional tests locally utilizing the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness), you can run the following commands:
@@ -221,7 +265,7 @@ Configuration modifiers:
   ```bash
   sh ./test/util/scripts/populateTestData.sh
   ```
-  
+
   View Logs for Mockserver (i.e. Payee Receiver) and ML-API-Adapter:
 
   ```bash

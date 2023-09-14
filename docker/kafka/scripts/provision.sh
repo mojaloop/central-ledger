@@ -25,7 +25,8 @@ topics=(
   "topic-bulk-prepare"
   "topic-bulk-fulfil"
   "topic-bulk-processing"
-  "topic-bulk-get"
+  "topic-bulk-get",
+  "topic-transfer-position-batch"
 )
 
 # Loop through the topics and create them using kafka-topics.sh
