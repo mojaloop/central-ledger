@@ -73,9 +73,9 @@ Test('BinProcessor', async (binProcessorTest) => {
     sandbox.stub(SettlementModelCached)
     sandbox.stub(participantFacade)
 
-    const prepareTransfersStates = Object.fromEntries(prepareTransfers.map((transferId) => [transferId, Enum.Transfers.TransferInternalState.RECEIVED_PREPARE]))
-    const fulfillTransfersStates = Object.fromEntries(fulfillTransfers.map((transferId) => [transferId, Enum.Transfers.TransferInternalState.RECEIVED_FULFIL]))
-    BatchPositionModel.getLatestTransferStatesByTransferIdList.returns({
+    const prepareTransfersStates = Object.fromEntries(prepareTransfers.map((transferId) => [transferId, { transferStateChangeId: 1, transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE }]))
+    const fulfillTransfersStates = Object.fromEntries(fulfillTransfers.map((transferId) => [transferId, { transferStateChangeId: 1, transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL }]))
+    BatchPositionModel.getLatestTransferStateChangesByTransferIdList.returns({
       ...prepareTransfersStates,
       ...fulfillTransfersStates
     })
@@ -358,24 +358,11 @@ Test('BinProcessor', async (binProcessorTest) => {
             transferId,
             transferStateId: Enum.Transfers.TransferState.RESERVED
           })),
-          accumulatedPositionChanges: [
-            {
-              value: 12,
-              reservedValue: 0
-            },
-            {
-              value: 14,
-              reservedValue: 0
-            },
-            {
-              value: 16,
-              reservedValue: 0
-            },
-            {
-              value: 18,
-              reservedValue: 0
-            }
-          ],
+          accumulatedPositionChanges: prepareTransfersBin1.map((transferId) => ({
+            transferId,
+            value: 22,
+            reservedValue: 0
+          })),
           notifyMessages: [
             { message: 'notify1' },
             { message: 'notify2' },
@@ -396,20 +383,11 @@ Test('BinProcessor', async (binProcessorTest) => {
             transferId,
             transferStateId: Enum.Transfers.TransferInternalState.RESERVED
           })),
-          accumulatedPositionChanges: [
-            {
-              value: 22,
-              reservedValue: 0
-            },
-            {
-              value: 24,
-              reservedValue: 0
-            },
-            {
-              value: 26,
-              reservedValue: 0
-            }
-          ],
+          accumulatedPositionChanges: prepareTransfersBin2.map((transferId) => ({
+            transferId,
+            value: 22,
+            reservedValue: 0
+          })),
           notifyMessages: [
             { message: 'notify1' },
             { message: 'notify2' },
