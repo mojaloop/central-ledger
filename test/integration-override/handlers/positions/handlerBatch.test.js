@@ -371,43 +371,42 @@ Test('Handlers test', async handlersTest => {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
 
-      // try {
-      //   const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-      //     topicFilter: 'topic-transfer-position',
-      //     action: 'prepare',
-      //     keyFilter: td.payer.participantCurrencyId.toString()
-      //   }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      //   test.ok(positionPrepare[0], 'Position prepare message with key found')
-      // } catch (err) {
-      //   test.notOk('Error should not be thrown')
-      //   console.error(err)
-      // }
-      const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
-        const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
-        const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
-        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-        test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
-        test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
-      }
-
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer?.transferState !== TransferState.RESERVED) {
-            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-          }
-          return tests()
-        }, retryOpts)
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'event'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers')
       } catch (err) {
-        Logger.error(err)
-        test.fail(err.message)
+        test.notOk('Error should not be thrown')
+        console.error(err)
       }
+      // const tests = async () => {
+      //   const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+      //   const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+      //   const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+      //   const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
+      //   const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+      //   test.equal(producerResponse, true, 'Producer for prepare published message')
+      //   test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+      //   test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+      //   test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+      //   test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+      // }
+
+      // try {
+      //   await retry(async () => { // use bail(new Error('to break before max retries'))
+      //     const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+      //     if (transfer?.transferState !== TransferState.RESERVED) {
+      //       if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+      //       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+      //     }
+      //     return tests()
+      //   }, retryOpts)
+      // } catch (err) {
+      //   Logger.error(err)
+      //   test.fail(err.message)
+      // }
       test.end()
     })
     transferPositionPrepare.end()

@@ -190,7 +190,7 @@ If you want to run override position topic tests you can repeat the above and us
 For running integration tests for batch processing interactively
 - Run dependecies
 ```
-docker-compose up -d mysql kafka init-kafka
+docker-compose up -d mysql kafka init-kafka kafka-debug-console
 npm run wait-4-docker
 ```
 - Run central-ledger services
