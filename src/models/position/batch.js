@@ -97,6 +97,18 @@ const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
   return positions
 }
 
+const getPositionsByAccountIdsNonTrx = async (accountIds) => {
+  _initKnex()
+  const participantPositions = await knex('participantPosition')
+    .whereIn('participantCurrencyId', accountIds)
+    .select('*')
+  const positions = {}
+  participantPositions.forEach((position) => {
+    positions[position.participantCurrencyId] = position
+  })
+  return positions
+}
+
 const updateParticipantPosition = async (trx, participantPositionId, participantPositionValue, participantPositionReservedValue = null) => {
   const optionalValues = {}
   if (participantPositionReservedValue !== null) {
@@ -123,6 +135,7 @@ module.exports = {
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
   getPositionsByAccountIdsForUpdate,
+  getPositionsByAccountIdsNonTrx,
   getParticipantCurrencyIds,
   getParticipantCurrencyIdsByParticipantIds,
   updateParticipantPosition,
