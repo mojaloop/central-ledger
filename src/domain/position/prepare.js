@@ -31,7 +31,6 @@ const processPositionPrepareBin = async (
   settlementModel,
   participantLimit
 ) => {
-  let availablePosition
   const transferStateChanges = []
   const participantPositionChanges = []
   const resultMessages = []
@@ -167,8 +166,6 @@ const processPositionPrepareBin = async (
       )
     // Payer has sufficient liquidity and limit
     } else {
-      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::availablePosition: ${availablePosition} >= ${transfer.amount.amount}`)
-
       transferStateId = Enum.Transfers.TransferState.RESERVED
       currentPosition = currentPosition.add(transfer.amount.amount)
       availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transfer.amount.amount)
