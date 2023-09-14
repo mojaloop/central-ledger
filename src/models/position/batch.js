@@ -42,7 +42,7 @@ const _initKnex = async () => {
 }
 
 const startDbTransaction = async () => {
-  _initKnex()
+  await _initKnex()
   const trx = await knex.transaction()
   return trx
 }

@@ -187,6 +187,25 @@ If you want to run integration tests in a repetitive manner, you can startup the
 
 If you want to run override position topic tests you can repeat the above and use `npm run test:int-override` after configuring settings found [here](#kafka-position-event-type-action-topic-map)
 
+For running integration tests for batch processing interactively
+- Run dependecies
+```
+docker-compose up -d mysql kafka init-kafka
+npm run wait-4-docker
+```
+- Run central-ledger services
+```
+nvm use
+npm run migrate
+env "CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch" npm start
+```
+- Additionally, run position batch handler in a new terminal
+```
+env "CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch" "CLEDG_HANDLERS__API__DISABLED=true" node src/handlers/index.js handler --positionbatch
+```
+- Run tests using `npx tape 'test/integration-override/**/handlerBatch.test.js'`
+
+
 If you want to just run all of the integration suite non-interactively then use npm run `test:integration`.
 It will handle docker start up, migration, service starting and testing. Be sure to exit any previously ran handlers or docker commands.
 

@@ -295,6 +295,31 @@
               "auto.offset.reset": "earliest"
             }
           }
+        },
+        "POSITION_BATCH": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 10,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-transfer-position",
+              "group.id": "cl-group-transfer-position",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true,
+              "enable.auto.commit": false
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
         }
       },
       "ADMIN": {
