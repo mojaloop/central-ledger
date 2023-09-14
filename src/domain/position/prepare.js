@@ -196,10 +196,19 @@ const processPositionPrepareBin = async (
         transfer.payerFsp,
         metadata,
         headers,
-        null,
-        { id: transfer.transferId },
+        transfer,
+        {},
         'application/json'
       )
+
+      const participantPositionChange = {
+        transferId: transfer.transferId, // Need to delete this in bin processor while updating transferStateChangeId
+        transferStateChangeId: null, // Need to update this in bin processor while executing queries
+        value: currentPosition.toNumber(),
+        reservedValue: accumulatedPositionReservedValue
+      }
+      participantPositionChanges.push(participantPositionChange)
+      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
     }
 
     resultMessages.push({ binItem, message: resultMessage })
@@ -211,15 +220,6 @@ const processPositionPrepareBin = async (
     }
     transferStateChanges.push(transferStateChange)
     Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferStateChange: ${JSON.stringify(transferStateChange)}`)
-
-    const participantPositionChange = {
-      transferId: transfer.transferId, // Need to delete this in bin processor while updating transferStateChangeId
-      transferStateChangeId: null, // Need to update this in bin processor while executing queries
-      value: currentPosition.toNumber(),
-      reservedValue: accumulatedPositionReservedValue
-    }
-    participantPositionChanges.push(participantPositionChange)
-    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
 
     Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
     if (currentPosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
