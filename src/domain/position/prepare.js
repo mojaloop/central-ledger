@@ -227,6 +227,7 @@ const processPositionPrepareBin = async (
     Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferStateChange: ${JSON.stringify(transferStateChange)}`)
 
     const participantPositionChange = {
+      transferId: transfer.transferId, // Need to delete this in bin processor while updating transferStateChangeId
       transferStateChangeId: null, // Need to update this in bin processor while executing queries
       value: accumulatedInvertedPositionValue.multiply(-1).toNumber(),
       reservedValue: accumulatedPositionReservedValue
