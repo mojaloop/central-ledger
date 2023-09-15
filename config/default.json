@@ -289,7 +289,9 @@
               "group.id": "cl-group-transfer-position",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "partition.assignment.strategy": "cooperative-sticky",
+              "enable.auto.commit": false
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -314,6 +316,7 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
+              "partition.assignment.strategy": "cooperative-sticky",
               "enable.auto.commit": false
             },
             "topicConf": {

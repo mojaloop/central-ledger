@@ -68,8 +68,8 @@ const consumerCommit = true
 
 const positions = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
-    'transfer_position',
-    'Consume a prepare transfer message from the kafka topic and process it accordingly',
+    'transfer_position_batch',
+    'Consume a batch of prepare transfer messages from the kafka topic and process them',
     ['success']
   ).startTimer()
 
@@ -95,6 +95,11 @@ const positions = async (error, messages) => {
   // Iterate through consumedMessages
   const bins = {}
   for (const message of consumedMessages) {
+    const histTimerMsgEnd = Metrics.getHistogram(
+      'transfer_position',
+      'Process a prepare transfer message',
+      ['success']
+    ).startTimer()
     // Create a span for each message
     const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
     const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_position', contextFromMessage)
@@ -111,7 +116,8 @@ const positions = async (error, messages) => {
     const actionBin = accountBin[action] || (accountBin[action] = [])
     actionBin.push({
       message,
-      span
+      span,
+      histTimerMsgEnd
     })
 
     await span.audit(message, EventSdk.AuditEventAction.start)
@@ -141,6 +147,7 @@ const positions = async (error, messages) => {
       // 5.3.1. Produce notification message and audit message
       Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, Enum.Events.Event.Action.EVENT, item.message, Enum.Events.EventStatus.SUCCESS, null, item.binItem.span)
     })
+    histTimerEnd({ success: true })
   } catch (err) {
     // 6. If Bin Processor returns failure
     // 6.1. Rollback DB transaction
@@ -153,17 +160,18 @@ const positions = async (error, messages) => {
       const span = item.span
       await span.error(fspiopError, state)
     })
+    histTimerEnd({ success: false })
   } finally {
     // Finish span for each message
     await BinProcessor.iterateThroughBins(bins, async (item) => {
+      // TODO: We need to get the success status properly for each message
+      item.histTimerMsgEnd({ success: true })
       const span = item.span
       if (!span.isFinished) {
         await span.finish()
       }
     })
   }
-
-  histTimerEnd({ success: true })
 }
 
 /**

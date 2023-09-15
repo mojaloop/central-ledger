@@ -177,7 +177,7 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
         amount: dataObj.payer.fundsIn
       })
       // endpoint setup
-      _endpointSetup(payer.participant.name, dataObj.endpoint.base)
+      await _endpointSetup(payer.participant.name, dataObj.endpoint.base)
 
       payerList.push(payer)
     }
@@ -192,7 +192,7 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
         limit: { value: dataObj.payee.limit }
       })
       // endpoint setup
-      _endpointSetup(payee.participant.name, dataObj.endpoint.base)
+      await _endpointSetup(payee.participant.name, dataObj.endpoint.base)
       payeeList.push(payee)
     }
 
