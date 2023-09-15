@@ -72,9 +72,9 @@ Test('BinProcessor', async (binProcessorTest) => {
     sandbox.stub(SettlementModelCached)
     sandbox.stub(participantFacade)
 
-    const prepareTransfersStates = Object.fromEntries(prepareTransfers.map((transferId) => [transferId, Enum.Transfers.TransferInternalState.RECEIVED_PREPARE]))
-    const fulfillTransfersStates = Object.fromEntries(fulfillTransfers.map((transferId) => [transferId, Enum.Transfers.TransferInternalState.RECEIVED_FULFIL]))
-    BatchPositionModel.getLatestTransferStatesByTransferIdList.returns({
+    const prepareTransfersStates = Object.fromEntries(prepareTransfers.map((transferId) => [transferId, { transferStateChangeId: 1, transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE }]))
+    const fulfillTransfersStates = Object.fromEntries(fulfillTransfers.map((transferId) => [transferId, { transferStateChangeId: 1, transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL }]))
+    BatchPositionModel.getLatestTransferStateChangesByTransferIdList.returns({
       ...prepareTransfersStates,
       ...fulfillTransfersStates
     })

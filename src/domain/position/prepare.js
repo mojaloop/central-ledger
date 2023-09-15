@@ -94,7 +94,7 @@ const processPositionPrepareBin = async (
       )
     // Check if payer has insufficient liquidity, produce an error message and abort transfer
     } else if (availablePositionBasedOnLiquidityCover.toNumber() < transfer.amount.amount) {
-      transferStateId = Enum.Transfers.TransferState.ABORTED
+      transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
       reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
 
       const headers = Utility.Http.SwitchDefaultHeaders(
@@ -130,7 +130,7 @@ const processPositionPrepareBin = async (
       )
     // Check if payer has surpassed their limit, produce an error message and abort transfer
     } else if (availablePositionBasedOnPayerLimit.toNumber() < transfer.amount.amount) {
-      transferStateId = Enum.Transfers.TransferState.ABORTED
+      transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
       reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
 
       const headers = Utility.Http.SwitchDefaultHeaders(
