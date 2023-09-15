@@ -473,7 +473,7 @@ Test('Handlers test', async handlersTest => {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
           action: 'event',
-          errorCodeFilter: '4200'
+          errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.code
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers payer limit aborts')
       } catch (err) {
@@ -511,7 +511,7 @@ Test('Handlers test', async handlersTest => {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
           action: 'event',
-          errorCodeFilter: '4001'
+          errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers payer insufficient liquidity aborts')
       } catch (err) {
