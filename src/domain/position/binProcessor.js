@@ -31,6 +31,7 @@
 
 const Logger = require('@mojaloop/central-services-logger')
 const BatchPositionModel = require('../../models/position/batch')
+const BatchPositionModelCached = require('../../models/position/batchCached')
 const PositionPrepareDomain = require('./prepare')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -67,8 +68,8 @@ const processBins = async (bins, trx) => {
 
   // Pre fetch all settlement accounts corresponding to the position accounts
   // Get all participantIdMap for the accountIds
-  const participantCurrencyIds = await BatchPositionModel.getParticipantCurrencyIds(trx, accountIds)
-
+  const participantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByIds(accountIds)
+  console.log(participantCurrencyIds)
   const allSettlementModels = await SettlementModelCached.getAll()
 
   // Construct an object participantIdMap, accountIdMap amd currencyIdMap
@@ -89,7 +90,7 @@ const processBins = async (bins, trx) => {
     accountIdMap[participantCurrencyId] = { participantId, currencyId }
   })
   // Get all participantCurrencyIds for the participantIdMap
-  const allParticipantCurrencyIds = await BatchPositionModel.getParticipantCurrencyIdsByParticipantIds(trx, Object.keys(participantIdMap))
+  const allParticipantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByParticipantIds(Object.keys(participantIdMap))
   const settlementCurrencyIds = []
   allParticipantCurrencyIds.forEach(pc => {
     const correspondingParticipantCurrencyId = participantIdMap[pc.participantId][pc.currencyId]

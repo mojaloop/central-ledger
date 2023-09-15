@@ -68,6 +68,11 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
   }
 }
 
+const getAllParticipantCurrency = async () => {
+  const result = await Db.from('participantCurrency').find({})
+  return result
+}
+
 const getParticipantCurrencyIds = async (trx, accountIds) => {
   const participantCurrencies = await knex('participantCurrency')
     .transacting(trx)
@@ -140,5 +145,6 @@ module.exports = {
   getParticipantCurrencyIdsByParticipantIds,
   updateParticipantPosition,
   bulkInsertTransferStateChanges,
-  bulkInsertParticipantPositionChanges
+  bulkInsertParticipantPositionChanges,
+  getAllParticipantCurrency
 }
