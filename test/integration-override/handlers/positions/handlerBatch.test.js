@@ -26,11 +26,8 @@
 
 const Test = require('tape')
 const Uuid = require('uuid4')
-const retry = require('async-retry')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
-const Time = require('@mojaloop/central-services-shared').Util.Time
-const sleep = Time.sleep
 const Db = require('@mojaloop/database-lib').Db
 const Cache = require('#src/lib/cache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
@@ -47,9 +44,7 @@ const ParticipantService = require('#src/domain/participant/index')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const {
-  wrapWithRetries,
-  getMessagePayloadOrThrow,
-  sleepPromise
+  wrapWithRetries
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
 const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
@@ -72,7 +67,7 @@ const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
 const debug = process?.env?.TEST_INT_DEBUG || false
-const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
+// const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
 const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
 const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
 const retryOpts = {
@@ -96,6 +91,54 @@ const testData = {
     name: 'payeeFsp',
     number: 2,
     limit: 1000
+  },
+  endpoint: {
+    base: 'http://localhost:1080',
+    email: 'test@example.com'
+  },
+  now: new Date(),
+  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
+}
+
+const testDataLimitExceeded = {
+  amount: {
+    currency: 'USD',
+    amount: 5
+  },
+  payer: {
+    name: 'payerFsp',
+    limit: 1, // Limit set low
+    number: 1,
+    fundsIn: 10000
+  },
+  payee: {
+    name: 'payeeFsp',
+    number: 2,
+    limit: 0
+  },
+  endpoint: {
+    base: 'http://localhost:1080',
+    email: 'test@example.com'
+  },
+  now: new Date(),
+  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
+}
+
+const testDataLimitNoLiquidity = {
+  amount: {
+    currency: 'USD',
+    amount: 5
+  },
+  payer: {
+    name: 'payerFsp',
+    limit: 10000,
+    number: 1,
+    fundsIn: 1 // Low liquidity
+  },
+  payee: {
+    name: 'payeeFsp',
+    number: 2,
+    limit: 0
   },
   endpoint: {
     base: 'http://localhost:1080',
@@ -134,7 +177,7 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
         amount: dataObj.payer.fundsIn
       })
       // endpoint setup
-      _endpointSetup(payer.participant.name, dataObj.endpoint.base)
+      await _endpointSetup(payer.participant.name, dataObj.endpoint.base)
 
       payerList.push(payer)
     }
@@ -149,7 +192,7 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
         limit: { value: dataObj.payee.limit }
       })
       // endpoint setup
-      _endpointSetup(payee.participant.name, dataObj.endpoint.base)
+      await _endpointSetup(payee.participant.name, dataObj.endpoint.base)
       payeeList.push(payee)
     }
 
@@ -355,16 +398,16 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('position batch handler should', async transferPositionPrepare => {
-    // Construct test data for 10 transfers
-    const td = await prepareTestData(testData, 10)
+    const prepareConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventType.PREPARE.toUpperCase())
+    prepareConfig.logger = Logger
 
     await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
-      const prepareConfig = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.PREPARE.toUpperCase())
-      prepareConfig.logger = Logger
+      // Construct test data for 10 transfers
+      const td = await prepareTestData(testData, 10)
 
       // Produce prepare messages for transfersArray
       for (const transfer of td.transfersArray) {
@@ -381,75 +424,120 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
-      // const tests = async () => {
-      //   const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-      //   const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
-      //   const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
-      //   const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
-      //   const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-      //   test.equal(producerResponse, true, 'Producer for prepare published message')
-      //   test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-      //   test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-      //   test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
-      //   test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
-      // }
+      const tests = async (totalTransferAmounts) => {
+        for (const value of Object.values(totalTransferAmounts)) {
+          const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(value.payer.participantCurrencyId) || {}
+          const payerInitialPosition = value.payer.payerLimitAndInitialPosition.participantPosition.value
+          const payerExpectedPosition = payerInitialPosition + value.totalTransferAmount
+          const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+          test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+          test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        }
+      }
 
-      // try {
-      //   await retry(async () => { // use bail(new Error('to break before max retries'))
-      //     const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-      //     if (transfer?.transferState !== TransferState.RESERVED) {
-      //       if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-      //       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-      //     }
-      //     return tests()
-      //   }, retryOpts)
-      // } catch (err) {
-      //   Logger.error(err)
-      //   test.fail(err.message)
-      // }
+      try {
+        const totalTransferAmounts = {}
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
+            payer: tdTest.payer,
+            totalTransferAmount: (
+              (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
+               totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+            ) + tdTest.transferPayload.amount.amount
+          }
+        }
+        await tests(totalTransferAmounts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPositionPrepare.test('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
+      // Construct test data for 10 transfers
+      const td = await prepareTestData(testDataLimitExceeded, 10)
+
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'event',
+          errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.code
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers payer limit aborts')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      try {
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
+      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
+      test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPositionPrepare.test('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
+      // Construct test data for 10 transfers
+      const td = await prepareTestData(testDataLimitNoLiquidity, 10)
+
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'event',
+          errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers payer insufficient liquidity aborts')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      try {
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
+      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
+      test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
+
+      testConsumer.clearEvents()
       test.end()
     })
     transferPositionPrepare.end()
   })
-
-  // await handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
-  //   testData.amount.amount = 1100
-  //   const td = await prepareTestData(testData)
-
-  //   await transferPrepareExceedLimit.test('fail the transfer if the amount is higher than the remaining participant limit', async (test) => {
-  //     const config = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     config.logger = Logger
-
-  //     const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
-
-  //     const tests = async () => {
-  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //       test.equal(producerResponse, true, 'Producer for prepare published message')
-  //       test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, `Transfer state changed to ${TransferInternalState.ABORTED_REJECTED}`)
-  //     }
-
-  //     try {
-  //       await retry(async () => { // use bail(new Error('to break before max retries'))
-  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //         if (transfer?.transferState !== TransferInternalState.ABORTED_REJECTED) {
-  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-  //           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#4 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-  //         }
-  //         return tests()
-  //       }, retryOpts)
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-  //     test.end()
-  //   })
-
-  //   transferPrepareExceedLimit.end()
-  // })
 
   await handlersTest.test('teardown', async (assert) => {
     try {

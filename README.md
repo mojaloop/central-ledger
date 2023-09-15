@@ -187,7 +187,7 @@ If you want to run integration tests in a repetitive manner, you can startup the
 
 If you want to run override position topic tests you can repeat the above and use `npm run test:int-override` after configuring settings found [here](#kafka-position-event-type-action-topic-map)
 
-For running integration tests for batch processing interactively
+#### For running integration tests for batch processing interactively
 - Run dependecies
 ```
 docker-compose up -d mysql kafka init-kafka kafka-debug-console
