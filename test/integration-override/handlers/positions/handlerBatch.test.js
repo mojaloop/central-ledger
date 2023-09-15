@@ -53,7 +53,6 @@ const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
-const { sleepPromise } = require('../../../util/helpers')
 
 const Handlers = {
   index: require('#src/handlers/register'),
@@ -458,7 +457,7 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
-      await sleepPromise(3)
+      testConsumer.clearEvents()
       test.end()
     })
 
@@ -486,7 +485,7 @@ Test('Handlers test', async handlersTest => {
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
-      await sleepPromise(3)
+      testConsumer.clearEvents()
       test.end()
     })
 
@@ -514,7 +513,7 @@ Test('Handlers test', async handlersTest => {
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
-      await sleepPromise(3)
+      testConsumer.clearEvents()
       test.end()
     })
     transferPositionPrepare.end()
