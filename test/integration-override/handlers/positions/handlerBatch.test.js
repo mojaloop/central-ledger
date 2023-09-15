@@ -53,6 +53,7 @@ const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
+const { sleepPromise } = require('../../../util/helpers')
 
 const Handlers = {
   index: require('#src/handlers/register'),
@@ -398,15 +399,16 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('position batch handler should', async transferPositionPrepare => {
+    const prepareConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventType.PREPARE.toUpperCase())
+    prepareConfig.logger = Logger
+
     await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
       // Construct test data for 10 transfers
       const td = await prepareTestData(testData, 10)
-      const prepareConfig = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.PREPARE.toUpperCase())
-      prepareConfig.logger = Logger
 
       // Produce prepare messages for transfersArray
       for (const transfer of td.transfersArray) {
@@ -456,18 +458,13 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      await sleepPromise(3)
       test.end()
     })
 
     await transferPositionPrepare.test('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
       // Construct test data for 10 transfers
       const td = await prepareTestData(testDataLimitExceeded, 10)
-      const prepareConfig = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.PREPARE.toUpperCase())
-      prepareConfig.logger = Logger
 
       // Produce prepare messages for transfersArray
       for (const transfer of td.transfersArray) {
@@ -489,19 +486,13 @@ Test('Handlers test', async handlersTest => {
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
+      await sleepPromise(3)
       test.end()
     })
 
     await transferPositionPrepare.test('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
       // Construct test data for 10 transfers
       const td = await prepareTestData(testDataLimitNoLiquidity, 10)
-
-      const prepareConfig = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.PREPARE.toUpperCase())
-      prepareConfig.logger = Logger
 
       // Produce prepare messages for transfersArray
       for (const transfer of td.transfersArray) {
@@ -523,6 +514,7 @@ Test('Handlers test', async handlersTest => {
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
+      await sleepPromise(3)
       test.end()
     })
     transferPositionPrepare.end()
