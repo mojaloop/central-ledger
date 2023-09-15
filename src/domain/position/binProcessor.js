@@ -68,7 +68,7 @@ const processBins = async (bins, trx) => {
 
   // Pre fetch all settlement accounts corresponding to the position accounts
   // Get all participantIdMap for the accountIds
-  const participantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByIds(accountIds)
+  const participantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByIds(trx, accountIds)
 
   // TODO: Validate if all the participantCurrencyIds exist for all the accountIds
 
@@ -96,7 +96,7 @@ const processBins = async (bins, trx) => {
   // TODO: Verify all maps are correctly constructed
 
   // Get all participantCurrencyIds for the participantIdMap
-  const allParticipantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByParticipantIds(Object.keys(participantIdMap))
+  const allParticipantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByParticipantIds(trx, Object.keys(participantIdMap))
   const settlementCurrencyIds = []
   allParticipantCurrencyIds.forEach(pc => {
     const correspondingParticipantCurrencyId = participantIdMap[pc.participantId][pc.currencyId]

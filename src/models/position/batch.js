@@ -68,9 +68,18 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
   }
 }
 
-const getAllParticipantCurrency = async () => {
-  const result = await Db.from('participantCurrency').find({})
-  return result
+const getAllParticipantCurrency = async (trx) => {
+  const knex = Db.getKnex()
+  if (trx) {
+    const result = await knex('participantCurrency')
+      .transacting(trx)
+      .select('*')
+    return result
+  } else {
+    const result = await knex('participantCurrency')
+      .select('*')
+    return result
+  }
 }
 
 const getParticipantCurrencyIds = async (trx, accountIds) => {

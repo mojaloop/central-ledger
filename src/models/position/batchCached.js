@@ -70,7 +70,7 @@ const buildUnifiedParticipantCurrencyData = (allParticipantCurrency) => {
   return unifiedParticipantsCurrency
 }
 
-const getParticipantCurrencyCached = async () => {
+const getParticipantCurrencyCached = async (trx) => {
   const histTimer = Metrics.getHistogram(
     'model_participant',
     'model_getParticipantsCached - Metrics for participant model',
@@ -79,7 +79,7 @@ const getParticipantCurrencyCached = async () => {
   // Do we have valid participants list in the cache ?
   let cachedParticipantCurrency = cacheClient.get(participantCurrencyAllCacheKey)
   if (!cachedParticipantCurrency) {
-    const allParticipantCurrency = await BatchPositionModel.getAllParticipantCurrency()
+    const allParticipantCurrency = await BatchPositionModel.getAllParticipantCurrency(trx)
     cachedParticipantCurrency = buildUnifiedParticipantCurrencyData(allParticipantCurrency)
 
     // store in cache
@@ -107,10 +107,10 @@ exports.initialize = async () => {
   participantCurrencyAllCacheKey = cacheClient.createKey('participantCurrency')
 }
 
-exports.getParticipantCurrencyByIds = async (participantCurrencyIds) => {
+exports.getParticipantCurrencyByIds = async (trx, participantCurrencyIds) => {
   try {
     let participantCurrencies = []
-    const cachedParticipantCurrency = await getParticipantCurrencyCached()
+    const cachedParticipantCurrency = await getParticipantCurrencyCached(trx)
     for (const participantCurrencyId of participantCurrencyIds) {
       participantCurrencies = participantCurrencies.concat(cachedParticipantCurrency.indexById[parseInt(participantCurrencyId)])
     }
@@ -120,10 +120,10 @@ exports.getParticipantCurrencyByIds = async (participantCurrencyIds) => {
   }
 }
 
-exports.getParticipantCurrencyByParticipantIds = async (participantIds) => {
+exports.getParticipantCurrencyByParticipantIds = async (trx, participantIds) => {
   try {
     let participantCurrencies = []
-    const cachedParticipantCurrency = await getParticipantCurrencyCached()
+    const cachedParticipantCurrency = await getParticipantCurrencyCached(trx)
     for (const participantId of participantIds) {
       participantCurrencies = participantCurrencies.concat(cachedParticipantCurrency.indexByParticipantId[parseInt(participantId)])
     }
