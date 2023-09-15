@@ -116,11 +116,12 @@ class TestConsumer {
    * @param {string} filters.valueFromFilter - String matching filter for `event.value.from`
    * @param {string} filters.valueToFilter - String matching filter for `event.value.to`
    * @param {string} filters.keyFilter - String matching filter for `event.key`
+   * @param {string} filters.errorCodeFilter - String matching filter for `event.value.content.payload.errorInformation.errorCode`
    * @returns {Array<event>} A list of the events found for the eventId
    * @throws {Error} If no events could be found for the given set of filters
    */
   getEventsForFilter (filters) {
-    const { action, topicFilter, valueFromFilter, valueToFilter, keyFilter } = filters
+    const { action, topicFilter, valueFromFilter, valueToFilter, keyFilter, errorCodeFilter } = filters
 
     let events = this.eventLog
     if (topicFilter !== undefined) {
@@ -141,6 +142,10 @@ class TestConsumer {
 
     if (keyFilter !== undefined) {
       events = events.filter(e => e.key.toString() === keyFilter)
+    }
+
+    if (errorCodeFilter !== undefined) {
+      events = events.filter(e => e.value.content.payload.errorInformation.errorCode === errorCodeFilter)
     }
 
     if (events.length === 0) {
