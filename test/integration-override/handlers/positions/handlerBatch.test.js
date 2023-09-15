@@ -26,11 +26,11 @@
 
 const Test = require('tape')
 const Uuid = require('uuid4')
-const retry = require('async-retry')
+// const retry = require('async-retry')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
-const Time = require('@mojaloop/central-services-shared').Util.Time
-const sleep = Time.sleep
+// const Time = require('@mojaloop/central-services-shared').Util.Time
+// const sleep = Time.sleep
 const Db = require('@mojaloop/database-lib').Db
 const Cache = require('#src/lib/cache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
@@ -42,14 +42,14 @@ const ParticipantFundsInOutHelper = require('#test/integration/helpers/participa
 const ParticipantEndpointHelper = require('#test/integration/helpers/participantEndpoint')
 const SettlementHelper = require('#test/integration/helpers/settlementModels')
 const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
-const TransferService = require('#src/domain/transfer/index')
-const ParticipantService = require('#src/domain/participant/index')
+// const TransferService = require('#src/domain/transfer/index')
+// const ParticipantService = require('#src/domain/participant/index')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const {
-  wrapWithRetries,
-  getMessagePayloadOrThrow,
-  sleepPromise
+  wrapWithRetries
+  // getMessagePayloadOrThrow,
+  // sleepPromise
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
 const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
@@ -66,13 +66,13 @@ const Handlers = {
   timeouts: require('#src/handlers/timeouts/handler')
 }
 
-const TransferState = Enum.Transfers.TransferState
+// const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
 const debug = process?.env?.TEST_INT_DEBUG || false
-const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
+// const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
 const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
 const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
 const retryOpts = {
