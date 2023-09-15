@@ -451,7 +451,6 @@ Test('Handlers test', async handlersTest => {
             ) + tdTest.transferPayload.amount.amount
           }
         }
-        Logger.info(totalTransferAmounts)
         await tests(totalTransferAmounts)
       } catch (err) {
         Logger.error(err)
@@ -482,6 +481,16 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
 
+      try {
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
@@ -510,9 +519,20 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
 
+      try {
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
+
       testConsumer.clearEvents()
       test.end()
     })
