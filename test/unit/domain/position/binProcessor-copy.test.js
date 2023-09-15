@@ -34,6 +34,7 @@ const Test = require('tapes')(require('tape'))
 const Enum = require('@mojaloop/central-services-shared').Enum
 const BinProcessor = require('../../../../src/domain/position/binProcessor')
 const BatchPositionModel = require('../../../../src/models/position/batch')
+const BatchPositionModelCached = require('../../../../src/models/position/batchCached')
 const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const participantFacade = require('../../../../src/models/participant/facade')
 const sampleBins = require('./sampleBins')
@@ -69,6 +70,7 @@ Test('BinProcessor', async (binProcessorTest) => {
   binProcessorTest.beforeEach(async test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(BatchPositionModel)
+    sandbox.stub(BatchPositionModelCached)
     sandbox.stub(SettlementModelCached)
     sandbox.stub(participantFacade)
 
@@ -79,7 +81,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       ...fulfillTransfersStates
     })
 
-    BatchPositionModel.getParticipantCurrencyIds.returns([
+    BatchPositionModelCached.getParticipantCurrencyByIds.returns([
       {
         participantCurrencyId: 7,
         participantId: 2,
@@ -159,7 +161,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       }
     ])
 
-    BatchPositionModel.getParticipantCurrencyIdsByParticipantIds.returns([
+    BatchPositionModelCached.getParticipantCurrencyByParticipantIds.returns([
       {
         participantCurrencyId: 9,
         participantId: 2,
