@@ -305,14 +305,12 @@ Test('Prepare domain', positionIndexTest => {
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
-      test.equal(processedMessages.notifyMessages[0].message.content.uriParams.id, '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf')
       test.equal(processedMessages.notifyMessages[0].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Destination'], 'perffsp2')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Source'], 'perffsp1')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferState.RESERVED)
 
-      test.equal(processedMessages.notifyMessages[1].message.content.uriParams.id, '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e')
       test.equal(processedMessages.notifyMessages[1].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Destination'], 'perffsp2')
       test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Source'], 'perffsp1')
@@ -379,6 +377,8 @@ Test('Prepare domain', positionIndexTest => {
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.accumulatedPositionChanges.length, 0)
+
       test.equal(processedMessages.notifyMessages[0].message.content.uriParams.id, '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf')
       test.equal(processedMessages.notifyMessages[0].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Destination'], 'perffsp1')
@@ -386,8 +386,7 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[0].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[0].message.content.payload.errorInformation.errorCode, '4001')
       test.equal(processedMessages.notifyMessages[0].message.content.payload.errorInformation.errorDescription, 'Payer FSP insufficient liquidity')
-      test.equal(processedMessages.accumulatedPositionChanges[0].value, 0)
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferState.ABORTED)
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.notifyMessages[1].message.content.uriParams.id, '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e')
       test.equal(processedMessages.notifyMessages[1].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
@@ -396,8 +395,7 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[1].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[1].message.content.payload.errorInformation.errorCode, '4001')
       test.equal(processedMessages.notifyMessages[1].message.content.payload.errorInformation.errorDescription, 'Payer FSP insufficient liquidity')
-      test.equal(processedMessages.accumulatedPositionChanges[1].value, 0)
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferState.ABORTED)
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, '5dff336f-62c0-4619-92c6-9ccd7c8f0369')
       test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
@@ -406,15 +404,14 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[2].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
       test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedPositionChanges[2].value, 0)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferId, transferMessage2.value.id)
       test.equal(processedMessages.accumulatedTransferStateChanges[2].transferId, transferMessage3.value.id)
 
-      test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.ABORTED)
-      test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.ABORTED)
+      test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
       test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedPositionValue, 0)
@@ -461,7 +458,8 @@ Test('Prepare domain', positionIndexTest => {
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
 
-      test.equal(processedMessages.notifyMessages[0].message.content.uriParams.id, '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf')
+      test.equal(processedMessages.accumulatedPositionChanges.length, 2)
+
       test.equal(processedMessages.notifyMessages[0].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Destination'], 'perffsp2')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Source'], 'perffsp1')
@@ -469,7 +467,6 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedPositionChanges[0].value, -2)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferState.RESERVED)
 
-      test.equal(processedMessages.notifyMessages[1].message.content.uriParams.id, '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e')
       test.equal(processedMessages.notifyMessages[1].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Destination'], 'perffsp2')
       test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Source'], 'perffsp1')
@@ -484,7 +481,6 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[2].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
       test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedPositionChanges[2].value, 0)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
@@ -538,8 +534,8 @@ Test('Prepare domain', positionIndexTest => {
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.accumulatedPositionChanges.length, 2)
 
-      test.equal(processedMessages.notifyMessages[0].message.content.uriParams.id, '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf')
       test.equal(processedMessages.notifyMessages[0].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Destination'], 'perffsp2')
       test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Source'], 'perffsp1')
@@ -547,7 +543,6 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedPositionChanges[0].value, -2)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferState.RESERVED)
 
-      test.equal(processedMessages.notifyMessages[1].message.content.uriParams.id, '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e')
       test.equal(processedMessages.notifyMessages[1].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Destination'], 'perffsp2')
       test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Source'], 'perffsp1')
@@ -562,7 +557,6 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[2].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
       test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
       test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedPositionChanges[2].value, 0)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
