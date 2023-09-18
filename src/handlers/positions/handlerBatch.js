@@ -50,6 +50,7 @@ const Uuid = require('uuid4')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 // const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
 const BatchPositionModel = require('../../models/position/batch')
+const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 
 const consumerCommit = true
 // const fromSwitch = true
@@ -98,7 +99,7 @@ const positions = async (error, messages) => {
     const histTimerMsgEnd = Metrics.getHistogram(
       'transfer_position',
       'Process a prepare transfer message',
-      ['success']
+      ['success', 'action']
     ).startTimer()
     // Create a span for each message
     const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
@@ -114,9 +115,13 @@ const positions = async (error, messages) => {
 
     const accountBin = bins[accountID] || (bins[accountID] = {})
     const actionBin = accountBin[action] || (accountBin[action] = [])
+    // Decode the payload and pass it as a separate parameter
+    const decodedPayload = decodePayload(message.value.content.payload)
     actionBin.push({
       message,
+      decodedPayload,
       span,
+      result: {},
       histTimerMsgEnd
     })
 
@@ -163,9 +168,9 @@ const positions = async (error, messages) => {
     histTimerEnd({ success: false })
   } finally {
     // Finish span for each message
-    await BinProcessor.iterateThroughBins(bins, async (item) => {
+    await BinProcessor.iterateThroughBins(bins, async (_accountID, action, item) => {
       // TODO: We need to get the success status properly for each message
-      item.histTimerMsgEnd({ success: true })
+      item.histTimerMsgEnd({ success: true, action })
       const span = item.span
       if (!span.isFinished) {
         await span.finish()
