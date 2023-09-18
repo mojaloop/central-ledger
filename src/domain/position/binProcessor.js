@@ -51,9 +51,9 @@ const participantFacade = require('../../models/participant/facade')
  */
 const processBins = async (bins, trx) => {
   const transferIdList = []
-  await iterateThroughBins(bins, async (item) => {
-    if (item.message.value.content?.payload?.transferId) {
-      transferIdList.push(item.message.value.content.payload.transferId)
+  await iterateThroughBins(bins, async (_accountID, _action, item) => {
+    if (item.decodedPayload?.transferId) {
+      transferIdList.push(item.decodedPayload.transferId)
     }
   })
   // Pre fetch latest transferStates for all the transferIds in the account-bin
@@ -208,7 +208,7 @@ const iterateThroughBins = async (bins, cb) => {
       const actionBin = accountBin[action]
       for (const item of actionBin) {
         try {
-          await cb(item)
+          await cb(accountID, action, item)
         } catch (err) {}
       }
     }

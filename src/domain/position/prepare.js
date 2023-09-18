@@ -5,7 +5,6 @@ const Utility = require('@mojaloop/central-services-shared').Util
 const resourceVersions = require('@mojaloop/central-services-shared').Util.resourceVersions
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('@mojaloop/central-services-logger')
-const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 
 /**
  * @function processPositionPrepareBin
@@ -51,7 +50,7 @@ const processPositionPrepareBin = async (
     let transferStateId
     let reason
     let resultMessage
-    const transfer = decodePayload(binItem.message.value.content.payload)
+    const transfer = binItem.decodedPayload
     Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
 
     // Check if transfer is in correct state for processing, produce an internal error message
