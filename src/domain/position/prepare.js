@@ -91,6 +91,7 @@ const processPositionPrepareBin = async (
         { id: transfer.transferId },
         'application/json'
       )
+      binItem.result = { success: false }
     // Check if payer has insufficient liquidity, produce an error message and abort transfer
     } else if (availablePositionBasedOnLiquidityCover.toNumber() < transfer.amount.amount) {
       transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
@@ -127,6 +128,7 @@ const processPositionPrepareBin = async (
         { id: transfer.transferId },
         'application/json'
       )
+      binItem.result = { success: false }
     // Check if payer has surpassed their limit, produce an error message and abort transfer
     } else if (availablePositionBasedOnPayerLimit.toNumber() < transfer.amount.amount) {
       transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
@@ -163,6 +165,7 @@ const processPositionPrepareBin = async (
         { id: transfer.transferId },
         'application/json'
       )
+      binItem.result = { success: false }
     // Payer has sufficient liquidity and limit
     } else {
       transferStateId = Enum.Transfers.TransferState.RESERVED
@@ -208,6 +211,7 @@ const processPositionPrepareBin = async (
       }
       participantPositionChanges.push(participantPositionChange)
       Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
+      binItem.result = { success: true }
     }
 
     resultMessages.push({ binItem, message: resultMessage })

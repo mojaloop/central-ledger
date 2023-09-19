@@ -36,6 +36,7 @@ const BinProcessor = require('../../../../src/domain/position/binProcessor')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const KafkaConsumer = Consumer.Consumer
 const BatchPositionModel = require('../../../../src/models/position/batch')
+const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Proxyquire = require('proxyquire')
 
@@ -46,6 +47,9 @@ const prepareMessageValue = {
     event: {
       action: Enum.Events.Event.Action.PREPARE
     }
+  },
+  content: {
+    payload: {}
   }
 }
 const commitMessageValue = {
@@ -53,6 +57,9 @@ const commitMessageValue = {
     event: {
       action: Enum.Events.Event.Action.COMMIT
     }
+  },
+  content: {
+    payload: {}
   }
 }
 
@@ -115,10 +122,10 @@ let trxStub
 let messages
 let expectedBins
 
-Test('Position handler', transferHandlerTest => {
+Test('Position handler', positionBatchHandlerTest => {
   let sandbox
 
-  transferHandlerTest.beforeEach(test => {
+  positionBatchHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     SpanStub = {
       audit: sandbox.stub().callsFake(),
@@ -141,17 +148,23 @@ Test('Position handler', transferHandlerTest => {
         prepare: [
           {
             message: samplePrepareMessages[0],
-            span: SpanStub
+            span: SpanStub,
+            result: {},
+            decodedPayload: {}
           },
           {
             message: samplePrepareMessages[1],
-            span: SpanStub
+            span: SpanStub,
+            result: {},
+            decodedPayload: {}
           }
         ],
         commit: [
           {
             message: sampleCommitMessages[0],
-            span: SpanStub
+            span: SpanStub,
+            result: {},
+            decodedPayload: {}
           }
         ]
       },
@@ -159,13 +172,17 @@ Test('Position handler', transferHandlerTest => {
         prepare: [
           {
             message: samplePrepareMessages[2],
-            span: SpanStub
+            span: SpanStub,
+            result: {},
+            decodedPayload: {}
           }
         ],
         commit: [
           {
             message: sampleCommitMessages[1],
-            span: SpanStub
+            span: SpanStub,
+            result: {},
+            decodedPayload: {}
           }
         ]
       }
@@ -188,6 +205,7 @@ Test('Position handler', transferHandlerTest => {
       '@mojaloop/event-sdk': EventSdkStub
     })
 
+    sandbox.stub(SettlementModelCached)
     sandbox.stub(Kafka)
     sandbox.stub(KafkaConsumer.prototype, 'constructor').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'connect').resolves()
@@ -213,32 +231,37 @@ Test('Position handler', transferHandlerTest => {
     test.end()
   })
 
-  transferHandlerTest.afterEach(test => {
+  positionBatchHandlerTest.afterEach(test => {
     sandbox.restore()
     test.end()
   })
 
-  transferHandlerTest.test('createPrepareHandler should', registerHandlersTest => {
-    registerHandlersTest.test('register all consumers on Kafka', async (test) => {
+  positionBatchHandlerTest.test('createPrepareHandler should', registerHandlersTest => {
+    registerHandlersTest.test('register all consumers on Kafka', async test => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+        const result = await allTransferHandlers.registerAllHandlers()
+        test.equal(result, true)
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.fail('Error not thrown')
+        test.end()
+      }
+    })
+
+    registerHandlersTest.test('register a consumer on Kafka', async test => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
-
       const result = await allTransferHandlers.registerAllHandlers()
       test.equal(result, true)
       test.end()
     })
 
-    registerHandlersTest.test('register a consumer on Kafka', async (test) => {
-      await Consumer.createHandler(topicName, config, command)
-      Kafka.transformGeneralTopicName.returns(topicName)
-      Kafka.getKafkaConfig.returns(config)
-      const result = await allTransferHandlers.registerAllHandlers()
-      test.equal(result, true)
-      test.end()
-    })
-
-    registerHandlersTest.test('throw error when there is an error getting KafkaConfig', async (test) => {
+    registerHandlersTest.test('throw error when there is an error getting KafkaConfig', async test => {
       try {
         Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
@@ -253,7 +276,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('registerPrepareHandler throw error when there is an error getting KafkaConfig', async (test) => {
+    registerHandlersTest.test('registerPrepareHandler throw error when there is an error getting KafkaConfig', async test => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
@@ -271,7 +294,7 @@ Test('Position handler', transferHandlerTest => {
     registerHandlersTest.end()
   })
 
-  transferHandlerTest.test('positions should', positionsTest => {
+  positionBatchHandlerTest.test('positions should', positionsTest => {
     positionsTest.test('process messages and commit Kafka offset and DB transaction', async test => {
       // Arrange
       await Consumer.createHandler(topicName, config, command)
@@ -283,7 +306,17 @@ Test('Position handler', transferHandlerTest => {
       try {
         await allTransferHandlers.positions(null, messages)
         test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once')
-        test.ok(BinProcessor.processBins.calledOnceWithExactly(expectedBins, trxStub), 'processBins should be called once with bins and trx')
+        // Need an easier way to do partial matching...
+        delete BinProcessor.processBins.getCall(0).args[0][1001].commit[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[1].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1002].commit[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1002].prepare[0].histTimerMsgEnd
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].commit, expectedBins[1001].commit)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].prepare, expectedBins[1001].prepare)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1002].commit, expectedBins[1002].commit)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1002].prepare, expectedBins[1002].prepare)
+        test.equal(BinProcessor.processBins.getCall(0).args[1], trxStub)
         const expectedLastMessageToCommit = messages[messages.length - 1]
         test.equal(Kafka.proceed.getCall(0).args[1].message.offset, expectedLastMessageToCommit.offset, 'kafkaProceed should be called with the correct offset')
         test.equal(SpanStub.audit.callCount, 5, 'span.audit should be called five times')
@@ -310,7 +343,17 @@ Test('Position handler', transferHandlerTest => {
       try {
         await allTransferHandlers.positions(null, messages)
         test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once')
-        test.ok(BinProcessor.processBins.calledOnceWithExactly(expectedBins, trxStub), 'processBins should be called once with bins and trx')
+        // Need an easier way to do partial matching...
+        delete BinProcessor.processBins.getCall(0).args[0][1001].commit[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[1].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1002].commit[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1002].prepare[0].histTimerMsgEnd
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].commit, expectedBins[1001].commit)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].prepare, expectedBins[1001].prepare)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1002].commit, expectedBins[1002].commit)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1002].prepare, expectedBins[1002].prepare)
+        test.equal(BinProcessor.processBins.getCall(0).args[1], trxStub)
         test.ok(Kafka.proceed.notCalled, 'kafkaProceed should not be called')
         test.equal(SpanStub.audit.callCount, 5, 'span.audit should be called five times')
         test.equal(SpanStub.error.callCount, 5, 'span.error should be called five times')
@@ -328,5 +371,5 @@ Test('Position handler', transferHandlerTest => {
     positionsTest.end()
   })
 
-  transferHandlerTest.end()
+  positionBatchHandlerTest.end()
 })

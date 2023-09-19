@@ -161,7 +161,7 @@ const positions = async (error, messages) => {
     // 6.2. Audit Error for each message
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
     const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-    await BinProcessor.iterateThroughBins(bins, async (item) => {
+    await BinProcessor.iterateThroughBins(bins, async (_accountID, _action, item) => {
       const span = item.span
       await span.error(fspiopError, state)
     })
@@ -169,8 +169,7 @@ const positions = async (error, messages) => {
   } finally {
     // Finish span for each message
     await BinProcessor.iterateThroughBins(bins, async (_accountID, action, item) => {
-      // TODO: We need to get the success status properly for each message
-      item.histTimerMsgEnd({ success: true, action })
+      item.histTimerMsgEnd({ ...item.result, action })
       const span = item.span
       if (!span.isFinished) {
         await span.finish()

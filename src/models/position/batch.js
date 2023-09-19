@@ -68,6 +68,20 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
   }
 }
 
+const getAllParticipantCurrency = async (trx) => {
+  const knex = Db.getKnex()
+  if (trx) {
+    const result = await knex('participantCurrency')
+      .transacting(trx)
+      .select('*')
+    return result
+  } else {
+    const result = await knex('participantCurrency')
+      .select('*')
+    return result
+  }
+}
+
 const getParticipantCurrencyIds = async (trx, accountIds) => {
   const participantCurrencies = await knex('participantCurrency')
     .transacting(trx)
@@ -140,5 +154,6 @@ module.exports = {
   getParticipantCurrencyIdsByParticipantIds,
   updateParticipantPosition,
   bulkInsertTransferStateChanges,
-  bulkInsertParticipantPositionChanges
+  bulkInsertParticipantPositionChanges,
+  getAllParticipantCurrency
 }
