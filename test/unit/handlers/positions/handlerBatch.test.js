@@ -46,6 +46,9 @@ const prepareMessageValue = {
     event: {
       action: Enum.Events.Event.Action.PREPARE
     }
+  },
+  content: {
+    payload: {}
   }
 }
 const commitMessageValue = {
@@ -53,6 +56,9 @@ const commitMessageValue = {
     event: {
       action: Enum.Events.Event.Action.COMMIT
     }
+  },
+  content: {
+    payload: {}
   }
 }
 
@@ -141,17 +147,23 @@ Test('Position handler', transferHandlerTest => {
         prepare: [
           {
             message: samplePrepareMessages[0],
-            span: SpanStub
+            span: SpanStub,
+            result: {},
+            decodedPayload: {}
           },
           {
             message: samplePrepareMessages[1],
-            span: SpanStub
+            span: SpanStub,
+            result: {},
+            decodedPayload: {}
           }
         ],
         commit: [
           {
             message: sampleCommitMessages[0],
-            span: SpanStub
+            span: SpanStub,
+            result: {},
+            decodedPayload: {}
           }
         ]
       },
@@ -159,13 +171,17 @@ Test('Position handler', transferHandlerTest => {
         prepare: [
           {
             message: samplePrepareMessages[2],
-            span: SpanStub
+            span: SpanStub,
+            result: {},
+            decodedPayload: {}
           }
         ],
         commit: [
           {
             message: sampleCommitMessages[1],
-            span: SpanStub
+            span: SpanStub,
+            result: {},
+            decodedPayload: {}
           }
         ]
       }
