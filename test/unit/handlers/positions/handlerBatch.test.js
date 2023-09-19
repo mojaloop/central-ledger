@@ -36,6 +36,7 @@ const BinProcessor = require('../../../../src/domain/position/binProcessor')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const KafkaConsumer = Consumer.Consumer
 const BatchPositionModel = require('../../../../src/models/position/batch')
+const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Proxyquire = require('proxyquire')
 
@@ -121,10 +122,10 @@ let trxStub
 let messages
 let expectedBins
 
-Test('Position handler', transferHandlerTest => {
+Test('Position handler', positionBatchHandlerTest => {
   let sandbox
 
-  transferHandlerTest.beforeEach(test => {
+  positionBatchHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     SpanStub = {
       audit: sandbox.stub().callsFake(),
@@ -204,6 +205,7 @@ Test('Position handler', transferHandlerTest => {
       '@mojaloop/event-sdk': EventSdkStub
     })
 
+    sandbox.stub(SettlementModelCached)
     sandbox.stub(Kafka)
     sandbox.stub(KafkaConsumer.prototype, 'constructor').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'connect').resolves()
@@ -229,20 +231,25 @@ Test('Position handler', transferHandlerTest => {
     test.end()
   })
 
-  transferHandlerTest.afterEach(test => {
+  positionBatchHandlerTest.afterEach(test => {
     sandbox.restore()
     test.end()
   })
 
-  transferHandlerTest.test('createPrepareHandler should', registerHandlersTest => {
+  positionBatchHandlerTest.test('createPrepareHandler should', registerHandlersTest => {
     registerHandlersTest.test('register all consumers on Kafka', async test => {
-      await Consumer.createHandler(topicName, config, command)
-      Kafka.transformGeneralTopicName.returns(topicName)
-      Kafka.getKafkaConfig.returns(config)
-
-      const result = await allTransferHandlers.registerAllHandlers()
-      test.equal(result, true)
-      test.end()
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+        const result = await allTransferHandlers.registerAllHandlers()
+        test.equal(result, true)
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.fail('Error not thrown')
+        test.end()
+      }
     })
 
     registerHandlersTest.test('register a consumer on Kafka', async test => {
@@ -287,7 +294,7 @@ Test('Position handler', transferHandlerTest => {
     registerHandlersTest.end()
   })
 
-  transferHandlerTest.test('positions should', positionsTest => {
+  positionBatchHandlerTest.test('positions should', positionsTest => {
     positionsTest.test('process messages and commit Kafka offset and DB transaction', async test => {
       // Arrange
       await Consumer.createHandler(topicName, config, command)
@@ -364,5 +371,5 @@ Test('Position handler', transferHandlerTest => {
     positionsTest.end()
   })
 
-  transferHandlerTest.end()
+  positionBatchHandlerTest.end()
 })
