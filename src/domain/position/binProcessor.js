@@ -31,12 +31,14 @@
 
 const Logger = require('@mojaloop/central-services-logger')
 const BatchPositionModel = require('../../models/position/batch')
+const BatchPositionModelCached = require('../../models/position/batchCached')
 const PositionPrepareDomain = require('./prepare')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 // TODO: We may not need this if we optimize the participantLimit query
 const participantFacade = require('../../models/participant/facade')
+const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 
 /**
  * @function processBins
@@ -52,6 +54,7 @@ const participantFacade = require('../../models/participant/facade')
 const processBins = async (bins, trx) => {
   const transferIdList = []
   await iterateThroughBins(bins, async (_accountID, _action, item) => {
+    Logger.info(decodePayload(item.message.value.content.payload))
     if (item.decodedPayload?.transferId) {
       transferIdList.push(item.decodedPayload.transferId)
     }
@@ -67,7 +70,7 @@ const processBins = async (bins, trx) => {
 
   // Pre fetch all settlement accounts corresponding to the position accounts
   // Get all participantIdMap for the accountIds
-  const participantCurrencyIds = await BatchPositionModel.getParticipantCurrencyIds(trx, accountIds)
+  const participantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByIds(trx, accountIds)
 
   // TODO: Validate if all the participantCurrencyIds exist for all the accountIds
 
@@ -95,7 +98,7 @@ const processBins = async (bins, trx) => {
   // TODO: Verify all maps are correctly constructed
 
   // Get all participantCurrencyIds for the participantIdMap
-  const allParticipantCurrencyIds = await BatchPositionModel.getParticipantCurrencyIdsByParticipantIds(trx, Object.keys(participantIdMap))
+  const allParticipantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByParticipantIds(trx, Object.keys(participantIdMap))
   const settlementCurrencyIds = []
   allParticipantCurrencyIds.forEach(pc => {
     const correspondingParticipantCurrencyId = participantIdMap[pc.participantId][pc.currencyId]
