@@ -112,7 +112,7 @@ exports.getParticipantCurrencyByIds = async (trx, participantCurrencyIds) => {
     let participantCurrencies = []
     const cachedParticipantCurrency = await getParticipantCurrencyCached(trx)
     for (const participantCurrencyId of participantCurrencyIds) {
-      participantCurrencies = participantCurrencies.concat(cachedParticipantCurrency.indexById[parseInt(participantCurrencyId)])
+      participantCurrencies = participantCurrencies.concat(cachedParticipantCurrency.indexById[participantCurrencyId])
     }
     return participantCurrencies
   } catch (err) {
@@ -125,7 +125,7 @@ exports.getParticipantCurrencyByParticipantIds = async (trx, participantIds) => 
     let participantCurrencies = []
     const cachedParticipantCurrency = await getParticipantCurrencyCached(trx)
     for (const participantId of participantIds) {
-      participantCurrencies = participantCurrencies.concat(cachedParticipantCurrency.indexByParticipantId[parseInt(participantId)])
+      participantCurrencies = participantCurrencies.concat(cachedParticipantCurrency.indexByParticipantId[participantId])
     }
     return participantCurrencies
   } catch (err) {
