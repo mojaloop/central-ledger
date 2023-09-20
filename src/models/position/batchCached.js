@@ -72,8 +72,8 @@ const buildUnifiedParticipantCurrencyData = (allParticipantCurrency) => {
 
 const getParticipantCurrencyCached = async (trx) => {
   const histTimer = Metrics.getHistogram(
-    'model_batchposition',
-    'model_batchGetParticipantsCached - Metrics for participant model',
+    'model_participant_batch',
+    'model_getParticipantsCached - Metrics for participant model',
     ['success', 'queryName', 'hit']
   ).startTimer()
   // Do we have valid participants list in the cache ?
