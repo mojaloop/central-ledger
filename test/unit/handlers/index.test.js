@@ -67,7 +67,7 @@ Test('cli', async (cliTest) => {
         '--bulkprepare',
         '--bulkfulfil',
         '--bulkprocessing',
-        '--positionbatch',
+        '--positionbatch'
       ]
 
       process.argv = argv
@@ -126,7 +126,6 @@ Test('cli', async (cliTest) => {
         enabled: true
       }
 
-
       const modulesList = [
         prepareHandler,
         positionHandler,
@@ -137,7 +136,7 @@ Test('cli', async (cliTest) => {
         adminHandler,
         bulkprepareHandler,
         bulkfulfilHandler,
-        bulkprocessingHandler,
+        bulkprocessingHandler
         // rejectHandler
       ]
 

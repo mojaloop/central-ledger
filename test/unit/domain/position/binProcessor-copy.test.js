@@ -410,7 +410,7 @@ Test('BinProcessor', async (binProcessorTest) => {
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
-      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins));
+      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins))
       sampleBinsDeepCopy[7].prepare = []
       sampleBinsDeepCopy[15].prepare = []
       const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
@@ -577,7 +577,7 @@ Test('BinProcessor', async (binProcessorTest) => {
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
-      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins));
+      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins))
       delete sampleBinsDeepCopy[7].prepare
       delete sampleBinsDeepCopy[15].prepare
       const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
