@@ -41,6 +41,10 @@ const _initKnex = async () => {
   }
 }
 
+const _unsetKnex = async () => {
+  knex = null
+}
+
 const startDbTransaction = async () => {
   await _initKnex()
   const trx = await knex.transaction()
@@ -119,6 +123,7 @@ const bulkInsertParticipantPositionChanges = async (trx, participantPositionChan
 
 module.exports = {
   _initKnex, // for testing
+  _unsetKnex,
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
   getPositionsByAccountIdsForUpdate,

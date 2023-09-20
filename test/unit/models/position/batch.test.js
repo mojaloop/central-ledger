@@ -123,6 +123,7 @@ Test('Batch model', async (positionBatchTest) => {
       await Model.getLatestTransferStateChangesByTransferIdList(trxStub, [1, 2])
       test.pass('completed successfully')
       test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+      Model._unsetKnex()
       test.end()
     } catch (err) {
       Logger.error(`getLatestTransferStateChangesByTransferIdList failed with error - ${err}`)
@@ -131,7 +132,7 @@ Test('Batch model', async (positionBatchTest) => {
     }
   })
 
-  await positionBatchTest.skip('getPositionsByAccountIdsForUpdate', async (test) => {
+  await positionBatchTest.test('getPositionsByAccountIdsForUpdate', async (test) => {
     try {
       sandbox.stub(Db, 'getKnex')
 
@@ -145,16 +146,16 @@ Test('Batch model', async (positionBatchTest) => {
         transacting: sandbox.stub().returns({
           whereIn: sandbox.stub().returns({
             forUpdate: sandbox.stub().returns({
-              select: sandbox.stub().returns()
+              select: sandbox.stub().returns([{ participantCurrencyId: 1 }, { participantCurrencyId: 2 }])
             })
           })
         })
       })
-
       await Model._initKnex()
       await Model.getPositionsByAccountIdsForUpdate(trxStub, [1, 2])
       test.pass('completed successfully')
       test.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with transferStateChange once')
+      Model._unsetKnex()
       test.end()
     } catch (err) {
       Logger.error(`getPositionsByAccountIdsForUpdate failed with error - ${err}`)
@@ -163,7 +164,7 @@ Test('Batch model', async (positionBatchTest) => {
     }
   })
 
-  await positionBatchTest.skip('updateParticipantPosition', async (test) => {
+  await positionBatchTest.test('updateParticipantPosition', async (test) => {
     try {
       sandbox.stub(Db, 'getKnex')
 
@@ -186,6 +187,7 @@ Test('Batch model', async (positionBatchTest) => {
       await Model.updateParticipantPosition(trxStub, 1, 1, null)
       test.pass('completed successfully')
       test.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with transferStateChange once')
+      Model._unsetKnex()
       test.end()
     } catch (err) {
       Logger.error(`updateParticipantPosition failed with error - ${err}`)
@@ -194,24 +196,27 @@ Test('Batch model', async (positionBatchTest) => {
     }
   })
 
-  await positionBatchTest.skip('bulkInsertTransferStateChanges', async (test) => {
+  await positionBatchTest.test('bulkInsertTransferStateChanges', async (test) => {
     try {
       sandbox.stub(Db, 'getKnex')
 
       const knexStub = sandbox.stub()
       const trxStub = sandbox.stub()
       trxStub.commit = sandbox.stub()
-      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-      Db.getKnex.returns(knexStub)
-
-      knexStub.returns({
-        batchInsert: sandbox.stub().returns({})
+      knexStub.batchInsert = sandbox.stub().returns({
+        transacting: sandbox.stub().returns({
+          where: sandbox.stub().returns({
+            update: sandbox.stub().returns({})
+          })
+        })
       })
+      Db.getKnex.returns(knexStub)
 
       await Model._initKnex()
       await Model.bulkInsertTransferStateChanges(trxStub, 1, 1, null)
       test.pass('completed successfully')
-      test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+      test.ok(knexStub.batchInsert.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+      Model._unsetKnex()
       test.end()
     } catch (err) {
       Logger.error(`bulkInsertTransferStateChanges failed with error - ${err}`)
@@ -220,24 +225,27 @@ Test('Batch model', async (positionBatchTest) => {
     }
   })
 
-  await positionBatchTest.skip('bulkInsertParticipantPositionChanges', async (test) => {
+  await positionBatchTest.test('bulkInsertParticipantPositionChanges', async (test) => {
     try {
       sandbox.stub(Db, 'getKnex')
 
       const knexStub = sandbox.stub()
       const trxStub = sandbox.stub()
       trxStub.commit = sandbox.stub()
-      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-      Db.getKnex.returns(knexStub)
-
-      knexStub.returns({
-        batchInsert: sandbox.stub().returns({})
+      knexStub.batchInsert = sandbox.stub().returns({
+        transacting: sandbox.stub().returns({
+          where: sandbox.stub().returns({
+            update: sandbox.stub().returns({})
+          })
+        })
       })
+      Db.getKnex.returns(knexStub)
 
       await Model._initKnex()
       await Model.bulkInsertParticipantPositionChanges(trxStub, 1, 1, null)
       test.pass('completed successfully')
-      test.ok(knexStub.withArgs('participantPositionChange').calledOnce, 'knex called with transferStateChange once')
+      test.ok(knexStub.batchInsert.withArgs('participantPositionChange').calledOnce, 'knex called with transferStateChange once')
+      Model._unsetKnex()
       test.end()
     } catch (err) {
       Logger.error(`bulkInsertParticipantPositionChanges failed with error - ${err}`)
