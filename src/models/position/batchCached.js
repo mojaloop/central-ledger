@@ -72,7 +72,7 @@ const buildUnifiedParticipantCurrencyData = (allParticipantCurrency) => {
 
 const getParticipantCurrencyCached = async (trx) => {
   const histTimer = Metrics.getHistogram(
-    'model_participant',
+    'model_participant_batch',
     'model_getParticipantsCached - Metrics for participant model',
     ['success', 'queryName', 'hit']
   ).startTimer()
@@ -84,11 +84,11 @@ const getParticipantCurrencyCached = async (trx) => {
 
     // store in cache
     cacheClient.set(participantCurrencyAllCacheKey, cachedParticipantCurrency)
-    histTimer({ success: true, queryName: 'model_getParticipantCurrencyCached', hit: false })
+    histTimer({ success: true, queryName: 'model_getParticipantCurrencyBatchCached', hit: false })
   } else {
     // unwrap participants list from catbox structure
     cachedParticipantCurrency = cachedParticipantCurrency.item
-    histTimer({ success: true, queryName: 'model_getParticipantCurrencyCached', hit: true })
+    histTimer({ success: true, queryName: 'model_getParticipantCurrencyBatchCached', hit: true })
   }
   return cachedParticipantCurrency
 }

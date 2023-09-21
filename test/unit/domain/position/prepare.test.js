@@ -465,6 +465,87 @@ Test('Prepare domain', positionIndexTest => {
       test.end()
     })
 
+    changeParticipantPositionTest.test('produce abort message for when payer has reached their set payer limit', async (test) => {
+      const participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: 1000,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 0.5
+      }
+      const settlementModel = {
+        settlementModelId: 1,
+        name: 'DEFERREDNET',
+        isActive: 1,
+        settlementGranularityId: 2,
+        settlementInterchangeId: 2,
+        settlementDelayId: 2, // 1 Immediate, 2 Deferred
+        currencyId: 'USD',
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
+        autoPositionReset: 1,
+        adjustPosition: 0,
+        settlementAccountTypeId: 2
+      }
+      const processedMessages = await processPositionPrepareBin(
+        binItems,
+        1000, // Position value has reached limit of 1000
+        0,
+        {
+          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+        },
+        -2000, // Payer has liquidity
+        settlementModel,
+        participantLimit
+      )
+      Logger.isInfoEnabled && Logger.info(processedMessages)
+      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.accumulatedPositionChanges.length, 0)
+
+      test.equal(processedMessages.notifyMessages[0].message.content.uriParams.id, '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf')
+      test.equal(processedMessages.notifyMessages[0].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
+      test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Destination'], 'perffsp1')
+      test.equal(processedMessages.notifyMessages[0].message.content.headers['FSPIOP-Source'], 'switch')
+      test.equal(processedMessages.notifyMessages[0].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
+      test.equal(processedMessages.notifyMessages[0].message.content.payload.errorInformation.errorCode, '4200')
+      test.equal(processedMessages.notifyMessages[0].message.content.payload.errorInformation.errorDescription, 'Payer limit error')
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+
+      test.equal(processedMessages.notifyMessages[1].message.content.uriParams.id, '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e')
+      test.equal(processedMessages.notifyMessages[1].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
+      test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Destination'], 'perffsp1')
+      test.equal(processedMessages.notifyMessages[1].message.content.headers['FSPIOP-Source'], 'switch')
+      test.equal(processedMessages.notifyMessages[1].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
+      test.equal(processedMessages.notifyMessages[1].message.content.payload.errorInformation.errorCode, '4200')
+      test.equal(processedMessages.notifyMessages[1].message.content.payload.errorInformation.errorDescription, 'Payer limit error')
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+
+      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, '5dff336f-62c0-4619-92c6-9ccd7c8f0369')
+      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, 'application/vnd.interoperability.transfers+json;version=1.0')
+      test.equal(processedMessages.notifyMessages[2].message.content.headers['FSPIOP-Destination'], 'perffsp1')
+      test.equal(processedMessages.notifyMessages[2].message.content.headers['FSPIOP-Source'], 'switch')
+      test.equal(processedMessages.notifyMessages[2].message.content.headers['Content-Type'], 'application/vnd.interoperability.transfers+json;version=1.0')
+      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
+      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+
+      test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
+      test.equal(processedMessages.accumulatedTransferStateChanges[1].transferId, transferMessage2.value.id)
+      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferId, transferMessage3.value.id)
+
+      test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+
+      // Accumulated position value should not change from the input
+      test.equal(processedMessages.accumulatedPositionValue, 1000)
+      test.end()
+    })
+
     changeParticipantPositionTest.test('produce reserved messages for valid transfer messages', async (test) => {
       const participantLimit = {
         participantCurrencyId: 1,

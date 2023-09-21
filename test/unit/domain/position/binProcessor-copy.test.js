@@ -393,6 +393,216 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       test.end()
     })
+
+    prepareActionTest.test('processBins should handle no prepare messages', async (test) => {
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins))
+      sampleBinsDeepCopy[7].prepare = []
+      sampleBinsDeepCopy[15].prepare = []
+      const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
+
+      // Assert on result.notifyMessages
+      test.equal(result.notifyMessages.length, 0, 'processBins should return no messages')
+
+      // TODO: What if there are no position changes in a batch?
+      // Assert on number of function calls for DB update on position value
+      // test.ok(BatchPositionModel.updateParticipantPosition.notCalled, 'updateParticipantPosition should not be called')
+
+      // TODO: Assert on number of function calls for DB bulk insert of transferStateChanges
+      // TODO: Assert on number of function calls for DB bulk insert of positionChanges
+
+      // Assert on DB update for position values of all accounts in each function call
+      test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
+        [{}, 7, 0, 0],
+        [{}, 15, 0, 0]
+      ], 'updateParticipantPosition should be called with the expected arguments')
+
+      // TODO: Assert on DB bulk insert of transferStateChanges in each function call
+      // TODO: Assert on DB bulk insert of positionChanges in each function call
+
+      test.end()
+    })
+
+    prepareActionTest.test('processBins should throw error if no settlement model is found', async (test) => {
+      SettlementModelCached.getAll.returns([])
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      try {
+        await BinProcessor.processBins(sampleBins, trx)
+        test.fail('Error not thrown!')
+      } catch (err) {
+        test.pass('Error thrown')
+      }
+      test.end()
+    })
+
+    prepareActionTest.test('processBins should throw error if no default settlement model if currency model is missing', async (test) => {
+      SettlementModelCached.getAll.returns([
+        {
+          settlementModelId: 3,
+          name: 'CGS',
+          isActive: 1,
+          settlementGranularityId: 1,
+          settlementInterchangeId: 1,
+          settlementDelayId: 1,
+          currencyId: 'INR',
+          requireLiquidityCheck: 1,
+          ledgerAccountTypeId: 1,
+          autoPositionReset: 0,
+          adjustPosition: 0,
+          settlementAccountTypeId: 2
+        }
+      ])
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      try {
+        await BinProcessor.processBins(sampleBins, trx)
+        test.fail('Error not thrown!')
+      } catch (err) {
+        test.pass('Error thrown')
+      }
+      test.end()
+    })
+
+    prepareActionTest.test('processBins should use default settlement model if currency model is missing', async (test) => {
+      SettlementModelCached.getAll.returns([
+        {
+          settlementModelId: 2,
+          name: 'DEFAULTDEFERREDNET',
+          isActive: 1,
+          settlementGranularityId: 2,
+          settlementInterchangeId: 2,
+          settlementDelayId: 2,
+          currencyId: null,
+          requireLiquidityCheck: 1,
+          ledgerAccountTypeId: 1,
+          autoPositionReset: 1,
+          adjustPosition: 0,
+          settlementAccountTypeId: 2
+        }
+      ])
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+
+      const result = await BinProcessor.processBins(sampleBins, trx)
+
+      // Assert on result.notifyMessages
+      test.equal(result.notifyMessages.length, 7, 'processBins should return no messages')
+
+      // TODO: What if there are no position changes in a batch?
+      // Assert on number of function calls for DB update on position value
+      // test.ok(BatchPositionModel.updateParticipantPosition.notCalled, 'updateParticipantPosition should not be called')
+
+      // TODO: Assert on number of function calls for DB bulk insert of transferStateChanges
+      // TODO: Assert on number of function calls for DB bulk insert of positionChanges
+
+      // Assert on DB update for position values of all accounts in each function call
+      test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
+        [{}, 7, 8, 0],
+        [{}, 15, 6, 0]
+      ], 'updateParticipantPosition should be called with the expected arguments')
+
+      // TODO: Assert on DB bulk insert of transferStateChanges in each function call
+      // TODO: Assert on DB bulk insert of positionChanges in each function call
+
+      test.end()
+    })
+
+    prepareActionTest.test('processBins should handle no prepare binItems', async (test) => {
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins))
+      delete sampleBinsDeepCopy[7].prepare
+      delete sampleBinsDeepCopy[15].prepare
+      const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
+
+      // Assert on result.notifyMessages
+      test.equal(result.notifyMessages.length, 0, 'processBins should return no messages')
+
+      // TODO: What if there are no position changes in a batch?
+      // Assert on number of function calls for DB update on position value
+      // test.ok(BatchPositionModel.updateParticipantPosition.notCalled, 'updateParticipantPosition should not be called')
+
+      // TODO: Assert on number of function calls for DB bulk insert of transferStateChanges
+      // TODO: Assert on number of function calls for DB bulk insert of positionChanges
+
+      // Assert on DB update for position values of all accounts in each function call
+      test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
+        [{}, 7, 0, 0],
+        [{}, 15, 0, 0]
+      ], 'updateParticipantPosition should be called with the expected arguments')
+
+      // TODO: Assert on DB bulk insert of transferStateChanges in each function call
+      // TODO: Assert on DB bulk insert of positionChanges in each function call
+
+      test.end()
+    })
     prepareActionTest.end()
   })
   binProcessorTest.end()

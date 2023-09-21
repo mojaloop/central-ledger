@@ -41,6 +41,10 @@ const _initKnex = async () => {
   }
 }
 
+const _unsetKnex = async () => {
+  knex = null
+}
+
 const startDbTransaction = async () => {
   await _initKnex()
   const trx = await knex.transaction()
@@ -82,39 +86,11 @@ const getAllParticipantCurrency = async (trx) => {
   }
 }
 
-const getParticipantCurrencyIds = async (trx, accountIds) => {
-  const participantCurrencies = await knex('participantCurrency')
-    .transacting(trx)
-    .whereIn('participantCurrencyId', accountIds)
-    .select('*')
-  return participantCurrencies
-}
-
-const getParticipantCurrencyIdsByParticipantIds = async (trx, participantIds) => {
-  const participantCurrencies = await knex('participantCurrency')
-    .transacting(trx)
-    .whereIn('participantId', participantIds)
-    .select('*')
-  return participantCurrencies
-}
-
 const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
   const participantPositions = await knex('participantPosition')
     .transacting(trx)
     .whereIn('participantCurrencyId', accountIds)
     .forUpdate()
-    .select('*')
-  const positions = {}
-  participantPositions.forEach((position) => {
-    positions[position.participantCurrencyId] = position
-  })
-  return positions
-}
-
-const getPositionsByAccountIdsNonTrx = async (accountIds) => {
-  _initKnex()
-  const participantPositions = await knex('participantPosition')
-    .whereIn('participantCurrencyId', accountIds)
     .select('*')
   const positions = {}
   participantPositions.forEach((position) => {
@@ -146,12 +122,11 @@ const bulkInsertParticipantPositionChanges = async (trx, participantPositionChan
 }
 
 module.exports = {
+  _initKnex, // for testing
+  _unsetKnex,
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
   getPositionsByAccountIdsForUpdate,
-  getPositionsByAccountIdsNonTrx,
-  getParticipantCurrencyIds,
-  getParticipantCurrencyIdsByParticipantIds,
   updateParticipantPosition,
   bulkInsertTransferStateChanges,
   bulkInsertParticipantPositionChanges,
