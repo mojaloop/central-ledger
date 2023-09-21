@@ -39,6 +39,7 @@ const BatchPositionModel = require('../../../../src/models/position/batch')
 const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Proxyquire = require('proxyquire')
+const Logger = require('@mojaloop/central-services-logger')
 
 const topicName = 'topic-transfer-position-batch'
 
@@ -368,6 +369,56 @@ Test('Position handler', positionBatchHandlerTest => {
       }
     })
 
+    positionsTest.test('throw error if error pass in as input', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+
+      // Act
+      try {
+        await allTransferHandlers.positions(new Error(), messages)
+        test.fail('Error should be thrown')
+      } catch (err) {
+        test.pass('Error was thrown')
+        test.end()
+      }
+    })
+
+    positionsTest.test('process messages if input is not an array but a message', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+
+      BinProcessor.processBins.resolves({
+        notifyMessages: [{ binItem: { message: messages[0], span: SpanStub } }]
+      })
+
+      // Act
+      try {
+        await allTransferHandlers.positions(null, messages[0])
+        test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once')
+        // Need an easier way to do partial matching...
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[0].histTimerMsgEnd
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].prepare[0], expectedBins[1001].prepare[0])
+        test.equal(BinProcessor.processBins.getCall(0).args[1], trxStub)
+        const expectedLastMessageToCommit = messages[messages.length - 1]
+        test.equal(Kafka.proceed.getCall(0).args[1].message.offset, expectedLastMessageToCommit.offset, 'kafkaProceed should be called with the correct offset')
+        test.equal(SpanStub.audit.callCount, 1, 'span.audit should be called one time')
+        test.equal(SpanStub.finish.callCount, 1, 'span.finish should be called one time')
+        test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
+        test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called')
+        test.equal(Kafka.produceGeneralMessage.callCount, 1, 'produceGeneralMessage should be one time to produce kafka notification events')
+        test.end()
+      } catch (err) {
+        Logger.info(err)
+        test.fail('Error should not be thrown')
+        test.end()
+      }
+    })
     positionsTest.end()
   })
 

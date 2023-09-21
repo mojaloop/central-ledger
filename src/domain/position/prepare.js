@@ -46,191 +46,193 @@ const processPositionPrepareBin = async (
   let availablePositionBasedOnPayerLimit = new MLNumber(payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE))
   Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::availablePositionBasedOnPayerLimit: ${availablePositionBasedOnPayerLimit}`)
 
-  for (const binItem of binItems) {
-    let transferStateId
-    let reason
-    let resultMessage
-    const transfer = binItem.decodedPayload
-    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
+  if (binItems && binItems.length > 0) {
+    for (const binItem of binItems) {
+      let transferStateId
+      let reason
+      let resultMessage
+      const transfer = binItem.decodedPayload
+      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
 
-    // Check if transfer is in correct state for processing, produce an internal error message
-    if (accumulatedTransferStates[transfer.transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
-      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferState: ${accumulatedTransferStates[transfer.transferId]} !== ${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
+      // Check if transfer is in correct state for processing, produce an internal error message
+      if (accumulatedTransferStates[transfer.transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
+        Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferState: ${accumulatedTransferStates[transfer.transferId]} !== ${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
 
-      transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-      reason = 'Transfer in incorrect state'
+        transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
+        reason = 'Transfer in incorrect state'
 
-      const headers = Utility.Http.SwitchDefaultHeaders(
-        transfer.payerFsp,
-        Enum.Http.HeaderResources.TRANSFERS,
-        Enum.Http.Headers.FSPIOP.SWITCH.value,
-        resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
-      )
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
-      ).toApiErrorObject(Config.ERROR_HANDLING)
-      const state = Utility.StreamingProtocol.createEventState(
-        Enum.Events.EventStatus.FAILURE.status,
-        fspiopError.errorInformation.errorCode,
-        fspiopError.errorInformation.errorDescription
-      )
-      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-        transfer.transferId,
-        Enum.Kafka.Topics.NOTIFICATION,
-        Enum.Events.Event.Action.PREPARE,
-        state
-      )
+        const headers = Utility.Http.SwitchDefaultHeaders(
+          transfer.payerFsp,
+          Enum.Http.HeaderResources.TRANSFERS,
+          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
+        )
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
+        ).toApiErrorObject(Config.ERROR_HANDLING)
+        const state = Utility.StreamingProtocol.createEventState(
+          Enum.Events.EventStatus.FAILURE.status,
+          fspiopError.errorInformation.errorCode,
+          fspiopError.errorInformation.errorDescription
+        )
+        const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
+          transfer.transferId,
+          Enum.Kafka.Topics.NOTIFICATION,
+          Enum.Events.Event.Action.PREPARE,
+          state
+        )
 
-      resultMessage = Utility.StreamingProtocol.createMessage(
-        transfer.transferId,
-        transfer.payeeFsp,
-        transfer.payerFsp,
-        metadata,
-        headers,
-        fspiopError,
-        { id: transfer.transferId },
-        'application/json'
-      )
-      binItem.result = { success: false }
-    // Check if payer has insufficient liquidity, produce an error message and abort transfer
-    } else if (availablePositionBasedOnLiquidityCover.toNumber() < transfer.amount.amount) {
-      transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-      reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
+        resultMessage = Utility.StreamingProtocol.createMessage(
+          transfer.transferId,
+          transfer.payeeFsp,
+          transfer.payerFsp,
+          metadata,
+          headers,
+          fspiopError,
+          { id: transfer.transferId },
+          'application/json'
+        )
+        binItem.result = { success: false }
+      // Check if payer has insufficient liquidity, produce an error message and abort transfer
+      } else if (availablePositionBasedOnLiquidityCover.toNumber() < transfer.amount.amount) {
+        transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
+        reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
 
-      const headers = Utility.Http.SwitchDefaultHeaders(
-        transfer.payerFsp,
-        Enum.Http.HeaderResources.TRANSFERS,
-        Enum.Http.Headers.FSPIOP.SWITCH.value,
-        resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
-      )
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
-      ).toApiErrorObject(Config.ERROR_HANDLING)
-      const state = Utility.StreamingProtocol.createEventState(
-        Enum.Events.EventStatus.FAILURE.status,
-        fspiopError.errorInformation.errorCode,
-        fspiopError.errorInformation.errorDescription
-      )
-      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-        transfer.transferId,
-        Enum.Kafka.Topics.NOTIFICATION,
-        Enum.Events.Event.Action.PREPARE,
-        state
-      )
+        const headers = Utility.Http.SwitchDefaultHeaders(
+          transfer.payerFsp,
+          Enum.Http.HeaderResources.TRANSFERS,
+          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
+        )
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
+        ).toApiErrorObject(Config.ERROR_HANDLING)
+        const state = Utility.StreamingProtocol.createEventState(
+          Enum.Events.EventStatus.FAILURE.status,
+          fspiopError.errorInformation.errorCode,
+          fspiopError.errorInformation.errorDescription
+        )
+        const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
+          transfer.transferId,
+          Enum.Kafka.Topics.NOTIFICATION,
+          Enum.Events.Event.Action.PREPARE,
+          state
+        )
 
-      resultMessage = Utility.StreamingProtocol.createMessage(
-        transfer.transferId,
-        transfer.payeeFsp,
-        transfer.payerFsp,
-        metadata,
-        headers,
-        fspiopError,
-        { id: transfer.transferId },
-        'application/json'
-      )
-      binItem.result = { success: false }
-    // Check if payer has surpassed their limit, produce an error message and abort transfer
-    } else if (availablePositionBasedOnPayerLimit.toNumber() < transfer.amount.amount) {
-      transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-      reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
+        resultMessage = Utility.StreamingProtocol.createMessage(
+          transfer.transferId,
+          transfer.payeeFsp,
+          transfer.payerFsp,
+          metadata,
+          headers,
+          fspiopError,
+          { id: transfer.transferId },
+          'application/json'
+        )
+        binItem.result = { success: false }
+      // Check if payer has surpassed their limit, produce an error message and abort transfer
+      } else if (availablePositionBasedOnPayerLimit.toNumber() < transfer.amount.amount) {
+        transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
+        reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
 
-      const headers = Utility.Http.SwitchDefaultHeaders(
-        transfer.payerFsp,
-        Enum.Http.HeaderResources.TRANSFERS,
-        Enum.Http.Headers.FSPIOP.SWITCH.value,
-        resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
-      )
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR
-      ).toApiErrorObject(Config.ERROR_HANDLING)
-      const state = Utility.StreamingProtocol.createEventState(
-        Enum.Events.EventStatus.FAILURE.status,
-        fspiopError.errorInformation.errorCode,
-        fspiopError.errorInformation.errorDescription
-      )
-      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-        transfer.transferId,
-        Enum.Kafka.Topics.NOTIFICATION,
-        Enum.Events.Event.Action.PREPARE,
-        state
-      )
+        const headers = Utility.Http.SwitchDefaultHeaders(
+          transfer.payerFsp,
+          Enum.Http.HeaderResources.TRANSFERS,
+          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
+        )
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR
+        ).toApiErrorObject(Config.ERROR_HANDLING)
+        const state = Utility.StreamingProtocol.createEventState(
+          Enum.Events.EventStatus.FAILURE.status,
+          fspiopError.errorInformation.errorCode,
+          fspiopError.errorInformation.errorDescription
+        )
+        const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
+          transfer.transferId,
+          Enum.Kafka.Topics.NOTIFICATION,
+          Enum.Events.Event.Action.PREPARE,
+          state
+        )
 
-      resultMessage = Utility.StreamingProtocol.createMessage(
-        transfer.transferId,
-        transfer.payeeFsp,
-        transfer.payerFsp,
-        metadata,
-        headers,
-        fspiopError,
-        { id: transfer.transferId },
-        'application/json'
-      )
-      binItem.result = { success: false }
-    // Payer has sufficient liquidity and limit
-    } else {
-      transferStateId = Enum.Transfers.TransferState.RESERVED
-      currentPosition = currentPosition.add(transfer.amount.amount)
-      availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transfer.amount.amount)
-      availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.add(transfer.amount.amount)
+        resultMessage = Utility.StreamingProtocol.createMessage(
+          transfer.transferId,
+          transfer.payeeFsp,
+          transfer.payerFsp,
+          metadata,
+          headers,
+          fspiopError,
+          { id: transfer.transferId },
+          'application/json'
+        )
+        binItem.result = { success: false }
+      // Payer has sufficient liquidity and limit
+      } else {
+        transferStateId = Enum.Transfers.TransferState.RESERVED
+        currentPosition = currentPosition.add(transfer.amount.amount)
+        availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transfer.amount.amount)
+        availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.add(transfer.amount.amount)
 
-      // Are these the right headers?
-      const headers = Utility.Http.SwitchDefaultHeaders(
-        transfer.payeeFsp,
-        Enum.Http.HeaderResources.TRANSFERS,
-        transfer.payerFsp,
-        resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
-      )
-      const state = Utility.StreamingProtocol.createEventState(
-        Enum.Events.EventStatus.SUCCESS.status,
-        null,
-        null
-      )
-      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-        transfer.transferId,
-        Enum.Kafka.Topics.TRANSFER,
-        Enum.Events.Event.Action.PREPARE,
-        state
-      )
+        // Are these the right headers?
+        const headers = Utility.Http.SwitchDefaultHeaders(
+          transfer.payeeFsp,
+          Enum.Http.HeaderResources.TRANSFERS,
+          transfer.payerFsp,
+          resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
+        )
+        const state = Utility.StreamingProtocol.createEventState(
+          Enum.Events.EventStatus.SUCCESS.status,
+          null,
+          null
+        )
+        const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
+          transfer.transferId,
+          Enum.Kafka.Topics.TRANSFER,
+          Enum.Events.Event.Action.PREPARE,
+          state
+        )
 
-      resultMessage = Utility.StreamingProtocol.createMessage(
-        transfer.transferId,
-        transfer.payeeFsp,
-        transfer.payerFsp,
-        metadata,
-        headers,
-        transfer,
-        {},
-        'application/json'
-      )
+        resultMessage = Utility.StreamingProtocol.createMessage(
+          transfer.transferId,
+          transfer.payeeFsp,
+          transfer.payerFsp,
+          metadata,
+          headers,
+          transfer,
+          {},
+          'application/json'
+        )
 
-      const participantPositionChange = {
-        transferId: transfer.transferId, // Need to delete this in bin processor while updating transferStateChangeId
-        transferStateChangeId: null, // Need to update this in bin processor while executing queries
-        value: currentPosition.toNumber(),
-        reservedValue: accumulatedPositionReservedValue
+        const participantPositionChange = {
+          transferId: transfer.transferId, // Need to delete this in bin processor while updating transferStateChangeId
+          transferStateChangeId: null, // Need to update this in bin processor while executing queries
+          value: currentPosition.toNumber(),
+          reservedValue: accumulatedPositionReservedValue
+        }
+        participantPositionChanges.push(participantPositionChange)
+        Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
+        binItem.result = { success: true }
       }
-      participantPositionChanges.push(participantPositionChange)
-      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
-      binItem.result = { success: true }
+
+      resultMessages.push({ binItem, message: resultMessage })
+
+      const transferStateChange = {
+        transferId: transfer.transferId,
+        transferStateId,
+        reason
+      }
+      transferStateChanges.push(transferStateChange)
+      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferStateChange: ${JSON.stringify(transferStateChange)}`)
+
+      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
+      if (currentPosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
+        limitAlarms.push(participantLimit)
+      }
+
+      accumulatedTransferStatesCopy[transfer.transferId] = transferStateId
+      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::accumulatedTransferStatesCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)
     }
-
-    resultMessages.push({ binItem, message: resultMessage })
-
-    const transferStateChange = {
-      transferId: transfer.transferId,
-      transferStateId,
-      reason
-    }
-    transferStateChanges.push(transferStateChange)
-    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferStateChange: ${JSON.stringify(transferStateChange)}`)
-
-    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
-    if (currentPosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
-      limitAlarms.push(participantLimit)
-    }
-
-    accumulatedTransferStatesCopy[transfer.transferId] = transferStateId
-    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::accumulatedTransferStatesCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)
   }
 
   return {
