@@ -77,10 +77,69 @@ const retryOpts = {
 }
 
 const testData = {
-  amount: {
-    currency: 'USD',
-    amount: 5
-  },
+  currencies: ['USD', 'ZAR'],
+  transfers: [
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    }
+  ],
   payer: {
     name: 'payerFsp',
     limit: 1000,
@@ -101,10 +160,69 @@ const testData = {
 }
 
 const testDataLimitExceeded = {
-  amount: {
-    currency: 'USD',
-    amount: 5
-  },
+  currencies: ['USD', 'ZAR'],
+  transfers: [
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    }
+  ],
   payer: {
     name: 'payerFsp',
     limit: 1, // Limit set low
@@ -125,10 +243,69 @@ const testDataLimitExceeded = {
 }
 
 const testDataLimitNoLiquidity = {
-  amount: {
-    currency: 'USD',
-    amount: 5
-  },
+  currencies: ['USD', 'ZAR'],
+  transfers: [
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    }
+  ],
   payer: {
     name: 'payerFsp',
     limit: 10000,
@@ -158,7 +335,7 @@ const _endpointSetup = async (participantName, baseURL) => {
   await ParticipantEndpointHelper.prepareData(participantName, 'FSPIOP_CALLBACK_URL_QUOTES', `${baseURL}`)
 }
 
-const prepareTestData = async (dataObj, numberOfTransfers) => {
+const prepareTestData = async (dataObj) => {
   try {
     const payerList = []
     const payeeList = []
@@ -166,14 +343,22 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
     // Create Payers
     for (let i = 0; i < dataObj.payer.number; i++) {
       // Create payer
-      const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
+      const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.currencies[0], dataObj.currencies[1])
       // limit,initial position and funds in
       payer.payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
-        currency: dataObj.amount.currency,
+        currency: dataObj.currencies[0],
+        limit: { value: dataObj.payer.limit }
+      })
+      payer.payerLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
+        currency: dataObj.currencies[1],
         limit: { value: dataObj.payer.limit }
       })
       await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
-        currency: dataObj.amount.currency,
+        currency: dataObj.currencies[0],
+        amount: dataObj.payer.fundsIn
+      })
+      await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyIdSecondary2, {
+        currency: dataObj.currencies[1],
         amount: dataObj.payer.fundsIn
       })
       // endpoint setup
@@ -185,10 +370,14 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
     // Create Payees
     for (let i = 0; i < dataObj.payee.number; i++) {
       // Create payee
-      const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
+      const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.currencies[0], dataObj.currencies[1])
       // limit,initial position
       payee.payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
-        currency: dataObj.amount.currency,
+        currency: dataObj.currencies[0],
+        limit: { value: dataObj.payee.limit }
+      })
+      payee.payeeLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
+        currency: dataObj.currencies[1],
         limit: { value: dataObj.payee.limit }
       })
       // endpoint setup
@@ -201,7 +390,7 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
 
     // Create payloads for number of transfers
     const transfersArray = []
-    for (let i = 0; i < numberOfTransfers; i++) {
+    for (let i = 0; i < dataObj.transfers.length; i++) {
       const payer = payerList[i % payerList.length]
       const payee = payeeList[i % payeeList.length]
 
@@ -210,8 +399,8 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
         payerFsp: payer.participant.name,
         payeeFsp: payee.participant.name,
         amount: {
-          currency: dataObj.amount.currency,
-          amount: dataObj.amount.amount
+          currency: dataObj.transfers[i].amount.currency,
+          amount: dataObj.transfers[i].amount.amount
         },
         ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
         condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
@@ -323,6 +512,7 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
       transfersArray
     }
   } catch (err) {
+    Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -406,8 +596,8 @@ Test('Handlers test', async handlersTest => {
     prepareConfig.logger = Logger
 
     await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
-      // Construct test data for 10 transfers
-      const td = await prepareTestData(testData, 10)
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testData)
 
       // Produce prepare messages for transfersArray
       for (const transfer of td.transfersArray) {
@@ -461,8 +651,8 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferPositionPrepare.test('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
-      // Construct test data for 10 transfers
-      const td = await prepareTestData(testDataLimitExceeded, 10)
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testDataLimitExceeded)
 
       // Produce prepare messages for transfersArray
       for (const transfer of td.transfersArray) {
@@ -491,16 +681,16 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
-      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
-      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
       testConsumer.clearEvents()
       test.end()
     })
 
     await transferPositionPrepare.test('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
-      // Construct test data for 10 transfers
-      const td = await prepareTestData(testDataLimitNoLiquidity, 10)
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testDataLimitNoLiquidity)
 
       // Produce prepare messages for transfersArray
       for (const transfer of td.transfersArray) {
@@ -529,8 +719,8 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
-      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
-      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
 
       testConsumer.clearEvents()
