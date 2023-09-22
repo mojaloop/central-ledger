@@ -5,5 +5,7 @@ reject: [
   # TODO: New versions from 2.2.0 onwards introduce a newer incompatible version of the ILP-Packet that is not compatible with the Mojaloop Specification
   "ilp-packet",
   # TODO: v6+ (ref: https://github.com/sindresorhus/get-port/releases/tag/v6.0.0) is an ESM library and thus not compatible with CommonJS. Future story needed to resolve.
-  "get-port"
+  "get-port",
+  # TODO: disabling this temporarily as it is causing issues with kafka consumer connection
+  "@mojaloop/central-services-stream"
 ]
