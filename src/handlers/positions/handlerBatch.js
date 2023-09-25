@@ -148,11 +148,11 @@ const positions = async (error, messages) => {
     await trx.commit()
 
     //   - 5.3. Loop through results and produce notification messages and audit messages
-    result.notifyMessages.forEach(async (item) => {
+    for (const item of result.notifyMessages) {
       // 5.3.1. Produce notification message and audit message
       const action = item.binItem.message?.value.metadata.event.action
-      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, Enum.Events.EventStatus.SUCCESS, null, item.binItem.span)
-    })
+      await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, Enum.Events.EventStatus.SUCCESS, null, item.binItem.span)
+    }
     histTimerEnd({ success: true })
   } catch (err) {
     // 6. If Bin Processor returns failure
