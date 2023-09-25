@@ -713,192 +713,207 @@ Test('Handlers test', async handlersTest => {
       TransferEventType.PREPARE.toUpperCase())
     prepareConfig.logger = Logger
 
-    // await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
-    //   // Construct test data for 10 transfers. Default object contains 10 transfers.
-    //   const td = await prepareTestData(testData)
+    await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testData)
 
-    //   // Produce prepare messages for transfersArray
-    //   for (const transfer of td.transfersArray) {
-    //     await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-    //   }
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
 
-    //   try {
-    //     const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-notification-event',
-    //       action: 'event'
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers')
-    //   } catch (err) {
-    //     test.notOk('Error should not be thrown')
-    //     console.error(err)
-    //   }
-    //   const tests = async (totalTransferAmounts) => {
-    //     for (const value of Object.values(totalTransferAmounts)) {
-    //       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(value.payer.participantCurrencyId) || {}
-    //       const payerInitialPosition = value.payer.payerLimitAndInitialPosition.participantPosition.value
-    //       const payerExpectedPosition = payerInitialPosition + value.totalTransferAmount
-    //       const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-    //       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-    //       test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
-    //     }
-    //   }
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'event'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
-    //   try {
-    //     const totalTransferAmounts = {}
-    //     for (const tdTest of td.transfersArray) {
-    //       const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
-    //       if (transfer?.transferState !== TransferState.RESERVED) {
-    //         if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-    //         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-    //       }
-    //       totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
-    //         payer: tdTest.payer,
-    //         totalTransferAmount: (
-    //           (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
-    //             totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
-    //         ) + tdTest.transferPayload.amount.amount
-    //       }
-    //     }
-    //     await tests(totalTransferAmounts)
-    //   } catch (err) {
-    //     Logger.error(err)
-    //     test.fail(err.message)
-    //   }
-    //   testConsumer.clearEvents()
-    //   test.end()
-    // })
+        // filter positionPrepare messages where destination is not Hub
+        const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionPrepareFiltered.length, 10, 'Notification Messages received for all 10 transfers')
+      
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      const tests = async (totalTransferAmounts) => {
+        for (const value of Object.values(totalTransferAmounts)) {
+          const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(value.payer.participantCurrencyId) || {}
+          const payerInitialPosition = value.payer.payerLimitAndInitialPosition.participantPosition.value
+          const payerExpectedPosition = payerInitialPosition + value.totalTransferAmount
+          const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+          test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+          test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        }
+      }
 
-    // await transferPositionPrepare.test('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
-    //   // Construct test data for 10 transfers. Default object contains 10 transfers.
-    //   const td = await prepareTestData(testDataLimitExceeded)
+      try {
+        const totalTransferAmounts = {}
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
+            payer: tdTest.payer,
+            totalTransferAmount: (
+              (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
+                totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+            ) + tdTest.transferPayload.amount.amount
+          }
+        }
+        await tests(totalTransferAmounts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
 
-    //   // Produce prepare messages for transfersArray
-    //   for (const transfer of td.transfersArray) {
-    //     await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-    //   }
+    await transferPositionPrepare.test('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testDataLimitExceeded)
 
-    //   try {
-    //     const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-notification-event',
-    //       action: 'event',
-    //       errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.code
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers payer limit aborts')
-    //   } catch (err) {
-    //     test.notOk('Error should not be thrown')
-    //     console.error(err)
-    //   }
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
 
-    //   try {
-    //     for (const tdTest of td.transfersArray) {
-    //       const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
-    //       test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
-    //     }
-    //   } catch (err) {
-    //     Logger.error(err)
-    //     test.fail(err.message)
-    //   }
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'event',
+          errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.code
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
-    //   const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
-    //   const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
-    //   test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
-    //   testConsumer.clearEvents()
-    //   test.end()
-    // })
+        // filter positionPrepare messages where destination is not Hub
+        const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionPrepareFiltered.length, 10, 'Notification Messages received for all 10 transfers payer limit aborts')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
-    // await transferPositionPrepare.test('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
-    //   // Construct test data for 10 transfers. Default object contains 10 transfers.
-    //   const td = await prepareTestData(testDataLimitNoLiquidity)
+      try {
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
 
-    //   // Produce prepare messages for transfersArray
-    //   for (const transfer of td.transfersArray) {
-    //     await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-    //   }
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
+      test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
+      testConsumer.clearEvents()
+      test.end()
+    })
 
-    //   try {
-    //     const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-notification-event',
-    //       action: 'event',
-    //       errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers payer insufficient liquidity aborts')
-    //   } catch (err) {
-    //     test.notOk('Error should not be thrown')
-    //     console.error(err)
-    //   }
+    await transferPositionPrepare.test('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testDataLimitNoLiquidity)
 
-    //   try {
-    //     for (const tdTest of td.transfersArray) {
-    //       const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
-    //       test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
-    //     }
-    //   } catch (err) {
-    //     Logger.error(err)
-    //     test.fail(err.message)
-    //   }
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
 
-    //   const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
-    //   const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
-    //   test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'event',
+          errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
-    //   testConsumer.clearEvents()
-    //   test.end()
-    // })
+         // filter positionPrepare messages where destination is not Hub
+         const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionPrepareFiltered.length, 10, 'Notification Messages received for all 10 transfers payer insufficient liquidity aborts')
 
-    // await transferPositionPrepare.test('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
-    //   // Construct test data for 10 transfers. Default object contains 10 transfers.
-    //   const td = await prepareTestData(testDataMixedWithLimitExceeded)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
-    //   // filter out the transferId for the transfer that will be aborted
-    //   const transferIdForLimitExceeded = td.transfersArray.filter(transfer => transfer.transferPayload.amount.amount === 5000)[0].transferPayload.transferId;
-    //   console.log('transferIdForLimitExceeded:', transferIdForLimitExceeded)
+      try {
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
 
-    //   // Produce prepare messages for transfersArray
-    //   for (const transfer of td.transfersArray) {
-    //     await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-    //   }
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
+      test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
 
-    //   // Consume messages from notification topic
-    //   const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //     topicFilter: 'topic-notification-event',
-    //     action: 'event'
-    //   }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      testConsumer.clearEvents()
+      test.end()
+    })
 
-    //   // Check error code for the transfer that exceeded NDC
-    //   positionPrepare.forEach((notification) => {
-    //     console.log('notification:', notification)
-    //     if (notification.content?.payload?.transferId === transferIdForLimitExceeded) {
-    //       test.equal(notification.content.payload.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.code, 'Notification Messages received for transfer that exceeded NDC')
-    //     }
-    //   })
+    await transferPositionPrepare.test('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testDataMixedWithLimitExceeded)
 
-    //   // Check that payer position is only updated by sums of transfers that did not exceed NDC
-    //   const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
-    //   const payerExpectedPosition = testDataMixedWithLimitExceeded.transfers[0].amount.amount + testDataMixedWithLimitExceeded.transfers[2].amount.amount
-    //   test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should only increase by the amounts that did not exceed NDC')
+      // filter out the transferId for the transfer that will be aborted
+      const transferIdForLimitExceeded = td.transfersArray.filter(transfer => transfer.transferPayload.amount.amount === 5000)[0].transferPayload.transferId;
+      console.log('transferIdForLimitExceeded:', transferIdForLimitExceeded)
 
-    //   // Check that the transfer state for transfers that exceeded NDC is ABORTED_REJECTED and for transfers that did not exceed NDC is RESERVED
-    //   try {
-    //     for (const tdTest of td.transfersArray) {
-    //       const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
-    //       // check if transferId is not transferIdForLimitExceeded
-    //       if (tdTest.messageProtocolPrepare.content.payload.transferId === transferIdForLimitExceeded) {
-    //         test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
-    //       } else {
-    //         test.equal(transfer?.transferState, TransferInternalState.RESERVED, 'Transfer state updated to RESERVED')
-    //       }
-    //     }
-    //   } catch (err) {
-    //     Logger.error(err)
-    //     test.fail(err.message)
-    //   }
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
 
-    //   testConsumer.clearEvents()
-    //   test.end()
-    // })
+      // Consume messages from notification topic
+      const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+        topicFilter: 'topic-notification-event',
+        action: 'event'
+      }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+       // filter positionPrepare messages where destination is not Hub
+       const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+       test.equal(positionPrepareFiltered.length, 3, 'Notification Messages received for all 3 transfers')
+
+      // Check error code for the transfer that exceeded NDC
+      positionPrepare.forEach((notification) => {
+        console.log('notification:', notification)
+        if (notification.content?.payload?.transferId === transferIdForLimitExceeded) {
+          test.equal(notification.content.payload.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.code, 'Notification Messages received for transfer that exceeded NDC')
+        }
+      })
+
+      // Check that payer position is only updated by sum of transfers that did not exceed NDC
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
+      const payerExpectedPosition = testDataMixedWithLimitExceeded.transfers[0].amount.amount + testDataMixedWithLimitExceeded.transfers[2].amount.amount
+      test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should only increase by the amounts that did not exceed NDC')
+
+      // Check that the transfer state for transfers that exceeded NDC is ABORTED_REJECTED and for transfers that did not exceed NDC is RESERVED
+      try {
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          // check if transferId is not transferIdForLimitExceeded
+          if (tdTest.messageProtocolPrepare.content.payload.transferId === transferIdForLimitExceeded) {
+            test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
+          } else {
+            test.equal(transfer?.transferState, TransferInternalState.RESERVED, 'Transfer state updated to RESERVED')
+          }
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
 
     await transferPositionPrepare.test('process batch of transfers with mixed currencies', async (test) => {
-      
+
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataWithMixedCurrencies)
 
@@ -917,7 +932,7 @@ Test('Handlers test', async handlersTest => {
       const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
       test.equal(positionPrepareFiltered.length, 8, 'Notification Messages received for all 8 transfers')
 
-      //Check that payer position is only updated by sums of transfers that did not exceed NDC
+      //Check that payer position is only updated by sum of transfers relevant to the currency
       const payerCurrentPositionForUSD = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPositionForUSD = 20 // Sum of USD transfers in testDataWithMixedCurrencies
       test.equal(payerCurrentPositionForUSD.value, payerExpectedPositionForUSD, 'Payer position increases for USD transfers')
@@ -926,7 +941,7 @@ Test('Handlers test', async handlersTest => {
       const payerExpectedPositionForZAR = 24 // Sum of ZAR transfers in testDataWithMixedCurrencies
       test.equal(payerCurrentPositionForZAR.value, payerExpectedPositionForZAR, 'Payer position increases for ZAR transfers')
 
-      //Check that the transfer state for transfers that exceeded NDC is ABORTED_REJECTED and for transfers that did not exceed NDC is RESERVED
+      //Check that the transfer state for transfers is RESERVED
       try {
         for (const tdTest of td.transfersArray) {
           const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
