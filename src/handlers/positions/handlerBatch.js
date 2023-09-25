@@ -150,7 +150,8 @@ const positions = async (error, messages) => {
     //   - 5.3. Loop through results and produce notification messages and audit messages
     result.notifyMessages.forEach(async (item) => {
       // 5.3.1. Produce notification message and audit message
-      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, item.message?.value.metadata.event.action, item.message, Enum.Events.EventStatus.SUCCESS, null, item.binItem.span)
+      const action = item.binItem.message?.value.metadata.event.action
+      Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, Enum.Events.EventStatus.SUCCESS, null, item.binItem.span)
     })
     histTimerEnd({ success: true })
   } catch (err) {
