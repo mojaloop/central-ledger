@@ -38,7 +38,6 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 // TODO: We may not need this if we optimize the participantLimit query
 const participantFacade = require('../../models/participant/facade')
-const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 
 /**
  * @function processBins
@@ -54,7 +53,6 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const processBins = async (bins, trx) => {
   const transferIdList = []
   await iterateThroughBins(bins, async (_accountID, _action, item) => {
-    Logger.info(decodePayload(item.message.value.content.payload))
     if (item.decodedPayload?.transferId) {
       transferIdList.push(item.decodedPayload.transferId)
     }
@@ -129,7 +127,12 @@ const processBins = async (bins, trx) => {
     const settlementModel = currencyIdMap[accountIdMap[accountID].currencyId].settlementModel
 
     // TODO: Refactor the following SQL query to optimize the performance
-    const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(accountIdMap[accountID].participantId, accountIdMap[accountID].currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
+    const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(
+      accountIdMap[accountID].participantId,
+      accountIdMap[accountID].currencyId,
+      Enum.Accounts.LedgerAccountType.POSITION,
+      Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP
+    )
     // Initialize accumulated values
     // These values will be passed across various actions in the bin
     let accumulatedPositionValue = positions[accountID].value

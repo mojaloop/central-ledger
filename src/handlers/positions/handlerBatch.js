@@ -109,7 +109,7 @@ const positions = async (error, messages) => {
       binId
     })
     // 1. Assign message to account-bin by accountID and child action-bin by action
-    //    (References to the messagses to be stored in bins, no duplication of messages)
+    //    (References to the messages to be stored in bins, no duplication of messages)
     const accountID = message.key.toString()
     const action = message.value.metadata.event.action
 
