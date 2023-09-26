@@ -39,7 +39,7 @@ const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Enums = require('../../lib/enumCached')
 
@@ -480,7 +480,7 @@ const adjustLimits = async (name, payload) => {
 
 const createLimitAdjustmentMessageProtocol = (payload, action = Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, state = '', pp = '') => {
   return {
-    id: Uuid(),
+    id: randomUUID(),
     from: payload.name,
     to: Config.HUB_NAME,
     type: 'application/json',
@@ -490,7 +490,7 @@ const createLimitAdjustmentMessageProtocol = (payload, action = Enum.Transfers.A
     },
     metadata: {
       event: {
-        id: Uuid(),
+        id: randomUUID(),
         responseTo: '',
         type: 'notification',
         action,
@@ -653,7 +653,7 @@ const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp =
     },
     metadata: {
       event: {
-        id: Uuid(),
+        id: randomUUID(),
         responseTo: '',
         type: 'transfer',
         action,

@@ -24,7 +24,7 @@
 
 'use strict'
 
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const Config = require('../../src/lib/config')
 const Db = require('@mojaloop/database-lib').Db
 const Enum = require('../../src/lib/enum')
@@ -47,7 +47,7 @@ const randTransfer = (amount, currency, maxHoursDiff) => {
     createdDate = new Date(expirationDate.getTime() - ((Math.floor(Math.random() * 3600) + 3 * 60) * 1000))
   }
   return {
-    transferId: Uuid(),
+    transferId: randomUUID(),
     amount,
     currencyId: currency,
     ilpCondition: 'ilpCondition',
@@ -147,7 +147,7 @@ const insert = async (cfg) => {
     await Db.connect(Config.DATABASE)
 
     // prepare participants and participant limits
-    const str = Uuid()
+    const str = randomUUID()
     let name = 'dfsp1-' + str.substr(0, 5)
     let participantId = await Db.participant.insert({ name, createdBy: 'randomTransfers' })
     const payerAccountId = await Db.participantCurrency.insert({ participantId, currencyId: 'USD', createdBy: 'randomTransfers' })

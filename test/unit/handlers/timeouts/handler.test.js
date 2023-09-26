@@ -35,7 +35,7 @@ const TimeoutHandler = require('../../../../src/handlers/timeouts/handler')
 const CronJob = require('cron').CronJob
 const TimeoutService = require('../../../../src/domain/timeout')
 const Config = require('../../../../src/lib/config')
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 
@@ -68,7 +68,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
     }
     const resultMock = [
       {
-        transferId: Uuid(),
+        transferId: randomUUID(),
         bulkTransferId: null,
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
@@ -76,7 +76,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
         payerParticipantCurrencyId: 0
       },
       {
-        transferId: Uuid(),
+        transferId: randomUUID(),
         bulkTransferId: null,
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
@@ -84,7 +84,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
         payerParticipantCurrencyId: 0
       },
       {
-        transferId: Uuid(),
+        transferId: randomUUID(),
         bulkTransferId: null,
         payerFsp: 'dfsp2',
         payeeFsp: 'dfsp1',
@@ -92,24 +92,24 @@ Test('Timeout handler', TimeoutHandlerTest => {
         payerParticipantCurrencyId: 0
       },
       {
-        transferId: Uuid(),
-        bulkTransferId: Uuid(),
+        transferId: randomUUID(),
+        bulkTransferId: randomUUID(),
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
         transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED,
         payerParticipantCurrencyId: 0
       },
       {
-        transferId: Uuid(),
-        bulkTransferId: Uuid(),
+        transferId: randomUUID(),
+        bulkTransferId: randomUUID(),
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
         transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT,
         payerParticipantCurrencyId: 0
       },
       {
-        transferId: Uuid(),
-        bulkTransferId: Uuid(),
+        transferId: randomUUID(),
+        bulkTransferId: randomUUID(),
         payerFsp: 'dfsp2',
         payeeFsp: 'dfsp1',
         transferStateId: Enum.Transfers.TransferState.COMMITTED,

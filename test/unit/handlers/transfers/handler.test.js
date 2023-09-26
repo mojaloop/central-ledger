@@ -41,7 +41,7 @@ const TransferObjectTransform = require('../../../../src/domain/transfer/transfo
 const MainUtil = require('@mojaloop/central-services-shared').Util
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ilp = require('../../../../src/models/transfer/ilpPacket')
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -130,7 +130,7 @@ const errInfo = {
 }
 
 const messageProtocol = {
-  id: Uuid(),
+  id: randomUUID(),
   from: transfer.payerFsp,
   to: transfer.payeeFsp,
   type: 'application/json',
@@ -141,7 +141,7 @@ const messageProtocol = {
   },
   metadata: {
     event: {
-      id: Uuid(),
+      id: randomUUID(),
       type: 'prepare',
       action: 'prepare',
       createdAt: new Date(),
@@ -1037,7 +1037,7 @@ Test('Transfer handler', transferHandlerTest => {
         payeeFsp: 'dfsp1',
         payerFsp: 'dfsp2',
         transferState: TransferState.RESERVED,
-        id: Uuid(),
+        id: randomUUID(),
         completedTimestamp: Time.getUTCString(new Date()),
         expirationDate: new Date('2020-01-01')
       }))
@@ -1076,7 +1076,7 @@ Test('Transfer handler', transferHandlerTest => {
         payeeFsp: 'dfsp1',
         payerFsp: 'dfsp2',
         transferState: TransferState.ABORTED,
-        id: Uuid(),
+        id: randomUUID(),
         completedTimestamp: Time.getUTCString(new Date())
 
       }))
@@ -1115,7 +1115,7 @@ Test('Transfer handler', transferHandlerTest => {
         payeeFsp: 'dfsp1',
         payerFsp: 'dfsp2',
         transferState: TransferState.RESERVED,
-        id: Uuid(),
+        id: randomUUID(),
         completedTimestamp: Time.getUTCString(new Date())
 
       }))

@@ -29,7 +29,7 @@
 
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Logger = require('@mojaloop/central-services-logger')
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Config = require('../../../src/lib/config')
@@ -42,7 +42,7 @@ const expiration = new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // t
 const Time = require('@mojaloop/central-services-shared').Util.Time
 
 const transfer = {
-  transferId: Uuid(),
+  transferId: randomUUID(),
   payerFsp: 'dfsp1',
   payeeFsp: 'dfsp2',
   amount: {
@@ -131,7 +131,7 @@ exports.transferReject = async (transferId) => {
 }
 
 const requestBodys = (transferId = null) => {
-  const localTransfer = Object.assign({}, transfer, { transferId: transferId || Uuid() })
+  const localTransfer = Object.assign({}, transfer, { transferId: transferId || randomUUID() })
   const localFulfil = Object.assign({}, fulfil, { completedTimestamp: new Date() })
   const localReject = Object.assign({}, fulfil, { transferState: TransferInternalState.ABORTED_REJECTED })
 
@@ -148,7 +148,7 @@ const requestBodys = (transferId = null) => {
         },
         metadata: {
           event: {
-            id: Uuid(),
+            id: randomUUID(),
             type: 'transfer',
             action: 'prepare',
             createdAt: new Date(),
@@ -174,7 +174,7 @@ const requestBodys = (transferId = null) => {
         },
         metadata: {
           event: {
-            id: Uuid(),
+            id: randomUUID(),
             type: 'fulfil',
             action: 'commit',
             createdAt: new Date(),
@@ -200,7 +200,7 @@ const requestBodys = (transferId = null) => {
         },
         metadata: {
           event: {
-            id: Uuid(),
+            id: randomUUID(),
             type: 'fulfil',
             action: 'reject',
             createdAt: new Date(),
@@ -226,7 +226,7 @@ const requestBodys = (transferId = null) => {
         },
         metadata: {
           event: {
-            id: Uuid(),
+            id: randomUUID(),
             type: 'fulfil',
             action: TransferEventAction.REJECT,
             createdAt: new Date(),

@@ -40,7 +40,7 @@ const TransferEventAction = Enum.Events.Event.Action
 // const Proxyquire = require('proxyquire')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
 const Time = require('@mojaloop/central-services-shared').Util.Time
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const cloneDeep = require('lodash').cloneDeep
 
 Test('Transfer facade', async (transferFacadeTest) => {
@@ -789,7 +789,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('savePayeeTransferResponse should', async savePayeeTransferResponse => {
     try {
-      const transferId = Uuid()
+      const transferId = randomUUID()
       const extensions = cloneDeep(transferExtensions)
       const payload = {
         fulfilment: 'fulfilment.helper',
@@ -1597,7 +1597,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await transferStateAndPositionUpdateTest.test('change position when called from within a transaction', async test => {
         try {
           const param1 = {
-            transferId: Uuid(),
+            transferId: randomUUID(),
             transferStateId: Enum.Transfers.TransferState.COMMITTED,
             reason: 'text',
             createdDate: Time.getUTCString(now),
@@ -1702,7 +1702,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await transferStateAndPositionUpdateTest.test('commit when called outside of a transaction', async test => {
         try {
           const param1 = {
-            transferId: Uuid(),
+            transferId: randomUUID(),
             transferStateId: Enum.Transfers.TransferInternalState.ABORTED_REJECTED,
             reason: 'text',
             createdDate: Time.getUTCString(now),
@@ -1800,7 +1800,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await transferStateAndPositionUpdateTest.test('throw error and rollback when called outside of a transaction', async test => {
         try {
           const param1 = {
-            transferId: Uuid(),
+            transferId: randomUUID(),
             transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
             reason: 'text',
             createdDate: Time.getUTCString(now),

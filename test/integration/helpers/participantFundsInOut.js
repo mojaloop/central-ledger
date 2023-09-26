@@ -24,7 +24,7 @@
 
 'use strict'
 
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const TransferService = require('../../../src/domain/transfer')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Time = require('@mojaloop/central-services-shared').Util.Time
@@ -40,7 +40,7 @@ const recordFundsInSampleData = {
 
 exports.recordFundsIn = async (participantName, participantCurrencyId, recordFundsInObj = {}) => {
   try {
-    const transferId = Uuid()
+    const transferId = randomUUID()
     const payload = {
       transferId,
       externalReference: 'string',

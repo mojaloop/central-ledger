@@ -122,7 +122,9 @@ Test('setup', setupTest => {
     ConfigStub.MONGODB_DISABLED = false
 
     Setup = Proxyquire('../../../src/shared/setup', {
-      uuid4: uuidStub,
+      crypto: {
+        randomUUID: uuidStub
+      },
       '../handlers/register': RegisterHandlersStub,
       '../lib/db': DbStub,
       '../lib/cache': CacheStub,
@@ -183,7 +185,9 @@ Test('setup', setupTest => {
       }
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        uuid4: uuidStub,
+        crypto: {
+          randomUUID: uuidStub
+        },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
@@ -233,7 +237,9 @@ Test('setup', setupTest => {
       const service = 'api'
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        uuid4: uuidStub,
+        crypto: {
+          randomUUID: uuidStub
+        },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
@@ -347,7 +353,9 @@ Test('setup', setupTest => {
 
     initializeTest.test('run Handlers if runHandlers flag enabled and cronjobs are enabled and start API and do register cronJobs', async (test) => {
       Setup = Proxyquire('../../../src/shared/setup', {
-        uuid4: uuidStub,
+        crypto: {
+          randomUUID: uuidStub
+        },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
@@ -378,7 +386,9 @@ Test('setup', setupTest => {
       ConfigStub.HANDLERS_CRON_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        uuid4: uuidStub,
+        crypto: {
+          randomUUID: uuidStub
+        },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
@@ -410,7 +420,9 @@ Test('setup', setupTest => {
       ConfigStub.HANDLERS_API_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        uuid4: uuidStub,
+        crypto: {
+          randomUUID: uuidStub
+        },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
@@ -444,7 +456,9 @@ Test('setup', setupTest => {
       ConfigStub.INSTRUMENTATION_METRICS_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        uuid4: uuidStub,
+        crypto: {
+          randomUUID: uuidStub
+        },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
@@ -676,7 +690,9 @@ Test('setup', setupTest => {
       ConfigStub.HANDLERS_API_DISABLED = false
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        uuid4: uuidStub,
+        crypto: {
+          randomUUID: uuidStub
+        },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '../lib/cache': CacheStub,
