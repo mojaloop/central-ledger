@@ -56,6 +56,7 @@ const Config = require('../../lib/config')
 const decodePayload = Util.StreamingProtocol.decodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Participant = require('../../domain/participant')
 
 const consumerCommit = true
 const fromSwitch = true
