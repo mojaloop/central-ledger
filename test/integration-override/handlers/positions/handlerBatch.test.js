@@ -77,10 +77,69 @@ const retryOpts = {
 }
 
 const testData = {
-  amount: {
-    currency: 'USD',
-    amount: 5
-  },
+  currencies: ['USD', 'ZAR'],
+  transfers: [
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    }
+  ],
   payer: {
     name: 'payerFsp',
     limit: 1000,
@@ -101,10 +160,69 @@ const testData = {
 }
 
 const testDataLimitExceeded = {
-  amount: {
-    currency: 'USD',
-    amount: 5
-  },
+  currencies: ['USD', 'ZAR'],
+  transfers: [
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    }
+  ],
   payer: {
     name: 'payerFsp',
     limit: 1, // Limit set low
@@ -125,10 +243,69 @@ const testDataLimitExceeded = {
 }
 
 const testDataLimitNoLiquidity = {
-  amount: {
-    currency: 'USD',
-    amount: 5
-  },
+  currencies: ['USD', 'ZAR'],
+  transfers: [
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+    }
+  ],
   payer: {
     name: 'payerFsp',
     limit: 10000,
@@ -148,6 +325,124 @@ const testDataLimitNoLiquidity = {
   expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
 }
 
+const testDataMixedWithLimitExceeded = {
+  currencies: ['USD', 'ZAR'],
+  transfers: [
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5000
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 6
+      }
+    }
+  ],
+  payer: {
+    name: 'payerFsp',
+    limit: 1000,
+    number: 1,
+    fundsIn: 10000
+  },
+  payee: {
+    name: 'payeeFsp',
+    number: 2,
+    limit: 1000
+  },
+  endpoint: {
+    base: 'http://localhost:1080',
+    email: 'test@example.com'
+  },
+  now: new Date(),
+  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
+}
+
+const testDataWithMixedCurrencies = {
+  currencies: ['USD', 'ZAR'],
+  transfers: [
+    {
+      amount: {
+        currency: 'USD',
+        amount: 2
+      }
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 3
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 4
+      }
+
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 5
+      }
+
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 6
+      }
+
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 7
+      }
+
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 8
+      }
+
+    },
+    {
+      amount: {
+        currency: 'ZAR',
+        amount: 9
+      }
+
+    }
+  ],
+  payer: {
+    name: 'payerFsp',
+    limit: 1000,
+    number: 1,
+    fundsIn: 10000
+  },
+  payee: {
+    name: 'payeeFsp',
+    number: 2,
+    limit: 1000
+  },
+  endpoint: {
+    base: 'http://localhost:1080',
+    email: 'test@example.com'
+  },
+  now: new Date(),
+  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
+}
+
 const _endpointSetup = async (participantName, baseURL) => {
   await ParticipantEndpointHelper.prepareData(participantName, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${baseURL}/transfers`)
   await ParticipantEndpointHelper.prepareData(participantName, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${baseURL}/transfers/{{transferId}}`)
@@ -158,7 +453,7 @@ const _endpointSetup = async (participantName, baseURL) => {
   await ParticipantEndpointHelper.prepareData(participantName, 'FSPIOP_CALLBACK_URL_QUOTES', `${baseURL}`)
 }
 
-const prepareTestData = async (dataObj, numberOfTransfers) => {
+const prepareTestData = async (dataObj) => {
   try {
     const payerList = []
     const payeeList = []
@@ -166,14 +461,22 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
     // Create Payers
     for (let i = 0; i < dataObj.payer.number; i++) {
       // Create payer
-      const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
+      const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.currencies[0], dataObj.currencies[1])
       // limit,initial position and funds in
       payer.payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
-        currency: dataObj.amount.currency,
+        currency: dataObj.currencies[0],
+        limit: { value: dataObj.payer.limit }
+      })
+      payer.payerLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
+        currency: dataObj.currencies[1],
         limit: { value: dataObj.payer.limit }
       })
       await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
-        currency: dataObj.amount.currency,
+        currency: dataObj.currencies[0],
+        amount: dataObj.payer.fundsIn
+      })
+      await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyIdSecondary2, {
+        currency: dataObj.currencies[1],
         amount: dataObj.payer.fundsIn
       })
       // endpoint setup
@@ -185,10 +488,14 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
     // Create Payees
     for (let i = 0; i < dataObj.payee.number; i++) {
       // Create payee
-      const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
+      const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.currencies[0], dataObj.currencies[1])
       // limit,initial position
       payee.payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
-        currency: dataObj.amount.currency,
+        currency: dataObj.currencies[0],
+        limit: { value: dataObj.payee.limit }
+      })
+      payee.payeeLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
+        currency: dataObj.currencies[1],
         limit: { value: dataObj.payee.limit }
       })
       // endpoint setup
@@ -201,7 +508,7 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
 
     // Create payloads for number of transfers
     const transfersArray = []
-    for (let i = 0; i < numberOfTransfers; i++) {
+    for (let i = 0; i < dataObj.transfers.length; i++) {
       const payer = payerList[i % payerList.length]
       const payee = payeeList[i % payeeList.length]
 
@@ -210,8 +517,8 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
         payerFsp: payer.participant.name,
         payeeFsp: payee.participant.name,
         amount: {
-          currency: dataObj.amount.currency,
-          amount: dataObj.amount.amount
+          currency: dataObj.transfers[i].amount.currency,
+          amount: dataObj.transfers[i].amount.amount
         },
         ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
         condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
@@ -323,6 +630,7 @@ const prepareTestData = async (dataObj, numberOfTransfers) => {
       transfersArray
     }
   } catch (err) {
+    Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -406,8 +714,8 @@ Test('Handlers test', async handlersTest => {
     prepareConfig.logger = Logger
 
     await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
-      // Construct test data for 10 transfers
-      const td = await prepareTestData(testData, 10)
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testData)
 
       // Produce prepare messages for transfersArray
       for (const transfer of td.transfersArray) {
@@ -419,7 +727,10 @@ Test('Handlers test', async handlersTest => {
           topicFilter: 'topic-notification-event',
           action: 'event'
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers')
+
+        // filter positionPrepare messages where destination is not Hub
+        const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionPrepareFiltered.length, 10, 'Notification Messages received for all 10 transfers')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
@@ -447,7 +758,7 @@ Test('Handlers test', async handlersTest => {
             payer: tdTest.payer,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
-               totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+                totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
             ) + tdTest.transferPayload.amount.amount
           }
         }
@@ -461,8 +772,8 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferPositionPrepare.test('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
-      // Construct test data for 10 transfers
-      const td = await prepareTestData(testDataLimitExceeded, 10)
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testDataLimitExceeded)
 
       // Produce prepare messages for transfersArray
       for (const transfer of td.transfersArray) {
@@ -475,7 +786,10 @@ Test('Handlers test', async handlersTest => {
           action: 'event',
           errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.code
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers payer limit aborts')
+
+        // filter positionPrepare messages where destination is not Hub
+        const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionPrepareFiltered.length, 10, 'Notification Messages received for all 10 transfers payer limit aborts')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
@@ -491,16 +805,16 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
-      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
-      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
       testConsumer.clearEvents()
       test.end()
     })
 
     await transferPositionPrepare.test('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
-      // Construct test data for 10 transfers
-      const td = await prepareTestData(testDataLimitNoLiquidity, 10)
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testDataLimitNoLiquidity)
 
       // Produce prepare messages for transfersArray
       for (const transfer of td.transfersArray) {
@@ -513,7 +827,10 @@ Test('Handlers test', async handlersTest => {
           action: 'event',
           errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.equal(positionPrepare.length, 10, 'Notification Messages received for all 10 transfers payer insufficient liquidity aborts')
+
+        // filter positionPrepare messages where destination is not Hub
+        const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionPrepareFiltered.length, 10, 'Notification Messages received for all 10 transfers payer insufficient liquidity aborts')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
@@ -529,13 +846,113 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
-      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
-      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPosition.participantPosition.value
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
 
       testConsumer.clearEvents()
       test.end()
     })
+
+    await transferPositionPrepare.test('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testDataMixedWithLimitExceeded)
+
+      // filter out the transferId for the transfer that will be aborted
+      const transferIdForLimitExceeded = td.transfersArray.filter(transfer => transfer.transferPayload.amount.amount === 5000)[0].transferPayload.transferId
+      console.log('transferIdForLimitExceeded:', transferIdForLimitExceeded)
+
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
+
+      // Consume messages from notification topic
+      const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+        topicFilter: 'topic-notification-event',
+        action: 'event'
+      }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      // filter positionPrepare messages where destination is not Hub
+      const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+      test.equal(positionPrepareFiltered.length, 3, 'Notification Messages received for all 3 transfers')
+
+      // Check error code for the transfer that exceeded NDC
+      positionPrepare.forEach((notification) => {
+        console.log('notification:', notification)
+        if (notification.content?.payload?.transferId === transferIdForLimitExceeded) {
+          test.equal(notification.content.payload.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.code, 'Notification Messages received for transfer that exceeded NDC')
+        }
+      })
+
+      // Check that payer position is only updated by sum of transfers that did not exceed NDC
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
+      const payerExpectedPosition = testDataMixedWithLimitExceeded.transfers[0].amount.amount + testDataMixedWithLimitExceeded.transfers[2].amount.amount
+      test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should only increase by the amounts that did not exceed NDC')
+
+      // Check that the transfer state for transfers that exceeded NDC is ABORTED_REJECTED and for transfers that did not exceed NDC is RESERVED
+      try {
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          // check if transferId is not transferIdForLimitExceeded
+          if (tdTest.messageProtocolPrepare.content.payload.transferId === transferIdForLimitExceeded) {
+            test.equal(transfer?.transferState, TransferInternalState.ABORTED_REJECTED, 'Transfer state updated to ABORTED_REJECTED')
+          } else {
+            test.equal(transfer?.transferState, TransferInternalState.RESERVED, 'Transfer state updated to RESERVED')
+          }
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPositionPrepare.test('process batch of transfers with mixed currencies', async (test) => {
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testDataWithMixedCurrencies)
+
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
+
+      // Consume messages from notification topic
+      const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+        topicFilter: 'topic-notification-event',
+        action: 'event'
+      }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      // filter positionPrepare messages where destination is not Hub
+      const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+      test.equal(positionPrepareFiltered.length, 8, 'Notification Messages received for all 8 transfers')
+
+      // Check that payer position is only updated by sum of transfers relevant to the currency
+      const payerCurrentPositionForUSD = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
+      const payerExpectedPositionForUSD = 20 // Sum of USD transfers in testDataWithMixedCurrencies
+      test.equal(payerCurrentPositionForUSD.value, payerExpectedPositionForUSD, 'Payer position increases for USD transfers')
+
+      const payerCurrentPositionForZAR = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const payerExpectedPositionForZAR = 24 // Sum of ZAR transfers in testDataWithMixedCurrencies
+      test.equal(payerCurrentPositionForZAR.value, payerExpectedPositionForZAR, 'Payer position increases for ZAR transfers')
+
+      // Check that the transfer state for transfers is RESERVED
+      try {
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          test.equal(transfer?.transferState, TransferInternalState.RESERVED, 'Transfer state updated to RESERVED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
     transferPositionPrepare.end()
   })
 
