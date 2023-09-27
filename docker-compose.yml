@@ -32,9 +32,12 @@ services:
     networks:
       - cl-mojaloop-net
     depends_on:
-      - mysql
-      - kafka
-      - objstore
+        mysql:
+          condition: service_healthy
+        objstore:
+          condition: service_healthy
+        init-kafka:
+          condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", "&&", "curl", "http://localhost:3001/health"]
       timeout: 20s
@@ -61,7 +64,8 @@ services:
     networks:
       - cl-mojaloop-net
     depends_on:
-      - kafka
+      init-kafka:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", "&&", "curl", "http://localhost:3000/health"]
       timeout: 20s
@@ -175,7 +179,7 @@ services:
     networks:
       - cl-mojaloop-net
     healthcheck:
-      test: mongo --eval 'db.runCommand("ping").ok' localhost:27017/test --quiet
+      test: mongosh --eval 'db.runCommand("ping").ok' localhost:27017/test --quiet
       interval: 10s
       timeout: 10s
       retries: 5

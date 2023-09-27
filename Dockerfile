@@ -43,7 +43,7 @@ COPY migrations /opt/app/migrations
 COPY seeds /opt/app/seeds
 COPY test /opt/app/test
 
-RUN npm prune --production
+RUN npm prune --omit=dev
 
 EXPOSE 3001
 CMD ["npm", "run", "start"]
