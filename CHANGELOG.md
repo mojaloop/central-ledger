@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.2.1](https://github.com/mojaloop/central-ledger/compare/v17.2.0...v17.2.1) (2023-10-02)
+
+
+### Bug Fixes
+
+* **mojaloop/#3529:** fix high latency  ([#981](https://github.com/mojaloop/central-ledger/issues/981)) ([54f89d7](https://github.com/mojaloop/central-ledger/commit/54f89d7132b253070f81f4dd0462267f6a6800e2))
+
 ## [17.2.0](https://github.com/mojaloop/central-ledger/compare/v17.1.2...v17.2.0) (2023-09-07)
 
 
