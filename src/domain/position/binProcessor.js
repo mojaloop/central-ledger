@@ -184,7 +184,6 @@ const processBins = async (bins, trx) => {
     // Bulk insert accumulated positionChanges by calling a facade function
     await BatchPositionModel.bulkInsertParticipantPositionChanges(trx, accumulatedPositionChanges)
 
-    // testing: await trx.rollback()
     limitAlarms = limitAlarms.concat(prepareActionResult.limitAlarms)
   }
 
