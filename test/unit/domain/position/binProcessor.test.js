@@ -449,5 +449,26 @@ Test('BinProcessor', async (binProcessorTest) => {
     })
     prepareActionTest.end()
   })
+  binProcessorTest.test('iterateThroughBins should', async (iterateThroughBinsTest) => {
+    iterateThroughBinsTest.test('iterateThroughBins should call callback function for each message in bins', async (test) => {
+      const spyCb = sandbox.spy()
+      await BinProcessor.iterateThroughBins(sampleBins, spyCb)
+
+      test.equal(spyCb.callCount, 10, 'callback should be called 10 times')
+      test.end()
+    })
+    iterateThroughBinsTest.test('iterateThroughBins should call error callback function if callback function throws error', async (test) => {
+      const spyCb = sandbox.stub()
+      const errorCb = sandbox.spy()
+      spyCb.onFirstCall().throws()
+      spyCb.onThirdCall().throws()
+      await BinProcessor.iterateThroughBins(sampleBins, spyCb, errorCb)
+
+      test.equal(spyCb.callCount, 10, 'callback should be called 10 times')
+      test.equal(errorCb.callCount, 2, 'error callback should be called 2 times')
+      test.end()
+    })
+    iterateThroughBinsTest.end()
+  })
   binProcessorTest.end()
 })
