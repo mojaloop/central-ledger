@@ -47,7 +47,7 @@ const buildUnifiedParticipantCurrencyData = (allParticipantCurrency) => {
   const indexById = {}
   const indexByParticipantId = {}
 
-  allParticipantCurrency.forEach((oneParticipantCurrency) => {
+  for(let oneParticipantCurrency of allParticipantCurrency) {
     // Participant API returns Date type, but cache internals will serialize it to String
     // by calling JSON.stringify(), which calls .toISOString() on a Date object.
     // Let's ensure all places return same kind of String.
@@ -59,7 +59,7 @@ const buildUnifiedParticipantCurrencyData = (allParticipantCurrency) => {
     }
     indexByParticipantId[oneParticipantCurrency.participantId].push(oneParticipantCurrency)
     indexById[oneParticipantCurrency.participantCurrencyId] = oneParticipantCurrency
-  })
+  }
 
   // build unified structure - indexes + data
   const unifiedParticipantsCurrency = {

@@ -60,11 +60,11 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
       .orderBy('transferStateChangeId', 'desc')
       .select('*')
 
-    results.forEach((result) => {
+    for(let result of results) {
       if (!latestTransferStateChanges[result.transferId]) {
         latestTransferStateChanges[result.transferId] = result
       }
-    })
+    }
     return latestTransferStateChanges
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
@@ -93,9 +93,9 @@ const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
     .forUpdate()
     .select('*')
   const positions = {}
-  participantPositions.forEach((position) => {
+  for(let position of participantPositions) {
     positions[position.participantCurrencyId] = position
-  })
+  }
   return positions
 }
 

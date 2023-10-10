@@ -78,7 +78,7 @@ const processBins = async (bins, trx) => {
   const participantIdMap = {}
   const accountIdMap = {}
   const currencyIdMap = {}
-  participantCurrencyIds.forEach(item => {
+  for(let item of participantCurrencyIds) {
     const { participantId, currencyId, participantCurrencyId } = item
     if (!participantIdMap[participantId]) {
       participantIdMap[participantId] = {}
@@ -90,7 +90,7 @@ const processBins = async (bins, trx) => {
     }
     participantIdMap[participantId][currencyId] = participantCurrencyId
     accountIdMap[participantCurrencyId] = { participantId, currencyId }
-  })
+  }
 
   // TODO: Verify if all the accountIds have a corresponding participantCurrencyId
   // TODO: Verify all maps are correctly constructed
@@ -98,7 +98,7 @@ const processBins = async (bins, trx) => {
   // Get all participantCurrencyIds for the participantIdMap
   const allParticipantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByParticipantIds(trx, Object.keys(participantIdMap))
   const settlementCurrencyIds = []
-  allParticipantCurrencyIds.forEach(pc => {
+  for(let pc of allParticipantCurrencyIds) {
     const correspondingParticipantCurrencyId = participantIdMap[pc.participantId][pc.currencyId]
     if (correspondingParticipantCurrencyId) {
       const settlementModel = currencyIdMap[pc.currencyId].settlementModel
@@ -107,7 +107,7 @@ const processBins = async (bins, trx) => {
         accountIdMap[correspondingParticipantCurrencyId].settlementCurrencyId = pc.participantCurrencyId
       }
     }
-  })
+  }
 
   // Pre fetch all position account balances for the account-bin and acquire lock on position
   const positions = await BatchPositionModel.getPositionsByAccountIdsForUpdate(trx, [
@@ -176,11 +176,11 @@ const processBins = async (bins, trx) => {
     // Bulk get the transferStateChangeIds for transferids using select whereIn
     const fetchedTransferStateChanges = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, accumulatedTransferStateChanges.map(item => item.transferId))
     // Mutate accumulated positionChanges with transferStateChangeIds
-    accumulatedPositionChanges.forEach(positionChange => {
+    for(let positionChange of accumulatedPositionChanges) {
       positionChange.transferStateChangeId = fetchedTransferStateChanges[positionChange.transferId].transferStateChangeId
       positionChange.participantPositionId = positions[accountID].participantPositionId
       delete positionChange.transferId
-    })
+    }
     // Bulk insert accumulated positionChanges by calling a facade function
     await BatchPositionModel.bulkInsertParticipantPositionChanges(trx, accumulatedPositionChanges)
 
