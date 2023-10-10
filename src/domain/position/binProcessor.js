@@ -78,7 +78,7 @@ const processBins = async (bins, trx) => {
   const participantIdMap = {}
   const accountIdMap = {}
   const currencyIdMap = {}
-  for(let item of participantCurrencyIds) {
+  for (const item of participantCurrencyIds) {
     const { participantId, currencyId, participantCurrencyId } = item
     if (!participantIdMap[participantId]) {
       participantIdMap[participantId] = {}
@@ -98,7 +98,7 @@ const processBins = async (bins, trx) => {
   // Get all participantCurrencyIds for the participantIdMap
   const allParticipantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByParticipantIds(trx, Object.keys(participantIdMap))
   const settlementCurrencyIds = []
-  for(let pc of allParticipantCurrencyIds) {
+  for (const pc of allParticipantCurrencyIds) {
     const correspondingParticipantCurrencyId = participantIdMap[pc.participantId][pc.currencyId]
     if (correspondingParticipantCurrencyId) {
       const settlementModel = currencyIdMap[pc.currencyId].settlementModel
@@ -176,7 +176,7 @@ const processBins = async (bins, trx) => {
     // Bulk get the transferStateChangeIds for transferids using select whereIn
     const fetchedTransferStateChanges = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, accumulatedTransferStateChanges.map(item => item.transferId))
     // Mutate accumulated positionChanges with transferStateChangeIds
-    for(let positionChange of accumulatedPositionChanges) {
+    for (const positionChange of accumulatedPositionChanges) {
       positionChange.transferStateChangeId = fetchedTransferStateChanges[positionChange.transferId].transferStateChangeId
       positionChange.participantPositionId = positions[accountID].participantPositionId
       delete positionChange.transferId

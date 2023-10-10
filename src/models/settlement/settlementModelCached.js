@@ -42,7 +42,7 @@ const buildUnifiedSettlementModelsData = (allSettlementModels) => {
   const indexByName = {}
   const indexByLedgerAccountTypeId = {}
 
-  for(let oneSettlementModel of allSettlementModels) {
+  for (const oneSettlementModel of allSettlementModels) {
     // Add to indexes
     indexById[oneSettlementModel.settlementModelId] = oneSettlementModel
     indexByName[oneSettlementModel.name] = oneSettlementModel
