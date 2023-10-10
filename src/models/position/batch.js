@@ -33,25 +33,14 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 
-let knex
-
-const _initKnex = async () => {
-  if (!knex) {
-    knex = await Db.getKnex()
-  }
-}
-
-const _unsetKnex = async () => {
-  knex = null
-}
-
 const startDbTransaction = async () => {
-  await _initKnex()
+  const knex = await Db.getKnex()
   const trx = await knex.transaction()
   return trx
 }
 
 const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdList) => {
+  const knex = await Db.getKnex()
   try {
     const latestTransferStateChanges = {}
     const results = await knex('transferStateChange')
@@ -73,7 +62,7 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
 }
 
 const getAllParticipantCurrency = async (trx) => {
-  const knex = Db.getKnex()
+  const knex = await Db.getKnex()
   if (trx) {
     const result = await knex('participantCurrency')
       .transacting(trx)
@@ -87,6 +76,7 @@ const getAllParticipantCurrency = async (trx) => {
 }
 
 const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
+  const knex = await Db.getKnex()
   const participantPositions = await knex('participantPosition')
     .transacting(trx)
     .whereIn('participantCurrencyId', accountIds)
@@ -100,6 +90,7 @@ const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
 }
 
 const updateParticipantPosition = async (trx, participantPositionId, participantPositionValue, participantPositionReservedValue = null) => {
+  const knex = await Db.getKnex()
   const optionalValues = {}
   if (participantPositionReservedValue !== null) {
     optionalValues.reservedValue = participantPositionReservedValue
@@ -114,16 +105,16 @@ const updateParticipantPosition = async (trx, participantPositionId, participant
 }
 
 const bulkInsertTransferStateChanges = async (trx, transferStateChangeList) => {
+  const knex = await Db.getKnex()
   return await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
 }
 
 const bulkInsertParticipantPositionChanges = async (trx, participantPositionChangeList) => {
+  const knex = await Db.getKnex()
   return await knex.batchInsert('participantPositionChange', participantPositionChangeList).transacting(trx)
 }
 
 module.exports = {
-  _initKnex, // for testing
-  _unsetKnex,
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
   getPositionsByAccountIdsForUpdate,
