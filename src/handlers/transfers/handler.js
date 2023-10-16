@@ -390,7 +390,7 @@ const fulfil = async (error, messages) => {
       // Publish message to Position Handler
       // Key position abort with payer account id
       const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, messageKey: payerAccount.participantCurrencyId.toString() })
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, toDestination: transfer.payerFsp, messageKey: payerAccount.participantCurrencyId.toString() })
 
       /**
        * Send patch notification callback to original payee fsp if they asked for a a patch response.
