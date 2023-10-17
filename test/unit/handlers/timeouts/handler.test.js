@@ -46,7 +46,6 @@ Test('Timeout handler', TimeoutHandlerTest => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(TimeoutService)
     sandbox.stub(Utility)
-    sandbox.stub(CronJob.prototype, 'constructor').returns(Promise.resolve())
     sandbox.stub(CronJob.prototype, 'start').returns(Promise.resolve(true))
     sandbox.stub(CronJob.prototype, 'stop').returns(Promise.resolve(true))
     Config.HANDLERS_TIMEOUT_DISABLED = false
