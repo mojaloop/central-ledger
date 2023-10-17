@@ -420,7 +420,7 @@ const fulfil = async (error, messages) => {
           }
         }
         message.value.content.payload = reservedAbortedPayload
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail: reserveAbortedEventDetail, fromSwitch: true })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail: reserveAbortedEventDetail, fromSwitch: true, toDestination: toPayeeDestination })
       }
 
       throw apiFSPIOPError
@@ -587,7 +587,7 @@ const fulfil = async (error, messages) => {
           }
         }
         message.value.content.payload = reservedAbortedPayload
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, toDestination: transfer.payeeFsp })
       }
       throw fspiopError
     }
@@ -615,7 +615,7 @@ const fulfil = async (error, messages) => {
           transferState: TransferState.ABORTED
         }
         message.value.content.payload = reservedAbortedPayload
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, toDestination: transfer.payeeFsp })
       }
       throw fspiopError
     }
