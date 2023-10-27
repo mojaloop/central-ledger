@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.3.0](https://github.com/mojaloop/central-ledger/compare/v17.2.1...v17.3.0) (2023-10-27)
+
+
+### Bug Fixes
+
+* **mojaloop/#3533:** helm v15.2.0-rc fixes ([#982](https://github.com/mojaloop/central-ledger/issues/982)) ([c232750](https://github.com/mojaloop/central-ledger/commit/c232750f8d0608d6d1f897a45eafb3c7bc00111b)), closes [mojaloop/#3580](https://github.com/mojaloop/project/issues/3580)
+
 ### [17.2.1](https://github.com/mojaloop/central-ledger/compare/v17.2.0...v17.2.1) (2023-10-02)
 
 
