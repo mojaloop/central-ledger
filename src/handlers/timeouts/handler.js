@@ -176,7 +176,7 @@ const registerTimeoutHandler = async () => {
       await stop()
     }
 
-    timeoutJob = new CronJob({
+    timeoutJob = CronJob.from({
       cronTime: Config.HANDLERS_TIMEOUT_TIMEXP,
       onTick: timeout,
       start: false,
