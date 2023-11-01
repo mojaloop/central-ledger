@@ -28,7 +28,7 @@ const Model = require('../../../src/models/transfer/transferDuplicateCheck')
 const ParticipantPreparationModule = require('./participant')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const Crypto = require('crypto')
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async () => {
@@ -36,7 +36,7 @@ exports.prepareData = async () => {
     const participantPayerResult = await ParticipantPreparationModule.prepareData('payerFsp')
     const participantPayeeResult = await ParticipantPreparationModule.prepareData('payeeFsp')
 
-    const transferId = Uuid()
+    const transferId = randomUUID()
     const payload = {
       payerFsp: participantPayerResult.name,
       payeeFsp: participantPayeeResult.name,

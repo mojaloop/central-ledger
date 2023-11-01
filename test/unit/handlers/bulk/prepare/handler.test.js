@@ -27,7 +27,7 @@
  ******/
 'use strict'
 
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const Sinon = require('sinon')
 const Proxyquire = require('proxyquire')
 const Test = require('tapes')(require('tape'))
@@ -88,7 +88,7 @@ const bulkTransferPrepareMsg = {
 
 // Sample Kafka protocol message containing the Bulk Transfer Message published by the Bulk API Adapter to Kafka for consumption by the Bulk Transfer Prepare Handler
 const messageProtocol = {
-  id: Uuid(),
+  id: randomUUID(),
   from: fspiopBulkTransferMsg.payerFsp,
   to: fspiopBulkTransferMsg.payeeFsp,
   type: 'application/json',
@@ -103,7 +103,7 @@ const messageProtocol = {
   },
   metadata: {
     event: {
-      id: Uuid(),
+      id: randomUUID(),
       type: Enum.Events.Event.Type.BULK,
       action: Enum.Events.Event.Action.BULK_PREPARE,
       createdAt: new Date().toISOString(),

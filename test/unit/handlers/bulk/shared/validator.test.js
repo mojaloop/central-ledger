@@ -2,7 +2,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const BulkTransfer = require('#src/domain/bulkTransfer/index')
 const Validator = require('#src/handlers/bulk/shared/validator')
 const Config = require('#src/lib/config')
@@ -18,7 +18,7 @@ Test('bulkTransfer validator', validatorTest => {
       bulkTransferState: 'COMPLETED',
       completedTimestamp: new Date(),
       individualTransferResults: [{
-        transferId: Uuid(),
+        transferId: randomUUID(),
         fulfilment: 'adlcfFFpGkn3dDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI'
       }]
     }

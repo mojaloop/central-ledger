@@ -10,7 +10,7 @@ const SettlementModelCached = require('../../../../src/models/settlement/settlem
 const MainUtil = require('@mojaloop/central-services-shared').Util
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const KafkaConsumer = Consumer.Consumer
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const Logger = require('@mojaloop/central-services-logger')
 const TransferStateChange = require('../../../../src/models/transfer/transferStateChange')
 const transferEventAction = require('@mojaloop/central-services-shared').Enum.Events.Event.Action
@@ -80,7 +80,7 @@ const messageProtocol = {
   },
   metadata: {
     event: {
-      id: Uuid(),
+      id: randomUUID(),
       type: 'position',
       action: 'prepare',
       createdAt: new Date(),
@@ -94,7 +94,7 @@ const messageProtocol = {
 }
 
 const messageProtocolPut = Clone(messageProtocol)
-messageProtocolPut.content.uriParams = { id: Uuid() }
+messageProtocolPut.content.uriParams = { id: randomUUID() }
 delete messageProtocolPut.content.payload.transferId
 
 const topicName = 'topic-test'

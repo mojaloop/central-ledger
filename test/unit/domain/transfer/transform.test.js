@@ -26,7 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const TransformService = require('../../../../src/domain/transfer/transform')
 const Util = require('@mojaloop/central-services-shared').Util
 const Logger = require('@mojaloop/central-services-logger')
@@ -193,7 +193,7 @@ Test('Transform Service', transformTest => {
 
     toTransferTest.test('return result for savePayeeTransferResponseExecuted', async (test) => {
       try {
-        const transferId = Uuid()
+        const transferId = randomUUID()
         const executedTransfer = {
           transferFulfilmentRecord: {
             transferId,

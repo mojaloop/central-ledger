@@ -27,7 +27,7 @@
  ******/
 'use strict'
 
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const Sinon = require('sinon')
 const Proxyquire = require('proxyquire')
 const Test = require('tapes')(require('tape'))
@@ -87,7 +87,7 @@ const bulkTransferReturn = {
 }
 
 const messageProtocol = {
-  id: Uuid(),
+  id: randomUUID(),
   from: bulkTransfer.payerFsp,
   to: bulkTransfer.payeeFsp,
   type: 'application/json',
@@ -100,7 +100,7 @@ const messageProtocol = {
   },
   metadata: {
     event: {
-      id: Uuid(),
+      id: randomUUID(),
       type: Enum.Events.Event.Type.BULK,
       action: Enum.Events.Event.Action.GET,
       createdAt: new Date(),

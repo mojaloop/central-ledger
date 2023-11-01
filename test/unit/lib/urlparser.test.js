@@ -27,7 +27,7 @@
 'use strict'
 
 const Test = require('tape')
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const Config = require('../../../src/lib/config')
 const UrlParser = require('../../../src/lib/urlParser')
 
@@ -106,7 +106,7 @@ Test('idFromTransferUri', idFromTransferUriTest => {
   })
 
   idFromTransferUriTest.test('err if not begins with hostname', t => {
-    UrlParser.idFromTransferUri(`http://not-host-name/transfers/${Uuid()}`, (err, id) => {
+    UrlParser.idFromTransferUri(`http://not-host-name/transfers/${randomUUID()}`, (err, id) => {
       t.equal(err, 'no match')
       t.equal(id, null)
       t.end()
@@ -115,7 +115,7 @@ Test('idFromTransferUri', idFromTransferUriTest => {
 
   idFromTransferUriTest.test('id if uri contains hostname and uuid', t => {
     const hostname = Config.HOSTNAME
-    const transferId = Uuid()
+    const transferId = randomUUID()
     UrlParser.idFromTransferUri(`${hostname}/transfers/${transferId}`, (err, id) => {
       t.equal(err, null)
       t.equal(id, transferId)
@@ -125,7 +125,7 @@ Test('idFromTransferUri', idFromTransferUriTest => {
 
   idFromTransferUriTest.test('return id if no callback provided', t => {
     const hostname = Config.HOSTNAME
-    const transferId = Uuid()
+    const transferId = randomUUID()
     const result = UrlParser.idFromTransferUri(`${hostname}/transfers/${transferId}`)
     t.equal(result, transferId)
     t.end()
@@ -143,14 +143,14 @@ Test('idFromTransferUri', idFromTransferUriTest => {
 Test('toTransferUri', toTransferUriTest => {
   toTransferUriTest.test('return path', t => {
     const hostName = Config.HOSTNAME
-    const id = Uuid()
+    const id = randomUUID()
     t.equal(UrlParser.toTransferUri(id), hostName + '/transfers/' + id)
     t.end()
   })
 
   toTransferUriTest.test('return value if already transfer uri', test => {
     const hostName = Config.HOSTNAME
-    const id = `${hostName}/transfers/${Uuid()}`
+    const id = `${hostName}/transfers/${randomUUID()}`
     test.equal(UrlParser.toTransferUri(id), id)
     test.end()
   })
