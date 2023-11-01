@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.3.1](https://github.com/mojaloop/central-ledger/compare/v17.3.0...v17.3.1) (2023-11-01)
+
+
+### Chore
+
+* remove uuid4 ([#976](https://github.com/mojaloop/central-ledger/issues/976)) ([da9dbaf](https://github.com/mojaloop/central-ledger/commit/da9dbafaccc22317609ef278eb0d0bdec6eb938a))
+
 ## [17.3.0](https://github.com/mojaloop/central-ledger/compare/v17.2.1...v17.3.0) (2023-10-27)
 
 
