@@ -40,7 +40,7 @@ const ObjStoreDb = require('@mojaloop/object-store-lib').Db
 const Plugins = require('./plugins')
 const Config = require('../lib/config')
 const RequestLogger = require('../lib/requestLogger')
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-logger')
 const RegisterHandlers = require('../handlers/register')
@@ -116,7 +116,7 @@ const createServer = (port, modules) => {
     })
     server.ext('onPostAuth', function (request, h) {
       const transferId = UrlParser.idFromTransferUri(`${Config.HOSTNAME}${request.path}`)
-      request.headers.traceid = request.headers.traceid || transferId || Uuid()
+      request.headers.traceid = request.headers.traceid || transferId || randomUUID()
       RequestLogger.logRequest(request)
       return h.continue
     })

@@ -25,7 +25,7 @@ optionally within square brackets <email>.
 'use strict'
 
 const Test = require('tape')
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
 const Time = require('@mojaloop/central-services-shared').Util.Time
@@ -160,7 +160,7 @@ const prepareTestData = async (dataObj) => {
     }
 
     const transferPayload = {
-      transferId: Uuid(),
+      transferId: randomUUID(),
       payerFsp: payer.participant.name,
       payeeFsp: payee.participant.name,
       amount: {
@@ -219,7 +219,7 @@ const prepareTestData = async (dataObj) => {
     errorPayload.errorInformation.extensionList = { extension: [{ key: 'errorDetail', value: 'This is an abort extension' }] }
 
     const messageProtocolPrepare = {
-      id: Uuid(),
+      id: randomUUID(),
       from: transferPayload.payerFsp,
       to: transferPayload.payeeFsp,
       type: 'application/json',
@@ -229,7 +229,7 @@ const prepareTestData = async (dataObj) => {
       },
       metadata: {
         event: {
-          id: Uuid(),
+          id: randomUUID(),
           type: TransferEventAction.PREPARE,
           action: TransferEventType.PREPARE,
           createdAt: dataObj.now,
@@ -242,24 +242,24 @@ const prepareTestData = async (dataObj) => {
     }
 
     const messageProtocolFulfil = Util.clone(messageProtocolPrepare)
-    messageProtocolFulfil.id = Uuid()
+    messageProtocolFulfil.id = randomUUID()
     messageProtocolFulfil.from = transferPayload.payeeFsp
     messageProtocolFulfil.to = transferPayload.payerFsp
     messageProtocolFulfil.content.headers = fulfilAbortRejectHeaders
     messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
     messageProtocolFulfil.content.payload = fulfilPayload
-    messageProtocolFulfil.metadata.event.id = Uuid()
+    messageProtocolFulfil.metadata.event.id = randomUUID()
     messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
     messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
 
     const messageProtocolReject = Util.clone(messageProtocolFulfil)
-    messageProtocolReject.id = Uuid()
+    messageProtocolReject.id = randomUUID()
     messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
     messageProtocolReject.content.payload = rejectPayload
     messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
 
     const messageProtocolError = Util.clone(messageProtocolFulfil)
-    messageProtocolError.id = Uuid()
+    messageProtocolError.id = randomUUID()
     messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
     messageProtocolError.content.payload = errorPayload
     messageProtocolError.metadata.event.action = TransferEventAction.ABORT

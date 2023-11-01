@@ -6,7 +6,7 @@ const AdminHandler = require('../../../../src/handlers/admin/handler')
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const KafkaConsumer = Consumer.Consumer
-const Uuid = require('uuid4')
+const { randomUUID } = require('crypto')
 const Logger = require('@mojaloop/central-services-logger')
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const TransferService = require('../../../../src/domain/transfer')
@@ -81,7 +81,7 @@ const messageProtocolRecordFundsIn = {
   },
   metadata: {
     event: {
-      id: Uuid(),
+      id: randomUUID(),
       type: 'admin',
       action: 'transfer',
       createdAt: new Date(),
@@ -111,7 +111,7 @@ const messageProtocolrecordFundsOutPrepareReserve = {
   },
   metadata: {
     event: {
-      id: Uuid(),
+      id: randomUUID(),
       type: 'admin',
       action: 'transfer',
       createdAt: new Date(),
@@ -149,7 +149,7 @@ const messageProtocolRecordFundsOutCommit = {
   },
   metadata: {
     event: {
-      id: Uuid(),
+      id: randomUUID(),
       type: 'admin',
       action: 'transfer',
       createdAt: new Date(),
@@ -189,7 +189,7 @@ const messageProtocolRecordFundsOutAbort = {
   },
   metadata: {
     event: {
-      id: Uuid(),
+      id: randomUUID(),
       type: 'admin',
       action: 'transfer',
       createdAt: new Date(),
@@ -232,7 +232,7 @@ const messageProtocolWrongAction = {
     },
     metadata: {
       event: {
-        id: Uuid(),
+        id: randomUUID(),
         type: 'admin',
         action: 'transfer',
         createdAt: new Date(),
