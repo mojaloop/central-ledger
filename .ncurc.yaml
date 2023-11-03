@@ -6,4 +6,6 @@ reject: [
   "ilp-packet",
   # TODO: v6+ (ref: https://github.com/sindresorhus/get-port/releases/tag/v6.0.0) is an ESM library and thus not compatible with CommonJS. Future story needed to resolve.
   "get-port"
+  # TODO: sinon v17.0.1 causes 58 tests to fail. This will need to be resolved in a future story.
+  "sinon"
 ]
