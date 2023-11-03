@@ -1,11 +1,13 @@
 ## Add a TODO comment indicating the reason for each rejected dependency upgrade added to this list, and what should be done to resolve it (i.e. handle it through a story, etc).
 reject: [
-  # TODO: Tests fail when tape is upgraded.
+  # Tests fail when tape is upgraded.
+  # Issue is tracked here: https://github.com/mojaloop/project/issues/3616
   "tape",
   # TODO: New versions from 2.2.0 onwards introduce a newer incompatible version of the ILP-Packet that is not compatible with the Mojaloop Specification
   "ilp-packet",
-  # TODO: v6+ (ref: https://github.com/sindresorhus/get-port/releases/tag/v6.0.0) is an ESM library and thus not compatible with CommonJS. Future story needed to resolve.
-  "get-port"
-  # TODO: sinon v17.0.1 causes 58 tests to fail. This will need to be resolved in a future story.
+  # v6+ (ref: https://github.com/sindresorhus/get-port/releases/tag/v6.0.0) is an ESM library and thus not compatible with CommonJS. Future story needed to resolve.
+  "get-port",
+  # sinon v17.0.1 causes 58 tests to fail. This will need to be resolved in a future story.
+  # Issue is tracked here: https://github.com/mojaloop/project/issues/3616
   "sinon"
 ]
