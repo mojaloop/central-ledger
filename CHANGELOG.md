@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.3.2](https://github.com/mojaloop/central-ledger/compare/v17.3.1...v17.3.2) (2023-11-06)
+
+
+### Bug Fixes
+
+* **mojaloop/#3615:** upgrade dependencies ([#985](https://github.com/mojaloop/central-ledger/issues/985)) ([ef69daf](https://github.com/mojaloop/central-ledger/commit/ef69dafc12e85c89aa97eb67dec148c4f2cceb4f)), closes [mojaloop/#3615](https://github.com/mojaloop/project/issues/3615)
+
 ### [17.3.1](https://github.com/mojaloop/central-ledger/compare/v17.3.0...v17.3.1) (2023-11-01)
 
 
