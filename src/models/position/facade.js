@@ -39,6 +39,7 @@ const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
+const Cyril = require('../../domain/fx/cyril')
 
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -50,8 +51,21 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
   ).startTimer()
   try {
     const knex = await Db.getKnex()
-    const participantName = transferList[0].value.content.payload.payerFsp
-    const currencyId = transferList[0].value.content.payload.amount.currency
+    const action = transferList[0].value.metadata.event.action
+    let participantAndCurrencyDetails
+    if (action === Enum.Events.Event.Action.FX_PREPARE) {
+      // FX transfer
+      participantAndCurrencyDetails = await Cyril.getParticipantAndCurrencyForFxTransferMessage(transferList[0])
+    } else {
+      // Standard transfer
+      participantAndCurrencyDetails = await Cyril.getParticipantAndCurrencyForTransferMessage(transferList[0])
+    }
+
+    const participantName = participantAndCurrencyDetails.participantName
+    const currencyId = participantAndCurrencyDetails.currencyId
+
+
+    // TODO: Need to continue on FX changes below this point
     const allSettlementModels = await SettlementModelCached.getAll()
     let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
     if (settlementModels.length === 0) {
