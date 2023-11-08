@@ -18,50 +18,23 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
- * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
+ * INFITX
+ - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
 'use strict'
 
-const transferParticipantRoleTypes = [
-  {
-    name: 'PAYER_DFSP',
-    description: 'The participant is the Payer DFSP in this transfer and is sending the funds'
-  },
-  {
-    name: 'PAYEE_DFSP',
-    description: 'The participant is the Payee DFSP in this transfer and is receiving the funds'
-  },
-  {
-    name: 'HUB',
-    description: 'The participant is representing the Hub Operator'
-  },
-  {
-    name: 'DFSP_SETTLEMENT',
-    description: 'Indicates the settlement account'
-  },
-  {
-    name: 'DFSP_POSITION',
-    description: 'Indicates the position account'
-  },
-  {
-    name: 'INITIATING_FSP',
-    description: 'Identifier for the FSP who is requesting a currency conversion'
-  },
-  {
-    name: 'COUNTER_PARTY_FSP',
-    description: 'Identifier for the FXP who is performing the currency conversion'
-  }
-]
+exports.up = function (knex) {
+  return knex.schema.table('fxTransfer', (t) => {
+    t.index('sourceCurrency')
+    t.index('targetCurrency')
+  })
+}
 
-exports.seed = async function (knex) {
-  try {
-    return await knex('transferParticipantRoleType').insert(transferParticipantRoleTypes).onConflict('name').ignore()
-  } catch (err) {
-    console.log(`Uploading seeds for transferParticipantRoleType has failed with the following error: ${err}`)
-    return -1000
-  }
+exports.down = function (knex) {
+  return knex.schema.table('fxTransfer', (t) => {
+    t.dropIndex('sourceCurrency')
+    t.dropIndex('targetCurrency')
+  })
 }
