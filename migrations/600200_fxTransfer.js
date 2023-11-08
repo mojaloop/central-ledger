@@ -18,50 +18,34 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
- * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
+ * INFITX
+ - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
-'use strict'
+ 'use strict'
 
-const transferParticipantRoleTypes = [
-  {
-    name: 'PAYER_DFSP',
-    description: 'The participant is the Payer DFSP in this transfer and is sending the funds'
-  },
-  {
-    name: 'PAYEE_DFSP',
-    description: 'The participant is the Payee DFSP in this transfer and is receiving the funds'
-  },
-  {
-    name: 'HUB',
-    description: 'The participant is representing the Hub Operator'
-  },
-  {
-    name: 'DFSP_SETTLEMENT',
-    description: 'Indicates the settlement account'
-  },
-  {
-    name: 'DFSP_POSITION',
-    description: 'Indicates the position account'
-  },
-  {
-    name: 'INITIATING_FSP',
-    description: 'Identifier for the FSP who is requesting a currency conversion'
-  },
-  {
-    name: 'COUNTER_PARTY_FSP',
-    description: 'Identifier for the FXP who is performing the currency conversion'
-  }
-]
+exports.up = async (knex) => {
+  return await knex.schema.hasTable('fxTransfer').then(function(exists) {
+    if (!exists) {
+      return knex.schema.createTable('fxTransfer', (t) => {
+        t.string('commitRequestId', 36).primary().notNullable()
+        t.foreign('commitRequestId').references('commitRequestId').inTable('fxTransferDuplicateCheck')
+        t.string('determiningTransferId', 36).defaultTo(null).nullable()
+        t.decimal('sourceAmount', 18, 4).notNullable()
+        t.decimal('targetAmount', 18, 4).notNullable()
+        t.string('sourceCurrency', 3).notNullable()
+        t.foreign('sourceCurrency').references('currencyId').inTable('currency')
+        t.string('targetCurrency', 3).notNullable()
+        t.foreign('targetCurrency').references('currencyId').inTable('currency')
+        t.string('ilpCondition', 256).notNullable()
+        t.dateTime('expirationDate').notNullable()
+        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+      })
+    }
+  })
+}
 
-exports.seed = async function (knex) {
-  try {
-    return await knex('transferParticipantRoleType').insert(transferParticipantRoleTypes).onConflict('name').ignore()
-  } catch (err) {
-    console.log(`Uploading seeds for transferParticipantRoleType has failed with the following error: ${err}`)
-    return -1000
-  }
+exports.down = function (knex) {
+  return knex.schema.dropTableIfExists('fxTransfer')
 }
