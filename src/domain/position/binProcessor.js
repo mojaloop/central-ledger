@@ -104,9 +104,6 @@ const processBins = async (bins, trx) => {
     accountIdMap[participantCurrencyId] = { participantId, currencyId }
   }
 
-  // TODO: Verify if all the accountIds have a corresponding participantCurrencyId
-  // TODO: Verify all maps are correctly constructed
-
   // Get all participantCurrencyIds for the participantIdMap
   const allParticipantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByParticipantIds(trx, Object.keys(participantIdMap))
   const settlementCurrencyIds = []
