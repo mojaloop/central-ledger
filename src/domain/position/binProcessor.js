@@ -74,11 +74,9 @@ const processBins = async (bins, trx) => {
   // Validate that participantCurrencyIds exist for each of the accountIds
   // i.e every unique accountId has a corresponding entry in participantCurrencyIds
   const participantIdsHavingCurrencyIdsList = [...new Set(participantCurrencyIds.map(item => item.participantCurrencyId))]
-
   const allAccountIdsHaveParticipantCurrencyIds = accountIds.every(accountId => {
     return participantIdsHavingCurrencyIdsList.includes(Number(accountId))
   })
-
   if (!allAccountIdsHaveParticipantCurrencyIds) {
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Not all accountIds have corresponding participantCurrencyIds')
   }
