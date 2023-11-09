@@ -24,6 +24,7 @@
 
  * INFITX
  - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
+ - Steven Oderayi <steven.oderayi@infitx.com>
 
  --------------
  ******/
@@ -52,7 +53,7 @@ const participantFacade = require('../../models/participant/facade')
  */
 const processBins = async (bins, trx) => {
   const transferIdList = []
-  await iterateThroughBins(bins, async (_accountID, _action, item) => {
+  iterateThroughBins(bins, (_accountID, _action, item) => {
     if (item.decodedPayload?.transferId) {
       transferIdList.push(item.decodedPayload.transferId)
     }
@@ -216,7 +217,9 @@ const iterateThroughBins = async (bins, cb, errCb) => {
         try {
           await cb(accountID, action, item)
         } catch (err) {
-          if (errCb !== undefined) {
+          if (errCb === undefined) {
+            Logger.isErrorEnabled && Logger.error(err)
+          } else {
             await errCb(accountID, action, item)
           }
         }
