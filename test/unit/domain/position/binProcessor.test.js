@@ -437,6 +437,35 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
+    prepareActionTest.test('processBins should throw error if any accountId cannot be matched to atleast on participantCurrencyId', async (test) => {
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins))
+      sampleBinsDeepCopy[100] = sampleBinsDeepCopy[15]
+      delete sampleBinsDeepCopy[15]
+
+      try {
+        await BinProcessor.processBins(sampleBinsDeepCopy, trx)
+        test.fail('Error not thrown!')
+      } catch (err) {
+        test.pass('Error thrown')
+      }
+      test.end()
+    })
+
     prepareActionTest.test('processBins should throw error if no settlement model is found', async (test) => {
       SettlementModelCached.getAll.returns([])
       const sampleParticipantLimitReturnValues = [

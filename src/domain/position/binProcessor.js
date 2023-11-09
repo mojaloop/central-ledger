@@ -80,7 +80,6 @@ const processBins = async (bins, trx) => {
   })
 
   if (!allAccountIdsHaveParticipantCurrencyIds) {
-    // TODO: Add test coverage for this
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Not all accountIds have corresponding participantCurrencyIds')
   }
 
