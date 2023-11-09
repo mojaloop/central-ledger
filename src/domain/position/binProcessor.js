@@ -71,11 +71,22 @@ const processBins = async (bins, trx) => {
   // Get all participantIdMap for the accountIds
   const participantCurrencyIds = await BatchPositionModelCached.getParticipantCurrencyByIds(trx, accountIds)
 
-  // TODO: Validate if all the participantCurrencyIds exist for all the accountIds
+  // Validate that participantCurrencyIds exist for each of the accountIds
+  // i.e every unique accountId has a corresponding entry in participantCurrencyIds
+  const participantIdsHavingCurrencyIdsList = [...new Set(participantCurrencyIds.map(item => item.participantCurrencyId))]
+
+  const allAccountIdsHaveParticipantCurrencyIds = accountIds.every(accountId => {
+    return participantIdsHavingCurrencyIdsList.includes(Number(accountId))
+  })
+
+  if (!allAccountIdsHaveParticipantCurrencyIds) {
+    // TODO: Add test coverage for this
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Not all accountIds have corresponding participantCurrencyIds')
+  }
 
   const allSettlementModels = await SettlementModelCached.getAll()
 
-  // Construct an object participantIdMap, accountIdMap amd currencyIdMap
+  // Construct objects participantIdMap, accountIdMap and currencyIdMap
   const participantIdMap = {}
   const accountIdMap = {}
   const currencyIdMap = {}
