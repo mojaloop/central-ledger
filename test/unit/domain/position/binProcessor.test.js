@@ -437,7 +437,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should throw error if any accountId cannot be matched to atleast on participantCurrencyId', async (test) => {
+    prepareActionTest.test('processBins should throw error if any accountId cannot be matched to atleast one participantCurrencyId', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
