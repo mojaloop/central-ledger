@@ -264,6 +264,7 @@ const error = () => {
 
 let SpanStub
 let allTransferHandlers
+let prepare
 
 const participants = ['testName1', 'testName2']
 
@@ -295,8 +296,12 @@ Test('Transfer handler', transferHandlerTest => {
       Tracer: TracerStub
     }
 
-    allTransferHandlers = Proxyquire('../../../../src/handlers/transfers/handler', {
+    prepare = Proxyquire('../../../../src/handlers/transfers/prepare', {
       '@mojaloop/event-sdk': EventSdkStub
+    })
+    allTransferHandlers = Proxyquire('../../../../src/handlers/transfers/handler', {
+      '@mojaloop/event-sdk': EventSdkStub,
+      './prepare': prepare
     })
 
     sandbox.stub(KafkaConsumer.prototype, 'constructor').returns(Promise.resolve())

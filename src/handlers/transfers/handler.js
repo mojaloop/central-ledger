@@ -40,217 +40,28 @@
 
 const Logger = require('@mojaloop/central-services-logger')
 const EventSdk = require('@mojaloop/event-sdk')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
+const { Enum, Util } = require('@mojaloop/central-services-shared')
+const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
+
+const Config = require('../../lib/config')
 const TransferService = require('../../domain/transfer')
-const Util = require('@mojaloop/central-services-shared').Util
-const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const Producer = require('@mojaloop/central-services-stream').Util.Producer
-const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
+const TransferObjectTransform = require('../../domain/transfer/transform')
+const Participant = require('../../domain/participant')
 const Validator = require('./validator')
-const Enum = require('@mojaloop/central-services-shared').Enum
+
+// particular handlers
+const prepare = require('./prepare')
+
+const { Kafka, Comparators } = Util
 const TransferState = Enum.Transfers.TransferState
 const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
-const TransferObjectTransform = require('../../domain/transfer/transform')
-const Metrics = require('@mojaloop/central-services-metrics')
-const Config = require('../../lib/config')
 const decodePayload = Util.StreamingProtocol.decodePayload
-const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Participant = require('../../domain/participant')
 
 const consumerCommit = true
 const fromSwitch = true
-
-/**
- * @function TransferPrepareHandler
- *
- * @async
- * @description This is the consumer callback function that gets registered to a topic. This then gets a list of messages,
- * we will only ever use the first message in non batch processing. We then break down the message into its payload and
- * begin validating the payload. Once the payload is validated successfully it will be written to the database to
- * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
- * INVALID status. For any duplicate requests we will send appropriate callback based on the transfer state and the hash validation
- *
- * Validator.validatePrepare called to validate the payload of the message
- * TransferService.getById called to get the details of the existing transfer
- * TransferObjectTransform.toTransfer called to transform the transfer object
- * TransferService.prepare called and creates new entries in transfer tables for successful prepare transfer
- * TransferService.logTransferError called to log the invalid request
- *
- * @param {error} error - error thrown if something fails within Kafka
- * @param {array} messages - a list of messages to consume for the relevant topic
- *
- * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
- */
-const prepare = async (error, messages) => {
-  const location = { module: 'PrepareHandler', method: '', path: '' }
-  const histTimerEnd = Metrics.getHistogram(
-    'transfer_prepare',
-    'Consume a prepare transfer message from the kafka topic and process it accordingly',
-    ['success', 'fspId']
-  ).startTimer()
-  if (error) {
-    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw ErrorHandler.Factory.reformatFSPIOPError(error)
-  }
-  let message = {}
-  if (Array.isArray(messages)) {
-    message = messages[0]
-  } else {
-    message = messages
-  }
-  const parentSpanService = 'cl_transfer_prepare'
-  const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
-  const span = EventSdk.Tracer.createChildSpanFromContext(parentSpanService, contextFromMessage)
-  try {
-    const payload = decodePayload(message.value.content.payload)
-    const headers = message.value.content.headers
-    const action = message.value.metadata.event.action
-    const transferId = payload.transferId
-    span.setTags({ transactionId: transferId })
-    await span.audit(message, EventSdk.AuditEventAction.start)
-    const kafkaTopic = message.topic
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'prepare' }))
-
-    const actionLetter = action === TransferEventAction.PREPARE
-      ? Enum.Events.ActionLetter.prepare
-      : (action === TransferEventAction.BULK_PREPARE
-          ? Enum.Events.ActionLetter.bulkPrepare
-          : Enum.Events.ActionLetter.unknown)
-
-    let functionality = action === TransferEventAction.PREPARE
-      ? TransferEventType.NOTIFICATION
-      : (action === TransferEventAction.BULK_PREPARE
-          ? TransferEventType.BULK_PROCESSING
-          : Enum.Events.ActionLetter.unknown)
-    const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
-
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
-    const histTimerDuplicateCheckEnd = Metrics.getHistogram(
-      'handler_transfers',
-      'prepare_duplicateCheckComparator - Metrics for transfer handler',
-      ['success', 'funcName']
-    ).startTimer()
-
-    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
-    histTimerDuplicateCheckEnd({ success: true, funcName: 'prepare_duplicateCheckComparator' })
-    if (hasDuplicateId && hasDuplicateHash) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'handleResend'))
-      const transfer = await TransferService.getByIdLight(transferId)
-      const transferStateEnum = transfer && transfer.transferStateEnumeration
-      const eventDetail = { functionality, action: TransferEventAction.PREPARE_DUPLICATE }
-      if ([TransferState.COMMITTED, TransferState.ABORTED].includes(transferStateEnum)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'finalized'))
-        if (action === TransferEventAction.PREPARE) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callback--${actionLetter}1`))
-          message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
-          message.value.content.uriParams = { id: transferId }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
-        } else if (action === TransferEventAction.BULK_PREPARE) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `validationError1--${actionLetter}2`))
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-          throw fspiopError
-        }
-      } else {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'inProgress'))
-        if (action === TransferEventAction.BULK_PREPARE) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `validationError2--${actionLetter}4`))
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-          throw fspiopError
-        } else { // action === TransferEventAction.PREPARE
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
-        }
-      }
-    } else if (hasDuplicateId && !hasDuplicateHash) {
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}5`))
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
-      const eventDetail = { functionality, action }
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      throw fspiopError
-    } else { // !hasDuplicateId
-      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
-      if (validationPassed) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
-        try {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveTransfer'))
-          await TransferService.prepare(payload)
-        } catch (err) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}6`))
-          Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-          const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
-          const eventDetail = { functionality, action: TransferEventAction.PREPARE }
-          /**
-           * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
-           * HOWTO: Stop execution at the `TransferService.prepare`, stop mysql,
-           * continue execution to catch block, start mysql
-           */
-          Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-          throw fspiopError
-        }
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
-        functionality = TransferEventType.POSITION
-        const eventDetail = { functionality, action }
-        // Key position prepare message with payer account id
-        const payerAccount = await Participant.getAccountByNameAndCurrency(payload.payerFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
-      } else {
-        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
-        try {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
-          await TransferService.prepare(payload, reasons.toString(), false)
-        } catch (err) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}8`))
-          Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-          const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
-          const eventDetail = { functionality, action: TransferEventAction.PREPARE }
-          /**
-           * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
-           * HOWTO: For regular transfers this branch may be triggered by sending
-           * a transfer in a currency not supported by either dfsp and also stopping
-           * mysql at `TransferService.prepare` and starting it after entring catch.
-           * Not sure if it will work for bulk, because of the BulkPrepareHandler.
-           */
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-          throw fspiopError
-        }
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}9`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
-        await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
-        const eventDetail = { functionality, action }
-        /**
-         * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
-         * HOWTO: For regular transfers this branch may be triggered by sending
-         * a tansfer in a currency not supported by either dfsp. Not sure if it
-         * will be triggered for bulk, because of the BulkPrepareHandler.
-         */
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-        throw fspiopError
-      }
-    }
-  } catch (err) {
-    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--P0`)
-    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-    await span.error(fspiopError, state)
-    await span.finish(fspiopError.message, state)
-    return true
-  } finally {
-    if (!span.isFinished) {
-      await span.finish()
-    }
-  }
-}
 
 const fulfil = async (error, messages) => {
   const location = { module: 'FulfilHandler', method: '', path: '' }
@@ -812,13 +623,14 @@ const getTransfer = async (error, messages) => {
  */
 const registerPrepareHandler = async () => {
   try {
-    const prepareHandler = {
-      command: prepare,
-      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventAction.PREPARE),
-      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
-    }
-    prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
-    await Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
+    const { TRANSFER } = TransferEventType
+    const { PREPARE } = TransferEventAction
+
+    const topicName = Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TRANSFER, PREPARE)
+    const consumeConfig = Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
+    consumeConfig.rdkafkaConf['client.id'] = topicName
+
+    await Consumer.createHandler(topicName, consumeConfig, prepare)
     return true
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)

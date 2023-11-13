@@ -199,6 +199,7 @@ const validatePrepare = async (payload, headers) => {
     validationPassed = false
     return { validationPassed, reasons }
   }
+  // todo: adjust logic for FX
   validationPassed = (validateFspiopSourceMatchesPayer(payload, headers) &&
     await validateParticipantByName(payload.payerFsp) &&
     await validatePositionAccountByNameAndCurrency(payload.payerFsp, payload.amount.currency) &&
@@ -208,6 +209,7 @@ const validatePrepare = async (payload, headers) => {
     await validateConditionAndExpiration(payload) &&
     validateDifferentDfsp(payload))
   histTimerValidatePrepareEnd({ success: true, funcName: 'validatePrepare' })
+
   return {
     validationPassed,
     reasons

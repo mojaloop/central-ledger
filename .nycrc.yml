@@ -17,5 +17,6 @@ exclude: [
   "**/node_modules/**",
   '**/migrations/**',
   '**/ddl/**',
-  '**/bulk*/**'
+  '**/bulk*/**',
+  'src/shared/logger/**'
 ]
