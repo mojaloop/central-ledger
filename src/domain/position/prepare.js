@@ -93,7 +93,7 @@ const processPositionPrepareBin = async (
           'application/json'
         )
         binItem.result = { success: false }
-      // Check if payer has insufficient liquidity, produce an error message and abort transfer
+        // Check if payer has insufficient liquidity, produce an error message and abort transfer
       } else if (availablePositionBasedOnLiquidityCover.toNumber() < transfer.amount.amount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
@@ -130,7 +130,7 @@ const processPositionPrepareBin = async (
           'application/json'
         )
         binItem.result = { success: false }
-      // Check if payer has surpassed their limit, produce an error message and abort transfer
+        // Check if payer has surpassed their limit, produce an error message and abort transfer
       } else if (availablePositionBasedOnPayerLimit.toNumber() < transfer.amount.amount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
@@ -144,11 +144,13 @@ const processPositionPrepareBin = async (
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR
         ).toApiErrorObject(Config.ERROR_HANDLING)
+
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.FAILURE.status,
           fspiopError.errorInformation.errorCode,
           fspiopError.errorInformation.errorDescription
         )
+
         const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
           transfer.transferId,
           Enum.Kafka.Topics.NOTIFICATION,
@@ -167,7 +169,7 @@ const processPositionPrepareBin = async (
           'application/json'
         )
         binItem.result = { success: false }
-      // Payer has sufficient liquidity and limit
+        // Payer has sufficient liquidity and limit
       } else {
         transferStateId = Enum.Transfers.TransferState.RESERVED
         currentPosition = currentPosition.add(transfer.amount.amount)
@@ -175,12 +177,14 @@ const processPositionPrepareBin = async (
         availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.add(transfer.amount.amount)
 
         // Are these the right headers?
-        const headers = Utility.Http.SwitchDefaultHeaders(
-          transfer.payeeFsp,
-          Enum.Http.HeaderResources.TRANSFERS,
-          transfer.payerFsp,
-          resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
-        )
+        // const headers = Utility.Http.SwitchDefaultHeaders(
+        //   transfer.payeeFsp,
+        //   Enum.Http.HeaderResources.TRANSFERS,
+        //   transfer.payerFsp,
+        //   resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
+        // )
+        const headers = { ...binItem.message.value.content.headers }
+        delete headers['content-length']
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.SUCCESS.status,
           null,
