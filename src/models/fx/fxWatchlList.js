@@ -18,27 +18,36 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * INFITX
- - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
+ * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
-exports.up = async (knex) => {
-  return await knex.schema.hasTable('fxWatchList').then(function(exists) {
-    if (!exists) {
-      return knex.schema.createTable('fxWatchList', (t) => {
-        t.bigIncrements('fxWatchListId').primary().notNullable()
-        t.string('commitRequestId', 36).notNullable()
-        t.foreign('commitRequestId').references('commitRequestId').inTable('fxTransfer')
-        t.string('determiningTransferId', 36).notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-      })
-    }
-  })
+const Db = require('../../lib/db')
+const Logger = require('@mojaloop/central-services-logger')
+
+const getItemInWatchListByCommitRequestId = async (commitRequestId) => {
+  Logger.isDebugEnabled && Logger.debug(`get item in watch list (commitRequestId=${commitRequestId})`)
+  return Db.from('fxWatchList').findOne({ commitRequestId })
 }
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists('fxWatchList')
+const getItemInWatchListByDeterminingTransferId = async (determiningTransferId) => {
+  Logger.isDebugEnabled && Logger.debug(`get item in watch list (determiningTransferId=${determiningTransferId})`)
+  return Db.from('fxWatchList').findOne({ determiningTransferId })
+}
+
+const addToWatchList = async (record) => {
+  Logger.isDebugEnabled && Logger.debug('add to fx watch list' + record.toString())
+  return Db.from('fxWatchList').insert(record)
+}
+
+isTransferInWatchList
+
+
+
+module.exports = {
+  getItemInWatchListByCommitRequestId,
+  getItemInWatchListByDeterminingTransferId,
+  addToWatchList
 }

@@ -21,6 +21,7 @@
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
+ * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
@@ -51,21 +52,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
   ).startTimer()
   try {
     const knex = await Db.getKnex()
-    const action = transferList[0].value.metadata.event.action
-    let participantAndCurrencyDetails
-    if (action === Enum.Events.Event.Action.FX_PREPARE) {
-      // FX transfer
-      participantAndCurrencyDetails = await Cyril.getParticipantAndCurrencyForFxTransferMessage(transferList[0])
-    } else {
-      // Standard transfer
-      participantAndCurrencyDetails = await Cyril.getParticipantAndCurrencyForTransferMessage(transferList[0])
-    }
 
-    const participantName = participantAndCurrencyDetails.participantName
-    const currencyId = participantAndCurrencyDetails.currencyId
+    const { participantName, currencyId } = await Cyril.getParticipantAndCurrencyForTransferMessage(transferList[0])
 
-
-    // TODO: Need to continue on FX changes below this point
     const allSettlementModels = await SettlementModelCached.getAll()
     let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
     if (settlementModels.length === 0) {
@@ -278,6 +267,219 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
   }
 }
 
+const prepareChangeParticipantPositionTransactionFx = async (transferList) => {
+  const histTimerChangeParticipantPositionEnd = Metrics.getHistogram(
+    'fx_model_position',
+    'facade_prepareChangeParticipantPositionTransactionFx - Metrics for position model',
+    ['success', 'queryName']
+  ).startTimer()
+  try {
+    const knex = await Db.getKnex()
+
+    const { participantName, currencyId } = await Cyril.getParticipantAndCurrencyForFxTransferMessage(transferList[0])
+
+    const allSettlementModels = await SettlementModelCached.getAll()
+    let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
+    if (settlementModels.length === 0) {
+      settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+      if (settlementModels.length === 0) {
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
+      }
+    }
+    const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
+    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
+    const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
+    const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
+    const reservedTransfers = []
+    const abortedTransfers = []
+    const initialTransferStateChangePromises = []
+    const commitRequestIdList = []
+    const limitAlarms = []
+    let sumTransfersInBatch = 0
+    const histTimerChangeParticipantPositionTransEnd = Metrics.getHistogram(
+      'fx_model_position',
+      'facade_prepareChangeParticipantPositionTransactionFx_transaction - Metrics for position model',
+      ['success', 'queryName']
+    ).startTimer()
+    await knex.transaction(async (trx) => {
+      try {
+        const transactionTimestamp = Time.getUTCString(new Date())
+        for (const transfer of transferList) {
+          const id = transfer.value.content.payload.commitRequestId
+          commitRequestIdList.push(id)
+          // DUPLICATE of TransferStateChangeModel getByTransferId
+          initialTransferStateChangePromises.push(await knex('fxTransferStateChange').transacting(trx).where('commitRequestId', id).orderBy('fxTransferStateChangeId', 'desc').first())
+        }
+        const histTimerinitialTransferStateChangeListEnd = Metrics.getHistogram(
+          'fx_model_position',
+          'facade_prepareChangeParticipantPositionTransactionFx_transaction_initialTransferStateChangeList - Metrics for position model',
+          ['success', 'queryName']
+        ).startTimer()
+        const initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
+        histTimerinitialTransferStateChangeListEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransactionFx_transaction_initialTransferStateChangeList' })
+        const histTimerTransferStateChangePrepareAndBatchInsertEnd = Metrics.getHistogram(
+          'fx_model_position',
+          'facade_prepareChangeParticipantPositionTransactionFx_transaction_transferStateChangeBatchInsert - Metrics for position model',
+          ['success', 'queryName']
+        ).startTimer()
+        for (const id in initialTransferStateChangeList) {
+          const transferState = initialTransferStateChangeList[id]
+          const transfer = transferList[id].value.content.payload
+          const rawMessage = transferList[id]
+          if (transferState.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
+            transferState.fxTransferStateChangeId = null
+            transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
+            let transferAmount
+            if (transfer.targetAmount.currency === currencyId) {
+              transferAmount = new MLNumber(transfer.targetAmount.amount)
+            } else {
+              transferAmount = new MLNumber(transfer.sourceAmount.amount)
+            }
+            reservedTransfers[transfer.commitRequestId] = { transferState, transfer, rawMessage, transferAmount }
+            sumTransfersInBatch = new MLNumber(sumTransfersInBatch).add(transferAmount).toFixed(Config.AMOUNT.SCALE)
+          } else {
+            transferState.fxTransferStateChangeId = null
+            transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
+            transferState.reason = 'Transfer in incorrect state'
+            abortedTransfers[transfer.commitRequestId] = { transferState, transfer, rawMessage }
+          }
+        }
+        const abortedTransferStateChangeList = Object.keys(abortedTransfers).length && Array.from(commitRequestIdList.map(id => abortedTransfers[id].transferState))
+        Object.keys(abortedTransferStateChangeList).length && await knex.batchInsert('fxTransferStateChange', abortedTransferStateChangeList).transacting(trx)
+        histTimerTransferStateChangePrepareAndBatchInsertEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransactionFx_transaction_transferStateChangeBatchInsert' })
+        // Get the effective position for this participantCurrency at the start of processing the Batch
+        // and reserved the total value of the transfers in the batch (sumTransfersInBatch)
+        const histTimerUpdateEffectivePositionEnd = Metrics.getHistogram(
+          'fx_model_position',
+          'facade_prepareChangeParticipantPositionTransactionFx_transaction_UpdateEffectivePosition - Metrics for position model',
+          ['success', 'queryName']
+        ).startTimer()
+        const participantPositions = await knex('participantPosition')
+          .transacting(trx)
+          .whereIn('participantCurrencyId', [participantCurrency.participantCurrencyId, settlementParticipantCurrency.participantCurrencyId])
+          .forUpdate()
+          .select('*')
+        const initialParticipantPosition = participantPositions.find(position => position.participantCurrencyId === participantCurrency.participantCurrencyId)
+        const settlementParticipantPosition = participantPositions.find(position => position.participantCurrencyId === settlementParticipantCurrency.participantCurrencyId)
+        const currentPosition = new MLNumber(initialParticipantPosition.value)
+        const reservedPosition = new MLNumber(initialParticipantPosition.reservedValue)
+        const effectivePosition = currentPosition.add(reservedPosition).toFixed(Config.AMOUNT.SCALE)
+        initialParticipantPosition.reservedValue = new MLNumber(initialParticipantPosition.reservedValue).add(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE)
+        initialParticipantPosition.changedDate = transactionTimestamp
+        await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update(initialParticipantPosition)
+        histTimerUpdateEffectivePositionEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransactionFx_transaction_UpdateEffectivePosition' })
+        // Get the actual position limit and calculate the available position for the transfers to use in this batch
+        // Note: see optimisation decision notes to understand the justification for the algorithm
+        const histTimerValidatePositionBatchEnd = Metrics.getHistogram(
+          'fx_model_position',
+          'facade_prepareChangeParticipantPositionTransactionFx_transaction_ValidatePositionBatch - Metrics for position model',
+          ['success', 'queryName']
+        ).startTimer()
+        const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
+
+        const liquidityCover = new MLNumber(settlementParticipantPosition.value).multiply(-1)
+        const payerLimit = new MLNumber(participantLimit.value)
+        const availablePositionBasedOnLiquidityCover = liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
+        const availablePositionBasedOnPayerLimit = payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
+        /* Validate entire batch if availablePosition >= sumTransfersInBatch - the impact is that applying per transfer rules would require to be handled differently
+           since further rules are expected we do not do this at this point
+           As we enter this next step the order in which the transfer is processed against the Position is critical.
+           Both positive and failure cases need to recorded in processing order
+           This means that they should not be removed from the list, and the participantPosition
+        */
+        let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
+        for (const id in reservedTransfers) {
+          const { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[id]
+          if (new MLNumber(availablePositionBasedOnLiquidityCover).toNumber() < transferAmount.toNumber()) {
+            transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
+            transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
+            reservedTransfers[id].fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList)
+            rawMessage.value.content.payload = reservedTransfers[id].fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
+          } else if (new MLNumber(availablePositionBasedOnPayerLimit).toNumber() < transferAmount.toNumber()) {
+            transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
+            transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
+            reservedTransfers[id].fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR, null, null, null, rawMessage.value.content.payload.extensionList)
+            rawMessage.value.content.payload = reservedTransfers[id].fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
+          } else {
+            transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
+            sumReserved = new MLNumber(sumReserved).add(transferAmount).toFixed(Config.AMOUNT.SCALE) /* actually used */
+          }
+          const runningPosition = new MLNumber(currentPosition).add(sumReserved).toFixed(Config.AMOUNT.SCALE) /* effective position */
+          const runningReservedValue = new MLNumber(sumTransfersInBatch).subtract(sumReserved).toFixed(Config.AMOUNT.SCALE)
+          processedTransfers[id] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
+        }
+        histTimerValidatePositionBatchEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransactionFx_transaction_ValidatePositionBatch' })
+        const histTimerUpdateParticipantPositionEnd = Metrics.getHistogram(
+          'fx_model_position',
+          'facade_prepareChangeParticipantPositionTransactionFx_transaction_UpdateParticipantPosition - Metrics for position model',
+          ['success', 'queryName']
+        ).startTimer()
+        /*
+          Update the participantPosition with the eventual impact of the Batch
+          So the position moves forward by the sum of the transfers actually reserved (sumReserved)
+          and the reserved amount is cleared of the we reserved in the first instance (sumTransfersInBatch)
+        */
+        const processedPositionValue = currentPosition.add(sumReserved)
+        await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update({
+          value: processedPositionValue.toFixed(Config.AMOUNT.SCALE),
+          reservedValue: new MLNumber(initialParticipantPosition.reservedValue).subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE),
+          changedDate: transactionTimestamp
+        })
+        // TODO this limit needs to be clarified
+        if (processedPositionValue.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
+          limitAlarms.push(participantLimit)
+        }
+        histTimerUpdateParticipantPositionEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransactionFx_transaction_UpdateParticipantPosition' })
+        /*
+          Persist the transferStateChanges and associated participantPositionChange entry to record the running position
+          The transferStateChanges need to be persisted first (by INSERTing) to have the PK reference
+        */
+        const histTimerPersistTransferStateChangeEnd = Metrics.getHistogram(
+          'fx_model_position',
+          'facade_prepareChangeParticipantPositionTransactionFx_transaction_PersistTransferState - Metrics for position model',
+          ['success', 'queryName']
+        ).startTimer()
+        await knex('fxTransfer').transacting(trx).forUpdate().whereIn('commitRequestId', commitRequestIdList).select('*')
+        const processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(id => processedTransfers[id].transferState))
+        const processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('fxTransferStateChange', processedTransferStateChangeList).transacting(trx)
+        const processedTransfersKeysList = Object.keys(processedTransfers)
+        const batchParticipantPositionChange = []
+        for (const keyIndex in processedTransfersKeysList) {
+          const { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
+          const participantPositionChange = {
+            participantPositionId: initialParticipantPosition.participantPositionId,
+            fxTransferStateChangeId: processedTransferStateChangeIdList[keyIndex],
+            value: runningPosition,
+            // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
+            reservedValue: runningReservedValue
+          }
+          batchParticipantPositionChange.push(participantPositionChange)
+        }
+        batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
+        histTimerPersistTransferStateChangeEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransactionFx_transaction_PersistTransferState' })
+        await trx.commit()
+        histTimerChangeParticipantPositionTransEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransactionFx_transaction' })
+      } catch (err) {
+        Logger.isErrorEnabled && Logger.error(err)
+        await trx.rollback()
+        histTimerChangeParticipantPositionTransEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransactionFx_transaction' })
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    })
+    const preparedMessagesList = Array.from(transferIdList.map(id =>
+      id in processedTransfers
+        ? reservedTransfers[id]
+        : abortedTransfers[id]
+    ))
+    histTimerChangeParticipantPositionEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransactionFx' })
+    return { preparedMessagesList, limitAlarms }
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    histTimerChangeParticipantPositionEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransactionFx' })
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 const changeParticipantPositionTransaction = async (participantCurrencyId, isReversal, amount, transferStateChange) => {
   const histTimerChangeParticipantPositionTransactionEnd = Metrics.getHistogram(
     'model_position',
@@ -393,6 +595,7 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
 module.exports = {
   changeParticipantPositionTransaction,
   prepareChangeParticipantPositionTransaction,
+  prepareChangeParticipantPositionTransactionFx,
   getByNameAndCurrency,
   getAllByNameAndCurrency
 }

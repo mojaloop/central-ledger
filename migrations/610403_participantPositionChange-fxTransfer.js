@@ -23,22 +23,24 @@
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('fxWatchList').then(function(exists) {
-    if (!exists) {
-      return knex.schema.createTable('fxWatchList', (t) => {
-        t.bigIncrements('fxWatchListId').primary().notNullable()
-        t.string('commitRequestId', 36).notNullable()
-        t.foreign('commitRequestId').references('commitRequestId').inTable('fxTransfer')
-        t.string('determiningTransferId', 36).notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+  return await knex.schema.hasTable('participantPositionChange').then(function(exists) {
+    if (exists) {
+      return knex.schema.alterTable('participantPositionChange', (t) => {
+        t.bigInteger('transferStateChangeId').unsigned().defaultTo(null).alter()
+        t.bigInteger('fxTransferStateChangeId').unsigned().defaultTo(null)
+        t.foreign('fxTransferStateChangeId').references('fxTransferStateChangeId').inTable('fxTransferStateChange')
       })
     }
   })
 }
 
 exports.down = function (knex) {
-  return knex.schema.dropTableIfExists('fxWatchList')
+  return knex.schema.alterTable('participantPositionChange', (t) => {
+    t.dropForeign('fxTransferStateChangeId')
+    t.dropColumn('fxTransferStateChangeId')
+    t.bigInteger('transferStateChangeId').unsigned().notNullable().alter()
+  })
 }

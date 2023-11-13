@@ -23,6 +23,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
 
  --------------
  ******/
@@ -50,7 +51,15 @@ const calculatePreparePositionsBatch = async (transferList) => {
     'calculatePreparePositionsBatch - Metrics for transfer domain',
     ['success', 'funcName']
   ).startTimer()
-  const result = PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
+  let result
+  const action = transferList[0].value.metadata.event.action
+  if (action === Enum.Events.Event.Action.FX_PREPARE) {
+    // FX transfer
+    result = PositionFacade.prepareChangeParticipantPositionTransactionFx(transferList)
+  } else {
+    // Standard transfer
+    result = PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
+  }
   histTimerPositionBatchDomainEnd({ success: true, funcName: 'calculatePreparePositionsBatch' })
   return result
 }
