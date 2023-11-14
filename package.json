@@ -36,6 +36,7 @@
   "scripts": {
     "start": "npm run start:api",
     "start:api": "node src/api/index.js",
+    "start:debug": "npm run start:api --node-options --inspect=0.0.0.0",
     "watch:api": "npx nodemon src/api/index.js",
     "start:handlers": "node src/handlers/index.js",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",

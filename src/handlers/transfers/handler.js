@@ -52,7 +52,7 @@ const Participant = require('../../domain/participant')
 const Validator = require('./validator')
 
 // particular handlers
-const prepare = require('./prepare')
+const { prepare } = require('./prepare')
 
 const { Kafka, Comparators } = Util
 const TransferState = Enum.Transfers.TransferState

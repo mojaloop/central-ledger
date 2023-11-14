@@ -98,8 +98,8 @@ const validateDifferentDfsp = (payload) => {
   return true
 }
 
-const validateFspiopSourceMatchesPayer = (payload, headers) => {
-  const matched = (headers && headers['fspiop-source'] && headers['fspiop-source'] === payload.payerFsp)
+const validateFspiopSourceMatchesPayer = (payer, headers) => {
+  const matched = (headers && headers['fspiop-source'] && headers['fspiop-source'] === payer)
   if (!matched) {
     reasons.push('FSPIOP-Source header should match Payer')
     return false
@@ -185,7 +185,11 @@ const validateConditionAndExpiration = async (payload) => {
   return true
 }
 
-const validatePrepare = async (payload, headers) => {
+const isAmountValid = (payload, isFx) => isFx
+  ? validateAmount(payload.sourceAmount) && validateAmount(payload.targetAmount)
+  : validateAmount(payload.amount)
+
+const validatePrepare = async (payload, headers, isFx = false) => {
   const histTimerValidatePrepareEnd = Metrics.getHistogram(
     'handlers_transfer_validator',
     'validatePrepare - Metrics for transfer handler',
@@ -199,13 +203,19 @@ const validatePrepare = async (payload, headers) => {
     validationPassed = false
     return { validationPassed, reasons }
   }
-  // todo: adjust logic for FX
-  validationPassed = (validateFspiopSourceMatchesPayer(payload, headers) &&
-    await validateParticipantByName(payload.payerFsp) &&
-    await validatePositionAccountByNameAndCurrency(payload.payerFsp, payload.amount.currency) &&
-    await validateParticipantByName(payload.payeeFsp) &&
-    await validatePositionAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency) &&
-    validateAmount(payload.amount) &&
+
+  const payer = isFx ? payload.initiatingFsp : payload.payerFsp
+  const payee = isFx ? payload.counterPartyFsp : payload.payeeFsp
+  const payerAmount = isFx ? payload.sourceAmount : payload.amount
+  const payeeAmount = isFx ? payload.targetAmount : payload.amount
+
+  // todo: implement validation in parallel
+  validationPassed = (validateFspiopSourceMatchesPayer(payer, headers) &&
+    isAmountValid(payload, isFx) &&
+    await validateParticipantByName(payer) &&
+    await validatePositionAccountByNameAndCurrency(payer, payerAmount.currency) &&
+    await validateParticipantByName(payee) &&
+    await validatePositionAccountByNameAndCurrency(payee, payeeAmount.currency) &&
     await validateConditionAndExpiration(payload) &&
     validateDifferentDfsp(payload))
   histTimerValidatePrepareEnd({ success: true, funcName: 'validatePrepare' })

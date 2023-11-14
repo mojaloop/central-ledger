@@ -1,6 +1,7 @@
 const TABLE_NAMES = Object.freeze({
   fxTransfer: 'fxTransfer',
   fxTransferDuplicateCheck: 'fxTransferDuplicateCheck',
+  fxTransferParticipant: 'fxTransferParticipant',
   fxTransferStateChange: 'fxTransferStateChange',
   transferDuplicateCheck: 'transferDuplicateCheck'
 })

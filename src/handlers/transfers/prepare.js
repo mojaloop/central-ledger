@@ -6,7 +6,6 @@ const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 
 const { logger } = require('../../shared/logger')
 const Config = require('../../lib/config')
-const TransferService = require('../../domain/transfer')
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Participant = require('../../domain/participant')
 
@@ -69,10 +68,10 @@ const processDuplication = async ({
     })
     throw error
   }
-
   logger.info(Util.breadcrumb(location, 'handleResend'))
-  const remittance = createRemittanceEntity(isFx)
-  const transfer = await remittance.getByIdLight(ID)
+
+  const transfer = await createRemittanceEntity(isFx)
+    .getByIdLight(ID)
 
   const isFinalized = [TransferState.COMMITTED, TransferState.ABORTED].includes(transfer?.transferStateEnumeration)
   const isPrepare = [Action.PREPARE, Action.FX_PREPARE].includes(action)
@@ -91,13 +90,13 @@ const processDuplication = async ({
   return true
 }
 
-const savePreparedRequest = async ({ validationPassed, reasons, payload, functionality, params, location }) => {
+const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, functionality, params, location }) => {
   const logMessage = Util.breadcrumb(location, 'savePreparedRequest')
   try {
     logger.info(logMessage, { validationPassed, reasons })
     const reason = validationPassed ? null : reasons.toString()
-    // !!! todo: adjust for FX
-    await TransferService.prepare(payload, reason, validationPassed)
+    await createRemittanceEntity(isFx)
+      .savePreparedRequest(payload, reason, validationPassed)
   } catch (err) {
     logger.error(`${logMessage} error - ${err.message}`)
     const fspiopError = reformatFSPIOPError(err, FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
@@ -111,21 +110,26 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, functio
   }
 }
 
+const definePayerCurrency = async ({ payload, isFx }) => {
+  const name = isFx ? payload.initiatingFsp : payload.payerFsp
+  const currency = isFx ? payload.sourceAmount.currency : payload.amount.currency
+
+  const payerAccount = await Participant.getAccountByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
+
+  return payerAccount.participantCurrencyId.toString()
+}
+
 const sendPositionPrepareMessage = async ({ isFx, payload, action, params }) => {
   const eventDetail = {
     functionality: Type.POSITION,
     action
   }
-  const name = isFx ? payload.initiatingFsp : payload.payerFsp
-  const currency = isFx ? payload.sourceAmount.currency : payload.amount.currency
-  // todo: adjust for FX
-  // Key position prepare message with payer account id
-  const payerAccount = await Participant.getAccountByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
+  const messageKey = await definePayerCurrency({ payload, isFx })
 
   await Kafka.proceed(Config.KAFKA_CONFIG, params, {
     consumerCommit,
     eventDetail,
-    messageKey: payerAccount.participantCurrencyId.toString(),
+    messageKey,
     topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE
   })
 
@@ -197,14 +201,14 @@ const prepare = async (error, messages) => {
       return success
     }
 
-    const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
-    await savePreparedRequest({ validationPassed, reasons, payload, functionality, params, location })
+    const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers, isFx)
+    await savePreparedRequest({ validationPassed, reasons, payload, isFx, functionality, params, location })
 
     if (!validationPassed) {
       logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       const fspiopError = createFSPIOPError(FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
-      const remittance = createRemittanceEntity(isFx)
-      await remittance.logTransferError(ID, FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
+      await createRemittanceEntity(isFx)
+        .logTransferError(ID, FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
       /**
        * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
        * HOWTO: For regular transfers this branch may be triggered by sending
@@ -239,4 +243,12 @@ const prepare = async (error, messages) => {
   }
 }
 
-module.exports = prepare
+module.exports = {
+  prepare,
+
+  checkDuplication,
+  processDuplication,
+  savePreparedRequest,
+  definePayerCurrency,
+  sendPositionPrepareMessage
+}

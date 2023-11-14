@@ -27,7 +27,7 @@ const getFxTransferDuplicateCheck = async (commitRequestId) => {
   logger.debug(`get ${table}`, { commitRequestId })
 
   try {
-    const result = Db.from(table).findOne({ commitRequestId })
+    const result = await Db.from(table).findOne({ commitRequestId })
     histTimerEnd({ success: true, queryName })
     return result
   } catch (err) {
@@ -58,7 +58,7 @@ const saveFxTransferDuplicateCheck = async (commitRequestId, hash) => {
   logger.debug(`save ${table}`, { commitRequestId, hash })
 
   try {
-    const result = Db.from(table).insert({ commitRequestId, hash })
+    const result = await Db.from(table).insert({ commitRequestId, hash })
     histTimerEnd({ success: true, queryName })
     return result
   } catch (err) {
