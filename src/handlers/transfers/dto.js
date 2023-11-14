@@ -8,7 +8,7 @@ const prepareInputDto = (error, messages) => {
   if (error || !messages) {
     return {
       error,
-      metric: PROM_METRICS.transferPrepare() // (!) think, how to define transfer type in case of error
+      metric: PROM_METRICS.transferPrepare()
     }
   }
 

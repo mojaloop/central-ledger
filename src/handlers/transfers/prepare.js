@@ -111,6 +111,7 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, f
 }
 
 const definePayerCurrency = async ({ payload, isFx }) => {
+  // todo: need to use Cyril
   const name = isFx ? payload.initiatingFsp : payload.payerFsp
   const currency = isFx ? payload.sourceAmount.currency : payload.amount.currency
 

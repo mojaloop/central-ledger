@@ -17,7 +17,6 @@ const getByIdLight = async (id) => {
         .where({ 'fxTransfer.commitRequestId': id })
         .leftJoin('fxTransferStateChange AS tsc', 'tsc.commitRequestId', 'fxTransfer.commitRequestId')
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
-        // todo: think, if we need participants and watchList here
         .select(
           'fxTransfer.*',
           'tsc.fxTransferStateChangeId',
