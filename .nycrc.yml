@@ -20,6 +20,6 @@ exclude: [
   '**/bulk*/**',
   'src/shared/logger/**',
   'src/shared/constants.js',
-  'src/handlers/transfers/createRemittanceEntity.js'
+  'src/handlers/transfers/createRemittanceEntity.js',
   'src/models/fxTransfer/**'
 ]
