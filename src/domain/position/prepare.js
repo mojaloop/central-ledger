@@ -105,7 +105,10 @@ const processPositionPrepareBin = async (
         //   resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
         // )
         // forward same headers from the prepare message, except the content-length header
+        // set destination to payer and source to switch
         const headers = { ...binItem.message.value.content.headers }
+        headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
+        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
         delete headers['content-length']
 
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
@@ -179,11 +182,11 @@ const processPositionPrepareBin = async (
         currentPosition = currentPosition.add(transfer.amount.amount)
         availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transfer.amount.amount)
         availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.add(transfer.amount.amount)
-        
+
         // forward same headers from the prepare message, except the content-length header
         const headers = { ...binItem.message.value.content.headers }
         delete headers['content-length']
-        
+
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.SUCCESS.status,
           null,
