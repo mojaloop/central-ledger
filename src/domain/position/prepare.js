@@ -98,12 +98,16 @@ const processPositionPrepareBin = async (
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
 
-        const headers = Utility.Http.SwitchDefaultHeaders(
-          transfer.payerFsp,
-          Enum.Http.HeaderResources.TRANSFERS,
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
-          resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
-        )
+        // const headers = Utility.Http.SwitchDefaultHeaders(
+        //   transfer.payerFsp,
+        //   Enum.Http.HeaderResources.TRANSFERS,
+        //   Enum.Http.Headers.FSPIOP.SWITCH.value,
+        //   resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
+        // )
+        // forward same headers from the prepare message, except the content-length header
+        const headers = { ...binItem.message.value.content.headers }
+        delete headers['content-length']
+
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
         ).toApiErrorObject(Config.ERROR_HANDLING)
@@ -121,8 +125,8 @@ const processPositionPrepareBin = async (
 
         resultMessage = Utility.StreamingProtocol.createMessage(
           transfer.transferId,
-          transfer.payeeFsp,
           transfer.payerFsp,
+          Enum.Http.Headers.FSPIOP.SWITCH.value,
           metadata,
           headers,
           fspiopError,
@@ -175,16 +179,11 @@ const processPositionPrepareBin = async (
         currentPosition = currentPosition.add(transfer.amount.amount)
         availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transfer.amount.amount)
         availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.add(transfer.amount.amount)
-
-        // Are these the right headers?
-        // const headers = Utility.Http.SwitchDefaultHeaders(
-        //   transfer.payeeFsp,
-        //   Enum.Http.HeaderResources.TRANSFERS,
-        //   transfer.payerFsp,
-        //   resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
-        // )
+        
+        // forward same headers from the prepare message, except the content-length header
         const headers = { ...binItem.message.value.content.headers }
         delete headers['content-length']
+        
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.SUCCESS.status,
           null,
