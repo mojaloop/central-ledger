@@ -151,7 +151,8 @@ const positions = async (error, messages) => {
     for (const item of result.notifyMessages) {
       // 5.3.1. Produce notification message and audit message
       const action = item.binItem.message?.value.metadata.event.action
-      await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, Enum.Events.EventStatus.SUCCESS, null, item.binItem.span)
+      const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
+      await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
     }
     histTimerEnd({ success: true })
   } catch (err) {

@@ -2,7 +2,6 @@ const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
-const resourceVersions = require('@mojaloop/central-services-shared').Util.resourceVersions
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('@mojaloop/central-services-logger')
 
@@ -61,20 +60,23 @@ const processPositionPrepareBin = async (
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = 'Transfer in incorrect state'
 
-        const headers = Utility.Http.SwitchDefaultHeaders(
-          transfer.payerFsp,
-          Enum.Http.HeaderResources.TRANSFERS,
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
-          resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
-        )
+        // forward same headers from the prepare message, except the content-length header
+        // set destination to payerfsp and source to switch
+        const headers = { ...binItem.message.value.content.headers }
+        headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
+        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+        delete headers['content-length']
+
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
         ).toApiErrorObject(Config.ERROR_HANDLING)
+
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.FAILURE.status,
           fspiopError.errorInformation.errorCode,
           fspiopError.errorInformation.errorDescription
         )
+
         const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
           transfer.transferId,
           Enum.Kafka.Topics.NOTIFICATION,
@@ -84,28 +86,24 @@ const processPositionPrepareBin = async (
 
         resultMessage = Utility.StreamingProtocol.createMessage(
           transfer.transferId,
-          transfer.payeeFsp,
           transfer.payerFsp,
+          Enum.Http.Headers.FSPIOP.SWITCH.value,
           metadata,
           headers,
           fspiopError,
           { id: transfer.transferId },
           'application/json'
         )
+
         binItem.result = { success: false }
+
         // Check if payer has insufficient liquidity, produce an error message and abort transfer
       } else if (availablePositionBasedOnLiquidityCover.toNumber() < transfer.amount.amount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
 
-        // const headers = Utility.Http.SwitchDefaultHeaders(
-        //   transfer.payerFsp,
-        //   Enum.Http.HeaderResources.TRANSFERS,
-        //   Enum.Http.Headers.FSPIOP.SWITCH.value,
-        //   resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
-        // )
         // forward same headers from the prepare message, except the content-length header
-        // set destination to payer and source to switch
+        // set destination to payerfsp and source to switch
         const headers = { ...binItem.message.value.content.headers }
         headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
         headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
@@ -114,11 +112,13 @@ const processPositionPrepareBin = async (
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
         ).toApiErrorObject(Config.ERROR_HANDLING)
+
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.FAILURE.status,
           fspiopError.errorInformation.errorCode,
           fspiopError.errorInformation.errorDescription
         )
+
         const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
           transfer.transferId,
           Enum.Kafka.Topics.NOTIFICATION,
@@ -136,18 +136,21 @@ const processPositionPrepareBin = async (
           { id: transfer.transferId },
           'application/json'
         )
+
         binItem.result = { success: false }
+
         // Check if payer has surpassed their limit, produce an error message and abort transfer
       } else if (availablePositionBasedOnPayerLimit.toNumber() < transfer.amount.amount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
 
-        const headers = Utility.Http.SwitchDefaultHeaders(
-          transfer.payerFsp,
-          Enum.Http.HeaderResources.TRANSFERS,
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
-          resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion
-        )
+        // forward same headers from the prepare message, except the content-length header
+        // set destination to payerfsp and source to switch
+        const headers = { ...binItem.message.value.content.headers }
+        headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
+        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+        delete headers['content-length']
+
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR
         ).toApiErrorObject(Config.ERROR_HANDLING)
@@ -167,15 +170,17 @@ const processPositionPrepareBin = async (
 
         resultMessage = Utility.StreamingProtocol.createMessage(
           transfer.transferId,
-          transfer.payeeFsp,
           transfer.payerFsp,
+          Enum.Http.Headers.FSPIOP.SWITCH.value,
           metadata,
           headers,
           fspiopError,
           { id: transfer.transferId },
           'application/json'
         )
+
         binItem.result = { success: false }
+
         // Payer has sufficient liquidity and limit
       } else {
         transferStateId = Enum.Transfers.TransferState.RESERVED
