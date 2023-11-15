@@ -28,13 +28,13 @@
 exports.up = function (knex) {
   return knex.schema.table('fxWatchList', (t) => {
     t.index('commitRequestId')
-    t.index('transferId')
+    t.index('determiningTransferId')
   })
 }
 
 exports.down = function (knex) {
   return knex.schema.table('fxWatchList', (t) => {
     t.dropIndex('commitRequestId')
-    t.dropIndex('transferId')
+    t.dropIndex('determiningTransferId')
   })
 }

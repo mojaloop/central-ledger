@@ -110,20 +110,18 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, f
   }
 }
 
-const definePositionParticipant = async ({ payload, isFx }) => {
-  const cyrilResult = {
-    participantName: isFx ? payload.initiatingFsp : payload.payerFsp,
-    currencyId: isFx ? payload.sourceAmount.currency : payload.amount.currency
-  }
-  // todo: need to use Cyril
-  const payerAccount = await Participant.getAccountByNameAndCurrency(
+const definePositionParticipant = async ({ isFx, payload }) => {
+  const cyrilResult = await createRemittanceEntity(isFx)
+    .getPositionParticipant(payload)
+
+  const account = await Participant.getAccountByNameAndCurrency(
     cyrilResult.participantName,
     cyrilResult.currencyId,
     Enum.Accounts.LedgerAccountType.POSITION
   )
 
   return {
-    messageKey: payerAccount.participantCurrencyId.toString(),
+    messageKey: account.participantCurrencyId.toString(),
     cyrilResult
   }
 }
@@ -215,7 +213,9 @@ const prepare = async (error, messages) => {
     }
 
     const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers, isFx)
-    await savePreparedRequest({ validationPassed, reasons, payload, isFx, functionality, params, location })
+    await savePreparedRequest({
+      validationPassed, reasons, payload, isFx, functionality, params, location
+    })
 
     if (!validationPassed) {
       logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
@@ -239,6 +239,7 @@ const prepare = async (error, messages) => {
 
     logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
     const success = await sendPositionPrepareMessage({ isFx, payload, action, params })
+
     histTimerEnd({ success, fspId })
     return success
   } catch (err) {

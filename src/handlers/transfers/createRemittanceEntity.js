@@ -1,5 +1,6 @@
 const fxTransferModel = require('../../models/fxTransfer')
 const TransferService = require('../../domain/transfer')
+const cyril = require('../../domain/fx/cyril')
 
 // abstraction on transfer and fxTransfer
 const createRemittanceEntity = (isFx) => {
@@ -28,6 +29,12 @@ const createRemittanceEntity = (isFx) => {
       return isFx
         ? fxTransferModel.fxTransfer.getByIdLight(id)
         : TransferService.getByIdLight(id)
+    },
+
+    async getPositionParticipant (payload) {
+      return isFx
+        ? cyril.getParticipantAndCurrencyForFxTransferMessage(payload)
+        : cyril.getParticipantAndCurrencyForTransferMessage(payload)
     },
 
     async logTransferError (id, errorCode, errorDescription) {

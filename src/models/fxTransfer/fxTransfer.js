@@ -9,6 +9,21 @@ const { logger } = require('../../shared/logger')
 
 const { TransferInternalState } = Enum.Transfers
 
+const getByCommitRequestId = async (commitRequestId) => {
+  logger.debug(`get fx transfer (commitRequestId=${commitRequestId})`)
+  return Db.from(TABLE_NAMES.fxTransfer).findOne({ commitRequestId })
+}
+
+const getByDeterminingTransferId = async (determiningTransferId) => {
+  logger.debug(`get fx transfer (determiningTransferId=${determiningTransferId})`)
+  return Db.from(TABLE_NAMES.fxTransfer).findOne({ determiningTransferId })
+}
+
+const saveFxTransfer = async (record) => {
+  logger.debug('save fx transfer' + record.toString())
+  return Db.from(TABLE_NAMES.fxTransfer).insert(record)
+}
+
 const getByIdLight = async (id) => {
   try {
     /** @namespace Db.fxTransfer **/
@@ -38,7 +53,7 @@ const getByIdLight = async (id) => {
 const getParticipant = async (name, currency) =>
   participant.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
 
-const savePreparedRequest = async (payload, stateReason = null, hasPassedValidation = true) => {
+const savePreparedRequest = async (payload, stateReason, hasPassedValidation) => {
   const histTimerSaveFxTransferEnd = Metrics.getHistogram(
     'model_fx_transfer',
     'facade_saveFxTransferPrepared - Metrics for transfer model',
@@ -70,20 +85,20 @@ const savePreparedRequest = async (payload, stateReason = null, hasPassedValidat
       createdDate: Util.Time.getUTCString(new Date())
     }
 
-    const payerTransferParticipantRecord = {
+    const initiatingParticipantRecord = {
       commitRequestId: payload.commitRequestId,
       participantCurrencyId: initiatingParticipant.participantCurrencyId,
+      amount: payload.sourceAmount.amount,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP,
-      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
-      amount: fxTransferRecord.sourceAmount
+      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
     }
 
-    const payeeTransferParticipantRecord = {
+    const counterPartyParticipantRecord = {
       commitRequestId: payload.commitRequestId,
       participantCurrencyId: counterParticipant.participantCurrencyId,
+      amount: -payload.targetAmount.amount,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
-      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
-      amount: -fxTransferRecord.sourceAmount // todo: think, how to define proper amount
+      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
     }
 
     const knex = await Db.getKnex()
@@ -96,10 +111,10 @@ const savePreparedRequest = async (payload, stateReason = null, hasPassedValidat
       return await knex.transaction(async (trx) => {
         try {
           await knex(TABLE_NAMES.fxTransfer).transacting(trx).insert(fxTransferRecord)
-          await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(payerTransferParticipantRecord)
-          await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(payeeTransferParticipantRecord)
-          payerTransferParticipantRecord.name = payload.initiatingFsp
-          payeeTransferParticipantRecord.name = payload.counterPartyFsp
+          await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(initiatingParticipantRecord)
+          await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord)
+          initiatingParticipantRecord.name = payload.initiatingFsp
+          counterPartyParticipantRecord.name = payload.counterPartyFsp
 
           await knex(TABLE_NAMES.fxTransferStateChange).transacting(trx).insert(fxTransferStateChangeRecord)
           await trx.commit()
@@ -120,20 +135,20 @@ const savePreparedRequest = async (payload, stateReason = null, hasPassedValidat
       await knex(TABLE_NAMES.fxTransfer).insert(fxTransferRecord)
 
       try {
-        await knex(TABLE_NAMES.fxTransferParticipant).insert(payerTransferParticipantRecord)
+        await knex(TABLE_NAMES.fxTransferParticipant).insert(initiatingParticipantRecord)
       } catch (err) {
         logger.warn(`Payer fxTransferParticipant insert error: ${err.message}`)
         histTimerNoValidationEnd({ success: false, queryName })
       }
 
       try {
-        await knex(TABLE_NAMES.fxTransferParticipant).insert(payeeTransferParticipantRecord)
+        await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord)
       } catch (err) {
         histTimerNoValidationEnd({ success: false, queryName })
         logger.warn(`Payee fxTransferParticipant insert error: ${err.message}`)
       }
-      payerTransferParticipantRecord.name = payload.initiatingFsp
-      payeeTransferParticipantRecord.name = payload.counterPartyFsp
+      initiatingParticipantRecord.name = payload.initiatingFsp
+      counterPartyParticipantRecord.name = payload.counterPartyFsp
 
       try {
         await knex(TABLE_NAMES.fxTransferStateChange).insert(fxTransferStateChangeRecord)
@@ -151,6 +166,9 @@ const savePreparedRequest = async (payload, stateReason = null, hasPassedValidat
 }
 
 module.exports = {
+  getByCommitRequestId,
+  getByDeterminingTransferId,
   getByIdLight,
-  savePreparedRequest
+  savePreparedRequest,
+  saveFxTransfer
 }
