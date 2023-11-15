@@ -30,14 +30,14 @@ const TransferModel = require('../../models/transfer/transfer')
 const FxTransferModel = require('../../models/fx/fxTransfer')
 const FxWatchListModel = require('../../models/fx/fxWatchList')
 
-const getParticipantAndCurrencyForTransferMessage = async (message) => {
+const getParticipantAndCurrencyForTransferMessage = async (payload) => {
   const histTimerGetParticipantAndCurrencyForTransferMessage = Metrics.getHistogram(
     'fx_domain_cyril_getParticipantAndCurrencyForTransferMessage',
     'fx_domain_cyril_getParticipantAndCurrencyForTransferMessage - Metrics for fx cyril',
     ['success', 'determiningTransferExists']
   ).startTimer()
   // Does this determining transfer ID appear on the watch list?
-  const watchListRecord = await FxWatchListModel.getItemInWatchListByDeterminingTransferId(message.value.content.payload.determiningTransferId)
+  const watchListRecord = await FxWatchListModel.getItemInWatchListByDeterminingTransferId(payload.determiningTransferId)
   const determiningTransferExistsInWatchList = (watchListRecord !== null)
 
   let participantName, currencyId
@@ -46,7 +46,7 @@ const getParticipantAndCurrencyForTransferMessage = async (message) => {
     // If there's a currency conversion before the transfer is requested, it must be the debtor who did it.
     // Get the FX request corresponding to this transaction ID
     // TODO: Can't we just use the following query in the first place above to check if the determining transfer exists instead of using the watch list?
-    const fxTransferRecord = await FxTransferModel.getByDeterminingTransferId(message.value.content.payload.determiningTransferId)
+    const fxTransferRecord = await FxTransferModel.getByDeterminingTransferId(payload.determiningTransferId)
     // Liquidity check and reserve funds against FXP in FX target currency
     participantName = fxTransferRecord.counterPartyFsp
     currencyId = fxTransferRecord.targetCurrency
@@ -58,22 +58,22 @@ const getParticipantAndCurrencyForTransferMessage = async (message) => {
   } else {
     // Normal transfer request
     // Liquidity check and reserve against payer
-    participantName = message.value.content.payload.payerFsp
-    currencyId = message.value.content.payload.amount.currency
+    participantName = payload.payerFsp
+    currencyId = payload.amount.currency
   }
 
   histTimerGetParticipantAndCurrencyForTransferMessage({ success: true, determiningTransferExists: determiningTransferExistsInWatchList })
   return {participantName, currencyId}
 }
 
-const getParticipantAndCurrencyForFxTransferMessage = async (message) => {
+const getParticipantAndCurrencyForFxTransferMessage = async (payload) => {
   const histTimerGetParticipantAndCurrencyForFxTransferMessage = Metrics.getHistogram(
     'fx_domain_cyril_getParticipantAndCurrencyForFxTransferMessage',
     'fx_domain_cyril_getParticipantAndCurrencyForFxTransferMessage - Metrics for fx cyril',
     ['success', 'determiningTransferExists']
   ).startTimer()
   // Does this determining transfer ID appear on the transfer list?
-  const transferRecord = await TransferModel.getById(message.value.content.payload.determiningTransferId)
+  const transferRecord = await TransferModel.getById(payload.determiningTransferId)
   const determiningTransferExistsInTransferList = (transferRecord !== null)
 
   let participantName, currencyId
@@ -81,19 +81,19 @@ const getParticipantAndCurrencyForFxTransferMessage = async (message) => {
   if (determiningTransferExistsInTransferList) {
     // If there's a currency conversion before the transfer is requested, then it must be issued by the debtor party
     // Liquidity check and reserve funds against requester in FX source currency
-    participantName = message.value.content.payload.initiatingFsp
-    currencyId = message.value.content.payload.sourceAmount.currency
+    participantName = payload.initiatingFsp
+    currencyId = payload.sourceAmount.currency
   } else {
     // If there's a currency conversion which is not the first message, then it must be issued by the creditor party
     // Liquidity check and reserve funds against FXP in FX target currency
-    participantName = message.value.content.payload.counterPartyFsp
-    currencyId = message.value.content.payload.targetAmount.currency
+    participantName = payload.counterPartyFsp
+    currencyId = payload.targetAmount.currency
   }
 
   // Add to watchlist
   await FxWatchListModel.addToWatchList({
-    commitRequestId: message.value.content.payload.commitRequestId,
-    determiningTransferId: message.value.content.payload.determiningTransferId,
+    commitRequestId: payload.commitRequestId,
+    determiningTransferId: payload.determiningTransferId,
   })
 
   histTimerGetParticipantAndCurrencyForFxTransferMessage({ success: true, determiningTransferExists: determiningTransferExistsInTransferList })

@@ -53,7 +53,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
     const knex = await Db.getKnex()
 
-    const { participantName, currencyId } = await Cyril.getParticipantAndCurrencyForTransferMessage(transferList[0])
+    const { participantName, currencyId } = await Cyril.getParticipantAndCurrencyForTransferMessage(transferList[0].value.content.payload)
 
     const allSettlementModels = await SettlementModelCached.getAll()
     let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
@@ -276,7 +276,7 @@ const prepareChangeParticipantPositionTransactionFx = async (transferList) => {
   try {
     const knex = await Db.getKnex()
 
-    const { participantName, currencyId } = await Cyril.getParticipantAndCurrencyForFxTransferMessage(transferList[0])
+    const { participantName, currencyId } = await Cyril.getParticipantAndCurrencyForFxTransferMessage(transferList[0].value.content.payload)
 
     const allSettlementModels = await SettlementModelCached.getAll()
     let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
