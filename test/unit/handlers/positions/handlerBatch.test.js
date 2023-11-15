@@ -223,7 +223,7 @@ Test('Position handler', positionBatchHandlerTest => {
     BatchPositionModel.startDbTransaction.returns(trxStub)
     sandbox.stub(BinProcessor)
     BinProcessor.processBins.resolves({
-      notifyMessages: messages.map((i) => ({ binItem: { message: i, span: SpanStub }, message: { metadata: { event: { state: 'success' } } } }))
+      notifyMessages: messages.map((i) => ({ binItem: { message: i, span: SpanStub }, message: { metadata: { event: { state: { status: 'success' } } } } }))
     })
     BinProcessor.iterateThroughBins.restore()
 
@@ -237,8 +237,8 @@ Test('Position handler', positionBatchHandlerTest => {
     test.end()
   })
 
-  positionBatchHandlerTest.test('createPrepareHandler should', registerHandlersTest => {
-    registerHandlersTest.test('register all consumers on Kafka', async test => {
+  positionBatchHandlerTest.test('registerAllHandlers should', registerAllHandlersTest => {
+    registerAllHandlersTest.test('register all consumers on Kafka', async test => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
@@ -253,7 +253,7 @@ Test('Position handler', positionBatchHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('register a consumer on Kafka', async test => {
+    registerAllHandlersTest.test('register a consumer on Kafka', async test => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
@@ -262,7 +262,7 @@ Test('Position handler', positionBatchHandlerTest => {
       test.end()
     })
 
-    registerHandlersTest.test('throw error when there is an error getting KafkaConfig', async test => {
+    registerAllHandlersTest.test('throw error when there is an error getting KafkaConfig', async test => {
       try {
         Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
@@ -277,7 +277,11 @@ Test('Position handler', positionBatchHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('registerPrepareHandler throw error when there is an error getting KafkaConfig', async test => {
+    registerAllHandlersTest.end()
+  })
+
+  positionBatchHandlerTest.test('registerAllHandlers should', registerPositionHandlerTest => {
+    registerPositionHandlerTest.test('registerPositionHandler throw error when there is an error getting KafkaConfig', async test => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
@@ -292,7 +296,22 @@ Test('Position handler', positionBatchHandlerTest => {
       }
     })
 
-    registerHandlersTest.end()
+    registerPositionHandlerTest.test('registerPositionHandler registers handler and returns true ', async test => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+
+        const result = await allTransferHandlers.registerPositionHandler()
+        test.equal(result, true, 'Result should be true')
+        test.end()
+      } catch (e) {
+        test.fail('Error should not be thrown')
+        test.end()
+      }
+    })
+
+    registerPositionHandlerTest.end()
   })
 
   positionBatchHandlerTest.test('positions should', positionsTest => {
@@ -419,6 +438,42 @@ Test('Position handler', positionBatchHandlerTest => {
         test.end()
       }
     })
+
+    positionsTest.test('calls Kafka.produceGeneralMessage with correct eventStatus if event is a failure event', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+
+      BinProcessor.processBins.resolves({
+        notifyMessages: [{ binItem: { message: messages[0], span: SpanStub }, message: { metadata: { event: { state: { status: 'error' } } } } }]
+      })
+
+      // Act
+      try {
+        await allTransferHandlers.positions(null, messages[0])
+        test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once')
+        // Need an easier way to do partial matching...
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[0].histTimerMsgEnd
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].prepare[0], expectedBins[1001].prepare[0])
+        test.equal(BinProcessor.processBins.getCall(0).args[1], trxStub)
+        const expectedLastMessageToCommit = messages[messages.length - 1]
+        test.equal(Kafka.proceed.getCall(0).args[1].message.offset, expectedLastMessageToCommit.offset, 'kafkaProceed should be called with the correct offset')
+        test.equal(SpanStub.audit.callCount, 1, 'span.audit should be called one time')
+        test.equal(SpanStub.finish.callCount, 1, 'span.finish should be called one time')
+        test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
+        test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called')
+        test.equal(Kafka.produceGeneralMessage.callCount, 1, 'produceGeneralMessage should be one time to produce kafka notification events')
+        test.equal(Kafka.produceGeneralMessage.getCall(0).args[5], Enum.Events.EventStatus.FAILURE, 'produceGeneralMessage should be called with eventStatus as Enum.Events.EventStatus.FAILURE')
+        test.end()
+      } catch (err) {
+        Logger.info(err)
+        test.fail('Error should not be thrown')
+        test.end()
+      }
+    })
+
     positionsTest.end()
   })
 
