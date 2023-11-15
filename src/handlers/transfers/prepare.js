@@ -110,14 +110,22 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, f
   }
 }
 
-const definePayerCurrency = async ({ payload, isFx }) => {
+const definePositionParticipant = async ({ payload, isFx }) => {
+  const cyrilResult = {
+    participantName: isFx ? payload.initiatingFsp : payload.payerFsp,
+    currencyId: isFx ? payload.sourceAmount.currency : payload.amount.currency
+  }
   // todo: need to use Cyril
-  const name = isFx ? payload.initiatingFsp : payload.payerFsp
-  const currency = isFx ? payload.sourceAmount.currency : payload.amount.currency
+  const payerAccount = await Participant.getAccountByNameAndCurrency(
+    cyrilResult.participantName,
+    cyrilResult.currencyId,
+    Enum.Accounts.LedgerAccountType.POSITION
+  )
 
-  const payerAccount = await Participant.getAccountByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
-
-  return payerAccount.participantCurrencyId.toString()
+  return {
+    messageKey: payerAccount.participantCurrencyId.toString(),
+    cyrilResult
+  }
 }
 
 const sendPositionPrepareMessage = async ({ isFx, payload, action, params }) => {
@@ -125,8 +133,12 @@ const sendPositionPrepareMessage = async ({ isFx, payload, action, params }) => 
     functionality: Type.POSITION,
     action
   }
-  const messageKey = await definePayerCurrency({ payload, isFx })
+  const { messageKey, cyrilResult } = await definePositionParticipant({ payload, isFx })
 
+  params.message.value.content.context = {
+    ...params.message.value.content.context,
+    cyrilResult
+  }
   await Kafka.proceed(Config.KAFKA_CONFIG, params, {
     consumerCommit,
     eventDetail,
@@ -250,6 +262,6 @@ module.exports = {
   checkDuplication,
   processDuplication,
   savePreparedRequest,
-  definePayerCurrency,
+  definePositionParticipant,
   sendPositionPrepareMessage
 }

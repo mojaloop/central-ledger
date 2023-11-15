@@ -59,10 +59,8 @@ const savePreparedRequest = async (payload, stateReason = null, hasPassedValidat
       sourceCurrency: payload.sourceAmount.currency,
       targetAmount: payload.targetAmount.amount,
       targetCurrency: payload.targetAmount.currency,
-      ilpCondition: payload.condition
-    }
-    if (payload.expiration) {
-      fxTransferRecord.expirationDate = Util.Time.getUTCString(new Date(payload.expiration))
+      ilpCondition: payload.condition,
+      expirationDate: Util.Time.getUTCString(new Date(payload.expiration))
     }
 
     const fxTransferStateChangeRecord = {
@@ -75,7 +73,7 @@ const savePreparedRequest = async (payload, stateReason = null, hasPassedValidat
     const payerTransferParticipantRecord = {
       commitRequestId: payload.commitRequestId,
       participantCurrencyId: initiatingParticipant.participantCurrencyId,
-      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
       amount: fxTransferRecord.sourceAmount
     }
@@ -83,7 +81,7 @@ const savePreparedRequest = async (payload, stateReason = null, hasPassedValidat
     const payeeTransferParticipantRecord = {
       commitRequestId: payload.commitRequestId,
       participantCurrencyId: counterParticipant.participantCurrencyId,
-      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
       amount: -fxTransferRecord.sourceAmount // todo: think, how to define proper amount
     }

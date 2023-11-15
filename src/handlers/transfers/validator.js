@@ -87,9 +87,9 @@ const validatePositionAccountByNameAndCurrency = async function (participantName
   return validationPassed
 }
 
-const validateDifferentDfsp = (payload) => {
+const validateDifferentDfsp = (payerFsp, payeeFsp) => {
   if (!Config.ENABLE_ON_US_TRANSFERS) {
-    const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
+    const isPayerAndPayeeDifferent = (payerFsp.toLowerCase() !== payeeFsp.toLowerCase())
     if (!isPayerAndPayeeDifferent) {
       reasons.push('Payer FSP and Payee FSP should be different, unless on-us tranfers are allowed by the Scheme')
       return false
@@ -217,7 +217,8 @@ const validatePrepare = async (payload, headers, isFx = false) => {
     await validateParticipantByName(payee) &&
     await validatePositionAccountByNameAndCurrency(payee, payeeAmount.currency) &&
     await validateConditionAndExpiration(payload) &&
-    validateDifferentDfsp(payload))
+    validateDifferentDfsp(payer, payee)
+  )
   histTimerValidatePrepareEnd({ success: true, funcName: 'validatePrepare' })
 
   return {
