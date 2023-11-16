@@ -17,7 +17,6 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
-
  * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
@@ -25,26 +24,23 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
+const { TABLE_NAMES } = require('../../shared/constants')
+const { logger } = require('../../shared/logger')
 
 const getItemInWatchListByCommitRequestId = async (commitRequestId) => {
-  Logger.isDebugEnabled && Logger.debug(`get item in watch list (commitRequestId=${commitRequestId})`)
-  return Db.from('fxWatchList').findOne({ commitRequestId })
+  logger.debug(`get item in watch list (commitRequestId=${commitRequestId})`)
+  return Db.from(TABLE_NAMES.fxWatchList).findOne({ commitRequestId })
 }
 
 const getItemInWatchListByDeterminingTransferId = async (determiningTransferId) => {
-  Logger.isDebugEnabled && Logger.debug(`get item in watch list (determiningTransferId=${determiningTransferId})`)
-  return Db.from('fxWatchList').findOne({ determiningTransferId })
+  logger.debug(`get item in watch list (determiningTransferId=${determiningTransferId})`)
+  return Db.from(TABLE_NAMES.fxWatchList).findOne({ determiningTransferId })
 }
 
 const addToWatchList = async (record) => {
-  Logger.isDebugEnabled && Logger.debug('add to fx watch list' + record.toString())
-  return Db.from('fxWatchList').insert(record)
+  logger.debug('add to fx watch list' + record.toString())
+  return Db.from(TABLE_NAMES.fxWatchList).insert(record)
 }
-
-isTransferInWatchList
-
-
 
 module.exports = {
   getItemInWatchListByCommitRequestId,

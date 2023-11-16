@@ -264,8 +264,16 @@ const error = () => {
 
 let SpanStub
 let allTransferHandlers
+let prepare
+let createRemittanceEntity
 
 const participants = ['testName1', 'testName2']
+
+const cyrilStub = async (payload) => ({
+  participantName: payload.payerFsp,
+  currencyId: payload.amount.currency,
+  amount: payload.amount.amount
+})
 
 Test('Transfer handler', transferHandlerTest => {
   let sandbox
@@ -295,8 +303,19 @@ Test('Transfer handler', transferHandlerTest => {
       Tracer: TracerStub
     }
 
+    createRemittanceEntity = Proxyquire('../../../../src/handlers/transfers/createRemittanceEntity', {
+      '../../domain/fx/cyril': {
+        getParticipantAndCurrencyForTransferMessage: cyrilStub,
+        getParticipantAndCurrencyForFxTransferMessage: cyrilStub
+      }
+    })
+    prepare = Proxyquire('../../../../src/handlers/transfers/prepare', {
+      '@mojaloop/event-sdk': EventSdkStub,
+      './createRemittanceEntity': createRemittanceEntity
+    })
     allTransferHandlers = Proxyquire('../../../../src/handlers/transfers/handler', {
-      '@mojaloop/event-sdk': EventSdkStub
+      '@mojaloop/event-sdk': EventSdkStub,
+      './prepare': prepare
     })
 
     sandbox.stub(KafkaConsumer.prototype, 'constructor').returns(Promise.resolve())
