@@ -260,8 +260,10 @@ const addEndpoint = async (participantId, endpoint) => {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       try {
-        const endpointType = await knex('endpointType').where({ name: endpoint.type, isActive: 1 }).select('endpointTypeId').first()
-        // let endpointType = await trx.first('endpointTypeId').from('endpointType').where({ 'name': endpoint.type, 'isActive': 1 })
+        const endpointType = await knex('endpointType').where({
+          name: endpoint.type,
+          isActive: 1
+        }).select('endpointTypeId').first()
 
         const existingEndpoint = await knex('participantEndpoint').transacting(trx).forUpdate().select('*')
           .where({
