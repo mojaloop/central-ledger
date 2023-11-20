@@ -87,7 +87,8 @@
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
-        "PREPARE": null
+        "PREPARE": null,
+        "BULK_PREPARE": null
       }
     },
     "TOPIC_TEMPLATES": {

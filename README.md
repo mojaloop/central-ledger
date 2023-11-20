@@ -122,11 +122,14 @@ Batch processing can be enabled in the transfer execution flow. Follow the steps
     "KAFKA": {
       "EVENT_TYPE_ACTION_TOPIC_MAP" : {
         "POSITION":{
-          "PREPARE": "topic-transfer-position-batch"
+          "PREPARE": "topic-transfer-position-batch",
+          "BULK_PREPARE": "topic-transfer-position"
         }
       }
     }
   ```
+  _NOTE_: `BULK_PREPARE` configuration property is added to aid routing of `bulk-prepare` events to non-batch handler since the batch handler does not support `bulk-prepare` events.
+
 - **Step 3:** **Run Batch Processing Handlers**
 
   Run the position batch handler along with the existing position handler using the following configuration options:
