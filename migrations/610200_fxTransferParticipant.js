@@ -38,6 +38,8 @@ exports.up = async (knex) => {
         t.foreign('transferParticipantRoleTypeId').references('transferParticipantRoleTypeId').inTable('transferParticipantRoleType')
         t.integer('ledgerEntryTypeId').unsigned().notNullable()
         t.foreign('ledgerEntryTypeId').references('ledgerEntryTypeId').inTable('ledgerEntryType')
+        t.integer('fxParticipantCurrencyTypeId').unsigned()
+        t.foreign('fxParticipantCurrencyTypeId').references('fxParticipantCurrencyTypeId').inTable('fxParticipantCurrencyType')
         t.decimal('amount', 18, 4).notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })

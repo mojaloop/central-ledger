@@ -25,7 +25,12 @@ const logTransferError = async (id, errorCode, errorDescription) => {
   }
 }
 
+const addStateChange = async (fxTransferStateChangeRecord) => {
+  return  knex(TABLE_NAMES.fxTransferStateChange).insert(fxTransferStateChangeRecord)
+}
+
 module.exports = {
   getByCommitRequestId,
-  logTransferError
+  logTransferError,
+  addStateChange
 }

@@ -18,29 +18,28 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * INFITX
- - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
+ * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
-exports.up = async (knex) => {
-  return await knex.schema.hasTable('fxWatchList').then(function(exists) {
-    if (!exists) {
-      return knex.schema.createTable('fxWatchList', (t) => {
-        t.bigIncrements('fxWatchListId').primary().notNullable()
-        t.string('commitRequestId', 36).notNullable()
-        t.foreign('commitRequestId').references('commitRequestId').inTable('fxTransfer')
-        t.string('determiningTransferId', 36).notNullable()
-        t.integer('fxTransferTypeId').unsigned().notNullable()
-        t.foreign('fxTransferTypeId').references('fxTransferTypeId').inTable('fxTransferType')
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-      })
-    }
-  })
-}
+const fxTransferTypes = [
+  {
+    name: 'PAYER_CONVERSION',
+    description: 'Payer side currency conversion'
+  },
+  {
+    name: 'PAYEE_CONVERSION',
+    description: 'Payee side currency conversion'
+  }
+]
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists('fxWatchList')
+exports.seed = async function (knex) {
+  try {
+    return await knex('fxTransferType').insert(fxTransferTypes).onConflict('name').ignore()
+  } catch (err) {
+    console.log(`Uploading seeds for fxTransferType has failed with the following error: ${err}`)
+    return -1000
+  }
 }

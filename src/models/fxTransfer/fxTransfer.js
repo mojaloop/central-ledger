@@ -1,6 +1,8 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
+const Time = require('@mojaloop/central-services-shared').Util.Time
+const TransferEventAction = Enum.Events.Event.Action
 
 const Db = require('../../lib/db')
 const participant = require('../participant/facade')
@@ -50,6 +52,83 @@ const getByIdLight = async (id) => {
   }
 }
 
+const getAllDetailsByCommitRequestId = async (commitRequestId) => {
+  try {
+    /** @namespace Db.fxTransfer **/
+    return await Db.from('fxTransfer').query(async (builder) => {
+      const transferResult = await builder
+        .where({
+          'fxTransfer.commitRequestId': commitRequestId,
+          'tprt1.name': 'INITIATING_FSP', // TODO: refactor to use transferParticipantRoleTypeId
+          'tprt2.name': 'COUNTER_PARTY_FSP',
+          'tprt3.name': 'COUNTER_PARTY_FSP',
+          'fpct1.name': 'SOURCE',
+          'fpct2.name': 'TARGET'
+        })
+        .whereRaw('pc1.currencyId = fxTransfer.sourceCurrency')
+        // .whereRaw('pc21.currencyId = fxTransfer.sourceCurrency')
+        // .whereRaw('pc22.currencyId = fxTransfer.targetCurrency')
+        // INITIATING_FSP
+        .innerJoin('fxTransferParticipant AS tp1', 'tp1.commitRequestId', 'fxTransfer.commitRequestId')
+        .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
+        .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
+        .innerJoin('participant AS da', 'da.participantId', 'pc1.participantId')
+        // COUNTER_PARTY_FSP SOURCE currency
+        .innerJoin('fxTransferParticipant AS tp21', 'tp21.commitRequestId', 'fxTransfer.commitRequestId')
+        .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp21.transferParticipantRoleTypeId')
+        .innerJoin('fxParticipantCurrencyType AS fpct1', 'fpct1.fxParticipantCurrencyTypeId', 'tp21.fxParticipantCurrencyTypeId')
+        .innerJoin('participantCurrency AS pc21', 'pc21.participantCurrencyId', 'tp21.participantCurrencyId')
+        .innerJoin('participant AS ca', 'ca.participantId', 'pc21.participantId')
+        // COUNTER_PARTY_FSP TARGET currency
+        .innerJoin('fxTransferParticipant AS tp22', 'tp22.commitRequestId', 'fxTransfer.commitRequestId')
+        .innerJoin('transferParticipantRoleType AS tprt3', 'tprt3.transferParticipantRoleTypeId', 'tp22.transferParticipantRoleTypeId')
+        .innerJoin('fxParticipantCurrencyType AS fpct2', 'fpct2.fxParticipantCurrencyTypeId', 'tp22.fxParticipantCurrencyTypeId')
+        // .innerJoin('participantCurrency AS pc22', 'pc22.participantCurrencyId', 'tp22.participantCurrencyId')
+        // OTHER JOINS
+        .leftJoin('fxTransferStateChange AS tsc', 'tsc.commitRequestId', 'fxTransfer.commitRequestId')
+        .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
+        .leftJoin('fxTransferFulfilment AS tf', 'tf.commitRequestId', 'fxTransfer.commitRequestId')
+        // .leftJoin('transferError as te', 'te.commitRequestId', 'transfer.commitRequestId') // currently transferError.transferId is PK ensuring one error per transferId
+        .select(
+          'fxTransfer.*',
+          'pc1.participantCurrencyId AS initiatingFspParticipantCurrencyId',
+          'tp1.amount AS initiatingFspAmount',
+          'da.participantId AS initiatingFspParticipantId',
+          'da.name AS initiatingFspName',
+          // 'pc21.participantCurrencyId AS counterPartyFspSourceParticipantCurrencyId',
+          // 'pc22.participantCurrencyId AS counterPartyFspTargetParticipantCurrencyId',
+          'tp21.participantCurrencyId AS counterPartyFspSourceParticipantCurrencyId',
+          'tp22.participantCurrencyId AS counterPartyFspTargetParticipantCurrencyId',
+          'ca.participantId AS counterPartyFspParticipantId',
+          'ca.name AS counterPartyFspName',
+          'tsc.fxTransferStateChangeId',
+          'tsc.transferStateId AS transferState',
+          'tsc.reason AS reason',
+          'tsc.createdDate AS completedTimestamp',
+          'ts.enumeration as transferStateEnumeration',
+          'ts.description as transferStateDescription',
+          'tf.ilpFulfilment AS fulfilment',
+        )
+        .orderBy('tsc.fxTransferStateChangeId', 'desc')
+        .first()
+      if (transferResult) {
+        // transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
+        // if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+        //   if (!transferResult.extensionList) transferResult.extensionList = []
+        //   transferResult.extensionList.push({
+        //     key: 'cause',
+        //     value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128)
+        //   })
+        // }
+        transferResult.isTransferReadModel = true
+      }
+      return transferResult
+    })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 const getParticipant = async (name, currency) =>
   participant.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
 
@@ -61,9 +140,10 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
   ).startTimer()
 
   try {
-    const [initiatingParticipant, counterParticipant] = await Promise.all([
+    const [initiatingParticipant, counterParticipant1, counterParticipant2] = await Promise.all([
       getParticipant(payload.initiatingFsp, payload.sourceAmount.currency),
-      getParticipant(payload.counterPartyFsp, payload.targetAmount.currency)
+      getParticipant(payload.counterPartyFsp, payload.sourceAmount.currency),
+      getParticipant(payload.counterPartyFsp, payload.targetAmount.currency),
     ])
 
     // todo: move all mappings to DTO
@@ -93,11 +173,21 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
     }
 
-    const counterPartyParticipantRecord = {
+    const counterPartyParticipantRecord1 = {
       commitRequestId: payload.commitRequestId,
-      participantCurrencyId: counterParticipant.participantCurrencyId,
+      participantCurrencyId: counterParticipant1.participantCurrencyId,
+      amount: -payload.sourceAmount.amount,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
+      fxParticipantCurrencyTypeId: Enum.Fx.FxParticipantCurrencyType.SOURCE,
+      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
+    }
+
+    const counterPartyParticipantRecord2 = {
+      commitRequestId: payload.commitRequestId,
+      participantCurrencyId: counterParticipant2.participantCurrencyId,
       amount: -payload.targetAmount.amount,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
+      fxParticipantCurrencyTypeId: Enum.Fx.FxParticipantCurrencyType.TARGET,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
     }
 
@@ -112,9 +202,11 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
         try {
           await knex(TABLE_NAMES.fxTransfer).transacting(trx).insert(fxTransferRecord)
           await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(initiatingParticipantRecord)
-          await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord)
+          await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord1)
+          await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord2)
           initiatingParticipantRecord.name = payload.initiatingFsp
-          counterPartyParticipantRecord.name = payload.counterPartyFsp
+          counterPartyParticipantRecord1.name = payload.counterPartyFsp
+          counterPartyParticipantRecord2.name = payload.counterPartyFsp
 
           await knex(TABLE_NAMES.fxTransferStateChange).transacting(trx).insert(fxTransferStateChangeRecord)
           await trx.commit()
@@ -142,13 +234,15 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
       }
 
       try {
-        await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord)
+        await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord1)
+        await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord2)
       } catch (err) {
         histTimerNoValidationEnd({ success: false, queryName })
         logger.warn(`Payee fxTransferParticipant insert error: ${err.message}`)
       }
       initiatingParticipantRecord.name = payload.initiatingFsp
-      counterPartyParticipantRecord.name = payload.counterPartyFsp
+      counterPartyParticipantRecord1.name = payload.counterPartyFsp
+      counterPartyParticipantRecord2.name = payload.counterPartyFsp
 
       try {
         await knex(TABLE_NAMES.fxTransferStateChange).insert(fxTransferStateChangeRecord)
@@ -165,10 +259,165 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
   }
 }
 
+const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopError) => {
+  const histTimerSaveFulfilResponseEnd = Metrics.getHistogram(
+    'fx_model_transfer',
+    'facade_saveFxFulfilResponse - Metrics for fxTransfer model',
+    ['success', 'queryName']
+  ).startTimer()
+
+  let state
+  let isFulfilment = false
+  let isError = false
+  const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
+  const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
+  let extensionList
+  switch (action) {
+    // TODO: Need to check if these are relevant for FX transfers
+    // case TransferEventAction.COMMIT:
+    // case TransferEventAction.BULK_COMMIT:
+    case TransferEventAction.FX_RESERVE:
+      state = TransferInternalState.RECEIVED_FULFIL
+      extensionList = payload && payload.extensionList
+      isFulfilment = true
+      break
+    case TransferEventAction.FX_REJECT:
+      state = TransferInternalState.RECEIVED_REJECT
+      extensionList = payload && payload.extensionList
+      isFulfilment = true
+      break
+    // TODO: Need to check if these are relevant for FX transfers
+    // case TransferEventAction.BULK_ABORT:
+    // case TransferEventAction.ABORT_VALIDATION:
+    case TransferEventAction.FX_ABORT:
+      state = TransferInternalState.RECEIVED_ERROR
+      extensionList = payload && payload.errorInformation && payload.errorInformation.extensionList
+      isError = true
+      break
+    default:
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(UnsupportedActionText)
+  }
+  const completedTimestamp = Time.getUTCString((payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date())
+  const transactionTimestamp = Time.getUTCString(new Date())
+  const result = {
+    savePayeeTransferResponseExecuted: false
+  }
+
+  const fxTransferFulfilmentRecord = {
+    commitRequestId,
+    ilpFulfilment: payload.fulfilment || null,
+    completedDate: completedTimestamp,
+    isValid: !fspiopError,
+    settlementWindowId: null,
+    createdDate: transactionTimestamp
+  }
+  let fxTransferExtensionRecordsList = []
+  if (extensionList && extensionList.extension) {
+    fxTransferExtensionRecordsList = extensionList.extension.map(ext => {
+      return {
+        commitRequestId,
+        key: ext.key,
+        value: ext.value,
+        isFulfilment,
+        isError
+      }
+    })
+  }
+  const fxTransferStateChangeRecord = {
+    commitRequestId,
+    transferStateId: state,
+    reason: errorDescription,
+    createdDate: transactionTimestamp
+  }
+  const fxTransferErrorRecord = {
+    commitRequestId,
+    fxTransferStateChangeId: null,
+    errorCode,
+    errorDescription,
+    createdDate: transactionTimestamp
+  }
+
+  try {
+    /** @namespace Db.getKnex **/
+    const knex = await Db.getKnex()
+    const histTFxFulfilResponseValidationPassedEnd = Metrics.getHistogram(
+      'model_transfer',
+      'facade_saveTransferPrepared_transaction - Metrics for transfer model',
+      ['success', 'queryName']
+    ).startTimer()
+
+    await knex.transaction(async (trx) => {
+      try {
+        if (!fspiopError && [TransferEventAction.FX_COMMIT, TransferEventAction.FX_RESERVE].includes(action)) {
+          const res = await Db.from('settlementWindow').query(builder => {
+            return builder
+              .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
+              .select(
+                'settlementWindow.settlementWindowId',
+                'swsc.settlementWindowStateId as state',
+                'swsc.reason as reason',
+                'settlementWindow.createdDate as createdDate',
+                'swsc.createdDate as changedDate'
+              )
+              .where('swsc.settlementWindowStateId', 'OPEN')
+              .orderBy('changedDate', 'desc')
+          })
+          fxTransferFulfilmentRecord.settlementWindowId = res[0].settlementWindowId
+          logger.debug('saveFxFulfilResponse::settlementWindowId')
+        }
+        if (isFulfilment) {
+          await knex('fxTransferFulfilment').transacting(trx).insert(fxTransferFulfilmentRecord)
+          result.fxTransferFulfilmentRecord = fxTransferFulfilmentRecord
+          logger.debug('saveFxFulfilResponse::fxTransferFulfilment')
+        }
+        // TODO: Need to create a new table for fxExtensions and enable the following
+        // if (fxTransferExtensionRecordsList.length > 0) {
+        //   // ###! CAN BE DONE THROUGH A BATCH
+        //   for (const fxTransferExtension of fxTransferExtensionRecordsList) {
+        //     await knex('fxTransferExtension').transacting(trx).insert(fxTransferExtension)
+        //   }
+        //   // ###!
+        //   result.fxTransferExtensionRecordsList = fxTransferExtensionRecordsList
+        //   logger.debug('saveFxFulfilResponse::transferExtensionRecordsList')
+        // }
+        await knex('fxTransferStateChange').transacting(trx).insert(fxTransferStateChangeRecord)
+        result.fxTransferStateChangeRecord = fxTransferStateChangeRecord
+        logger.debug('saveFxFulfilResponse::fxTransferStateChange')
+        // TODO: Need to handle the following incase of error
+        // if (fspiopError) {
+        //   const insertedTransferStateChange = await knex('fxTransferStateChange').transacting(trx)
+        //     .where({ commitRequestId })
+        //     .forUpdate().first().orderBy('fxTransferStateChangeId', 'desc')
+        //   fxTransferStateChangeRecord.fxTransferStateChangeId = insertedTransferStateChange.fxTransferStateChangeId
+        //   fxTransferErrorRecord.fxTransferStateChangeId = insertedTransferStateChange.fxTransferStateChangeId
+        //   await knex('transferError').transacting(trx).insert(fxTransferErrorRecord)
+        //   result.fxTransferErrorRecord = fxTransferErrorRecord
+        //   logger.debug('saveFxFulfilResponse::transferError')
+        // }
+        histTFxFulfilResponseValidationPassedEnd({ success: true, queryName: 'facade_saveFxFulfilResponse_transaction' })
+        result.savePayeeTransferResponseExecuted = true
+        logger.debug('saveFxFulfilResponse::success')
+      } catch (err) {
+        await trx.rollback()
+        histTFxFulfilResponseValidationPassedEnd({ success: false, queryName: 'facade_saveFxFulfilResponse_transaction' })
+        logger.error('saveFxFulfilResponse::failure')
+        throw err
+      }
+    })
+    histTimerSaveFulfilResponseEnd({ success: true, queryName: 'facade_saveFulfilResponse' })
+    return result
+  } catch (err) {
+    histTimerSaveFulfilResponseEnd({ success: false, queryName: 'facade_saveFulfilResponse' })
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 module.exports = {
   getByCommitRequestId,
   getByDeterminingTransferId,
   getByIdLight,
+  getAllDetailsByCommitRequestId,
   savePreparedRequest,
+  saveFxFulfilResponse,
   saveFxTransfer
 }

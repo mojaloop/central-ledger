@@ -40,7 +40,6 @@ const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
-const Cyril = require('../../domain/fx/cyril')
 
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -53,7 +52,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
     const knex = await Db.getKnex()
 
-    const { participantName, currencyId } = await Cyril.getParticipantAndCurrencyForTransferMessage(transferList[0].value.content.payload)
+    const { participantName, currencyId } = transferList[0].value.content.context.cyrilResult
 
     const allSettlementModels = await SettlementModelCached.getAll()
     let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
@@ -276,7 +275,7 @@ const prepareChangeParticipantPositionTransactionFx = async (transferList) => {
   try {
     const knex = await Db.getKnex()
 
-    const { participantName, currencyId } = await Cyril.getParticipantAndCurrencyForFxTransferMessage(transferList[0].value.content.payload)
+    const { participantName, currencyId } = transferList[0].value.content.context.cyrilResult
 
     const allSettlementModels = await SettlementModelCached.getAll()
     let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
@@ -440,7 +439,7 @@ const prepareChangeParticipantPositionTransactionFx = async (transferList) => {
           ['success', 'queryName']
         ).startTimer()
         await knex('fxTransfer').transacting(trx).forUpdate().whereIn('commitRequestId', commitRequestIdList).select('*')
-        const processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(id => processedTransfers[id].transferState))
+        const processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(commitRequestIdList.map(id => processedTransfers[id].transferState))
         const processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('fxTransferStateChange', processedTransferStateChangeList).transacting(trx)
         const processedTransfersKeysList = Object.keys(processedTransfers)
         const batchParticipantPositionChange = []
@@ -466,7 +465,7 @@ const prepareChangeParticipantPositionTransactionFx = async (transferList) => {
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     })
-    const preparedMessagesList = Array.from(transferIdList.map(id =>
+    const preparedMessagesList = Array.from(commitRequestIdList.map(id =>
       id in processedTransfers
         ? reservedTransfers[id]
         : abortedTransfers[id]
@@ -516,6 +515,55 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
         await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
         await trx.commit()
         histTimerChangeParticipantPositionTransactionEnd({ success: true, queryName: 'facade_changeParticipantPositionTransaction' })
+      } catch (err) {
+        await trx.rollback()
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }).catch((err) => {
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    })
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const changeParticipantPositionTransactionFx = async (participantCurrencyId, isReversal, amount, fxTransferStateChange) => {
+  const histTimerChangeParticipantPositionTransactionEnd = Metrics.getHistogram(
+    'fx_model_position',
+    'facade_changeParticipantPositionTransactionFx - Metrics for position model',
+    ['success', 'queryName']
+  ).startTimer()
+  try {
+    const knex = await Db.getKnex()
+    await knex.transaction(async (trx) => {
+      try {
+        const transactionTimestamp = Time.getUTCString(new Date())
+        fxTransferStateChange.createdDate = transactionTimestamp
+        const participantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).forUpdate().select('*').first()
+        let latestPosition
+        if (isReversal) {
+          latestPosition = new MLNumber(participantPosition.value).subtract(amount)
+        } else {
+          latestPosition = new MLNumber(participantPosition.value).add(amount)
+        }
+        latestPosition = latestPosition.toFixed(Config.AMOUNT.SCALE)
+        await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).update({
+          value: latestPosition,
+          changedDate: transactionTimestamp
+        })
+        await knex('fxTransferStateChange').transacting(trx).insert(fxTransferStateChange)
+        const insertedFxTransferStateChange = await knex('fxTransferStateChange').transacting(trx).where({ commitRequestId: fxTransferStateChange.commitRequestId }).forUpdate().first().orderBy('fxTransferStateChangeId', 'desc')
+        const participantPositionChange = {
+          participantPositionId: participantPosition.participantPositionId,
+          fxTransferStateChangeId: insertedFxTransferStateChange.fxTransferStateChangeId,
+          value: latestPosition,
+          reservedValue: participantPosition.reservedValue,
+          createdDate: transactionTimestamp
+        }
+        await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
+        await trx.commit()
+        histTimerChangeParticipantPositionTransactionEnd({ success: true, queryName: 'facade_changeParticipantPositionTransactionFx' })
       } catch (err) {
         await trx.rollback()
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -594,6 +642,7 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
 
 module.exports = {
   changeParticipantPositionTransaction,
+  changeParticipantPositionTransactionFx,
   prepareChangeParticipantPositionTransaction,
   prepareChangeParticipantPositionTransactionFx,
   getByNameAndCurrency,

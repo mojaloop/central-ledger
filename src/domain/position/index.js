@@ -31,6 +31,7 @@
 'use strict'
 
 const PositionFacade = require('../../models/position/facade')
+const { Enum } = require('@mojaloop/central-services-shared')
 
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -42,6 +43,17 @@ const changeParticipantPosition = (participantCurrencyId, isReversal, amount, tr
   ).startTimer()
   const result = PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isReversal, amount, transferStateChange)
   histTimerChangeParticipantPositionEnd({ success: true, funcName: 'changeParticipantPosition' })
+  return result
+}
+
+const changeParticipantPositionFx = (participantCurrencyId, isReversal, amount, fxTransferStateChange) => {
+  const histTimerChangeParticipantPositionEnd = Metrics.getHistogram(
+    'fx_domain_position',
+    'changeParticipantPositionFx - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+  const result = PositionFacade.changeParticipantPositionTransactionFx(participantCurrencyId, isReversal, amount, fxTransferStateChange)
+  histTimerChangeParticipantPositionEnd({ success: true, funcName: 'changeParticipantPositionFx' })
   return result
 }
 
@@ -66,5 +78,6 @@ const calculatePreparePositionsBatch = async (transferList) => {
 
 module.exports = {
   changeParticipantPosition,
+  changeParticipantPositionFx,
   calculatePreparePositionsBatch
 }
