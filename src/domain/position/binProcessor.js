@@ -37,7 +37,6 @@ const PositionPrepareDomain = require('./prepare')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-// TODO: We may not need this if we optimize the participantLimit query
 const participantFacade = require('../../models/participant/facade')
 
 /**
@@ -132,7 +131,7 @@ const processBins = async (bins, trx) => {
     const settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
     const settlementModel = currencyIdMap[accountIdMap[accountID].currencyId].settlementModel
 
-    // TODO: Refactor the following SQL query to optimize the performance
+    // Story #3657: The following SQL query/lookup can be optimized for performance
     const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(
       accountIdMap[accountID].participantId,
       accountIdMap[accountID].currencyId,
