@@ -18,23 +18,20 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * INFITX
+ * ModusBox
  - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('fxWatchList').then(function(exists) {
+  return await knex.schema.hasTable('fxTransferFulfilmentDuplicateCheck').then(function(exists) {
     if (!exists) {
-      return knex.schema.createTable('fxWatchList', (t) => {
-        t.bigIncrements('fxWatchListId').primary().notNullable()
-        t.string('commitRequestId', 36).notNullable()
+      return knex.schema.createTable('fxTransferFulfilmentDuplicateCheck', (t) => {
+        t.string('commitRequestId', 36).primary().notNullable()
         t.foreign('commitRequestId').references('commitRequestId').inTable('fxTransfer')
-        t.string('determiningTransferId', 36).notNullable()
-        t.integer('fxTransferTypeId').unsigned().notNullable()
-        t.foreign('fxTransferTypeId').references('fxTransferTypeId').inTable('fxTransferType')
+        t.string('hash', 256).nullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
     }
@@ -42,5 +39,5 @@ exports.up = async (knex) => {
 }
 
 exports.down = function (knex) {
-  return knex.schema.dropTableIfExists('fxWatchList')
+  return knex.schema.dropTableIfExists('fxTransferFulfilmentDuplicateCheck')
 }

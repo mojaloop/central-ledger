@@ -32,18 +32,18 @@ const getItemInWatchListByCommitRequestId = async (commitRequestId) => {
   return Db.from(TABLE_NAMES.fxWatchList).findOne({ commitRequestId })
 }
 
-const getItemInWatchListByDeterminingTransferId = async (determiningTransferId) => {
+const getItemsInWatchListByDeterminingTransferId = async (determiningTransferId) => {
   logger.debug(`get item in watch list (determiningTransferId=${determiningTransferId})`)
-  return Db.from(TABLE_NAMES.fxWatchList).findOne({ determiningTransferId })
+  return Db.from(TABLE_NAMES.fxWatchList).find({ determiningTransferId })
 }
 
 const addToWatchList = async (record) => {
-  logger.debug('add to fx watch list' + record.toString())
+  logger.debug('add to fx watch list', record)
   return Db.from(TABLE_NAMES.fxWatchList).insert(record)
 }
 
 module.exports = {
   getItemInWatchListByCommitRequestId,
-  getItemInWatchListByDeterminingTransferId,
+  getItemsInWatchListByDeterminingTransferId,
   addToWatchList
 }

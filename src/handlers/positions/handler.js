@@ -107,12 +107,23 @@ const positions = async (error, messages) => {
     const payload = decodePayload(message.value.content.payload)
     const eventType = message.value.metadata.event.type
     action = message.value.metadata.event.action
-    const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
-    if (!transferId) {
-      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transferId is null or undefined')
-      Logger.isErrorEnabled && Logger.error(fspiopError)
-      throw fspiopError
+    let transferId
+    if (action === Enum.Events.Event.Action.FX_PREPARE) {
+      transferId = payload.commitRequestId || (message.value.content.uriParams && message.value.content.uriParams.id)
+      if (!transferId) {
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('commitRequestId is null or undefined')
+        Logger.isErrorEnabled && Logger.error(fspiopError)
+        throw fspiopError
+      }
+    } else {
+      transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
+      if (!transferId) {
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transferId is null or undefined')
+        Logger.isErrorEnabled && Logger.error(fspiopError)
+        throw fspiopError
+      }
     }
+
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { method: 'positions' }))
 
@@ -136,7 +147,11 @@ const positions = async (error, messages) => {
                                       ? Enum.Events.ActionLetter.bulkTimeoutReserved
                                       : (action === Enum.Events.Event.Action.BULK_ABORT
                                           ? Enum.Events.ActionLetter.bulkAbort
-                                          : Enum.Events.ActionLetter.unknown)))))))))
+                                          : (action === Enum.Events.Event.Action.FX_PREPARE
+                                              ? Enum.Events.ActionLetter.prepare // TODO: may need to change this
+                                              : (action === Enum.Events.Event.Action.FX_RESERVE
+                                                  ? Enum.Events.ActionLetter.prepare // TODO: may need to change this
+                                                  : Enum.Events.ActionLetter.unknown)))))))))))
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
     const eventDetail = { action }
     if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
@@ -145,7 +160,7 @@ const positions = async (error, messages) => {
       eventDetail.functionality = Enum.Events.Event.Type.BULK_PROCESSING
     }
 
-    if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.PREPARE, Enum.Events.Event.Action.BULK_PREPARE].includes(action)) {
+    if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.PREPARE, Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.FX_PREPARE].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'prepare' }))
       const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
       for (const limit of limitAlarms) {
@@ -165,35 +180,96 @@ const positions = async (error, messages) => {
           Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payerNotifyInsufficientLiquidity--${actionLetter}2`))
           const responseFspiopError = fspiopError || ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
           const fspiopApiError = responseFspiopError.toApiErrorObject(Config.ERROR_HANDLING)
-          await TransferService.logTransferError(transferId, fspiopApiError.errorInformation.errorCode, fspiopApiError.errorInformation.errorDescription)
+          // TODO: log error incase of fxTransfer to a new table like fxTransferError
+          if (action !== Enum.Events.Event.Action.FX_PREPARE) {
+            await TransferService.logTransferError(transferId, fspiopApiError.errorInformation.errorCode, fspiopApiError.errorInformation.errorDescription)
+          }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopApiError, eventDetail, fromSwitch })
           throw responseFspiopError
         }
       }
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
-      const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
-      if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
-        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid State: ${transferInfo.transferStateId} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-        throw fspiopError
-      } else {
-        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payee--${actionLetter}4`))
-        const isReversal = false
-        const transferStateChange = {
-          transferId: transferInfo.transferId,
-          transferStateId: Enum.Transfers.TransferState.COMMITTED
+      const cyrilResult = message.value.content.context.cyrilResult
+      if (cyrilResult.isFx) {
+        // This is FX transfer
+        // Handle position movements
+        // Iterate through positionChanges and handle each position movement, mark as done and publish a position-commit kafka message again for the next item
+        // Find out the first item to be processed
+        const positionChangeIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
+        // TODO: Check fxTransferStateId is in RECEIVED_FULFIL state
+        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `fx-commit--${actionLetter}4`))
+        const positionChangeToBeProcessed = cyrilResult.positionChanges[positionChangeIndex]
+        if (positionChangeToBeProcessed.isFxTransferStateChange) {
+          const fxTransferStateChange = {
+            commitRequestId: positionChangeToBeProcessed.commitRequestId,
+            transferStateId: Enum.Transfers.TransferState.COMMITTED
+          }
+          const isReversal = false
+          await PositionService.changeParticipantPositionFx(positionChangeToBeProcessed.participantCurrencyId, isReversal, positionChangeToBeProcessed.amount, fxTransferStateChange)
+          // TODO: Send required FX PATCH notifications
+        } else {
+          Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `fx-commit--${actionLetter}4`))
+          const isReversal = false
+          const transferStateChange = {
+            transferId: positionChangeToBeProcessed.transferId,
+            transferStateId: Enum.Transfers.TransferState.COMMITTED
+          }
+          await PositionService.changeParticipantPosition(positionChangeToBeProcessed.participantCurrencyId, isReversal, positionChangeToBeProcessed.amount, transferStateChange)
         }
-        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
-        if (action === Enum.Events.Event.Action.RESERVE) {
-          const transfer = await TransferService.getById(transferInfo.transferId)
-          message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
+        cyrilResult.positionChanges[positionChangeIndex].isDone = true
+        const nextIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
+        if (nextIndex === -1) {
+          // All position changes are done
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
+        } else {
+          // There are still position changes to be processed
+          // Send position-commit kafka message again for the next item
+          const eventDetailCopy = Object.assign({}, eventDetail)
+          eventDetailCopy.functionality = Enum.Events.Event.Type.POSITION
+          const participantCurrencyId = cyrilResult.positionChanges[nextIndex].participantCurrencyId
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail: eventDetailCopy, messageKey: participantCurrencyId.toString() })
         }
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
         return true
+      } else {
+        const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+        if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
+          Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
+          const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid State: ${transferInfo.transferStateId} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`)
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+          throw fspiopError
+        } else {
+          Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payee--${actionLetter}4`))
+          const isReversal = false
+          const transferStateChange = {
+            transferId: transferInfo.transferId,
+            transferStateId: Enum.Transfers.TransferState.COMMITTED
+          }
+          await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
+          if (action === Enum.Events.Event.Action.RESERVE) {
+            const transfer = await TransferService.getById(transferInfo.transferId)
+            message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
+          }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
+          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
+          return true
+        }
       }
+    } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.FX_RESERVE].includes(action)) {
+      Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
+      // TODO: transferState check: Need to check the transferstate is in RECEIVED_FULFIL state
+      Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `fulfil--${actionLetter}4`))
+      // TODO: Do we need to handle transferStateChange?
+      // const transferStateChange = {
+      //   transferId: transferId,
+      //   transferStateId: Enum.Transfers.TransferState.COMMITTED
+      // }
+
+      // We don't need to change the position for FX transfers. All the position changes are done when actual transfer is done
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
+      return true
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.REJECT, Enum.Events.Event.Action.ABORT, Enum.Events.Event.Action.ABORT_VALIDATION, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: action }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)

@@ -23,6 +23,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
 
  --------------
  ******/
@@ -30,6 +31,7 @@
 'use strict'
 
 const PositionFacade = require('../../models/position/facade')
+const { Enum } = require('@mojaloop/central-services-shared')
 
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -44,18 +46,38 @@ const changeParticipantPosition = (participantCurrencyId, isReversal, amount, tr
   return result
 }
 
+const changeParticipantPositionFx = (participantCurrencyId, isReversal, amount, fxTransferStateChange) => {
+  const histTimerChangeParticipantPositionEnd = Metrics.getHistogram(
+    'fx_domain_position',
+    'changeParticipantPositionFx - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+  const result = PositionFacade.changeParticipantPositionTransactionFx(participantCurrencyId, isReversal, amount, fxTransferStateChange)
+  histTimerChangeParticipantPositionEnd({ success: true, funcName: 'changeParticipantPositionFx' })
+  return result
+}
+
 const calculatePreparePositionsBatch = async (transferList) => {
   const histTimerPositionBatchDomainEnd = Metrics.getHistogram(
     'domain_position',
     'calculatePreparePositionsBatch - Metrics for transfer domain',
     ['success', 'funcName']
   ).startTimer()
-  const result = PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
+  let result
+  const action = transferList[0].value.metadata.event.action
+  if (action === Enum.Events.Event.Action.FX_PREPARE) {
+    // FX transfer
+    result = PositionFacade.prepareChangeParticipantPositionTransactionFx(transferList)
+  } else {
+    // Standard transfer
+    result = PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
+  }
   histTimerPositionBatchDomainEnd({ success: true, funcName: 'calculatePreparePositionsBatch' })
   return result
 }
 
 module.exports = {
   changeParticipantPosition,
+  changeParticipantPositionFx,
   calculatePreparePositionsBatch
 }
