@@ -26,6 +26,7 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Enum } = require('@mojaloop/central-services-shared')
 const TransferModel = require('../../models/transfer/transfer')
+const ParticipantFacade = require('../../models/participant/facade')
 const { fxTransfer, watchList } = require('../../models/fxTransfer')
 
 const getParticipantAndCurrencyForTransferMessage = async (payload) => {
@@ -175,7 +176,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
     // Loop around watch list
     let sendingFxpExists = false
     let receivingFxpExists = false
-    // let sendingFxpRecord = null
+    let sendingFxpRecord = null
     let receivingFxpRecord = null
     for (const watchListRecord of watchListRecords) {
       const fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(watchListRecord.commitRequestId)
@@ -198,7 +199,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
       // The above condition is not required as we are setting the fxTransferType in the watchList beforehand
       if (watchListRecord.fxTransferTypeId === Enum.Fx.FxTransferType.PAYER_CONVERSION) {
         sendingFxpExists = true
-        // sendingFxpRecord = fxTransferRecord
+        sendingFxpRecord = fxTransferRecord
         // Create obligation between FX requesting party and FXP in currency of reservation
         result.positionChanges.push({
           isFxTransferStateChange: true,
@@ -225,11 +226,13 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
       })
     } else if (sendingFxpExists) {
       // If we have a sending FXP, Create obligation between FXP and creditor party to the transfer in currency of FX transfer
+      // Get participantCurrencyId for transfer.payeeParticipantId/transfer.payeeFsp and sendingFxpRecord.targetCurrency
+      const participantCurrency = await ParticipantFacade.getByNameAndCurrency(transfer.payeeFsp, sendingFxpRecord.targetCurrency, Enum.Accounts.LedgerAccountType.POSITION)
       result.positionChanges.push({
         isFxTransferStateChange: false,
         transferId,
-        participantCurrencyId: transfer.payeeParticipantCurrencyId,
-        amount: -transfer.amount
+        participantCurrencyId: participantCurrency.participantCurrencyId,
+        amount: -sendingFxpRecord.targetAmount
       })
     } else if (receivingFxpExists) {
       // If we have a receiving FXP, Create obligation between debtor party to the transfer and FXP in currency of transfer

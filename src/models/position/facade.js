@@ -52,10 +52,10 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
     const knex = await Db.getKnex()
 
-    const { participantName, currencyId } = transferList[0].value.content.context.cyrilResult
+    const cyrilResult = transferList[0].value.content.context.cyrilResult
 
     const allSettlementModels = await SettlementModelCached.getAll()
-    let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
+    let settlementModels = allSettlementModels.filter(model => model.currencyId === cyrilResult.currencyId)
     if (settlementModels.length === 0) {
       settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
       if (settlementModels.length === 0) {
@@ -63,8 +63,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
       }
     }
     const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
-    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
-    const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
+    const participantCurrency = await participantFacade.getByNameAndCurrency(cyrilResult.participantName, cyrilResult.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
+    const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(cyrilResult.participantName, cyrilResult.currencyId, settlementModel.settlementAccountTypeId)
     const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
     const reservedTransfers = []
     const abortedTransfers = []
@@ -120,7 +120,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           if (transferState.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
             transferState.transferStateChangeId = null
             transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
-            const transferAmount = new MLNumber(transfer.amount.amount) /* Just do this once, so add to reservedTransfers */
+            // const transferAmount = new MLNumber(transfer.amount.amount) /* Just do this once, so add to reservedTransfers */
+            const transferAmount = new MLNumber(cyrilResult.amount)
             reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage, transferAmount }
             sumTransfersInBatch = new MLNumber(sumTransfersInBatch).add(transferAmount).toFixed(Config.AMOUNT.SCALE)
           } else {
