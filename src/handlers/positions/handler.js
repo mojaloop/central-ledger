@@ -108,7 +108,7 @@ const positions = async (error, messages) => {
     const eventType = message.value.metadata.event.type
     action = message.value.metadata.event.action
     let transferId
-    if(action === Enum.Events.Event.Action.FX_PREPARE) {
+    if (action === Enum.Events.Event.Action.FX_PREPARE) {
       transferId = payload.commitRequestId || (message.value.content.uriParams && message.value.content.uriParams.id)
       if (!transferId) {
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('commitRequestId is null or undefined')
@@ -191,7 +191,7 @@ const positions = async (error, messages) => {
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
       const cyrilResult = message.value.content.context.cyrilResult
-      if(cyrilResult.isFx) {
+      if (cyrilResult.isFx) {
         // This is FX transfer
         // Handle position movements
         // Iterate through positionChanges and handle each position movement, mark as done and publish a position-commit kafka message again for the next item
@@ -219,7 +219,7 @@ const positions = async (error, messages) => {
         }
         cyrilResult.positionChanges[positionChangeIndex].isDone = true
         const nextIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
-        if ( nextIndex === -1) {
+        if (nextIndex === -1) {
           // All position changes are done
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
         } else {
@@ -232,7 +232,6 @@ const positions = async (error, messages) => {
         }
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
         return true
-
       } else {
         const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
         if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
@@ -266,7 +265,7 @@ const positions = async (error, messages) => {
       //   transferId: transferId,
       //   transferStateId: Enum.Transfers.TransferState.COMMITTED
       // }
-        
+
       // We don't need to change the position for FX transfers. All the position changes are done when actual transfer is done
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })

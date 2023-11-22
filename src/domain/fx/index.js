@@ -34,7 +34,6 @@ const FxTransferModel = require('../../models/fxTransfer')
 // const TransferObjectTransform = require('./transform')
 const Cyril = require('./cyril')
 
-
 const handleFulfilResponse = async (transferId, payload, action, fspiopError) => {
   const histTimerTransferServiceHandlePayeeResponseEnd = Metrics.getHistogram(
     'fx_domain_transfer',
@@ -43,9 +42,10 @@ const handleFulfilResponse = async (transferId, payload, action, fspiopError) =>
   ).startTimer()
 
   try {
-    const fxTransfer = await FxTransferModel.fxTransfer.saveFxFulfilResponse(transferId, payload, action, fspiopError)
+    await FxTransferModel.fxTransfer.saveFxFulfilResponse(transferId, payload, action, fspiopError)
+    // TODO: Need to return a result if we need
     // const result = TransferObjectTransform.toTransfer(fxTransfer)
-    const result= {}
+    const result = {}
     histTimerTransferServiceHandlePayeeResponseEnd({ success: true, funcName: 'handleFulfilResponse' })
     return result
   } catch (err) {

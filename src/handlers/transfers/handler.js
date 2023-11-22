@@ -102,12 +102,11 @@ const fulfil = async (error, messages) => {
       }
     })()
 
-    if(action === TransferEventAction.FX_RESERVE) {
+    if (action === TransferEventAction.FX_RESERVE) {
       await processFxFulfilMessage(message, functionality, span)
     } else {
       await processFulfilMessage(message, functionality, span)
     }
-
   } catch (err) {
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--F0`)
@@ -138,16 +137,6 @@ const processFulfilMessage = async (message, functionality, span) => {
   const kafkaTopic = message.topic
   Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
 
-  // We fail early and silently to allow timeout handler abort transfer
-  // if 'RESERVED' transfer state is sent in with v1.0 content-type
-  if (headers['content-type'].split('=')[1] === '1.0' && payload.transferState === TransferState.RESERVED) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `failSilentlyforReservedStateWith1.0ContentType--${actionLetter}0`))
-    const errorMessage = 'action "RESERVE" is not allowed in fulfil handler for v1.0 clients.'
-    Logger.isErrorEnabled && Logger.error(errorMessage)
-    !!span && span.error(errorMessage)
-    return true
-  }
-
   const actionLetter = (() => {
     switch (action) {
       case TransferEventAction.COMMIT: return Enum.Events.ActionLetter.commit
@@ -159,6 +148,17 @@ const processFulfilMessage = async (message, functionality, span) => {
       default: return Enum.Events.ActionLetter.unknown
     }
   })()
+
+  // We fail early and silently to allow timeout handler abort transfer
+  // if 'RESERVED' transfer state is sent in with v1.0 content-type
+  if (headers['content-type'].split('=')[1] === '1.0' && payload.transferState === TransferState.RESERVED) {
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `failSilentlyforReservedStateWith1.0ContentType--${actionLetter}0`))
+    const errorMessage = 'action "RESERVE" is not allowed in fulfil handler for v1.0 clients.'
+    Logger.isErrorEnabled && Logger.error(errorMessage)
+    !!span && span.error(errorMessage)
+    return true
+  }
+
   // fulfil-specific declarations
   const isTransferError = action === TransferEventAction.ABORT
   const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
@@ -512,7 +512,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       } else {
         histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid cyril result`)
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
         throw fspiopError
       }
       return true
@@ -569,7 +569,7 @@ const processFxFulfilMessage = async (message, functionality, span) => {
   ).startTimer()
 
   const payload = decodePayload(message.value.content.payload)
-  const headers = message.value.content.headers
+  // const headers = message.value.content.headers
   const type = message.value.metadata.event.type
   const action = message.value.metadata.event.action
   const commitRequestId = message.value.content.uriParams.id
@@ -588,22 +588,22 @@ const processFxFulfilMessage = async (message, functionality, span) => {
     }
   })()
   // fulfil-specific declarations
-  const isTransferError = action === TransferEventAction.ABORT
+  // const isTransferError = action === TransferEventAction.ABORT
   const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
 
   Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'getById' }))
 
   // const transfer = await FxTransferModel.fxTransfer.getByCommitRequestId(commitRequestId)
   const transfer = await FxTransferModel.fxTransfer.getByIdLight(commitRequestId)
-  const transferStateEnum = transfer && transfer.fxTransferStateEnumeration
+  // const transferStateEnum = transfer && transfer.fxTransferStateEnumeration
 
   // List of valid actions that Source & Destination headers should be checked
-  const validActionsForRouteValidations = [
-    TransferEventAction.FX_COMMIT,
-    TransferEventAction.FX_RESERVE,
-    TransferEventAction.FX_REJECT,
-    TransferEventAction.FX_ABORT
-  ]
+  // const validActionsForRouteValidations = [
+  //   TransferEventAction.FX_COMMIT,
+  //   TransferEventAction.FX_RESERVE,
+  //   TransferEventAction.FX_REJECT,
+  //   TransferEventAction.FX_ABORT
+  // ]
 
   if (!transfer) {
     Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackInternalServerErrorNotFound--${actionLetter}1`))
@@ -702,12 +702,12 @@ const processFxFulfilMessage = async (message, functionality, span) => {
   // }
   // If execution continues after this point we are sure transfer exists and source matches payee fsp
 
-  Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
-  const histTimerDuplicateCheckEnd = Metrics.getHistogram(
-    'fx_handler_transfers',
-    'fulfil_duplicateCheckComparator - Metrics for transfer handler',
-    ['success', 'funcName']
-  ).startTimer()
+  // Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+  // const histTimerDuplicateCheckEnd = Metrics.getHistogram(
+  //   'fx_handler_transfers',
+  //   'fulfil_duplicateCheckComparator - Metrics for transfer handler',
+  //   ['success', 'funcName']
+  // ).startTimer()
 
   // TODO: Duplicate Check: Need to refactor following for fxTransfer
   // let dupCheckResult

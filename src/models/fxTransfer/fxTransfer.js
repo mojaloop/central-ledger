@@ -11,6 +11,8 @@ const { logger } = require('../../shared/logger')
 
 const { TransferInternalState } = Enum.Transfers
 
+const UnsupportedActionText = 'Unsupported action'
+
 const getByCommitRequestId = async (commitRequestId) => {
   logger.debug(`get fx transfer (commitRequestId=${commitRequestId})`)
   return Db.from(TABLE_NAMES.fxTransfer).findOne({ commitRequestId })
@@ -107,7 +109,7 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
           'tsc.createdDate AS completedTimestamp',
           'ts.enumeration as transferStateEnumeration',
           'ts.description as transferStateDescription',
-          'tf.ilpFulfilment AS fulfilment',
+          'tf.ilpFulfilment AS fulfilment'
         )
         .orderBy('tsc.fxTransferStateChangeId', 'desc')
         .first()
@@ -143,7 +145,7 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
     const [initiatingParticipant, counterParticipant1, counterParticipant2] = await Promise.all([
       getParticipant(payload.initiatingFsp, payload.sourceAmount.currency),
       getParticipant(payload.counterPartyFsp, payload.sourceAmount.currency),
-      getParticipant(payload.counterPartyFsp, payload.targetAmount.currency),
+      getParticipant(payload.counterPartyFsp, payload.targetAmount.currency)
     ])
 
     // todo: move all mappings to DTO
@@ -268,22 +270,22 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
 
   let state
   let isFulfilment = false
-  let isError = false
-  const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
+  // const isError = false
+  // const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
   const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
-  let extensionList
+  // let extensionList
   switch (action) {
     // TODO: Need to check if these are relevant for FX transfers
     // case TransferEventAction.COMMIT:
     // case TransferEventAction.BULK_COMMIT:
     case TransferEventAction.FX_RESERVE:
       state = TransferInternalState.RECEIVED_FULFIL
-      extensionList = payload && payload.extensionList
+      // extensionList = payload && payload.extensionList
       isFulfilment = true
       break
     case TransferEventAction.FX_REJECT:
       state = TransferInternalState.RECEIVED_REJECT
-      extensionList = payload && payload.extensionList
+      // extensionList = payload && payload.extensionList
       isFulfilment = true
       break
     // TODO: Need to check if these are relevant for FX transfers
@@ -291,8 +293,8 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
     // case TransferEventAction.ABORT_VALIDATION:
     case TransferEventAction.FX_ABORT:
       state = TransferInternalState.RECEIVED_ERROR
-      extensionList = payload && payload.errorInformation && payload.errorInformation.extensionList
-      isError = true
+      // extensionList = payload && payload.errorInformation && payload.errorInformation.extensionList
+      // isError = true
       break
     default:
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(UnsupportedActionText)
@@ -311,31 +313,31 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
     settlementWindowId: null,
     createdDate: transactionTimestamp
   }
-  let fxTransferExtensionRecordsList = []
-  if (extensionList && extensionList.extension) {
-    fxTransferExtensionRecordsList = extensionList.extension.map(ext => {
-      return {
-        commitRequestId,
-        key: ext.key,
-        value: ext.value,
-        isFulfilment,
-        isError
-      }
-    })
-  }
+  // let fxTransferExtensionRecordsList = []
+  // if (extensionList && extensionList.extension) {
+  //   fxTransferExtensionRecordsList = extensionList.extension.map(ext => {
+  //     return {
+  //       commitRequestId,
+  //       key: ext.key,
+  //       value: ext.value,
+  //       isFulfilment,
+  //       isError
+  //     }
+  //   })
+  // }
   const fxTransferStateChangeRecord = {
     commitRequestId,
     transferStateId: state,
     reason: errorDescription,
     createdDate: transactionTimestamp
   }
-  const fxTransferErrorRecord = {
-    commitRequestId,
-    fxTransferStateChangeId: null,
-    errorCode,
-    errorDescription,
-    createdDate: transactionTimestamp
-  }
+  // const fxTransferErrorRecord = {
+  //   commitRequestId,
+  //   fxTransferStateChangeId: null,
+  //   errorCode,
+  //   errorDescription,
+  //   createdDate: transactionTimestamp
+  // }
 
   try {
     /** @namespace Db.getKnex **/

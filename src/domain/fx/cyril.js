@@ -108,7 +108,6 @@ const getParticipantAndCurrencyForFxTransferMessage = async (payload) => {
     })
   }
 
-
   histTimerGetParticipantAndCurrencyForFxTransferMessage({ success: true, determiningTransferExists: determiningTransferExistsInTransferList })
   return {
     participantName,
@@ -116,7 +115,6 @@ const getParticipantAndCurrencyForFxTransferMessage = async (payload) => {
     amount
   }
 }
-
 
 const processFxFulfilMessage = async (commitRequestId, payload) => {
   const histTimerGetParticipantAndCurrencyForFxTransferMessage = Metrics.getHistogram(
@@ -177,30 +175,30 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
     // Loop around watch list
     let sendingFxpExists = false
     let receivingFxpExists = false
-    let sendingFxpRecord = null
+    // let sendingFxpRecord = null
     let receivingFxpRecord = null
     for (const watchListRecord of watchListRecords) {
       const fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(watchListRecord.commitRequestId)
       // Original Plan: If the reservation is against the FXP, then this is a conversion at the creditor. Mark FXP as receiving FXP
       // The above condition is not required as we are setting the fxTransferType in the watchList beforehand
-      if(watchListRecord.fxTransferTypeId === Enum.Fx.FxTransferType.PAYEE_CONVERSION) {
+      if (watchListRecord.fxTransferTypeId === Enum.Fx.FxTransferType.PAYEE_CONVERSION) {
         receivingFxpExists = true
         receivingFxpRecord = fxTransferRecord
         // Create obligation between FXP and FX requesting party in currency of reservation
         result.positionChanges.push({
           isFxTransferStateChange: false,
-          transferId: transferId,
+          transferId,
           participantCurrencyId: fxTransferRecord.initiatingFspParticipantCurrencyId,
           amount: -fxTransferRecord.targetAmount
         })
         // TODO: Send PATCH notification to FXP
       }
-    
+
       // Original Plan: If the reservation is against the DFSP, then this is a conversion at the debtor. Mark FXP as sending FXP
       // The above condition is not required as we are setting the fxTransferType in the watchList beforehand
-      if(watchListRecord.fxTransferTypeId === Enum.Fx.FxTransferType.PAYER_CONVERSION) {
+      if (watchListRecord.fxTransferTypeId === Enum.Fx.FxTransferType.PAYER_CONVERSION) {
         sendingFxpExists = true
-        sendingFxpRecord = fxTransferRecord
+        // sendingFxpRecord = fxTransferRecord
         // Create obligation between FX requesting party and FXP in currency of reservation
         result.positionChanges.push({
           isFxTransferStateChange: true,
@@ -216,7 +214,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
       // If there are no sending and receiving fxp, throw an error
       throw new Error(`Required records not found in watch list for transfer ID ${transferId}`)
     }
-    
+
     if (sendingFxpExists && receivingFxpExists) {
       // If we have both a sending and a receiving FXP, Create obligation between sending and receiving FXP in currency of transfer.
       result.positionChanges.push({
@@ -229,7 +227,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
       // If we have a sending FXP, Create obligation between FXP and creditor party to the transfer in currency of FX transfer
       result.positionChanges.push({
         isFxTransferStateChange: false,
-        transferId: transferId,
+        transferId,
         participantCurrencyId: transfer.payeeParticipantCurrencyId,
         amount: -transfer.amount
       })
@@ -242,7 +240,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
         amount: -receivingFxpRecord.sourceAmount
       })
     }
-  
+
     // TODO: Remove entries from watchlist
   } else {
     // Normal transfer request, just return isFx = false
