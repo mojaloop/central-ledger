@@ -190,8 +190,8 @@ const positions = async (error, messages) => {
       }
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
-      const cyrilResult = message.value.content.context.cyrilResult
-      if (cyrilResult.isFx) {
+      const cyrilResult = message.value.content.context?.cyrilResult
+      if (cyrilResult && cyrilResult.isFx) {
         // This is FX transfer
         // Handle position movements
         // Iterate through positionChanges and handle each position movement, mark as done and publish a position-commit kafka message again for the next item
