@@ -501,19 +501,25 @@ const processFulfilMessage = async (message, functionality, span) => {
       const eventDetail = { functionality: TransferEventType.POSITION, action }
       // Key position fulfil message with payee account id
       const cyrilResult = await FxService.Cyril.processFulfilMessage(transferId, payload, transfer)
-      // const payeeAccount = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
-      params.message.value.content.context = {
-        ...params.message.value.content.context,
-        cyrilResult
-      }
-      if (cyrilResult.positionChanges.length > 0) {
-        const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: participantCurrencyId.toString() })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      if (cyrilResult.isFx) {
+        // const payeeAccount = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
+        params.message.value.content.context = {
+          ...params.message.value.content.context,
+          cyrilResult
+        }
+        if (cyrilResult.positionChanges.length > 0) {
+          const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: participantCurrencyId.toString() })
+          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        } else {
+          histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+          const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
+          throw fspiopError
+        }
       } else {
-        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
-        throw fspiopError
+        const payeeAccount = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: payeeAccount.participantCurrencyId.toString() })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       }
       return true
     }
