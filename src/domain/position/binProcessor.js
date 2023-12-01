@@ -56,6 +56,7 @@ const processBins = async (bins, trx) => {
   iterateThroughBins(bins, (_accountID, _action, item) => {
     if (item.decodedPayload?.transferId) {
       transferIdList.push(item.decodedPayload.transferId)
+    // get transferId from message for fulfil messages
     } else if (item.message?.value?.id){
       transferIdList.push(item.message.value.id)
     }

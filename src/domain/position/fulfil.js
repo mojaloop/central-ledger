@@ -4,7 +4,6 @@ const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('@mojaloop/central-services-logger')
-const TransferService = require('../transfer')
 
 /**
  * @function processPositionFulfilBin
@@ -30,7 +29,6 @@ const processPositionFulfilBin = async (
   const participantPositionChanges = []
   const resultMessages = []
   const accumulatedTransferStatesCopy = Object.assign({}, accumulatedTransferStates)
-
   let runningPosition = new MLNumber(accumulatedPositionValue)
 
   if (binItems && binItems.length > 0) {
@@ -80,9 +78,6 @@ const processPositionFulfilBin = async (
           'application/json'
         )
       } else {
-        console.log(accumulatedTransferInfo)
-        console.log('transferId', transferId)
-
         const transferInfo = accumulatedTransferInfo[transferId]
 
         // forward same headers from the prepare message, except the content-length header
