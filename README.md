@@ -96,13 +96,14 @@ diverges from the defaults.
 You can configure the customized topic names in the config. Each position action key
 refers to position messages with associated actions.
 
-NOTE: Only POSITION.PREPARE is supported at this time, with additional event-type-actions being added later when required.
+NOTE: Only POSITION.PREPARE and POSITION.FULFIL is supported at this time, with additional event-type-actions being added later when required.
 
 ```
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
-        "PREPARE": "topic-transfer-position-batch"
+        "PREPARE": "topic-transfer-position-batch",
+        "FULFIL": "topic-transfer-position-batch"
       }
     }
   }
@@ -113,10 +114,10 @@ NOTE: Only POSITION.PREPARE is supported at this time, with additional event-typ
 Batch processing can be enabled in the transfer execution flow. Follow the steps below to enable batch processing for a more efficient transfer execution:
 
 - **Step 1:** **Create a New Kafka Topic**
-  
+
   Create a new Kafka topic named `topic-transfer-position-batch` to handle batch processing events.
 - **Step 2:** **Configure Action Type Mapping**
-  
+
   Point the prepare handler to the newly created topic for the action type `prepare` using the `KAFKA.EVENT_TYPE_ACTION_TOPIC_MAP` configuration as shown below:
   ```
     "KAFKA": {

@@ -666,7 +666,16 @@ const fulfil = async (error, messages) => {
         const eventDetail = { functionality: TransferEventType.POSITION, action }
         // Key position fulfil message with payee account id
         const payeeAccount = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: payeeAccount.participantCurrencyId.toString() })
+        await Kafka.proceed(
+          Config.KAFKA_CONFIG,
+          params,
+          {
+            consumerCommit,
+            eventDetail,
+            messageKey: payeeAccount.participantCurrencyId.toString(),
+            topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FULFIL
+          },
+        )
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
