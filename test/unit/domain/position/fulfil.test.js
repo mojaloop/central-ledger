@@ -230,6 +230,14 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
         'f33add51-38b1-4715-9876-83d8a08c485d': Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
         '4830fa00-0c2a-4de1-9640-5ad4e68f5f62': Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
       },
+      {
+        'f33add51-38b1-4715-9876-83d8a08c485d': {
+          amount: 2.00,
+        },
+        '4830fa00-0c2a-4de1-9640-5ad4e68f5f62': {
+          amount: 2.00,
+        },
+      }
     )
 
     // Assert the expected results
@@ -287,6 +295,14 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
         'f33add51-38b1-4715-9876-83d8a08c485d': Enum.Transfers.TransferInternalState.INVALID,
         '4830fa00-0c2a-4de1-9640-5ad4e68f5f62': Enum.Transfers.TransferInternalState.INVALID,
       },
+      {
+        'f33add51-38b1-4715-9876-83d8a08c485d': {
+          amount: 2.00,
+        },
+        '4830fa00-0c2a-4de1-9640-5ad4e68f5f62': {
+          amount: 2.00,
+        },
+      }
     )
 
     // Assert the expected results
