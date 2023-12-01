@@ -674,7 +674,7 @@ const fulfil = async (error, messages) => {
             eventDetail,
             messageKey: payeeAccount.participantCurrencyId.toString(),
             topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FULFIL
-          },
+          }
         )
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true

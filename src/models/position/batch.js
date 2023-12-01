@@ -131,7 +131,8 @@ const getTransferInfosToChangePosition = async (trx, transferIds, transferPartic
     }
     return info
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
   }
 }
 

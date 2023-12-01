@@ -57,7 +57,7 @@ const processBins = async (bins, trx) => {
     if (item.decodedPayload?.transferId) {
       transferIdList.push(item.decodedPayload.transferId)
     // get transferId from message for fulfil messages
-    } else if (item.message?.value?.id){
+    } else if (item.message?.value?.id) {
       transferIdList.push(item.message.value.id)
     }
   })
@@ -137,7 +137,7 @@ const processBins = async (bins, trx) => {
   // For each account-bin in the list
   for (const accountID in bins) {
     const accountBin = bins[accountID]
-    const actions = Object.keys(accountBin)
+    // const actions = Object.keys(accountBin)
 
     const settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
     const settlementModel = currencyIdMap[accountIdMap[accountID].currencyId].settlementModel
