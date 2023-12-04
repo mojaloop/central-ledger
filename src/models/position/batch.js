@@ -122,7 +122,6 @@ const getTransferInfosToChangePosition = async (trx, transferIds, transferPartic
       )
       .orderBy('tsc.transferStateChangeId', 'desc')
     const info = {}
-    console.log(transferInfos)
     // This should key the transfer info with the latest transferStateChangeId
     for (const transferInfo of transferInfos) {
       if (!(transferInfo.transferId in info)) {
