@@ -106,23 +106,23 @@ const updateParticipantPosition = async (trx, participantPositionId, participant
 
 const getTransferInfosToChangePosition = async (trx, transferIds, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
   try {
-    const transferInfos = await Db.from('transferParticipant').query(async builder => {
-      return builder
-        .transacting(trx)
-        .innerJoin('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId')
-        .where({
-          'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
-          'transferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
-        })
-        .whereIn('transferParticipant.transferId', transferIds)
-        .select(
-          'transferParticipant.*',
-          'tsc.transferStateId',
-          'tsc.reason'
-        )
-        .orderBy('tsc.transferStateChangeId', 'desc')
-    })
+    const knex = await Db.getKnex()
+    const transferInfos = await knex('transferParticipant')
+      .transacting(trx)
+      .innerJoin('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId')
+      .where({
+        'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
+        'transferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
+      })
+      .whereIn('transferParticipant.transferId', transferIds)
+      .select(
+        'transferParticipant.*',
+        'tsc.transferStateId',
+        'tsc.reason'
+      )
+      .orderBy('tsc.transferStateChangeId', 'desc')
     const info = {}
+    console.log(transferInfos)
     // This should key the transfer info with the latest transferStateChangeId
     for (const transferInfo of transferInfos) {
       if (!(transferInfo.transferId in info)) {
