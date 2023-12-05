@@ -200,7 +200,14 @@ const prepare = async (error, messages) => {
         const eventDetail = { functionality, action }
         // Key position prepare message with payer account id
         const payerAccount = await Participant.getAccountByNameAndCurrency(payload.payerFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE })
+        // We route bulk-prepare and prepare messages differently based on the topic configured for it.
+        // Note: The batch handler does not currently support bulk-prepare messages, only prepare messages are supported.
+        // Therefore, it is necessary to check the action to determine the topic to route to.
+        const topicNameOverride =
+          action === TransferEventAction.BULK_PREPARE
+            ? Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.BULK_PREPARE
+            : Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), topicNameOverride })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else {

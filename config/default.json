@@ -87,7 +87,8 @@
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
-        "PREPARE": null
+        "PREPARE": null,
+        "BULK_PREPARE": null
       }
     },
     "TOPIC_TEMPLATES": {
@@ -289,7 +290,35 @@
               "group.id": "cl-group-transfer-position",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "partition.assignment.strategy": "cooperative-sticky",
+              "enable.auto.commit": false
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        },
+        "POSITION_BATCH": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 10,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 10
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-transfer-position-batch",
+              "group.id": "cl-group-transfer-position-batch",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true,
+              "partition.assignment.strategy": "cooperative-sticky",
+              "enable.auto.commit": false
             },
             "topicConf": {
               "auto.offset.reset": "earliest"

@@ -51,6 +51,7 @@ const EnumCached = require('../lib/enumCached')
 const ParticipantCached = require('../models/participant/participantCached')
 const ParticipantCurrencyCached = require('../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
+const BatchPositionModelCached = require('../models/position/batchCached')
 const MongoUriBuilder = require('mongo-uri-builder')
 
 const migrate = (runMigrations) => {
@@ -175,6 +176,10 @@ const createHandlers = async (handlers) => {
           // }
           break
         }
+        case 'positionbatch': {
+          await RegisterHandlers.positionsBatch.registerPositionHandler()
+          break
+        }
         case 'fulfil': {
           await RegisterHandlers.transfers.registerFulfilHandler()
           break
@@ -230,6 +235,7 @@ const initializeCache = async () => {
   await ParticipantCached.initialize()
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
+  await BatchPositionModelCached.initialize()
   await Cache.initCache()
 }
 

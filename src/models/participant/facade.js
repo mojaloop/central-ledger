@@ -308,7 +308,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
 
       /* Checkpoint #1: participant found and is active */
       if ((participant) && (participant.isActive)) {
-        /* use the paricipant id and incoming params to prepare the filter */
+        /* use the participant id and incoming params to prepare the filter */
         const searchFilter = {
           participantId: participant.participantId,
           currencyId,
