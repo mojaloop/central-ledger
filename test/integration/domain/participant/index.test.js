@@ -442,5 +442,5 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  participantTest.end()
+  await participantTest.end()
 })
