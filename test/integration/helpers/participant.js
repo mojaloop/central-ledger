@@ -42,7 +42,7 @@ const testParticipant = {
   createdDate: new Date()
 }
 
-exports.prepareData = async (name, currencyId = 'USD', secondaryCurrencyId = 'ZAR', isUnique = true) => {
+exports.prepareData = async (name, currencyId = 'USD', secondaryCurrencyId = 'XXX', isUnique = true) => {
   try {
     const participantId = await Model.create(Object.assign(
       {},

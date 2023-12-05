@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.4.1](https://github.com/mojaloop/central-ledger/compare/v17.4.0...v17.4.1) (2023-12-05)
+
+
+### Tests
+
+* fix local integration testing ([#991](https://github.com/mojaloop/central-ledger/issues/991)) ([2244d8e](https://github.com/mojaloop/central-ledger/commit/2244d8e6bfb65ce88bc471e53ac5b180dd1f2bb0)), closes [#970](https://github.com/mojaloop/central-ledger/issues/970)
+
+## [17.4.0](https://github.com/mojaloop/central-ledger/compare/v17.3.2...v17.4.0) (2023-12-05)
+
+
+### Features
+
+* **mojaloop/#3636:** batching implementation for position prepare messages ([#968](https://github.com/mojaloop/central-ledger/issues/968)) ([538616d](https://github.com/mojaloop/central-ledger/commit/538616d4718d5601251357c7ef24199607b630f7)), closes [mojaloop/#3636](https://github.com/mojaloop/project/issues/3636)
+
 ### [17.3.2](https://github.com/mojaloop/central-ledger/compare/v17.3.1...v17.3.2) (2023-11-06)
 
 

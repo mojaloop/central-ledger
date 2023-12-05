@@ -77,7 +77,7 @@ const retryOpts = {
 }
 
 const testData = {
-  currencies: ['USD', 'ZAR'],
+  currencies: ['USD', 'XXX'],
   transfers: [
     {
       amount: {
@@ -160,7 +160,7 @@ const testData = {
 }
 
 const testDataLimitExceeded = {
-  currencies: ['USD', 'ZAR'],
+  currencies: ['USD', 'XXX'],
   transfers: [
     {
       amount: {
@@ -243,65 +243,65 @@ const testDataLimitExceeded = {
 }
 
 const testDataLimitNoLiquidity = {
-  currencies: ['USD', 'ZAR'],
+  currencies: ['USD', 'XXX'],
   transfers: [
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
     }
@@ -326,7 +326,7 @@ const testDataLimitNoLiquidity = {
 }
 
 const testDataMixedWithLimitExceeded = {
-  currencies: ['USD', 'ZAR'],
+  currencies: ['USD', 'XXX'],
   transfers: [
     {
       amount: {
@@ -367,7 +367,7 @@ const testDataMixedWithLimitExceeded = {
 }
 
 const testDataWithMixedCurrencies = {
-  currencies: ['USD', 'ZAR'],
+  currencies: ['USD', 'XXX'],
   transfers: [
     {
       amount: {
@@ -377,7 +377,7 @@ const testDataWithMixedCurrencies = {
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 3
       }
     },
@@ -390,7 +390,7 @@ const testDataWithMixedCurrencies = {
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 5
       }
 
@@ -404,7 +404,7 @@ const testDataWithMixedCurrencies = {
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 7
       }
 
@@ -418,7 +418,7 @@ const testDataWithMixedCurrencies = {
     },
     {
       amount: {
-        currency: 'ZAR',
+        currency: 'XXX',
         amount: 9
       }
 
@@ -934,9 +934,9 @@ Test('Handlers test', async handlersTest => {
       const payerExpectedPositionForUSD = 20 // Sum of USD transfers in testDataWithMixedCurrencies
       test.equal(payerCurrentPositionForUSD.value, payerExpectedPositionForUSD, 'Payer position increases for USD transfers')
 
-      const payerCurrentPositionForZAR = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
-      const payerExpectedPositionForZAR = 24 // Sum of ZAR transfers in testDataWithMixedCurrencies
-      test.equal(payerCurrentPositionForZAR.value, payerExpectedPositionForZAR, 'Payer position increases for ZAR transfers')
+      const payerCurrentPositionForXXX = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const payerExpectedPositionForXXX = 24 // Sum of XXX transfers in testDataWithMixedCurrencies
+      test.equal(payerCurrentPositionForXXX.value, payerExpectedPositionForXXX, 'Payer position increases for XXX transfers')
 
       // Check that the transfer state for transfers is RESERVED
       try {

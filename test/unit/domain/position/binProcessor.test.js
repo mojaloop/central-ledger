@@ -648,7 +648,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle nobinItems', async (test) => {
+    prepareActionTest.test('processBins should handle no binItems', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
