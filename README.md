@@ -113,10 +113,10 @@ NOTE: Only POSITION.PREPARE is supported at this time, with additional event-typ
 Batch processing can be enabled in the transfer execution flow. Follow the steps below to enable batch processing for a more efficient transfer execution:
 
 - **Step 1:** **Create a New Kafka Topic**
-  
+
   Create a new Kafka topic named `topic-transfer-position-batch` to handle batch processing events.
 - **Step 2:** **Configure Action Type Mapping**
-  
+
   Point the prepare handler to the newly created topic for the action type `prepare` using the `KAFKA.EVENT_TYPE_ACTION_TOPIC_MAP` configuration as shown below:
   ```
     "KAFKA": {
@@ -181,7 +181,7 @@ If you want to run integration tests in a repetitive manner, you can startup the
     Start containers required for Integration Tests
 
     ```bash
-    docker-compose -f docker-compose.yml up -d kafka mysql
+    docker-compose -f docker-compose.yml up -d mysql kafka init-kafka kafka-debug-console
     ```
 
     Run wait script which will report once all required containers are up and running
