@@ -110,16 +110,16 @@ Test('Participant service', async (participantTest) => {
     try {
       let getByNameResult, result
       getByNameResult = await ParticipantService.getByName(testData.fsp1Name)
-      result = await ParticipantHelper.prepareData(testData.fsp1Name, testData.currency, null, !!getByNameResult)
+      result = await ParticipantHelper.prepareData(testData.fsp1Name, testData.currency, undefined, !!getByNameResult)
       participantFixtures.push(result.participant)
       getByNameResult = await ParticipantService.getByName(testData.fsp2Name)
-      result = await ParticipantHelper.prepareData(testData.fsp2Name, testData.currency, null, !!getByNameResult)
+      result = await ParticipantHelper.prepareData(testData.fsp2Name, testData.currency, undefined, !!getByNameResult)
       participantFixtures.push(result.participant)
       getByNameResult = await ParticipantService.getByName(testData.fsp3Name)
-      result = await ParticipantHelper.prepareData(testData.fsp3Name, testData.currency, null, !!getByNameResult)
+      result = await ParticipantHelper.prepareData(testData.fsp3Name, testData.currency, undefined, !!getByNameResult)
       participantFixtures.push(result.participant)
       getByNameResult = await ParticipantService.getByName(testData.fsp4Name)
-      result = await ParticipantHelper.prepareData(testData.fsp4Name, testData.currency, null, !!getByNameResult)
+      result = await ParticipantHelper.prepareData(testData.fsp4Name, testData.currency, undefined, !!getByNameResult)
       participantFixtures.push(result.participant)
       for (const participant of participantFixtures) {
         const read = await ParticipantService.getById(participant.participantId)
@@ -442,5 +442,5 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  await participantTest.end()
+  participantTest.end()
 })
