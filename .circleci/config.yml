@@ -36,7 +36,7 @@ defaults_machine_Dependencies: &defaults_machine_Dependencies |
 
   ## Install deps
   sudo apt install -y librdkafka-dev curl bash musl-dev
-  ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
+  sudo ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
 
 defaults_awsCliDependencies: &defaults_awsCliDependencies |
     apk --no-cache add aws-cli
