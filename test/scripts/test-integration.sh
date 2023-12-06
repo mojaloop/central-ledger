@@ -55,8 +55,10 @@ kill $(lsof -t -i:3001)
 ## Restart service with topic name override
 echo "Starting Service in the background"
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE='topic-transfer-position-batch'
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT='topic-transfer-position-batch'
 npm start > ./test/results/cl-service-override.log &
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE
+unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT
 
 ## Store PID for cleanup
 echo $! > /tmp/int-test-service.pid
