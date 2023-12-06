@@ -89,7 +89,9 @@
       "POSITION":{
         "PREPARE": null,
         "BULK_PREPARE": null,
-        "FULFIL": null
+        "COMMIT": null,
+        "BULK_COMMIT": null,
+        "RESERVE": null
       }
     },
     "TOPIC_TEMPLATES": {

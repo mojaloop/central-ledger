@@ -36,12 +36,12 @@ const processPositionFulfilBin = async (
       let transferStateId
       let reason
       let resultMessage
-      const transferId = binItem.message.value.id
+      const transferId = binItem.message.value.content.uriParams.id
       const payeeFsp = binItem.message.value.from
       const payerFsp = binItem.message.value.to
       const transfer = binItem.decodedPayload
       Logger.isDebugEnabled && Logger.debug(`processPositionFulfilBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
-      Logger.info(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
+      Logger.isDebugEnabled && Logger.debug(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
       // Inform payee dfsp if transfer is not in RECEIVED_FULFIL state, skip making any transfer state changes
       if (accumulatedTransferStates[transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
         // forward same headers from the prepare message, except the content-length header

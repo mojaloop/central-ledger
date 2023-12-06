@@ -665,6 +665,14 @@ const fulfil = async (error, messages) => {
         await TransferService.handlePayeeResponse(transferId, payload, action)
         const eventDetail = { functionality: TransferEventType.POSITION, action }
         // Key position fulfil message with payee account id
+        let topicNameOverride
+        if (action === TransferEventAction.COMMIT) {
+          topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+        } else if (action === TransferEventAction.RESERVE) {
+          topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.RESERVE
+        } else if (action === TransferEventAction.BULK_COMMIT) {
+          topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.BULK_COMMIT
+        }
         const payeeAccount = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await Kafka.proceed(
           Config.KAFKA_CONFIG,
@@ -673,7 +681,7 @@ const fulfil = async (error, messages) => {
             consumerCommit,
             eventDetail,
             messageKey: payeeAccount.participantCurrencyId.toString(),
-            topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FULFIL
+            topicNameOverride
           }
         )
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
