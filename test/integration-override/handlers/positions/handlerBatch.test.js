@@ -719,7 +719,7 @@ Test('Handlers test', async handlersTest => {
     prepareConfig.logger = Logger
     fulfilConfig.logger = Logger
 
-    await transferPositionPrepare.skip('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testData)
 
@@ -777,7 +777,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataLimitExceeded)
 
@@ -818,7 +818,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataLimitNoLiquidity)
 
@@ -860,7 +860,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataMixedWithLimitExceeded)
 
@@ -916,7 +916,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of transfers with mixed currencies', async (test) => {
+    await transferPositionPrepare.test('process batch of transfers with mixed currencies', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataWithMixedCurrencies)
 
