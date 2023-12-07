@@ -732,7 +732,7 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -790,7 +790,7 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -831,7 +831,7 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -877,7 +877,7 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 2000))
       // Consume messages from notification topic
       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
         topicFilter: 'topic-notification-event',
@@ -929,7 +929,7 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 2000))
       // Consume messages from notification topic
       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
         topicFilter: 'topic-notification-event',
@@ -972,7 +972,7 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -1025,6 +1025,7 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
       }
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -1049,7 +1050,6 @@ Test('Handlers test', async handlersTest => {
           test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
         }
       }
-      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const totalTransferAmounts = {}
         for (const tdTest of td.transfersArray) {
