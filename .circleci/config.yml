@@ -354,7 +354,7 @@ jobs:
             ENDPOINT_URL: http://localhost:4545/notification
             UV_THREADPOOL_SIZE: 12
             WAIT_FOR_REBALANCE: 20
-            TEST_INT_RETRY_COUNT: 20
+            TEST_INT_RETRY_COUNT: 30
             TEST_INT_RETRY_DELAY: 2
             TEST_INT_REBALANCE_DELAY: 20000
       - store_artifacts:
