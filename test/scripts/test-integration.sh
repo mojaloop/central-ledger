@@ -52,6 +52,9 @@ echo "Stopping Service with Process ID=$PID"
 kill $(cat /tmp/int-test-service.pid)
 kill $(lsof -t -i:3001)
 
+## Give some time before restarting service for override tests
+sleep $WAIT_FOR_REBALANCE
+
 ## Restart service with topic name override
 echo "Starting Service in the background"
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE='topic-transfer-position-batch'
@@ -100,6 +103,6 @@ else
 fi
 
 ## Exit with the exit code from the test harness
-INT_TEST_EXIT_CODE=$((INTEGRATION_TEST_EXIT_CODE && OVERRIDE_INTEGRATION_TEST_EXIT_CODE))
+INT_TEST_EXIT_CODE=$((INTEGRATION_TEST_EXIT_CODE || OVERRIDE_INTEGRATION_TEST_EXIT_CODE))
 echo "==> Exiting functional tests with code: $INT_TEST_EXIT_CODE"
 exit $INT_TEST_EXIT_CODE

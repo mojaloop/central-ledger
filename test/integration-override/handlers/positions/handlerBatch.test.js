@@ -1014,6 +1014,8 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
+      testConsumer.clearEvents()
+
       // Produce fulfil messages for transfersArray
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
