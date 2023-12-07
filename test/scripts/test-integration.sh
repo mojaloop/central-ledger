@@ -43,8 +43,8 @@ echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_F
 
 ## Start integration tests
 echo "Running Integration Tests"
-INTEGRATION_TEST_EXIT_CODE="$?"
 npm run test:xint
+INTEGRATION_TEST_EXIT_CODE="$?"
 echo "==> integration tests exited with code: $INTEGRATION_TEST_EXIT_CODE"
 
 ## Kill service
@@ -80,8 +80,8 @@ echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_F
 
 ## Start integration tests
 echo "Running Override Integration Tests"
-OVERRIDE_INTEGRATION_TEST_EXIT_CODE="$?"
 npm run test:xint-override
+OVERRIDE_INTEGRATION_TEST_EXIT_CODE="$?"
 echo "==> override integration tests exited with code: $OVERRIDE_INTEGRATION_TEST_EXIT_CODE"
 
 ## Kill service
