@@ -28,8 +28,6 @@ const Test = require('tape')
 const { randomUUID } = require('crypto')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
-const Time = require('@mojaloop/central-services-shared').Util.Time
-const sleep = Time.sleep
 const Db = require('@mojaloop/database-lib').Db
 const Cache = require('#src/lib/cache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
@@ -69,7 +67,7 @@ const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
 const debug = process?.env?.TEST_INT_DEBUG || false
-const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
+// const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
 const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
 const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
 const retryOpts = {
