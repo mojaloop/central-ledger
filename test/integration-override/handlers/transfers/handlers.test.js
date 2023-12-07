@@ -362,6 +362,7 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
+      testConsumer.clearEvents()
       test.end()
     })
 
@@ -397,7 +398,7 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
-
+      testConsumer.clearEvents()
       await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
 
       try {
@@ -411,6 +412,7 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
+      testConsumer.clearEvents()
       test.end()
     })
 
