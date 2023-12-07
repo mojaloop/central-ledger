@@ -67,7 +67,7 @@ const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
 const debug = process?.env?.TEST_INT_DEBUG || false
-// const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
+const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
 const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
 const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
 const retryOpts = {
@@ -698,6 +698,9 @@ Test('Handlers test', async handlersTest => {
     await setupTests.test('start testConsumer', async (test) => {
       // Set up the testConsumer here
       await testConsumer.startListening()
+      await KafkaHelper.producers.connect()
+      sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
+
       test.pass('done')
       test.end()
     })
