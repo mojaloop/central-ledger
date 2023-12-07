@@ -700,9 +700,6 @@ Test('Handlers test', async handlersTest => {
     await setupTests.test('start testConsumer', async (test) => {
       // Set up the testConsumer here
       await testConsumer.startListening()
-      await testConsumer.clearEvents()
-      await KafkaHelper.producers.connect()
-      sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
 
       test.pass('done')
       test.end()
