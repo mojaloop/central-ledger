@@ -57,13 +57,19 @@ echo "Starting Service in the background"
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE='topic-transfer-position-batch'
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT='topic-transfer-position-batch'
 npm start > ./test/results/cl-service-override.log &
+## Store PID for cleanup
+echo $! > /tmp/int-test-service.pid
+env "CLEDG_HANDLERS__API__DISABLED=true" node src/handlers/index.js handler --positionbatch > ./test/results/cl-batch-handler.log &
+## Store PID for cleanup
+echo $! > /tmp/int-test-handler.pid
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT
 
-## Store PID for cleanup
-echo $! > /tmp/int-test-service.pid
-PID=$(cat /tmp/int-test-service.pid)
-echo "Service started with Process ID=$PID"
+PID1=$(cat /tmp/int-test-service.pid)
+echo "Service started with Process ID=$PID1"
+
+PID2=$(cat /tmp/int-test-handler.pid)
+echo "Service started with Process ID=$PID2"
 
 ## Check Service Health
 echo "Waiting for Service to be healthy"
@@ -79,9 +85,11 @@ npm run test:xint-override
 echo "==> override integration tests exited with code: $OVERRIDE_INTEGRATION_TEST_EXIT_CODE"
 
 ## Kill service
-echo "Stopping Service with Process ID=$PID"
+echo "Stopping Service with Process ID=$PID1"
 kill $(cat /tmp/int-test-service.pid)
 kill $(lsof -t -i:3001)
+echo "Stopping Service with Process ID=$PID2"
+kill $(cat /tmp/int-test-handler.pid)
 
 ## Shutdown the backend services
 if [ $INT_TEST_SKIP_SHUTDOWN == true ]; then
