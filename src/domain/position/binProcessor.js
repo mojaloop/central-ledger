@@ -53,7 +53,7 @@ const participantFacade = require('../../models/participant/facade')
  */
 const processBins = async (bins, trx) => {
   const transferIdList = []
-  iterateThroughBins(bins, (_accountID, _action, item) => {
+  await iterateThroughBins(bins, (_accountID, _action, item) => {
     if (item.decodedPayload?.transferId) {
       transferIdList.push(item.decodedPayload.transferId)
     // get transferId from uriParams for fulfil messages
