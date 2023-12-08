@@ -341,7 +341,7 @@ Test('BinProcessor', async (binProcessorTest) => {
 
     BatchPositionModel.updateParticipantPosition.returns(true)
 
-    BatchPositionModel.getTransferInfosToChangePosition.returns({
+    BatchPositionModel.getTransferInfoList.returns({
       '4830fa00-0c2a-4de1-9640-5ad4e68f5f62': {
         amount: -2
       },

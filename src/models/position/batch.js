@@ -104,7 +104,7 @@ const updateParticipantPosition = async (trx, participantPositionId, participant
     })
 }
 
-const getTransferInfosToChangePosition = async (trx, transferIds, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
+const getTransferInfoList = async (trx, transferIds, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
   try {
     const knex = await Db.getKnex()
     const transferInfos = await knex('transferParticipant')
@@ -153,5 +153,5 @@ module.exports = {
   bulkInsertTransferStateChanges,
   bulkInsertParticipantPositionChanges,
   getAllParticipantCurrency,
-  getTransferInfosToChangePosition
+  getTransferInfoList
 }

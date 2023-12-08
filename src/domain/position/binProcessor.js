@@ -124,7 +124,7 @@ const processBins = async (bins, trx) => {
     ...settlementCurrencyIds.map(pc => pc.participantCurrencyId)
   ])
 
-  const latestTransferInfoByTransferId = await BatchPositionModel.getTransferInfosToChangePosition(
+  const latestTransferInfoByTransferId = await BatchPositionModel.getTransferInfoList(
     trx,
     transferIdList,
     Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,

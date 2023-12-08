@@ -15,7 +15,7 @@ const Logger = require('@mojaloop/central-services-logger')
  * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
  * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
  * @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
- * @param {object} accumulatedTransferInfo - object with transfer id keys and transfer info values. Used to pass transfer info to domain function.
+ * @param {object} transferInfoList - object with transfer id keys and transfer info values. Used to pass transfer info to domain function.
  * @returns {object} - Returns an object containing accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, accumulatedTransferStates, resultMessages, limitAlarms or throws an error if failed
  */
 const processPositionFulfilBin = async (
@@ -23,7 +23,7 @@ const processPositionFulfilBin = async (
   accumulatedPositionValue,
   accumulatedPositionReservedValue,
   accumulatedTransferStates,
-  accumulatedTransferInfo
+  transferInfoList
 ) => {
   const transferStateChanges = []
   const participantPositionChanges = []
@@ -78,7 +78,7 @@ const processPositionFulfilBin = async (
           'application/json'
         )
       } else {
-        const transferInfo = accumulatedTransferInfo[transferId]
+        const transferInfo = transferInfoList[transferId]
 
         // forward same headers from the prepare message, except the content-length header
         const headers = { ...binItem.message.value.content.headers }

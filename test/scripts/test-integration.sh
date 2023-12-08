@@ -104,5 +104,5 @@ fi
 
 ## Exit with the exit code from the test harness
 INT_TEST_EXIT_CODE=$((INTEGRATION_TEST_EXIT_CODE || OVERRIDE_INTEGRATION_TEST_EXIT_CODE))
-echo "==> Exiting functional tests with code: $INT_TEST_EXIT_CODE"
+echo "==> Exiting integration tests with code: $INT_TEST_EXIT_CODE"
 exit $INT_TEST_EXIT_CODE

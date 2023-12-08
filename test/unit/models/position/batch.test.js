@@ -359,7 +359,7 @@ Test('Batch model', async (positionBatchTest) => {
     }
   })
 
-  await positionBatchTest.test('getTransferInfosToChangePosition ', async (test) => {
+  await positionBatchTest.test('getTransferInfoList ', async (test) => {
     try {
       sandbox.stub(Db, 'getKnex')
 
@@ -383,18 +383,18 @@ Test('Batch model', async (positionBatchTest) => {
         })
       })
 
-      await Model.getTransferInfosToChangePosition(trxStub, [1, 2], 3, 4)
+      await Model.getTransferInfoList(trxStub, [1, 2], 3, 4)
       test.pass('completed successfully')
       test.ok(knexStub.withArgs('transferParticipant').calledOnce, 'knex called with transferParticipant once')
       test.end()
     } catch (err) {
-      Logger.error(`getTransferInfosToChangePosition failed with error - ${err}`)
+      Logger.error(`getTransferInfoList failed with error - ${err}`)
       test.fail()
       test.end()
     }
   })
 
-  await positionBatchTest.test('getTransferInfosToChangePosition should re throw db error', async (test) => {
+  await positionBatchTest.test('getTransferInfoList should re throw db error', async (test) => {
     try {
       sandbox.stub(Db, 'getKnex')
 
@@ -418,14 +418,14 @@ Test('Batch model', async (positionBatchTest) => {
         })
       })
       try {
-        await Model.getTransferInfosToChangePosition(trxStub, [1, 2], 3, 4)
+        await Model.getTransferInfoList(trxStub, [1, 2], 3, 4)
         test.fail('should throw error')
       } catch (err) {
         test.pass('completed successfully')
       }
       test.end()
     } catch (err) {
-      Logger.error(`getTransferInfosToChangePosition failed with error - ${err}`)
+      Logger.error(`getTransferInfoList failed with error - ${err}`)
       test.fail()
       test.end()
     }
