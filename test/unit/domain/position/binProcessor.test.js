@@ -38,6 +38,7 @@ const BatchPositionModelCached = require('../../../../src/models/position/batchC
 const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const participantFacade = require('../../../../src/models/participant/facade')
 const sampleBins = require('./sampleBins')
+const erroneousBins = require('./erroneousBins')
 
 const trx = {}
 
@@ -689,6 +690,35 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       // TODO: Assert on DB bulk insert of transferStateChanges in each function call
       // TODO: Assert on DB bulk insert of positionChanges in each function call
+
+      test.end()
+    })
+
+    prepareActionTest.test('processBins should handle non supported bins', async (test) => {
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(erroneousBins))
+      const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
+
+      // Assert on result.notifyMessages
+      test.equal(result.notifyMessages.length, 4, 'processBins should return 4 messages')
+      // Assert on DB update for position values of all accounts in each function call
+      test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
+        [{}, 7, 8, 0]
+      ], 'updateParticipantPosition should be called with the expected arguments')
 
       test.end()
     })

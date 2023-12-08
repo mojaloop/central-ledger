@@ -115,7 +115,7 @@ const getTransferInfoList = async (trx, transferIds, transferParticipantRoleType
       })
       .whereIn('transferParticipant.transferId', transferIds)
       .select(
-        'transferParticipant.*',
+        'transferParticipant.*'
       )
     const info = {}
     // This should key the transfer info with the latest transferStateChangeId

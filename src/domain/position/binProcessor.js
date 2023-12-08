@@ -139,7 +139,7 @@ const processBins = async (bins, trx) => {
     const accountBin = bins[accountID]
     const actions = Object.keys(accountBin)
     const isSubset = (array1, array2) =>
-      array2.every((element) => array1.includes(element));
+      array2.every((element) => array1.includes(element))
     // If non-prepare/non-commit action found, log error
     // We need to remove this once we implement all the actions
     if (!isSubset(['prepare', 'commit'], actions)) {
