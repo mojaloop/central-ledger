@@ -371,13 +371,9 @@ Test('Batch model', async (positionBatchTest) => {
 
       knexStub.returns({
         transacting: sandbox.stub().returns({
-          innerJoin: sandbox.stub().returns({
-            where: sandbox.stub().returns({
-              whereIn: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  orderBy: sandbox.stub().returns([{ transferId: 1 }, { transferId: 2 }, { transferId: 2 }])
-                })
-              })
+          where: sandbox.stub().returns({
+            whereIn: sandbox.stub().returns({
+              select: sandbox.stub().returns([{ transferId: 1 }, { transferId: 2 }, { transferId: 2 }])
             })
           })
         })

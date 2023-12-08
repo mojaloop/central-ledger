@@ -109,7 +109,6 @@ const getTransferInfoList = async (trx, transferIds, transferParticipantRoleType
     const knex = await Db.getKnex()
     const transferInfos = await knex('transferParticipant')
       .transacting(trx)
-      .innerJoin('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId')
       .where({
         'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
         'transferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
@@ -117,10 +116,7 @@ const getTransferInfoList = async (trx, transferIds, transferParticipantRoleType
       .whereIn('transferParticipant.transferId', transferIds)
       .select(
         'transferParticipant.*',
-        'tsc.transferStateId',
-        'tsc.reason'
       )
-      .orderBy('tsc.transferStateChangeId', 'desc')
     const info = {}
     // This should key the transfer info with the latest transferStateChangeId
     for (const transferInfo of transferInfos) {

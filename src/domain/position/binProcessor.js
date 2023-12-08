@@ -137,7 +137,15 @@ const processBins = async (bins, trx) => {
   // For each account-bin in the list
   for (const accountID in bins) {
     const accountBin = bins[accountID]
-    // const actions = Object.keys(accountBin)
+    const actions = Object.keys(accountBin)
+    const isSubset = (array1, array2) =>
+      array2.every((element) => array1.includes(element));
+    // If non-prepare/non-commit action found, log error
+    // We need to remove this once we implement all the actions
+    if (!isSubset(['prepare', 'commit'], actions)) {
+      Logger.isErrorEnabled && Logger.error('Only prepare/commit actions are allowed in a batch')
+      // throw new Error('Only prepare action is allowed in a batch')
+    }
 
     const settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
     const settlementModel = currencyIdMap[accountIdMap[accountID].currencyId].settlementModel
@@ -174,6 +182,14 @@ const processBins = async (bins, trx) => {
     accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(fulfilActionResult.accumulatedTransferStateChanges)
     accumulatedPositionChanges = accumulatedPositionChanges.concat(fulfilActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(fulfilActionResult.notifyMessages)
+
+    // Bulk get the transferStateChangeIds for transferids using select whereIn
+    const fetchedTransferStateChangesAfterFulfil = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, accumulatedTransferStateChanges.map(item => item.transferId))
+    // Mutate accumulated positionChanges with transferStateChangeIds
+    for (const positionChange of accumulatedPositionChanges) {
+      positionChange.transferStateChangeId = fetchedTransferStateChangesAfterFulfil[positionChange.transferId].transferStateChangeId
+      positionChange.participantPositionId = positions[accountID].participantPositionId
+    }
 
     // If prepare action found then call processPositionPrepareBin function
     const prepareActionResult = await PositionPrepareDomain.processPositionPrepareBin(
