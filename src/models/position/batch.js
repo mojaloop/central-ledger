@@ -153,7 +153,7 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
         .leftJoin('transferError as te', 'te.transferId', 'transfer.transferId') // currently transferError.transferId is PK ensuring one error per transferId
-        .whereIn('id', transferIds)
+        .whereIn('transfer.transferId', transferIds)
         .select(
           'transfer.*',
           'tsc.createdDate AS completedTimestamp',
@@ -173,7 +173,7 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
           })
         }
         transfer.isTransferReadModel = true
-        transfers[transfer.id] = transfer
+        transfers[transfer.transferId] = transfer
       }
       return transfers
     } catch (err) {

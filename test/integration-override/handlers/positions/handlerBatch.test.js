@@ -557,6 +557,15 @@ const prepareTestData = async (dataObj) => {
         }
       }
 
+      const fulfilPayloadReserved = {
+        fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
+        completedTimestamp: dataObj.now,
+        transferState: 'RESERVED',
+        extensionList: {
+          extension: []
+        }
+      }
+
       const rejectPayload = Object.assign({}, fulfilPayload, { transferState: TransferInternalState.ABORTED_REJECTED })
 
       const errorPayload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN).toApiErrorObject()
@@ -596,6 +605,17 @@ const prepareTestData = async (dataObj) => {
       messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
       messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
 
+      const messageProtocolFulfilReserved = Util.clone(messageProtocolPrepare)
+      messageProtocolFulfilReserved.id = randomUUID()
+      messageProtocolFulfilReserved.from = transferPayload.payeeFsp
+      messageProtocolFulfilReserved.to = transferPayload.payerFsp
+      messageProtocolFulfilReserved.content.headers = fulfilAbortRejectHeaders
+      messageProtocolFulfilReserved.content.uriParams = { id: transferPayload.transferId }
+      messageProtocolFulfilReserved.content.payload = fulfilPayloadReserved
+      messageProtocolFulfilReserved.metadata.event.id = randomUUID()
+      messageProtocolFulfilReserved.metadata.event.type = TransferEventType.FULFIL
+      messageProtocolFulfilReserved.metadata.event.action = TransferEventAction.RESERVE
+
       const messageProtocolReject = Util.clone(messageProtocolFulfil)
       messageProtocolReject.id = randomUUID()
       messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
@@ -616,6 +636,7 @@ const prepareTestData = async (dataObj) => {
         messageProtocolFulfil,
         messageProtocolReject,
         messageProtocolError,
+        messageProtocolFulfilReserved,
         payer,
         payee
       })
@@ -1080,6 +1101,122 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
+    await transferPositionPrepare.test('process batch of prepare/reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testData)
+
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'prepare'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+        // filter positionPrepare messages where destination is not Hub
+        const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionPrepareFiltered.length, 10, 'Notification Messages received for all 10 transfers')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      const tests = async (totalTransferAmounts) => {
+        for (const value of Object.values(totalTransferAmounts)) {
+          const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(value.payer.participantCurrencyId) || {}
+          const payerInitialPosition = value.payer.payerLimitAndInitialPosition.participantPosition.value
+          const payerExpectedPosition = payerInitialPosition + value.totalTransferAmount
+          const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+          test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+          test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        }
+      }
+
+      try {
+        const totalTransferAmounts = {}
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(
+              ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+            )
+          }
+          totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
+            payer: tdTest.payer,
+            totalTransferAmount: (
+              (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
+                totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+            ) + tdTest.transferPayload.amount.amount
+          }
+        }
+        await tests(totalTransferAmounts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+
+      // Produce fulfil messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolFulfilReserved, td.topicConfTransferFulfil, fulfilConfig)
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'reserve'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+        // filter positionFulfil messages where destination is not Hub
+        const positionFulfilFiltered = positionFulfil.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionFulfilFiltered.length, 10, 'Notification Messages received for all 10 transfers')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      const testsFulfil = async (totalTransferAmounts) => {
+        for (const value of Object.values(totalTransferAmounts)) {
+          const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(value.payee.participantCurrencyId) || {}
+          const payeeInitialPosition = value.payee.payeeLimitAndInitialPosition.participantPosition.value
+          const payeeExpectedPosition = payeeInitialPosition + value.totalTransferAmount
+          const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
+          test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position incremented by transfer amount and updated in participantPosition')
+          test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+        }
+      }
+      try {
+        const totalTransferAmounts = {}
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferState.COMMITTED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(
+              ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+            )
+          }
+          totalTransferAmounts[tdTest.payee.participantCurrencyId] = {
+            payee: tdTest.payee,
+            totalTransferAmount: (
+              (totalTransferAmounts[tdTest.payee.participantCurrencyId] &&
+                totalTransferAmounts[tdTest.payee.participantCurrencyId].totalTransferAmount) || 0
+            ) - tdTest.transferPayload.amount.amount
+          }
+        }
+        await testsFulfil(totalTransferAmounts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
     transferPositionPrepare.end()
   })
 
