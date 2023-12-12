@@ -164,7 +164,7 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
         )
       const transfers = {}
       for (const transfer of query) {
-        transfer.extensionList = await TransferExtensionModel.getByTransferId(transfer.transferId) // TODO: check if this is needed
+        transfer.extensionList = await TransferExtensionModel.getByTransferId(transfer.transferId)
         if (transfer.errorCode && transfer.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
           if (!transfer.extensionList) transfer.extensionList = []
           transfer.extensionList.push({
