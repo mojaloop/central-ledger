@@ -510,6 +510,164 @@ module.exports = {
         },
         span: {}
       }
+    ],
+    reserve: [
+      {
+        message: {
+          value: {
+            from: 'perffsp2',
+            to: 'perffsp1',
+            id: '0a4834e7-7e4c-47e8-8dcb-f3f68031d377',
+            content: {
+              uriParams: {
+                id: '0a4834e7-7e4c-47e8-8dcb-f3f68031d377'
+              },
+              headers: {
+                accept: 'application/vnd.interoperability.transfers+json;version=1.1',
+                'content-type': 'application/vnd.interoperability.transfers+json;version=1.1',
+                date: '2023-08-21T10:22:27.000Z',
+                'fspiop-source': 'perffsp2',
+                'fspiop-destination': 'perffsp1',
+                traceparent: '00-1fcd3843697316bd4dea096eb8b0f20d-242262bdec0c9c76-01',
+                tracestate: 'acmevendor=eyJzcGFuSWQiOiIyNDIyNjJiZGVjMGM5Yzc2IiwidGltZUFwaVByZXBhcmUiOiIxNjkyMjg1OTEyMDI3In0=,tx_end2end_start_ts=1692285912027,tx_callback_start_ts=1692613347073',
+                'user-agent': 'axios/1.4.0',
+                'content-length': '136',
+                'accept-encoding': 'gzip, compress, deflate, br',
+                host: 'ml-api-adapter:3000',
+                connection: 'keep-alive'
+              },
+              payload: 'data:application/vnd.interoperability.transfers+json;version=1.1;base64,eyJ0cmFuc2ZlclN0YXRlIjoiQ09NTUlUVEVEIiwiZnVsZmlsbWVudCI6ImxuWWU0cll3THRoV2J6aFZ5WDVjQXVEZkwxVWx3NFdkYVRneUdEUkV5c3ciLCJjb21wbGV0ZWRUaW1lc3RhbXAiOiIyMDIzLTA4LTIxVDEwOjIyOjI3LjA3M1oifQ=='
+            },
+            type: 'application/json',
+            metadata: {
+              correlationId: '0a4834e7-7e4c-47e8-8dcb-f3f68031d377',
+              event: {
+                type: 'position',
+                action: 'reserve',
+                createdAt: '2023-08-21T10:22:27.074Z',
+                state: {
+                  status: 'success',
+                  code: 0,
+                  description: 'action successful'
+                },
+                id: 'c16155a3-1807-470d-9386-ce46603ed875'
+              },
+              trace: {
+                service: 'cl_transfer_fulfil',
+                traceId: '1fcd3843697316bd4dea096eb8b0f20d',
+                spanId: '5690c3dbd5bb1ee5',
+                sampled: 1,
+                flags: '01',
+                parentSpanId: '66055f3f76497fc9',
+                startTimestamp: '2023-08-21T10:23:45.332Z',
+                tags: {
+                  tracestate: 'acmevendor=eyJzcGFuSWQiOiI1NjkwYzNkYmQ1YmIxZWU1IiwidGltZUFwaVByZXBhcmUiOiIxNjkyMjg1OTEyMDI3IiwidGltZUFwaUZ1bGZpbCI6IjE2OTI2MTMzNDcwNzQifQ==,tx_end2end_start_ts=1692285912027,tx_callback_start_ts=1692613347073',
+                  transactionType: 'transfer',
+                  transactionAction: 'fulfil',
+                  transactionId: '0a4834e7-7e4c-47e8-8dcb-f3f68031d377',
+                  source: 'perffsp2',
+                  destination: 'perffsp1'
+                },
+                tracestates: {
+                  acmevendor: {
+                    spanId: '5690c3dbd5bb1ee5',
+                    timeApiPrepare: '1692285912027',
+                    timeApiFulfil: '1692613347074'
+                  },
+                  tx_end2end_start_ts: '1692285912027',
+                  tx_callback_start_ts: '1692613347073'
+                }
+              },
+              'protocol.createdAt': 1692613425335
+            }
+          },
+          size: 3489,
+          key: 51,
+          topic: 'topic-transfer-position',
+          offset: 4073,
+          partition: 0,
+          timestamp: 1694175690401
+        },
+        span: {}
+      },
+      {
+        message: {
+          value: {
+            from: 'perffsp2',
+            to: 'perffsp1',
+            id: '35cb4a90-5f54-48fb-9778-202fdb51da94',
+            content: {
+              uriParams: {
+                id: '35cb4a90-5f54-48fb-9778-202fdb51da94'
+              },
+              headers: {
+                accept: 'application/vnd.interoperability.transfers+json;version=1.1',
+                'content-type': 'application/vnd.interoperability.transfers+json;version=1.1',
+                date: '2023-08-21T10:22:27.000Z',
+                'fspiop-source': 'perffsp2',
+                'fspiop-destination': 'perffsp1',
+                traceparent: '00-1fcd3843697316bd4dea096eb8b0f20d-242262bdec0c9c76-01',
+                tracestate: 'acmevendor=eyJzcGFuSWQiOiIyNDIyNjJiZGVjMGM5Yzc2IiwidGltZUFwaVByZXBhcmUiOiIxNjkyMjg1OTEyMDI3In0=,tx_end2end_start_ts=1692285912027,tx_callback_start_ts=1692613347073',
+                'user-agent': 'axios/1.4.0',
+                'content-length': '136',
+                'accept-encoding': 'gzip, compress, deflate, br',
+                host: 'ml-api-adapter:3000',
+                connection: 'keep-alive'
+              },
+              payload: 'data:application/vnd.interoperability.transfers+json;version=1.1;base64,eyJ0cmFuc2ZlclN0YXRlIjoiQ09NTUlUVEVEIiwiZnVsZmlsbWVudCI6ImxuWWU0cll3THRoV2J6aFZ5WDVjQXVEZkwxVWx3NFdkYVRneUdEUkV5c3ciLCJjb21wbGV0ZWRUaW1lc3RhbXAiOiIyMDIzLTA4LTIxVDEwOjIyOjI3LjA3M1oifQ=='
+            },
+            type: 'application/json',
+            metadata: {
+              correlationId: '35cb4a90-5f54-48fb-9778-202fdb51da94',
+              event: {
+                type: 'position',
+                action: 'reserve',
+                createdAt: '2023-08-21T10:22:27.074Z',
+                state: {
+                  status: 'success',
+                  code: 0,
+                  description: 'action successful'
+                },
+                id: 'c16155a3-1807-470d-9386-ce46603ed875'
+              },
+              trace: {
+                service: 'cl_transfer_fulfil',
+                traceId: '1fcd3843697316bd4dea096eb8b0f20d',
+                spanId: '5690c3dbd5bb1ee5',
+                sampled: 1,
+                flags: '01',
+                parentSpanId: '66055f3f76497fc9',
+                startTimestamp: '2023-08-21T10:23:45.332Z',
+                tags: {
+                  tracestate: 'acmevendor=eyJzcGFuSWQiOiI1NjkwYzNkYmQ1YmIxZWU1IiwidGltZUFwaVByZXBhcmUiOiIxNjkyMjg1OTEyMDI3IiwidGltZUFwaUZ1bGZpbCI6IjE2OTI2MTMzNDcwNzQifQ==,tx_end2end_start_ts=1692285912027,tx_callback_start_ts=1692613347073',
+                  transactionType: 'transfer',
+                  transactionAction: 'fulfil',
+                  transactionId: '35cb4a90-5f54-48fb-9778-202fdb51da94',
+                  source: 'perffsp2',
+                  destination: 'perffsp1'
+                },
+                tracestates: {
+                  acmevendor: {
+                    spanId: '5690c3dbd5bb1ee5',
+                    timeApiPrepare: '1692285912027',
+                    timeApiFulfil: '1692613347074'
+                  },
+                  tx_end2end_start_ts: '1692285912027',
+                  tx_callback_start_ts: '1692613347073'
+                }
+              },
+              'protocol.createdAt': 1692613425335
+            }
+          },
+          size: 3489,
+          key: 51,
+          topic: 'topic-transfer-position',
+          offset: 4073,
+          partition: 0,
+          timestamp: 1694175690401
+        },
+        span: {}
+      }
     ]
   },
   15: {
@@ -833,6 +991,86 @@ module.exports = {
                   transactionType: 'transfer',
                   transactionAction: 'fulfil',
                   transactionId: 'f33add51-38b1-4715-9876-83d8a08c485d',
+                  source: 'perffsp1',
+                  destination: 'perffsp2'
+                },
+                tracestates: {
+                  acmevendor: {
+                    spanId: '29dcf2b250cd22d1',
+                    timeApiPrepare: '1692285908178',
+                    timeApiFulfil: '1692613331481'
+                  },
+                  tx_end2end_start_ts: '1692285908177',
+                  tx_callback_start_ts: '1692613331481'
+                }
+              },
+              'protocol.createdAt': 1692613411360
+            }
+          },
+          size: 2215,
+          key: 52,
+          topic: 'topic-transfer-position',
+          offset: 4077,
+          partition: 0,
+          timestamp: 1694175690401
+        },
+        span: {}
+      }
+    ],
+    reserve: [
+      {
+        message: {
+          value: {
+            from: 'perffsp1',
+            to: 'perffsp2',
+            id: 'fe332218-07d6-4f00-8399-76671594697a',
+            content: {
+              uriParams: {
+                id: 'fe332218-07d6-4f00-8399-76671594697a'
+              },
+              headers: {
+                accept: 'application/vnd.interoperability.transfers+json;version=1.1',
+                'content-type': 'application/vnd.interoperability.transfers+json;version=1.1',
+                date: '2023-08-21T10:22:11.000Z',
+                'fspiop-source': 'perffsp1',
+                'fspiop-destination': 'perffsp2',
+                traceparent: '00-278414be0ce56adab6c6461b1196f7ec-c2639bb302a327f2-01',
+                tracestate: 'acmevendor=eyJzcGFuSWQiOiJjMjYzOWJiMzAyYTMyN2YyIiwidGltZUFwaVByZXBhcmUiOiIxNjkyMjg1OTA4MTc4In0=,tx_end2end_start_ts=1692285908177,tx_callback_start_ts=1692613331481',
+                'user-agent': 'axios/1.4.0',
+                'content-length': '136',
+                'accept-encoding': 'gzip, compress, deflate, br',
+                host: 'ml-api-adapter:3000',
+                connection: 'keep-alive'
+              },
+              payload: 'data:application/vnd.interoperability.transfers+json;version=1.1;base64,eyJ0cmFuc2ZlclN0YXRlIjoiQ09NTUlUVEVEIiwiZnVsZmlsbWVudCI6ImxuWWU0cll3THRoV2J6aFZ5WDVjQXVEZkwxVWx3NFdkYVRneUdEUkV5c3ciLCJjb21wbGV0ZWRUaW1lc3RhbXAiOiIyMDIzLTA4LTIxVDEwOjIyOjExLjQ4MVoifQ=='
+            },
+            type: 'application/json',
+            metadata: {
+              correlationId: 'fe332218-07d6-4f00-8399-76671594697a',
+              event: {
+                type: 'position',
+                action: 'reserve',
+                createdAt: '2023-08-21T10:22:11.481Z',
+                state: {
+                  status: 'success',
+                  code: 0,
+                  description: 'action successful'
+                },
+                id: 'ffa2969c-8b90-4fa7-97b3-6013b5937553'
+              },
+              trace: {
+                service: 'cl_transfer_fulfil',
+                traceId: '278414be0ce56adab6c6461b1196f7ec',
+                spanId: '29dcf2b250cd22d1',
+                sampled: 1,
+                flags: '01',
+                parentSpanId: 'e038bfd263a0b4c0',
+                startTimestamp: '2023-08-21T10:23:31.357Z',
+                tags: {
+                  tracestate: 'acmevendor=eyJzcGFuSWQiOiIyOWRjZjJiMjUwY2QyMmQxIiwidGltZUFwaVByZXBhcmUiOiIxNjkyMjg1OTA4MTc4IiwidGltZUFwaUZ1bGZpbCI6IjE2OTI2MTMzMzE0ODEifQ==,tx_end2end_start_ts=1692285908177,tx_callback_start_ts=1692613331481',
+                  transactionType: 'transfer',
+                  transactionAction: 'fulfil',
+                  transactionId: 'fe332218-07d6-4f00-8399-76671594697a',
                   source: 'perffsp1',
                   destination: 'perffsp2'
                 },

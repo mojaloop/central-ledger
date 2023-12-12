@@ -32,6 +32,8 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
+const TransferExtensionModel = require('../transfer/transferExtension')
+const { Enum } = require('@mojaloop/central-services-shared')
 
 const startDbTransaction = async () => {
   const knex = await Db.getKnex()
@@ -141,6 +143,47 @@ const bulkInsertParticipantPositionChanges = async (trx, participantPositionChan
   return await knex.batchInsert('participantPositionChange', participantPositionChangeList).transacting(trx)
 }
 
+const getTransferByIdsForReserve = async (trx, transferIds) => {
+  if (transferIds && transferIds.length > 0) {
+    try {
+      const knex = await Db.getKnex()
+      const query = await knex('transfer')
+        .transacting(trx)
+        .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
+        .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
+        .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
+        .leftJoin('transferError as te', 'te.transferId', 'transfer.transferId') // currently transferError.transferId is PK ensuring one error per transferId
+        .whereIn('id', transferIds)
+        .select(
+          'transfer.*',
+          'tsc.createdDate AS completedTimestamp',
+          'ts.enumeration as transferStateEnumeration',
+          'tf.ilpFulfilment AS fulfilment',
+          'te.errorCode',
+          'te.errorDescription'
+        )
+      const transfers = {}
+      for (const transfer of query) {
+        transfer.extensionList = await TransferExtensionModel.getByTransferId(transfer.transferId) // TODO: check if this is needed
+        if (transfer.errorCode && transfer.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+          if (!transfer.extensionList) transfer.extensionList = []
+          transfer.extensionList.push({
+            key: 'cause',
+            value: `${transfer.errorCode}: ${transfer.errorDescription}`.substr(0, 128)
+          })
+        }
+        transfer.isTransferReadModel = true
+        transfers[transfer.id] = transfer
+      }
+      return transfers
+    } catch (err) {
+      Logger.isErrorEnabled && Logger.error(err)
+      throw err
+    }
+  }
+  return {}
+}
+
 module.exports = {
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
@@ -149,5 +192,6 @@ module.exports = {
   bulkInsertTransferStateChanges,
   bulkInsertParticipantPositionChanges,
   getAllParticipantCurrency,
-  getTransferInfoList
+  getTransferInfoList,
+  getTransferByIdsForReserve
 }
