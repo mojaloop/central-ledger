@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.5.0](https://github.com/mojaloop/central-ledger/compare/v17.4.1...v17.5.0) (2023-12-13)
+
+
+### Features
+
+* **mojaloop/#3524:** add position fulfil to binprocessor ([#990](https://github.com/mojaloop/central-ledger/issues/990)) ([dddedf6](https://github.com/mojaloop/central-ledger/commit/dddedf6adc03b441dcdc177f51d3850b79cfb144)), closes [mojaloop/#3524](https://github.com/mojaloop/project/issues/3524)
+
 ### [17.4.1](https://github.com/mojaloop/central-ledger/compare/v17.4.0...v17.4.1) (2023-12-05)
 
 
