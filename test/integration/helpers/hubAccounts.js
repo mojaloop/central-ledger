@@ -56,6 +56,14 @@ exports.prepareData = async () => {
     if (!hubMlnsAccountExistsZAR) {
       await ParticipantService.createHubAccount(Config.HUB_ID, 'ZAR', Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
     }
+    const hubReconciliationAccountExistsXXX = await ParticipantService.hubAccountExists('XXX', Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION)
+    if (!hubReconciliationAccountExistsXXX) {
+      await ParticipantService.createHubAccount(Config.HUB_ID, 'XXX', Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION)
+    }
+    const hubMlnsAccountExistsXXX = await ParticipantService.hubAccountExists('XXX', Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
+    if (!hubMlnsAccountExistsXXX) {
+      await ParticipantService.createHubAccount(Config.HUB_ID, 'XXX', Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

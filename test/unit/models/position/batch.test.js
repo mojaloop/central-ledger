@@ -39,6 +39,7 @@ Test('Batch model', async (positionBatchTest) => {
     Db.participantPosition = {}
     Db.transferStateChange = {}
     Db.participantPositionChange = {}
+    Db.transferParticipant = {}
 
     Db.from = (table) => {
       return Db[table]
@@ -353,6 +354,74 @@ Test('Batch model', async (positionBatchTest) => {
       test.end()
     } catch (err) {
       Logger.error(`bulkInsertParticipantPositionChanges failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await positionBatchTest.test('getTransferInfoList ', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        transacting: sandbox.stub().returns({
+          where: sandbox.stub().returns({
+            whereIn: sandbox.stub().returns({
+              select: sandbox.stub().returns([{ transferId: 1 }, { transferId: 2 }, { transferId: 2 }])
+            })
+          })
+        })
+      })
+
+      await Model.getTransferInfoList(trxStub, [1, 2], 3, 4)
+      test.pass('completed successfully')
+      test.ok(knexStub.withArgs('transferParticipant').calledOnce, 'knex called with transferParticipant once')
+      test.end()
+    } catch (err) {
+      Logger.error(`getTransferInfoList failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await positionBatchTest.test('getTransferInfoList should re throw db error', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        transacting: sandbox.stub().returns({
+          innerJoin: sandbox.stub().returns({
+            where: sandbox.stub().returns({
+              whereIn: sandbox.stub().returns({
+                select: sandbox.stub().returns({
+                  orderBy: sandbox.stub().returns(new Error())
+                })
+              })
+            })
+          })
+        })
+      })
+      try {
+        await Model.getTransferInfoList(trxStub, [1, 2], 3, 4)
+        test.fail('should throw error')
+      } catch (err) {
+        test.pass('completed successfully')
+      }
+      test.end()
+    } catch (err) {
+      Logger.error(`getTransferInfoList failed with error - ${err}`)
       test.fail()
       test.end()
     }

@@ -6,7 +6,7 @@
 url="http://localhost:3001/health"
 
 # Number of retries
-retries=10
+retries=30
 
 # Sleep between retries
 sleepwait=1

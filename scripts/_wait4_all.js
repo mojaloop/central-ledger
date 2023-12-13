@@ -21,7 +21,7 @@ const expectedContainers = [
 ]
 
 let retries = 40
-const waitTimeMs = 60000
+const waitTimeMs = 30000
 
 async function main () {
   const waitingMap = {}

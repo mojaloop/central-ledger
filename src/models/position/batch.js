@@ -104,6 +104,33 @@ const updateParticipantPosition = async (trx, participantPositionId, participant
     })
 }
 
+const getTransferInfoList = async (trx, transferIds, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
+  try {
+    const knex = await Db.getKnex()
+    const transferInfos = await knex('transferParticipant')
+      .transacting(trx)
+      .where({
+        'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
+        'transferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
+      })
+      .whereIn('transferParticipant.transferId', transferIds)
+      .select(
+        'transferParticipant.*'
+      )
+    const info = {}
+    // This should key the transfer info with the latest transferStateChangeId
+    for (const transferInfo of transferInfos) {
+      if (!(transferInfo.transferId in info)) {
+        info[transferInfo.transferId] = transferInfo
+      }
+    }
+    return info
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
 const bulkInsertTransferStateChanges = async (trx, transferStateChangeList) => {
   const knex = await Db.getKnex()
   return await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
@@ -121,5 +148,6 @@ module.exports = {
   updateParticipantPosition,
   bulkInsertTransferStateChanges,
   bulkInsertParticipantPositionChanges,
-  getAllParticipantCurrency
+  getAllParticipantCurrency,
+  getTransferInfoList
 }

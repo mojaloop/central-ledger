@@ -88,7 +88,10 @@
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
         "PREPARE": null,
-        "BULK_PREPARE": null
+        "BULK_PREPARE": null,
+        "COMMIT": null,
+        "BULK_COMMIT": null,
+        "RESERVE": null
       }
     },
     "TOPIC_TEMPLATES": {

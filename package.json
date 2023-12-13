@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "17.4.1",
+  "version": "17.5.0-snapshot.0",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -111,7 +111,7 @@
     "hapi-auth-bearer-token": "8.0.0",
     "hapi-swagger": "17.2.0",
     "ilp-packet": "2.2.0",
-    "knex": "3.0.1",
+    "knex": "3.1.0",
     "lodash": "4.17.21",
     "moment": "2.29.4",
     "mongo-uri-builder": "^4.0.0",

@@ -34,6 +34,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const BatchPositionModel = require('../../models/position/batch')
 const BatchPositionModelCached = require('../../models/position/batchCached')
 const PositionPrepareDomain = require('./prepare')
+const PositionFulfilDomain = require('./fulfil')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -52,9 +53,12 @@ const participantFacade = require('../../models/participant/facade')
  */
 const processBins = async (bins, trx) => {
   const transferIdList = []
-  iterateThroughBins(bins, (_accountID, _action, item) => {
+  await iterateThroughBins(bins, (_accountID, _action, item) => {
     if (item.decodedPayload?.transferId) {
       transferIdList.push(item.decodedPayload.transferId)
+    // get transferId from uriParams for fulfil messages
+    } else if (item.message?.value?.content?.uriParams?.id) {
+      transferIdList.push(item.message.value.content.uriParams.id)
     }
   })
   // Pre fetch latest transferStates for all the transferIds in the account-bin
@@ -120,6 +124,13 @@ const processBins = async (bins, trx) => {
     ...settlementCurrencyIds.map(pc => pc.participantCurrencyId)
   ])
 
+  const latestTransferInfoByTransferId = await BatchPositionModel.getTransferInfoList(
+    trx,
+    transferIdList,
+    Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+    Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
+  )
+
   let notifyMessages = []
   let limitAlarms = []
 
@@ -127,6 +138,14 @@ const processBins = async (bins, trx) => {
   for (const accountID in bins) {
     const accountBin = bins[accountID]
     const actions = Object.keys(accountBin)
+    const isSubset = (array1, array2) =>
+      array2.every((element) => array1.includes(element))
+    // If non-prepare/non-commit action found, log error
+    // We need to remove this once we implement all the actions
+    if (!isSubset(['prepare', 'commit'], actions)) {
+      Logger.isErrorEnabled && Logger.error('Only prepare/commit actions are allowed in a batch')
+      // throw new Error('Only prepare action is allowed in a batch')
+    }
 
     const settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
     const settlementModel = currencyIdMap[accountIdMap[accountID].currencyId].settlementModel
@@ -146,12 +165,24 @@ const processBins = async (bins, trx) => {
     let accumulatedTransferStateChanges = []
     let accumulatedPositionChanges = []
 
-    // If non-prepare action found, log error
-    // We need to remove this once we implement all the actions
-    if (actions.length > 1 || (actions.length === 1 && actions[0] !== 'prepare')) {
-      Logger.isErrorEnabled && Logger.error('Only prepare action is allowed in a batch')
-      // throw new Error('Only prepare action is allowed in a batch')
-    }
+    // If fulfil action found then call processPositionPrepareBin function
+    const fulfilActionResult = await PositionFulfilDomain.processPositionFulfilBin(
+      accountBin.commit,
+      accumulatedPositionValue,
+      accumulatedPositionReservedValue,
+      accumulatedTransferStates,
+      latestTransferInfoByTransferId
+    )
+
+    // Update accumulated values
+    accumulatedPositionValue = fulfilActionResult.accumulatedPositionValue
+    accumulatedPositionReservedValue = fulfilActionResult.accumulatedPositionReservedValue
+    accumulatedTransferStates = fulfilActionResult.accumulatedTransferStates
+    // Append accumulated arrays
+    accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(fulfilActionResult.accumulatedTransferStateChanges)
+    accumulatedPositionChanges = accumulatedPositionChanges.concat(fulfilActionResult.accumulatedPositionChanges)
+    notifyMessages = notifyMessages.concat(fulfilActionResult.notifyMessages)
+
     // If prepare action found then call processPositionPrepareBin function
     const prepareActionResult = await PositionPrepareDomain.processPositionPrepareBin(
       accountBin.prepare,

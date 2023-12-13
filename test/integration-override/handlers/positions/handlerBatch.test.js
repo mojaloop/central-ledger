@@ -698,6 +698,7 @@ Test('Handlers test', async handlersTest => {
     await setupTests.test('start testConsumer', async (test) => {
       // Set up the testConsumer here
       await testConsumer.startListening()
+
       test.pass('done')
       test.end()
     })
@@ -711,7 +712,13 @@ Test('Handlers test', async handlersTest => {
       Enum.Kafka.Config.PRODUCER,
       TransferEventType.TRANSFER.toUpperCase(),
       TransferEventType.PREPARE.toUpperCase())
+    const fulfilConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventType.FULFIL.toUpperCase())
     prepareConfig.logger = Logger
+    fulfilConfig.logger = Logger
 
     await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
@@ -721,11 +728,11 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 5000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
-          action: 'event'
+          action: 'prepare'
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
         // filter positionPrepare messages where destination is not Hub
@@ -752,7 +759,10 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(
+              ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+            )
           }
           totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
             payer: tdTest.payer,
@@ -779,11 +789,11 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 5000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
-          action: 'event',
+          action: 'prepare',
           errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.code
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
@@ -820,11 +830,11 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 5000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
-          action: 'event',
+          action: 'prepare',
           errorCodeFilter: ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
@@ -866,11 +876,11 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 5000))
       // Consume messages from notification topic
       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
         topicFilter: 'topic-notification-event',
-        action: 'event'
+        action: 'prepare'
       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
       // filter positionPrepare messages where destination is not Hub
@@ -918,11 +928,11 @@ Test('Handlers test', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-
+      await new Promise(resolve => setTimeout(resolve, 5000))
       // Consume messages from notification topic
       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
         topicFilter: 'topic-notification-event',
-        action: 'event'
+        action: 'prepare'
       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
       // filter positionPrepare messages where destination is not Hub
@@ -949,6 +959,123 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPositionPrepare.test('process batch of prepare/commit messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testData)
+
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'prepare'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+        // filter positionPrepare messages where destination is not Hub
+        const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionPrepareFiltered.length, 10, 'Notification Messages received for all 10 transfers')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      const tests = async (totalTransferAmounts) => {
+        for (const value of Object.values(totalTransferAmounts)) {
+          const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(value.payer.participantCurrencyId) || {}
+          const payerInitialPosition = value.payer.payerLimitAndInitialPosition.participantPosition.value
+          const payerExpectedPosition = payerInitialPosition + value.totalTransferAmount
+          const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+          test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+          test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        }
+      }
+
+      try {
+        const totalTransferAmounts = {}
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(
+              ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+            )
+          }
+          totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
+            payer: tdTest.payer,
+            totalTransferAmount: (
+              (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
+                totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+            ) + tdTest.transferPayload.amount.amount
+          }
+        }
+        await tests(totalTransferAmounts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+
+      // Produce fulfil messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'commit'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+        // filter positionFulfil messages where destination is not Hub
+        const positionFulfilFiltered = positionFulfil.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionFulfilFiltered.length, 10, 'Notification Messages received for all 10 transfers')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      const testsFulfil = async (totalTransferAmounts) => {
+        for (const value of Object.values(totalTransferAmounts)) {
+          const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(value.payee.participantCurrencyId) || {}
+          const payeeInitialPosition = value.payee.payeeLimitAndInitialPosition.participantPosition.value
+          const payeeExpectedPosition = payeeInitialPosition + value.totalTransferAmount
+          const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
+          test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position incremented by transfer amount and updated in participantPosition')
+          test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+        }
+      }
+      try {
+        const totalTransferAmounts = {}
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferState.COMMITTED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw ErrorHandler.Factory.createFSPIOPError(
+              ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+            )
+          }
+          totalTransferAmounts[tdTest.payee.participantCurrencyId] = {
+            payee: tdTest.payee,
+            totalTransferAmount: (
+              (totalTransferAmounts[tdTest.payee.participantCurrencyId] &&
+                totalTransferAmounts[tdTest.payee.participantCurrencyId].totalTransferAmount) || 0
+            ) - tdTest.transferPayload.amount.amount
+          }
+        }
+        await testsFulfil(totalTransferAmounts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
       testConsumer.clearEvents()
       test.end()
     })

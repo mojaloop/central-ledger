@@ -96,13 +96,14 @@ diverges from the defaults.
 You can configure the customized topic names in the config. Each position action key
 refers to position messages with associated actions.
 
-NOTE: Only POSITION.PREPARE is supported at this time, with additional event-type-actions being added later when required.
+NOTE: Only POSITION.PREPARE and POSITION.COMMIT is supported at this time, with additional event-type-actions being added later when required.
 
 ```
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
-        "PREPARE": "topic-transfer-position-batch"
+        "PREPARE": "topic-transfer-position-batch",
+        "COMMIT": "topic-transfer-position-batch"
       }
     }
   }
@@ -123,7 +124,10 @@ Batch processing can be enabled in the transfer execution flow. Follow the steps
       "EVENT_TYPE_ACTION_TOPIC_MAP" : {
         "POSITION":{
           "PREPARE": "topic-transfer-position-batch",
-          "BULK_PREPARE": "topic-transfer-position"
+          "BULK_PREPARE": "topic-transfer-position",
+          "COMMIT": "topic-transfer-position-batch",
+          "BULK_COMMIT": "topic-transfer-position",
+          "RESERVE": "topic-transfer-position",
         }
       }
     }
@@ -243,7 +247,10 @@ env "CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-
 ```
 - Additionally, run position batch handler in a new terminal
 ```
-env "CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch" "CLEDG_HANDLERS__API__DISABLED=true" node src/handlers/index.js handler --positionbatch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
+export CLEDG_HANDLERS__API__DISABLED=true
+node src/handlers/index.js handler --positionbatch
 ```
 - Run tests using `npx tape 'test/integration-override/**/handlerBatch.test.js'`
 

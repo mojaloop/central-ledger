@@ -38,6 +38,7 @@ const BatchPositionModelCached = require('../../../../src/models/position/batchC
 const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const participantFacade = require('../../../../src/models/participant/facade')
 const sampleBins = require('./sampleBins')
+const erroneousBins = require('./erroneousBins')
 
 const trx = {}
 
@@ -341,6 +342,18 @@ Test('BinProcessor', async (binProcessorTest) => {
 
     BatchPositionModel.updateParticipantPosition.returns(true)
 
+    BatchPositionModel.getTransferInfoList.returns({
+      '4830fa00-0c2a-4de1-9640-5ad4e68f5f62': {
+        amount: -2
+      },
+      '33d42717-1dc9-4224-8c9b-45aab4fe6457': {
+        amount: -2
+      },
+      'f33add51-38b1-4715-9876-83d8a08c485d': {
+        amount: -2
+      }
+    })
+
     test.end()
   })
 
@@ -371,6 +384,52 @@ Test('BinProcessor', async (binProcessorTest) => {
       const result = await BinProcessor.processBins(sampleBins, trx)
 
       // Assert on result.notifyMessages
+      test.equal(result.notifyMessages.length, 10, 'processBins should return the expected number of notify messages')
+
+      // Assert on result.limitAlarms
+      // test.equal(result.limitAlarms.length, 1, 'processBin should return the expected number of limit alarms')
+
+      // Assert on number of function calls for DB update on position value
+      test.ok(BatchPositionModel.updateParticipantPosition.calledTwice, 'updateParticipantPosition should be called twice')
+
+      // TODO: Assert on number of function calls for DB bulk insert of transferStateChanges
+      // TODO: Assert on number of function calls for DB bulk insert of positionChanges
+
+      // Assert on DB update for position values of all accounts in each function call
+      test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
+        [{}, 7, 4, 0],
+        [{}, 15, 4, 0]
+      ], 'updateParticipantPosition should be called with the expected arguments')
+
+      // TODO: Assert on DB bulk insert of transferStateChanges in each function call
+      // TODO: Assert on DB bulk insert of positionChanges in each function call
+
+      test.end()
+    })
+
+    prepareActionTest.test('processBins should handle prepare messages', async (test) => {
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins))
+      sampleBinsDeepCopy[7].commit = []
+      sampleBinsDeepCopy[15].commit = []
+      const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
+
+      // Assert on result.notifyMessages
       test.equal(result.notifyMessages.length, 7, 'processBins should return the expected number of notify messages')
 
       // Assert on result.limitAlarms
@@ -394,7 +453,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle no prepare messages', async (test) => {
+    prepareActionTest.test('processBins should handle fulfil messages', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -416,7 +475,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
 
       // Assert on result.notifyMessages
-      test.equal(result.notifyMessages.length, 0, 'processBins should return no messages')
+      test.equal(result.notifyMessages.length, 3, 'processBins should return 3 messages')
 
       // TODO: What if there are no position changes in a batch?
       // Assert on number of function calls for DB update on position value
@@ -427,8 +486,8 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       // Assert on DB update for position values of all accounts in each function call
       test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
-        [{}, 7, 0, 0],
-        [{}, 15, 0, 0]
+        [{}, 7, -4, 0],
+        [{}, 15, -2, 0]
       ], 'updateParticipantPosition should be called with the expected arguments')
 
       // TODO: Assert on DB bulk insert of transferStateChanges in each function call
@@ -569,7 +628,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       const result = await BinProcessor.processBins(sampleBins, trx)
 
       // Assert on result.notifyMessages
-      test.equal(result.notifyMessages.length, 7, 'processBins should return no messages')
+      test.equal(result.notifyMessages.length, 10, 'processBins should return 10 messages')
 
       // TODO: What if there are no position changes in a batch?
       // Assert on number of function calls for DB update on position value
@@ -580,8 +639,8 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       // Assert on DB update for position values of all accounts in each function call
       test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
-        [{}, 7, 8, 0],
-        [{}, 15, 6, 0]
+        [{}, 7, 4, 0],
+        [{}, 15, 4, 0]
       ], 'updateParticipantPosition should be called with the expected arguments')
 
       // TODO: Assert on DB bulk insert of transferStateChanges in each function call
@@ -590,7 +649,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle no prepare binItems', async (test) => {
+    prepareActionTest.test('processBins should handle no binItems', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -609,6 +668,8 @@ Test('BinProcessor', async (binProcessorTest) => {
       const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins))
       delete sampleBinsDeepCopy[7].prepare
       delete sampleBinsDeepCopy[15].prepare
+      delete sampleBinsDeepCopy[7].commit
+      delete sampleBinsDeepCopy[15].commit
       const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
 
       // Assert on result.notifyMessages
@@ -629,6 +690,35 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       // TODO: Assert on DB bulk insert of transferStateChanges in each function call
       // TODO: Assert on DB bulk insert of positionChanges in each function call
+
+      test.end()
+    })
+
+    prepareActionTest.test('processBins should handle non supported bins', async (test) => {
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(erroneousBins))
+      const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
+
+      // Assert on result.notifyMessages
+      test.equal(result.notifyMessages.length, 4, 'processBins should return 4 messages')
+      // Assert on DB update for position values of all accounts in each function call
+      test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
+        [{}, 7, 8, 0]
+      ], 'updateParticipantPosition should be called with the expected arguments')
 
       test.end()
     })
