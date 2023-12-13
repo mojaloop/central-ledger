@@ -194,14 +194,6 @@ const processBins = async (bins, trx) => {
     accumulatedPositionChanges = accumulatedPositionChanges.concat(fulfilActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(fulfilActionResult.notifyMessages)
 
-    // Bulk get the transferStateChangeIds for transferids using select whereIn
-    const fetchedTransferStateChangesAfterFulfil = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, accumulatedTransferStateChanges.map(item => item.transferId))
-    // Mutate accumulated positionChanges with transferStateChangeIds
-    for (const positionChange of accumulatedPositionChanges) {
-      positionChange.transferStateChangeId = fetchedTransferStateChangesAfterFulfil[positionChange.transferId].transferStateChangeId
-      positionChange.participantPositionId = positions[accountID].participantPositionId
-    }
-
     // If prepare action found then call processPositionPrepareBin function
     const prepareActionResult = await PositionPrepareDomain.processPositionPrepareBin(
       accountBin.prepare,
