@@ -12,7 +12,7 @@ const TransferObjectTransform = require('../../domain/transfer/transform')
  * @async
  * @description This is the domain function to process a bin of position-fulfil messages of a single participant account.
  *
- * @param {array} commitReservedBins - an array containing commit and reserve acction bins
+ * @param {array} commitReserveFulfilBins - an array containing commit and reserve action bins
  * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
  * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
  * @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
@@ -20,7 +20,7 @@ const TransferObjectTransform = require('../../domain/transfer/transform')
  * @returns {object} - Returns an object containing accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, accumulatedTransferStates, resultMessages, limitAlarms or throws an error if failed
  */
 const processPositionFulfilBin = async (
-  commitReservedBins,
+  commitReserveFulfilBins,
   accumulatedPositionValue,
   accumulatedPositionReservedValue,
   accumulatedTransferStates,
@@ -33,7 +33,7 @@ const processPositionFulfilBin = async (
   const accumulatedTransferStatesCopy = Object.assign({}, accumulatedTransferStates)
   let runningPosition = new MLNumber(accumulatedPositionValue)
 
-  for (const binItems of commitReservedBins) {
+  for (const binItems of commitReserveFulfilBins) {
     if (binItems && binItems.length > 0) {
       for (const binItem of binItems) {
         let transferStateId
