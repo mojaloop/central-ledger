@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.6.0](https://github.com/mojaloop/central-ledger/compare/v17.5.0...v17.6.0) (2023-12-20)
+
+
+### Features
+
+* **mojaloop/#3524:** add reserve action to fulfil logic ([#992](https://github.com/mojaloop/central-ledger/issues/992)) ([eb82c33](https://github.com/mojaloop/central-ledger/commit/eb82c33c0572214a73930d8357102928c59e016f)), closes [mojaloop/#3524](https://github.com/mojaloop/project/issues/3524)
+
 ## [17.5.0](https://github.com/mojaloop/central-ledger/compare/v17.4.1...v17.5.0) (2023-12-13)
 
 
