@@ -53,12 +53,16 @@ const participantFacade = require('../../models/participant/facade')
  */
 const processBins = async (bins, trx) => {
   const transferIdList = []
-  await iterateThroughBins(bins, (_accountID, _action, item) => {
+  const reservedActionTransferIdList = []
+  await iterateThroughBins(bins, (_accountID, action, item) => {
     if (item.decodedPayload?.transferId) {
       transferIdList.push(item.decodedPayload.transferId)
     // get transferId from uriParams for fulfil messages
     } else if (item.message?.value?.content?.uriParams?.id) {
       transferIdList.push(item.message.value.content.uriParams.id)
+      if (action === Enum.Events.Event.Action.RESERVE) {
+        reservedActionTransferIdList.push(item.message.value.content.uriParams.id)
+      }
     }
   })
   // Pre fetch latest transferStates for all the transferIds in the account-bin
@@ -131,6 +135,12 @@ const processBins = async (bins, trx) => {
     Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
   )
 
+  // Pre fetch transfers for all reserve action fulfils
+  const reservedActionTransfers = await BatchPositionModel.getTransferByIdsForReserve(
+    trx,
+    reservedActionTransferIdList
+  )
+
   let notifyMessages = []
   let limitAlarms = []
 
@@ -142,7 +152,7 @@ const processBins = async (bins, trx) => {
       array2.every((element) => array1.includes(element))
     // If non-prepare/non-commit action found, log error
     // We need to remove this once we implement all the actions
-    if (!isSubset(['prepare', 'commit'], actions)) {
+    if (!isSubset(['prepare', 'commit', 'reserve'], actions)) {
       Logger.isErrorEnabled && Logger.error('Only prepare/commit actions are allowed in a batch')
       // throw new Error('Only prepare action is allowed in a batch')
     }
@@ -167,11 +177,12 @@ const processBins = async (bins, trx) => {
 
     // If fulfil action found then call processPositionPrepareBin function
     const fulfilActionResult = await PositionFulfilDomain.processPositionFulfilBin(
-      accountBin.commit,
+      [accountBin.commit, accountBin.reserve],
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
-      latestTransferInfoByTransferId
+      latestTransferInfoByTransferId,
+      reservedActionTransfers
     )
 
     // Update accumulated values

@@ -29,6 +29,8 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Model = require('../../../../src/models/position/batch')
 const Logger = require('@mojaloop/central-services-logger')
+const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
+const { Enum } = require('@mojaloop/central-services-shared')
 
 Test('Batch model', async (positionBatchTest) => {
   let sandbox
@@ -415,6 +417,132 @@ Test('Batch model', async (positionBatchTest) => {
       })
       try {
         await Model.getTransferInfoList(trxStub, [1, 2], 3, 4)
+        test.fail('should throw error')
+      } catch (err) {
+        test.pass('completed successfully')
+      }
+      test.end()
+    } catch (err) {
+      Logger.error(`getTransferInfoList failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await positionBatchTest.test('getTransferByIdsForReserve ', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      sandbox.stub(transferExtensionModel, 'getByTransferId')
+      transferExtensionModel.getByTransferId.returns(
+        [{ key: 'key1', value: 'value1' }, { key: 'key2', value: 'value2' }]
+      )
+
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        transacting: sandbox.stub().returns({
+          leftJoin: sandbox.stub().returns({
+            leftJoin: sandbox.stub().returns({
+              leftJoin: sandbox.stub().returns({
+                leftJoin: sandbox.stub().returns({
+                  whereIn: sandbox.stub().returns({
+                    select: sandbox.stub().returns([{ transferId: 1 }, { transferId: 2 }, { transferId: 2 }])
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+
+      await Model.getTransferByIdsForReserve(trxStub, [1, 2])
+      test.pass('completed successfully')
+      test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transferParticipant once')
+      test.end()
+    } catch (err) {
+      Logger.error(`getTransferByIdsForReserve failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await positionBatchTest.test('getTransferByIdsForReserve handles aborted', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      sandbox.stub(transferExtensionModel, 'getByTransferId')
+      transferExtensionModel.getByTransferId.returns(
+        [{ key: 'key1', value: 'value1' }, { key: 'key2', value: 'value2' }]
+      )
+
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        transacting: sandbox.stub().returns({
+          leftJoin: sandbox.stub().returns({
+            leftJoin: sandbox.stub().returns({
+              leftJoin: sandbox.stub().returns({
+                leftJoin: sandbox.stub().returns({
+                  whereIn: sandbox.stub().returns({
+                    select: sandbox.stub().returns([{ transferId: 1, errorCode: 1000, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED }])
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+
+      await Model.getTransferByIdsForReserve(trxStub, [1, 2])
+      test.pass('completed successfully')
+      test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transferParticipant once')
+      test.end()
+    } catch (err) {
+      Logger.error(`getTransferByIdsForReserve failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await positionBatchTest.test('getTransferByIdsForReserve re-throws error', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      sandbox.stub(transferExtensionModel, 'getByTransferId')
+      transferExtensionModel.getByTransferId.returns(
+        [{ key: 'key1', value: 'value1' }, { key: 'key2', value: 'value2' }]
+      )
+
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        transacting: sandbox.stub().returns({
+          leftJoin: sandbox.stub().returns({
+            leftJoin: sandbox.stub().returns({
+              leftJoin: sandbox.stub().returns({
+                leftJoin: sandbox.stub().returns({
+                  whereIn: sandbox.stub().returns({
+                    select: sandbox.stub().returns(new Error())
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+
+      try {
+        await Model.getTransferByIdsForReserve(trxStub, [1, 2])
         test.fail('should throw error')
       } catch (err) {
         test.pass('completed successfully')

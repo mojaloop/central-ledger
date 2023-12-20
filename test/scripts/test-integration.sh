@@ -59,6 +59,7 @@ sleep $WAIT_FOR_REBALANCE
 echo "Starting Service in the background"
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE='topic-transfer-position-batch'
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT='topic-transfer-position-batch'
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE='topic-transfer-position-batch'
 npm start > ./test/results/cl-service-override.log &
 ## Store PID for cleanup
 echo $! > /tmp/int-test-service.pid
@@ -67,6 +68,7 @@ env "CLEDG_HANDLERS__API__DISABLED=true" node src/handlers/index.js handler --po
 echo $! > /tmp/int-test-handler.pid
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT
+unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE
 
 PID1=$(cat /tmp/int-test-service.pid)
 echo "Service started with Process ID=$PID1"
