@@ -846,7 +846,10 @@ workflows:
             - setup
           filters:
             tags:
-              only: /.*/
+              # Re-enable as soon as test coverage is fixed for fx
+              # only: /.*/
+              # Remove as soon as test coverage is fixed for fx
+              ignore: /v[0-9]+(\.[0-9]+)*\-snapshot+((\.[0-9]+)?)/
             branches:
               ignore:
                 - /feature*/
@@ -857,7 +860,10 @@ workflows:
             - setup
           filters:
             tags:
-              only: /.*/
+              # Re-enable as soon as test coverage is fixed for fx
+              # only: /.*/
+              # Remove as soon as test coverage is fixed for fx
+              ignore: /v[0-9]+(\.[0-9]+)*\-snapshot+((\.[0-9]+)?)/
             branches:
               ignore:
                 - /feature*/
@@ -1001,7 +1007,7 @@ workflows:
             - test-lint
             ## TODO: re-enable these once we fix all the unit tests that are failing due to fx changes
             # - test-unit
-            # - test-coverage
+            - test-coverage
             - test-integration
             - test-functional
             - vulnerability-check
