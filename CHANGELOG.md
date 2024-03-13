@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.6.0](https://github.com/mojaloop/central-ledger/compare/v17.5.0...v17.6.0) (2023-12-20)
+
+
+### Features
+
+* **mojaloop/#3524:** add reserve action to fulfil logic ([#992](https://github.com/mojaloop/central-ledger/issues/992)) ([eb82c33](https://github.com/mojaloop/central-ledger/commit/eb82c33c0572214a73930d8357102928c59e016f)), closes [mojaloop/#3524](https://github.com/mojaloop/project/issues/3524)
+
+## [17.5.0](https://github.com/mojaloop/central-ledger/compare/v17.4.1...v17.5.0) (2023-12-13)
+
+
+### Features
+
+* **mojaloop/#3524:** add position fulfil to binprocessor ([#990](https://github.com/mojaloop/central-ledger/issues/990)) ([dddedf6](https://github.com/mojaloop/central-ledger/commit/dddedf6adc03b441dcdc177f51d3850b79cfb144)), closes [mojaloop/#3524](https://github.com/mojaloop/project/issues/3524)
+
+### [17.4.1](https://github.com/mojaloop/central-ledger/compare/v17.4.0...v17.4.1) (2023-12-05)
+
+
+### Tests
+
+* fix local integration testing ([#991](https://github.com/mojaloop/central-ledger/issues/991)) ([2244d8e](https://github.com/mojaloop/central-ledger/commit/2244d8e6bfb65ce88bc471e53ac5b180dd1f2bb0)), closes [#970](https://github.com/mojaloop/central-ledger/issues/970)
+
+## [17.4.0](https://github.com/mojaloop/central-ledger/compare/v17.3.2...v17.4.0) (2023-12-05)
+
+
+### Features
+
+* **mojaloop/#3636:** batching implementation for position prepare messages ([#968](https://github.com/mojaloop/central-ledger/issues/968)) ([538616d](https://github.com/mojaloop/central-ledger/commit/538616d4718d5601251357c7ef24199607b630f7)), closes [mojaloop/#3636](https://github.com/mojaloop/project/issues/3636)
+
 ### [17.3.2](https://github.com/mojaloop/central-ledger/compare/v17.3.1...v17.3.2) (2023-11-06)
 
 

@@ -42,7 +42,7 @@ const testParticipant = {
   createdDate: new Date()
 }
 
-exports.prepareData = async (name, currencyId = 'USD', isUnique = true) => {
+exports.prepareData = async (name, currencyId = 'USD', secondaryCurrencyId = 'XXX', isUnique = true) => {
   try {
     const participantId = await Model.create(Object.assign(
       {},
@@ -53,11 +53,15 @@ exports.prepareData = async (name, currencyId = 'USD', isUnique = true) => {
     ))
     const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.POSITION, false)
     const participantCurrencyId2 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.SETTLEMENT, false)
+    const participantCurrencyIdSecondary = await ParticipantCurrencyModel.create(participantId, secondaryCurrencyId, Enum.Accounts.LedgerAccountType.POSITION, false)
+    const participantCurrencyIdSecondary2 = await ParticipantCurrencyModel.create(participantId, secondaryCurrencyId, Enum.Accounts.LedgerAccountType.SETTLEMENT, false)
     const participant = await Model.getById(participantId)
     return {
       participant,
       participantCurrencyId,
-      participantCurrencyId2
+      participantCurrencyId2,
+      participantCurrencyIdSecondary,
+      participantCurrencyIdSecondary2
     }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

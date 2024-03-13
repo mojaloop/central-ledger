@@ -35,7 +35,8 @@ defaults_machine_Dependencies: &defaults_machine_Dependencies |
   sudo add-apt-repository -y "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
 
   ## Install deps
-  sudo apt install -y librdkafka-dev curl bash
+  sudo apt install -y librdkafka-dev curl bash musl-dev libsasl2-dev
+  sudo ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
 
 defaults_awsCliDependencies: &defaults_awsCliDependencies |
     apk --no-cache add aws-cli
@@ -345,6 +346,7 @@ jobs:
           command: |
             # Set Node version to default (Note: this is needed on Ubuntu)
             nvm use default
+            npm ci
 
             echo "Running integration tests...."
             bash ./test/scripts/test-integration.sh
@@ -352,7 +354,7 @@ jobs:
             ENDPOINT_URL: http://localhost:4545/notification
             UV_THREADPOOL_SIZE: 12
             WAIT_FOR_REBALANCE: 20
-            TEST_INT_RETRY_COUNT: 20
+            TEST_INT_RETRY_COUNT: 30
             TEST_INT_RETRY_DELAY: 2
             TEST_INT_REBALANCE_DELAY: 20000
       - store_artifacts:

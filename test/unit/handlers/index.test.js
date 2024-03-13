@@ -66,7 +66,8 @@ Test('cli', async (cliTest) => {
         '--admin',
         '--bulkprepare',
         '--bulkfulfil',
-        '--bulkprocessing'
+        '--bulkprocessing',
+        '--positionbatch'
       ]
 
       process.argv = argv
@@ -120,9 +121,15 @@ Test('cli', async (cliTest) => {
         enabled: true
       }
 
+      const positionBatchHandler = {
+        type: 'positionbatch',
+        enabled: true
+      }
+
       const modulesList = [
         prepareHandler,
         positionHandler,
+        positionBatchHandler,
         getHandler,
         fulfilHandler,
         timeoutHandler,
@@ -207,6 +214,43 @@ Test('cli', async (cliTest) => {
 
       const positionHandler = {
         type: 'position',
+        enabled: true
+      }
+
+      const modulesList = [
+        positionHandler
+      ]
+
+      const initOptions = {
+        service: 'handler',
+        port: Config.PORT,
+        modules: [Plugin, MetricsPlugin],
+        runMigrations: false,
+        handlers: modulesList,
+        runHandlers: true
+      }
+
+      test.ok(Index)
+      test.ok(SetupStub.initialize.calledWith(initOptions))
+      test.end()
+    })
+
+    commanderTest.test('start all position batch Handlers up with no FSPList provided', async test => {
+      const argv = [
+        'node',
+        'index.js',
+        'handler',
+        '--positionbatch'
+      ]
+
+      process.argv = argv
+
+      const Index = Proxyquire('../../../src/handlers/index', {
+        '../shared/setup': SetupStub
+      })
+
+      const positionHandler = {
+        type: 'positionbatch',
         enabled: true
       }
 

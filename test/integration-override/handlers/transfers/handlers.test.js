@@ -329,7 +329,7 @@ Test('Handlers test', async handlersTest => {
 
       // Set up the testConsumer here
       await testConsumer.startListening()
-
+      await KafkaHelper.producers.connect()
       // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
       sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
 
@@ -362,10 +362,61 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
+      testConsumer.clearEvents()
       test.end()
     })
 
     transferPrepare.end()
+  })
+
+  await handlersTest.test('transferFulfil should', async transferFulfil => {
+    await transferFulfil.test('should create position fulfil message to override topic name in config', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.payee.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    transferFulfil.end()
   })
 
   await handlersTest.test('teardown', async (assert) => {
