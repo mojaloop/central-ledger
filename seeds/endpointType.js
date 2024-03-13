@@ -49,6 +49,10 @@ const endpointTypes = [
     description: 'Participant callback URL to which transfer error notifications can be sent'
   },
   {
+    name: FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES,
+    description: 'Participant callback URL to which FX quote requests can be sent'
+  },
+  {
     name: FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST,
     description: 'Participant callback URL to which FX transfer post can be sent'
   },
