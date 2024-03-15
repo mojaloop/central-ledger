@@ -88,6 +88,7 @@ const positions = async (error, messages) => {
 
   // Iterate through consumedMessages
   const bins = {}
+  const lastPerPartition = {};
   for (const message of consumedMessages) {
     const histTimerMsgEnd = Metrics.getHistogram(
       'transfer_position',
@@ -120,6 +121,11 @@ const positions = async (error, messages) => {
       histTimerMsgEnd
     })
 
+    const last = lastPerPartition[message.partition];
+    if (!last || message.offset > last.offset) {
+      lastPerPartition[message.partition] = message;
+    }
+
     await span.audit(message, EventSdk.AuditEventAction.start)
   }
 
@@ -132,11 +138,11 @@ const positions = async (error, messages) => {
 
     // If Bin Processor processed bins successfully, commit Kafka offset
     // Commit the offset of last message in the array
-    const lastMessageToCommit = consumedMessages[consumedMessages.length - 1]
-    const params = { message: lastMessageToCommit, kafkaTopic: lastMessageToCommit.topic, consumer: Consumer }
-
-    // We are using Kafka.proceed() to just commit the offset of the last message in the array
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+    for (const message of Object.values(lastPerPartition)) {
+      const params = { message, kafkaTopic: message.topic, consumer: Consumer }
+      // We are using Kafka.proceed() to just commit the offset of the last message in the array
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+    }
 
     // Commit DB transaction
     await trx.commit()
