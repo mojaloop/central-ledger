@@ -88,7 +88,7 @@ const positions = async (error, messages) => {
 
   // Iterate through consumedMessages
   const bins = {}
-  const lastPerPartition = {};
+  const lastPerPartition = {}
   for (const message of consumedMessages) {
     const histTimerMsgEnd = Metrics.getHistogram(
       'transfer_position',
@@ -121,9 +121,9 @@ const positions = async (error, messages) => {
       histTimerMsgEnd
     })
 
-    const last = lastPerPartition[message.partition];
+    const last = lastPerPartition[message.partition]
     if (!last || message.offset > last.offset) {
-      lastPerPartition[message.partition] = message;
+      lastPerPartition[message.partition] = message
     }
 
     await span.audit(message, EventSdk.AuditEventAction.start)
