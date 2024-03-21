@@ -47,6 +47,7 @@ const resourceVersions = require('@mojaloop/central-services-shared').Util.resou
 const Logger = require('@mojaloop/central-services-logger')
 let timeoutJob
 let isRegistered
+let running = false
 
 /**
   * @function TransferTimeoutHandler
@@ -61,7 +62,9 @@ let isRegistered
   * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
   */
 const timeout = async () => {
+  if (running) return
   try {
+    running = true
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
     const intervalMin = timeoutSegment ? timeoutSegment.value : 0
     const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
@@ -135,6 +138,8 @@ const timeout = async () => {
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  } finally {
+    running = false
   }
 }
 
