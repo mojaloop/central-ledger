@@ -47,7 +47,6 @@ const {
   wrapWithRetries
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
-const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
 
 const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
@@ -1226,10 +1225,9 @@ Test('Handlers test', async handlersTest => {
       await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
-      await testConsumer.destroy()
+      await testConsumer.destroy() // this disconnects the consumers
 
-      await KafkaHelper.producers.disconnect(assert)
-      await KafkaHelper.consumers.disconnect(assert)
+      await Producer.disconnect()
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10

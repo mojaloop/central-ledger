@@ -427,7 +427,7 @@ Test('Handlers test', async handlersTest => {
       assert.pass('database connection closed')
       await testConsumer.destroy() // this disconnects the consumers
 
-      await KafkaHelper.producers.disconnect(assert)
+      await Producer.disconnect()
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
