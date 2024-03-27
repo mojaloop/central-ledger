@@ -54,7 +54,6 @@ const {
   sleepPromise
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
-const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
 
 const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
@@ -293,8 +292,9 @@ const prepareTestData = async (dataObj) => {
     messageProtocolError.content.payload = errorPayload
     messageProtocolError.metadata.event.action = TransferEventAction.ABORT
 
-    const topicConfTransferPrepare = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.PREPARE)
-    const topicConfTransferFulfil = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL)
+    const topicConfTransferPrepare = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.PREPARE, payer.participantCurrencyId.toString())
+    const topicConfTransferFulfil = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL, payee.participantCurrencyId.toString())
+    // console.log({topicConfTransferPrepare, topicConfTransferFulfil})
 
     return {
       transferPayload,
@@ -1346,30 +1346,8 @@ Test('Handlers test', async handlersTest => {
       assert.pass('database connection closed')
       await testConsumer.destroy()
 
-      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js - https://github.com/mojaloop/project/issues/3067
-      // const topics = KafkaHelper.topics
-      // for (const topic of topics) {
-      //   try {
-      //     await Producer.getProducer(topic).disconnect()
-      //     assert.pass(`producer to ${topic} disconnected`)
-      //   } catch (err) {
-      //     assert.pass(err.message)
-      //   }
-      // }
-      // Lets make sure that all existing Producers are disconnected
-      await KafkaHelper.producers.disconnect()
-
-      // TODO: Clean this up once the above issue has been resolved.
-      // for (const topic of topics) {
-      //   try {
-      //     await Consumer.getConsumer(topic).disconnect()
-      //     assert.pass(`consumer to ${topic} disconnected`)
-      //   } catch (err) {
-      //     assert.pass(err.message)
-      //   }
-      // }
-      // Lets make sure that all existing Consumers are disconnected
-      await KafkaHelper.consumers.disconnect()
+      // Kafka consumers and producers are automatically disconnected
+      // on process exit by @mojaloop/central-services-stream
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
