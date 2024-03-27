@@ -28,8 +28,6 @@ const Test = require('tape')
 const { randomUUID } = require('crypto')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
-const Time = require('@mojaloop/central-services-shared').Util.Time
-const sleep = Time.sleep
 const Db = require('@mojaloop/database-lib').Db
 const Cache = require('#src/lib/cache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
@@ -330,13 +328,10 @@ Test('Handlers test', async handlersTest => {
       await testConsumer.startListening()
       // await KafkaHelper.producers.connect(test)
       // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
-      sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
+      await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
 
       test.pass('done')
-      test.end()
     })
-
-    await registerAllHandlers.end()
   })
 
   await handlersTest.test('transferPrepare should', async transferPrepare => {
@@ -362,10 +357,7 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
       testConsumer.clearEvents()
-      test.end()
     })
-
-    transferPrepare.end()
   })
 
   await handlersTest.test('transferFulfil should', async transferFulfil => {
@@ -412,10 +404,7 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
       testConsumer.clearEvents()
-      test.end()
     })
-
-    transferFulfil.end()
   })
 
   await handlersTest.test('teardown', async (assert) => {
@@ -432,14 +421,9 @@ Test('Handlers test', async handlersTest => {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
         console.log(`handlers.test.js finished in (${elapsedTime}s)`)
       }
-
-      assert.end()
     } catch (err) {
       Logger.error(`teardown failed with error - ${err}`)
       assert.fail()
-      assert.end()
     }
   })
-
-  handlersTest.end()
 })
