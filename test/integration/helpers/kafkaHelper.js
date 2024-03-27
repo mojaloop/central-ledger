@@ -35,7 +35,7 @@ const topics = [
 exports.topics = topics
 
 exports.producers = {
-  connect: async (assert) => {
+  connect: async (assert, topics = exports.topics) => {
     // lets make sure all our Producers are already connected if they have already been defined.
     for (const topic of topics) {
       try {
@@ -64,7 +64,7 @@ exports.producers = {
     }
   },
 
-  disconnect: async (assert) => {
+  disconnect: async (assert, topics = exports.topics) => {
     for (const topic of topics) {
       try {
         console.log(`Producer[${topic}] disconnecting`)
@@ -81,7 +81,7 @@ exports.producers = {
 }
 
 exports.consumers = {
-  connect: async (assert) => {
+  connect: async (assert, topics = exports.topics) => {
     // lets make sure all our Consumers are already connected if they have already been defined.
     for (const topic of topics) {
       try {
@@ -110,7 +110,7 @@ exports.consumers = {
     }
   },
 
-  disconnect: async (assert) => {
+  disconnect: async (assert, topics = exports.topics) => {
     for (const topic of topics) {
       try {
         console.log(`Consumer[${topic}] disconnecting`)
