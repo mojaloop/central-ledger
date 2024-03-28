@@ -45,6 +45,7 @@ const {
   wrapWithRetries
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
+const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
 
 const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
@@ -326,7 +327,7 @@ Test('Handlers test', async handlersTest => {
 
       // Set up the testConsumer here
       await testConsumer.startListening()
-      // await KafkaHelper.producers.connect(test)
+      await KafkaHelper.producers.connect()
       // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
       await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
 
