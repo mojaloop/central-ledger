@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.6.1](https://github.com/mojaloop/central-ledger/compare/v17.6.0...v17.6.1) (2024-03-28)
+
+
+### Bug Fixes
+
+* cluster performance testing issues ([#996](https://github.com/mojaloop/central-ledger/issues/996)) ([6bc8aeb](https://github.com/mojaloop/central-ledger/commit/6bc8aebef5d4e4e5ec3072d7450f5cac2199800d))
+
+
+### Tests
+
+* fix disconnect errors ([#998](https://github.com/mojaloop/central-ledger/issues/998)) ([34f5418](https://github.com/mojaloop/central-ledger/commit/34f54188caaafffab51044a1b5e113b92eb9f53c))
+
 ## [17.6.0](https://github.com/mojaloop/central-ledger/compare/v17.5.0...v17.6.0) (2023-12-20)
 
 
