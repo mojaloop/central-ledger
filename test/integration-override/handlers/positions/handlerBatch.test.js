@@ -720,6 +720,8 @@ Test('Handlers test', async handlersTest => {
       await testConsumer.startListening()
 
       test.pass('done')
+      test.end()
+      setupTests.end()
     })
   })
 
@@ -795,6 +797,7 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
       testConsumer.clearEvents()
+      test.end()
     })
 
     await transferPositionPrepare.test('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
@@ -835,6 +838,7 @@ Test('Handlers test', async handlersTest => {
       const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
       testConsumer.clearEvents()
+      test.end()
     })
 
     await transferPositionPrepare.test('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
@@ -876,6 +880,7 @@ Test('Handlers test', async handlersTest => {
       test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
 
       testConsumer.clearEvents()
+      test.end()
     })
 
     await transferPositionPrepare.test('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
@@ -931,6 +936,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       testConsumer.clearEvents()
+      test.end()
     })
 
     await transferPositionPrepare.test('process batch of transfers with mixed currencies', async (test) => {
@@ -973,6 +979,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       testConsumer.clearEvents()
+      test.end()
     })
 
     await transferPositionPrepare.test('process batch of prepare/commit messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
@@ -1089,6 +1096,7 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
       testConsumer.clearEvents()
+      test.end()
     })
 
     await transferPositionPrepare.test('process batch of prepare/reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
@@ -1205,7 +1213,9 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
       testConsumer.clearEvents()
+      test.end()
     })
+    transferPositionPrepare.end()
   })
 
   await handlersTest.test('teardown', async (assert) => {
@@ -1222,9 +1232,14 @@ Test('Handlers test', async handlersTest => {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
         console.log(`handlers.test.js finished in (${elapsedTime}s)`)
       }
+
+      assert.end()
     } catch (err) {
       Logger.error(`teardown failed with error - ${err}`)
       assert.fail()
+      assert.end()
+    } finally {
+      handlersTest.end()
     }
   })
 })

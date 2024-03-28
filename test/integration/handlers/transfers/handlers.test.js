@@ -391,6 +391,8 @@ Test('Handlers test', async handlersTest => {
       await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
 
       test.pass('done')
+      test.end()
+      registerAllHandlers.end()
     })
   })
 
@@ -418,7 +420,10 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
+      test.end()
     })
+
+    transferPrepare.end()
   })
 
   await handlersTest.test('transferFulfilReserve should', async transferFulfilReserve => {
@@ -495,6 +500,7 @@ Test('Handlers test', async handlersTest => {
 
       // Cleanup
       testConsumer.clearEvents()
+      test.end()
     })
 
     await transferFulfilReserve.test('send a RESERVED_ABORTED notification if the transfer is expired', async (test) => {
@@ -607,6 +613,7 @@ Test('Handlers test', async handlersTest => {
 
       // Cleanup
       testConsumer.clearEvents()
+      test.end()
     })
 
     await transferFulfilReserve.test('send a RESERVED_ABORTED notification when the transfer is not in a RESERVED state', async (test) => {
@@ -700,6 +707,7 @@ Test('Handlers test', async handlersTest => {
 
       // Cleanup
       testConsumer.clearEvents()
+      test.end()
     })
 
     await transferFulfilReserve.test('send a RESERVED_ABORTED notification when the validation fails', async (test) => {
@@ -819,7 +827,10 @@ Test('Handlers test', async handlersTest => {
 
       // Cleanup
       testConsumer.clearEvents()
+      test.end()
     })
+
+    transferFulfilReserve.end()
   })
 
   await handlersTest.test('transferFulfilCommit should', async transferFulfilCommit => {
@@ -861,6 +872,7 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      test.end()
     })
 
     await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
@@ -900,6 +912,7 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      test.end()
     })
 
     await transferFulfilCommit.test('transfer position fulfil should be keyed with payee account id', async (test) => {
@@ -914,7 +927,10 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
+      test.end()
     })
+
+    transferFulfilCommit.end()
   })
 
   await handlersTest.test('transferFulfilCommit with default settlement model should', async transferFulfilCommit => {
@@ -955,6 +971,7 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      test.end()
     })
     await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
       const config = Utility.getKafkaConfig(
@@ -992,7 +1009,9 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      test.end()
     })
+    transferFulfilCommit.end()
   })
 
   await handlersTest.test('transferFulfilReject should', async transferFulfilReject => {
@@ -1028,6 +1047,7 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      test.end()
     })
   })
 
@@ -1064,7 +1084,10 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      test.end()
     })
+
+    transferPrepareExceedLimit.end()
   })
 
   await handlersTest.test('transferAbort should', async transferAbort => {
@@ -1100,6 +1123,7 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      test.end()
     })
 
     await transferAbort.test('update transfer state to ABORTED_ERROR by PUT /transfers/{id}/error endpoint', async (test) => {
@@ -1146,6 +1170,7 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      test.end()
     })
 
     await transferAbort.test('transfer position abort should be keyed with payer account id', async (test) => {
@@ -1160,7 +1185,10 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
+      test.end()
     })
+
+    transferAbort.end()
   })
 
   await handlersTest.test('timeout should', async timeoutTest => {
@@ -1210,6 +1238,8 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+
+      test.end()
     })
 
     await timeoutTest.test('update transfer after timeout with timeout status & error', async (test) => {
@@ -1259,11 +1289,13 @@ Test('Handlers test', async handlersTest => {
       // Assert
       if (result === false) {
         test.fail(`Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.end()
       } else {
         test.equal(result.transfer && result.transfer?.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
         test.equal(result.transferError && result.transferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
         test.equal(result.transferError && result.transferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `Transfer['${td.messageProtocolPrepare.content.payload.transferId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
         test.pass()
+        test.end()
       }
     })
 
@@ -1279,6 +1311,7 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
+      test.end()
     })
 
     await timeoutTest.test('position resets after a timeout', async (test) => {
@@ -1296,7 +1329,10 @@ Test('Handlers test', async handlersTest => {
 
       // Assert
       test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
+      test.end()
     })
+
+    timeoutTest.end()
   })
 
   await handlersTest.test('teardown', async (assert) => {
@@ -1313,9 +1349,14 @@ Test('Handlers test', async handlersTest => {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
         console.log(`handlers.test.js finished in (${elapsedTime}s)`)
       }
+
+      assert.end()
     } catch (err) {
       Logger.error(`teardown failed with error - ${err}`)
       assert.fail()
+      assert.end()
+    } finally {
+      handlersTest.end()
     }
   })
 })

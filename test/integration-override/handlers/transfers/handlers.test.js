@@ -331,6 +331,8 @@ Test('Handlers test', async handlersTest => {
       await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
 
       test.pass('done')
+      test.end()
+      registerAllHandlers.end()
     })
   })
 
@@ -357,7 +359,10 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
       testConsumer.clearEvents()
+      test.end()
     })
+
+    transferPrepare.end()
   })
 
   await handlersTest.test('transferFulfil should', async transferFulfil => {
@@ -404,7 +409,10 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
       testConsumer.clearEvents()
+      test.end()
     })
+
+    transferFulfil.end()
   })
 
   await handlersTest.test('teardown', async (assert) => {
@@ -421,9 +429,14 @@ Test('Handlers test', async handlersTest => {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
         console.log(`handlers.test.js finished in (${elapsedTime}s)`)
       }
+
+      assert.end()
     } catch (err) {
       Logger.error(`teardown failed with error - ${err}`)
       assert.fail()
+      assert.end()
+    } finally {
+      handlersTest.end()
     }
   })
 })
