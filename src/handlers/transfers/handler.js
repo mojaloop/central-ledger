@@ -103,11 +103,10 @@ const fulfil = async (error, messages) => {
     })()
 
     if (action === TransferEventAction.FX_RESERVE) {
-      await processFxFulfilMessage(message, functionality, span)
+      return await processFxFulfilMessage(message, functionality, span)
     } else {
-      await processFulfilMessage(message, functionality, span)
+      return await processFulfilMessage(message, functionality, span)
     }
-    return true
   } catch (err) {
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--F0`)
