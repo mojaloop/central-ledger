@@ -37,6 +37,7 @@ const Test = require('tapes')(require('tape'))
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
+const Cyril = require('../../../../src/domain/fx/cyril')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const MainUtil = require('@mojaloop/central-services-shared').Util
 const Time = require('@mojaloop/central-services-shared').Util.Time
@@ -325,6 +326,10 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(Comparators)
     sandbox.stub(Validator)
     sandbox.stub(TransferService)
+    sandbox.stub(Cyril)
+    Cyril.processFulfilMessage.returns({
+      isFx: false
+    })
     sandbox.stub(Consumer, 'getConsumer').returns({
       commitMessageSync: async function () {
         return true
@@ -1491,6 +1496,7 @@ Test('Transfer handler', transferHandlerTest => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
+
       TransferService.getById.returns(Promise.resolve({
         condition: 'condition',
         payeeFsp: 'dfsp2',

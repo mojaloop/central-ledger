@@ -107,6 +107,7 @@ const fulfil = async (error, messages) => {
     } else {
       await processFulfilMessage(message, functionality, span)
     }
+    return true
   } catch (err) {
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--F0`)

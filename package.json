@@ -107,7 +107,7 @@
     "docdash": "2.0.2",
     "event-stream": "4.0.1",
     "five-bells-condition": "5.0.1",
-    "glob": "10.3.10",
+    "glob": "10.3.12",
     "hapi-auth-basic": "5.0.0",
     "hapi-auth-bearer-token": "8.0.0",
     "hapi-swagger": "17.2.1",

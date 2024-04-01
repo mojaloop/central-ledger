@@ -64,7 +64,7 @@ const calculatePreparePositionsBatch = async (transferList) => {
     ['success', 'funcName']
   ).startTimer()
   let result
-  const action = transferList[0].value.metadata.event.action
+  const action = transferList[0]?.value.metadata.event.action
   if (action === Enum.Events.Event.Action.FX_PREPARE) {
     // FX transfer
     result = PositionFacade.prepareChangeParticipantPositionTransactionFx(transferList)
