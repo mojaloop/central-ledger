@@ -28,8 +28,6 @@ const Test = require('tape')
 const { randomUUID } = require('crypto')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
-const Time = require('@mojaloop/central-services-shared').Util.Time
-const sleep = Time.sleep
 const Db = require('@mojaloop/database-lib').Db
 const Cache = require('#src/lib/cache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
@@ -331,13 +329,12 @@ Test('Handlers test', async handlersTest => {
       await testConsumer.startListening()
       await KafkaHelper.producers.connect()
       // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
-      sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
+      await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
 
       test.pass('done')
       test.end()
+      registerAllHandlers.end()
     })
-
-    await registerAllHandlers.end()
   })
 
   await handlersTest.test('transferPrepare should', async transferPrepare => {
@@ -425,32 +422,9 @@ Test('Handlers test', async handlersTest => {
       await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
-      await testConsumer.destroy()
+      await testConsumer.destroy() // this disconnects the consumers
 
-      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js - https://github.com/mojaloop/project/issues/3067
-      // const topics = KafkaHelper.topics
-      // for (const topic of topics) {
-      //   try {
-      //     await Producer.getProducer(topic).disconnect()
-      //     assert.pass(`producer to ${topic} disconnected`)
-      //   } catch (err) {
-      //     assert.pass(err.message)
-      //   }
-      // }
-      // Lets make sure that all existing Producers are disconnected
-      await KafkaHelper.producers.disconnect()
-
-      // TODO: Clean this up once the above issue has been resolved.
-      // for (const topic of topics) {
-      //   try {
-      //     await Consumer.getConsumer(topic).disconnect()
-      //     assert.pass(`consumer to ${topic} disconnected`)
-      //   } catch (err) {
-      //     assert.pass(err.message)
-      //   }
-      // }
-      // Lets make sure that all existing Consumers are disconnected
-      await KafkaHelper.consumers.disconnect()
+      await Producer.disconnect()
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
@@ -462,8 +436,8 @@ Test('Handlers test', async handlersTest => {
       Logger.error(`teardown failed with error - ${err}`)
       assert.fail()
       assert.end()
+    } finally {
+      handlersTest.end()
     }
   })
-
-  handlersTest.end()
 })

@@ -76,7 +76,9 @@ class TestConsumer {
    */
   async destroy () {
     Logger.warn(`TestConsumer.destroy(): destroying ${this.consumers.length} consumers`)
-    await Promise.all(this.consumers.map(async c => c.disconnect()))
+    await Promise.all(this.consumers.map(consumer => new Promise((resolve, reject) => {
+      consumer.disconnect((err) => err ? reject(err) : resolve())
+    })))
   }
 
   /**
