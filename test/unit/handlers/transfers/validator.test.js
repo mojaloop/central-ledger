@@ -10,6 +10,8 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 
 let payload
 let headers
+let fxPayload
+let fxHeaders
 
 Test('transfer validator', validatorTest => {
   let sandbox
@@ -39,9 +41,29 @@ Test('transfer validator', validatorTest => {
         ]
       }
     }
+    fxPayload = {
+      commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
+      determiningTransferId: 'c05c3f31-33b5-4e33-8bfd-7c3a2685fb6c',
+      condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+      expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)), // tomorrow
+      initiatingFsp: 'fx_dfsp1',
+      counterPartyFsp: 'fx_dfsp2',
+      sourceAmount: {
+        currency: 'USD',
+        amount: '433.88'
+      },
+      targetAmount: {
+        currency: 'EUR',
+        amount: '200.00'
+      }
+    }
     headers = {
       'fspiop-source': 'dfsp1',
       'fspiop-destination': 'dfsp2'
+    }
+    fxHeaders = {
+      'fspiop-source': 'fx_dfsp1',
+      'fspiop-destination': 'fx_dfsp2'
     }
     sandbox = Sinon.createSandbox()
     sandbox.stub(Participant)
@@ -210,6 +232,20 @@ Test('transfer validator', validatorTest => {
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Amount 123456789012345.6789 exceeds allowed precision of 18'])
+      test.end()
+    })
+
+    validatePrepareTest.test('select variables based on prepare is fx', async (test) => {
+      Participant.getByName.returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+
+      const { validationPassed } = await Validator.validatePrepare(fxPayload, fxHeaders, true)
+      test.equal(validationPassed, true)
+      test.ok(Participant.getByName.calledWith('fx_dfsp1'))
+      test.ok(Participant.getByName.calledWith('fx_dfsp2'))
+      test.ok(Participant.getAccountByNameAndCurrency.calledWith('fx_dfsp1', 'USD', Enum.Accounts.LedgerAccountType.POSITION))
+      test.ok(Participant.getAccountByNameAndCurrency.calledWith('fx_dfsp2', 'EUR', Enum.Accounts.LedgerAccountType.POSITION))
       test.end()
     })
 
