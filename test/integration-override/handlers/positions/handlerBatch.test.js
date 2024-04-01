@@ -450,10 +450,10 @@ const _endpointSetup = async (participantName, baseURL) => {
   await ParticipantEndpointHelper.prepareData(participantName, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${baseURL}/bulkTransfers/{{id}}`)
   await ParticipantEndpointHelper.prepareData(participantName, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${baseURL}/bulkTransfers/{{id}}/error`)
   await ParticipantEndpointHelper.prepareData(participantName, 'FSPIOP_CALLBACK_URL_QUOTES', `${baseURL}`)
-  await ParticipantEndpointHelper.prepareData(participantName, Enum.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${baseURL}`)
-  await ParticipantEndpointHelper.prepareData(participantName, Enum.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${baseURL}/fxTransfers`)
-  await ParticipantEndpointHelper.prepareData(participantName, Enum.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${baseURL}/fxTransfers/{{commitRequestId}}`)
-  await ParticipantEndpointHelper.prepareData(participantName, Enum.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${baseURL}/fxTransfers/{{commitRequestId}}/error`)
+  await ParticipantEndpointHelper.prepareData(participantName, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${baseURL}`)
+  await ParticipantEndpointHelper.prepareData(participantName, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${baseURL}/fxTransfers`)
+  await ParticipantEndpointHelper.prepareData(participantName, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${baseURL}/fxTransfers/{{commitRequestId}}`)
+  await ParticipantEndpointHelper.prepareData(participantName, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${baseURL}/fxTransfers/{{commitRequestId}}/error`)
 }
 
 const prepareTestData = async (dataObj) => {
