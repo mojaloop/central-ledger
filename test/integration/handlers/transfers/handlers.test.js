@@ -31,7 +31,6 @@ const retry = require('async-retry')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
 const Time = require('@mojaloop/central-services-shared').Util.Time
-const sleep = Time.sleep
 const Db = require('@mojaloop/database-lib').Db
 const Cache = require('#src/lib/cache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
@@ -54,7 +53,6 @@ const {
   sleepPromise
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
-const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
 
 const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
@@ -186,6 +184,10 @@ const prepareTestData = async (dataObj) => {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${dataObj.endpoint.base}/bulkTransfers/{{id}}`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${dataObj.endpoint.base}/bulkTransfers/{{id}}/error`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_QUOTES', `${dataObj.endpoint.base}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${dataObj.endpoint.base}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${dataObj.endpoint.base}/fxTransfers`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}/error`)
     }
 
     const transferPayload = {
@@ -390,13 +392,12 @@ Test('Handlers test', async handlersTest => {
       await testConsumer.startListening()
 
       // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
-      sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
+      await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
 
       test.pass('done')
       test.end()
+      registerAllHandlers.end()
     })
-
-    await registerAllHandlers.end()
   })
 
   await handlersTest.test('transferPrepare should', async transferPrepare => {
@@ -1344,32 +1345,9 @@ Test('Handlers test', async handlersTest => {
       await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
-      await testConsumer.destroy()
+      await testConsumer.destroy() // this disconnects the consumers
 
-      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js - https://github.com/mojaloop/project/issues/3067
-      // const topics = KafkaHelper.topics
-      // for (const topic of topics) {
-      //   try {
-      //     await Producer.getProducer(topic).disconnect()
-      //     assert.pass(`producer to ${topic} disconnected`)
-      //   } catch (err) {
-      //     assert.pass(err.message)
-      //   }
-      // }
-      // Lets make sure that all existing Producers are disconnected
-      await KafkaHelper.producers.disconnect()
-
-      // TODO: Clean this up once the above issue has been resolved.
-      // for (const topic of topics) {
-      //   try {
-      //     await Consumer.getConsumer(topic).disconnect()
-      //     assert.pass(`consumer to ${topic} disconnected`)
-      //   } catch (err) {
-      //     assert.pass(err.message)
-      //   }
-      // }
-      // Lets make sure that all existing Consumers are disconnected
-      await KafkaHelper.consumers.disconnect()
+      await Producer.disconnect()
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
@@ -1381,8 +1359,8 @@ Test('Handlers test', async handlersTest => {
       Logger.error(`teardown failed with error - ${err}`)
       assert.fail()
       assert.end()
+    } finally {
+      handlersTest.end()
     }
   })
-
-  handlersTest.end()
 })

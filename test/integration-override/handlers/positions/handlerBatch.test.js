@@ -47,7 +47,6 @@ const {
   wrapWithRetries
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
-const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
 
 const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
@@ -451,6 +450,10 @@ const _endpointSetup = async (participantName, baseURL) => {
   await ParticipantEndpointHelper.prepareData(participantName, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${baseURL}/bulkTransfers/{{id}}`)
   await ParticipantEndpointHelper.prepareData(participantName, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${baseURL}/bulkTransfers/{{id}}/error`)
   await ParticipantEndpointHelper.prepareData(participantName, 'FSPIOP_CALLBACK_URL_QUOTES', `${baseURL}`)
+  await ParticipantEndpointHelper.prepareData(participantName, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${baseURL}`)
+  await ParticipantEndpointHelper.prepareData(participantName, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${baseURL}/fxTransfers`)
+  await ParticipantEndpointHelper.prepareData(participantName, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${baseURL}/fxTransfers/{{commitRequestId}}`)
+  await ParticipantEndpointHelper.prepareData(participantName, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${baseURL}/fxTransfers/{{commitRequestId}}/error`)
 }
 
 const prepareTestData = async (dataObj) => {
@@ -722,9 +725,8 @@ Test('Handlers test', async handlersTest => {
 
       test.pass('done')
       test.end()
+      setupTests.end()
     })
-
-    await setupTests.end()
   })
 
   await handlersTest.test('position batch handler should', async transferPositionPrepare => {
@@ -1226,10 +1228,9 @@ Test('Handlers test', async handlersTest => {
       await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
-      await testConsumer.destroy()
+      await testConsumer.destroy() // this disconnects the consumers
 
-      await KafkaHelper.producers.disconnect()
-      await KafkaHelper.consumers.disconnect()
+      await Producer.disconnect()
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
@@ -1241,8 +1242,8 @@ Test('Handlers test', async handlersTest => {
       Logger.error(`teardown failed with error - ${err}`)
       assert.fail()
       assert.end()
+    } finally {
+      handlersTest.end()
     }
   })
-
-  handlersTest.end()
 })

@@ -294,7 +294,6 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "partition.assignment.strategy": "cooperative-sticky",
               "enable.auto.commit": false
             },
             "topicConf": {
@@ -320,7 +319,6 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "partition.assignment.strategy": "cooperative-sticky",
               "enable.auto.commit": false
             },
             "topicConf": {
