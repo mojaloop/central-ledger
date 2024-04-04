@@ -82,7 +82,7 @@
   "dependencies": {
     "@hapi/catbox-memory": "6.0.1",
     "@hapi/good": "9.0.1",
-    "@hapi/hapi": "21.3.7",
+    "@hapi/hapi": "21.3.8",
     "@hapi/inert": "7.1.0",
     "@hapi/joi": "17.1.1",
     "@hapi/vision": "7.0.3",

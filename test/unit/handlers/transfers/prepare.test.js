@@ -50,6 +50,7 @@ const Comparators = require('@mojaloop/central-services-shared').Util.Comparator
 const Proxyquire = require('proxyquire')
 const Participant = require('../../../../src/domain/participant')
 const Config = require('../../../../src/lib/config')
+const { Action } = Enum.Events.Event
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -792,6 +793,36 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     prepareTest.end()
+  })
+
+  transferHandlerTest.test('processDuplication', processDuplicationTest => {
+    processDuplicationTest.test('return undefined hasDuplicateId is falsey', async (test) => {
+      const result = await prepare.processDuplication({
+        duplication: {
+          hasDuplicateId: false
+        }
+      })
+      test.equal(result, undefined)
+      test.end()
+    })
+
+    processDuplicationTest.test('throw error if action is BULK_PREPARE', async (test) => {
+      try {
+        await prepare.processDuplication({
+          duplication: {
+            hasDuplicateId: true
+          },
+          duplicationId: 'test',
+          hasDuplicateHash: true,
+          action: Action.BULK_PREPARE
+        })
+        test.fail('Error not thrown')
+      } catch (e) {
+        test.pass('Error thrown')
+      }
+      test.end()
+    })
+    processDuplicationTest.end()
   })
   transferHandlerTest.end()
 })

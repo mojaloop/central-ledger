@@ -266,7 +266,6 @@ const prepare = async (error, messages) => {
 
 module.exports = {
   prepare,
-
   checkDuplication,
   processDuplication,
   savePreparedRequest,
