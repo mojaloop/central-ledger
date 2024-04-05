@@ -810,10 +810,10 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         await prepare.processDuplication({
           duplication: {
-            hasDuplicateId: true
+            hasDuplicateId: true,
+            hasDuplicateHash: true
           },
-          duplicationId: 'test',
-          hasDuplicateHash: true,
+          location: { module: 'PrepareHandler', method: '', path: '' },
           action: Action.BULK_PREPARE
         })
         test.fail('Error not thrown')
