@@ -108,14 +108,13 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
 
 const getByTransferId = async (id) => {
   try {
-    const transferError = await Db.from('transferError').query(async (builder) => {
+    const transferError = transferToUuid(await Db.from('transferError').query(async (builder) => {
       const result = builder
         .where(transferToBin({ transferId: id }))
         .select('*')
         .first()
-      if (result) result.transferId = id
       return result
-    })
+    }))
     transferError.errorCode = transferError.errorCode.toString()
     return transferError
   } catch (err) {
