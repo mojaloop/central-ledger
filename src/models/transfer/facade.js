@@ -985,14 +985,14 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
 
     const trxFunction = async (trx, doCommit = true) => {
       try {
-        const param1 = transferToBin({
+        const param1 = {
           transferId: payload.transferId,
           transferStateId: enums.transferState.RESERVED,
           reason: payload.reason,
           createdDate: transactionTimestamp,
           drUpdated: true,
           crUpdated: false
-        })
+        }
         const positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
 
         if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
@@ -1031,22 +1031,22 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
-        const transferId = uuidToBin(payload.transferId)
+        const transferId = payload.transferId
         await knex('transferFulfilmentDuplicateCheck')
-          .insert({
+          .insert(transferToBin({
             transferId
-          })
+          }))
           .transacting(trx)
 
         await knex('transferFulfilment')
-          .insert({
+          .insert(transferToBin({
             transferId,
             ilpFulfilment: 0,
             completedDate: transactionTimestamp,
             isValid: 1,
             settlementWindowId: null,
             createdDate: transactionTimestamp
-          })
+          }))
           .transacting(trx)
 
         if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN ||
@@ -1093,22 +1093,22 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
-        const transferId = uuidToBin(payload.transferId)
+        const transferId = payload.transferId
         await knex('transferFulfilmentDuplicateCheck')
-          .insert({
+          .insert(transferToBin({
             transferId
-          })
+          }))
           .transacting(trx)
 
         await knex('transferFulfilment')
-          .insert({
+          .insert(transferToBin({
             transferId,
             ilpFulfilment: 0,
             completedDate: transactionTimestamp,
             isValid: 1,
             settlementWindowId: null,
             createdDate: transactionTimestamp
-          })
+          }))
           .transacting(trx)
 
         if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
