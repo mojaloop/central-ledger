@@ -32,7 +32,7 @@ const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
-const { uuidToBin } = require('./uuid')
+const { transferToBin, transferToUuid } = require('./uuid')
 
 /**
  * @function GetTransferDuplicateCheck
@@ -53,8 +53,7 @@ const getTransferDuplicateCheck = async (transferId) => {
   ).startTimer()
   Logger.isDebugEnabled && Logger.debug(`get transferDuplicateCheck (transferId=${transferId})`)
   try {
-    const result = Db.from('transferDuplicateCheck').findOne({ transferId: uuidToBin(transferId) })
-    if (result) result.transferId = transferId
+    const result = transferToUuid(await Db.from('transferDuplicateCheck').findOne(transferToBin({ transferId })))
     histTimerGetTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_getTransferDuplicateCheck' })
     return result
   } catch (err) {
@@ -83,7 +82,7 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
   ).startTimer()
   Logger.isDebugEnabled && Logger.debug(`save transferDuplicateCheck (transferId=${transferId}, hash=${hash})`)
   try {
-    const result = Db.from('transferDuplicateCheck').insert({ transferId: uuidToBin(transferId), hash })
+    const result = Db.from('transferDuplicateCheck').insert(transferToBin({ transferId, hash }))
     histTimerSaveTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })
     return result
   } catch (err) {

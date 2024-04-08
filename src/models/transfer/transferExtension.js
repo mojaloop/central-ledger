@@ -29,11 +29,11 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { uuidToBin } = require('./uuid')
+const { transferToBin, transferToUuid } = require('./uuid')
 
 const saveTransferExtension = async (extension) => {
   try {
-    return await Db.from('transferExtension').insert({ ...extension, transferId: uuidToBin(extension.transferId) })
+    return await Db.from('transferExtension').insert(transferToBin(extension))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -41,9 +41,7 @@ const saveTransferExtension = async (extension) => {
 
 const getByTransferId = async (transferId, isFulfilment = false, isError = false) => {
   try {
-    const result = await Db.from('transferExtension').find({ transferId: uuidToBin(transferId), isFulfilment, isError })
-    if (result) result.transferId = transferId
-    return result
+    return transferToUuid(await Db.from('transferExtension').find(transferToBin({ transferId, isFulfilment, isError })))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -59,7 +57,7 @@ const getByTransferExtensionId = async (transferExtensionId) => {
 
 const destroyByTransferId = async (transferId) => {
   try {
-    return await Db.from('transferExtension').destroy({ transferId: uuidToBin(transferId) })
+    return await Db.from('transferExtension').destroy(transferToBin({ transferId }))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

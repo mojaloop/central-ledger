@@ -27,13 +27,11 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { uuidToBin } = require('./uuid')
+const { transferToBin, transferToUuid } = require('./uuid')
 
 const getById = async (transferId) => {
   try {
-    const result = await Db.from('transfer').findOne({ transferId: uuidToBin(transferId) })
-    if (result) result.transferId = transferId
-    return result
+    return transferToUuid(await Db.from('transfer').findOne(transferToBin({ transferId })))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -42,7 +40,7 @@ const getById = async (transferId) => {
 const saveTransfer = async (record) => {
   Logger.isDebugEnabled && Logger.debug('save transfer' + record.toString())
   try {
-    return Db.from('transfer').insert({ ...record, transferId: uuidToBin(record.transferId) })
+    return Db.from('transfer').insert(transferToBin(record))
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -51,7 +49,7 @@ const saveTransfer = async (record) => {
 
 const destroyById = async (id) => {
   try {
-    await Db.from('transfer').destroy({ transferId: uuidToBin(id) })
+    await Db.from('transfer').destroy(transferToBin({ transferId: id }))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

@@ -30,14 +30,14 @@
 const Db = require('../../lib/db')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { uuidToBin } = require('./uuid')
+const { transferToBin, transferToUuid } = require('./uuid')
 
 exports.saveIlpPacket = async (record) => {
   try {
-    return await Db.from('ilpPacket').insert({
-      transferId: uuidToBin(record.transferId),
+    return await Db.from('ilpPacket').insert(transferToBin({
+      transferId: record.transferId,
       value: record.value
-    })
+    }))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -45,21 +45,19 @@ exports.saveIlpPacket = async (record) => {
 
 exports.getByTransferId = async (transferId) => {
   try {
-    const result = await Db.from('ilpPacket').findOne({ transferId: uuidToBin(transferId) })
-    if (result) result.transferId = transferId
-    return result
+    return transferToUuid(await Db.from('ilpPacket').findOne(transferToBin({ transferId })))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 exports.update = async (record) => {
-  const fields = {
-    transferId: uuidToBin(record.transferId),
+  const fields = ({
+    transferId: record.transferId,
     value: record.value
-  }
+  })
   try {
-    return await Db.from('ilpPacket').update({ transferId: uuidToBin(record.transferId) }, Util.omitNil(fields))
+    return await Db.from('ilpPacket').update(transferToBin({ transferId: record.transferId }), Util.omitNil(fields))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -67,7 +65,7 @@ exports.update = async (record) => {
 
 exports.destroyByTransferId = async (record) => {
   try {
-    return await Db.from('ilpPacket').destroy({ transferId: uuidToBin(record.transferId) })
+    return await Db.from('ilpPacket').destroy(transferToBin({ transferId: record.transferId }))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

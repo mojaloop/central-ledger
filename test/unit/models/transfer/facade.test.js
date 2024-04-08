@@ -34,7 +34,7 @@ const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
 const TransferFacade = require('../../../../src/models/transfer/facade')
-const { uuidToBin } = require('../../../../src/models/transfer/uuid')
+const { uuidToBin, transferToBin } = require('../../../../src/models/transfer/uuid')
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
@@ -806,7 +806,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const transferStateChangeRecord = { transferId, transferStateId: 'state', reason: stateReason, createdDate: Time.getUTCString(now) }
       const transferExtensionRecords = extensions.map(ext => {
         return {
-          transferId: transferFulfilmentRecord.transferId,
+          transferId,
           isFulfilment: true,
           isError: false,
           key: ext.key,
@@ -863,11 +863,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
           test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
-          test.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
+          test.ok(insertStub.withArgs(transferToBin(transferFulfilmentRecord)).calledOnce, 'insert transferFulfilmentRecord called once')
           for (const extension of transferExtensionRecords) {
-            test.ok(insertStub.withArgs(extension).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
+            test.ok(insertStub.withArgs(transferToBin(extension)).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
           }
-          test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
+          test.ok(insertStub.withArgs(transferToBin(transferStateChangeRecord)).calledOnce, 'insert transferStateChangeRecord called once')
           test.end()
         } catch (err) {
           Logger.error(`savePayeeTransferResponse failed with error - ${err}`)

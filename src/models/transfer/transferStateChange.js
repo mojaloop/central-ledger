@@ -28,12 +28,12 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const { uuidToBin } = require('./uuid')
+const { transferToBin, uuidToBin, transferToUuid } = require('./uuid')
 
 const saveTransferStateChange = async (stateChange) => {
   Logger.isDebugEnabled && Logger.debug('save transferStateChange' + stateChange.toString())
   try {
-    return Db.from('transferStateChange').insert({ ...stateChange, transferId: uuidToBin(stateChange.transferId) })
+    return Db.from('transferStateChange').insert(transferToBin(stateChange))
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -42,15 +42,14 @@ const saveTransferStateChange = async (stateChange) => {
 
 const getByTransferId = async (id) => {
   try {
-    return await Db.from('transferStateChange').query(async (builder) => {
+    return transferToUuid(await Db.from('transferStateChange').query(async (builder) => {
       const result = builder
         .where({ 'transferStateChange.transferId': uuidToBin(id) })
         .select('transferStateChange.*')
         .orderBy('transferStateChangeId', 'desc')
         .first()
-      if (result) result.transferId = id
       return result
-    })
+    }))
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -59,11 +58,11 @@ const getByTransferId = async (id) => {
 
 const getByTransferIdList = async (transfersIdList) => {
   try {
-    return await Db.from('transferStateChange').query(async (builder) => {
+    return transferToUuid(await Db.from('transferStateChange').query(async (builder) => {
       const result = builder
         .whereIn('transferStateChange.transferId', [].concat(transfersIdList).map(uuidToBin))
       return result
-    })
+    }))
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
