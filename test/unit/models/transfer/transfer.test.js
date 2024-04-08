@@ -29,7 +29,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/transfer')
-const { uuidToBin } = require('../../../../src/models/transfer/uuid')
+const { transferToBin } = require('../../../../src/models/transfer/uuid')
 
 Test('Transfer model', async (transfer) => {
   let sandbox
@@ -70,7 +70,7 @@ Test('Transfer model', async (transfer) => {
     Model.getById(transferRecord.transferId)
       .then(result => {
         assert.deepEqual(result, transferRecord, 'match the result object')
-        assert.ok(Db.transfer.findOne.calledWith({ transferId: uuidToBin(transferRecord.transferId) }), 'called with transferId')
+        assert.ok(Db.transfer.findOne.calledWith(transferToBin({ transferId: transferRecord.transferId })), 'called with transferId')
         assert.end()
       })
   })

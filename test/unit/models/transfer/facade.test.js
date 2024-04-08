@@ -135,8 +135,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const transferId2 = '00000000-0000-0000-0000-000000000002'
       const extensions = cloneDeep(transferExtensions)
       const transfers = [
-        { transferId: uuidToBin(transferId1), extensionList: extensions },
-        { transferId: uuidToBin(transferId2), errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED, extensionList: [{ key: 'key1', value: 'value1' }, { key: 'key2', value: 'value2' }, { key: 'cause', value: '5105: undefined' }], isTransferReadModel: true }
+        transferToBin({ transferId: transferId1, extensionList: extensions }),
+        transferToBin({ transferId: transferId2, errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED, extensionList: [{ key: 'key1', value: 'value1' }, { key: 'key2', value: 'value2' }, { key: 'cause', value: '5105: undefined' }], isTransferReadModel: true })
       ]
 
       const builderStub = sandbox.stub()
@@ -378,8 +378,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const transferId1 = '00000000-0000-0000-0000-000000000001'
       const transferId2 = '00000000-0000-0000-0000-000000000002'
       const extensions = cloneDeep(transferExtensions)
-      const transfer = { transferId: uuidToBin(transferId1), extensionList: extensions }
-      const transfer2 = { transferId: uuidToBin(transferId2), errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED }
+      const transfer = transferToBin({ transferId: transferId1, extensionList: extensions })
+      const transfer2 = transferToBin({ transferId: transferId2, errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED })
 
       const builderStub = sandbox.stub()
       const ilpPacketStub = sandbox.stub()
@@ -480,7 +480,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const transferId = '00000000-0000-0000-0000-000000000001'
       const fulfilment = 'ff1'
       const extensions = cloneDeep(transferExtensions)
-      const transfer = { transferId: uuidToBin(transferId), fulfilment, extensionList: extensions }
+      const transfer = transferToBin({ transferId, fulfilment, extensionList: extensions })
 
       const builderStub = sandbox.stub()
       const ilpPacketStub = sandbox.stub()

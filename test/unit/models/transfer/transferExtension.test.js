@@ -32,7 +32,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/transferExtension')
-const { uuidToBin } = require('../../../../src/models/transfer/uuid')
+const { transferToBin } = require('../../../../src/models/transfer/uuid')
 
 Test('Extension model', async (extensionModelTest) => {
   const transferExtensionModelFixtures = [
@@ -77,19 +77,19 @@ Test('Extension model', async (extensionModelTest) => {
   })
 
   await extensionModelTest.test('create false extension', async (assert) => {
-    Db.transferExtension.insert.withArgs({
-      transferId: uuidToBin('00000000-0000-0000-0000-000000000001'),
+    Db.transferExtension.insert.withArgs(transferToBin({
+      transferId: '00000000-0000-0000-0000-000000000001',
       key: 'key1',
       value: 'value1',
       createdDate: undefined
-    }).throws(new Error())
+    })).throws(new Error())
     try {
-      await Model.saveTransferExtension({
+      await Model.saveTransferExtension(transferToBin({
         transferId: '00000000-0000-0000-0000-000000000001',
         key: 'key1',
         value: 'value1',
         createdDate: undefined
-      })
+      }))
       assert.fail('should throw error')
     } catch (err) {
       assert.assert(err instanceof Error, `throws ${err}`)
@@ -98,7 +98,7 @@ Test('Extension model', async (extensionModelTest) => {
   })
 
   await extensionModelTest.test('save extension', async (assert) => {
-    Db.transferExtension.insert.withArgs({ ...transferExtensionModelFixtures[0], transferId: uuidToBin(transferExtensionModelFixtures[0].transferId) }).returns(1)
+    Db.transferExtension.insert.withArgs(transferToBin(transferExtensionModelFixtures[0])).returns(1)
     try {
       const result = await Model.saveTransferExtension(transferExtensionModelFixtures[0])
       assert.equal(result, 1, `returns ${result}`)
@@ -122,7 +122,7 @@ Test('Extension model', async (extensionModelTest) => {
   })
 
   await extensionModelTest.test('get extension by transferId', async (assert) => {
-    Db.transferExtension.find.withArgs({ transferId: uuidToBin('00000000-0000-0000-0000-000000000001'), isFulfilment: false, isError: false }).returns(transferExtensionModelFixtures[0])
+    Db.transferExtension.find.withArgs(transferToBin({ transferId: '00000000-0000-0000-0000-000000000001', isFulfilment: false, isError: false })).returns(transferExtensionModelFixtures[0])
     try {
       const result = await Model.getByTransferId('00000000-0000-0000-0000-000000000001')
       assert.deepEqual(result, transferExtensionModelFixtures[0])
@@ -136,7 +136,7 @@ Test('Extension model', async (extensionModelTest) => {
 
   await extensionModelTest.test('get fulfilment extension by transferId', async (assert) => {
     const isFulfilment = true
-    Db.transferExtension.find.withArgs({ transferId: uuidToBin('00000000-0000-0000-0000-000000000001'), isFulfilment, isError: false }).returns(transferExtensionModelFixtures[0])
+    Db.transferExtension.find.withArgs(transferToBin({ transferId: '00000000-0000-0000-0000-000000000001', isFulfilment, isError: false })).returns(transferExtensionModelFixtures[0])
     try {
       const result = await Model.getByTransferId('00000000-0000-0000-0000-000000000001', isFulfilment)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
@@ -160,7 +160,7 @@ Test('Extension model', async (extensionModelTest) => {
   })
 
   await extensionModelTest.test('get extension by transferErrorId', async (assert) => {
-    Db.transferExtension.find.withArgs({ transferId: uuidToBin('00000000-0000-0000-0000-000000000001'), isFulfilment: false, isError: true }).returns(transferExtensionModelFixtures[0])
+    Db.transferExtension.find.withArgs(transferToBin({ transferId: '00000000-0000-0000-0000-000000000001', isFulfilment: false, isError: true })).returns(transferExtensionModelFixtures[0])
     try {
       const result = await Model.getByTransferId('00000000-0000-0000-0000-000000000001', false, true)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
@@ -197,7 +197,7 @@ Test('Extension model', async (extensionModelTest) => {
   })
 
   await extensionModelTest.test('destroy extension', async (assert) => {
-    Db.transferExtension.destroy.withArgs({ transferId: uuidToBin('00000000-0000-0000-0000-000000000001') }).returns(1)
+    Db.transferExtension.destroy.withArgs(transferToBin({ transferId: '00000000-0000-0000-0000-000000000001' })).returns(1)
     try {
       const result = await Model.destroyByTransferId(transferExtensionModelFixtures[0].transferId)
       assert.equal(result, 1)

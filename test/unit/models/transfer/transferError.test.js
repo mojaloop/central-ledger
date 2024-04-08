@@ -30,7 +30,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/transferError')
 const Db = require('../../../../src/lib/db')
 const Time = require('@mojaloop/central-services-shared').Util.Time
-const { uuidToBin } = require('../../../../src/models/transfer/uuid')
+const { transferToBin } = require('../../../../src/models/transfer/uuid')
 
 Test('TransferError model', async (TransferErrorTest) => {
   let sandbox
@@ -71,7 +71,7 @@ Test('TransferError model', async (TransferErrorTest) => {
   await TransferErrorTest.test('insert should', async (insertTest) => {
     await insertTest.test('insert the record into database', async test => {
       try {
-        Db.transferError.insert.withArgs({ ...transferErrorFixtures[0], transferId: uuidToBin(transferErrorFixtures[0].transferId) }).returns(1)
+        Db.transferError.insert.withArgs(transferToBin(transferErrorFixtures[0])).returns(1)
         const result = await Model.insert(transferErrorFixtures[0].transferId, transferErrorFixtures[0].transferStateChangeId, transferErrorFixtures[0].errorCode, transferErrorFixtures[0].errorDescription)
         test.equal(result, 1)
         test.end()
@@ -84,7 +84,7 @@ Test('TransferError model', async (TransferErrorTest) => {
 
     await insertTest.test('should throw error', async (test) => {
       try {
-        Db.transferError.insert.withArgs({ ...transferErrorFixtures[0], transferId: uuidToBin(transferErrorFixtures[0].transferId) }).throws(new Error('message'))
+        Db.transferError.insert.withArgs(transferToBin(transferErrorFixtures[0])).throws(new Error('message'))
 
         await Model.insert(transferErrorFixtures[0].transferId, transferErrorFixtures[0].transferStateChangeId, transferErrorFixtures[0].errorCode, transferErrorFixtures[0].errorDescription)
         test.fail(' should throw')
@@ -101,7 +101,7 @@ Test('TransferError model', async (TransferErrorTest) => {
   await TransferErrorTest.test('getByTransferStateChangeId should', async (getByTransferStateChangeIdTest) => {
     await getByTransferStateChangeIdTest.test('getByTransferStateChangeId the record into database', async test => {
       try {
-        Db.transferError.find.returns(transferErrorFixtures[0])
+        Db.transferError.find.returns(transferToBin(transferErrorFixtures[0]))
         const result = await Model.getByTransferStateChangeId(transferErrorFixtures[0].transferStateChangeId)
         test.deepEqual(result, transferErrorFixtures[0], 'Results match')
         test.end()

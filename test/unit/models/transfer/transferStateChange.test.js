@@ -32,7 +32,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/transferStateChange')
-const { uuidToBin } = require('../../../../src/models/transfer/uuid')
+const { transferToBin } = require('../../../../src/models/transfer/uuid')
 
 Test('TransferStateChange model', async (transferStateChangeModel) => {
   let sandbox
@@ -84,7 +84,7 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
   })
 
   await transferStateChangeModel.test('save transferStateChange', async (assert) => {
-    Db.transferStateChange.insert.withArgs({ ...transferStateChangeModelFixtures[0], transferId: uuidToBin(transferStateChangeModelFixtures[0].transferId) }).returns(1)
+    Db.transferStateChange.insert.withArgs(transferToBin(transferStateChangeModelFixtures[0])).returns(1)
     try {
       const result = await Model.saveTransferStateChange(transferStateChangeModelFixtures[0])
       assert.equal(result, 1, ` returns ${result}`)
