@@ -29,7 +29,7 @@ exports.up = async (knex) => {
   return await knex.schema.hasTable('ilpPacket').then(function(exists) {
     if (!exists) {
       return knex.schema.createTable('ilpPacket', (t) => {
-        t.string('transferId', 36).primary().notNullable()
+        t.binary('transferId', 16).primary().notNullable()
         t.foreign('transferId').references('transferId').inTable('transfer')
         t.text('value').notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()

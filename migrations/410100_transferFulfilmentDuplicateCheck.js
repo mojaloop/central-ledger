@@ -30,7 +30,7 @@ exports.up = async (knex) => {
     if (!exists) {
       return knex.schema.createTable('transferFulfilmentDuplicateCheck', (t) => {
         t.string('transferFulfilmentId', 36).primary().notNullable()
-        t.string('transferId', 36).notNullable()
+        t.binary('transferId', 16).notNullable()
         t.foreign('transferId').references('transferId').inTable('transfer')
         t.string('hash', 256).notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()

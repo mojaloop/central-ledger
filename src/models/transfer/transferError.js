@@ -32,6 +32,7 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { uuidToBin } = require('./uuid')
 
 /**
  * @function Insert
@@ -49,7 +50,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const insert = async (transferId, transferStateChangeId, errorCode, errorDescription) => {
   Logger.isDebugEnabled && Logger.debug(`insert transferError - errorCode: ${errorCode}, errorDesc: ${errorDescription}`)
   try {
-    return Db.from('transferError').insert({ transferId, transferStateChangeId, errorCode, errorDescription })
+    return Db.from('transferError').insert({ transferId: uuidToBin(transferId), transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -109,9 +110,10 @@ const getByTransferId = async (id) => {
   try {
     const transferError = await Db.from('transferError').query(async (builder) => {
       const result = builder
-        .where({ transferId: id })
+        .where({ transferId: uuidToBin(id) })
         .select('*')
         .first()
+      if (result) result.transferId = id
       return result
     })
     transferError.errorCode = transferError.errorCode.toString()

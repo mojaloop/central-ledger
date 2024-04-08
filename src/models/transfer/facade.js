@@ -45,6 +45,7 @@ const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
 const Metrics = require('@mojaloop/central-services-metrics')
+const { uuidToBin, binToUuid } = require('./uuid')
 
 // Alphabetically ordered list of error texts used below
 const UnsupportedActionText = 'Unsupported action'
@@ -55,7 +56,7 @@ const getById = async (id) => {
     return await Db.from('transfer').query(async (builder) => {
       const transferResult = await builder
         .where({
-          'transfer.transferId': id,
+          'transfer.transferId': uuidToBin(id),
           'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
           'tprt2.name': 'PAYEE_DFSP'
         })
@@ -103,6 +104,7 @@ const getById = async (id) => {
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
       if (transferResult) {
+        transferResult.transferId = id
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
         if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
           if (!transferResult.extensionList) transferResult.extensionList = []
@@ -125,7 +127,7 @@ const getByIdLight = async (id) => {
     /** @namespace Db.transfer **/
     return await Db.from('transfer').query(async (builder) => {
       const transferResult = await builder
-        .where({ 'transfer.transferId': id })
+        .where({ 'transfer.transferId': uuidToBin(id) })
         .leftJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
@@ -149,6 +151,7 @@ const getByIdLight = async (id) => {
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
       if (transferResult) {
+        transferResult.transferId = id
         if (!transferResult.fulfilment) {
           transferResult.extensionList = await TransferExtensionModel.getByTransferId(id)
         } else {
@@ -216,6 +219,8 @@ const getAll = async () => {
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
       for (const transferResult of transferResultList) {
+        if (transferResult.transferId) transferResult.transferId = binToUuid(transferResult.transferId)
+        transferResult.transferId = transferResult.transferId.toString('hex')
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(transferResult.transferId)
         transferResult.isTransferReadModel = true
       }
@@ -232,7 +237,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
     return await Db.from('transferParticipant').query(async builder => {
       return builder
         .where({
-          'transferParticipant.transferId': id,
+          'transferParticipant.transferId': uuidToBin(id),
           'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
           'transferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
         })
@@ -374,7 +379,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
         Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferStateChange')
         if (fspiopError) {
           const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
-            .where({ transferId })
+            .where({ transferId: uuidToBin(transferId) })
             .forUpdate().first().orderBy('transferStateChangeId', 'desc')
           transferStateChangeRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
           transferErrorRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
@@ -421,7 +426,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       _.set(m, acct.name, acct.participantCurrencyId), {})
 
     const transferRecord = {
-      transferId: payload.transferId,
+      transferId: uuidToBin(payload.transferId),
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
       ilpCondition: payload.condition,
@@ -429,21 +434,21 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
 
     const ilpPacketRecord = {
-      transferId: payload.transferId,
+      transferId: uuidToBin(payload.transferId),
       value: payload.ilpPacket
     }
 
     const state = ((hasPassedValidation) ? Enum.Transfers.TransferInternalState.RECEIVED_PREPARE : Enum.Transfers.TransferInternalState.INVALID)
 
     const transferStateChangeRecord = {
-      transferId: payload.transferId,
+      transferId: uuidToBin(payload.transferId),
       transferStateId: state,
       reason: stateReason,
       createdDate: Time.getUTCString(new Date())
     }
 
     const payerTransferParticipantRecord = {
-      transferId: payload.transferId,
+      transferId: uuidToBin(payload.transferId),
       participantCurrencyId: participantCurrencyIds[payload.payerFsp],
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
@@ -451,7 +456,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
 
     const payeeTransferParticipantRecord = {
-      transferId: payload.transferId,
+      transferId: uuidToBin(payload.transferId),
       participantCurrencyId: participantCurrencyIds[payload.payeeFsp],
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
@@ -580,7 +585,7 @@ const getTransferStateByTransferId = async (id) => {
       return builder
         .innerJoin('transferState AS ts', 'ts.transferStateId', 'transferStateChange.transferStateId')
         .where({
-          'transferStateChange.transferId': id,
+          'transferStateChange.transferId': uuidToBin(id),
           'ts.isActive': 1
         })
         .select('transferStateChange.*', 'ts.enumeration')
@@ -745,7 +750,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           .join('participantCurrency AS crpc', 'crpc.participantCurrencyId', 'dr.participantCurrencyId')
           .join('participantPosition AS crp', 'crp.participantCurrencyId', 'cr.participantCurrencyId')
           .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
-          .where('t.transferId', param1.transferId)
+          .where('t.transferId', uuidToBin(param1.transferId))
           .whereIn('drpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
             enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
           .whereIn('crpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
@@ -761,7 +766,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         if (param1.transferStateId === enums.transferState.COMMITTED) {
           await knex('transferStateChange')
             .insert({
-              transferId: param1.transferId,
+              transferId: uuidToBin(param1.transferId),
               transferStateId: enums.transferState.RECEIVED_FULFIL,
               reason: param1.reason,
               createdDate: param1.createdDate
@@ -770,7 +775,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         } else if (param1.transferStateId === enums.transferState.ABORTED_REJECTED) {
           await knex('transferStateChange')
             .insert({
-              transferId: param1.transferId,
+              transferId: uuidToBin(param1.transferId),
               transferStateId: enums.transferState.RECEIVED_REJECT,
               reason: param1.reason,
               createdDate: param1.createdDate
@@ -779,7 +784,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         }
         transferStateChangeId = await knex('transferStateChange')
           .insert({
-            transferId: param1.transferId,
+            transferId: uuidToBin(param1.transferId),
             transferStateId: param1.transferStateId,
             reason: param1.reason,
             createdDate: param1.createdDate
@@ -870,7 +875,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         // Insert transfer
         await knex('transfer')
           .insert({
-            transferId: payload.transferId,
+            transferId: uuidToBin(payload.transferId),
             amount: payload.amount.amount,
             currencyId: payload.amount.currency,
             ilpCondition: 0,
@@ -902,7 +907,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         // Insert transferParticipant records
         await knex('transferParticipant')
           .insert({
-            transferId: payload.transferId,
+            transferId: uuidToBin(payload.transferId),
             participantCurrencyId: reconciliationAccountId,
             transferParticipantRoleTypeId: enums.transferParticipantRoleType.HUB,
             ledgerEntryTypeId,
@@ -912,7 +917,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           .transacting(trx)
         await knex('transferParticipant')
           .insert({
-            transferId: payload.transferId,
+            transferId: uuidToBin(payload.transferId),
             participantCurrencyId: payload.participantCurrencyId,
             transferParticipantRoleTypeId: enums.transferParticipantRoleType.DFSP_SETTLEMENT,
             ledgerEntryTypeId,
@@ -923,7 +928,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
 
         await knex('transferStateChange')
           .insert({
-            transferId: payload.transferId,
+            transferId: uuidToBin(payload.transferId),
             transferStateId: enums.transferState.RECEIVED_PREPARE,
             reason: payload.reason,
             createdDate: transactionTimestamp
@@ -933,7 +938,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         // Save transaction reference and transfer extensions
         let transferExtensions = []
         transferExtensions.push({
-          transferId: payload.transferId,
+          transferId: uuidToBin(payload.transferId),
           key: 'externalReference',
           value: payload.externalReference,
           createdDate: transactionTimestamp
@@ -942,7 +947,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           transferExtensions = transferExtensions.concat(
             payload.extensionList.extension.map(ext => {
               return {
-                transferId: payload.transferId,
+                transferId: uuidToBin(payload.transferId),
                 key: ext.key,
                 value: ext.value,
                 createdDate: transactionTimestamp
@@ -983,7 +988,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
     const trxFunction = async (trx, doCommit = true) => {
       try {
         const param1 = {
-          transferId: payload.transferId,
+          transferId: uuidToBin(payload.transferId),
           transferStateId: enums.transferState.RESERVED,
           reason: payload.reason,
           createdDate: transactionTimestamp,
@@ -1028,7 +1033,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
-        const transferId = payload.transferId
+        const transferId = uuidToBin(payload.transferId)
         await knex('transferFulfilmentDuplicateCheck')
           .insert({
             transferId
@@ -1049,7 +1054,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
         if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN ||
           payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
           const param1 = {
-            transferId: payload.transferId,
+            transferId,
             transferStateId: enums.transferState.COMMITTED,
             reason: payload.reason,
             createdDate: transactionTimestamp,
@@ -1090,7 +1095,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
-        const transferId = payload.transferId
+        const transferId = uuidToBin(payload.transferId)
         await knex('transferFulfilmentDuplicateCheck')
           .insert({
             transferId
@@ -1110,7 +1115,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
 
         if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
           const param1 = {
-            transferId: payload.transferId,
+            transferId,
             transferStateId: enums.transferState.ABORTED_REJECTED,
             reason: payload.reason,
             createdDate: transactionTimestamp,
@@ -1150,7 +1155,7 @@ const getTransferParticipant = async (participantName, transferId) => {
       return builder
         .where({
           'participant.name': participantName,
-          'tp.transferId': transferId,
+          'tp.transferId': uuidToBin(transferId),
           'participant.isActive': 1,
           'pc.isActive': 1
         })

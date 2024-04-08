@@ -32,7 +32,7 @@ exports.up = async (knex) => {
         t.string('transferFulfilmentId', 36).primary().notNullable()
         // TODO: enable when transferFulfilmentDuplicateCheck is performed
         // t.foreign('transferFulfilmentId').references('transferFulfilmentId').inTable('transferFulfilmentDuplicateCheck')
-        t.string('transferId', 36).notNullable()
+        t.binary('transferId', 16).notNullable()
         t.foreign('transferId').references('transferId').inTable('transfer')
         t.string('ilpFulfilment', 256).notNullable()
         t.dateTime('completedDate').notNullable()

@@ -30,7 +30,7 @@ exports.up = async (knex) => {
     if (!exists) {
       return knex.schema.createTable('transferParticipant', (t) => {
         t.bigIncrements('transferParticipantId').primary().notNullable()
-        t.string('transferId', 36).notNullable()
+        t.binary('transferId', 16).notNullable()
         t.foreign('transferId').references('transferId').inTable('transfer')
         t.integer('participantCurrencyId').unsigned().notNullable()
         t.foreign('participantCurrencyId').references('participantCurrencyId').inTable('participantCurrency')

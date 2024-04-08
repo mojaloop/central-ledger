@@ -33,11 +33,12 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/ilpPacket')
+const { uuidToBin } = require('../../../../src/models/transfer/uuid')
 
 Test('ilpPacket model', async (ilpTest) => {
   const ilpPacketTestValues = [
     {
-      transferId: '1',
+      transferId: '00000000-0000-0000-0000-000000000001',
       value: 'test packet'
     }
   ]
@@ -72,8 +73,8 @@ Test('ilpPacket model', async (ilpTest) => {
   })
 
   await ilpTest.test('create false ilpPacket', async (assert) => {
-    const falseIlp = { transferId: '1', value: undefined }
-    Db.ilpPacket.insert.withArgs(falseIlp).throws(new Error())
+    const falseIlp = { transferId: '00000000-0000-0000-0000-000000000001', value: undefined }
+    Db.ilpPacket.insert.withArgs({ ...falseIlp, transferId: uuidToBin(falseIlp.transferId) }).throws(new Error())
     try {
       const r = await Model.saveIlpPacket(falseIlp)
       console.log(r)
@@ -87,7 +88,7 @@ Test('ilpPacket model', async (ilpTest) => {
   await ilpTest.test('create ilpPacket', async (assert) => {
     try {
       Db.ilpPacket.insert.withArgs({
-        transferId: ilpPacket.transferId,
+        transferId: uuidToBin(ilpPacket.transferId),
         value: ilpPacket.value
       }).returns(1)
       const result = await Model.saveIlpPacket(ilpPacket)
@@ -112,9 +113,9 @@ Test('ilpPacket model', async (ilpTest) => {
   })
 
   await ilpTest.test('getByTransferId', async (assert) => {
-    Db.ilpPacket.findOne.withArgs({ transferId: ilpPacketTestValues[0].transferId }).returns(ilpPacketTestValues[0])
+    Db.ilpPacket.findOne.withArgs({ transferId: uuidToBin(ilpPacketTestValues[0].transferId) }).returns(ilpPacketTestValues[0])
     try {
-      const result = await Model.getByTransferId('1')
+      const result = await Model.getByTransferId('00000000-0000-0000-0000-000000000001')
       assert.equal(result.transferId, ilpPacket.transferId, 'transferIds are equal')
       assert.equal(result.condition, ilpPacket.condition, 'conditions match')
       assert.equal(result.fulfilment, ilpPacket.fulfilment, 'fulfilments match')
@@ -155,7 +156,7 @@ Test('ilpPacket model', async (ilpTest) => {
     }
 
     Db.ilpPacket.destroy.withArgs({
-      transferId: falseIlpPacket.transferId
+      transferId: uuidToBin(falseIlpPacket.transferId)
     }).throws(new Error('False destroyByTransferId ilpPacket'))
 
     try {
@@ -170,7 +171,7 @@ Test('ilpPacket model', async (ilpTest) => {
   await ilpTest.test('destroyByTransferId', async (assert) => {
     try {
       Db.ilpPacket.destroy.withArgs(
-        { transferId: ilpPacketTestValues[0].transferId }
+        { transferId: uuidToBin(ilpPacketTestValues[0].transferId) }
       ).returns(1)
 
       const updatedId = await Model.destroyByTransferId({ transferId: ilpPacketTestValues[0].transferId })

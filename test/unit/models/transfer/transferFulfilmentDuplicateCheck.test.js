@@ -29,6 +29,7 @@ const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/transferFulfilmentDuplicateCheck')
 const Db = require('../../../../src/lib/db')
+const { uuidToBin } = require('../../../../src/models/transfer/uuid')
 
 Test('TransferFulfilmentDuplicateCheck model', async (TransferFulfilmentDuplicateCheckTest) => {
   let sandbox
@@ -59,7 +60,7 @@ Test('TransferFulfilmentDuplicateCheck model', async (TransferFulfilmentDuplicat
     await getTransferFulfilmentDuplicateCheckTest.test('get the transfer duplicate check hash', async test => {
       try {
         const { transferId } = existingHashes[0]
-        Db.transferFulfilmentDuplicateCheck.findOne.withArgs({ transferId }).returns(existingHashes[0])
+        Db.transferFulfilmentDuplicateCheck.findOne.withArgs({ transferId: uuidToBin(transferId) }).returns(existingHashes[0])
         const result = await Model.getTransferFulfilmentDuplicateCheck(transferId)
         test.deepEqual(result, existingHashes[0])
         test.end()

@@ -32,17 +32,18 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/transferStateChange')
+const { uuidToBin } = require('../../../../src/models/transfer/uuid')
 
 Test('TransferStateChange model', async (transferStateChangeModel) => {
   let sandbox
 
   const transferStateChangeModelFixtures = [
     {
-      transferId: 1,
+      transferId: '00000000-0000-0000-0000-000000000001',
       transferStateId: 1
     },
     {
-      transferId: 2,
+      transferId: '00000000-0000-0000-0000-000000000002',
       transferStateId: 2
     }
   ]
@@ -83,7 +84,7 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
   })
 
   await transferStateChangeModel.test('save transferStateChange', async (assert) => {
-    Db.transferStateChange.insert.withArgs(transferStateChangeModelFixtures[0]).returns(1)
+    Db.transferStateChange.insert.withArgs({ ...transferStateChangeModelFixtures[0], transferId: uuidToBin(transferStateChangeModelFixtures[0].transferId) }).returns(1)
     try {
       const result = await Model.saveTransferStateChange(transferStateChangeModelFixtures[0])
       assert.equal(result, 1, ` returns ${result}`)
@@ -113,7 +114,7 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
         })
       })
 
-      const result = await Model.getByTransferId(1)
+      const result = await Model.getByTransferId('00000000-0000-0000-0000-000000000001')
       assert.deepEqual(result, transferStateChangeModelFixtures[0])
       assert.end()
       sandbox.restore()
@@ -145,7 +146,7 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
 
       Db.transferStateChange.query.callsArgWith(0, builderStub)
       Db.transferStateChange.query.returns(transferStateChangeModelFixtures[0])
-      builderStub.selext = sandbox.stub().returns({
+      builderStub.select = sandbox.stub().returns({
         orderBy: orderStub.returns({
           first: firstStub.returns(transferStateChangeModelFixtures[0])
         })

@@ -31,7 +31,7 @@ exports.up = async (knex) => {
     if (!exists) {
       return knex.schema.createTable('bulkTransferAssociation', (t) => {
         t.bigIncrements('bulkTransferAssociationId').primary().notNullable()
-        t.string('transferId', 36).notNullable()
+        t.binary('transferId', 16).notNullable()
         t.string('bulkTransferId', 36).notNullable()
         t.foreign('bulkTransferId').references('bulkTransferId').inTable('bulkTransfer')
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()

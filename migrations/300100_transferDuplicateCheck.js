@@ -29,7 +29,7 @@ exports.up = async (knex) => {
   return await knex.schema.hasTable('transferDuplicateCheck').then(function(exists) {
     if (!exists) {
       return knex.schema.createTable('transferDuplicateCheck', (t) => {
-        t.string('transferId', 36).primary().notNullable()
+        t.binary('transferId', 16).primary().notNullable()
         t.string('hash', 256).notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })

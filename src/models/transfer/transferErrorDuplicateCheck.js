@@ -31,6 +31,7 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { uuidToBin } = require('./uuid')
 
 /**
  * @function GetTransferFulfilmentDuplicateCheck
@@ -46,7 +47,9 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const getTransferErrorDuplicateCheck = async (transferId) => {
   Logger.isDebugEnabled && Logger.debug(`get transferErrorDuplicateCheck (transferId=${transferId})`)
   try {
-    return Db.from('transferErrorDuplicateCheck').findOne({ transferId })
+    const result = Db.from('transferErrorDuplicateCheck').findOne({ transferId: uuidToBin(transferId) })
+    if (result) result.transferId = transferId
+    return result
   } catch (err) {
     throw new Error(err.message)
   }
@@ -67,7 +70,7 @@ const getTransferErrorDuplicateCheck = async (transferId) => {
 const saveTransferErrorDuplicateCheck = async (transferId, hash) => {
   Logger.isDebugEnabled && Logger.debug(`save transferErrorDuplicateCheck (transferId=${transferId}, hash=${hash})`)
   try {
-    return Db.from('transferErrorDuplicateCheck').insert({ transferId, hash })
+    return Db.from('transferErrorDuplicateCheck').insert({ transferId: uuidToBin(transferId), hash })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

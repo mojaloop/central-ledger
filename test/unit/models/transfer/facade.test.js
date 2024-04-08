@@ -34,6 +34,7 @@ const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
 const TransferFacade = require('../../../../src/models/transfer/facade')
+const { uuidToBin } = require('../../../../src/models/transfer/uuid')
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
@@ -130,12 +131,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('getById should return transfer by id', async (test) => {
     try {
-      const transferId1 = 't1'
-      const transferId2 = 't2'
+      const transferId1 = '00000000-0000-0000-0000-000000000001'
+      const transferId2 = '00000000-0000-0000-0000-000000000002'
       const extensions = cloneDeep(transferExtensions)
       const transfers = [
-        { transferId: transferId1, extensionList: extensions },
-        { transferId: transferId2, errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED, extensionList: [{ key: 'key1', value: 'value1' }, { key: 'key2', value: 'value2' }, { key: 'cause', value: '5105: undefined' }], isTransferReadModel: true }
+        { transferId: uuidToBin(transferId1), extensionList: extensions },
+        { transferId: uuidToBin(transferId2), errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED, extensionList: [{ key: 'key1', value: 'value1' }, { key: 'key2', value: 'value2' }, { key: 'cause', value: '5105: undefined' }], isTransferReadModel: true }
       ]
 
       const builderStub = sandbox.stub()
@@ -208,7 +209,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const found = await TransferFacade.getById(transferId1)
       test.equal(found, transfers[0])
       test.ok(builderStub.where.withArgs({
-        'transfer.transferId': transferId1,
+        'transfer.transferId': uuidToBin(transferId1),
         'tprt1.name': 'PAYER_DFSP',
         'tprt2.name': 'PAYEE_DFSP'
       }).calledOnce)
@@ -307,7 +308,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('getById should find zero records', async (test) => {
     try {
-      const transferId1 = 't1'
+      const transferId1 = '00000000-0000-0000-0000-000000000001'
       const builderStub = sandbox.stub()
       Db.transfer.query.callsArgWith(0, builderStub)
       builderStub.where = sandbox.stub()
@@ -360,7 +361,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('getById should throw an error', async (test) => {
     try {
-      const transferId1 = 't1'
+      const transferId1 = '00000000-0000-0000-0000-000000000001'
       Db.transfer.query.throws(new Error())
       await TransferFacade.getById(transferId1)
       test.fail('Error not thrown')
@@ -374,11 +375,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('getByIdLight should return transfer by id for RESERVED', async (test) => {
     try {
-      const transferId1 = 't1'
-      const transferId2 = 't2'
+      const transferId1 = '00000000-0000-0000-0000-000000000001'
+      const transferId2 = '00000000-0000-0000-0000-000000000002'
       const extensions = cloneDeep(transferExtensions)
-      const transfer = { transferId: transferId1, extensionList: extensions }
-      const transfer2 = { transferId: transferId2, errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED }
+      const transfer = { transferId: uuidToBin(transferId1), extensionList: extensions }
+      const transfer2 = { transferId: uuidToBin(transferId2), errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED }
 
       const builderStub = sandbox.stub()
       const ilpPacketStub = sandbox.stub()
@@ -419,7 +420,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
       const found = await TransferFacade.getByIdLight(transferId1)
       test.equal(found, transfer)
-      test.ok(builderStub.where.withArgs({ 'transfer.transferId': transferId1 }).calledOnce)
+      test.ok(builderStub.where.withArgs({ 'transfer.transferId': uuidToBin(transferId1) }).calledOnce)
       test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
       test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
       test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
@@ -476,10 +477,10 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('getByIdLight should return transfer by id for COMMITTED', async (test) => {
     try {
-      const transferId = 't1'
+      const transferId = '00000000-0000-0000-0000-000000000001'
       const fulfilment = 'ff1'
       const extensions = cloneDeep(transferExtensions)
-      const transfer = { transferId, fulfilment, extensionList: extensions }
+      const transfer = { transferId: uuidToBin(transferId), fulfilment, extensionList: extensions }
 
       const builderStub = sandbox.stub()
       const ilpPacketStub = sandbox.stub()
@@ -520,7 +521,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
       const found = await TransferFacade.getByIdLight(transferId)
       test.equal(found, transfer)
-      test.ok(builderStub.where.withArgs({ 'transfer.transferId': transferId }).calledOnce)
+      test.ok(builderStub.where.withArgs({ 'transfer.transferId': uuidToBin(transferId) }).calledOnce)
       test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
       test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
       test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
@@ -552,7 +553,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('getByIdLight should find zero records', async (test) => {
     try {
-      const transferId1 = 't1'
+      const transferId1 = '00000000-0000-0000-0000-000000000001'
       const builderStub = sandbox.stub()
       Db.transfer.query.callsArgWith(0, builderStub)
       builderStub.where = sandbox.stub()
@@ -585,7 +586,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('getByIdLight should throw an error', async (test) => {
     try {
-      const transferId1 = 't1'
+      const transferId1 = '00000000-0000-0000-0000-000000000001'
       Db.transfer.query.throws(new Error())
       await TransferFacade.getByIdLight(transferId1)
       test.fail('Error not thrown')
@@ -599,8 +600,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('getAll should return all transfers', async (test) => {
     try {
-      const transferId1 = 't1'
-      const transferId2 = 't2'
+      const transferId1 = '00000000-0000-0000-0000-000000000001'
+      const transferId2 = '00000000-0000-0000-0000-000000000002'
       const extensions = cloneDeep(transferExtensions)
       const transfers = [{ transferId: transferId1, extensionList: extensions }, { transferId: transferId2 }]
 
@@ -724,7 +725,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('getTransferInfoToChangePosition should return transfer', async (test) => {
     try {
-      const transferId = 't1'
+      const transferId = '00000000-0000-0000-0000-000000000001'
       const extensions = cloneDeep(transferExtensions)
       const transfer = { transferId, extensionList: extensions }
       const transferParticipantRoleType = Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP
@@ -753,7 +754,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const found = await TransferFacade.getTransferInfoToChangePosition(transferId, transferParticipantRoleType, ledgerEntryType)
       test.equal(found, transfer)
       test.ok(builderStub.where.withArgs({
-        'transferParticipant.transferId': transferId,
+        'transferParticipant.transferId': uuidToBin(transferId),
         'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleType,
         'transferParticipant.ledgerEntryTypeId': ledgerEntryType
       }).calledOnce)
@@ -775,7 +776,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('getTransferInfoToChangePosition should throw an error', async (test) => {
     try {
-      const transferId = 't1'
+      const transferId = '00000000-0000-0000-0000-000000000001'
       Db.transferParticipant.query.throws(new Error())
       await TransferFacade.getTransferInfoToChangePosition(transferId)
       test.fail('Error not thrown')
@@ -1094,7 +1095,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('savePayeeTransferResponse should throw an error when action is not supported', async (test) => {
     try {
-      const transferId = 't1'
+      const transferId = '00000000-0000-0000-0000-000000000001'
       const payload = {}
       const action = 'not supported'
       const fspiopError = null
@@ -2271,7 +2272,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferCommitTest.test('make transfer commit when called from within a transaction', async test => {
         try {
           const payload = {
-            transferId: 1,
+            transferId: '00000000-0000-0000-0000-000000000001',
             action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_COMMIT,
             participantCurrencyId: 2
           }
@@ -2331,7 +2332,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferCommitTest.test('make transfer commit in a new transaction and commit it when called from outside of a transaction', async test => {
         try {
           const payload = {
-            transferId: 1,
+            transferId: '00000000-0000-0000-0000-000000000001',
             action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN,
             participantCurrencyId: 2
           }
@@ -2424,7 +2425,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferAbortTest.test('make transfer abort when called from within a transaction', async test => {
         try {
           const payload = {
-            transferId: 1,
+            transferId: '00000000-0000-0000-0000-000000000001',
             action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT,
             participantCurrencyId: 2
           }
@@ -2483,7 +2484,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferAbortTest.test('make transfer commit in a new transaction and commit it when called from outside of a transaction', async test => {
         try {
           const payload = {
-            transferId: 1,
+            transferId: '00000000-0000-0000-0000-000000000001',
             action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT,
             participantCurrencyId: 2
           }
@@ -2576,7 +2577,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       test.deepEqual(found, [1], 'retrieve the record')
       test.ok(builderStub.where.withArgs({
         'participant.name': participantName,
-        'tp.transferId': transferId,
+        'tp.transferId': uuidToBin(transferId),
         'participant.isActive': 1,
         'pc.isActive': 1
       }).calledOnce, 'query builder called once')

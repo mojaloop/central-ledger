@@ -26,11 +26,12 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
+const { uuidToBin } = require('./uuid')
 
 const saveTransferParticipant = async (record) => {
   Logger.isDebugEnabled && Logger.debug('save transferParticipant' + record.toString())
   try {
-    return await Db.from('transferParticipant').insert(record)
+    return await Db.from('transferParticipant').insert({ ...record, transferId: uuidToBin(record.transferId) })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err

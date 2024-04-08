@@ -29,6 +29,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/transfer')
+const { uuidToBin } = require('../../../../src/models/transfer/uuid')
 
 Test('Transfer model', async (transfer) => {
   let sandbox
@@ -69,7 +70,7 @@ Test('Transfer model', async (transfer) => {
     Model.getById(transferRecord.transferId)
       .then(result => {
         assert.deepEqual(result, transferRecord, 'match the result object')
-        assert.ok(Db.transfer.findOne.calledWith({ transferId: transferRecord.transferId }), 'called with transferId')
+        assert.ok(Db.transfer.findOne.calledWith({ transferId: uuidToBin(transferRecord.transferId) }), 'called with transferId')
         assert.end()
       })
   })
@@ -118,7 +119,7 @@ Test('Transfer model', async (transfer) => {
   await transfer.test('destroyById should', async (assert) => {
     try {
       Db.transfer.destroy.returns(Promise.resolve())
-      await Model.destroyById(1)
+      await Model.destroyById('00000000-0000-0000-0000-000000000001')
       assert.ok(Db.transfer.destroy.calledOnce, 'have been called once')
       assert.end()
     } catch (err) {
@@ -131,7 +132,7 @@ Test('Transfer model', async (transfer) => {
   await transfer.test('destroyById should throw an error', async (assert) => {
     try {
       Db.transfer.destroy.throws(new Error())
-      await Model.destroyById(1)
+      await Model.destroyById('00000000-0000-0000-0000-000000000001')
       assert.ok(Db.transfer.destroy.calledOnce)
       assert.fail('Error not thrown')
       assert.end()

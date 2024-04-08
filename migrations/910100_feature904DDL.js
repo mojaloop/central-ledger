@@ -85,7 +85,7 @@ const migrateDDL = async (knex) => {
   // create new table for storing transferExtension - isFulfilment, isError boolean columns
   await knex.schema.createTable('transferExtension', (t) => {
     t.bigIncrements('transferExtensionId').primary().notNullable()
-    t.string('transferId', 36).notNullable()
+    t.binary('transferId', 16).notNullable()
     t.foreign('transferId').references('transferId').inTable('transfer')
     t.string('key', 128).notNullable()
     t.text('value').notNullable()
@@ -95,14 +95,14 @@ const migrateDDL = async (knex) => {
   })
   // create new table for storing transferFulfilment hashes with new primary key - transferId
   await knex.schema.createTable('transferFulfilmentDuplicateCheck', (t) => {
-    t.string('transferId', 36).primary().notNullable()
+    t.binary('transferId', 16).primary().notNullable()
     t.foreign('transferId').references('transferId').inTable('transfer')
     t.string('hash', 256).nullable()
     t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
   })
   // create new table for storing transferFulfilment records with new primary key - transferId
   await knex.schema.createTable('transferFulfilment', (t) => {
-    t.string('transferId', 36).primary().notNullable()
+    t.binary('transferId', 16).primary().notNullable()
     t.foreign('transferId').references('transferId').inTable('transferFulfilmentDuplicateCheck')
     t.string('ilpFulfilment', 256).nullable()
     t.dateTime('completedDate').notNullable()
@@ -113,14 +113,14 @@ const migrateDDL = async (knex) => {
   })
   // create new table for storing transferError hashes with new primary key - transferId
   await knex.schema.createTable('transferErrorDuplicateCheck', (t) => {
-    t.string('transferId', 36).primary().notNullable()
+    t.binary('transferId', 16).primary().notNullable()
     t.foreign('transferId').references('transferId').inTable('transfer')
     t.string('hash', 256).nullable()
     t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
   })
   // create new table for storing transferError records with new primary key - transferId
   await knex.schema.createTable('transferError', (t) => {
-    t.string('transferId', 36).primary().notNullable()
+    t.binary('transferId', 16).primary().notNullable()
     t.foreign('transferId').references('transferId').inTable('transferErrorDuplicateCheck')
     t.bigInteger('transferStateChangeId').unsigned().notNullable()
     t.foreign('transferStateChangeId').references('transferStateChangeId').inTable('transferStateChange')
