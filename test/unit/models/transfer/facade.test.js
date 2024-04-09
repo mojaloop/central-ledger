@@ -34,7 +34,7 @@ const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
 const TransferFacade = require('../../../../src/models/transfer/facade')
-const { uuidToBin, transferToBin } = require('../../../../src/models/transfer/uuid')
+const { uuidToBin, transferToBin, transferToUuid } = require('../../../../src/models/transfer/uuid')
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
@@ -135,7 +135,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const transferId2 = '00000000-0000-0000-0000-000000000002'
       const extensions = cloneDeep(transferExtensions)
       const transfers = [
-        transferToBin({ transferId: transferId1, extensionList: extensions }),
+        transferToBin({ transferId: transferId1, extensionList: extensions, isTransferReadModel: true }),
         transferToBin({ transferId: transferId2, errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED, extensionList: [{ key: 'key1', value: 'value1' }, { key: 'key2', value: 'value2' }, { key: 'cause', value: '5105: undefined' }], isTransferReadModel: true })
       ]
 
@@ -207,7 +207,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       transferExtensionModel.getByTransferId.returns(extensions)
 
       const found = await TransferFacade.getById(transferId1)
-      test.equal(found, transfers[0])
+      test.deepEqual(found, transferToUuid(transfers[0]))
       test.ok(builderStub.where.withArgs({
         'transfer.transferId': uuidToBin(transferId1),
         'tprt1.name': 'PAYER_DFSP',
@@ -271,7 +271,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
                                     leftJoin: transferErrorStub.returns({
                                       select: selectStub.returns({
                                         orderBy: orderByStub.returns({
-                                          first: firstStub.returns(transfers[1])
+                                          first: firstStub.returns({ ...transfers[1] })
                                         })
                                       })
                                     })
@@ -292,12 +292,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
       })
       const found2 = await TransferFacade.getById(transferId2)
       // TODO: extend testing for the current code branch
-      test.deepEqual(found2, transfers[1])
+      test.deepEqual(found2, transferToUuid(transfers[1]))
 
       transferExtensionModel.getByTransferId.returns(null)
       const found3 = await TransferFacade.getById(transferId2)
       // TODO: extend testing for the current code branch
-      test.equal(found3, transfers[1])
+      test.deepEqual(found3, transferToUuid(transfers[1]))
       test.end()
     } catch (err) {
       Logger.error(`getById failed with error - ${err}`)
@@ -378,7 +378,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const transferId1 = '00000000-0000-0000-0000-000000000001'
       const transferId2 = '00000000-0000-0000-0000-000000000002'
       const extensions = cloneDeep(transferExtensions)
-      const transfer = transferToBin({ transferId: transferId1, extensionList: extensions })
+      const transfer = transferToBin({ transferId: transferId1, extensionList: extensions, isTransferReadModel: true })
       const transfer2 = transferToBin({ transferId: transferId2, errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED })
 
       const builderStub = sandbox.stub()
@@ -419,7 +419,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       transferExtensionModel.getByTransferId.returns(extensions)
 
       const found = await TransferFacade.getByIdLight(transferId1)
-      test.equal(found, transfer)
+      test.deepEqual(found, transferToUuid(transfer))
       test.ok(builderStub.where.withArgs({ 'transfer.transferId': uuidToBin(transferId1) }).calledOnce)
       test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
       test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
@@ -450,7 +450,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
                 leftJoin: transferErrorStub.returns({
                   select: selectStub.returns({
                     orderBy: orderByStub.returns({
-                      first: firstStub.returns(transfer2)
+                      first: firstStub.returns({ ...transfer2 })
                     })
                   })
                 })
@@ -461,12 +461,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
       })
       const found2 = await TransferFacade.getByIdLight(transferId2)
       // TODO: extend testing for the current code branch
-      test.equal(found2, transfer2)
+      test.deepEqual(found2, transferToUuid(transfer2))
 
       transferExtensionModel.getByTransferId.returns(null)
       const found3 = await TransferFacade.getByIdLight(transferId2)
       // TODO: extend testing for the current code branch
-      test.equal(found3, transfer2)
+      test.deepEqual(found3, transferToUuid(transfer2))
       test.end()
     } catch (err) {
       Logger.error(`getByIdLight failed with error - ${err}`)
@@ -480,7 +480,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const transferId = '00000000-0000-0000-0000-000000000001'
       const fulfilment = 'ff1'
       const extensions = cloneDeep(transferExtensions)
-      const transfer = transferToBin({ transferId, fulfilment, extensionList: extensions })
+      const transfer = transferToBin({ transferId, fulfilment, extensionList: extensions, isTransferReadModel: true })
 
       const builderStub = sandbox.stub()
       const ilpPacketStub = sandbox.stub()
@@ -520,7 +520,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       transferExtensionModel.getByTransferId.returns(extensions)
 
       const found = await TransferFacade.getByIdLight(transferId)
-      test.equal(found, transfer)
+      test.deepEqual(found, transferToUuid(transfer))
       test.ok(builderStub.where.withArgs({ 'transfer.transferId': uuidToBin(transferId) }).calledOnce)
       test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
       test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
@@ -665,7 +665,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
       const found = await TransferFacade.getAll()
 
-      test.equal(found, transfers)
+      test.deepEqual(found, transfers)
       test.ok(builderStub.where.withArgs({
         'tprt1.name': 'PAYER_DFSP',
         'tprt2.name': 'PAYEE_DFSP'
@@ -752,7 +752,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       })
 
       const found = await TransferFacade.getTransferInfoToChangePosition(transferId, transferParticipantRoleType, ledgerEntryType)
-      test.equal(found, transfer)
+      test.deepEqual(found, transfer)
       test.ok(builderStub.where.withArgs({
         'transferParticipant.transferId': uuidToBin(transferId),
         'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleType,
@@ -1546,7 +1546,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           try {
             segmentId = 0
             result = await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
-            test.equal(result, expectedResult, 'Expected result returned')
+            test.deepEqual(result, expectedResult, 'Expected result returned')
           } catch (err) {
             Logger.error(`timeoutExpireReserved failed with error - ${err}`)
             test.fail()
@@ -1554,7 +1554,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           try {
             segmentId = 1
             await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
-            test.equal(result, expectedResult, 'Expected result returned.')
+            test.deepEqual(result, expectedResult, 'Expected result returned.')
           } catch (err) {
             Logger.error(`timeoutExpireReserved failed with error - ${err}`)
             test.fail()

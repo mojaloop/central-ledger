@@ -34,6 +34,7 @@ const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const TransferExtensionModel = require('../transfer/transferExtension')
 const { Enum } = require('@mojaloop/central-services-shared')
+const { transferToUuid, uuidToBin } = require('../transfer/uuid')
 
 const startDbTransaction = async () => {
   const knex = await Db.getKnex()
@@ -45,11 +46,11 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
   const knex = await Db.getKnex()
   try {
     const latestTransferStateChanges = {}
-    const results = await knex('transferStateChange')
+    const results = transferToUuid(await knex('transferStateChange')
       .transacting(trx)
-      .whereIn('transferStateChange.transferId', transfersIdList)
+      .whereIn('transferStateChange.transferId', [].concat(transfersIdList).map(uuidToBin))
       .orderBy('transferStateChangeId', 'desc')
-      .select('*')
+      .select('*'))
 
     for (const result of results) {
       if (!latestTransferStateChanges[result.transferId]) {
@@ -109,16 +110,16 @@ const updateParticipantPosition = async (trx, participantPositionId, participant
 const getTransferInfoList = async (trx, transferIds, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
   try {
     const knex = await Db.getKnex()
-    const transferInfos = await knex('transferParticipant')
+    const transferInfos = transferToUuid(await knex('transferParticipant')
       .transacting(trx)
       .where({
         'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
         'transferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
       })
-      .whereIn('transferParticipant.transferId', transferIds)
+      .whereIn('transferParticipant.transferId', [].concat(transferIds).map(uuidToBin))
       .select(
         'transferParticipant.*'
-      )
+      ))
     const info = {}
     // This should key the transfer info with the latest transferStateChangeId
     for (const transferInfo of transferInfos) {
@@ -147,13 +148,13 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
   if (transferIds && transferIds.length > 0) {
     try {
       const knex = await Db.getKnex()
-      const query = await knex('transfer')
+      const query = transferToUuid(await knex('transfer')
         .transacting(trx)
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
         .leftJoin('transferError as te', 'te.transferId', 'transfer.transferId') // currently transferError.transferId is PK ensuring one error per transferId
-        .whereIn('transfer.transferId', transferIds)
+        .whereIn('transfer.transferId', [].concat(transferIds).map(uuidToBin))
         .select(
           'transfer.*',
           'tsc.createdDate AS completedTimestamp',
@@ -161,7 +162,7 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
           'tf.ilpFulfilment AS fulfilment',
           'te.errorCode',
           'te.errorDescription'
-        )
+        ))
       const transfers = {}
       for (const transfer of query) {
         transfer.extensionList = await TransferExtensionModel.getByTransferId(transfer.transferId)

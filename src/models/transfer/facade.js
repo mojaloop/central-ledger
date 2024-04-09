@@ -53,7 +53,7 @@ const UnsupportedActionText = 'Unsupported action'
 const getById = async (id) => {
   try {
     /** @namespace Db.transfer **/
-    return await Db.from('transfer').query(async (builder) => {
+    return transferToUuid(await Db.from('transfer').query(async (builder) => {
       const transferResult = await builder
         .where({
           'transfer.transferId': uuidToBin(id),
@@ -104,7 +104,6 @@ const getById = async (id) => {
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
       if (transferResult) {
-        transferResult.transferId = id
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
         if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
           if (!transferResult.extensionList) transferResult.extensionList = []
@@ -116,7 +115,7 @@ const getById = async (id) => {
         transferResult.isTransferReadModel = true
       }
       return transferResult
-    })
+    }))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -125,7 +124,7 @@ const getById = async (id) => {
 const getByIdLight = async (id) => {
   try {
     /** @namespace Db.transfer **/
-    return await Db.from('transfer').query(async (builder) => {
+    return transferToUuid(await Db.from('transfer').query(async (builder) => {
       const transferResult = await builder
         .where({ 'transfer.transferId': uuidToBin(id) })
         .leftJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
@@ -151,7 +150,6 @@ const getByIdLight = async (id) => {
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
       if (transferResult) {
-        transferResult.transferId = id
         if (!transferResult.fulfilment) {
           transferResult.extensionList = await TransferExtensionModel.getByTransferId(id)
         } else {
@@ -169,7 +167,7 @@ const getByIdLight = async (id) => {
         transferResult.isTransferReadModel = true
       }
       return transferResult
-    })
+    }))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -177,7 +175,7 @@ const getByIdLight = async (id) => {
 
 const getAll = async () => {
   try {
-    return await Db.from('transfer').query(async (builder) => {
+    return transferToUuid(await Db.from('transfer').query(async (builder) => {
       const transferResultList = await builder
         .where({
           'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
@@ -223,7 +221,7 @@ const getAll = async () => {
         transferResult.isTransferReadModel = true
       }
       return transferToUuid(transferResultList)
-    })
+    }))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -232,7 +230,7 @@ const getAll = async () => {
 const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
   try {
     /** @namespace Db.transferParticipant **/
-    return await Db.from('transferParticipant').query(async builder => {
+    return transferToUuid(await Db.from('transferParticipant').query(async builder => {
       return builder
         .where({
           'transferParticipant.transferId': uuidToBin(id),
@@ -247,7 +245,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
-    })
+    }))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -1149,7 +1147,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
 
 const getTransferParticipant = async (participantName, transferId) => {
   try {
-    return Db.from('participant').query(async (builder) => {
+    return transferToUuid(await Db.from('participant').query(async (builder) => {
       return builder
         .where({
           'participant.name': participantName,
@@ -1162,7 +1160,7 @@ const getTransferParticipant = async (participantName, transferId) => {
         .select(
           'tp.*'
         )
-    })
+    }))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

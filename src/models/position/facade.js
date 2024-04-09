@@ -41,6 +41,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
 
 const Metrics = require('@mojaloop/central-services-metrics')
+const { transferToBin, uuidToBin } = require('../transfer/uuid')
 
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   const histTimerChangeParticipantPositionEnd = Metrics.getHistogram(
@@ -97,7 +98,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           const id = transfer.value.content.payload.transferId
           transferIdList.push(id)
           // DUPLICATE of TransferStateChangeModel getByTransferId
-          initialTransferStateChangePromises.push(await knex('transferStateChange').transacting(trx).where('transferId', id).orderBy('transferStateChangeId', 'desc').first())
+          initialTransferStateChangePromises.push(await knex('transferStateChange').transacting(trx).where('transferId', uuidToBin(id)).orderBy('transferStateChangeId', 'desc').first())
         }
         const histTimerinitialTransferStateChangeListEnd = Metrics.getHistogram(
           'model_position',
@@ -129,7 +130,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           }
         }
         const abortedTransferStateChangeList = Object.keys(abortedTransfers).length && Array.from(transferIdList.map(transferId => abortedTransfers[transferId].transferState))
-        Object.keys(abortedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', abortedTransferStateChangeList).transacting(trx)
+        Object.keys(abortedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', abortedTransferStateChangeList.map(transferToBin)).transacting(trx)
         histTimerTransferStateChangePrepareAndBatchInsertEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_transferStateChangeBatchInsert' })
         // Get the effective position for this participantCurrency at the start of processing the Batch
         // and reserved the total value of the transfers in the batch (sumTransfersInBatch)
@@ -223,7 +224,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           'facade_prepareChangeParticipantPositionTransaction_transaction_PersistTransferState - Metrics for position model',
           ['success', 'queryName']
         ).startTimer()
-        await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
+        await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList.map(uuidToBin)).select('*')
         const processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
         const processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList).transacting(trx)
         const processedTransfersKeysList = Object.keys(processedTransfers)

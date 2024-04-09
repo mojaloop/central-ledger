@@ -26,10 +26,11 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { transferToBin, transferToUuid } = require('../transfer/uuid')
 
 exports.getById = async (id) => {
   try {
-    return await Db.from('ilpPacket').find({ transferId: id })
+    return transferToUuid(await Db.from('ilpPacket').find(transferToBin({ transferId: id })))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

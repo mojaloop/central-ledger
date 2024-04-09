@@ -31,6 +31,7 @@ const Model = require('../../../../src/models/position/batch')
 const Logger = require('@mojaloop/central-services-logger')
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
 const { Enum } = require('@mojaloop/central-services-shared')
+const { transferToBin } = require('#src/models/transfer/uuid')
 
 Test('Batch model', async (positionBatchTest) => {
   let sandbox
@@ -136,13 +137,17 @@ Test('Batch model', async (positionBatchTest) => {
         transacting: sandbox.stub().returns({
           whereIn: sandbox.stub().returns({
             orderBy: sandbox.stub().returns({
-              select: sandbox.stub().returns([{ transferId: 1 }, { transferId: 2 }, { transferId: 2 }])
+              select: sandbox.stub().returns([
+                transferToBin({ transferId: '00000000-0000-0000-0000-000000000001' }),
+                transferToBin({ transferId: '00000000-0000-0000-0000-000000000002' }),
+                transferToBin({ transferId: '00000000-0000-0000-0000-000000000002' })
+              ])
             })
           })
         })
       })
 
-      await Model.getLatestTransferStateChangesByTransferIdList(trxStub, [1, 2])
+      await Model.getLatestTransferStateChangesByTransferIdList(trxStub, ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'])
       test.pass('completed successfully')
       test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
       test.end()
@@ -174,7 +179,7 @@ Test('Batch model', async (positionBatchTest) => {
       })
 
       try {
-        await Model.getLatestTransferStateChangesByTransferIdList(trxStub, [1, 2])
+        await Model.getLatestTransferStateChangesByTransferIdList(trxStub, ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'])
         test.fail('should throw error')
       } catch (err) {
         test.pass('completed successfully')
@@ -206,7 +211,7 @@ Test('Batch model', async (positionBatchTest) => {
           })
         })
       })
-      await Model.getPositionsByAccountIdsForUpdate(trxStub, [1, 2])
+      await Model.getPositionsByAccountIdsForUpdate(trxStub, ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'])
       test.pass('completed successfully')
       test.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with transferStateChange once')
       test.end()
@@ -375,13 +380,17 @@ Test('Batch model', async (positionBatchTest) => {
         transacting: sandbox.stub().returns({
           where: sandbox.stub().returns({
             whereIn: sandbox.stub().returns({
-              select: sandbox.stub().returns([{ transferId: 1 }, { transferId: 2 }, { transferId: 2 }])
+              select: sandbox.stub().returns([
+                transferToBin({ transferId: '00000000-0000-0000-0000-000000000001' }),
+                transferToBin({ transferId: '00000000-0000-0000-0000-000000000002' }),
+                transferToBin({ transferId: '00000000-0000-0000-0000-000000000002' })
+              ])
             })
           })
         })
       })
 
-      await Model.getTransferInfoList(trxStub, [1, 2], 3, 4)
+      await Model.getTransferInfoList(trxStub, ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'], 3, 4)
       test.pass('completed successfully')
       test.ok(knexStub.withArgs('transferParticipant').calledOnce, 'knex called with transferParticipant once')
       test.end()
@@ -408,7 +417,7 @@ Test('Batch model', async (positionBatchTest) => {
             where: sandbox.stub().returns({
               whereIn: sandbox.stub().returns({
                 select: sandbox.stub().returns({
-                  orderBy: sandbox.stub().returns(new Error())
+                  orderBy: sandbox.stub().throws(new Error())
                 })
               })
             })
@@ -416,7 +425,7 @@ Test('Batch model', async (positionBatchTest) => {
         })
       })
       try {
-        await Model.getTransferInfoList(trxStub, [1, 2], 3, 4)
+        await Model.getTransferInfoList(trxStub, ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'], 3, 4)
         test.fail('should throw error')
       } catch (err) {
         test.pass('completed successfully')
@@ -450,7 +459,11 @@ Test('Batch model', async (positionBatchTest) => {
               leftJoin: sandbox.stub().returns({
                 leftJoin: sandbox.stub().returns({
                   whereIn: sandbox.stub().returns({
-                    select: sandbox.stub().returns([{ transferId: 1 }, { transferId: 2 }, { transferId: 2 }])
+                    select: sandbox.stub().returns([
+                      transferToBin({ transferId: '00000000-0000-0000-0000-000000000001' }),
+                      transferToBin({ transferId: '00000000-0000-0000-0000-000000000002' }),
+                      transferToBin({ transferId: '00000000-0000-0000-0000-000000000002' })
+                    ])
                   })
                 })
               })
@@ -459,7 +472,7 @@ Test('Batch model', async (positionBatchTest) => {
         })
       })
 
-      await Model.getTransferByIdsForReserve(trxStub, [1, 2])
+      await Model.getTransferByIdsForReserve(trxStub, ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'])
       test.pass('completed successfully')
       test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transferParticipant once')
       test.end()
@@ -491,7 +504,7 @@ Test('Batch model', async (positionBatchTest) => {
               leftJoin: sandbox.stub().returns({
                 leftJoin: sandbox.stub().returns({
                   whereIn: sandbox.stub().returns({
-                    select: sandbox.stub().returns([{ transferId: 1, errorCode: 1000, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED }])
+                    select: sandbox.stub().returns([transferToBin({ transferId: '00000000-0000-0000-0000-000000000001', errorCode: 1000, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED })])
                   })
                 })
               })
@@ -500,7 +513,7 @@ Test('Batch model', async (positionBatchTest) => {
         })
       })
 
-      await Model.getTransferByIdsForReserve(trxStub, [1, 2])
+      await Model.getTransferByIdsForReserve(trxStub, ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'])
       test.pass('completed successfully')
       test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transferParticipant once')
       test.end()
@@ -532,7 +545,7 @@ Test('Batch model', async (positionBatchTest) => {
               leftJoin: sandbox.stub().returns({
                 leftJoin: sandbox.stub().returns({
                   whereIn: sandbox.stub().returns({
-                    select: sandbox.stub().returns(new Error())
+                    select: sandbox.stub().throws(new Error())
                   })
                 })
               })
@@ -542,7 +555,7 @@ Test('Batch model', async (positionBatchTest) => {
       })
 
       try {
-        await Model.getTransferByIdsForReserve(trxStub, [1, 2])
+        await Model.getTransferByIdsForReserve(trxStub, ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'])
         test.fail('should throw error')
       } catch (err) {
         test.pass('completed successfully')

@@ -29,6 +29,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const IlpPacketsModel = require('../../../../src/models/ilpPackets/ilpPacket')
+const { transferToBin } = require('../../../../src/models/transfer/uuid')
 
 Test('IlpPackets', async (IlpPacketsTest) => {
   let sandbox
@@ -54,19 +55,19 @@ Test('IlpPackets', async (IlpPacketsTest) => {
 
   await IlpPacketsTest.test('get IlpPackets with transferId', async (assert) => {
     try {
-      Db.ilpPacket.find.withArgs({ transferId: '6d3e964e-9a25-4ff5-a365-2cc5af348321' }).returns([
-        {
+      Db.ilpPacket.find.withArgs(transferToBin({ transferId: '6d3e964e-9a25-4ff5-a365-2cc5af348321' })).returns([
+        transferToBin({
           transferId: '6d3e964e-9a25-4ff5-a365-2cc5af348321',
           value: 'AYIC-AAAAAAAAeIfHWcucGF5ZWVmc3AubXNpc2RuLjIyNTU2OTk5MTI1ggLOZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTlRWa09ESXdObVV0T0RCaU55MDBPR00wTFRrNU5HTXRaREEyTmpRd01XRXdZbU00SWl3aWNYVnZkR1ZKWkNJNklqRmtPVGhpTkdReExXWmpOVFV0TkRaa09DMDROV1EyTFRnNVl6TXdZMkZoWWpRME5pSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpJMU5UWTVPVGt4TWpVaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpJeU5UQTNNREE0TVRneElpd2labk53U1dRaU9pSndZWGxsY21aemNDSjlMQ0p3WlhKemIyNWhiRWx1Wm04aU9uc2lZMjl0Y0d4bGVFNWhiV1VpT25zaVptbHljM1JPWVcxbElqb2lUV0YwY3lJc0lteGhjM1JPWVcxbElqb2lTR0ZuYldGdUluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazRNeTB4TUMweU5TSjlmU3dpWVcxdmRXNTBJanA3SW1OMWNuSmxibU41SWpvaVZWTkVJaXdpWVcxdmRXNTBJam94TWpNMExqSXpmU3dpZEhKaGJuTmhZM1JwYjI1VWVYQmxJanA3SW5OalpXNWhjbWx2SWpvaVZGSkJUbE5HUlZJaUxDSnBibWwwYVdGMGIzSWlPaUpRUVZsRlVpSXNJbWx1YVhScFlYUnZjbFI1Y0dVaU9pSkRUMDVUVlUxRlVpSjlmUQA',
           createdDate: '2020-05-23T17:31:29.000Z'
-        }])
+        })])
       const expected = [{
         transferId: '6d3e964e-9a25-4ff5-a365-2cc5af348321',
         value: 'AYIC-AAAAAAAAeIfHWcucGF5ZWVmc3AubXNpc2RuLjIyNTU2OTk5MTI1ggLOZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTlRWa09ESXdObVV0T0RCaU55MDBPR00wTFRrNU5HTXRaREEyTmpRd01XRXdZbU00SWl3aWNYVnZkR1ZKWkNJNklqRmtPVGhpTkdReExXWmpOVFV0TkRaa09DMDROV1EyTFRnNVl6TXdZMkZoWWpRME5pSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpJMU5UWTVPVGt4TWpVaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpJeU5UQTNNREE0TVRneElpd2labk53U1dRaU9pSndZWGxsY21aemNDSjlMQ0p3WlhKemIyNWhiRWx1Wm04aU9uc2lZMjl0Y0d4bGVFNWhiV1VpT25zaVptbHljM1JPWVcxbElqb2lUV0YwY3lJc0lteGhjM1JPWVcxbElqb2lTR0ZuYldGdUluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazRNeTB4TUMweU5TSjlmU3dpWVcxdmRXNTBJanA3SW1OMWNuSmxibU41SWpvaVZWTkVJaXdpWVcxdmRXNTBJam94TWpNMExqSXpmU3dpZEhKaGJuTmhZM1JwYjI1VWVYQmxJanA3SW5OalpXNWhjbWx2SWpvaVZGSkJUbE5HUlZJaUxDSnBibWwwYVdGMGIzSWlPaUpRUVZsRlVpSXNJbWx1YVhScFlYUnZjbFI1Y0dVaU9pSkRUMDVUVlUxRlVpSjlmUQA',
         createdDate: '2020-05-23T17:31:29.000Z'
       }]
       const result = await IlpPacketsModel.getById('6d3e964e-9a25-4ff5-a365-2cc5af348321')
-      assert.deepEqual(JSON.stringify(result), JSON.stringify(expected))
+      assert.equal(JSON.stringify(result), JSON.stringify(expected))
       assert.end()
     } catch (err) {
       Logger.error(`get IlpPackets with transferId failed with error - ${err}`)
