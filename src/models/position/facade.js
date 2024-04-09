@@ -226,7 +226,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         ).startTimer()
         await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList.map(uuidToBin)).select('*')
         const processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
-        const processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList).transacting(trx)
+        const processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList.map(transferToBin)).transacting(trx)
         const processedTransfersKeysList = Object.keys(processedTransfers)
         const batchParticipantPositionChange = []
         for (const keyIndex in processedTransfersKeysList) {
@@ -289,8 +289,8 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
           value: latestPosition,
           changedDate: transactionTimestamp
         })
-        await knex('transferStateChange').transacting(trx).insert(transferStateChange)
-        const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({ transferId: transferStateChange.transferId }).forUpdate().first().orderBy('transferStateChangeId', 'desc')
+        await knex('transferStateChange').transacting(trx).insert(transferToBin(transferStateChange))
+        const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where(transferToBin({ transferId: transferStateChange.transferId })).forUpdate().first().orderBy('transferStateChangeId', 'desc')
         const participantPositionChange = {
           participantPositionId: participantPosition.participantPositionId,
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
