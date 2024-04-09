@@ -49,7 +49,7 @@ const getByTransferId = async (transferId, isFulfilment = false, isError = false
 
 const getByTransferExtensionId = async (transferExtensionId) => {
   try {
-    return await Db.from('transferExtension').findOne({ transferExtensionId })
+    return transferToUuid(await Db.from('transferExtension').findOne({ transferExtensionId }))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

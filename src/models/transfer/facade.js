@@ -175,8 +175,8 @@ const getByIdLight = async (id) => {
 
 const getAll = async () => {
   try {
-    return transferToUuid(await Db.from('transfer').query(async (builder) => {
-      const transferResultList = await builder
+    return await Db.from('transfer').query(async (builder) => {
+      const transferResultList = transferToUuid(await builder
         .where({
           'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
           'tprt2.name': 'PAYEE_DFSP'
@@ -215,13 +215,13 @@ const getAll = async () => {
           'transfer.ilpCondition AS condition',
           'tf.ilpFulfilment AS fulfilment'
         )
-        .orderBy('tsc.transferStateChangeId', 'desc')
+        .orderBy('tsc.transferStateChangeId', 'desc'))
       for (const transferResult of transferResultList) {
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(transferResult.transferId)
         transferResult.isTransferReadModel = true
       }
-      return transferToUuid(transferResultList)
-    }))
+      return transferResultList
+    })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

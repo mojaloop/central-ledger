@@ -57,7 +57,7 @@ exports.update = async (record) => {
     value: record.value
   })
   try {
-    return await Db.from('ilpPacket').update(transferToBin({ transferId: record.transferId }), Util.omitNil(fields))
+    return await Db.from('ilpPacket').update(transferToBin({ transferId: record.transferId }), transferToBin(Util.omitNil(fields)))
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
