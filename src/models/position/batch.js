@@ -34,7 +34,7 @@ const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const TransferExtensionModel = require('../transfer/transferExtension')
 const { Enum } = require('@mojaloop/central-services-shared')
-const { transferToUuid, uuidToBin } = require('../transfer/uuid')
+const { transferToUuid, uuidToBin, transferToBin } = require('../transfer/uuid')
 
 const startDbTransaction = async () => {
   const knex = await Db.getKnex()
@@ -136,7 +136,7 @@ const getTransferInfoList = async (trx, transferIds, transferParticipantRoleType
 
 const bulkInsertTransferStateChanges = async (trx, transferStateChangeList) => {
   const knex = await Db.getKnex()
-  return await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
+  return await knex.batchInsert('transferStateChange', [].concat(transferStateChangeList).map(transferToBin)).transacting(trx)
 }
 
 const bulkInsertParticipantPositionChanges = async (trx, participantPositionChangeList) => {

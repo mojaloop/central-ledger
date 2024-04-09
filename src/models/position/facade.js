@@ -41,7 +41,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
 
 const Metrics = require('@mojaloop/central-services-metrics')
-const { transferToBin, uuidToBin } = require('../transfer/uuid')
+const { transferToBin, uuidToBin, transferToUuid } = require('../transfer/uuid')
 
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   const histTimerChangeParticipantPositionEnd = Metrics.getHistogram(
@@ -98,7 +98,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           const id = transfer.value.content.payload.transferId
           transferIdList.push(id)
           // DUPLICATE of TransferStateChangeModel getByTransferId
-          initialTransferStateChangePromises.push(await knex('transferStateChange').transacting(trx).where('transferId', uuidToBin(id)).orderBy('transferStateChangeId', 'desc').first())
+          initialTransferStateChangePromises.push(transferToUuid(await knex('transferStateChange').transacting(trx).where('transferId', uuidToBin(id)).orderBy('transferStateChangeId', 'desc').first()))
         }
         const histTimerinitialTransferStateChangeListEnd = Metrics.getHistogram(
           'model_position',
