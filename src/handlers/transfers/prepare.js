@@ -113,7 +113,6 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, f
 const definePositionParticipant = async ({ isFx, payload }) => {
   const cyrilResult = await createRemittanceEntity(isFx)
     .getPositionParticipant(payload)
-
   const account = await Participant.getAccountByNameAndCurrency(
     cyrilResult.participantName,
     cyrilResult.currencyId,
@@ -223,7 +222,6 @@ const prepare = async (error, messages) => {
     await savePreparedRequest({
       validationPassed, reasons, payload, isFx, functionality, params, location
     })
-
     if (!validationPassed) {
       logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       const fspiopError = createFSPIOPError(FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
