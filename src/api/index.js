@@ -2,6 +2,7 @@
 
 process.env.UV_THREADPOOL_SIZE = 12
 
+require('./tracing')
 const Config = require('../lib/config')
 const Routes = require('./routes')
 const Setup = require('../shared/setup')
