@@ -895,7 +895,7 @@ Test('Transfer handler', transferHandlerTest => {
     processDuplicationTest.end()
   })
 
-  transferHandlerTest.test('fxPrepare should', fxPrepareTest => {
+  transferHandlerTest.test('payer initiated conversion fxPrepare should', fxPrepareTest => {
     fxPrepareTest.test('persist fxtransfer to database when messages is an array', async (test) => {
       const localMessages = MainUtil.clone(fxMessages)
       await Consumer.createHandler(topicName, config, command)
