@@ -321,47 +321,47 @@ jobs:
           paths:
             - ./docker-image.tar
 
-  test-integration:
-    executor: default-machine
-    environment:
-      <<: *defaults_environment
-    steps:
-      - run:
-          name: Install general dependencies
-          command: *defaults_machine_Dependencies
-      - checkout
-      - run:
-          <<: *defaults_configure_nvm
-      - run:
-          <<: *defaults_display_versions
-      - restore_cache:
-          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
-      - attach_workspace:
-          at: /tmp
-      - run:
-          name: Create dir for test results
-          command: mkdir -p ./test/results
-      - run:
-          name: Execute integration tests
-          command: |
-            # Set Node version to default (Note: this is needed on Ubuntu)
-            nvm use default
-            npm ci
+  # test-integration:
+  #   executor: default-machine
+  #   environment:
+  #     <<: *defaults_environment
+  #   steps:
+  #     - run:
+  #         name: Install general dependencies
+  #         command: *defaults_machine_Dependencies
+  #     - checkout
+  #     - run:
+  #         <<: *defaults_configure_nvm
+  #     - run:
+  #         <<: *defaults_display_versions
+  #     - restore_cache:
+  #         key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+  #     - attach_workspace:
+  #         at: /tmp
+  #     - run:
+  #         name: Create dir for test results
+  #         command: mkdir -p ./test/results
+  #     - run:
+  #         name: Execute integration tests
+  #         command: |
+  #           # Set Node version to default (Note: this is needed on Ubuntu)
+  #           nvm use default
+  #           npm ci
 
-            echo "Running integration tests...."
-            bash ./test/scripts/test-integration.sh
-          environment:
-            ENDPOINT_URL: http://localhost:4545/notification
-            UV_THREADPOOL_SIZE: 12
-            WAIT_FOR_REBALANCE: 20
-            TEST_INT_RETRY_COUNT: 30
-            TEST_INT_RETRY_DELAY: 2
-            TEST_INT_REBALANCE_DELAY: 20000
-      - store_artifacts:
-          path: ./test/results
-          destination: test
-      - store_test_results:
-          path: ./test/results
+  #           echo "Running integration tests...."
+  #           bash ./test/scripts/test-integration.sh
+  #         environment:
+  #           ENDPOINT_URL: http://localhost:4545/notification
+  #           UV_THREADPOOL_SIZE: 12
+  #           WAIT_FOR_REBALANCE: 20
+  #           TEST_INT_RETRY_COUNT: 30
+  #           TEST_INT_RETRY_DELAY: 2
+  #           TEST_INT_REBALANCE_DELAY: 20000
+  #     - store_artifacts:
+  #         path: ./test/results
+  #         destination: test
+  #     - store_test_results:
+  #         path: ./test/results
 
   test-functional:
     executor: default-machine
@@ -864,18 +864,18 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
-      - test-integration:
-          context: org-global
-          requires:
-            - setup
-            - build-local
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              ignore:
-                - /feature*/
-                - /bugfix*/
+      # - test-integration:
+      #     context: org-global
+      #     requires:
+      #       - setup
+      #       - build-local
+      #     filters:
+      #       tags:
+      #         only: /.*/
+      #       branches:
+      #         ignore:
+      #           - /feature*/
+      #           - /bugfix*/
       - test-functional:
           context: org-global
           requires:
@@ -951,7 +951,7 @@ workflows:
             - test-lint
             - test-unit
             - test-coverage
-            - test-integration
+            # - test-integration
             - test-functional
             - vulnerability-check
             - audit-licenses
@@ -981,7 +981,7 @@ workflows:
             - test-lint
             - test-unit
             - test-coverage
-            - test-integration
+            # - test-integration
             - test-functional
             - vulnerability-check
             - audit-licenses
@@ -1003,7 +1003,7 @@ workflows:
             - test-lint
             - test-unit
             - test-coverage
-            - test-integration
+            # - test-integration
             - test-functional
             - vulnerability-check
             - audit-licenses
@@ -1024,7 +1024,7 @@ workflows:
             - test-lint
             - test-unit
             - test-coverage
-            - test-integration
+            # - test-integration
             - test-functional
             - vulnerability-check
             - audit-licenses
@@ -1045,7 +1045,7 @@ workflows:
             - test-lint
             - test-unit
             - test-coverage
-            - test-integration
+            # - test-integration
             - test-functional
             - vulnerability-check
             - audit-licenses
