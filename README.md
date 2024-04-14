@@ -168,14 +168,6 @@ Logs are sent to standard output by default.
 
 Tests include unit, functional, and integration.
 
-Running the tests:
-
-```bash
-    npm run test:all
-```
-
-Tests include code coverage via istanbul. See the test/ folder for testing scripts.
-
 ### Running Integration Tests interactively
 
 If you want to run integration tests in a repetitive manner, you can startup the test containers using `docker-compose` via one of the following methods:
