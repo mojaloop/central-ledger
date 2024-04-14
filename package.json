@@ -91,7 +91,7 @@
     "@mojaloop/central-services-metrics": "12.0.8",
     "@mojaloop/central-services-shared": "18.3.4",
     "@mojaloop/central-services-stream": "11.2.4",
-    "@mojaloop/database-lib": "11.0.4",
+    "@mojaloop/database-lib": "11.0.5",
     "@mojaloop/event-sdk": "14.0.2",
     "@mojaloop/ml-number": "11.2.3",
     "@mojaloop/object-store-lib": "12.0.2",
