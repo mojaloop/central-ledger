@@ -227,7 +227,11 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
     } else if (sendingFxpExists) {
       // If we have a sending FXP, Create obligation between FXP and creditor party to the transfer in currency of FX transfer
       // Get participantCurrencyId for transfer.payeeParticipantId/transfer.payeeFsp and sendingFxpRecord.targetCurrency
-      const participantCurrency = await ParticipantFacade.getByNameAndCurrency(transfer.payeeFsp, sendingFxpRecord.targetCurrency, Enum.Accounts.LedgerAccountType.POSITION)
+      const participantCurrency = await ParticipantFacade.getByNameAndCurrency(
+        transfer.payeeFsp,
+        sendingFxpRecord.targetCurrency,
+        Enum.Accounts.LedgerAccountType.POSITION
+      )
       result.positionChanges.push({
         isFxTransferStateChange: false,
         transferId,
