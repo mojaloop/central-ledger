@@ -279,7 +279,7 @@ class FxFulfilService {
 
   static decodeKafkaMessage (message) {
     if (!message?.value) {
-      throw TypeError('Invalid message format')
+      throw TypeError('Invalid message format!')
     }
     const payload = Util.StreamingProtocol.decodePayload(message.value.content.payload)
     const { headers } = message.value.content
