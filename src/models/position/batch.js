@@ -63,6 +63,28 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
   }
 }
 
+const getLatestFxTransferStateChangesByCommitRequestIdList = async (trx, commitRequestIdList) => {
+  const knex = await Db.getKnex()
+  try {
+    const latestFxTransferStateChanges = {}
+    const results = await knex('fxTransferStateChange')
+      .transacting(trx)
+      .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)
+      .orderBy('fxTransferStateChangeId', 'desc')
+      .select('*')
+
+    for (const result of results) {
+      if (!latestFxTransferStateChanges[result.commitRequestId]) {
+        latestFxTransferStateChanges[result.commitRequestId] = result
+      }
+    }
+    return latestFxTransferStateChanges
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
 const getAllParticipantCurrency = async (trx) => {
   const knex = await Db.getKnex()
   if (trx) {
@@ -138,6 +160,11 @@ const bulkInsertTransferStateChanges = async (trx, transferStateChangeList) => {
   return await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
 }
 
+const bulkInsertFxTransferStateChanges = async (trx, fxTransferStateChangeList) => {
+  const knex = await Db.getKnex()
+  return await knex.batchInsert('fxTransferStateChange', fxTransferStateChangeList).transacting(trx)
+}
+
 const bulkInsertParticipantPositionChanges = async (trx, participantPositionChangeList) => {
   const knex = await Db.getKnex()
   return await knex.batchInsert('participantPositionChange', participantPositionChangeList).transacting(trx)
@@ -187,9 +214,11 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
 module.exports = {
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
+  getLatestFxTransferStateChangesByCommitRequestIdList,
   getPositionsByAccountIdsForUpdate,
   updateParticipantPosition,
   bulkInsertTransferStateChanges,
+  bulkInsertFxTransferStateChanges,
   bulkInsertParticipantPositionChanges,
   getAllParticipantCurrency,
   getTransferInfoList,
