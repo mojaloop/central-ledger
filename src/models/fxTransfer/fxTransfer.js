@@ -148,7 +148,6 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
       getParticipant(payload.counterPartyFsp, payload.targetAmount.currency)
     ])
 
-    // todo: move all mappings to DTO
     const fxTransferRecord = {
       commitRequestId: payload.commitRequestId,
       determiningTransferId: payload.determiningTransferId,
@@ -261,6 +260,7 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
   }
 }
 
+// todo: clarify this code
 const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopError) => {
   const histTimerSaveFulfilResponseEnd = Metrics.getHistogram(
     'fx_model_transfer',
@@ -277,7 +277,6 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
   switch (action) {
     // TODO: Need to check if these are relevant for FX transfers
     // case TransferEventAction.COMMIT:
-    // case TransferEventAction.BULK_COMMIT:
     case TransferEventAction.FX_RESERVE:
       state = TransferInternalState.RECEIVED_FULFIL
       // extensionList = payload && payload.extensionList
@@ -289,7 +288,6 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
       isFulfilment = true
       break
     // TODO: Need to check if these are relevant for FX transfers
-    // case TransferEventAction.BULK_ABORT:
     // case TransferEventAction.ABORT_VALIDATION:
     case TransferEventAction.FX_ABORT:
       state = TransferInternalState.RECEIVED_ERROR

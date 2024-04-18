@@ -9,48 +9,67 @@ const makeLogString = (message, meta) => meta
 
 // wrapper to avoid doing Logger.is{SomeLogLevel}Enabled checks everywhere
 class Logger {
-  #log
+  #log = MlLogger
 
-  constructor (log = MlLogger) {
-    this.#log = log
+  isErrorEnabled = this.#log.isErrorEnabled
+  // to be able to follow the same logic: log.isDebugEnabled && log.debug(`some log message: ${data}`)
+  isWarnEnabled = this.#log.isWarnEnabled
+  isAuditEnabled = this.#log.isAuditEnabled
+  isTraceEnabled = this.#log.isTraceEnabled
+  isInfoEnabled = this.#log.isInfoEnabled
+  isPerfEnabled = this.#log.isPerfEnabled
+  isVerboseEnabled = this.#log.isVerboseEnabled
+  isDebugEnabled = this.#log.isDebugEnabled
+  isSillyEnabled = this.#log.isSillyEnabled
+
+  constructor (context = {}) {
+    this.context = context
   }
 
-  get log () { return this.#log }
+  get log() { return this.#log }
 
-  error(...args) {
-    this.#log.isDebugEnabled && this.#log.debug(makeLogString(...args))
+  error(message, meta) {
+    this.isErrorEnabled && this.#log.error(this.#formatLog(message, meta))
   }
 
-  warn(...args) {
-    this.#log.isWarnEnabled && this.#log.warn(makeLogString(...args))
+  warn(message, meta) {
+    this.isWarnEnabled && this.#log.warn(this.#formatLog(message, meta))
   }
 
-  audit(...args) {
-    this.#log.isAuditEnabled && this.#log.audit(makeLogString(...args))
+  audit(message, meta) {
+    this.isAuditEnabled && this.#log.audit(this.#formatLog(message, meta))
   }
 
-  trace(...args) {
-    this.#log.isTraceEnabled && this.#log.trace(makeLogString(...args))
+  trace(message, meta) {
+    this.isTraceEnabled && this.#log.trace(this.#formatLog(message, meta))
   }
 
-  info(...args) {
-    this.#log.isInfoEnabled && this.#log.info(makeLogString(...args))
+  info(message, meta) {
+    this.isInfoEnabled && this.#log.info(this.#formatLog(message, meta))
   }
 
-  perf(...args) {
-    this.#log.isPerfEnabled && this.#log.perf(makeLogString(...args))
+  perf(message, meta) {
+    this.isPerfEnabled && this.#log.perf(this.#formatLog(message, meta))
   }
 
-  verbose(...args) {
-    this.#log.isVerboseEnabled && this.#log.verbose(makeLogString(...args))
+  verbose(message, meta) {
+    this.isVerboseEnabled && this.#log.verbose(this.#formatLog(message, meta))
   }
 
-  debug(...args) {
-    this.#log.isDebugEnabled && this.#log.debug(makeLogString(...args))
+  debug(message, meta) {
+    this.isDebugEnabled && this.#log.debug(this.#formatLog(message, meta))
   }
 
-  silly(...args) {
-    this.#log.isLevelEnabled && this.#log.silly(makeLogString(...args))
+  silly(message, meta) {
+    this.isSillyEnabled && this.#log.silly(this.#formatLog(message, meta))
+  }
+
+  child(childContext = {}) {
+    return new Logger(Object.assign({}, this.context, childContext))
+  }
+
+  #formatLog(message, meta = {}) {
+    return makeLogString(message, Object.assign({}, meta, this.context))
   }
 }
 
