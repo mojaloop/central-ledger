@@ -288,8 +288,7 @@ jobs:
           key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Execute code coverage check
-          command: npm run test:coverage-check
-#          command: npm -s run test:coverage-check
+          command: npm -s run test:coverage-check
       - store_artifacts:
           path: coverage
           destination: test
