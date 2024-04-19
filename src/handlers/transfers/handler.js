@@ -616,7 +616,7 @@ const processFxFulfilMessage = async (message, functionality, span) => {
   }
 
   const fxFulfilService = new FxFulfilService({
-    log, Config, Validator, FxTransferModel, Kafka, params
+    log, Config, Comparators, Validator, FxTransferModel, Kafka, params
   })
 
   const transfer = await fxFulfilService.getFxTransferDetails(commitRequestId, functionality)
@@ -630,19 +630,12 @@ const processFxFulfilMessage = async (message, functionality, span) => {
     ['success', 'funcName']
   ).startTimer()
 
-  // todo: - add new table for storing error duplication
-  //       - move to fxFulfilService
-  const dupCheckResult = await Comparators.duplicateCheckComparator(
-    commitRequestId,
-    payload,
-    FxTransferModel.duplicateCheck.getFxTransferDuplicateCheck,
-    FxTransferModel.duplicateCheck.saveFxTransferDuplicateCheck
-  )
+  const dupCheckResult = await fxFulfilService.getDuplicateCheckResult({ commitRequestId, payload })
   histTimerDuplicateCheckEnd({ success: true, funcName: 'fxFulfil_duplicateCheckComparator' })
 
   const isDuplicate = await fxFulfilService.checkDuplication({ dupCheckResult, transfer, functionality, action, type })
   if (isDuplicate) {
-    log.info('fxTransfer duplication, skip further processing')
+    log.info('fxTransfer duplication detected, skip further processing')
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     return true
   }

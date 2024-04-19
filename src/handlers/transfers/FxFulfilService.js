@@ -17,6 +17,7 @@ class FxFulfilService {
   constructor(deps) {
     this.log = deps.log
     this.Config = deps.Config
+    this.Comparators = deps.Comparators
     this.Validator = deps.Validator
     this.FxTransferModel = deps.FxTransferModel
     this.Kafka = deps.Kafka
@@ -82,6 +83,24 @@ class FxFulfilService {
       })
       throw fspiopError
     }
+  }
+
+  async getDuplicateCheckResult({ commitRequestId, payload, action }) {
+    const { duplicateCheck } = this.FxTransferModel
+
+    const getDuplicateFn = action === Action.FX_ABORT
+      ? duplicateCheck.getFxTransferErrorDuplicateCheck
+      : duplicateCheck.getFxTransferDuplicateCheck
+    const saveHashFn = action === Action.FX_ABORT
+      ? duplicateCheck.saveFxTransferErrorDuplicateCheck
+      : duplicateCheck.saveFxTransferDuplicateCheck
+
+    return this.Comparators.duplicateCheckComparator(
+      commitRequestId,
+      payload,
+      getDuplicateFn,
+      saveHashFn
+    )
   }
 
   async checkDuplication({ dupCheckResult, transfer, functionality, action, type }) {
@@ -277,7 +296,7 @@ class FxFulfilService {
     return this.Kafka.proceed(this.Config.KAFKA_CONFIG, this.params, kafkaOpts)
   }
 
-  static decodeKafkaMessage (message) {
+  static decodeKafkaMessage(message) {
     if (!message?.value) {
       throw TypeError('Invalid message format!')
     }
