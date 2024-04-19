@@ -261,7 +261,8 @@ jobs:
           command: mkdir -p ./test/results
       - run:
           name: Execute unit tests
-          command: npm -s run test:xunit
+          command: npm test
+#          command: npm -s run test:xunit
       - store_artifacts:
           path: ./test/results
           destination: test
@@ -288,7 +289,8 @@ jobs:
           key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Execute code coverage check
-          command: npm -s run test:coverage-check
+          command: npm run test:coverage-check
+#          command: npm -s run test:coverage-check
       - store_artifacts:
           path: coverage
           destination: test
