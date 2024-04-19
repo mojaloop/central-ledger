@@ -305,6 +305,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     sandbox.stub(FxFulfilService.prototype, 'validateEventType').resolves()
     sandbox.stub(FxFulfilService.prototype, 'validateFulfilment').resolves()
     sandbox.stub(FxFulfilService.prototype, 'validateTransferState').resolves()
+    sandbox.stub(FxFulfilService.prototype, 'validateExpirationDate').resolves()
     Comparators.duplicateCheckComparator.resolves({
       hasDuplicateId: false,
       hasDuplicateHash: false
