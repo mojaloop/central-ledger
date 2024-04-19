@@ -3,6 +3,7 @@ const { Enum } = require('@mojaloop/central-services-shared')
 const TABLE_NAMES = Object.freeze({
   fxTransfer: 'fxTransfer',
   fxTransferDuplicateCheck: 'fxTransferDuplicateCheck',
+  fxTransferErrorDuplicateCheck: 'fxTransferErrorDuplicateCheck',
   fxTransferParticipant: 'fxTransferParticipant',
   fxTransferStateChange: 'fxTransferStateChange',
   fxWatchList: 'fxWatchList',

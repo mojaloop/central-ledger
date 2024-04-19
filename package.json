@@ -95,7 +95,7 @@
     "@mojaloop/database-lib": "11.0.5",
     "@mojaloop/event-sdk": "14.0.2",
     "@mojaloop/ml-number": "11.2.3",
-    "@mojaloop/object-store-lib": "12.0.2",
+    "@mojaloop/object-store-lib": "12.0.3",
     "@now-ims/hapi-now-auth": "2.1.0",
     "ajv": "8.12.0",
     "ajv-keywords": "5.1.0",
