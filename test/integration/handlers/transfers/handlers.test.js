@@ -160,9 +160,6 @@ const prepareTestData = async (dataObj) => {
     const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
     const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
 
-    const kafkacat = 'GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare'
-    if (debug) console.error(kafkacat)
-
     const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.amount.currency,
       limit: { value: dataObj.payer.limit }
@@ -349,9 +346,6 @@ const prepareFxTestData = async (dataObj) => {
     const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.sourceAmount.currency)
     const fxp = await ParticipantHelper.prepareData(dataObj.fxp.name, dataObj.sourceAmount.currency)
 
-    const kafkacat = 'GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare'
-    if (debug) console.error(kafkacat)
-
     const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.sourceAmount.currency,
       limit: { value: dataObj.payer.limit }
@@ -407,7 +401,7 @@ const prepareFxTestData = async (dataObj) => {
     const fxPrepareHeaders = {
       'fspiop-source': payer.participant.name,
       'fspiop-destination': fxp.participant.name,
-      'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
+      'content-type': 'application/vnd.interoperability.fxTransfers+json;version=1.1'
     }
 
     const errorPayload = ErrorHandler.Factory.createFSPIOPError(
