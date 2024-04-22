@@ -506,9 +506,6 @@ const prepareTestData = async (dataObj) => {
       payeeList.push(payee)
     }
 
-    const kafkacat = 'GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-position-batch $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare'
-    if (debug) console.error(kafkacat)
-
     // Create payloads for number of transfers
     const transfersArray = []
     for (let i = 0; i < dataObj.transfers.length; i++) {
