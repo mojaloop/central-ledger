@@ -153,7 +153,7 @@ Test('Cyril', cyrilTest => {
       }
     })
 
-    getParticipantAndCurrencyForFxTransferMessageTest.test('return details about fxtransfer creditor party initited msg', async (test) => {
+    getParticipantAndCurrencyForFxTransferMessageTest.test('throw not implemented error on fxtransfer creditor party initited msg', async (test) => {
       try {
         TransferModel.getById.returns(Promise.resolve({}))
         await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload)
