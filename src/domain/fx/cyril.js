@@ -25,6 +25,7 @@
 
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Enum } = require('@mojaloop/central-services-shared')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const TransferModel = require('../../models/transfer/transfer')
 const ParticipantFacade = require('../../models/participant/facade')
 const { fxTransfer, watchList } = require('../../models/fxTransfer')
@@ -82,20 +83,23 @@ const getParticipantAndCurrencyForFxTransferMessage = async (payload) => {
   // Does this determining transfer ID appear on the transfer list?
   const transferRecord = await TransferModel.getById(payload.determiningTransferId)
   const determiningTransferExistsInTransferList = (transferRecord !== null)
-
   let participantName, currencyId, amount
 
   if (determiningTransferExistsInTransferList) {
     // If there's a currency conversion which is not the first message, then it must be issued by the creditor party
     // Liquidity check and reserve funds against FXP in FX target currency
-    participantName = payload.counterPartyFsp
-    currencyId = payload.targetAmount.currency
-    amount = payload.targetAmount.amount
-    await watchList.addToWatchList({
-      commitRequestId: payload.commitRequestId,
-      determiningTransferId: payload.determiningTransferId,
-      fxTransferTypeId: Enum.Fx.FxTransferType.PAYEE_CONVERSION
-    })
+    throw ErrorHandler.Factory.createFSPIOPError(
+      ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED,
+      'Payee FX conversion not implemented'
+    )
+    // participantName = payload.counterPartyFsp
+    // currencyId = payload.targetAmount.currency
+    // amount = payload.targetAmount.amount
+    // await watchList.addToWatchList({
+    //   commitRequestId: payload.commitRequestId,
+    //   determiningTransferId: payload.determiningTransferId,
+    //   fxTransferTypeId: Enum.Fx.FxTransferType.PAYEE_CONVERSION
+    // })
   } else {
     // If there's a currency conversion before the transfer is requested, then it must be issued by the debtor party
     // Liquidity check and reserve funds against requester in FX source currency

@@ -156,22 +156,13 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForFxTransferMessageTest.test('return details about fxtransfer creditor party initited msg', async (test) => {
       try {
         TransferModel.getById.returns(Promise.resolve({}))
-        const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload)
+        await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload)
 
-        test.ok(watchList.addToWatchList.calledWith({
-          commitRequestId: fxPayload.commitRequestId,
-          determiningTransferId: fxPayload.determiningTransferId,
-          fxTransferTypeId: Enum.Fx.FxTransferType.PAYEE_CONVERSION
-        }))
-        test.deepEqual(result, {
-          participantName: fxPayload.counterPartyFsp,
-          currencyId: fxPayload.targetAmount.currency,
-          amount: fxPayload.targetAmount.amount
-        })
-        test.pass('Error not thrown')
+        test.fail('Error not thrown')
         test.end()
       } catch (e) {
-        test.fail('Error Thrown')
+        test.equal(e.message, 'Payee FX conversion not implemented')
+        test.pass('Error Thrown')
         test.end()
       }
     })
