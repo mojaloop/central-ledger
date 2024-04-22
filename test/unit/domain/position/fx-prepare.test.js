@@ -35,17 +35,17 @@ const constructFxTransferTestData = (initiatingFsp, counterPartyFsp, sourceAmoun
   const commitRequestId = randomUUID()
   const determiningTransferId = randomUUID()
   const payload = {
-    commitRequestId: commitRequestId,
-    determiningTransferId: determiningTransferId,
-    initiatingFsp: initiatingFsp,
-    counterPartyFsp: counterPartyFsp,
+    commitRequestId,
+    determiningTransferId,
+    initiatingFsp,
+    counterPartyFsp,
     sourceAmount: {
-        currency: sourceCurrency,
-        amount: sourceAmount
+      currency: sourceCurrency,
+      amount: sourceAmount
     },
     targetAmount: {
-        currency: targetCurrency,
-        amount: targetAmount
+      currency: targetCurrency,
+      amount: targetAmount
     },
     condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
     expiration: '2024-04-19T14:06:08.936Z'
@@ -76,9 +76,9 @@ const constructFxTransferTestData = (initiatingFsp, counterPartyFsp, sourceAmoun
           payload: 'data:application/vnd.interoperability.fxTransfers+json;version=2.0;base64,' + base64Payload,
           context: {
             cyrilResult: {
-                participantName: initiatingFsp,
-                currencyId: sourceCurrency,
-                amount: sourceAmount
+              participantName: initiatingFsp,
+              currencyId: sourceCurrency,
+              amount: sourceAmount
             }
           }
         },
@@ -111,8 +111,8 @@ const constructFxTransferTestData = (initiatingFsp, counterPartyFsp, sourceAmoun
               transactionId: '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf',
               source: initiatingFsp,
               destination: counterPartyFsp,
-              initiatingFsp: initiatingFsp,
-              counterPartyFsp: counterPartyFsp
+              initiatingFsp,
+              counterPartyFsp
             },
             tracestates: {
               acmevendor: {
@@ -225,7 +225,7 @@ Test('FX Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedFxTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedFxTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
-      test.equal(processedMessages.accumulatedPositionValue, sourceAmount*2)
+      test.equal(processedMessages.accumulatedPositionValue, sourceAmount * 2)
       test.end()
     })
 
@@ -402,7 +402,7 @@ Test('FX Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[1].message.content.headers['fspiop-destination'], fxTransferTestData2.message.value.content.headers['fspiop-destination'])
       test.equal(processedMessages.notifyMessages[1].message.content.headers['fspiop-source'], fxTransferTestData2.message.value.content.headers['fspiop-source'])
       test.equal(processedMessages.notifyMessages[1].message.content.headers['content-type'], fxTransferTestData2.message.value.content.headers['content-type'])
-      test.equal(processedMessages.accumulatedPositionChanges[1].value, sourceAmount*2)
+      test.equal(processedMessages.accumulatedPositionChanges[1].value, sourceAmount * 2)
       test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData2.message.value.id], Enum.Transfers.TransferState.RESERVED)
 
       test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, fxTransferTestData3.message.value.id)
@@ -422,7 +422,7 @@ Test('FX Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedFxTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedFxTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
-      test.equal(processedMessages.accumulatedPositionValue, sourceAmount*2)
+      test.equal(processedMessages.accumulatedPositionValue, sourceAmount * 2)
       test.end()
     })
 
@@ -430,7 +430,7 @@ Test('FX Prepare domain', positionIndexTest => {
       const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
-        value: sourceAmount*2,
+        value: sourceAmount * 2,
         isActive: 1,
         createdBy: 'unknown',
         participantLimitId: 1,
@@ -446,13 +446,13 @@ Test('FX Prepare domain', positionIndexTest => {
         0,
         0,
         accumulatedFxTransferStates,
-        -sourceAmount*2,
+        -sourceAmount * 2,
         participantLimit
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
       test.equal(processedMessages.limitAlarms.length, 2)
-      test.equal(processedMessages.accumulatedPositionValue, sourceAmount*2)
+      test.equal(processedMessages.accumulatedPositionValue, sourceAmount * 2)
       test.end()
     })
 

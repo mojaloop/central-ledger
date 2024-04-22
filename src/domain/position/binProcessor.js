@@ -122,7 +122,7 @@ const processBins = async (bins, trx) => {
     let accumulatedPositionValue = positions[accountID].value
     let accumulatedPositionReservedValue = positions[accountID].reservedValue
     let accumulatedTransferStates = latestTransferStates
-    let accumulatedFxTransferStates = latestFxTransferStates
+    const accumulatedFxTransferStates = latestFxTransferStates
     let accumulatedTransferStateChanges = []
     let accumulatedFxTransferStateChanges = []
     let accumulatedPositionChanges = []
@@ -202,12 +202,11 @@ const processBins = async (bins, trx) => {
       if (positionChange.transferId) {
         positionChange.transferStateChangeId = fetchedTransferStateChanges[positionChange.transferId].transferStateChangeId
         delete positionChange.transferId
-      } else if (positionChange.commitRequestId){
+      } else if (positionChange.commitRequestId) {
         positionChange.fxTransferStateChangeId = fetchedFxTransferStateChanges[positionChange.commitRequestId].fxTransferStateChangeId
         delete positionChange.commitRequestId
       }
       positionChange.participantPositionId = positions[accountID].participantPositionId
-      
     }
     // Bulk insert accumulated positionChanges by calling a facade function
     await BatchPositionModel.bulkInsertParticipantPositionChanges(trx, accumulatedPositionChanges)
@@ -271,14 +270,14 @@ const _getTransferIdList = async (bins) => {
   const reservedActionTransferIdList = []
   const commitRequestIdList = []
   await iterateThroughBins(bins, (_accountID, action, item) => {
-    if(action === Enum.Events.Event.Action.PREPARE) {
+    if (action === Enum.Events.Event.Action.PREPARE) {
       transferIdList.push(item.decodedPayload.transferId)
     } else if (action === Enum.Events.Event.Action.FULFIL) {
       transferIdList.push(item.message.value.content.uriParams.id)
     } else if (action === Enum.Events.Event.Action.RESERVE) {
       transferIdList.push(item.message.value.content.uriParams.id)
       reservedActionTransferIdList.push(item.message.value.content.uriParams.id)
-    } else if(action === Enum.Events.Event.Action.FX_PREPARE) {
+    } else if (action === Enum.Events.Event.Action.FX_PREPARE) {
       commitRequestIdList.push(item.decodedPayload.commitRequestId)
     } else if (action === Enum.Events.Event.Action.FX_RESERVE) {
       commitRequestIdList.push(item.message.value.content.uriParams.id)
@@ -358,4 +357,3 @@ module.exports = {
   processBins,
   iterateThroughBins
 }
-
