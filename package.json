@@ -31,6 +31,7 @@
   "pre-commit": [
     "lint",
     "dep:check",
+    "audit:check",
     "test"
   ],
   "scripts": {
