@@ -46,14 +46,14 @@ const TransferObjectTransform = require('../../../../src/domain/transfer/transfo
 const fspiopErrorFactory = require('../../../../src/shared/fspiopErrorFactory')
 const { logger } = require('../../../../src/shared/logger')
 
-const { checkErrorPayload  } = require('../../../util/helpers')
+const { checkErrorPayload } = require('../../../util/helpers')
 const fixtures = require('../../../fixtures')
 const mocks = require('./mocks')
 
 const { Kafka, Comparators } = Util
 const { Action, Type } = Enum.Events.Event
 const { TransferState } = Enum.Transfers
-const { TOPICS } = fixtures;
+const { TOPICS } = fixtures
 
 let transferHandlers
 
