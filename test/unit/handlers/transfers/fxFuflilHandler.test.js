@@ -121,7 +121,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     let message
 
     test.beforeEach((t) => {
-      message = fixtures.fulfilKafkaMessageDto({
+      message = fixtures.fxFulfilKafkaMessageDto({
         from,
         to,
         metadata: fixtures.fulfilMetadataDto({ action: Action.FX_RESERVE })
@@ -179,7 +179,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
       from: 'wrongCounterPartyId',
       to: initiatingFsp
     })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ content, metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ content, metadata })
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
     t.ok(result)
@@ -201,7 +201,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
       to: fixtures.DFSP1_ID,
       from: fixtures.FXP_ID
     })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata, content })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata, content })
     const fxTransferDetails = fixtures.fxtGetAllDetailsByCommitRequestIdDto()
     fxTransferModel.fxTransfer.getAllDetailsByCommitRequestId.resolves(fxTransferDetails)
     Comparators.duplicateCheckComparator.resolves({
@@ -230,7 +230,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
       hasDuplicateHash: false
     })
     const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_RESERVE })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
     Validator.validateFulfilCondition.returns(false)
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
@@ -257,7 +257,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     })
     Validator.validateFulfilCondition.returns(true)
     const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_RESERVE })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
@@ -284,7 +284,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     })
     Validator.validateFulfilCondition.returns(true)
     const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_RESERVE })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
@@ -312,7 +312,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     })
     Validator.validateFulfilCondition.returns(true)
     const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_REJECT })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
@@ -337,7 +337,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     const errorInfo = fixtures.errorInfoDto()
     const content = fixtures.fulfilContentDto({ payload: errorInfo })
     const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_ABORT })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ content, metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ content, metadata })
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
@@ -367,7 +367,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     Validator.validateFulfilCondition.returns(true)
     fxTransferModel.watchList.getItemInWatchListByCommitRequestId.resolves(null)
     const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_COMMIT })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
@@ -394,7 +394,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
 
     const action = Action.FX_COMMIT
     const metadata = fixtures.fulfilMetadataDto({ action })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
@@ -419,7 +419,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
 
     const action = Action.FX_COMMIT
     const metadata = fixtures.fulfilMetadataDto({ action })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
@@ -443,7 +443,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
 
     const action = Action.FX_COMMIT
     const metadata = fixtures.fulfilMetadataDto({ action })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
@@ -467,7 +467,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
 
     const action = Action.FX_RESERVE
     const metadata = fixtures.fulfilMetadataDto({ action })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
@@ -489,7 +489,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     const action = Action.FX_COMMIT
     const type = 'fulfil'
     const metadata = fixtures.fulfilMetadataDto({ action, type })
-    const kafkaMessage = fixtures.fulfilKafkaMessageDto({ metadata })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 

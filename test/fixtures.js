@@ -1,3 +1,27 @@
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Eugen Klymniuk <eugen.klymniuk@infitx.com
+ --------------
+ **********/
+
 const { randomUUID } = require('node:crypto')
 const { Enum } = require('@mojaloop/central-services-shared')
 
@@ -33,6 +57,18 @@ const fulfilPayloadDto = ({
   extensionList
 })
 
+const fxFulfilPayloadDto = ({
+  fulfilment = FULLFILMENT,
+  conversionState = 'RECEIVED',
+  completedTimestamp = new Date().toISOString(),
+  extensionList = extensionListDto()
+} = {}) => ({
+  fulfilment,
+  conversionState,
+  completedTimestamp,
+  extensionList
+})
+
 const fulfilContentDto = ({
   payload = fulfilPayloadDto(),
   transferId = randomUUID(),
@@ -47,6 +83,23 @@ const fulfilContentDto = ({
     'fspiop-source': from,
     'fspiop-destination': to,
     'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
+  }
+})
+
+const fxFulfilContentDto = ({
+  payload = fxFulfilPayloadDto(),
+  fxTransferId = randomUUID(),
+  from = FXP_ID,
+  to = DFSP1_ID
+} = {}) => ({
+  payload,
+  uriParams: {
+    id: fxTransferId
+  },
+  headers: {
+    'fspiop-source': from,
+    'fspiop-destination': to,
+    'content-type': 'application/vnd.interoperability.fxTransfers+json;version=2.0'
   }
 })
 
@@ -73,14 +126,14 @@ const metadataEventStateDto = ({
   description
 })
 
-const fulfilKafkaMessageDto = ({
+const createKafkaMessage = ({
   id = randomUUID(),
   from = DFSP1_ID,
   to = DFSP2_ID,
   content = fulfilContentDto({ from, to }),
   metadata = fulfilMetadataDto(),
-  topic = 'test-topic'
-} = {}) => ({
+  topic = 'topic-transfer-fulfil'
+}) => ({
   topic,
   value: {
     id,
@@ -91,6 +144,38 @@ const fulfilKafkaMessageDto = ({
     type: 'application/json',
     pp: ''
   }
+})
+
+const fulfilKafkaMessageDto = ({
+  id = randomUUID(),
+  from = DFSP1_ID,
+  to = DFSP2_ID,
+  content = fulfilContentDto({ from, to }),
+  metadata = fulfilMetadataDto(),
+  topic
+} = {}) => createKafkaMessage({
+  id,
+  from,
+  to,
+  content,
+  metadata,
+  topic
+})
+
+const fxFulfilKafkaMessageDto = ({
+  id = randomUUID(),
+  from = FXP_ID,
+  to = DFSP1_ID,
+  content = fxFulfilContentDto({ from, to }),
+  metadata = fulfilMetadataDto(),
+  topic
+} = {}) => createKafkaMessage({
+  id,
+  from,
+  to,
+  content,
+  metadata,
+  topic
 })
 
 const amountDto = ({
@@ -222,6 +307,9 @@ module.exports = {
   extensionListDto,
   amountDto,
   transferDto,
+  fxFulfilKafkaMessageDto,
+  fxFulfilPayloadDto,
+  fxFulfilContentDto,
   fxTransferDto,
   fxFulfilResponseDto,
   fxtGetAllDetailsByCommitRequestIdDto,
