@@ -32,27 +32,32 @@
  ******/
 'use strict'
 
+const { randomUUID } = require('crypto')
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
+const Proxyquire = require('proxyquire')
+
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const Validator = require('../../../../src/handlers/transfers/validator')
-const TransferService = require('../../../../src/domain/transfer')
-const Cyril = require('../../../../src/domain/fx/cyril')
-const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const MainUtil = require('@mojaloop/central-services-shared').Util
 const Time = require('@mojaloop/central-services-shared').Util.Time
-const ilp = require('../../../../src/models/transfer/ilpPacket')
-const { randomUUID } = require('crypto')
-const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
-const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
+const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
+const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
+const { Consumer } = require('@mojaloop/central-services-stream').Util
 const EventSdk = require('@mojaloop/event-sdk')
+
+const Validator = require('../../../../src/handlers/transfers/validator')
+const TransferService = require('../../../../src/domain/transfer')
+const Participant = require('../../../../src/domain/participant')
+const Cyril = require('../../../../src/domain/fx/cyril')
+const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
+const ilp = require('../../../../src/models/transfer/ilpPacket')
+
+const { getMessagePayloadOrThrow } = require('../../../util/helpers')
+const mocks = require('./mocks')
+
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
-const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
-const Proxyquire = require('proxyquire')
-const { getMessagePayloadOrThrow } = require('../../../util/helpers')
-const Participant = require('../../../../src/domain/participant')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -256,27 +261,12 @@ Test('Transfer handler', transferHandlerTest => {
 
   transferHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    SpanStub = {
-      audit: sandbox.stub().callsFake(),
-      error: sandbox.stub().callsFake(),
-      finish: sandbox.stub().callsFake(),
-      debug: sandbox.stub().callsFake(),
-      info: sandbox.stub().callsFake(),
-      getChild: sandbox.stub().returns(SpanStub),
-      setTags: sandbox.stub().callsFake()
-    }
 
-    const TracerStub = {
-      extractContextFromMessage: sandbox.stub().callsFake(() => {
-        return {}
-      }),
-      createChildSpanFromContext: sandbox.stub().callsFake(() => {
-        return SpanStub
-      })
-    }
+    const stubs = mocks.createTracerStub(sandbox)
+    SpanStub = stubs.SpanStub
 
     const EventSdkStub = {
-      Tracer: TracerStub
+      Tracer: stubs.TracerStub
     }
 
     createRemittanceEntity = Proxyquire('../../../../src/handlers/transfers/createRemittanceEntity', {
@@ -1795,6 +1785,7 @@ Test('Transfer handler', transferHandlerTest => {
   transferHandlerTest.test('reject should', rejectTest => {
     rejectTest.test('throw', async (test) => {
       try {
+        // todo: clarify, what the test is about?
         await allTransferHandlers.reject()
         test.fail('No Error Thrown')
         test.end()
