@@ -38,28 +38,22 @@ const Proxyquire = require('proxyquire')
 
 const { Util, Enum } = require('@mojaloop/central-services-shared')
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
-const { FSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
 const FxFulfilService = require('../../../../src/handlers/transfers/FxFulfilService')
 const fxTransferModel = require('../../../../src/models/fxTransfer')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const fspiopErrorFactory = require('../../../../src/shared/fspiopErrorFactory')
-const { ERROR_HANDLING } = require('../../../../src/lib/config')
 const { logger } = require('../../../../src/shared/logger')
 
+const { checkErrorPayload  } = require('../../../util/helpers')
 const fixtures = require('../../../fixtures')
 const mocks = require('./mocks')
 
 const { Kafka, Comparators } = Util
-const { Action } = Enum.Events.Event
+const { Action, Type } = Enum.Events.Event
 const { TransferState } = Enum.Transfers
-
-const TOPICS = Object.freeze({
-  notificationEvent: 'topic-notification-event',
-  transferPosition: 'topic-transfer-position'
-})
-// think, how to define TOPICS dynamically (based on TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE)
+const { TOPICS } = fixtures;
 
 let transferHandlers
 
@@ -95,15 +89,6 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     sandbox.restore()
     test.end()
   })
-
-  const compareFspiopError = test => (actualErrorPayload, expectedFspiopError) => {
-    if (!(expectedFspiopError instanceof FSPIOPError)) {
-      throw new TypeError('Not a FSPIOPError')
-    }
-    const { errorCode, errorDescription } = expectedFspiopError.toApiErrorObject(ERROR_HANDLING).errorInformation
-    test.equal(actualErrorPayload.errorInformation.errorCode, errorCode)
-    test.equal(actualErrorPayload.errorInformation.errorDescription, errorDescription)
-  }
 
   fxFulfilTest.test('should return true in case of wrong message format', async (test) => {
     const logError = sandbox.stub(logger, 'error')
@@ -144,7 +129,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
         action: Action.FX_RESERVE
       })
       t.true(opts.fromSwitch)
-      compareFspiopError(t)(opts.fspiopError, notFoundError)
+      checkErrorPayload(t)(opts.fspiopError, notFoundError)
       t.end()
     })
 
@@ -159,7 +144,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
       t.equal(messageProtocol.metadata, message.value.metadata)
       t.equal(messageProtocol.id, message.value.id)
       t.equal(messageProtocol.content.uriParams, message.value.content.uriParams)
-      compareFspiopError(t)(messageProtocol.content.payload, notFoundError)
+      checkErrorPayload(t)(messageProtocol.content.payload, notFoundError)
       t.end()
     })
 
@@ -187,7 +172,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
     t.equal(messageProtocol.from, fixtures.SWITCH_ID)
     t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT_VALIDATION)
-    compareFspiopError(t)(messageProtocol.content.payload, fspiopErrorFactory.fxHeaderSourceValidationError())
+    checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxHeaderSourceValidationError())
     t.equal(topicConfig.topicName, TOPICS.transferPosition)
     t.equal(topicConfig.key, String(fxTransferDetailsFromDb.initiatingFspParticipantCurrencyId))
     t.end()
@@ -215,7 +200,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.ok(producer.produceMessage.calledOnce)
     const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
     t.equal(messageProtocol.metadata.event.action, action)
-    compareFspiopError(t)(messageProtocol.content.payload, fspiopErrorFactory.invalidEventType(type))
+    checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.invalidEventType(type))
     t.equal(topicConfig.topicName, TOPICS.notificationEvent)
     t.end()
   })
@@ -239,7 +224,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.ok(producer.produceMessage.calledOnce)
     const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
     t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT_VALIDATION)
-    compareFspiopError(t)(messageProtocol.content.payload, fspiopErrorFactory.fxInvalidFulfilment())
+    checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxInvalidFulfilment())
     t.equal(topicConfig.topicName, TOPICS.transferPosition)
     t.equal(topicConfig.key, String(fxTransferDetails.counterPartyFspTargetParticipantCurrencyId))
     t.end()
@@ -266,7 +251,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
     t.equal(messageProtocol.from, fixtures.SWITCH_ID)
     t.equal(messageProtocol.metadata.event.action, Action.FX_RESERVE)
-    compareFspiopError(t)(messageProtocol.content.payload, fspiopErrorFactory.fxTransferNonReservedState())
+    checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxTransferNonReservedState())
     t.equal(topicConfig.topicName, TOPICS.notificationEvent)
     t.end()
   })
@@ -293,7 +278,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
     t.equal(messageProtocol.from, fixtures.SWITCH_ID)
     t.equal(messageProtocol.metadata.event.action, Action.FX_RESERVE)
-    compareFspiopError(t)(messageProtocol.content.payload, fspiopErrorFactory.fxTransferExpired())
+    checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxTransferExpired())
     t.equal(topicConfig.topicName, TOPICS.notificationEvent)
     t.end()
   })
@@ -345,7 +330,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.ok(producer.produceMessage.calledOnce)
     const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
     t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT)
-    compareFspiopError(t)(messageProtocol.content.payload, fspiopErrorFactory.fromErrorInformation(errorInfo.errorInformation))
+    checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fromErrorInformation(errorInfo.errorInformation))
     t.equal(topicConfig.topicName, TOPICS.transferPosition)
     t.equal(topicConfig.key, String(fxTransferDetails.counterPartyFspTargetParticipantCurrencyId))
     t.end()
@@ -428,7 +413,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
     t.equal(messageProtocol.from, fixtures.SWITCH_ID)
     t.equal(messageProtocol.metadata.event.action, Action.FX_FULFIL_DUPLICATE)
-    compareFspiopError(t)(messageProtocol.content.payload, fspiopErrorFactory.noFxDuplicateHash())
+    checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.noFxDuplicateHash())
     t.equal(topicConfig.topicName, TOPICS.transferPosition)
     t.end()
   })
@@ -487,7 +472,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     sandbox.stub(FxFulfilService.prototype, 'validateHeaders').resolves()
 
     const action = Action.FX_COMMIT
-    const type = 'fulfil'
+    const type = Type.FULFIL
     const metadata = fixtures.fulfilMetadataDto({ action, type })
     const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
@@ -503,7 +488,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
       type,
       action
     })
-    compareFspiopError(t)(messageProtocol.content.payload, fspiopError)
+    checkErrorPayload(t)(messageProtocol.content.payload, fspiopError)
     t.equal(topicConfig.topicName, TOPICS.notificationEvent)
     t.end()
   })

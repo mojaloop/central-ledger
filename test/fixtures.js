@@ -34,6 +34,13 @@ const DFSP2_ID = 'dfsp2'
 const FXP_ID = 'fxp'
 const SWITCH_ID = 'switch'
 
+const TOPICS = Object.freeze({
+  notificationEvent: 'topic-notification-event',
+  transferPosition: 'topic-transfer-position',
+  transferFulfil: 'topic-transfer-fulfil'
+})
+// think, how to define TOPICS dynamically (based on TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE)
+
 const extensionListDto = ({
   key = 'key1',
   value = 'value1'
@@ -107,7 +114,7 @@ const fulfilMetadataDto = ({
   id = randomUUID(), //  todo: think, how it relates to other ids
   type = 'fulfil',
   action = 'commit'
-} = {}) => Object.freeze({
+} = {}) => ({
   event: {
     id,
     type,
@@ -297,6 +304,7 @@ module.exports = {
   DFSP2_ID,
   FXP_ID,
   SWITCH_ID,
+  TOPICS,
 
   fulfilKafkaMessageDto,
   fulfilMetadataDto,
