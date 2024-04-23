@@ -40,6 +40,7 @@ const ParticipantEndpointHelper = require('#test/integration/helpers/participant
 const SettlementHelper = require('#test/integration/helpers/settlementModels')
 const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
 const TransferService = require('#src/domain/transfer/index')
+const FxTransferModel = require('#src/models/fxTransfer/fxTransfer')
 const ParticipantService = require('#src/domain/participant/index')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -148,6 +149,149 @@ const testData = {
   payee: {
     name: 'payeeFsp',
     number: 2,
+    limit: 1000
+  },
+  endpoint: {
+    base: 'http://localhost:1080',
+    email: 'test@example.com'
+  },
+  now: new Date(),
+  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
+}
+
+const testFxData = {
+  currencies: ['USD', 'XXX'],
+  transfers: [
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      },
+      fx: {
+        targetAmount: {
+          currency: 'XXX',
+          amount: 50
+        }
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      },
+      fx: {
+        targetAmount: {
+          currency: 'XXX',
+          amount: 50
+        }
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      },
+      fx: {
+        targetAmount: {
+          currency: 'XXX',
+          amount: 50
+        }
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      },
+      fx: {
+        targetAmount: {
+          currency: 'XXX',
+          amount: 50
+        }
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      },
+      fx: {
+        targetAmount: {
+          currency: 'XXX',
+          amount: 50
+        }
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      },
+      fx: {
+        targetAmount: {
+          currency: 'XXX',
+          amount: 50
+        }
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      },
+      fx: {
+        targetAmount: {
+          currency: 'XXX',
+          amount: 50
+        }
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      },
+      fx: {
+        targetAmount: {
+          currency: 'XXX',
+          amount: 50
+        }
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      },
+      fx: {
+        targetAmount: {
+          currency: 'XXX',
+          amount: 50
+        }
+      }
+    },
+    {
+      amount: {
+        currency: 'USD',
+        amount: 5
+      },
+      fx: {
+        targetAmount: {
+          currency: 'XXX',
+          amount: 50
+        }
+      }
+    }
+  ],
+  payer: {
+    name: 'payerFsp',
+    limit: 1000,
+    number: 1,
+    fundsIn: 10000
+  },
+  payee: {
+    name: 'payeeFsp',
+    number: 1,
     limit: 1000
   },
   endpoint: {
@@ -506,9 +650,6 @@ const prepareTestData = async (dataObj) => {
       payeeList.push(payee)
     }
 
-    const kafkacat = 'GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-position-batch $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare'
-    if (debug) console.error(kafkacat)
-
     // Create payloads for number of transfers
     const transfersArray = []
     for (let i = 0; i < dataObj.transfers.length; i++) {
@@ -540,10 +681,32 @@ const prepareTestData = async (dataObj) => {
         }
       }
 
+      const fxTransferPayload = {
+        commitRequestId: randomUUID(),
+        determiningTransferId: randomUUID(),
+        initiatingFsp: payer.participant.name,
+        counterPartyFsp: payee.participant.name,
+        sourceAmount: {
+          currency: dataObj.transfers[i].amount.currency,
+          amount: dataObj.transfers[i].amount.amount.toString()
+        },
+        targetAmount: {
+          currency: dataObj.transfers[i].fx?.targetAmount.currency || dataObj.transfers[i].amount.currency,
+          amount: dataObj.transfers[i].fx?.targetAmount.amount.toString() || dataObj.transfers[i].amount.amount.toString()
+        },
+        condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
+        expiration: dataObj.expiration
+      }
+
       const prepareHeaders = {
         'fspiop-source': payer.participant.name,
         'fspiop-destination': payee.participant.name,
         'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
+      }
+      const fxPrepareHeaders = {
+        'fspiop-source': payer.participant.name,
+        'fspiop-destination': payee.participant.name,
+        'content-type': 'application/vnd.interoperability.fxtransfers+json;version=2.0'
       }
       const fulfilAbortRejectHeaders = {
         'fspiop-source': payee.participant.name,
@@ -597,6 +760,17 @@ const prepareTestData = async (dataObj) => {
         }
       }
 
+      const messageProtocolFxPrepare = Util.clone(messageProtocolPrepare)
+      messageProtocolFxPrepare.id = randomUUID()
+      messageProtocolFxPrepare.from = fxTransferPayload.initiatingFsp
+      messageProtocolFxPrepare.to = fxTransferPayload.counterPartyFsp
+      messageProtocolFxPrepare.content.headers = fxPrepareHeaders
+      messageProtocolFxPrepare.content.uriParams = { id: fxTransferPayload.commitRequestId }
+      messageProtocolFxPrepare.content.payload = fxTransferPayload
+      messageProtocolFxPrepare.metadata.event.id = randomUUID()
+      messageProtocolFxPrepare.metadata.event.type = TransferEventType.PREPARE
+      messageProtocolFxPrepare.metadata.event.action = TransferEventAction.FX_PREPARE
+
       const messageProtocolFulfil = Util.clone(messageProtocolPrepare)
       messageProtocolFulfil.id = randomUUID()
       messageProtocolFulfil.from = transferPayload.payeeFsp
@@ -632,6 +806,7 @@ const prepareTestData = async (dataObj) => {
       messageProtocolError.metadata.event.action = TransferEventAction.ABORT
       transfersArray.push({
         transferPayload,
+        fxTransferPayload,
         fulfilPayload,
         rejectPayload,
         errorPayload,
@@ -640,6 +815,7 @@ const prepareTestData = async (dataObj) => {
         messageProtocolReject,
         messageProtocolError,
         messageProtocolFulfilReserved,
+        messageProtocolFxPrepare,
         payer,
         payee
       })
@@ -976,6 +1152,140 @@ Test('Handlers test', async handlersTest => {
         for (const tdTest of td.transfersArray) {
           const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
           test.equal(transfer?.transferState, TransferInternalState.RESERVED, 'Transfer state updated to RESERVED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPositionPrepare.test('process batch of fxtransfers', async (test) => {
+      // Construct test data for 10 fxTransfers.
+      const td = await prepareTestData(testFxData)
+
+      // Produce fx prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      // Consume messages from notification topic
+      const positionFxPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+        topicFilter: 'topic-notification-event',
+        action: 'fx-prepare'
+      }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      // filter positionFxPrepare messages where destination is not Hub
+      const positionFxPrepareFiltered = positionFxPrepare.filter((notification) => notification.to !== 'Hub')
+      test.equal(positionFxPrepareFiltered.length, 10, 'Notification Messages received for all 10 fxTransfers')
+
+      // Check that initiating FSP position is only updated by sum of transfers relevant to the source currency
+      const initiatingFspCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
+      const initiatingFspExpectedPositionForSourceCurrency = td.transfersArray.reduce((acc, tdTest) => acc + Number(tdTest.fxTransferPayload.sourceAmount.amount), 0)
+      test.equal(initiatingFspCurrentPositionForSourceCurrency.value, initiatingFspExpectedPositionForSourceCurrency, 'Initiating FSP position increases for Source Currency')
+
+      // Check that initiating FSP position is not updated for target currency
+      const initiatingFspCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const initiatingFspExpectedPositionForTargetCurrency = 0
+      test.equal(initiatingFspCurrentPositionForTargetCurrency.value, initiatingFspExpectedPositionForTargetCurrency, 'Initiating FSP position not changed for Target Currency')
+
+      // Check that CounterParty FSP position is only updated by sum of transfers relevant to the source currency
+      const counterPartyFspCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payee.participantCurrencyId) || {}
+      const counterPartyFspExpectedPositionForSourceCurrency = 0
+      test.equal(counterPartyFspCurrentPositionForSourceCurrency.value, counterPartyFspExpectedPositionForSourceCurrency, 'CounterParty FSP position not changed for Source Currency')
+
+      // Check that CounterParty FSP position is not updated for target currency
+      const counterPartyFspCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payee.participantCurrencyIdSecondary) || {}
+      const counterPartyFspExpectedPositionForTargetCurrency = 0
+      test.equal(counterPartyFspCurrentPositionForTargetCurrency.value, counterPartyFspExpectedPositionForTargetCurrency, 'CounterParty FSP position not changed for Target Currency')
+
+      // Check that the fx transfer state for fxTransfers is RESERVED
+      try {
+        for (const tdTest of td.transfersArray) {
+          const fxTransfer = await FxTransferModel.getByIdLight(tdTest.fxTransferPayload.commitRequestId) || {}
+          test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED, 'FX Transfer state updated to RESERVED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPositionPrepare.test('process batch of transfers and fxtransfers', async (test) => {
+      // Construct test data for 10 transfers / fxTransfers.
+      const td = await prepareTestData(testFxData)
+
+      // Construct mixed messages array
+      const mixedMessagesArray = []
+      for (const transfer of td.transfersArray) {
+        mixedMessagesArray.push(transfer.messageProtocolPrepare)
+        mixedMessagesArray.push(transfer.messageProtocolFxPrepare)
+      }
+
+      // Produce prepare and fx prepare messages
+      for (const message of mixedMessagesArray) {
+        await Producer.produceMessage(message, td.topicConfTransferPrepare, prepareConfig)
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      // Consume messages from notification topic
+      const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+        topicFilter: 'topic-notification-event',
+        action: 'prepare'
+      }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      const positionFxPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+        topicFilter: 'topic-notification-event',
+        action: 'fx-prepare'
+      }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      // filter positionPrepare messages where destination is not Hub
+      const positionPrepareFiltered = positionPrepare.filter((notification) => notification.to !== 'Hub')
+      test.equal(positionPrepareFiltered.length, 10, 'Notification Messages received for all 10 transfers')
+
+      // filter positionFxPrepare messages where destination is not Hub
+      const positionFxPrepareFiltered = positionFxPrepare.filter((notification) => notification.to !== 'Hub')
+      test.equal(positionFxPrepareFiltered.length, 10, 'Notification Messages received for all 10 fxTransfers')
+
+      // Check that payer / initiating FSP position is only updated by sum of transfers relevant to the source currency
+      const payerCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
+      const payerExpectedPositionForSourceCurrency = td.transfersArray.reduce((acc, tdTest) => acc + Number(tdTest.transferPayload.amount.amount), 0) + td.transfersArray.reduce((acc, tdTest) => acc + Number(tdTest.fxTransferPayload.sourceAmount.amount), 0)
+      test.equal(payerCurrentPositionForSourceCurrency.value, payerExpectedPositionForSourceCurrency, 'Payer / Initiating FSP position increases for Source Currency')
+
+      // Check that payer / initiating FSP position is not updated for target currency
+      const payerCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const payerExpectedPositionForTargetCurrency = 0
+      test.equal(payerCurrentPositionForTargetCurrency.value, payerExpectedPositionForTargetCurrency, 'Payer / Initiating FSP position not changed for Target Currency')
+
+      // Check that payee / CounterParty FSP position is only updated by sum of transfers relevant to the source currency
+      const payeeCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payee.participantCurrencyId) || {}
+      const payeeExpectedPositionForSourceCurrency = 0
+      test.equal(payeeCurrentPositionForSourceCurrency.value, payeeExpectedPositionForSourceCurrency, 'Payee / CounterParty FSP position not changed for Source Currency')
+
+      // Check that payee / CounterParty FSP position is not updated for target currency
+      const payeeCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payee.participantCurrencyIdSecondary) || {}
+      const payeeExpectedPositionForTargetCurrency = 0
+      test.equal(payeeCurrentPositionForTargetCurrency.value, payeeExpectedPositionForTargetCurrency, 'Payee / CounterParty FSP position not changed for Target Currency')
+
+      // Check that the transfer state for transfers is RESERVED
+      try {
+        for (const tdTest of td.transfersArray) {
+          const transfer = await TransferService.getById(tdTest.messageProtocolPrepare.content.payload.transferId) || {}
+          test.equal(transfer?.transferState, TransferInternalState.RESERVED, 'Transfer state updated to RESERVED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      // Check that the fx transfer state for fxTransfers is RESERVED
+      try {
+        for (const tdTest of td.transfersArray) {
+          const fxTransfer = await FxTransferModel.getByIdLight(tdTest.fxTransferPayload.commitRequestId) || {}
+          test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED, 'FX Transfer state updated to RESERVED')
         }
       } catch (err) {
         Logger.error(err)

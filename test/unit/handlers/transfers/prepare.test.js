@@ -50,6 +50,10 @@ const Comparators = require('@mojaloop/central-services-shared').Util.Comparator
 const Proxyquire = require('proxyquire')
 const Participant = require('../../../../src/domain/participant')
 const Config = require('../../../../src/lib/config')
+const fxTransferModel = require('../../../../src/models/fxTransfer/fxTransfer')
+const fxDuplicateCheck = require('../../../../src/models/fxTransfer/duplicateCheck')
+const fxTransferStateChange = require('../../../../src/models/fxTransfer/stateChange')
+
 const { Action } = Enum.Events.Event
 
 const transfer = {
@@ -77,6 +81,22 @@ const transfer = {
   }
 }
 
+const fxTransfer = {
+  commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
+  determiningTransferId: 'c05c3f31-33b5-4e33-8bfd-7c3a2685fb6c',
+  condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)), // tomorrow
+  initiatingFsp: 'fx_dfsp1',
+  counterPartyFsp: 'fx_dfsp2',
+  sourceAmount: {
+    currency: 'USD',
+    amount: '433.88'
+  },
+  targetAmount: {
+    currency: 'EUR',
+    amount: '200.00'
+  }
+}
 const transferReturn = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
   amount: {
@@ -139,6 +159,34 @@ const messageProtocol = {
   pp: ''
 }
 
+const fxMessageProtocol = {
+  id: randomUUID(),
+  from: fxTransfer.initiatingFsp,
+  to: fxTransfer.counterPartyFsp,
+  type: 'application/json',
+  content: {
+    headers: {
+      'fspiop-destination': fxTransfer.initiatingFsp,
+      'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
+    },
+    uriParams: { id: fxTransfer.commitRequestId },
+    payload: fxTransfer
+  },
+  metadata: {
+    event: {
+      id: randomUUID(),
+      type: 'fx-prepare',
+      action: Action.FX_PREPARE,
+      createdAt: new Date(),
+      state: {
+        status: 'success',
+        code: 0
+      }
+    }
+  },
+  pp: ''
+}
+
 const messageProtocolBulkPrepare = MainUtil.clone(messageProtocol)
 messageProtocolBulkPrepare.metadata.event.action = 'bulk-prepare'
 const messageProtocolBulkCommit = MainUtil.clone(messageProtocol)
@@ -154,6 +202,13 @@ const messages = [
   {
     topic: topicName,
     value: messageProtocolBulkPrepare
+  }
+]
+
+const fxMessages = [
+  {
+    topic: topicName,
+    value: fxMessageProtocol
   }
 ]
 
@@ -209,11 +264,20 @@ let allTransferHandlers
 let prepare
 let createRemittanceEntity
 
-const cyrilStub = async (payload) => ({
-  participantName: payload.payerFsp,
-  currencyId: payload.amount.currency,
-  amount: payload.amount.amount
-})
+const cyrilStub = async (payload) => {
+  if (payload.determiningTransferId) {
+    return {
+      participantName: payload.initiatingFsp,
+      currencyId: payload.targetAmount.currency,
+      amount: payload.targetAmount.amount
+    }
+  }
+  return {
+    participantName: payload.payerFsp,
+    currencyId: payload.amount.currency,
+    amount: payload.amount.amount
+  }
+}
 
 Test('Transfer handler', transferHandlerTest => {
   let sandbox
@@ -246,7 +310,8 @@ Test('Transfer handler', transferHandlerTest => {
     createRemittanceEntity = Proxyquire('../../../../src/handlers/transfers/createRemittanceEntity', {
       '../../domain/fx/cyril': {
         getParticipantAndCurrencyForTransferMessage: cyrilStub,
-        getParticipantAndCurrencyForFxTransferMessage: cyrilStub
+        getParticipantAndCurrencyForFxTransferMessage: cyrilStub,
+        getPositionParticipant: cyrilStub
       }
     })
     prepare = Proxyquire('../../../../src/handlers/transfers/prepare', {
@@ -265,6 +330,9 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(Comparators)
     sandbox.stub(Validator)
     sandbox.stub(TransferService)
+    sandbox.stub(fxTransferModel)
+    sandbox.stub(fxDuplicateCheck)
+    sandbox.stub(fxTransferStateChange)
     sandbox.stub(Cyril)
     Cyril.processFulfilMessage.returns({
       isFx: false
@@ -281,12 +349,12 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(TransferObjectTransform, 'toTransfer')
     sandbox.stub(TransferObjectTransform, 'toFulfil')
     sandbox.stub(Participant, 'getAccountByNameAndCurrency').callsFake((...args) => {
-      if (args[0] === transfer.payerFsp) {
+      if (args[0] === transfer.payerFsp || args[0] === fxTransfer.initiatingFsp) {
         return {
           participantCurrencyId: 0
         }
       }
-      if (args[0] === transfer.payeeFsp) {
+      if (args[0] === transfer.payeeFsp || args[0] === fxTransfer.counterPartyFsp) {
         return {
           participantCurrencyId: 1
         }
@@ -372,6 +440,8 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    // Not sure why all these tests have conditions on transferState.
+    // `prepare` does not currently have any code that checks transferState.
     prepareTest.test('send callback when duplicate found but without transferState', async (test) => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
@@ -823,6 +893,199 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
     processDuplicationTest.end()
+  })
+
+  transferHandlerTest.test('payer initiated conversion fxPrepare should', fxPrepareTest => {
+    fxPrepareTest.test('persist fxtransfer to database when messages is an array', async (test) => {
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
+      test.equal(result, true)
+      test.ok(Validator.validatePrepare.called)
+      test.ok(fxTransferModel.savePreparedRequest.called)
+      test.ok(Comparators.duplicateCheckComparator.called)
+      test.end()
+    })
+
+    fxPrepareTest.test('persist transfer to database when messages is an array - consumer throws error', async (test) => {
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Consumer.getConsumer.throws(new Error())
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
+      test.equal(result, true)
+      test.ok(Validator.validatePrepare.called)
+      test.ok(fxTransferModel.savePreparedRequest.called)
+      test.ok(Comparators.duplicateCheckComparator.called)
+      test.end()
+    })
+
+    fxPrepareTest.test('send callback when duplicate found', async (test) => {
+      const localMessages = MainUtil.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
+      }))
+
+      const result = await allTransferHandlers.prepare(null, localMessages)
+
+      test.equal(result, true)
+      test.end()
+    })
+
+    fxPrepareTest.test('persist transfer to database when single message sent', async (test) => {
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, config, command)
+
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.prepare(null, localMessages[0])
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
+      test.equal(result, true)
+      test.ok(Validator.validatePrepare.called)
+      test.ok(fxTransferModel.savePreparedRequest.called)
+      test.ok(Comparators.duplicateCheckComparator.called)
+      test.end()
+    })
+
+    fxPrepareTest.test('send notification when validation failed and duplicate error thrown by prepare', async (test) => {
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, config, command)
+
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
+      fxTransferModel.savePreparedRequest.throws(new Error())
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      // Is this not supposed to be FX_PREPARE?
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fxPrepareTest.test('send notification when validation failed and duplicate error thrown by prepare - kafka autocommit enabled', async (test) => {
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, configAutocommit, command)
+      Consumer.isConsumerAutoCommitEnabled.returns(true)
+
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
+      fxTransferModel.savePreparedRequest.throws(new Error())
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      // Is this not supposed to be FX_PREPARE?
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fxPrepareTest.test('fail validation and persist INVALID transfer to database and insert transferError', async (test) => {
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, config, command)
+
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
+      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
+      test.equal(result, true)
+      test.ok(Validator.validatePrepare.called)
+      test.ok(fxTransferModel.savePreparedRequest.called)
+      test.ok(Comparators.duplicateCheckComparator.called)
+      test.end()
+    })
+
+    fxPrepareTest.test('fail validation and persist INVALID transfer to database and insert transferError - kafka autocommit enabled', async (test) => {
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, configAutocommit, command)
+      Consumer.isConsumerAutoCommitEnabled.returns(true)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
+      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
+      test.equal(result, true)
+      test.ok(Validator.validatePrepare.called)
+      test.ok(fxTransferModel.savePreparedRequest.called)
+      test.ok(Comparators.duplicateCheckComparator.called)
+      test.end()
+    })
+    fxPrepareTest.end()
   })
   transferHandlerTest.end()
 })
