@@ -18,7 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Eugen Klymniuk <eugen.klymniuk@infitx.com
+ * Eugen Klymniuk <eugen.klymniuk@infitx.com>
  --------------
  **********/
 
@@ -76,9 +76,10 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
 
   fxFulfilTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(Kafka)
+    sandbox.stub(FxTransferModel.fxTransfer)
     sandbox.stub(FxTransferModel.duplicateCheck)
     span = mocks.createTracerStub(sandbox).SpanStub
-    // producer = sandbox.stub(Producer)
     test.end()
   })
 
@@ -97,8 +98,8 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
         commitRequestId, payload
       } = createFxFulfilServiceWithTestData(message)
 
-      FxTransferModel.duplicateCheck.getFxTransferDuplicateCheck.resolves({ hash: Hash.generateSha256(payload) })
-      FxTransferModel.duplicateCheck.saveFxTransferDuplicateCheck.resolves()
+      FxTransferModel.duplicateCheck.getFxTransferFulfilmentDuplicateCheck.resolves({ hash: Hash.generateSha256(payload) })
+      FxTransferModel.duplicateCheck.saveFxTransferFulfilmentDuplicateCheck.resolves()
       FxTransferModel.duplicateCheck.getFxTransferErrorDuplicateCheck.rejects(new Error('Should not be called'))
       FxTransferModel.duplicateCheck.saveFxTransferErrorDuplicateCheck.rejects(new Error('Should not be called'))
 
@@ -117,14 +118,31 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
         commitRequestId, payload
       } = createFxFulfilServiceWithTestData(message)
 
-      FxTransferModel.duplicateCheck.getFxTransferDuplicateCheck.rejects(new Error('Should not be called'))
-      FxTransferModel.duplicateCheck.saveFxTransferDuplicateCheck.rejects(new Error('Should not be called'))
+      FxTransferModel.duplicateCheck.getFxTransferFulfilmentDuplicateCheck.rejects(new Error('Should not be called'))
+      FxTransferModel.duplicateCheck.saveFxTransferFulfilmentDuplicateCheck.rejects(new Error('Should not be called'))
       FxTransferModel.duplicateCheck.getFxTransferErrorDuplicateCheck.resolves({ hash: Hash.generateSha256(payload) })
       FxTransferModel.duplicateCheck.saveFxTransferErrorDuplicateCheck.resolves()
 
       const dupCheckResult = await service.getDuplicateCheckResult({ commitRequestId, payload, action })
       t.ok(dupCheckResult.hasDuplicateId)
       t.ok(dupCheckResult.hasDuplicateHash)
+      t.end()
+    })
+
+    methodTest.end()
+  })
+
+  fxFulfilTest.test('validateFulfilment Method Tests -->', methodTest => {
+    methodTest.test('should pass fulfilment validation', async t => {
+      const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
+      const transfer = {
+        ilpCondition: fixtures.CONDITION,
+        counterPartyFspTargetParticipantCurrencyId: 123
+      }
+      const payload = { fulfilment: fixtures.FULFILMENT }
+
+      const isOk = await service.validateFulfilment(transfer, payload)
+      t.true(isOk)
       t.end()
     })
 

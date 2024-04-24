@@ -18,7 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Eugen Klymniuk <eugen.klymniuk@infitx.com
+ * Eugen Klymniuk <eugen.klymniuk@infitx.com>
  --------------
  **********/
 
@@ -111,13 +111,14 @@ class FxFulfilService {
 
   async getDuplicateCheckResult({ commitRequestId, payload, action }) {
     const { duplicateCheck } = this.FxTransferModel
+    const isFxTransferError = action === Action.FX_ABORT
 
-    const getDuplicateFn = action === Action.FX_ABORT
+    const getDuplicateFn = isFxTransferError
       ? duplicateCheck.getFxTransferErrorDuplicateCheck
-      : duplicateCheck.getFxTransferDuplicateCheck
-    const saveHashFn = action === Action.FX_ABORT
+      : duplicateCheck.getFxTransferFulfilmentDuplicateCheck
+    const saveHashFn = isFxTransferError
       ? duplicateCheck.saveFxTransferErrorDuplicateCheck
-      : duplicateCheck.saveFxTransferDuplicateCheck
+      : duplicateCheck.saveFxTransferFulfilmentDuplicateCheck
 
     return this.Comparators.duplicateCheckComparator(
       commitRequestId,
@@ -212,17 +213,18 @@ class FxFulfilService {
       })
       throw fspiopError
     }
+    this.log.debug('validateEventType is passed', { type, functionality })
   }
 
   async validateFulfilment(transfer, payload) {
-    if (payload.fulfilment && !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
+    if (payload.fulfilment && !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.ilpCondition)) {
       const fspiopError = fspiopErrorFactory.fxInvalidFulfilment()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
         functionality: Type.POSITION,
         action: Action.FX_ABORT_VALIDATION
       }
-      this.log.warn('callbackErrorInvalidFulfilment', { eventDetail, apiFSPIOPError })
+      this.log.warn('callbackErrorInvalidFulfilment', { eventDetail, apiFSPIOPError, transfer, payload })
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
       await this.kafkaProceed({
@@ -246,7 +248,7 @@ class FxFulfilService {
         functionality,
         action: Action.FX_RESERVE
       }
-      this.log.warn('callbackErrorNonReservedState', { eventDetail, apiFSPIOPError })
+      this.log.warn('callbackErrorNonReservedState', { eventDetail, apiFSPIOPError, transfer })
 
       await this.kafkaProceed({
         consumerCommit,
@@ -256,6 +258,8 @@ class FxFulfilService {
       })
       throw fspiopError
     }
+    this.log.debug('validateTransferState is passed')
+    return true
   }
 
   async validateExpirationDate(transfer, functionality) {

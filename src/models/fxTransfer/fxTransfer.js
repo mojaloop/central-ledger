@@ -147,6 +147,7 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
       getParticipant(payload.counterPartyFsp, payload.sourceAmount.currency),
       getParticipant(payload.counterPartyFsp, payload.targetAmount.currency)
     ])
+    // todo: clarify, what we should do if no initiatingParticipant or counterParticipant found?
 
     const fxTransferRecord = {
       commitRequestId: payload.commitRequestId,
