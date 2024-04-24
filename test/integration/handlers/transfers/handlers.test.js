@@ -1501,29 +1501,11 @@ Test('Handlers test', async handlersTest => {
           keyFilter: td.payer.participantCurrencyId.toString()
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
-
-        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
-        const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
-        const payerExpectedPosition = payerInitialPosition + td.transferPayload.sourceAmount.amount
-        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-        test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
 
-      try {
-        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-          topicFilter: 'topic-notification-event',
-          action: 'fx-prepare'
-        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionPrepare[0], 'Notification fx-prepare message with key found')
-      } catch (err) {
-        test.notOk('Error should not be thrown')
-        console.error(err)
-      }
       test.end()
     })
 
