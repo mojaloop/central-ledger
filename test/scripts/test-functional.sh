@@ -4,9 +4,9 @@ echo "--=== Running Functional Test Runner ===--"
 echo
 
 CENTRAL_LEDGER_VERSION=${CENTRAL_LEDGER_VERSION:-"local"}
-ML_CORE_TEST_HARNESS_VERSION=${ML_CORE_TEST_HARNESS_VERSION:-"v1.1.1"}
+ML_CORE_TEST_HARNESS_VERSION=${ML_CORE_TEST_HARNESS_VERSION:-"v1.2.4-fx-snapshot"}
 ML_CORE_TEST_HARNESS_GIT=${ML_CORE_TEST_HARNESS_GIT:-"https://github.com/mojaloop/ml-core-test-harness.git"}
-ML_CORE_TEST_HARNESS_TEST_PROV_CONT_NAME=${ML_CORE_TEST_HARNESS_TEST_PROV_CONT_NAME:-"ttk-func-ttk-provisioning-1"}
+ML_CORE_TEST_HARNESS_TEST_PROV_CONT_NAME=${ML_CORE_TEST_HARNESS_TEST_PROV_CONT_NAME:-"ttk-func-ttk-provisioning-fx-1"}
 ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME=${ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME:-"ttk-func-ttk-tests-1"}
 ML_CORE_TEST_HARNESS_DIR=${ML_CORE_TEST_HARNESS_DIR:-"/tmp/ml-api-adapter-core-test-harness"}
 ML_CORE_TEST_SKIP_SHUTDOWN=${ML_CORE_TEST_SKIP_SHUTDOWN:-false}
@@ -37,7 +37,7 @@ pushd $ML_CORE_TEST_HARNESS_DIR
 
   ## Start the test harness
   echo "==> Starting Docker compose"
-  docker compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests up -d
+  docker compose --project-name ttk-func --ansi never --profile all-services --profile fx --profile ttk-provisioning-fx --profile ttk-fx-tests up -d
 
   echo "==> Running wait-for-container.sh $ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME"
   ## Wait for the test harness to complete, and capture the exit code
@@ -59,7 +59,7 @@ pushd $ML_CORE_TEST_HARNESS_DIR
     echo "==> Skipping test harness shutdown"
   else
     echo "==> Shutting down test harness"
-    docker compose --project-name ttk-func --ansi never --profile all-services --profile ttk-provisioning --profile ttk-tests down -v
+    docker compose --project-name ttk-func --ansi never --profile all-services --profile fx --profile ttk-provisioning-fx --profile ttk-fx-tests down -v
   fi
 
   ## Dump log to console
