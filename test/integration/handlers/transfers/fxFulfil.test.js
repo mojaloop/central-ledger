@@ -26,7 +26,7 @@
 const Test = require('tape')
 const { Db } = require('@mojaloop/database-lib')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
-const { Producer } = require('@mojaloop/central-services-stream').Util
+const { Producer } = require('@mojaloop/central-services-stream').Kafka
 
 const Config = require('#src/lib/config')
 const fspiopErrorFactory = require('#src/shared/fspiopErrorFactory')
@@ -123,11 +123,9 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     Type.TRANSFER.toUpperCase(),
     Action.FULFIL.toUpperCase()
   )
-  const produceMessageToFxFulfilTopic = async (message) => Producer.produceMessage(
-    message,
-    topicFxFulfilConfig,
-    fxFulfilProducerConfig
-  )
+  const producer = new Producer(fxFulfilProducerConfig)
+  await producer.connect()
+  const produceMessageToFxFulfilTopic = async (message) => producer.sendMessage(message, topicFxFulfilConfig)
 
   const testConsumer = createTestConsumer([
     { type: Type.NOTIFICATION, action: Action.EVENT },
@@ -135,6 +133,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     { type: Type.TRANSFER, action: Action.FULFIL }
   ])
   await testConsumer.startListening()
+  await new Promise(resolve => setTimeout(resolve, 5_000))
   fxFulfilTest.pass('setup is done')
 
   fxFulfilTest.test('should publish a message to send error callback if fxTransfer does not exist', async (t) => {
@@ -207,9 +206,10 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     await Promise.all([
       Db.disconnect(),
       Cache.destroyCache(),
-      Producer.disconnect(),
+      producer.disconnect(),
       testConsumer.destroy()
     ])
+    await new Promise(resolve => setTimeout(resolve, 5_000))
     t.pass('teardown is finished')
     t.end()
   })
