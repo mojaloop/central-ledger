@@ -29,11 +29,12 @@ const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { Producer } = require('@mojaloop/central-services-stream').Kafka
 
 const Config = require('#src/lib/config')
-const fspiopErrorFactory = require('#src/shared/fspiopErrorFactory')
 const Cache = require('#src/lib/cache')
+const fspiopErrorFactory = require('#src/shared/fspiopErrorFactory')
 const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
+const fxTransferModel = require('#src/models/fxTransfer/index')
 const prepare = require('#src/handlers/transfers/prepare')
 const cyril = require('#src/domain/fx/cyril')
 const Logger = require('#src/shared/logger/Logger')
@@ -112,6 +113,21 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
   const DFSP_1 = payer.participant.name
   const FXP = fxp.participant.name
 
+  const createFxFulfilKafkaMessage = ({ commitRequestId, action = Action.FX_RESERVE }) => {
+    const content = fixtures.fxFulfilContentDto({
+      commitRequestId,
+      from: FXP,
+      to: DFSP_1
+    })
+    const fxFulfilMessage = fixtures.fxFulfilKafkaMessageDto({
+      content,
+      from: FXP,
+      to: DFSP_1,
+      metadata: fixtures.fulfilMetadataDto({ action })
+    })
+    return fxFulfilMessage.value
+  }
+
   const topicFxFulfilConfig = kafkaUtil.createGeneralTopicConf(
     Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
     Type.TRANSFER,
@@ -134,6 +150,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
   ])
   await testConsumer.startListening()
   await new Promise(resolve => setTimeout(resolve, 5_000))
+  testConsumer.clearEvents()
   fxFulfilTest.pass('setup is done')
 
   fxFulfilTest.test('should publish a message to send error callback if fxTransfer does not exist', async (t) => {
@@ -170,19 +187,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     await storeFxTransferPreparePayload(fxTransfer, Enum.Transfers.TransferState.RESERVED)
     t.pass(`fxTransfer prepare is saved in DB: ${commitRequestId}`)
 
-    const content = fixtures.fxFulfilContentDto({
-      commitRequestId,
-      from: FXP,
-      to: DFSP_1
-    })
-    const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_RESERVE })
-    const fxFulfilMessage = fixtures.fxFulfilKafkaMessageDto({
-      from: FXP,
-      to: DFSP_1,
-      content,
-      metadata
-    }).value
-
+    const fxFulfilMessage = createFxFulfilKafkaMessage({ commitRequestId })
     const isTriggered = await produceMessageToFxFulfilTopic(fxFulfilMessage)
     t.ok(isTriggered, 'test is triggered')
 
@@ -191,14 +196,40 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
       action: Action.FX_RESERVE
     }))
     t.ok(messages[0], `Message is sent to ${TOPICS.transferPosition}`)
-    t.equal(messages[0].value.from, FXP)
-    t.equal(messages[0].value.to, DFSP_1)
-    t.equal(messages[0].value.content.payload.fulfilment, content.payload.fulfilment, 'fulfilment is correct')
+    const { from, to, content } = messages[0].value
+    t.equal(from, FXP)
+    t.equal(to, DFSP_1)
+    t.equal(content.payload.fulfilment, fxFulfilMessage.content.payload.fulfilment, 'fulfilment is correct')
     t.end()
   })
 
-  fxFulfilTest.skip('should detect duplicates, and stop further processing', async (t) => {
-    // todo: add impl.
+  fxFulfilTest.test('should check duplicates, and detect modified request (hash is not the same)', async (t) => {
+    const fxTransfer = fixtures.fxTransferDto({
+      initiatingFsp: DFSP_1,
+      counterPartyFsp: FXP,
+      sourceAmount,
+      targetAmount
+    })
+    const { commitRequestId } = fxTransfer
+
+    await storeFxTransferPreparePayload(fxTransfer, '', false)
+    await fxTransferModel.duplicateCheck.saveFxTransferFulfilmentDuplicateCheck(commitRequestId, 'wrongHash')
+    t.pass(`fxTransfer prepare and duplicateCheck are saved in DB: ${commitRequestId}`)
+
+    const fxFulfilMessage = createFxFulfilKafkaMessage({ commitRequestId })
+    const isTriggered = await produceMessageToFxFulfilTopic(fxFulfilMessage)
+    t.ok(isTriggered, 'test is triggered')
+
+    const messages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+      topicFilter: TOPICS.transferPosition,
+      action: Action.FX_FULFIL_DUPLICATE
+    }))
+    t.ok(messages[0], `Message is sent to ${TOPICS.transferPosition}`)
+    const { from, to, content, metadata } = messages[0].value
+    t.equal(from, fixtures.SWITCH_ID)
+    t.equal(to, FXP)
+    t.equal(metadata.event.type, Type.NOTIFICATION)
+    checkErrorPayload(t)(content.payload, fspiopErrorFactory.noFxDuplicateHash())
     t.end()
   })
 
