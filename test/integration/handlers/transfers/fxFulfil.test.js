@@ -113,9 +113,10 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
   const DFSP_1 = payer.participant.name
   const FXP = fxp.participant.name
 
-  const createFxFulfilKafkaMessage = ({ commitRequestId, action = Action.FX_RESERVE } = {}) => {
+  const createFxFulfilKafkaMessage = ({ commitRequestId, fulfilment, action = Action.FX_RESERVE } = {}) => {
     const content = fixtures.fxFulfilContentDto({
       commitRequestId,
+      payload: fixtures.fxFulfilPayloadDto({ fulfilment }),
       from: FXP,
       to: DFSP_1
     })
@@ -224,6 +225,35 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.equal(to, FXP)
     t.equal(metadata.event.type, Type.NOTIFICATION)
     checkErrorPayload(t)(content.payload, fspiopErrorFactory.noFxDuplicateHash())
+    t.end()
+  })
+
+  fxFulfilTest.test('should detect invalid fulfilment', async (t) => {
+    const fxTransfer = fixtures.fxTransferDto({
+      initiatingFsp: DFSP_1,
+      counterPartyFsp: FXP,
+      sourceAmount,
+      targetAmount
+    })
+    const { commitRequestId } = fxTransfer
+
+    await storeFxTransferPreparePayload(fxTransfer, Enum.Transfers.TransferState.RESERVED)
+    t.pass(`fxTransfer prepare is saved in DB: ${commitRequestId}`)
+
+    const fulfilment = 'wrongFulfilment'
+    const fxFulfilMessage = createFxFulfilKafkaMessage({ commitRequestId, fulfilment })
+    const isTriggered = await produceMessageToFxFulfilTopic(fxFulfilMessage)
+    t.ok(isTriggered, 'test is triggered')
+
+    const messages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+      topicFilter: TOPICS.transferPosition,
+      action: Action.FX_ABORT_VALIDATION
+    }))
+    t.ok(messages[0], `Message is sent to ${TOPICS.transferPosition}`)
+    const { from, to, content } = messages[0].value
+    t.equal(from, FXP)
+    t.equal(to, DFSP_1)
+    checkErrorPayload(t)(content.payload, fspiopErrorFactory.fxInvalidFulfilment())
     t.end()
   })
 

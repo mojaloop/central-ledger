@@ -25,20 +25,25 @@
 /* eslint-disable object-property-newline */
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
+const { Db } = require('@mojaloop/database-lib')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 
 const FxFulfilService = require('../../../../src/handlers/transfers/FxFulfilService')
+const fspiopErrorFactory = require('../../../../src/shared/fspiopErrorFactory')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const FxTransferModel = require('../../../../src/models/fxTransfer')
 const Config = require('../../../../src/lib/config')
+const { ERROR_MESSAGES } = require('../../../../src/shared/constants')
 const { Logger } = require('../../../../src/shared/logger')
 
 const fixtures = require('../../../fixtures')
 const mocks = require('./mocks')
+const { checkErrorPayload } = require('#test/util/helpers')
 
 const { Kafka, Comparators, Hash } = Util
 const { Action } = Enum.Events.Event
+const { TOPICS } = fixtures
 
 const log = new Logger()
 // const functionality = Type.NOTIFICATION
@@ -46,6 +51,7 @@ const log = new Logger()
 Test('FxFulfilService Tests -->', fxFulfilTest => {
   let sandbox
   let span
+  let producer
 
   const createFxFulfilServiceWithTestData = (message) => {
     const {
@@ -56,7 +62,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
       kafkaTopic
     } = FxFulfilService.decodeKafkaMessage(message)
 
-    const kafkaParams = {
+    const params = {
       message,
       kafkaTopic,
       span,
@@ -65,7 +71,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
       producer: Producer
     }
     const service = new FxFulfilService({
-      log, Config, Comparators, Validator, FxTransferModel, Kafka, kafkaParams
+      log, Config, Comparators, Validator, FxTransferModel, Kafka, params
     })
 
     return {
@@ -76,7 +82,9 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
 
   fxFulfilTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(Kafka)
+    producer = sandbox.stub(Producer)
+    sandbox.stub(Consumer, 'isConsumerAutoCommitEnabled').returns(true)
+    sandbox.stub(Db)
     sandbox.stub(FxTransferModel.fxTransfer)
     sandbox.stub(FxTransferModel.duplicateCheck)
     span = mocks.createTracerStub(sandbox).SpanStub
@@ -143,6 +151,36 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
 
       const isOk = await service.validateFulfilment(transfer, payload)
       t.true(isOk)
+      t.end()
+    })
+
+    methodTest.test('should process wrong fulfilment', async t => {
+      Db.getKnex.resolves({
+        transaction: sandbox.stub
+      })
+      FxTransferModel.fxTransfer.saveFxFulfilResponse.restore() // to call real saveFxFulfilResponse impl.
+
+      const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
+      const transfer = {
+        ilpCondition: fixtures.CONDITION,
+        counterPartyFspTargetParticipantCurrencyId: 123
+      }
+      const payload = { fulfilment: 'wrongFulfilment' }
+
+      try {
+        await service.validateFulfilment(transfer, payload)
+        t.fail('Should throw fxInvalidFulfilment error')
+      } catch (err) {
+        t.equal(err.message, ERROR_MESSAGES.fxInvalidFulfilment)
+        t.ok(producer.produceMessage.calledOnce)
+        const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
+        t.equal(topicConfig.topicName, TOPICS.transferPosition)
+        t.equal(topicConfig.key, String(transfer.counterPartyFspTargetParticipantCurrencyId))
+        t.equal(messageProtocol.from, fixtures.FXP_ID)
+        t.equal(messageProtocol.to, fixtures.DFSP1_ID)
+        t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT_VALIDATION)
+        checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxInvalidFulfilment())
+      }
       t.end()
     })
 

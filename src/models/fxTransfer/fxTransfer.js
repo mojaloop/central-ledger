@@ -276,8 +276,7 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
   const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
   // let extensionList
   switch (action) {
-    // TODO: Need to check if these are relevant for FX transfers
-    // case TransferEventAction.COMMIT:
+    case TransferEventAction.FX_COMMIT:
     case TransferEventAction.FX_RESERVE:
       state = TransferInternalState.RECEIVED_FULFIL
       // extensionList = payload && payload.extensionList
@@ -288,8 +287,8 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
       // extensionList = payload && payload.extensionList
       isFulfilment = true
       break
-    // TODO: Need to check if these are relevant for FX transfers
-    // case TransferEventAction.ABORT_VALIDATION:
+
+    case TransferEventAction.FX_ABORT_VALIDATION:
     case TransferEventAction.FX_ABORT:
       state = TransferInternalState.RECEIVED_ERROR
       // extensionList = payload && payload.errorInformation && payload.errorInformation.extensionList
