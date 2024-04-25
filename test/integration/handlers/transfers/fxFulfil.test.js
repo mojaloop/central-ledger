@@ -113,7 +113,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
   const DFSP_1 = payer.participant.name
   const FXP = fxp.participant.name
 
-  const createFxFulfilKafkaMessage = ({ commitRequestId, action = Action.FX_RESERVE }) => {
+  const createFxFulfilKafkaMessage = ({ commitRequestId, action = Action.FX_RESERVE } = {}) => {
     const content = fixtures.fxFulfilContentDto({
       commitRequestId,
       from: FXP,
@@ -154,13 +154,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
   fxFulfilTest.pass('setup is done')
 
   fxFulfilTest.test('should publish a message to send error callback if fxTransfer does not exist', async (t) => {
-    const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_RESERVE })
-    const noFxTransferMessage = fixtures.fxFulfilKafkaMessageDto({
-      from: FXP,
-      to: DFSP_1,
-      metadata
-    }).value
-
+    const noFxTransferMessage = createFxFulfilKafkaMessage()
     const isTriggered = await produceMessageToFxFulfilTopic(noFxTransferMessage)
     t.ok(isTriggered, 'test is triggered')
 
