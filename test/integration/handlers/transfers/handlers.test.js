@@ -1488,7 +1488,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventAction.PREPARE.toUpperCase()
       )
       prepareConfig.logger = Logger
-      const producerResponse = await Producer.produceMessage(
+      await Producer.produceMessage(
         td.messageProtocolPayerInitiatedConversionFxPrepare,
         td.topicConfFxTransferPrepare,
         prepareConfig
