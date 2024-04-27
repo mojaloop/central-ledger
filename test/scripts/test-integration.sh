@@ -43,7 +43,7 @@ echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_F
 
 ## Start integration tests
 echo "Running Integration Tests"
-npm run test:xint
+npm run test:int
 INTEGRATION_TEST_EXIT_CODE="$?"
 echo "==> integration tests exited with code: $INTEGRATION_TEST_EXIT_CODE"
 
@@ -85,7 +85,7 @@ echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_F
 
 ## Start integration tests
 echo "Running Override Integration Tests"
-npm run test:xint-override
+npm run test:int-override
 OVERRIDE_INTEGRATION_TEST_EXIT_CODE="$?"
 echo "==> override integration tests exited with code: $OVERRIDE_INTEGRATION_TEST_EXIT_CODE"
 
