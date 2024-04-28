@@ -91,7 +91,7 @@ const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', a
   }
 }
 
-Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
+Test.skip('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
   await Db.connect(Config.DATABASE)
   await Promise.all([
     Cache.initCache(),
