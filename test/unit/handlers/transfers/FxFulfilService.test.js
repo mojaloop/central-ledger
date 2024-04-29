@@ -97,8 +97,8 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
         commitRequestId, payload
       } = createFxFulfilServiceWithTestData(message)
 
-      FxTransferModel.duplicateCheck.getFxTransferDuplicateCheck.resolves({ hash: Hash.generateSha256(payload) })
-      FxTransferModel.duplicateCheck.saveFxTransferDuplicateCheck.resolves()
+      FxTransferModel.duplicateCheck.getFxTransferFulfilmentDuplicateCheck.resolves({ hash: Hash.generateSha256(payload) })
+      FxTransferModel.duplicateCheck.saveFxTransferFulfilmentDuplicateCheck.resolves()
       FxTransferModel.duplicateCheck.getFxTransferErrorDuplicateCheck.rejects(new Error('Should not be called'))
       FxTransferModel.duplicateCheck.saveFxTransferErrorDuplicateCheck.rejects(new Error('Should not be called'))
 
@@ -117,8 +117,8 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
         commitRequestId, payload
       } = createFxFulfilServiceWithTestData(message)
 
-      FxTransferModel.duplicateCheck.getFxTransferDuplicateCheck.rejects(new Error('Should not be called'))
-      FxTransferModel.duplicateCheck.saveFxTransferDuplicateCheck.rejects(new Error('Should not be called'))
+      FxTransferModel.duplicateCheck.getFxTransferFulfilmentDuplicateCheck.rejects(new Error('Should not be called'))
+      FxTransferModel.duplicateCheck.saveFxTransferFulfilmentDuplicateCheck.rejects(new Error('Should not be called'))
       FxTransferModel.duplicateCheck.getFxTransferErrorDuplicateCheck.resolves({ hash: Hash.generateSha256(payload) })
       FxTransferModel.duplicateCheck.saveFxTransferErrorDuplicateCheck.resolves()
 
