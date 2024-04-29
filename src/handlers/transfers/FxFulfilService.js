@@ -235,8 +235,8 @@ class FxFulfilService {
       })
       throw fspiopError
     }
-    this.log.info('fulfilmentCheck passed successfully', { isValid })
 
+    this.log.info('fulfilmentCheck passed successfully', { isValid })
     return isValid
   }
 
