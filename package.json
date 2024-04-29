@@ -50,7 +50,6 @@
     "test:coverage": "npx nyc --reporter=lcov --reporter=text-summary tapes -- 'test/unit/**/**.test.js'",
     "test:coverage-check": "npm run test:coverage && nyc check-coverage",
     "test:int": "npx tape 'test/integration/**/*.test.js' ",
-    "test:int:transfers": "npx tape 'test/integration/handlers/transfers/**/*.test.js'",
     "test:int-override": "npx tape 'test/integration-override/**/*.test.js'",
     "test:int:spec": "npm run test:int | npx tap-spec",
     "test:xint": "npm run test:int | tap-xunit > ./test/results/xunit-integration.xml",
