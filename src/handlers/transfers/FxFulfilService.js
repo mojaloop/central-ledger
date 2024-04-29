@@ -216,7 +216,7 @@ class FxFulfilService {
   }
 
   async validateFulfilment(transfer, payload) {
-    const isValid = this.validateFulfilCondition(payload.fulfilment, transfer.ilpCondition)
+    const isValid = this.validateFulfilCondition(payload.fulfilment, transfer.condition) // todo:  ilpCondition
 
     if (!isValid) {
       const fspiopError = fspiopErrorFactory.fxInvalidFulfilment()
