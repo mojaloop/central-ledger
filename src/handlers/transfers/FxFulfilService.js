@@ -215,7 +215,7 @@ class FxFulfilService {
   }
 
   async validateFulfilment(transfer, payload) {
-    if (payload.fulfilment && !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
+    if (payload.fulfilment && !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.ilpCondition)) {
       const fspiopError = fspiopErrorFactory.fxInvalidFulfilment()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
