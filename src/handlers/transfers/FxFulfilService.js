@@ -111,13 +111,14 @@ class FxFulfilService {
 
   async getDuplicateCheckResult({ commitRequestId, payload, action }) {
     const { duplicateCheck } = this.FxTransferModel
+    const isFxTransferError = action === Action.FX_ABORT
 
-    const getDuplicateFn = action === Action.FX_ABORT
+    const getDuplicateFn = isFxTransferError
       ? duplicateCheck.getFxTransferErrorDuplicateCheck
-      : duplicateCheck.getFxTransferDuplicateCheck
-    const saveHashFn = action === Action.FX_ABORT
+      : duplicateCheck.getFxTransferFulfilmentDuplicateCheck
+    const saveHashFn = isFxTransferError
       ? duplicateCheck.saveFxTransferErrorDuplicateCheck
-      : duplicateCheck.saveFxTransferDuplicateCheck
+      : duplicateCheck.saveFxTransferFulfilmentDuplicateCheck
 
     return this.Comparators.duplicateCheckComparator(
       commitRequestId,
@@ -215,7 +216,9 @@ class FxFulfilService {
   }
 
   async validateFulfilment(transfer, payload) {
-    if (payload.fulfilment && !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
+    const notValid = payload.fulfilment && !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition) // ilpCondition
+
+    if (notValid) {
       const fspiopError = fspiopErrorFactory.fxInvalidFulfilment()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
@@ -233,8 +236,8 @@ class FxFulfilService {
       })
       throw fspiopError
     }
-    this.log.info('fulfilmentCheck passed successfully')
 
+    this.log.info('fulfilmentCheck passed successfully')
     return true
   }
 
