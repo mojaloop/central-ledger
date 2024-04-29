@@ -111,13 +111,14 @@ class FxFulfilService {
 
   async getDuplicateCheckResult({ commitRequestId, payload, action }) {
     const { duplicateCheck } = this.FxTransferModel
+    const isFxTransferError = action === Action.FX_ABORT
 
-    const getDuplicateFn = action === Action.FX_ABORT
+    const getDuplicateFn = isFxTransferError
       ? duplicateCheck.getFxTransferErrorDuplicateCheck
-      : duplicateCheck.getFxTransferDuplicateCheck
-    const saveHashFn = action === Action.FX_ABORT
+      : duplicateCheck.getFxTransferFulfilmentDuplicateCheck
+    const saveHashFn = isFxTransferError
       ? duplicateCheck.saveFxTransferErrorDuplicateCheck
-      : duplicateCheck.saveFxTransferDuplicateCheck
+      : duplicateCheck.saveFxTransferFulfilmentDuplicateCheck
 
     return this.Comparators.duplicateCheckComparator(
       commitRequestId,
@@ -224,7 +225,7 @@ class FxFulfilService {
         functionality: Type.POSITION,
         action: Action.FX_ABORT_VALIDATION
       }
-      this.log.warn('callbackErrorInvalidFulfilment', { eventDetail, apiFSPIOPError })
+      this.log.warn('callbackErrorInvalidFulfilment', { isValid, eventDetail, apiFSPIOPError })
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
       await this.kafkaProceed({
