@@ -18,7 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Eugen Klymniuk <eugen.klymniuk@infitx.com
+ * Eugen Klymniuk <eugen.klymniuk@infitx.com>
  --------------
  **********/
 
