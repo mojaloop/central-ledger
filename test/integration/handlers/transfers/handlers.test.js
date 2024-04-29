@@ -532,6 +532,7 @@ Test('Handlers test', async handlersTest => {
 
       // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
       await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
+      testConsumer.clearEvents()
 
       test.pass('done')
       test.end()

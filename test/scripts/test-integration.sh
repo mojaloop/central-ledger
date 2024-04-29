@@ -49,8 +49,8 @@ echo "==> integration tests exited with code: $INTEGRATION_TEST_EXIT_CODE"
 
 ## Kill service
 echo "Stopping Service with Process ID=$PID"
-kill $(cat /tmp/int-test-service.pid)
-kill $(lsof -t -i:3001)
+kill -9 $(cat /tmp/int-test-service.pid)
+kill -9 $(lsof -t -i:3001)
 
 ## Give some time before restarting service for override tests
 sleep $WAIT_FOR_REBALANCE
@@ -91,10 +91,10 @@ echo "==> override integration tests exited with code: $OVERRIDE_INTEGRATION_TES
 
 ## Kill service
 echo "Stopping Service with Process ID=$PID1"
-kill $(cat /tmp/int-test-service.pid)
-kill $(lsof -t -i:3001)
+kill -9 $(cat /tmp/int-test-service.pid)
+kill -9 $(lsof -t -i:3001)
 echo "Stopping Service with Process ID=$PID2"
-kill $(cat /tmp/int-test-handler.pid)
+kill -9 $(cat /tmp/int-test-handler.pid)
 
 ## Shutdown the backend services
 if [ $INT_TEST_SKIP_SHUTDOWN == true ]; then

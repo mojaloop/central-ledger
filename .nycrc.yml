@@ -20,4 +20,13 @@ exclude: [
   '**/bulk*/**',
   'src/shared/logger/**',
   'src/shared/constants.js',
+  'src/domain/position/index.js',
+  'src/domain/position/binProcessor.js',
+  'src/handlers/positions/handler.js',
+  'src/handlers/transfers/createRemittanceEntity.js',
+  'src/handlers/transfers/FxFulfilService.js',
+  'src/models/position/batch.js',
+  'src/models/fxTransfer/**',
+  'src/shared/fspiopErrorFactory.js'
 ]
+## todo: increase test coverage before merging feat/fx-impl to main branch

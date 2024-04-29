@@ -18,7 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Eugen Klymniuk <eugen.klymniuk@infitx.com
+ * Eugen Klymniuk <eugen.klymniuk@infitx.com>
  --------------
  **********/
 
@@ -26,8 +26,8 @@ const { randomUUID } = require('node:crypto')
 const { Enum } = require('@mojaloop/central-services-shared')
 
 const ILP_PACKET = 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA'
-const CONDITION = 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI'
-const FULLFILMENT = 'oAKAAA'
+const CONDITION = '8x04dj-RKEtfjStajaKXKJ5eL1mWm9iG2ltEKvEDOHc'
+const FULFILMENT = 'uz0FAeutW6o8Mz7OmJh8ALX6mmsZCcIDOqtE01eo4uI'
 
 const DFSP1_ID = 'dfsp1'
 const DFSP2_ID = 'dfsp2'
@@ -53,7 +53,7 @@ const extensionListDto = ({
 })
 
 const fulfilPayloadDto = ({
-  fulfilment = FULLFILMENT,
+  fulfilment = FULFILMENT,
   transferState = 'RECEIVED',
   completedTimestamp = new Date().toISOString(),
   extensionList = extensionListDto()
@@ -65,7 +65,7 @@ const fulfilPayloadDto = ({
 })
 
 const fxFulfilPayloadDto = ({
-  fulfilment = FULLFILMENT,
+  fulfilment = FULFILMENT,
   conversionState = 'RECEIVED',
   completedTimestamp = new Date().toISOString(),
   extensionList = extensionListDto()
@@ -95,13 +95,13 @@ const fulfilContentDto = ({
 
 const fxFulfilContentDto = ({
   payload = fxFulfilPayloadDto(),
-  fxTransferId = randomUUID(),
+  commitRequestId = randomUUID(),
   from = FXP_ID,
   to = DFSP1_ID
 } = {}) => ({
   payload,
   uriParams: {
-    id: fxTransferId
+    id: commitRequestId
   },
   headers: {
     'fspiop-source': from,
@@ -111,7 +111,7 @@ const fxFulfilContentDto = ({
 })
 
 const fulfilMetadataDto = ({
-  id = randomUUID(), //  todo: think, how it relates to other ids
+  id = randomUUID(), // think, how it relates to other ids
   type = 'fulfil',
   action = 'commit'
 } = {}) => ({
@@ -228,7 +228,8 @@ const fxTransferDto = ({
   amountType = 'SEND',
   sourceAmount = amountDto({ currency: 'BWP', amount: '300.33' }),
   targetAmount = amountDto({ currency: 'TZS', amount: '48000' }),
-  condition = CONDITION
+  condition = CONDITION,
+  expiration = new Date(Date.now() + (24 * 60 * 60 * 1000))
 } = {}) => ({
   commitRequestId,
   determiningTransferId,
@@ -237,7 +238,8 @@ const fxTransferDto = ({
   amountType,
   sourceAmount,
   targetAmount,
-  condition
+  condition,
+  expiration
 })
 
 const fxtGetAllDetailsByCommitRequestIdDto = ({
@@ -265,7 +267,7 @@ const fxtGetAllDetailsByCommitRequestIdDto = ({
   counterPartyFspSourceParticipantCurrencyId: 33,
   transferState: Enum.Transfers.TransferState.RESERVED,
   transferStateEnumeration: 'RECEIVED', // or RECEIVED_FULFIL?
-  fulfilment: FULLFILMENT,
+  fulfilment: FULFILMENT,
   // todo: add other fields from getAllDetailsByCommitRequestId real response
   expirationDate: new Date(),
   createdDate: new Date()
@@ -299,7 +301,7 @@ const watchListItemDto = ({
 module.exports = {
   ILP_PACKET,
   CONDITION,
-  FULLFILMENT,
+  FULFILMENT,
   DFSP1_ID,
   DFSP2_ID,
   FXP_ID,
