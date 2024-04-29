@@ -123,7 +123,7 @@ const processBins = async (bins, trx) => {
     let accumulatedPositionValue = positions[accountID].value
     let accumulatedPositionReservedValue = positions[accountID].reservedValue
     let accumulatedTransferStates = latestTransferStates
-    const accumulatedFxTransferStates = latestFxTransferStates
+    let accumulatedFxTransferStates = latestFxTransferStates
     let accumulatedTransferStateChanges = []
     let accumulatedFxTransferStateChanges = []
     let accumulatedPositionChanges = []
