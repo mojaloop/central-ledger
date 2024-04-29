@@ -215,7 +215,9 @@ class FxFulfilService {
   }
 
   async validateFulfilment(transfer, payload) {
-    if (payload.fulfilment && !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
+    const isValid = this.validateFulfilCondition(payload.fulfilment, transfer.condition) // todo: should be ilpCondition
+    
+    if (!isValid) {
       const fspiopError = fspiopErrorFactory.fxInvalidFulfilment()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
@@ -233,8 +235,8 @@ class FxFulfilService {
       })
       throw fspiopError
     }
+    
     this.log.info('fulfilmentCheck passed successfully')
-
     return true
   }
 
@@ -318,6 +320,17 @@ class FxFulfilService {
 
   async kafkaProceed(kafkaOpts) {
     return this.Kafka.proceed(this.Config.KAFKA_CONFIG, this.params, kafkaOpts)
+  }
+
+  validateFulfilCondition(fulfilment, condition) {
+    try {
+      const isValid = this.Validator.validateFulfilCondition(fulfilment, condition)
+      this.log.debug('validateFulfilCondition result:', { isValid, fulfilment, condition })
+      return isValid
+    } catch (err) {
+      this.log.warn(`validateFulfilCondition error: ${err?.message}`, { fulfilment, condition })
+      return false
+    }
   }
 
   static decodeKafkaMessage(message) {
