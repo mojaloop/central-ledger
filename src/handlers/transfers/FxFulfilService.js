@@ -216,16 +216,16 @@ class FxFulfilService {
   }
 
   async validateFulfilment(transfer, payload) {
-    const notValid = payload.fulfilment && !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition) // ilpCondition
+    const isValid = payload.fulfilment && this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition) // ilpCondition
 
-    if (notValid) {
+    if (!isValid) {
       const fspiopError = fspiopErrorFactory.fxInvalidFulfilment()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
         functionality: Type.POSITION,
         action: Action.FX_ABORT_VALIDATION
       }
-      this.log.warn('callbackErrorInvalidFulfilment', { eventDetail, apiFSPIOPError })
+      this.log.warn('callbackErrorInvalidFulfilment', { isValid, eventDetail, apiFSPIOPError })
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
       await this.kafkaProceed({
