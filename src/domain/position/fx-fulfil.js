@@ -25,7 +25,7 @@ const processPositionFxFulfilBin = async (
 
   if (binItems && binItems.length > 0) {
     for (const binItem of binItems) {
-      let fxTransferStateId
+      let transferStateId
       let reason
       let resultMessage
       const commitRequestId = binItem.message.value.content.uriParams.id
@@ -42,6 +42,9 @@ const processPositionFxFulfilBin = async (
         headers[Enum.Http.Headers.FSPIOP.DESTINATION] = counterPartyFsp
         headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
         delete headers['content-length']
+
+        transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
+        reason = 'FxFulfil in incorrect state'
 
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
           `Invalid State: ${accumulatedFxTransferStates[commitRequestId]} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`
@@ -97,30 +100,30 @@ const processPositionFxFulfilBin = async (
           'application/json'
         )
 
-        fxTransferStateId = Enum.Transfers.TransferState.COMMITTED
+        transferStateId = Enum.Transfers.TransferState.COMMITTED
 
         binItem.result = { success: true }
       }
 
       resultMessages.push({ binItem, message: resultMessage })
 
-      if (fxTransferStateId) {
+      if (transferStateId) {
         const fxTransferStateChange = {
           commitRequestId,
-          fxTransferStateId,
+          transferStateId,
           reason
         }
         fxTransferStateChanges.push(fxTransferStateChange)
         Logger.isDebugEnabled && Logger.debug(`processPositionFxFulfilBin::fxTransferStateChange: ${JSON.stringify(fxTransferStateChange)}`)
 
-        accumulatedFxTransferStatesCopy[commitRequestId] = fxTransferStateId
-        Logger.isDebugEnabled && Logger.debug(`processPositionFxFulfilBin::accumulatedTransferStatesCopy:finalizedFxTransferState ${JSON.stringify(fxTransferStateId)}`)
+        accumulatedFxTransferStatesCopy[commitRequestId] = transferStateId
+        Logger.isDebugEnabled && Logger.debug(`processPositionFxFulfilBin::accumulatedTransferStatesCopy:finalizedFxTransferState ${JSON.stringify(transferStateId)}`)
       }
     }
   }
 
   return {
-    accumulatedTransferStates: accumulatedFxTransferStatesCopy, // finalized fx transfer state after fx-fulfil processing
+    accumulatedFxTransferStates: accumulatedFxTransferStatesCopy, // finalized fx transfer state after fx-fulfil processing
     accumulatedFxTransferStateChanges: fxTransferStateChanges, // fx transfer state changes to be persisted in order
     notifyMessages: resultMessages // array of objects containing bin item and result message. {binItem, message}
   }
