@@ -263,7 +263,11 @@ It will handle docker start up, migration, service starting and testing. Be sure
 If you want to run functional tests locally utilizing the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness), you can run the following commands:
 
 ```bash
-docker build -t mojaloop/central-ledger:local .
+export NODE_VERSION="$(cat .nvmrc)-alpine"
+docker build \
+  --build-arg NODE_VERSION=$NODE_VERSION \
+  -t mojaloop/central-ledger:local \
+  .
 ```
 
 ```bash
