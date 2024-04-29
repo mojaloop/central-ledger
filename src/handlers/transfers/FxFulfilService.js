@@ -237,8 +237,8 @@ class FxFulfilService {
       })
       throw fspiopError
     }
-    this.log.info('fulfilmentCheck passed successfully', { isValid })
 
+    this.log.info('fulfilmentCheck passed successfully', { isValid })
     return isValid
   }
 
@@ -328,7 +328,7 @@ class FxFulfilService {
 
   validateFulfilCondition(fulfilment, condition) {
     try {
-      const isValid = this.Validator.validateFulfilCondition(fulfilment, condition)
+      const isValid = fulfilment && this.Validator.validateFulfilCondition(fulfilment, condition)
       this.log.debug('validateFulfilCondition result:', { isValid, fulfilment, condition })
       return isValid
     } catch (err) {
