@@ -56,7 +56,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
       kafkaTopic
     } = FxFulfilService.decodeKafkaMessage(message)
 
-    const kafkaParams = {
+    const params = {
       message,
       kafkaTopic,
       span,
@@ -65,7 +65,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
       producer: Producer
     }
     const service = new FxFulfilService({
-      log, Config, Comparators, Validator, FxTransferModel, Kafka, kafkaParams
+      log, Config, Comparators, Validator, FxTransferModel, Kafka, params
     })
 
     return {
