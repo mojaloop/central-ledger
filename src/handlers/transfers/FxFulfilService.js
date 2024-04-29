@@ -324,7 +324,7 @@ class FxFulfilService {
 
   validateFulfilCondition(fulfilment, condition) {
     try {
-      const isValid = this.Validator.validateFulfilCondition(fulfilment, condition)
+      const isValid = fulfilment && this.Validator.validateFulfilCondition(fulfilment, condition)
       this.log.debug('validateFulfilCondition result:', { isValid, fulfilment, condition })
       return isValid
     } catch (err) {
