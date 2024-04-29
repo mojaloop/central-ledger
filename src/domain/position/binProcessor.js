@@ -288,6 +288,8 @@ const _getTransferIdList = async (bins) => {
       transferIdList.push(item.decodedPayload.transferId)
     } else if (action === Enum.Events.Event.Action.FULFIL) {
       transferIdList.push(item.message.value.content.uriParams.id)
+    } else if (action === Enum.Events.Event.Action.COMMIT) {
+      transferIdList.push(item.message.value.content.uriParams.id)
     } else if (action === Enum.Events.Event.Action.RESERVE) {
       transferIdList.push(item.message.value.content.uriParams.id)
       reservedActionTransferIdList.push(item.message.value.content.uriParams.id)
