@@ -253,20 +253,6 @@ const positions = async (error, messages) => {
           return true
         }
       }
-    } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.FX_RESERVE].includes(action)) {
-      Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
-      // TODO: transferState check: Need to check the transferstate is in RECEIVED_FULFIL state
-      Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `fulfil--${actionLetter}4`))
-      // TODO: Do we need to handle transferStateChange?
-      // const transferStateChange = {
-      //   transferId: transferId,
-      //   transferStateId: Enum.Transfers.TransferState.COMMITTED
-      // }
-
-      // We don't need to change the position for FX transfers. All the position changes are done when actual transfer is done
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
-      return true
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.REJECT, Enum.Events.Event.Action.ABORT, Enum.Events.Event.Action.ABORT_VALIDATION, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: action }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
