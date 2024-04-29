@@ -180,10 +180,7 @@ const positions = async (error, messages) => {
           Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payerNotifyInsufficientLiquidity--${actionLetter}2`))
           const responseFspiopError = fspiopError || ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
           const fspiopApiError = responseFspiopError.toApiErrorObject(Config.ERROR_HANDLING)
-          // TODO: log error incase of fxTransfer to a new table like fxTransferError
-          if (action !== Enum.Events.Event.Action.FX_PREPARE) {
-            await TransferService.logTransferError(transferId, fspiopApiError.errorInformation.errorCode, fspiopApiError.errorInformation.errorDescription)
-          }
+          await TransferService.logTransferError(transferId, fspiopApiError.errorInformation.errorCode, fspiopApiError.errorInformation.errorDescription)
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopApiError, eventDetail, fromSwitch })
           throw responseFspiopError
         }
