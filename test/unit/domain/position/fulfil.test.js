@@ -30,7 +30,7 @@ const Sinon = require('sinon')
 const { processPositionFulfilBin } = require('../../../../src/domain/position/fulfil')
 const { randomUUID } = require('crypto')
 
-const constructTransferCallbackTestData = (payerFsp, payeeFsp, transferState, eventAction, amount, currency, context) => {
+const constructTransferCallbackTestData = (payerFsp, payeeFsp, transferState, eventAction, amount, currency) => {
   const transferId = randomUUID()
   const payload = {
     transferState,
@@ -81,8 +81,7 @@ const constructTransferCallbackTestData = (payerFsp, payeeFsp, transferState, ev
             host: 'ml-api-adapter:3000',
             connection: 'keep-alive'
           },
-          payload: 'data:application/vnd.interoperability.transfers+json;version=1.1;base64,' + base64Payload,
-          context
+          payload: 'data:application/vnd.interoperability.transfers+json;version=1.1;base64,' + base64Payload
         },
         type: 'application/json',
         metadata: {
@@ -137,10 +136,42 @@ const constructTransferCallbackTestData = (payerFsp, payeeFsp, transferState, ev
   }
 }
 
-const transferTestData1 = constructTransferCallbackTestData('perffsp1', 'perffsp2', 'COMMITTED', 'commit', 2.00, 'USD')
-const transferTestData2 = constructTransferCallbackTestData('perffsp2', 'perffsp1', 'COMMITTED', 'commit', 2.00, 'USD')
-const transferTestData3 = constructTransferCallbackTestData('perffsp1', 'perffsp2', 'RESERVED', 'reserve', 2.00, 'USD')
-const transferTestData4 = constructTransferCallbackTestData('perffsp2', 'perffsp1', 'RESERVED', 'reserve', 2.00, 'USD')
+const _constructContextForFx = (transferTestData, partialProcessed = false) => {
+  return {
+    cyrilResult: {
+      isFx: true,
+      positionChanges: [
+        {
+          isFxTransferStateChange: true,
+          commitRequestId: randomUUID(),
+          participantCurrencyId: '100',
+          amount: '10',
+          isDone: partialProcessed ? true : undefined
+        },
+        {
+          isFxTransferStateChange: false,
+          transferId: transferTestData.message.value.id,
+          participantCurrencyId: '101',
+          amount: transferTestData.transferInfo.amount,
+        }
+      ]
+    }
+  }
+}
+
+const transferTestData1 = constructTransferCallbackTestData('perffsp1', 'perffsp2', 'COMMITTED', 'commit', '2.00', 'USD')
+const transferTestData2 = constructTransferCallbackTestData('perffsp2', 'perffsp1', 'COMMITTED', 'commit', '2.00', 'USD')
+const transferTestData3 = constructTransferCallbackTestData('perffsp1', 'perffsp2', 'RESERVED', 'reserve', '2.00', 'USD')
+const transferTestData4 = constructTransferCallbackTestData('perffsp2', 'perffsp1', 'RESERVED', 'reserve', '2.00', 'USD')
+// Fulfil messages those are linked to FX transfers
+const transferTestData5 = constructTransferCallbackTestData('perffsp1', 'perffsp2', 'COMMITTED', 'commit', '2.00', 'USD')
+transferTestData5.message.value.content.context = _constructContextForFx(transferTestData5)
+const transferTestData6 = constructTransferCallbackTestData('perffsp2', 'perffsp1', 'COMMITTED', 'commit', '2.00', 'USD')
+transferTestData6.message.value.content.context = _constructContextForFx(transferTestData6)
+const transferTestData7 = constructTransferCallbackTestData('perffsp1', 'perffsp2', 'COMMITTED', 'commit', '2.00', 'USD')
+transferTestData7.message.value.content.context = _constructContextForFx(transferTestData7, true)
+const transferTestData8 = constructTransferCallbackTestData('perffsp2', 'perffsp1', 'COMMITTED', 'commit', '2.00', 'USD')
+transferTestData8.message.value.content.context = _constructContextForFx(transferTestData8, true)
 
 const span = {}
 const commitBinItems = [{
@@ -162,6 +193,26 @@ const reserveBinItems = [{
   message: transferTestData4.message,
   span,
   decodedPayload: transferTestData4.decodedPayload
+}]
+const commitWithFxBinItems = [{
+  message: transferTestData5.message,
+  span,
+  decodedPayload: transferTestData5.decodedPayload
+},
+{
+  message: transferTestData6.message,
+  span,
+  decodedPayload: transferTestData6.decodedPayload
+}]
+const commitWithPartiallyProcessedFxBinItems = [{
+  message: transferTestData7.message,
+  span,
+  decodedPayload: transferTestData7.decodedPayload
+},
+{
+  message: transferTestData8.message,
+  span,
+  decodedPayload: transferTestData8.decodedPayload
 }]
 Test('Fulfil domain', processPositionFulfilBinTest => {
   let sandbox
@@ -375,7 +426,7 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     test.equal(result.notifyMessages.length, 2)
     test.equal(result.accumulatedPositionValue, 0)
     test.equal(result.accumulatedPositionReservedValue, 0)
-    test.deepEqual(result.accumulatedTransferStateChanges, [])
+    test.equal(result.accumulatedTransferStateChanges.length, 0)
 
     test.equal(result.notifyMessages[0].message.content.headers.accept, transferTestData1.message.value.content.headers.accept)
     test.equal(result.notifyMessages[0].message.content.headers['fspiop-destination'], transferTestData1.message.value.content.headers['fspiop-source'])
@@ -388,6 +439,159 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     test.equal(result.notifyMessages[1].message.content.headers['fspiop-source'], Enum.Http.Headers.FSPIOP.SWITCH.value)
     test.equal(result.notifyMessages[1].message.content.headers['content-type'], transferTestData2.message.value.content.headers['content-type'])
     test.equal(result.accumulatedTransferStates[transferTestData2.message.value.id], Enum.Transfers.TransferInternalState.INVALID)
+
+    test.end()
+  })
+
+  processPositionFulfilBinTest.test('should abort if some fulfil messages are in incorrect state', async (test) => {
+    const accumulatedTransferStates = {
+      [transferTestData1.message.value.id]: Enum.Transfers.TransferInternalState.INVALID,
+      [transferTestData2.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL
+    }
+    const accumulatedFxTransferStates = {}
+    const transferInfoList = {
+      [transferTestData1.message.value.id]: transferTestData1.transferInfo,
+      [transferTestData2.message.value.id]: transferTestData2.transferInfo
+    }
+    // Call the function
+    const result = await processPositionFulfilBin(
+      [commitBinItems, []],
+      0,
+      0,
+      accumulatedTransferStates,
+      accumulatedFxTransferStates,
+      transferInfoList
+    )
+
+    // Assert the expected results
+    test.equal(result.notifyMessages.length, 2)
+    test.equal(result.accumulatedPositionValue, 2)
+    test.equal(result.accumulatedPositionReservedValue, 0)
+    test.equal(result.accumulatedTransferStateChanges.length, 1)
+    test.equal(result.accumulatedPositionChanges.length, 1)
+    
+    test.equal(result.accumulatedTransferStateChanges[0].transferId, transferTestData2.message.value.id)
+    test.equal(result.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.COMMITTED)
+
+    test.equal(result.notifyMessages[0].message.content.headers.accept, transferTestData1.message.value.content.headers.accept)
+    test.equal(result.notifyMessages[0].message.content.headers['fspiop-destination'], transferTestData1.message.value.content.headers['fspiop-source'])
+    test.equal(result.notifyMessages[0].message.content.headers['fspiop-source'], Enum.Http.Headers.FSPIOP.SWITCH.value)
+    test.equal(result.notifyMessages[0].message.content.headers['content-type'], transferTestData1.message.value.content.headers['content-type'])
+    test.equal(result.accumulatedTransferStates[transferTestData1.message.value.id], Enum.Transfers.TransferInternalState.INVALID)
+
+    test.equal(result.notifyMessages[1].message.content.headers.accept, transferTestData2.message.value.content.headers.accept)
+    test.equal(result.notifyMessages[1].message.content.headers['fspiop-destination'], transferTestData2.message.value.content.headers['fspiop-destination'])
+    test.equal(result.notifyMessages[1].message.content.headers['fspiop-source'], transferTestData2.message.value.content.headers['fspiop-source'])
+    test.equal(result.notifyMessages[1].message.content.headers['content-type'], transferTestData2.message.value.content.headers['content-type'])
+    test.equal(result.accumulatedTransferStates[transferTestData2.message.value.id], Enum.Transfers.TransferState.COMMITTED)
+
+    test.equal(result.accumulatedPositionChanges[0].value, 2)
+
+    test.end()
+  })
+
+  // FX tests
+
+  processPositionFulfilBinTest.test('should process a bin of position-commit messages involved in fx transfers', async (test) => {
+    const accumulatedTransferStates = {
+      [transferTestData5.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
+      [transferTestData6.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL
+    }
+    const accumulatedFxTransferStates = {}
+    const transferInfoList = {
+      [transferTestData5.message.value.id]: transferTestData5.transferInfo,
+      [transferTestData6.message.value.id]: transferTestData6.transferInfo
+    }
+    // Call the function
+    const result = await processPositionFulfilBin(
+      [commitWithFxBinItems, []],
+      0,
+      0,
+      accumulatedTransferStates,
+      accumulatedFxTransferStates,
+      transferInfoList,
+      []
+    )
+
+    // Assert the expected results
+    test.equal(result.notifyMessages.length, 0)
+    test.equal(result.followupMessages.length, 2)
+    test.equal(result.accumulatedPositionValue, 20)
+    test.equal(result.accumulatedPositionReservedValue, 0)
+    test.equal(result.accumulatedTransferStateChanges.length, 0)
+    test.equal(result.accumulatedFxTransferStateChanges.length, 2)
+
+
+    test.equal(result.accumulatedFxTransferStateChanges[0].commitRequestId, transferTestData5.message.value.content.context.cyrilResult.positionChanges[0].commitRequestId)
+    test.equal(result.accumulatedFxTransferStateChanges[1].commitRequestId, transferTestData6.message.value.content.context.cyrilResult.positionChanges[0].commitRequestId)
+    test.equal(result.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.COMMITTED)
+    test.equal(result.accumulatedFxTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.COMMITTED)
+
+    test.equal(result.followupMessages[0].message.content.context.cyrilResult.isFx, true)
+    test.ok(result.followupMessages[0].message.content.context.cyrilResult.positionChanges[0].isDone)
+    test.notOk(result.followupMessages[0].message.content.context.cyrilResult.positionChanges[1].isDone)
+    test.equal(result.followupMessages[0].messageKey, '101')
+    test.equal(result.accumulatedPositionChanges[0].value, 10)
+    test.equal(result.accumulatedTransferStates[transferTestData5.message.value.id], Enum.Transfers.TransferInternalState.RECEIVED_FULFIL)
+
+    test.equal(result.followupMessages[1].message.content.context.cyrilResult.isFx, true)
+    test.ok(result.followupMessages[1].message.content.context.cyrilResult.positionChanges[0].isDone)
+    test.notOk(result.followupMessages[1].message.content.context.cyrilResult.positionChanges[1].isDone)
+    test.equal(result.followupMessages[1].messageKey, '101')
+    test.equal(result.accumulatedPositionChanges[1].value, 20)
+    test.equal(result.accumulatedTransferStates[transferTestData5.message.value.id], Enum.Transfers.TransferInternalState.RECEIVED_FULFIL)
+
+    test.end()
+  })
+
+  processPositionFulfilBinTest.test('should process a bin of position-commit partial processed messages involved in fx transfers', async (test) => {
+    const accumulatedTransferStates = {
+      [transferTestData7.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
+      [transferTestData8.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL
+    }
+    const accumulatedFxTransferStates = {}
+    const transferInfoList = {
+      [transferTestData7.message.value.id]: transferTestData7.transferInfo,
+      [transferTestData8.message.value.id]: transferTestData8.transferInfo
+    }
+    // Call the function
+    const result = await processPositionFulfilBin(
+      [commitWithPartiallyProcessedFxBinItems, []],
+      0,
+      0,
+      accumulatedTransferStates,
+      accumulatedFxTransferStates,
+      transferInfoList,
+      []
+    )
+
+    // Assert the expected results
+    test.equal(result.notifyMessages.length, 2)
+    test.equal(result.followupMessages.length, 0)
+    test.equal(result.accumulatedPositionValue, 4)
+    test.equal(result.accumulatedPositionReservedValue, 0)
+    test.equal(result.accumulatedTransferStateChanges.length, 2)
+    test.equal(result.accumulatedFxTransferStateChanges.length, 0)
+
+
+    test.equal(result.accumulatedTransferStateChanges[0].transferId, transferTestData7.message.value.content.context.cyrilResult.positionChanges[1].transferId)
+    test.equal(result.accumulatedTransferStateChanges[1].transferId, transferTestData8.message.value.content.context.cyrilResult.positionChanges[1].transferId)
+    test.equal(result.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.COMMITTED)
+    test.equal(result.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.COMMITTED)
+
+    test.equal(result.notifyMessages[0].message.content.headers.accept, transferTestData7.message.value.content.headers.accept)
+    test.equal(result.notifyMessages[0].message.content.headers['fspiop-destination'], transferTestData7.message.value.content.headers['fspiop-destination'])
+    test.equal(result.notifyMessages[0].message.content.headers['fspiop-source'], transferTestData7.message.value.content.headers['fspiop-source'])
+    test.equal(result.notifyMessages[0].message.content.headers['content-type'], transferTestData7.message.value.content.headers['content-type'])
+    test.equal(result.accumulatedPositionChanges[0].value, 2)
+    test.equal(result.accumulatedTransferStates[transferTestData7.message.value.id], Enum.Transfers.TransferState.COMMITTED)
+
+    test.equal(result.notifyMessages[1].message.content.headers.accept, transferTestData8.message.value.content.headers.accept)
+    test.equal(result.notifyMessages[1].message.content.headers['fspiop-destination'], transferTestData8.message.value.content.headers['fspiop-destination'])
+    test.equal(result.notifyMessages[1].message.content.headers['fspiop-source'], transferTestData8.message.value.content.headers['fspiop-source'])
+    test.equal(result.notifyMessages[1].message.content.headers['content-type'], transferTestData8.message.value.content.headers['content-type'])
+    test.equal(result.accumulatedPositionChanges[1].value, 4)
+    test.equal(result.accumulatedTransferStates[transferTestData8.message.value.id], Enum.Transfers.TransferState.COMMITTED)
 
     test.end()
   })

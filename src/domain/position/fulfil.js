@@ -70,7 +70,6 @@ const processPositionFulfilBin = async (
               accumulatedFxTransferStatesCopy[positionChangeToBeProcessed.commitRequestId] = transferStateId
               // TODO: Send required FX PATCH notifications
             } else {
-              Logger.isDebugEnabled && Logger.debug(Utility.breadcrumb(location, `fx-commit--${actionLetter}4`))
               const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition }
                 = _handleParticipantPositionChange(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.transferId, accumulatedPositionReservedValue)
               runningPosition = updatedRunningPosition
@@ -94,8 +93,6 @@ const processPositionFulfilBin = async (
               followupMessage.content.context = binItem.message.value.content.context
               followupMessages.push({ binItem, messageKey: participantCurrencyId.toString(), message: followupMessage })
             }
-            histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
-            return true
           } else {  
             const transferAmount = transferInfoList[transferId].amount
   
