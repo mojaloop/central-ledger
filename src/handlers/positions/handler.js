@@ -107,21 +107,11 @@ const positions = async (error, messages) => {
     const payload = decodePayload(message.value.content.payload)
     const eventType = message.value.metadata.event.type
     action = message.value.metadata.event.action
-    let transferId
-    if (action === Enum.Events.Event.Action.FX_PREPARE) {
-      transferId = payload.commitRequestId || (message.value.content.uriParams && message.value.content.uriParams.id)
-      if (!transferId) {
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('commitRequestId is null or undefined')
-        Logger.isErrorEnabled && Logger.error(fspiopError)
-        throw fspiopError
-      }
-    } else {
-      transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
-      if (!transferId) {
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transferId is null or undefined')
-        Logger.isErrorEnabled && Logger.error(fspiopError)
-        throw fspiopError
-      }
+    const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
+    if (!transferId) {
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transferId is null or undefined')
+      Logger.isErrorEnabled && Logger.error(fspiopError)
+      throw fspiopError
     }
 
     const kafkaTopic = message.topic
@@ -146,12 +136,8 @@ const positions = async (error, messages) => {
                                   : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED
                                       ? Enum.Events.ActionLetter.bulkTimeoutReserved
                                       : (action === Enum.Events.Event.Action.BULK_ABORT
-                                          ? Enum.Events.ActionLetter.bulkAbort
-                                          : (action === Enum.Events.Event.Action.FX_PREPARE
-                                              ? Enum.Events.ActionLetter.prepare // TODO: may need to change this
-                                              : (action === Enum.Events.Event.Action.FX_RESERVE
-                                                  ? Enum.Events.ActionLetter.prepare // TODO: may need to change this
-                                                  : Enum.Events.ActionLetter.unknown)))))))))))
+                                        ? Enum.Events.ActionLetter.bulkAbort
+                                        : Enum.Events.ActionLetter.unknown)))))))))
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
     const eventDetail = { action }
     if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
@@ -160,7 +146,7 @@ const positions = async (error, messages) => {
       eventDetail.functionality = Enum.Events.Event.Type.BULK_PROCESSING
     }
 
-    if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.PREPARE, Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.FX_PREPARE].includes(action)) {
+    if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.PREPARE, Enum.Events.Event.Action.BULK_PREPARE].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'prepare' }))
       const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
       for (const limit of limitAlarms) {
