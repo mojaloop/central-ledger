@@ -1049,6 +1049,8 @@ Test('Handlers test', async handlersTest => {
       }
       test.end()
     })
+
+    transferFulfilReject.end()
   })
 
   await handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
