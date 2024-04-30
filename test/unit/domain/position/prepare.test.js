@@ -624,6 +624,91 @@ Test('Prepare domain', positionIndexTest => {
       test.end()
     })
 
+    changeParticipantPositionTest.test('produce reserved messages for valid transfer messages related to fx transfers', async (test) => {
+      const participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: 10000,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 0.5
+      }
+      const settlementModel = {
+        settlementModelId: 1,
+        name: 'DEFERREDNET',
+        isActive: 1,
+        settlementGranularityId: 2,
+        settlementInterchangeId: 2,
+        settlementDelayId: 2, // 1 Immediate, 2 Deferred
+        currencyId: 'USD',
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
+        autoPositionReset: 1,
+        adjustPosition: 0,
+        settlementAccountTypeId: 2
+      }
+
+      // Modifying first transfer message to contain a context object with cyrilResult so that it is considered an FX transfer
+      const binItemsCopy = JSON.parse(JSON.stringify(binItems))
+      binItemsCopy[0].message.value.content.context = {
+        cyrilResult: {
+          amount: 10
+        }
+      }
+      const processedMessages = await processPositionPrepareBin(
+        binItemsCopy,
+        -20, // Accumulated position value
+        0,
+        {
+          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+        },
+        0, // Settlement participant position value
+        settlementModel,
+        participantLimit
+      )
+      Logger.isInfoEnabled && Logger.info(processedMessages)
+      test.equal(processedMessages.notifyMessages.length, 3)
+
+      test.equal(processedMessages.accumulatedPositionChanges.length, 2)
+
+      test.equal(processedMessages.notifyMessages[0].message.content.headers.accept, transferMessage1.value.content.headers.accept)
+      test.equal(processedMessages.notifyMessages[0].message.content.headers['fspiop-destination'], transferMessage1.value.content.headers['fspiop-destination'])
+      test.equal(processedMessages.notifyMessages[0].message.content.headers['fspiop-source'], transferMessage1.value.content.headers['fspiop-source'])
+      test.equal(processedMessages.notifyMessages[0].message.content.headers['content-type'], transferMessage1.value.content.headers['content-type'])
+      test.equal(processedMessages.accumulatedPositionChanges[0].value, -10)
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferState.RESERVED)
+
+      test.equal(processedMessages.notifyMessages[1].message.content.headers.accept, transferMessage2.value.content.headers.accept)
+      test.equal(processedMessages.notifyMessages[1].message.content.headers['fspiop-destination'], transferMessage2.value.content.headers['fspiop-destination'])
+      test.equal(processedMessages.notifyMessages[1].message.content.headers['fspiop-source'], transferMessage2.value.content.headers['fspiop-source'])
+      test.equal(processedMessages.notifyMessages[1].message.content.headers['content-type'], transferMessage2.value.content.headers['content-type'])
+      test.equal(processedMessages.accumulatedPositionChanges[1].value, -8)
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferState.RESERVED)
+
+      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, transferMessage3.value.id)
+      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, transferMessage3.value.content.headers.accept)
+      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], transferMessage3.value.content.headers['fspiop-source'])
+      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Enum.Http.Headers.FSPIOP.SWITCH.value)
+      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], transferMessage3.value.content.headers['content-type'])
+      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
+      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+
+      test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
+      test.equal(processedMessages.accumulatedTransferStateChanges[1].transferId, transferMessage2.value.id)
+      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferId, transferMessage3.value.id)
+
+      test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.RESERVED)
+      test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
+      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+
+      test.equal(processedMessages.accumulatedPositionValue, -8)
+      test.end()
+    })
+
     changeParticipantPositionTest.test('produce reserved messages for valid transfer messages with default settlement model', async (test) => {
       const participantLimit = {
         participantCurrencyId: 1,
