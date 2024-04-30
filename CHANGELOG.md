@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.6.2](https://github.com/mojaloop/central-ledger/compare/v17.6.1...v17.6.2) (2024-04-30)
+
+
+### Tests
+
+* added transferFulfilReject.end() ([#1028](https://github.com/mojaloop/central-ledger/issues/1028)) ([e32cb9b](https://github.com/mojaloop/central-ledger/commit/e32cb9bb23e2c09e4738b50e1041309107c875eb))
+
 ### [17.6.1](https://github.com/mojaloop/central-ledger/compare/v17.6.0...v17.6.1) (2024-03-28)
 
 
