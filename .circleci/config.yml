@@ -367,6 +367,7 @@ jobs:
     executor: default-machine
     environment:
       ML_CORE_TEST_HARNESS_DIR: /tmp/ml-core-test-harness
+      ML_CORE_TEST_HARNESS_VERSION: k8s
     steps:
       - checkout
       - attach_workspace:
