@@ -6,6 +6,42 @@ const { TABLE_NAMES } = require('../../shared/constants')
 
 const histName = 'model_fx_transfer'
 
+const getOneByCommitRequestId = async ({ commitRequestId, table, queryName }) => {
+  const histTimerEnd = Metrics.getHistogram(
+    histName,
+    `${queryName} - Metrics for fxTransfer duplicate check model`,
+    ['success', 'queryName']
+  ).startTimer()
+  logger.debug('get duplicate record', { commitRequestId, table, queryName })
+
+  try {
+    const result = await Db.from(table).findOne({ commitRequestId })
+    histTimerEnd({ success: true, queryName })
+    return result
+  } catch (err) {
+    histTimerEnd({ success: false, queryName })
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const saveCommitRequestIdAndHash = async ({ commitRequestId, hash, table, queryName }) => {
+  const histTimerEnd = Metrics.getHistogram(
+    histName,
+    `${queryName} - Metrics for fxTransfer duplicate check model`,
+    ['success', 'queryName']
+  ).startTimer()
+  logger.debug('save duplicate record', { commitRequestId, hash, table })
+
+  try {
+    const result = await Db.from(table).insert({ commitRequestId, hash })
+    histTimerEnd({ success: true, queryName })
+    return result
+  } catch (err) {
+    histTimerEnd({ success: false, queryName })
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 /**
  * @function GetTransferDuplicateCheck
  *
@@ -19,21 +55,7 @@ const histName = 'model_fx_transfer'
 const getFxTransferDuplicateCheck = async (commitRequestId) => {
   const table = TABLE_NAMES.fxTransferDuplicateCheck
   const queryName = `${table}_getFxTransferDuplicateCheck`
-  const histTimerEnd = Metrics.getHistogram(
-    histName,
-    `${queryName} - Metrics for fxTransfer duplicate check model`,
-    ['success', 'queryName']
-  ).startTimer()
-  logger.debug(`get ${table}`, { commitRequestId })
-
-  try {
-    const result = await Db.from(table).findOne({ commitRequestId })
-    histTimerEnd({ success: true, queryName })
-    return result
-  } catch (err) {
-    histTimerEnd({ success: false, queryName })
-    throw new Error(err?.message)
-  }
+  return getOneByCommitRequestId({ commitRequestId, table, queryName })
 }
 
 /**
@@ -50,21 +72,7 @@ const getFxTransferDuplicateCheck = async (commitRequestId) => {
 const saveFxTransferDuplicateCheck = async (commitRequestId, hash) => {
   const table = TABLE_NAMES.fxTransferDuplicateCheck
   const queryName = `${table}_saveFxTransferDuplicateCheck`
-  const histTimerEnd = Metrics.getHistogram(
-    histName,
-    `${queryName} - Metrics for fxTransfer duplicate check model`,
-    ['success', 'queryName']
-  ).startTimer()
-  logger.debug(`save ${table}`, { commitRequestId, hash })
-
-  try {
-    const result = await Db.from(table).insert({ commitRequestId, hash })
-    histTimerEnd({ success: true, queryName })
-    return result
-  } catch (err) {
-    histTimerEnd({ success: false, queryName })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
+  return saveCommitRequestIdAndHash({ commitRequestId, hash, table, queryName })
 }
 
 /**
@@ -80,21 +88,7 @@ const saveFxTransferDuplicateCheck = async (commitRequestId, hash) => {
 const getFxTransferErrorDuplicateCheck = async (commitRequestId) => {
   const table = TABLE_NAMES.fxTransferErrorDuplicateCheck
   const queryName = `${table}_getFxTransferErrorDuplicateCheck`
-  const histTimerEnd = Metrics.getHistogram(
-    histName,
-    `${queryName} - Metrics for fxTransfer error duplicate check model`,
-    ['success', 'queryName']
-  ).startTimer()
-  logger.debug(`get ${table}`, { commitRequestId })
-
-  try {
-    const result = await Db.from(table).findOne({ commitRequestId })
-    histTimerEnd({ success: true, queryName })
-    return result
-  } catch (err) {
-    histTimerEnd({ success: false, queryName })
-    throw new Error(err?.message)
-  }
+  return getOneByCommitRequestId({ commitRequestId, table, queryName })
 }
 
 /**
@@ -111,21 +105,40 @@ const getFxTransferErrorDuplicateCheck = async (commitRequestId) => {
 const saveFxTransferErrorDuplicateCheck = async (commitRequestId, hash) => {
   const table = TABLE_NAMES.fxTransferErrorDuplicateCheck
   const queryName = `${table}_saveFxTransferErrorDuplicateCheck`
-  const histTimerEnd = Metrics.getHistogram(
-    histName,
-    `${queryName} - Metrics for fxTransfer error duplicate check model`,
-    ['success', 'queryName']
-  ).startTimer()
-  logger.debug(`save ${table}`, { commitRequestId, hash })
+  return saveCommitRequestIdAndHash({ commitRequestId, hash, table, queryName })
+}
 
-  try {
-    const result = await Db.from(table).insert({ commitRequestId, hash })
-    histTimerEnd({ success: true, queryName })
-    return result
-  } catch (err) {
-    histTimerEnd({ success: false, queryName })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
+/**
+ * @function getFxTransferFulfilmentDuplicateCheck
+ *
+ * @async
+ * @description This retrieves the fxTransferFulfilmentDuplicateCheck table record if present
+ *
+ * @param {string} commitRequestId - the fxTransfer commitRequestId
+ *
+ * @returns {object} - Returns the record from fxTransferFulfilmentDuplicateCheck table, or throws an error if failed
+ */
+const getFxTransferFulfilmentDuplicateCheck = async (commitRequestId) => {
+  const table = TABLE_NAMES.fxTransferFulfilmentDuplicateCheck
+  const queryName = `${table}_getFxTransferFulfilmentDuplicateCheck`
+  return getOneByCommitRequestId({ commitRequestId, table, queryName })
+}
+
+/**
+ * @function saveFxTransferFulfilmentDuplicateCheck
+ *
+ * @async
+ * @description This inserts a record into fxTransferFulfilmentDuplicateCheck table
+ *
+ * @param {string} commitRequestId - the fxTransfer commitRequestId
+ * @param {string} hash - the hash of the fxTransfer request payload
+ *
+ * @returns {integer} - Returns the database id of the inserted row, or throws an error if failed
+ */
+const saveFxTransferFulfilmentDuplicateCheck = async (commitRequestId, hash) => {
+  const table = TABLE_NAMES.fxTransferFulfilmentDuplicateCheck
+  const queryName = `${table}_saveFxTransferFulfilmentDuplicateCheck`
+  return saveCommitRequestIdAndHash({ commitRequestId, hash, table, queryName })
 }
 
 module.exports = {
@@ -133,5 +146,8 @@ module.exports = {
   saveFxTransferDuplicateCheck,
 
   getFxTransferErrorDuplicateCheck,
-  saveFxTransferErrorDuplicateCheck
+  saveFxTransferErrorDuplicateCheck,
+
+  getFxTransferFulfilmentDuplicateCheck,
+  saveFxTransferFulfilmentDuplicateCheck
 }

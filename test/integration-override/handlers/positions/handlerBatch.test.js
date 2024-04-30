@@ -898,6 +898,8 @@ Test('Handlers test', async handlersTest => {
     await setupTests.test('start testConsumer', async (test) => {
       // Set up the testConsumer here
       await testConsumer.startListening()
+      await new Promise(resolve => setTimeout(resolve, 5_000))
+      testConsumer.clearEvents()
 
       test.pass('done')
       test.end()
