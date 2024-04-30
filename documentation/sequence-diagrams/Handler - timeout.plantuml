@@ -1,0 +1,80 @@
+@startuml
+title Transfer Timeout-Handler Flow
+
+autonumber
+hide footbox
+skinparam ParticipantPadding 10
+
+participant "Timeout handler\n(cron)"   as toh
+database    "central-ledger\nDB"        as clDb
+queue       Kafka                       as kafka
+
+
+toh --> toh : run each\n <i>HANDLERS_TIMEOUT_TIMEXP</i>
+activate toh
+
+toh --> toh : cleanup transferTimeout (<b>TT<b>)
+activate toh
+autonumber 2.1
+toh -> clDb : get <i>ttIdList</i>
+note right : <b>TT</b> innerJoin <b>TSC</b>\n where TSC.transferStateId in [...]
+toh -> clDb : delete from <b>TT</b> by <i>ttIdList</i>
+note right : table: <b>TT</b> (transferTimeout)
+deactivate toh
+
+autonumber 3
+toh -> clDb : get timeout segment
+note right : table: <b>segment</b>
+
+toh -> clDb :  getLatestTransferStateChange
+note right : table: <b>TSC</b> (transferStateChange)
+
+toh --> toh : define <i>segmentId, intervalMin, intervalMax</i>
+toh --> toh : update timeoutExpireReserved and get <i>expiredTransfers</i>
+activate toh
+autonumber 6.1
+toh -> clDb : Insert <i>expirationDate<i> into <b>TT</b>\n for transfers in [<i>intervalMin, ... intervalMax</i>]
+note right : table: <b>TT</b>
+toh -> clDb : Insert <i>EXPIRED_PREPARED</i> into <b>TSC</b> for <i>RECEIVED_PREPARE</i> state
+note right : table: <b>TSC</b>
+toh -> clDb : Insert <i>RESERVED_TIMEOUT</i> into <b>TSC</b> for <i>RESERVED</i> state
+note right : table: <b>TSC</b>
+toh -> clDb : Insert <i>error info</i> into <b>transferError  (TE)</b>
+note right : table: <b>TE</b>
+toh -> clDb : get <i>expired</i> transfers details from <b>TT</b>
+note right : <b>TT</b> <i>innerJoin</i> other tables
+deactivate toh
+
+autonumber 7
+toh --> toh : for each expiredTransfer
+activate toh
+autonumber 7.1
+toh --> toh : prepare error <i>messageProtocol</i>
+alt regular transfer
+alt state === EXPIRED_PREPARED
+autonumber 7.2
+toh -> kafka
+note right : topic: <b>topic-notification-event</b>
+else state === RESERVED_TIMEOUT
+autonumber 7.2
+toh -> kafka
+note right : topic: <b>topic-transfer-position</b>
+end
+else bulk mode
+alt state === EXPIRED_PREPARED
+autonumber 7.2
+toh -> kafka
+note right : topic: <b>topic-bulk-processing</b>
+else state === RESERVED_TIMEOUT
+autonumber 7.2
+toh -> kafka
+note right : topic: <b>topic-transfer-position</b>
+end
+
+end
+
+deactivate toh
+
+deactivate toh
+
+@enduml
