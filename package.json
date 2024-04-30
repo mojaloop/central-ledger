@@ -78,6 +78,9 @@
     "snapshot": "npx standard-version --no-verify --skip.changelog --prerelease snapshot --releaseCommitMessageFormat 'chore(snapshot): {{currentTag}}'",
     "wait-4-docker": "node ./scripts/_wait4_all.js"
   },
+  "overrides": {
+    "@mojaloop/event-sdk": "14.0.3-snapshot.0"
+  },
   "dependencies": {
     "@hapi/good": "9.0.1",
     "@hapi/hapi": "21.3.9",
