@@ -187,71 +187,27 @@ const positions = async (error, messages) => {
       }
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
-      const cyrilResult = message.value.content.context?.cyrilResult
-      if (cyrilResult && cyrilResult.isFx) {
-        // This is FX transfer
-        // Handle position movements
-        // Iterate through positionChanges and handle each position movement, mark as done and publish a position-commit kafka message again for the next item
-        // Find out the first item to be processed
-        const positionChangeIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
-        // TODO: Check fxTransferStateId is in RECEIVED_FULFIL state
-        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `fx-commit--${actionLetter}4`))
-        const positionChangeToBeProcessed = cyrilResult.positionChanges[positionChangeIndex]
-        if (positionChangeToBeProcessed.isFxTransferStateChange) {
-          const fxTransferStateChange = {
-            commitRequestId: positionChangeToBeProcessed.commitRequestId,
-            transferStateId: Enum.Transfers.TransferState.COMMITTED
-          }
-          const isReversal = false
-          await PositionService.changeParticipantPositionFx(positionChangeToBeProcessed.participantCurrencyId, isReversal, positionChangeToBeProcessed.amount, fxTransferStateChange)
-          // TODO: Send required FX PATCH notifications
-        } else {
-          Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `fx-commit--${actionLetter}4`))
-          const isReversal = false
-          const transferStateChange = {
-            transferId: positionChangeToBeProcessed.transferId,
-            transferStateId: Enum.Transfers.TransferState.COMMITTED
-          }
-          await PositionService.changeParticipantPosition(positionChangeToBeProcessed.participantCurrencyId, isReversal, positionChangeToBeProcessed.amount, transferStateChange)
+      const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+      if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
+        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid State: ${transferInfo.transferStateId} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        throw fspiopError
+      } else {
+        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payee--${actionLetter}4`))
+        const isReversal = false
+        const transferStateChange = {
+          transferId: transferInfo.transferId,
+          transferStateId: Enum.Transfers.TransferState.COMMITTED
         }
-        cyrilResult.positionChanges[positionChangeIndex].isDone = true
-        const nextIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
-        if (nextIndex === -1) {
-          // All position changes are done
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
-        } else {
-          // There are still position changes to be processed
-          // Send position-commit kafka message again for the next item
-          const eventDetailCopy = Object.assign({}, eventDetail)
-          eventDetailCopy.functionality = Enum.Events.Event.Type.POSITION
-          const participantCurrencyId = cyrilResult.positionChanges[nextIndex].participantCurrencyId
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail: eventDetailCopy, messageKey: participantCurrencyId.toString() })
+        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
+        if (action === Enum.Events.Event.Action.RESERVE) {
+          const transfer = await TransferService.getById(transferInfo.transferId)
+          message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
         }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
         return true
-      } else {
-        const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
-        if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
-          Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
-          const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid State: ${transferInfo.transferStateId} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`)
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-          throw fspiopError
-        } else {
-          Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payee--${actionLetter}4`))
-          const isReversal = false
-          const transferStateChange = {
-            transferId: transferInfo.transferId,
-            transferStateId: Enum.Transfers.TransferState.COMMITTED
-          }
-          await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
-          if (action === Enum.Events.Event.Action.RESERVE) {
-            const transfer = await TransferService.getById(transferInfo.transferId)
-            message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
-          }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
-          return true
-        }
       }
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.REJECT, Enum.Events.Event.Action.ABORT, Enum.Events.Event.Action.ABORT_VALIDATION, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: action }))
