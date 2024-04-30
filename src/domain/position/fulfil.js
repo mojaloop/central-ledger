@@ -40,12 +40,11 @@ const processPositionFulfilBin = async (
   for (const binItems of commitReserveFulfilBins) {
     if (binItems && binItems.length > 0) {
       for (const binItem of binItems) {
-        let reason
         const transferId = binItem.message.value.content.uriParams.id
         const payeeFsp = binItem.message.value.from
         const payerFsp = binItem.message.value.to
         const transfer = binItem.decodedPayload
-  
+
         // Inform payee dfsp if transfer is not in RECEIVED_FULFIL state, skip making any transfer state changes
         if (accumulatedTransferStates[transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
           const resultMessage = _handleIncorrectTransferState(binItem, payeeFsp, transferId, accumulatedTransferStates)
@@ -62,16 +61,16 @@ const processPositionFulfilBin = async (
             const positionChangeIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
             const positionChangeToBeProcessed = cyrilResult.positionChanges[positionChangeIndex]
             if (positionChangeToBeProcessed.isFxTransferStateChange) {
-              const { participantPositionChange, fxTransferStateChange, transferStateId, updatedRunningPosition }
-                = _handleParticipantPositionChangeFx(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.commitRequestId, accumulatedPositionReservedValue)
+              const { participantPositionChange, fxTransferStateChange, transferStateId, updatedRunningPosition } =
+                _handleParticipantPositionChangeFx(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.commitRequestId, accumulatedPositionReservedValue)
               runningPosition = updatedRunningPosition
               participantPositionChanges.push(participantPositionChange)
               fxTransferStateChanges.push(fxTransferStateChange)
               accumulatedFxTransferStatesCopy[positionChangeToBeProcessed.commitRequestId] = transferStateId
               // TODO: Send required FX PATCH notifications
             } else {
-              const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition }
-                = _handleParticipantPositionChange(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.transferId, accumulatedPositionReservedValue)
+              const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
+                _handleParticipantPositionChange(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.transferId, accumulatedPositionReservedValue)
               runningPosition = updatedRunningPosition
               participantPositionChanges.push(participantPositionChange)
               transferStateChanges.push(transferStateChange)
@@ -93,13 +92,13 @@ const processPositionFulfilBin = async (
               followupMessage.content.context = binItem.message.value.content.context
               followupMessages.push({ binItem, messageKey: participantCurrencyId.toString(), message: followupMessage })
             }
-          } else {  
+          } else {
             const transferAmount = transferInfoList[transferId].amount
-  
+
             const resultMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers)
-  
-            const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition }
-              = _handleParticipantPositionChange(runningPosition, transferAmount, transferId, accumulatedPositionReservedValue)
+
+            const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
+              _handleParticipantPositionChange(runningPosition, transferAmount, transferId, accumulatedPositionReservedValue)
             runningPosition = updatedRunningPosition
             binItem.result = { success: true }
             participantPositionChanges.push(participantPositionChange)
@@ -123,7 +122,6 @@ const processPositionFulfilBin = async (
     notifyMessages: resultMessages, // array of objects containing bin item and result message. {binItem, message}
     followupMessages // array of objects containing bin item, message key and followup message. {binItem, messageKey, message}
   }
-
 }
 
 const _handleIncorrectTransferState = (binItem, payeeFsp, transferId, accumulatedTransferStates) => {

@@ -136,8 +136,8 @@ const positions = async (error, messages) => {
                                   : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED
                                       ? Enum.Events.ActionLetter.bulkTimeoutReserved
                                       : (action === Enum.Events.Event.Action.BULK_ABORT
-                                        ? Enum.Events.ActionLetter.bulkAbort
-                                        : Enum.Events.ActionLetter.unknown)))))))))
+                                          ? Enum.Events.ActionLetter.bulkAbort
+                                          : Enum.Events.ActionLetter.unknown)))))))))
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
     const eventDetail = { action }
     if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {

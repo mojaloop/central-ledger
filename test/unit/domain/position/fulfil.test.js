@@ -152,7 +152,7 @@ const _constructContextForFx = (transferTestData, partialProcessed = false) => {
           isFxTransferStateChange: false,
           transferId: transferTestData.message.value.id,
           participantCurrencyId: '101',
-          amount: transferTestData.transferInfo.amount,
+          amount: transferTestData.transferInfo.amount
         }
       ]
     }
@@ -252,7 +252,6 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     test.equal(result.notifyMessages.length, 2)
     test.equal(result.accumulatedPositionValue, 4)
     test.equal(result.accumulatedPositionReservedValue, 0)
-
 
     test.equal(result.accumulatedTransferStateChanges[0].transferId, transferTestData1.message.value.id)
     test.equal(result.accumulatedTransferStateChanges[1].transferId, transferTestData2.message.value.id)
@@ -469,7 +468,7 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     test.equal(result.accumulatedPositionReservedValue, 0)
     test.equal(result.accumulatedTransferStateChanges.length, 1)
     test.equal(result.accumulatedPositionChanges.length, 1)
-    
+
     test.equal(result.accumulatedTransferStateChanges[0].transferId, transferTestData2.message.value.id)
     test.equal(result.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.COMMITTED)
 
@@ -521,7 +520,6 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     test.equal(result.accumulatedTransferStateChanges.length, 0)
     test.equal(result.accumulatedFxTransferStateChanges.length, 2)
 
-
     test.equal(result.accumulatedFxTransferStateChanges[0].commitRequestId, transferTestData5.message.value.content.context.cyrilResult.positionChanges[0].commitRequestId)
     test.equal(result.accumulatedFxTransferStateChanges[1].commitRequestId, transferTestData6.message.value.content.context.cyrilResult.positionChanges[0].commitRequestId)
     test.equal(result.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.COMMITTED)
@@ -572,7 +570,6 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     test.equal(result.accumulatedPositionReservedValue, 0)
     test.equal(result.accumulatedTransferStateChanges.length, 2)
     test.equal(result.accumulatedFxTransferStateChanges.length, 0)
-
 
     test.equal(result.accumulatedTransferStateChanges[0].transferId, transferTestData7.message.value.content.context.cyrilResult.positionChanges[1].transferId)
     test.equal(result.accumulatedTransferStateChanges[1].transferId, transferTestData8.message.value.content.context.cyrilResult.positionChanges[1].transferId)
