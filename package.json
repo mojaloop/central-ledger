@@ -79,7 +79,15 @@
     "wait-4-docker": "node ./scripts/_wait4_all.js"
   },
   "overrides": {
-    "@mojaloop/event-sdk": "14.0.3-snapshot.0"
+    "@mojaloop/event-sdk": "14.0.3-snapshot.0",
+    "shins": {
+      "ejs": "^3.1.7",
+      "sanitize-html": "2.12.1",
+      "jsonpointer": "5.0.0",
+      "markdown-it": "12.3.2",
+      "yargs-parser": "13.1.2",
+      "postcss": "8.4.31"
+    }
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
