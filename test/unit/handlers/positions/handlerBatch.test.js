@@ -223,7 +223,8 @@ Test('Position handler', positionBatchHandlerTest => {
     BatchPositionModel.startDbTransaction.returns(trxStub)
     sandbox.stub(BinProcessor)
     BinProcessor.processBins.resolves({
-      notifyMessages: messages.map((i) => ({ binItem: { message: i, span: SpanStub }, message: { metadata: { event: { state: { status: 'success' } } } } }))
+      notifyMessages: messages.map((i) => ({ binItem: { message: i, span: SpanStub }, message: { metadata: { event: { state: { status: 'success' } } } } })),
+      followupMessages: []
     })
     BinProcessor.iterateThroughBins.restore()
 
@@ -413,7 +414,8 @@ Test('Position handler', positionBatchHandlerTest => {
       Kafka.proceed.returns(true)
 
       BinProcessor.processBins.resolves({
-        notifyMessages: [{ binItem: { message: messages[0], span: SpanStub }, message: { metadata: { event: { state: 'success' } } } }]
+        notifyMessages: [{ binItem: { message: messages[0], span: SpanStub }, message: { metadata: { event: { state: 'success' } } } }],
+        followupMessages: []
       })
 
       // Act
@@ -447,7 +449,8 @@ Test('Position handler', positionBatchHandlerTest => {
       Kafka.proceed.returns(true)
 
       BinProcessor.processBins.resolves({
-        notifyMessages: [{ binItem: { message: messages[0], span: SpanStub }, message: { metadata: { event: { state: { status: 'error' } } } } }]
+        notifyMessages: [{ binItem: { message: messages[0], span: SpanStub }, message: { metadata: { event: { state: { status: 'error' } } } } }],
+        followupMessages: []
       })
 
       // Act

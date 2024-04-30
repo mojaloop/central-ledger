@@ -94,6 +94,7 @@ const processBins = async (bins, trx) => {
   )
 
   let notifyMessages = []
+  let followupMessages = []
   let limitAlarms = []
 
   // For each account-bin in the list
@@ -147,6 +148,7 @@ const processBins = async (bins, trx) => {
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
+      accumulatedFxTransferStates,
       latestTransferInfoByTransferId,
       reservedActionTransfers
     )
@@ -155,10 +157,13 @@ const processBins = async (bins, trx) => {
     accumulatedPositionValue = fulfilActionResult.accumulatedPositionValue
     accumulatedPositionReservedValue = fulfilActionResult.accumulatedPositionReservedValue
     accumulatedTransferStates = fulfilActionResult.accumulatedTransferStates
+    accumulatedFxTransferStates = fulfilActionResult.accumulatedFxTransferStates
     // Append accumulated arrays
     accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(fulfilActionResult.accumulatedTransferStateChanges)
+    accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fulfilActionResult.accumulatedFxTransferStateChanges)
     accumulatedPositionChanges = accumulatedPositionChanges.concat(fulfilActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(fulfilActionResult.notifyMessages)
+    followupMessages = followupMessages.concat(fulfilActionResult.followupMessages)
 
     // If prepare action found then call processPositionPrepareBin function
     const prepareActionResult = await PositionPrepareDomain.processPositionPrepareBin(
@@ -231,6 +236,7 @@ const processBins = async (bins, trx) => {
   // Return results
   return {
     notifyMessages,
+    followupMessages,
     limitAlarms
   }
 }

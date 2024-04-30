@@ -43,6 +43,7 @@ const processPositionFxFulfilBin = async (
         headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
         delete headers['content-length']
 
+        // TODO: Confirm if this setting transferStateId to ABORTED_REJECTED is correct. There is no such logic in the fulfil handler.
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = 'FxFulfil in incorrect state'
 

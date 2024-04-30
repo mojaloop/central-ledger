@@ -385,10 +385,13 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
       [commitBinItems, []],
       0,
       0,
+      // Transfer States
       {
         '68c8aa25-fe5b-4b1f-a0ab-ab890fe3ae7f': Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
         '4830fa00-0c2a-4de1-9640-5ad4e68f5f62': Enum.Transfers.TransferInternalState.RECEIVED_FULFIL
       },
+      // FX Transfer States
+      {},
       {
         '68c8aa25-fe5b-4b1f-a0ab-ab890fe3ae7f': {
           amount: 2.00
@@ -443,10 +446,13 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
       [[], reserveBinItems],
       0,
       0,
+      // Transfer States
       {
         '780a1e7c-f01e-47a4-8538-1a27fb690627': Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
         '0a4834e7-7e4c-47e8-8dcb-f3f68031d377': Enum.Transfers.TransferInternalState.RECEIVED_FULFIL
       },
+      // FX Transfer States
+      {},
       {
         '780a1e7c-f01e-47a4-8538-1a27fb690627': {
           amount: 2.00
@@ -527,12 +533,15 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
       [commitBinItems, reserveBinItems],
       0,
       0,
+      // Transfer States
       {
         '68c8aa25-fe5b-4b1f-a0ab-ab890fe3ae7f': Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
         '4830fa00-0c2a-4de1-9640-5ad4e68f5f62': Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
         '780a1e7c-f01e-47a4-8538-1a27fb690627': Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
         '0a4834e7-7e4c-47e8-8dcb-f3f68031d377': Enum.Transfers.TransferInternalState.RECEIVED_FULFIL
       },
+      // FX Transfer States
+      {},
       {
         '68c8aa25-fe5b-4b1f-a0ab-ab890fe3ae7f': {
           amount: 2.00
@@ -645,10 +654,13 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
       [commitBinItems, []],
       0,
       0,
+      // Transfer States
       {
         '68c8aa25-fe5b-4b1f-a0ab-ab890fe3ae7f': Enum.Transfers.TransferInternalState.INVALID,
         '4830fa00-0c2a-4de1-9640-5ad4e68f5f62': Enum.Transfers.TransferInternalState.INVALID
       },
+      // FX Transfer States
+      {},
       {
         '68c8aa25-fe5b-4b1f-a0ab-ab890fe3ae7f': {
           amount: 2.00
