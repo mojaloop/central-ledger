@@ -36,6 +36,7 @@ const BatchPositionModelCached = require('../../models/position/batchCached')
 const PositionPrepareDomain = require('./prepare')
 const PositionFxPrepareDomain = require('./fx-prepare')
 const PositionFulfilDomain = require('./fulfil')
+const PositionFxFulfilDomain = require('./fx-fulfil')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -93,6 +94,7 @@ const processBins = async (bins, trx) => {
   )
 
   let notifyMessages = []
+  let followupMessages = []
   let limitAlarms = []
 
   // For each account-bin in the list
@@ -122,10 +124,23 @@ const processBins = async (bins, trx) => {
     let accumulatedPositionValue = positions[accountID].value
     let accumulatedPositionReservedValue = positions[accountID].reservedValue
     let accumulatedTransferStates = latestTransferStates
-    const accumulatedFxTransferStates = latestFxTransferStates
+    let accumulatedFxTransferStates = latestFxTransferStates
     let accumulatedTransferStateChanges = []
     let accumulatedFxTransferStateChanges = []
     let accumulatedPositionChanges = []
+
+    // If fulfil action found then call processPositionPrepareBin function
+    // We don't need to change the position for FX transfers. All the position changes happen when actual transfer is done
+    const fxFulfilActionResult = await PositionFxFulfilDomain.processPositionFxFulfilBin(
+      accountBin[Enum.Events.Event.Action.FX_RESERVE],
+      accumulatedFxTransferStates
+    )
+
+    // Update accumulated values
+    accumulatedFxTransferStates = fxFulfilActionResult.accumulatedFxTransferStates
+    // Append accumulated arrays
+    accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fxFulfilActionResult.accumulatedFxTransferStateChanges)
+    notifyMessages = notifyMessages.concat(fxFulfilActionResult.notifyMessages)
 
     // If fulfil action found then call processPositionPrepareBin function
     const fulfilActionResult = await PositionFulfilDomain.processPositionFulfilBin(
@@ -133,6 +148,7 @@ const processBins = async (bins, trx) => {
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
+      accumulatedFxTransferStates,
       latestTransferInfoByTransferId,
       reservedActionTransfers
     )
@@ -141,10 +157,13 @@ const processBins = async (bins, trx) => {
     accumulatedPositionValue = fulfilActionResult.accumulatedPositionValue
     accumulatedPositionReservedValue = fulfilActionResult.accumulatedPositionReservedValue
     accumulatedTransferStates = fulfilActionResult.accumulatedTransferStates
+    accumulatedFxTransferStates = fulfilActionResult.accumulatedFxTransferStates
     // Append accumulated arrays
     accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(fulfilActionResult.accumulatedTransferStateChanges)
+    accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fulfilActionResult.accumulatedFxTransferStateChanges)
     accumulatedPositionChanges = accumulatedPositionChanges.concat(fulfilActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(fulfilActionResult.notifyMessages)
+    followupMessages = followupMessages.concat(fulfilActionResult.followupMessages)
 
     // If prepare action found then call processPositionPrepareBin function
     const prepareActionResult = await PositionPrepareDomain.processPositionPrepareBin(
@@ -217,6 +236,7 @@ const processBins = async (bins, trx) => {
   // Return results
   return {
     notifyMessages,
+    followupMessages,
     limitAlarms
   }
 }

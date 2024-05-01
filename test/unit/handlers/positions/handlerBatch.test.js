@@ -223,7 +223,8 @@ Test('Position handler', positionBatchHandlerTest => {
     BatchPositionModel.startDbTransaction.returns(trxStub)
     sandbox.stub(BinProcessor)
     BinProcessor.processBins.resolves({
-      notifyMessages: messages.map((i) => ({ binItem: { message: i, span: SpanStub }, message: { metadata: { event: { state: { status: 'success' } } } } }))
+      notifyMessages: messages.map((i) => ({ binItem: { message: i, span: SpanStub }, message: { metadata: { event: { state: { status: 'success' } } } } })),
+      followupMessages: []
     })
     BinProcessor.iterateThroughBins.restore()
 
@@ -413,7 +414,8 @@ Test('Position handler', positionBatchHandlerTest => {
       Kafka.proceed.returns(true)
 
       BinProcessor.processBins.resolves({
-        notifyMessages: [{ binItem: { message: messages[0], span: SpanStub }, message: { metadata: { event: { state: 'success' } } } }]
+        notifyMessages: [{ binItem: { message: messages[0], span: SpanStub }, message: { metadata: { event: { state: 'success' } } } }],
+        followupMessages: []
       })
 
       // Act
@@ -447,7 +449,8 @@ Test('Position handler', positionBatchHandlerTest => {
       Kafka.proceed.returns(true)
 
       BinProcessor.processBins.resolves({
-        notifyMessages: [{ binItem: { message: messages[0], span: SpanStub }, message: { metadata: { event: { state: { status: 'error' } } } } }]
+        notifyMessages: [{ binItem: { message: messages[0], span: SpanStub }, message: { metadata: { event: { state: { status: 'error' } } } } }],
+        followupMessages: []
       })
 
       // Act
@@ -465,6 +468,89 @@ Test('Position handler', positionBatchHandlerTest => {
         test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
         test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called')
         test.equal(Kafka.produceGeneralMessage.callCount, 1, 'produceGeneralMessage should be one time to produce kafka notification events')
+        test.equal(Kafka.produceGeneralMessage.getCall(0).args[5], Enum.Events.EventStatus.FAILURE, 'produceGeneralMessage should be called with eventStatus as Enum.Events.EventStatus.FAILURE')
+        test.end()
+      } catch (err) {
+        Logger.info(err)
+        test.fail('Error should not be thrown')
+        test.end()
+      }
+    })
+
+    positionsTest.test('calls Kafka.produceGeneralMessage for followup messages', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+
+      BinProcessor.processBins.resolves({
+        notifyMessages: [],
+        followupMessages: messages.map((i) => ({ binItem: { message: i, messageKey: '100', span: SpanStub }, message: { metadata: { event: { state: { status: 'success' } } } } })),
+      })
+
+      // Act
+      try {
+        await allTransferHandlers.positions(null, messages)
+        test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once')
+        // Need an easier way to do partial matching...
+        delete BinProcessor.processBins.getCall(0).args[0][1001].commit[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[1].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1002].commit[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1002].prepare[0].histTimerMsgEnd
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].commit, expectedBins[1001].commit)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].prepare, expectedBins[1001].prepare)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1002].commit, expectedBins[1002].commit)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1002].prepare, expectedBins[1002].prepare)
+        test.equal(BinProcessor.processBins.getCall(0).args[1], trxStub)
+        const expectedLastMessageToCommit = messages[messages.length - 1]
+        test.equal(Kafka.proceed.getCall(0).args[1].message.offset, expectedLastMessageToCommit.offset, 'kafkaProceed should be called with the correct offset')
+        test.equal(SpanStub.audit.callCount, 5, 'span.audit should be called five times')
+        test.equal(SpanStub.finish.callCount, 5, 'span.finish should be called five times')
+        test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
+        test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called')
+        test.equal(Kafka.produceGeneralMessage.callCount, 5, 'produceGeneralMessage should be five times to produce kafka notification events')
+        test.equal(Kafka.produceGeneralMessage.getCall(0).args[2], Enum.Events.Event.Type.POSITION, 'produceGeneralMessage should be called with eventType POSITION')
+        test.equal(Kafka.produceGeneralMessage.getCall(0).args[3], Enum.Events.Event.Action.PREPARE, 'produceGeneralMessage should be called with eventAction PREPARE')
+        test.equal(Kafka.produceGeneralMessage.getCall(0).args[5], Enum.Events.EventStatus.SUCCESS, 'produceGeneralMessage should be called with eventStatus as Enum.Events.EventStatus.SUCCESS')
+        test.end()
+      } catch (err) {
+        Logger.info(err)
+        test.fail('Error should not be thrown')
+        test.end()
+      }
+    })
+
+    positionsTest.test('calls Kafka.produceGeneralMessage for followup messages with correct eventStatus if event is a failure event', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+
+      BinProcessor.processBins.resolves({
+        notifyMessages: [],
+        followupMessages: [{ binItem: { message: messages[0], messageKey: '100', span: SpanStub }, message: { metadata: { event: { state: { status: 'error' } } } } }]
+      })
+
+      // Act
+      try {
+        await allTransferHandlers.positions(null, messages[0])
+        test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once')
+        // Need an easier way to do partial matching...
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[0].histTimerMsgEnd
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].prepare[0], expectedBins[1001].prepare[0])
+        test.equal(BinProcessor.processBins.getCall(0).args[1], trxStub)
+        const expectedLastMessageToCommit = messages[messages.length - 1]
+        test.equal(Kafka.proceed.getCall(0).args[1].message.offset, expectedLastMessageToCommit.offset, 'kafkaProceed should be called with the correct offset')
+        test.equal(SpanStub.audit.callCount, 1, 'span.audit should be called one time')
+        test.equal(SpanStub.finish.callCount, 1, 'span.finish should be called one time')
+        test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
+        test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called')
+        test.equal(Kafka.produceGeneralMessage.callCount, 1, 'produceGeneralMessage should be one time to produce kafka notification events')
+        test.equal(Kafka.produceGeneralMessage.getCall(0).args[2], Enum.Events.Event.Type.POSITION, 'produceGeneralMessage should be called with eventType POSITION')
+        test.equal(Kafka.produceGeneralMessage.getCall(0).args[3], Enum.Events.Event.Action.PREPARE, 'produceGeneralMessage should be called with eventAction PREPARE')
         test.equal(Kafka.produceGeneralMessage.getCall(0).args[5], Enum.Events.EventStatus.FAILURE, 'produceGeneralMessage should be called with eventStatus as Enum.Events.EventStatus.FAILURE')
         test.end()
       } catch (err) {
