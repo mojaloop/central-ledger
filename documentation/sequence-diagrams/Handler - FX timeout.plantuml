@@ -72,7 +72,7 @@ deactivate fxToh
 autonumber 8
 topicNE o-> nh : consume <i>notification</i>\n message
 activate nh
-nh -> payer : send <i>notification</i>\n callback to <i>payer</i>
+nh -> payer : send error <i>notification</i>\n callback to <i>payer</i>
 deactivate nh
 
 topicTP o-> ph : consume <i>position timeout/fx-timeout</i>\n message
@@ -90,7 +90,7 @@ deactivate ph
 
 topicNE o-> nh : consume <i>notification</i>\n message
 activate nh
-nh -> payee : send <i>notification</i>\n callback to <i>payee</i>
+nh -> payee : send error <i>notification</i>\n callback to <i>payee</i>
 deactivate nh
 
 @enduml
