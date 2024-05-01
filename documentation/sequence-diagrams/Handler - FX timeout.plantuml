@@ -1,0 +1,96 @@
+@startuml
+title Transfer/ FX transfer Timeout-Handler Flow
+
+autonumber
+hide footbox
+skinparam ParticipantPadding 10
+
+box "Central Services" #MistyRose
+participant "Timeout \n handler <i>(cron)</i>"      as toh
+participant "FX Timeout \n handler <i>(cron)</i>"   as fxToh
+participant "Position \n handler"                   as ph
+database    "central-ledger\nDB"                    as clDb
+end box
+box Kafka
+queue       "topic-\n transfer-position"            as topicTP
+queue       "topic-\n notification-event"           as topicNE
+end box
+box "ML API Adapter Services" #LightBlue
+participant "Notification \n handler"               as nh
+end box
+participant "FXP"                                   as fxp
+actor       "DFSP_1 \n<i>Payer</i>"                 as payer
+actor       "DFSP_2 \n<i>Payee</i>"                 as payee
+
+ref over toh : Current impl. of <i>transfer timeout</i>
+autonumber stop
+toh -->o topicTP : produce <i>position timeout-reserved</i> message
+
+autonumber 1
+fxToh --> fxToh : run on <i>cronTime</i>\n HANDLERS_FX_TIMEOUT_TIMEXP
+activate fxToh
+fxToh --> fxToh : cleanup fxTransferTimeout (<b>fxTT<b>)
+note right : <b>fxTT</b> innerJoin <b>fxTSC</b>\n where fxTSC.transferStateId in [...]
+activate fxToh
+autonumber 2.1
+fxToh -> clDb : delete from <b>fxTT</b> by <i>ttIdList</i>
+note right :  table: <b>fxTT</b> (fxTransferTimeout)
+deactivate fxToh
+
+autonumber 3
+fxToh -> clDb : get <i>segmentId, intervalMin, intervalMax</i>
+note right : tables:\n <b>segment</b>,\n <b>fxTSC</b> (fxTransferStateChange)
+
+fxToh --> fxToh : update timeoutExpireReserved and get <i>expired fxTransfers</i>
+activate fxToh
+autonumber 6.1
+fxToh -> clDb : Insert <i>expirationDate<i> into <b>fxTT</b>\n for fxTransfers in [<i>intervalMin, ... intervalMax</i>]
+note right : table: <b>fxTT</b>
+fxToh -> clDb : Insert <i>EXPIRED_PREPARED</i> into <b>fxTSC</b> for <i>RECEIVED_PREPARE</i> state
+note right : table: <b>fxTSC</b>
+fxToh -> clDb : Insert <i>RESERVED_TIMEOUT</i> into <b>fxTSC</b> for <i>RESERVED</i> state
+note right : table: <b>fxTSC</b>
+fxToh -> clDb : Insert <i>error info</i> into <b>fxTransferError  (TE)</b>
+note right : table: <b>fxTE</b>
+fxToh -> clDb : get <i>expired</i> fxTransfers details from <b>fxTT</b>
+note right : <b>fxTT</b> <i>innerJoin</i> other tables
+deactivate fxToh
+
+autonumber 7
+fxToh --> fxToh : for each expiredTransfer
+activate fxToh
+alt state === EXPIRED_PREPARED
+autonumber 7.1
+fxToh ->o topicNE : produce <i>notification fx-timeout-received</i> message
+else state === RESERVED_TIMEOUT
+autonumber 7.1
+fxToh ->o topicTP : produce <i>position fx-timeout-reserved</i> message
+end
+deactivate fxToh
+deactivate fxToh
+
+autonumber 8
+topicNE o-> nh : consume <i>notification</i>\n message
+activate nh
+nh -> payer : send <i>notification</i>\n callback to <i>payer</i>
+deactivate nh
+
+topicTP o-> ph : consume <i>position timeout/fx-timeout</i>\n message
+activate ph
+alt action === timeout
+ph --> ph : timeout <i>normal</i> transfer
+ph ->o topicNE : produce <i>notification-timeout</i> messages
+ph --> ph : check if there's related <i>fxTransfer</i> \n and timeout it
+else action === fx-timeout
+ph -> clDb : find appropriate <i>normal transfer</i> \n using <i>cyril</i>
+ph --> ph: timeout both <i>fx</i> and <i>normal</i> transfers
+ph ->o topicNE : produce 2 <i>notification-timeout</i> messages for <i>both</i> transfers
+end
+deactivate ph
+
+topicNE o-> nh : consume <i>notification</i>\n message
+activate nh
+nh -> payee : send <i>notification</i>\n callback to <i>payee</i>
+deactivate nh
+
+@enduml

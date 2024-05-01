@@ -1,35 +1,39 @@
 @startuml
-title Transfer Timeout-Handler Flow
+title Transfer Timeout-Handler Flow  \n(current impl.)
 
 autonumber
 hide footbox
 skinparam ParticipantPadding 10
 
-participant "Timeout handler\n(cron)"   as toh
-database    "central-ledger\nDB"        as clDb
-queue       Kafka                       as kafka
+box "Central Services" #MistyRose
+participant "Timeout \n handler <i>(cron)</i>"      as toh
+participant "Position \n handler"                   as ph
+database    "central-ledger\nDB"                    as clDb
+end box
+box Kafka
+queue       "topic-\n transfer-position"            as topicTP
+queue       "topic-\n notification-event"           as topicNE
+end box
+box "ML API Adapter Services" #LightBlue
+participant "Notification \n handler"               as nh
+end box
+actor       "DFSP_1 \n<i>Payer</i>"                 as payer
+actor       "DFSP_2 \n<i>Payee</i>"                 as payee
 
-
-toh --> toh : run each\n <i>HANDLERS_TIMEOUT_TIMEXP</i>
+toh --> toh : run on cronTime\n <i>HANDLERS_TIMEOUT_TIMEXP</i>
 activate toh
-
 toh --> toh : cleanup transferTimeout (<b>TT<b>)
+note right : <b>TT</b> innerJoin <b>TSC</b>\n where TSC.transferStateId in [...]
 activate toh
 autonumber 2.1
-toh -> clDb : get <i>ttIdList</i>
-note right : <b>TT</b> innerJoin <b>TSC</b>\n where TSC.transferStateId in [...]
 toh -> clDb : delete from <b>TT</b> by <i>ttIdList</i>
-note right : table: <b>TT</b> (transferTimeout)
+note right :  table: <b>TT</b> (transferTimeout)
 deactivate toh
 
 autonumber 3
-toh -> clDb : get timeout segment
-note right : table: <b>segment</b>
+toh -> clDb : get <i>segmentId, intervalMin, intervalMax</i>
+note right : tables:\n <b>segment</b>,\n <b>TSC</b> (transferStateChange)
 
-toh -> clDb :  getLatestTransferStateChange
-note right : table: <b>TSC</b> (transferStateChange)
-
-toh --> toh : define <i>segmentId, intervalMin, intervalMax</i>
 toh --> toh : update timeoutExpireReserved and get <i>expiredTransfers</i>
 activate toh
 autonumber 6.1
@@ -48,33 +52,30 @@ deactivate toh
 autonumber 7
 toh --> toh : for each expiredTransfer
 activate toh
+alt state === EXPIRED_PREPARED
 autonumber 7.1
-toh --> toh : prepare error <i>messageProtocol</i>
-alt regular transfer
-alt state === EXPIRED_PREPARED
-autonumber 7.2
-toh -> kafka
-note right : topic: <b>topic-notification-event</b>
+toh ->o topicNE : produce <i>notification timeout-received</i> message
 else state === RESERVED_TIMEOUT
-autonumber 7.2
-toh -> kafka
-note right : topic: <b>topic-transfer-position</b>
+autonumber 7.1
+toh ->o topicTP : produce <i>position timeout-reserved</i> message
 end
-else bulk mode
-alt state === EXPIRED_PREPARED
-autonumber 7.2
-toh -> kafka
-note right : topic: <b>topic-bulk-processing</b>
-else state === RESERVED_TIMEOUT
-autonumber 7.2
-toh -> kafka
-note right : topic: <b>topic-transfer-position</b>
-end
-
-end
-
+deactivate toh
 deactivate toh
 
-deactivate toh
+autonumber 8
+topicNE o-> nh : consume <i>notification</i>\n message
+activate nh
+nh -> payer : send <i>notification</i>\n callback to <i>payer</i>
+deactivate nh
+
+topicTP o-> ph : consume <i>position timeout</i>\n message
+activate ph
+ph --> ph : process <i>position timeout</i>
+ph ->o topicNE
+deactivate ph
+topicNE o-> nh : consume <i>notification</i>\n message
+activate nh
+nh -> payee : send <i>notification</i>\n callback to <i>payee</i>
+deactivate nh
 
 @enduml
