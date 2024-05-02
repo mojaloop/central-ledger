@@ -49,6 +49,7 @@ RECEIVED_ERROR --> ABORTED_ERROR : Hub aborts T.
 RECEIVED_PREPARE --> EXPIRED_PREPARED : Timeout handler \n detects T. being EXPIRED
 
 RESERVED --> RECEIVED_FULFIL : Fulfil callback from Payee \n with status "COMMITTED" \n [Fulfil handler]: \n <i>fulfilment check passed</i>
+RESERVED --> RECEIVED_ERROR : Fulfil callback from Payee fails validation\n [Fulfil handler]
 RESERVED --> RESERVED_TIMEOUT : Timeout handler
 RESERVED_TIMEOUT --> EXPIRED_RESERVED : Hub aborts T. due to being EXPIRED
 
