@@ -1,0 +1,56 @@
+@startuml
+
+state RECEIVED {
+  state RECEIVED_PREPARE {
+  }
+  state RECEIVED_FULFIL {
+  }
+  state RECEIVED_REJECT {
+  }
+  state RECEIVED_ERROR {
+  }
+}
+
+state _RESERVED_ {
+  state RESERVED_TIMEOUT {
+  }
+  state RESERVED {
+  }
+}
+
+state COMMITTED {
+}
+
+state ABORTED {
+  state ABORTED_ERROR {
+  }
+  state ABORTED_REJECTED {
+  }
+  state EXPIRED_PREPARED {
+  }
+  state EXPIRED_RESERVED {
+  }
+  state FAILED {
+  }
+  state INVALID {
+  }
+}
+
+[*] --> RECEIVED_PREPARE : Transfer Prepare Request [Prepare handler] \n <i>(validation & dupl.check passed)</i>
+RECEIVED_PREPARE --> RESERVED : [Position handler]: Liquidity check passed, \n funds reserved
+RECEIVED_PREPARE --> RECEIVED_FULFIL : Fulfil callback from Payee with status "COMMITTED" \n [Fulfil handler]: <i>fulfilment & dupl.check passed</i>
+RECEIVED_FULFIL --> COMMITTED : Transfer committed [Position handler] \n <i>(commit funds, assign T. to settlement window)</i>
+
+RECEIVED_PREPARE --> RECEIVED_REJECT : Reject callback from Payee with status "ABORTED"
+RECEIVED_PREPARE --> RECEIVED_ERROR : Transfer Error callback from Payee
+RECEIVED_REJECT --> ABORTED_REJECTED : Transfer Aborted by Payee
+RECEIVED_ERROR --> ABORTED_ERROR : Hub aborts T.
+RECEIVED_PREPARE --> EXPIRED_PREPARED : Timeout handler \n detects T. being EXPIRED
+
+RESERVED --> RESERVED_TIMEOUT : Timeout handler
+RESERVED_TIMEOUT --> EXPIRED_RESERVED : Hub aborts T. due to being EXPIRED
+
+COMMITTED --> [*]
+ABORTED --> [*]
+
+@enduml

@@ -27,7 +27,7 @@ autonumber stop
 toh -->o topicTP : produce <i>position timeout-reserved</i> message
 
 autonumber 1
-fxToh --> fxToh : run on <i>cronTime</i>\n HANDLERS_FX_TIMEOUT_TIMEXP
+fxToh --> fxToh : run on <i>cronTime</i>\n HANDLERS_FX_TIMEOUT_TIMEXP (default: 15sec)
 activate fxToh
 fxToh --> fxToh : cleanup fxTransferTimeout (<b>fxTT<b>)
 note right : <b>fxTT</b> innerJoin <b>fxTSC</b>\n where fxTSC.transferStateId in [...]
