@@ -32,11 +32,10 @@ const { randomUUID } = require('crypto')
 
 const constructFxTransferCallbackTestData = (initiatingFsp, counterPartyFsp) => {
   const commitRequestId = randomUUID()
-  const determiningTransferId = randomUUID()
   const payload = {
     fulfilment: 'WLctttbu2HvTsa1XWvUoGRcQozHsqeu9Ahl2JW9Bsu8',
     completedTimestamp: '2024-04-19T14:06:08.936Z',
-    conversionState: 'RESERVED',
+    conversionState: 'RESERVED'
   }
   const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64')
   return {
@@ -185,15 +184,13 @@ Test('Fx Fulfil domain', processPositionFxFulfilBinTest => {
     test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], fxTransferCallbackTestData3.message.value.content.headers['content-type'])
     test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
     test.equal(processedMessages.accumulatedFxTransferStates[fxTransferCallbackTestData3.message.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
-    
+
     test.equal(processedMessages.accumulatedFxTransferStateChanges.length, 3)
     test.equal(processedMessages.accumulatedFxTransferStateChanges[0].commitRequestId, fxTransferCallbackTestData1.message.value.id)
     test.equal(processedMessages.accumulatedFxTransferStateChanges[1].commitRequestId, fxTransferCallbackTestData2.message.value.id)
     test.equal(processedMessages.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.COMMITTED)
     test.equal(processedMessages.accumulatedFxTransferStateChanges[1].transferStateId, Enum.Transfers.TransferInternalState.COMMITTED)
     test.equal(processedMessages.accumulatedFxTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
-
-
 
     test.end()
   })

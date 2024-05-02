@@ -17,7 +17,7 @@ const Logger = require('@mojaloop/central-services-logger')
  */
 const processPositionFxFulfilBin = async (
   binItems,
-  accumulatedFxTransferStates,
+  accumulatedFxTransferStates
 ) => {
   const fxTransferStateChanges = []
   const resultMessages = []

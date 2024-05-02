@@ -486,7 +486,7 @@ Test('Position handler', positionBatchHandlerTest => {
 
       BinProcessor.processBins.resolves({
         notifyMessages: [],
-        followupMessages: messages.map((i) => ({ binItem: { message: i, messageKey: '100', span: SpanStub }, message: { metadata: { event: { state: { status: 'success' } } } } })),
+        followupMessages: messages.map((i) => ({ binItem: { message: i, messageKey: '100', span: SpanStub }, message: { metadata: { event: { state: { status: 'success' } } } } }))
       })
 
       // Act

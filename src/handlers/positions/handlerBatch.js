@@ -160,7 +160,17 @@ const positions = async (error, messages) => {
       // Produce position message and audit message
       const action = item.binItem.message?.value.metadata.event.action
       const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
-      await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.POSITION, action, item.message, eventStatus, item.messageKey, item.binItem.span)
+      await Kafka.produceGeneralMessage(
+        Config.KAFKA_CONFIG,
+        Producer,
+        Enum.Events.Event.Type.POSITION,
+        action,
+        item.message,
+        eventStatus,
+        item.messageKey,
+        item.binItem.span,
+        Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+      )
     }
     histTimerEnd({ success: true })
   } catch (err) {

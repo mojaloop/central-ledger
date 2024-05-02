@@ -317,13 +317,18 @@ class FxFulfilService {
     await this.kafkaProceed({
       consumerCommit,
       eventDetail,
-      messageKey: cyrilOutput.counterPartyFspSourceParticipantCurrencyId.toString()
+      messageKey: cyrilOutput.counterPartyFspSourceParticipantCurrencyId.toString(),
+      topicNameOverride: this.Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
     })
     return true
   }
 
   async kafkaProceed(kafkaOpts) {
-    return this.Kafka.proceed(this.Config.KAFKA_CONFIG, this.params, kafkaOpts)
+    return this.Kafka.proceed(
+      this.Config.KAFKA_CONFIG,
+      this.params,
+      kafkaOpts
+    )
   }
 
   validateFulfilCondition(fulfilment, condition) {
