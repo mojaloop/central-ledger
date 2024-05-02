@@ -37,7 +37,8 @@ const SWITCH_ID = 'switch'
 const TOPICS = Object.freeze({
   notificationEvent: 'topic-notification-event',
   transferPosition: 'topic-transfer-position',
-  transferFulfil: 'topic-transfer-fulfil'
+  transferFulfil: 'topic-transfer-fulfil',
+  transferPositionBatch: 'topic-transfer-position-batch'
 })
 // think, how to define TOPICS dynamically (based on TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE)
 
