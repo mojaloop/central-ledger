@@ -37,6 +37,7 @@ state ABORTED {
 }
 
 [*] --> RECEIVED_PREPARE : Transfer Prepare Request [Prepare handler] \n <i>(validation & dupl.check passed)</i>
+[*] --> INVALID : Validation failed \n [Prepare handler]
 RECEIVED_PREPARE --> RESERVED : [Position handler]: Liquidity check passed, \n funds reserved
 RECEIVED_PREPARE --> RECEIVED_FULFIL : Fulfil callback from Payee with status "COMMITTED" \n [Fulfil handler]: <i>fulfilment & dupl.check passed</i>
 RECEIVED_FULFIL --> COMMITTED : Transfer committed [Position handler] \n <i>(commit funds, assign T. to settlement window)</i>
