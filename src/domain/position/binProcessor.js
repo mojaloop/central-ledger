@@ -105,7 +105,7 @@ const processBins = async (bins, trx) => {
       array2.every((element) => array1.includes(element))
     // If non-prepare/non-commit action found, log error
     // We need to remove this once we implement all the actions
-    if (!isSubset([Enum.Events.Event.Action.PREPARE, Enum.Events.Event.Action.FX_PREPARE, Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE], actions)) {
+    if (!isSubset([Enum.Events.Event.Action.PREPARE, Enum.Events.Event.Action.FX_PREPARE, Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE, Enum.Events.Event.Action.FX_RESERVE], actions)) {
       Logger.isErrorEnabled && Logger.error('Only prepare/fx-prepare/commit actions are allowed in a batch')
     }
 
