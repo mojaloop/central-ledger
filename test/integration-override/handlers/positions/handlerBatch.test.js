@@ -691,7 +691,7 @@ const prepareTestData = async (dataObj) => {
     for (let i = 0; i < dataObj.transfers.length; i++) {
       const payer = payerList[i % payerList.length]
       const payee = payeeList[i % payeeList.length]
-      const fxp = fxpList.length > 0 ?  fxpList[i % fxpList.length] : payee
+      const fxp = fxpList.length > 0 ? fxpList[i % fxpList.length] : payee
 
       const transferPayload = {
         transferId: randomUUID(),
