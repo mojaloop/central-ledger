@@ -294,6 +294,11 @@ const testFxData = {
     number: 1,
     limit: 1000
   },
+  fxp: {
+    name: 'testFxp',
+    number: 1,
+    limit: 1000
+  },
   endpoint: {
     base: 'http://localhost:1080',
     email: 'test@example.com'
@@ -604,6 +609,7 @@ const prepareTestData = async (dataObj) => {
   try {
     const payerList = []
     const payeeList = []
+    const fxpList = []
 
     // Create Payers
     for (let i = 0; i < dataObj.payer.number; i++) {
@@ -650,11 +656,42 @@ const prepareTestData = async (dataObj) => {
       payeeList.push(payee)
     }
 
+    // Create FXPs
+
+    if (dataObj.fxp) {
+      for (let i = 0; i < dataObj.fxp.number; i++) {
+        // Create payer
+        const fxp = await ParticipantHelper.prepareData(dataObj.fxp.name, dataObj.currencies[0], dataObj.currencies[1])
+        // limit,initial position and funds in
+        fxp.payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
+          currency: dataObj.currencies[0],
+          limit: { value: dataObj.fxp.limit }
+        })
+        fxp.payerLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
+          currency: dataObj.currencies[1],
+          limit: { value: dataObj.fxp.limit }
+        })
+        await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyId2, {
+          currency: dataObj.currencies[0],
+          amount: dataObj.fxp.fundsIn
+        })
+        await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyIdSecondary2, {
+          currency: dataObj.currencies[1],
+          amount: dataObj.fxp.fundsIn
+        })
+        // endpoint setup
+        await _endpointSetup(fxp.participant.name, dataObj.endpoint.base)
+
+        fxpList.push(fxp)
+      }
+    }
+
     // Create payloads for number of transfers
     const transfersArray = []
     for (let i = 0; i < dataObj.transfers.length; i++) {
       const payer = payerList[i % payerList.length]
       const payee = payeeList[i % payeeList.length]
+      const fxp = fxpList.length > 0 ?  fxpList[i % fxpList.length] : payee
 
       const transferPayload = {
         transferId: randomUUID(),
@@ -685,7 +722,7 @@ const prepareTestData = async (dataObj) => {
         commitRequestId: randomUUID(),
         determiningTransferId: randomUUID(),
         initiatingFsp: payer.participant.name,
-        counterPartyFsp: payee.participant.name,
+        counterPartyFsp: fxp.participant.name,
         sourceAmount: {
           currency: dataObj.transfers[i].amount.currency,
           amount: dataObj.transfers[i].amount.amount.toString()
@@ -698,14 +735,28 @@ const prepareTestData = async (dataObj) => {
         expiration: dataObj.expiration
       }
 
+      const fxFulfilPayload = {
+        fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
+        completedTimestamp: dataObj.now,
+        conversionState: 'RESERVED',
+        extensionList: {
+          extension: []
+        }
+      }
+
       const prepareHeaders = {
         'fspiop-source': payer.participant.name,
-        'fspiop-destination': payee.participant.name,
+        'fspiop-destination': fxp.participant.name,
         'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
       }
       const fxPrepareHeaders = {
         'fspiop-source': payer.participant.name,
-        'fspiop-destination': payee.participant.name,
+        'fspiop-destination': fxp.participant.name,
+        'content-type': 'application/vnd.interoperability.fxtransfers+json;version=2.0'
+      }
+      const fxFulfilHeaders = {
+        'fspiop-source': fxp.participant.name,
+        'fspiop-destination': payer.participant.name,
         'content-type': 'application/vnd.interoperability.fxtransfers+json;version=2.0'
       }
       const fulfilAbortRejectHeaders = {
@@ -771,6 +822,17 @@ const prepareTestData = async (dataObj) => {
       messageProtocolFxPrepare.metadata.event.type = TransferEventType.PREPARE
       messageProtocolFxPrepare.metadata.event.action = TransferEventAction.FX_PREPARE
 
+      const messageProtocolFxFulfil = Util.clone(messageProtocolPrepare)
+      messageProtocolFxFulfil.id = randomUUID()
+      messageProtocolFxFulfil.from = fxTransferPayload.counterPartyFsp
+      messageProtocolFxFulfil.to = fxTransferPayload.initiatingFsp
+      messageProtocolFxFulfil.content.headers = fxFulfilHeaders
+      messageProtocolFxFulfil.content.uriParams = { id: fxTransferPayload.commitRequestId }
+      messageProtocolFxFulfil.content.payload = fxFulfilPayload
+      messageProtocolFxFulfil.metadata.event.id = randomUUID()
+      messageProtocolFxFulfil.metadata.event.type = TransferEventType.FULFIL
+      messageProtocolFxFulfil.metadata.event.action = TransferEventAction.FX_RESERVE
+
       const messageProtocolFulfil = Util.clone(messageProtocolPrepare)
       messageProtocolFulfil.id = randomUUID()
       messageProtocolFulfil.from = transferPayload.payeeFsp
@@ -816,8 +878,10 @@ const prepareTestData = async (dataObj) => {
         messageProtocolError,
         messageProtocolFulfilReserved,
         messageProtocolFxPrepare,
+        messageProtocolFxFulfil,
         payer,
-        payee
+        payee,
+        fxp
       })
     }
     const topicConfTransferPrepare = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.PREPARE)
@@ -825,6 +889,7 @@ const prepareTestData = async (dataObj) => {
     return {
       payerList,
       payeeList,
+      fxpList,
       topicConfTransferPrepare,
       topicConfTransferFulfil,
       transfersArray
@@ -1194,12 +1259,12 @@ Test('Handlers test', async handlersTest => {
       test.equal(initiatingFspCurrentPositionForTargetCurrency.value, initiatingFspExpectedPositionForTargetCurrency, 'Initiating FSP position not changed for Target Currency')
 
       // Check that CounterParty FSP position is only updated by sum of transfers relevant to the source currency
-      const counterPartyFspCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payee.participantCurrencyId) || {}
+      const counterPartyFspCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyId) || {}
       const counterPartyFspExpectedPositionForSourceCurrency = 0
       test.equal(counterPartyFspCurrentPositionForSourceCurrency.value, counterPartyFspExpectedPositionForSourceCurrency, 'CounterParty FSP position not changed for Source Currency')
 
       // Check that CounterParty FSP position is not updated for target currency
-      const counterPartyFspCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payee.participantCurrencyIdSecondary) || {}
+      const counterPartyFspCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyIdSecondary) || {}
       const counterPartyFspExpectedPositionForTargetCurrency = 0
       test.equal(counterPartyFspCurrentPositionForTargetCurrency.value, counterPartyFspExpectedPositionForTargetCurrency, 'CounterParty FSP position not changed for Target Currency')
 
@@ -1222,17 +1287,12 @@ Test('Handlers test', async handlersTest => {
       // Construct test data for 10 transfers / fxTransfers.
       const td = await prepareTestData(testFxData)
 
-      // Construct mixed messages array
-      const mixedMessagesArray = []
+      // Produce prepare and fx prepare messages
       for (const transfer of td.transfersArray) {
-        mixedMessagesArray.push(transfer.messageProtocolPrepare)
-        mixedMessagesArray.push(transfer.messageProtocolFxPrepare)
+        await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+        await Producer.produceMessage(transfer.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
 
-      // Produce prepare and fx prepare messages
-      for (const message of mixedMessagesArray) {
-        await Producer.produceMessage(message, td.topicConfTransferPrepare, prepareConfig)
-      }
       await new Promise(resolve => setTimeout(resolve, 5000))
       // Consume messages from notification topic
       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
@@ -1262,15 +1322,15 @@ Test('Handlers test', async handlersTest => {
       const payerExpectedPositionForTargetCurrency = 0
       test.equal(payerCurrentPositionForTargetCurrency.value, payerExpectedPositionForTargetCurrency, 'Payer / Initiating FSP position not changed for Target Currency')
 
-      // Check that payee / CounterParty FSP position is only updated by sum of transfers relevant to the source currency
-      const payeeCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payee.participantCurrencyId) || {}
-      const payeeExpectedPositionForSourceCurrency = 0
-      test.equal(payeeCurrentPositionForSourceCurrency.value, payeeExpectedPositionForSourceCurrency, 'Payee / CounterParty FSP position not changed for Source Currency')
+      // Check that FXP position is only updated by sum of transfers relevant to the source currency
+      const fxpCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyId) || {}
+      const fxpExpectedPositionForSourceCurrency = 0
+      test.equal(fxpCurrentPositionForSourceCurrency.value, fxpExpectedPositionForSourceCurrency, 'FXP position not changed for Source Currency')
 
       // Check that payee / CounterParty FSP position is not updated for target currency
-      const payeeCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payee.participantCurrencyIdSecondary) || {}
-      const payeeExpectedPositionForTargetCurrency = 0
-      test.equal(payeeCurrentPositionForTargetCurrency.value, payeeExpectedPositionForTargetCurrency, 'Payee / CounterParty FSP position not changed for Target Currency')
+      const fxpCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyIdSecondary) || {}
+      const fxpExpectedPositionForTargetCurrency = 0
+      test.equal(fxpCurrentPositionForTargetCurrency.value, fxpExpectedPositionForTargetCurrency, 'FXP position not changed for Target Currency')
 
       // Check that the transfer state for transfers is RESERVED
       try {
@@ -1528,6 +1588,99 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      testConsumer.clearEvents()
+      test.end()
+    })
+    await transferPositionPrepare.test('process batch of fx prepare/ fx reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+      // Construct test data for 10 transfers. Default object contains 10 transfers.
+      const td = await prepareTestData(testFxData)
+
+      // Produce prepare messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const positionFxPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-prepare'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+        // filter positionPrepare messages where destination is not Hub
+        const positionFxPrepareFiltered = positionFxPrepare.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionFxPrepareFiltered.length, 10, 'Notification Messages received for all 10 fx transfers')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      // Check that payer / initiating FSP position is only updated by sum of transfers relevant to the source currency
+      const payerCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
+      const payerExpectedPositionForSourceCurrency = td.transfersArray.reduce((acc, tdTest) => acc + Number(tdTest.fxTransferPayload.sourceAmount.amount), 0)
+      test.equal(payerCurrentPositionForSourceCurrency.value, payerExpectedPositionForSourceCurrency, 'Payer / Initiating FSP position increases for Source Currency')
+
+      // Check that payer / initiating FSP position is not updated for target currency
+      const payerCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      const payerExpectedPositionForTargetCurrency = 0
+      test.equal(payerCurrentPositionForTargetCurrency.value, payerExpectedPositionForTargetCurrency, 'Payer / Initiating FSP position not changed for Target Currency')
+
+      // Check that FXP position is only updated by sum of transfers relevant to the source currency
+      const fxpCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyId) || {}
+      const fxpExpectedPositionForSourceCurrency = 0
+      test.equal(fxpCurrentPositionForSourceCurrency.value, fxpExpectedPositionForSourceCurrency, 'FXP position not changed for Source Currency')
+
+      // Check that FXP position is not updated for target currency
+      const fxpCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyIdSecondary) || {}
+      const fxpExpectedPositionForTargetCurrency = 0
+      test.equal(fxpCurrentPositionForTargetCurrency.value, fxpExpectedPositionForTargetCurrency, 'FXP position not changed for Target Currency')
+
+      // Check that the fx transfer state for fxTransfers is RESERVED
+      try {
+        for (const tdTest of td.transfersArray) {
+          const fxTransfer = await FxTransferModel.getByIdLight(tdTest.fxTransferPayload.commitRequestId) || {}
+          test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED, 'FX Transfer state updated to RESERVED')
+        }
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+
+      // Produce fx fulfil messages for transfersArray
+      for (const transfer of td.transfersArray) {
+        await Producer.produceMessage(transfer.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-reserve'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+        // filter positionFxFulfil messages where destination is not Hub
+        const positionFxFulfilFiltered = positionFxFulfil.filter((notification) => notification.to !== 'Hub')
+        test.equal(positionFxFulfilFiltered.length, 10, 'Notification Messages received for all 10 transfers')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Check that payer / initiating FSP position is not updated for source currency
+      const payerCurrentPositionForSourceCurrencyAfterFxFulfil = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
+      test.equal(payerCurrentPositionForSourceCurrencyAfterFxFulfil.value, payerExpectedPositionForSourceCurrency, 'Payer / Initiating FSP position not changed for Source Currency')
+
+      // Check that payer / initiating FSP position is not updated for target currency
+      const payerCurrentPositionForTargetCurrencyAfterFxFulfil = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
+      test.equal(payerCurrentPositionForTargetCurrencyAfterFxFulfil.value, payerExpectedPositionForTargetCurrency, 'Payer / Initiating FSP position not changed for Target Currency')
+
+      // Check that FXP position is only updated by sum of transfers relevant to the source currency
+      const fxpCurrentPositionForSourceCurrencyAfterFxFulfil = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyId) || {}
+      test.equal(fxpCurrentPositionForSourceCurrencyAfterFxFulfil.value, fxpExpectedPositionForSourceCurrency, 'FXP position not changed for Source Currency')
+
+      // Check that FXP position is not updated for target currency
+      const fxpCurrentPositionForTargetCurrencyAfterFxFulfil = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyIdSecondary) || {}
+      test.equal(fxpCurrentPositionForTargetCurrencyAfterFxFulfil.value, fxpExpectedPositionForTargetCurrency, 'FXP position not changed for Target Currency')
+
       testConsumer.clearEvents()
       test.end()
     })
