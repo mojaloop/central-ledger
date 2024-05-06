@@ -10,6 +10,8 @@ state RESERVED_ {
   }
   state RECEIVED_FULFIL {
   }
+  state RECEIVED_FULFIL_DEPENDENT {
+  }
   state RESERVED_TIMEOUT {
   }
   state RECEIVED_REJECT {
@@ -36,6 +38,9 @@ state ABORTED {
   }
 }
 
+RECEIVED_FULFIL_DEPENDENT : only FX-transfer
+RECEIVED_FULFIL : only transfer
+
 [*] --> RECEIVED_PREPARE : Transfer Prepare Request [Prepare handler] \n <i>(validation & dupl.check passed)</i>
 [*] --> INVALID : Validation failed \n [Prepare handler]
 RECEIVED_PREPARE --> RESERVED : [Position handler]: Liquidity check passed, \n funds reserved
@@ -52,6 +57,10 @@ RESERVED --> RECEIVED_FULFIL : Fulfil callback from Payee \n with status "COMMIT
 RESERVED --> RECEIVED_ERROR : Fulfil callback from Payee fails validation\n [Fulfil handler]
 RESERVED --> RESERVED_TIMEOUT : Timeout handler
 RESERVED_TIMEOUT --> EXPIRED_RESERVED : Hub aborts T. due to being EXPIRED
+
+RESERVED --> RECEIVED_FULFIL_DEPENDENT : Recieved FX transfer fulfilment
+RECEIVED_FULFIL_DEPENDENT --> COMMITTED : Dependant transfer committed [Position handler] \n <i>(commit funds, assign T. to settlement window)</i>
+RECEIVED_FULFIL_DEPENDENT --> RESERVED_TIMEOUT : Dependant transfer is timed out
 
 COMMITTED --> [*]
 ABORTED --> [*]
