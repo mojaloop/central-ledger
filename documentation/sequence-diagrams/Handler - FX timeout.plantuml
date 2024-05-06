@@ -102,9 +102,7 @@ end
 deactivate toh
 deactivate toh
 
-
-
-autonumber 8
+autonumber 17
 topicNE o-> nh : consume <i>notification</i>\n message
 activate nh
 nh -> payer : send error <i>notification</i>\n callback to <i>payer</i>
