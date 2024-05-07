@@ -278,7 +278,7 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
   switch (action) {
     case TransferEventAction.FX_COMMIT:
     case TransferEventAction.FX_RESERVE:
-      state = TransferInternalState.RECEIVED_FULFIL
+      state = TransferInternalState.RECEIVED_FULFIL_DEPENDENT
       // extensionList = payload && payload.extensionList
       isFulfilment = true
       break
