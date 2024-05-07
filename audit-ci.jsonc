@@ -26,6 +26,5 @@
   "GHSA-f5x3-32g6-xq36", //  https://github.com/advisories/GHSA-f5x3-32g6-xq36
   "GHSA-cgfm-xwp7-2cvr", // https://github.com/advisories/GHSA-cgfm-xwp7-2cvr
   "GHSA-ghr5-ch3p-vcr6"  // https://github.com/advisories/GHSA-ghr5-ch3p-vcr6
-
   ]
 }
