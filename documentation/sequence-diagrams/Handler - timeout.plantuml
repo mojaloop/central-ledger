@@ -1,0 +1,81 @@
+@startuml
+title Transfer Timeout-Handler Flow  \n(current impl.)
+
+autonumber
+hide footbox
+skinparam ParticipantPadding 10
+
+box "Central Services" #MistyRose
+participant "Timeout \n handler <i>(cron)</i>"      as toh
+participant "Position \n handler"                   as ph
+database    "central-ledger\nDB"                    as clDb
+end box
+box Kafka
+queue       "topic-\n transfer-position"            as topicTP
+queue       "topic-\n notification-event"           as topicNE
+end box
+box "ML API Adapter Services" #LightBlue
+participant "Notification \n handler"               as nh
+end box
+actor       "DFSP_1 \n<i>Payer</i>"                 as payer
+actor       "DFSP_2 \n<i>Payee</i>"                 as payee
+
+toh --> toh : run on cronTime\n <i>HANDLERS_TIMEOUT_TIMEXP</i>
+activate toh
+toh --> toh : cleanup transferTimeout (<b>TT<b>)
+note right : <b>TT</b> innerJoin <b>TSC</b>\n where TSC.transferStateId in [...]
+activate toh
+autonumber 2.1
+toh -> clDb : delete from <b>TT</b> by <i>ttIdList</i>
+note right :  table: <b>TT</b> (transferTimeout)
+deactivate toh
+
+autonumber 3
+toh -> clDb : get <i>segmentId, intervalMin, intervalMax</i>
+note right : tables:\n <b>segment</b>,\n <b>TSC</b> (transferStateChange)
+
+toh --> toh : update timeoutExpireReserved and get <i>expiredTransfers</i>
+activate toh
+autonumber 6.1
+toh -> clDb : Insert <i>expirationDate<i> into <b>TT</b>\n for transfers in [<i>intervalMin, ... intervalMax</i>]
+note right : table: <b>TT</b>
+toh -> clDb : Insert <i>EXPIRED_PREPARED</i> into <b>TSC</b> for <i>RECEIVED_PREPARE</i> state
+note right : table: <b>TSC</b>
+toh -> clDb : Insert <i>RESERVED_TIMEOUT</i> into <b>TSC</b> for <i>RESERVED</i> state
+note right : table: <b>TSC</b>
+toh -> clDb : Insert <i>error info</i> into <b>transferError  (TE)</b>
+note right : table: <b>TE</b>
+toh -> clDb : get <i>expired</i> transfers details from <b>TT</b>
+note right : <b>TT</b> <i>innerJoin</i> other tables
+deactivate toh
+
+autonumber 7
+toh --> toh : for each expiredTransfer
+activate toh
+alt state === EXPIRED_PREPARED
+autonumber 7.1
+toh ->o topicNE : produce <i>notification timeout-received</i> message
+else state === RESERVED_TIMEOUT
+autonumber 7.1
+toh ->o topicTP : produce <i>position timeout-reserved</i> message
+end
+deactivate toh
+deactivate toh
+
+autonumber 8
+topicNE o-> nh : consume <i>notification</i>\n message
+activate nh
+nh -> payer : send <i>notification</i>\n callback to <i>payer</i>
+deactivate nh
+
+topicTP o-> ph : consume <i>position timeout</i>\n message
+activate ph
+ph --> ph : process <i>position timeout</i>
+ph ->o topicNE
+deactivate ph
+topicNE o-> nh : consume <i>notification</i>\n message
+activate nh
+nh -> payee : send <i>notification</i>\n callback to <i>payee</i>
+deactivate nh
+
+@enduml
