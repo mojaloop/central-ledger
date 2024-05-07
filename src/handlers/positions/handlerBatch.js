@@ -154,6 +154,24 @@ const positions = async (error, messages) => {
       const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
       await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
     }
+
+    // Loop through followup messages and produce position messages for further processing of the transfer
+    for (const item of result.followupMessages) {
+      // Produce position message and audit message
+      const action = item.binItem.message?.value.metadata.event.action
+      const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
+      await Kafka.produceGeneralMessage(
+        Config.KAFKA_CONFIG,
+        Producer,
+        Enum.Events.Event.Type.POSITION,
+        action,
+        item.message,
+        eventStatus,
+        item.messageKey,
+        item.binItem.span,
+        Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+      )
+    }
     histTimerEnd({ success: true })
   } catch (err) {
     // If Bin Processor returns failure

@@ -149,6 +149,16 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     { type: Type.TRANSFER, action: Action.POSITION },
     { type: Type.TRANSFER, action: Action.FULFIL }
   ])
+  const batchTopicConfig = {
+    topicName: TOPICS.transferPositionBatch,
+    config: Util.Kafka.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.CONSUMER,
+      Enum.Events.Event.Type.TRANSFER.toUpperCase(),
+      Enum.Events.Event.Action.POSITION.toUpperCase()
+    )
+  }
+  testConsumer.handlers.push(batchTopicConfig)
   await testConsumer.startListening()
   await new Promise(resolve => setTimeout(resolve, 5_000))
   testConsumer.clearEvents()
@@ -187,10 +197,10 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.ok(isTriggered, 'test is triggered')
 
     const messages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-      topicFilter: TOPICS.transferPosition,
+      topicFilter: TOPICS.transferPositionBatch,
       action: Action.FX_RESERVE
     }))
-    t.ok(messages[0], `Message is sent to ${TOPICS.transferPosition}`)
+    t.ok(messages[0], `Message is sent to ${TOPICS.transferPositionBatch}`)
     const { from, to, content } = messages[0].value
     t.equal(from, FXP)
     t.equal(to, DFSP_1)

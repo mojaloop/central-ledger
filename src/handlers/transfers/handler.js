@@ -508,6 +508,15 @@ const processFulfilMessage = async (message, functionality, span) => {
     case TransferEventAction.COMMIT:
     case TransferEventAction.RESERVE:
     case TransferEventAction.BULK_COMMIT: {
+      let topicNameOverride
+      if (action === TransferEventAction.COMMIT) {
+        topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+      } else if (action === TransferEventAction.RESERVE) {
+        topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.RESERVE
+      } else if (action === TransferEventAction.BULK_COMMIT) {
+        topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.BULK_COMMIT
+      }
+
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
       await TransferService.handlePayeeResponse(transferId, payload, action)
       const eventDetail = { functionality: TransferEventType.POSITION, action }
@@ -521,7 +530,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         }
         if (cyrilResult.positionChanges.length > 0) {
           const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: participantCurrencyId.toString() })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: participantCurrencyId.toString(), topicNameOverride })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         } else {
           histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -529,14 +538,6 @@ const processFulfilMessage = async (message, functionality, span) => {
           throw fspiopError
         }
       } else {
-        let topicNameOverride
-        if (action === TransferEventAction.COMMIT) {
-          topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
-        } else if (action === TransferEventAction.RESERVE) {
-          topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.RESERVE
-        } else if (action === TransferEventAction.BULK_COMMIT) {
-          topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.BULK_COMMIT
-        }
         const payeeAccount = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: payeeAccount.participantCurrencyId.toString(), topicNameOverride })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
