@@ -66,10 +66,10 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
-const debug = process?.env?.skip_INT_DEBUG || false
-// const rebalanceDelay = process?.env?.skip_INT_REBALANCE_DELAY || 10000
-const retryDelay = process?.env?.skip_INT_RETRY_DELAY || 2
-const retryCount = process?.env?.skip_INT_RETRY_COUNT || 40
+const debug = process?.env?.test_INT_DEBUG || false
+// const rebalanceDelay = process?.env?.test_INT_REBALANCE_DELAY || 10000
+const retryDelay = process?.env?.test_INT_RETRY_DELAY || 2
+const retryCount = process?.env?.test_INT_RETRY_COUNT || 40
 const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
@@ -986,7 +986,7 @@ Test('Handlers test', async handlersTest => {
     prepareConfig.logger = Logger
     fulfilConfig.logger = Logger
 
-    await transferPositionPrepare.skip('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testData)
 
@@ -1047,7 +1047,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataLimitExceeded)
 
@@ -1088,7 +1088,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataLimitNoLiquidity)
 
@@ -1130,7 +1130,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataMixedWithLimitExceeded)
 
@@ -1186,7 +1186,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of transfers with mixed currencies', async (test) => {
+    await transferPositionPrepare.test('process batch of transfers with mixed currencies', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataWithMixedCurrencies)
 
@@ -1229,7 +1229,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of fxtransfers', async (test) => {
+    await transferPositionPrepare.test('process batch of fxtransfers', async (test) => {
       // Construct test data for 10 fxTransfers.
       const td = await prepareTestData(testFxData)
 
@@ -1283,7 +1283,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of transfers and fxtransfers', async (test) => {
+    await transferPositionPrepare.test('process batch of transfers and fxtransfers', async (test) => {
       // Construct test data for 10 transfers / fxTransfers.
       const td = await prepareTestData(testFxData)
 
@@ -1358,7 +1358,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of prepare/commit messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+    await transferPositionPrepare.test('process batch of prepare/commit messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testData)
 
@@ -1475,7 +1475,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of prepare/reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+    await transferPositionPrepare.test('process batch of prepare/reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testData)
 
@@ -1592,7 +1592,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of fx prepare/ fx reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+    await transferPositionPrepare.test('process batch of fx prepare/ fx reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testFxData)
 
@@ -1841,7 +1841,7 @@ Test('Handlers test', async handlersTest => {
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
-        console.log(`handlers.skip.js finished in (${elapsedTime}s)`)
+        console.log(`handlers.test.js finished in (${elapsedTime}s)`)
       }
 
       assert.end()

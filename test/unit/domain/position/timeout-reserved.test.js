@@ -28,7 +28,6 @@ const Test = require('tapes')(require('tape'))
 const { Enum } = require('@mojaloop/central-services-shared')
 const Sinon = require('sinon')
 const { processPositionTimeoutReservedBin } = require('../../../../src/domain/position/timeout-reserved')
-const Logger = require('@mojaloop/central-services-logger')
 
 const timeoutMessage1 = {
   value: {
