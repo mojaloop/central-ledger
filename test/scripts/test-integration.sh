@@ -60,6 +60,8 @@ echo "Starting Service in the background"
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE='topic-transfer-position-batch'
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT='topic-transfer-position-batch'
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE='topic-transfer-position-batch'
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED='topic-transfer-position-batch'
+
 npm start > ./test/results/cl-service-override.log &
 ## Store PID for cleanup
 echo $! > /tmp/int-test-service.pid
@@ -69,6 +71,7 @@ echo $! > /tmp/int-test-handler.pid
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE
+unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED
 
 PID1=$(cat /tmp/int-test-service.pid)
 echo "Service started with Process ID=$PID1"

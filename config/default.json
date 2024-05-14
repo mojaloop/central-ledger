@@ -91,7 +91,8 @@
         "BULK_PREPARE": null,
         "COMMIT": null,
         "BULK_COMMIT": null,
-        "RESERVE": null
+        "RESERVE": null,
+        "TIMEOUT_RESERVED": null
       }
     },
     "TOPIC_TEMPLATES": {
