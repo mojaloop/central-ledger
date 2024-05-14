@@ -1807,7 +1807,6 @@ Test('Handlers test', async handlersTest => {
         // Arrange
         for (const payer of td.payerList) {
           const payerInitialPosition = payer.payerLimitAndInitialPosition.participantPosition.value
-          console.log(payerInitialPosition)
           // Act
           const payerPositionDidReset = async () => {
             const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(payer.participantCurrencyId)

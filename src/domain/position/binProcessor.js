@@ -150,10 +150,9 @@ const processBins = async (bins, trx) => {
     accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fxFulfilActionResult.accumulatedFxTransferStateChanges)
     notifyMessages = notifyMessages.concat(fxFulfilActionResult.notifyMessages)
 
-    console.log(accountBin)
     // If timeout-reserved action found then call processPositionTimeoutReserveBin function
     const timeoutReservedActionResult = await PositionTimeoutReservedDomain.processPositionTimeoutReservedBin(
-      [accountBin[Enum.Events.Event.Action.TIMEOUT_RESERVED]],
+      accountBin[Enum.Events.Event.Action.TIMEOUT_RESERVED],
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedTransferStates,

@@ -3,7 +3,6 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
-const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * @function processPositionTimeoutReservedBin
@@ -35,47 +34,44 @@ const processPositionTimeoutReservedBin = async (
   const accumulatedTransferStatesCopy = Object.assign({}, accumulatedTransferStates)
   const accumulatedFxTransferStatesCopy = Object.assign({}, accumulatedFxTransferStates)
   let runningPosition = new MLNumber(accumulatedPositionValue)
-
-  // Position RESERVED_TIMEOUT messages are keyed with payer account id.
+  // Position action RESERVED_TIMEOUT event messages are keyed with payer account id.
   // We need to revert the payer's position for the amount of the transfer.
   // We need to notify the payee of the timeout.
-  for (const binItems of timeoutReservedBins) {
-    if (binItems && binItems.length > 0) {
-      for (const binItem of binItems) {
-        Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::binItem: ${JSON.stringify(binItem.message.value)}`)
-        const transferId = binItem.message.value.content.uriParams.id
-        const payeeFsp = binItem.message.value.to
-        const transfer = binItem.decodedPayload
+  if (timeoutReservedBins && timeoutReservedBins.length > 0) {
+    for (const binItem of timeoutReservedBins) {
+      Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::binItem: ${JSON.stringify(binItem.message.value)}`)
+      const transferId = binItem.message.value.content.uriParams.id
+      const payeeFsp = binItem.message.value.to
+      const payerFsp = binItem.message.value.from
 
-        // If the transfer is not in `RESERVED_TIMEOUT`, a position timeout-reserved message was incorrectly published.
-        // i.e Something has gone extremely wrong.
-        if (accumulatedTransferStates[transferId] !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
-          throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
-        } else {
-          Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
-          Logger.isDebugEnabled && Logger.debug(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
+      // If the transfer is not in `RESERVED_TIMEOUT`, a position timeout-reserved message was incorrectly published.
+      // i.e Something has gone extremely wrong.
+      if (accumulatedTransferStates[transferId] !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
+      } else {
+        Logger.isDebugEnabled && Logger.debug(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
 
-          const transferAmount = transferInfoList[transferId].amount
+        const transferAmount = transferInfoList[transferId].amount
 
-          // Construct payee notification message
-          const resultMessage = _constructTimeoutReservedResultMessage(
-            binItem,
-            transferId,
-            payeeFsp
-          )
-          Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::resultMessage: ${JSON.stringify(resultMessage)}`)
+        // Construct payee notification message
+        const resultMessage = _constructTimeoutReservedResultMessage(
+          binItem,
+          transferId,
+          payeeFsp,
+          payerFsp
+        )
+        Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::resultMessage: ${JSON.stringify(resultMessage)}`)
 
-          // Revert payer's position for the amount of the transfer
-          const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
-            _handleParticipantPositionChange(runningPosition, transferAmount, transferId, accumulatedPositionReservedValue)
-          Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
-          runningPosition = updatedRunningPosition
-          binItem.result = { success: true }
-          participantPositionChanges.push(participantPositionChange)
-          transferStateChanges.push(transferStateChange)
-          accumulatedTransferStatesCopy[transferId] = transferStateId
-          resultMessages.push({ binItem, message: resultMessage })
-        }
+        // Revert payer's position for the amount of the transfer
+        const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
+          _handleParticipantPositionChange(runningPosition, transferAmount, transferId, accumulatedPositionReservedValue)
+        Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
+        runningPosition = updatedRunningPosition
+        binItem.result = { success: true }
+        participantPositionChanges.push(participantPositionChange)
+        transferStateChanges.push(transferStateChange)
+        accumulatedTransferStatesCopy[transferId] = transferStateId
+        resultMessages.push({ binItem, message: resultMessage })
       }
     }
   }
@@ -93,7 +89,12 @@ const processPositionTimeoutReservedBin = async (
   }
 }
 
-const _constructTimeoutReservedResultMessage = (binItem, transferId, payeeFsp) => {
+const _constructTimeoutReservedResultMessage = (binItem, transferId, payeeFsp, payerFsp) => {
+  const headers = { ...binItem.message.value.content.headers }
+  headers[Enum.Http.Headers.FSPIOP.DESTINATION] = payeeFsp
+  headers[Enum.Http.Headers.FSPIOP.SOURCE] = payerFsp
+  delete headers['content-length']
+
   // Create a FSPIOPError object for timeout payee notification
   const fspiopError = ErrorHandler.Factory.createFSPIOPError(
     ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED,
@@ -120,9 +121,9 @@ const _constructTimeoutReservedResultMessage = (binItem, transferId, payeeFsp) =
   const resultMessage = Utility.StreamingProtocol.createMessage(
     transferId,
     payeeFsp,
-    Enum.Http.Headers.FSPIOP.SWITCH.value,
+    payerFsp,
     metadata,
-    null, // Unsure what headers need to be passed here
+    headers, // Unsure what headers need to be passed here
     fspiopError,
     { id: transferId },
     'application/json'
