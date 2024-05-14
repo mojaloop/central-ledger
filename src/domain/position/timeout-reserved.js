@@ -91,11 +91,10 @@ const processPositionTimeoutReservedBin = async (
 }
 
 const _constructTimeoutReservedResultMessage = (binItem, transferId, payeeFsp, payerFsp) => {
-  const headers = { ...binItem.message.value.content.headers }
-  headers[Enum.Http.Headers.FSPIOP.DESTINATION] = payeeFsp
-  headers[Enum.Http.Headers.FSPIOP.SOURCE] = payerFsp
-  delete headers['content-length']
-
+  // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+  //            notify the payer and payee of the timeout.
+  //            As long as the `to` and `from` message values are the payer and payee,
+  //            and the action is `timeout-reserved`, the ml-api-adapter will notify both.
   // Create a FSPIOPError object for timeout payee notification
   const fspiopError = ErrorHandler.Factory.createFSPIOPError(
     ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED,
@@ -124,7 +123,7 @@ const _constructTimeoutReservedResultMessage = (binItem, transferId, payeeFsp, p
     payeeFsp,
     payerFsp,
     metadata,
-    headers, // Unsure what headers need to be passed here
+    binItem.message.value.content.headers, // Headers don't really matter here. ml-api-adapter will ignore them and create their own.
     fspiopError,
     { id: transferId },
     'application/json'
@@ -134,16 +133,11 @@ const _constructTimeoutReservedResultMessage = (binItem, transferId, payeeFsp, p
 }
 
 const _handleParticipantPositionChange = (runningPosition, transferAmount, transferId, accumulatedPositionReservedValue) => {
+  // NOTE: The transfer info amount is pulled from the payee records in a batch `SELECT` query.
+  //       And will have a negative value. We add that value to the payer's position
+  //       to revert the position for the amount of the transfer.
   const transferStateId = Enum.Transfers.TransferInternalState.EXPIRED_RESERVED
   // Revert payer's position for the amount of the transfer
-  // NOTE: We are pulling the transferAmount using
-  // const latestTransferInfoByTransferId = await BatchPositionModel.getTransferInfoList(
-  //   trx,
-  //   transferIdList,
-  //   Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
-  //   Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
-  // )
-  // Is it safe using this value of the payee even accounting for the negative value?
   const updatedRunningPosition = new MLNumber(runningPosition.add(transferAmount).toFixed(Config.AMOUNT.SCALE))
   Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::_handleParticipantPositionChange::updatedRunningPosition: ${updatedRunningPosition.toString()}`)
   Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::_handleParticipantPositionChange::transferAmount: ${transferAmount}`)
