@@ -1457,7 +1457,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
           let segmentId
           const intervalMin = 1
           const intervalMax = 10
-          const expectedResult = 1
+          const transferTimeoutListMock = 1
+          const fxTransferTimeoutListMock = undefined
+          const expectedResult = {
+            transferTimeoutList: transferTimeoutListMock,
+            fxTransferTimeoutList: fxTransferTimeoutListMock
+          }
 
           const knexStub = sandbox.stub()
           sandbox.stub(Db, 'getKnex').returns(knexStub)
@@ -1479,6 +1484,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
                     select: sandbox.stub()
                   })
                 })
+              }),
+              where: sandbox.stub().returns({
+                select: sandbox.stub()
               })
             })
           })
@@ -1502,6 +1510,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
                     as: sandbox.stub()
                   })
                 })
+              }),
+              innerJoin: sandbox.stub().returns({
+                innerJoin: sandbox.stub().returns({
+                  where: sandbox.stub().returns({
+                    whereIn: sandbox.stub().returns({
+                    })
+                  })
+                })
               })
             }),
             transacting: sandbox.stub().returns({
@@ -1518,10 +1534,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
                       innerJoin: sandbox.stub().returns({
                         innerJoin: sandbox.stub().returns({
                           innerJoin: sandbox.stub().returns({
+                            where: sandbox.stub().returns({ // This is for _getFxTransferTimeoutList
+                              select:  sandbox.stub()
+                            }),
                             leftJoin: sandbox.stub().returns({
                               where: sandbox.stub().returns({
                                 select: sandbox.stub().returns(
-                                  Promise.resolve(expectedResult)
+                                  Promise.resolve(transferTimeoutListMock)
                                 )
                               })
                             })
@@ -1537,7 +1556,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
           knexStub.raw = sandbox.stub()
           knexStub.from = sandbox.stub().returns({
             transacting: sandbox.stub().returns({
-              insert: sandbox.stub().callsArgOn(0, context)
+              insert: sandbox.stub().callsArgOn(0, context).returns({
+                onConflict: sandbox.stub().returns({
+                  merge: sandbox.stub()
+                })
+              })
             })
           })
 
@@ -1545,7 +1568,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
           try {
             segmentId = 0
             result = await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
-            test.equal(result, expectedResult, 'Expected result returned')
+            test.equal(result.transferTimeoutList, expectedResult.transferTimeoutList, 'Expected transferTimeoutList returned.')
+            test.equal(result.fxTransferTimeoutList, expectedResult.fxTransferTimeoutList, 'Expected fxTransferTimeoutList returned.')
           } catch (err) {
             Logger.error(`timeoutExpireReserved failed with error - ${err}`)
             test.fail()
@@ -1553,7 +1577,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
           try {
             segmentId = 1
             await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
-            test.equal(result, expectedResult, 'Expected result returned.')
+            test.equal(result.transferTimeoutList, expectedResult.transferTimeoutList, 'Expected transferTimeoutList returned.')
+            test.equal(result.fxTransferTimeoutList, expectedResult.fxTransferTimeoutList, 'Expected fxTransferTimeoutList returned.')
           } catch (err) {
             Logger.error(`timeoutExpireReserved failed with error - ${err}`)
             test.fail()

@@ -25,7 +25,22 @@ const logTransferError = async (id, errorCode, errorDescription) => {
   }
 }
 
+const getLatest = async () => {
+  try {
+    return await Db.from('fxTransferStateChange').query(async (builder) => {
+      return builder
+        .select('fxTransferStateChangeId')
+        .orderBy('fxTransferStateChangeId', 'desc')
+        .first()
+    })
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
 module.exports = {
   getByCommitRequestId,
-  logTransferError
+  logTransferError,
+  getLatest
 }

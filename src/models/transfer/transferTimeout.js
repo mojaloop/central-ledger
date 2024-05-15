@@ -63,6 +63,41 @@ const cleanup = async () => {
   }
 }
 
+const fxCleanup = async () => {
+  Logger.isDebugEnabled && Logger.debug('cleanup fxTransferTimeout')
+  try {
+    const knex = await Db.getKnex()
+
+    const ttIdList = await Db.from('fxTransferTimeout').query(async (builder) => {
+      const b = await builder
+        .whereIn('tsc.transferStateId', [`${TS.RECEIVED_FULFIL}`, `${TS.COMMITTED}`, `${TS.FAILED}`, `${TS.RESERVED_TIMEOUT}`,
+          `${TS.RECEIVED_REJECT}`, `${TS.EXPIRED_PREPARED}`, `${TS.EXPIRED_RESERVED}`, `${TS.ABORTED_REJECTED}`, `${TS.ABORTED_ERROR}`])
+        .innerJoin(
+          knex('fxTransferTimeout AS tt1')
+            .select('tsc1.commitRequestId')
+            .max('tsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
+            .innerJoin('fxTransferStateChange AS tsc1', 'tsc1.commitRequestId', 'tt1.commitRequestId')
+            .groupBy('tsc1.commitRequestId').as('ts'), 'ts.commitRequestId', 'fxTransferTimeout.commitRequestId'
+        )
+        .innerJoin('fxTransferStateChange AS tsc', 'tsc.fxTransferStateChangeId', 'ts.maxFxTransferStateChangeId')
+        .select('fxTransferTimeout.fxTransferTimeoutId')
+      return b
+    })
+
+    await Db.from('fxTransferTimeout').query(async (builder) => {
+      const b = await builder
+        .whereIn('fxTransferTimeout.fxTransferTimeoutId', ttIdList.map(elem => elem.transferTimeoutId))
+        .del()
+      return b
+    })
+    return ttIdList
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
 module.exports = {
-  cleanup
+  cleanup,
+  fxCleanup
 }

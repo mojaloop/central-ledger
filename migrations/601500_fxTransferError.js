@@ -28,7 +28,8 @@ exports.up = async (knex) => {
   return await knex.schema.hasTable('fxTransferError').then(function(exists) {
     if (!exists) {
       return knex.schema.createTable('fxTransferError', (t) => {
-        t.bigIncrements('fxTransferErrorId').primary().notNullable()
+        t.string('commitRequestId', 36).primary().notNullable()
+        t.foreign('commitRequestId').references('commitRequestId').inTable('fxTransferErrorDuplicateCheck')
         t.bigInteger('fxTransferStateChangeId').unsigned().notNullable()
         t.foreign('fxTransferStateChangeId').references('fxTransferStateChangeId').inTable('fxTransferStateChange')
         t.integer('errorCode').unsigned().notNullable()

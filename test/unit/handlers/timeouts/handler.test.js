@@ -66,7 +66,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
     const latestTransferStateChangeMock = {
       transferStateChangeId: 20
     }
-    const resultMock = [
+    const transferTimeoutListMock = [
       {
         transferId: randomUUID(),
         bulkTransferId: null,
@@ -116,11 +116,16 @@ Test('Timeout handler', TimeoutHandlerTest => {
         payerParticipantCurrencyId: 0
       }
     ]
+    const fxTransferTimeoutListMock = []
+    const resultMock = {
+      transferTimeoutList: transferTimeoutListMock,
+      fxTransferTimeoutList: fxTransferTimeoutListMock
+    }
     let expected = {
       cleanup: 1,
       intervalMin: 10,
       intervalMax: 20,
-      result: resultMock
+      ...resultMock
     }
 
     timeoutTest.test('perform timeout', async (test) => {
@@ -148,13 +153,17 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.getTimeoutSegment = sandbox.stub().returns(null)
       TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
-      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock[0])
+      const resultMock1 = {
+        transferTimeoutList: transferTimeoutListMock[0],
+        fxTransferTimeoutList: fxTransferTimeoutListMock
+      }
+      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock1)
       Utility.produceGeneralMessage = sandbox.stub()
       expected = {
         cleanup: 1,
         intervalMin: 0,
         intervalMax: 0,
-        result: resultMock[0]
+        ...resultMock1
       }
 
       const result = await TimeoutHandler.timeout()

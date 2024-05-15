@@ -31,6 +31,7 @@
 const SegmentModel = require('../../models/misc/segment')
 const TransferTimeoutModel = require('../../models/transfer/transferTimeout')
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
+const FxTransferStateChangeModel = require('../../models/fxTransfer/stateChange')
 const TransferFacade = require('../../models/transfer/facade')
 
 const getTimeoutSegment = async () => {
@@ -43,8 +44,23 @@ const getTimeoutSegment = async () => {
   return result
 }
 
+const getFxTimeoutSegment = async () => {
+  const params = {
+    segmentType: 'timeout',
+    enumeration: 0,
+    tableName: 'fxTransferStateChange'
+  }
+  const result = await SegmentModel.getByParams(params)
+  return result
+}
+
 const cleanupTransferTimeout = async () => {
   const result = await TransferTimeoutModel.cleanup()
+  return result
+}
+
+const cleanupFxTransferTimeout = async () => {
+  const result = await TransferTimeoutModel.fxCleanup()
   return result
 }
 
@@ -53,14 +69,26 @@ const getLatestTransferStateChange = async () => {
   return result
 }
 
-const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
-  const result = await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+const getLatestFxTransferStateChange = async () => {
+  const result = await FxTransferStateChangeModel.getLatest()
   return result
+}
+
+const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
+  return TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+}
+
+const fxTimeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
+  return TransferFacade.fxTimeoutExpireReserved(segmentId, intervalMin, intervalMax)
 }
 
 module.exports = {
   getTimeoutSegment,
+  getFxTimeoutSegment,
   cleanupTransferTimeout,
+  cleanupFxTransferTimeout,
   getLatestTransferStateChange,
-  timeoutExpireReserved
+  getLatestFxTransferStateChange,
+  timeoutExpireReserved,
+  fxTimeoutExpireReserved
 }
