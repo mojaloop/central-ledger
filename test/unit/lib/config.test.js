@@ -44,13 +44,12 @@ Test('Config should', configTest => {
 
   configTest.test('evaluate MONGODB_DISABLED to a boolean if a string', async function (test) {
     console.log(Defaults)
-    const DefaultsStub = { ...Defaults }
-    DefaultsStub.MONGODB.DISABLED = 'true'
     const Config = Proxyquire('../../../src/lib/config', {
-      '../../config/default.json': DefaultsStub
+      '../../config/default.json': { ...Defaults, MONGODB: { DISABLED: 'true', DEBUG: 'true' } }
     })
 
     test.ok(Config.MONGODB_DISABLED === true)
+    test.ok(Config.MONGODB_DEBUG === true)
     test.end()
   })
 
