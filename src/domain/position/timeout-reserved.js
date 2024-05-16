@@ -23,17 +23,13 @@ const processPositionTimeoutReservedBin = async (
   accumulatedPositionValue,
   accumulatedPositionReservedValue,
   accumulatedTransferStates,
-  accumulatedFxTransferStates,
-  transferInfoList,
-  reservedActionTransfers
+  transferInfoList
 ) => {
   const transferStateChanges = []
   const fxTransferStateChanges = []
   const participantPositionChanges = []
   const resultMessages = []
-  const followupMessages = []
   const accumulatedTransferStatesCopy = Object.assign({}, accumulatedTransferStates)
-  const accumulatedFxTransferStatesCopy = Object.assign({}, accumulatedFxTransferStates)
   let runningPosition = new MLNumber(accumulatedPositionValue)
   // Position action RESERVED_TIMEOUT event messages are keyed with payer account id.
   // We need to revert the payer's position for the amount of the transfer.
@@ -80,13 +76,11 @@ const processPositionTimeoutReservedBin = async (
   return {
     accumulatedPositionValue: runningPosition.toNumber(),
     accumulatedTransferStates: accumulatedTransferStatesCopy, // finalized transfer state after fulfil processing
-    accumulatedFxTransferStates: accumulatedFxTransferStatesCopy, // finalized transfer state after fx fulfil processing
     accumulatedPositionReservedValue, // not used but kept for consistency
     accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
     accumulatedFxTransferStateChanges: fxTransferStateChanges, // fx-transfer state changes to be persisted in order
     accumulatedPositionChanges: participantPositionChanges, // participant position changes to be persisted in order
-    notifyMessages: resultMessages, // array of objects containing bin item and result message. {binItem, message}
-    followupMessages // array of objects containing bin item, message key and followup message. {binItem, messageKey, message}
+    notifyMessages: resultMessages // array of objects containing bin item and result message. {binItem, message}
   }
 }
 

@@ -212,9 +212,7 @@ Test('timeout reserved domain', positionIndexTest => {
             'd6a036a5-65a3-48af-a0c7-ee089c412ada': 'INVALID_STATE',
             '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': 'INVALID_STATE'
           },
-          {},
-          {},
-          null
+          {}
         )
         test.fail('Error not thrown')
       } catch (e) {
@@ -232,7 +230,6 @@ Test('timeout reserved domain', positionIndexTest => {
           'd6a036a5-65a3-48af-a0c7-ee089c412ada': Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT,
           '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
         },
-        {},
         {
           'd6a036a5-65a3-48af-a0c7-ee089c412ada': {
             amount: -10
@@ -240,8 +237,7 @@ Test('timeout reserved domain', positionIndexTest => {
           '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': {
             amount: -5
           }
-        },
-        null
+        }
       )
       test.equal(processedMessages.notifyMessages.length, 2)
 
