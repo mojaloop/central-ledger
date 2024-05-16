@@ -38,6 +38,7 @@ const PositionFxPrepareDomain = require('./fx-prepare')
 const PositionFulfilDomain = require('./fulfil')
 const PositionFxFulfilDomain = require('./fx-fulfil')
 const PositionTimeoutReservedDomain = require('./timeout-reserved')
+const PositionFxTimeoutReservedDomain = require('./fx-timeout-reserved')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -88,6 +89,14 @@ const processBins = async (bins, trx) => {
     Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
   )
 
+  const latestInitiatingFxTransferInfoByFxCommitRequestId = await BatchPositionModel.getFxTransferInfoList(
+    trx,
+    commitRequestIdList,
+    Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP,
+    Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
+  )
+
+
   // Pre fetch transfers for all reserve action fulfils
   const reservedActionTransfers = await BatchPositionModel.getTransferByIdsForReserve(
     trx,
@@ -137,6 +146,28 @@ const processBins = async (bins, trx) => {
     let accumulatedFxTransferStateChanges = []
     let accumulatedPositionChanges = []
 
+    // If timeout-reserved action found then call processPositionTimeoutReserveBin function
+    const fxTimeoutReservedActionResult = await PositionFxTimeoutReservedDomain.processPositionFxTimeoutReservedBin(
+      accountBin[Enum.Events.Event.Action.FX_TIMEOUT_RESERVED],
+      accumulatedPositionValue,
+      accumulatedPositionReservedValue,
+      accumulatedTransferStates,
+      accumulatedFxTransferStates,
+      latestInitiatingFxTransferInfoByFxCommitRequestId,
+    )
+
+    // Update accumulated values
+    accumulatedPositionValue = fxTimeoutReservedActionResult.accumulatedPositionValue
+    accumulatedPositionReservedValue = fxTimeoutReservedActionResult.accumulatedPositionReservedValue
+    accumulatedTransferStates = fxTimeoutReservedActionResult.accumulatedTransferStates
+    accumulatedFxTransferStates = fxTimeoutReservedActionResult.accumulatedFxTransferStates
+
+    // Append accumulated arrays
+    accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(fxTimeoutReservedActionResult.accumulatedTransferStateChanges)
+    accumulatedPositionChanges = accumulatedPositionChanges.concat(fxTimeoutReservedActionResult.accumulatedPositionChanges)
+    notifyMessages = notifyMessages.concat(fxTimeoutReservedActionResult.notifyMessages)
+
+
     // If fulfil action found then call processPositionPrepareBin function
     // We don't need to change the position for FX transfers. All the position changes happen when actual transfer is done
     const fxFulfilActionResult = await PositionFxFulfilDomain.processPositionFxFulfilBin(
@@ -156,22 +187,17 @@ const processBins = async (bins, trx) => {
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
-      accumulatedFxTransferStates,
       latestTransferInfoByTransferId,
-      reservedActionTransfers
     )
 
     // Update accumulated values
     accumulatedPositionValue = timeoutReservedActionResult.accumulatedPositionValue
     accumulatedPositionReservedValue = timeoutReservedActionResult.accumulatedPositionReservedValue
     accumulatedTransferStates = timeoutReservedActionResult.accumulatedTransferStates
-    accumulatedFxTransferStates = timeoutReservedActionResult.accumulatedFxTransferStates
     // Append accumulated arrays
     accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(timeoutReservedActionResult.accumulatedTransferStateChanges)
-    accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(timeoutReservedActionResult.accumulatedFxTransferStateChanges)
     accumulatedPositionChanges = accumulatedPositionChanges.concat(timeoutReservedActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(timeoutReservedActionResult.notifyMessages)
-    followupMessages = followupMessages.concat(timeoutReservedActionResult.followupMessages)
 
     // If fulfil action found then call processPositionPrepareBin function
     const fulfilActionResult = await PositionFulfilDomain.processPositionFulfilBin(
@@ -335,6 +361,8 @@ const _getTransferIdList = async (bins) => {
     } else if (action === Enum.Events.Event.Action.FX_PREPARE) {
       commitRequestIdList.push(item.decodedPayload.commitRequestId)
     } else if (action === Enum.Events.Event.Action.FX_RESERVE) {
+      commitRequestIdList.push(item.message.value.content.uriParams.id)
+    } else if (action === Enum.Events.Event.Action.FX_TIMEOUT_RESERVED) {
       commitRequestIdList.push(item.message.value.content.uriParams.id)
     }
   })

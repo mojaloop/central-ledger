@@ -211,6 +211,32 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
   return {}
 }
 
+const getFxTransferInfoList = async (trx, commitRequestId, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
+  try {
+    const knex = await Db.getKnex()
+    const transferInfos = await knex('fxTransferParticipant')
+      .transacting(trx)
+      .where({
+        'fxTransferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
+        'fxTransferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
+      })
+      .whereIn('fxTransferParticipant.commitRequestId', commitRequestId)
+      .select(
+        'fxTransferParticipant.*'
+      )
+    const info = {}
+    // This should key the transfer info with the latest transferStateChangeId
+    for (const transferInfo of transferInfos) {
+      if (!(transferInfo.transferId in info)) {
+        info[transferInfo.transferId] = transferInfo
+      }
+    }
+    return info
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
 module.exports = {
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
@@ -222,5 +248,6 @@ module.exports = {
   bulkInsertParticipantPositionChanges,
   getAllParticipantCurrency,
   getTransferInfoList,
-  getTransferByIdsForReserve
+  getTransferByIdsForReserve,
+  getFxTransferInfoList
 }
