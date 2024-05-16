@@ -89,7 +89,7 @@ const positions = async (error, messages) => {
   // Iterate through consumedMessages
   const bins = {}
   const lastPerPartition = {}
-  for (const message of consumedMessages) {
+  await Promise.all(consumedMessages.map(message => {
     const histTimerMsgEnd = Metrics.getHistogram(
       'transfer_position',
       'Process a prepare transfer message',
@@ -126,8 +126,8 @@ const positions = async (error, messages) => {
       lastPerPartition[message.partition] = message
     }
 
-    await span.audit(message, EventSdk.AuditEventAction.start)
-  }
+    return span.audit(message, EventSdk.AuditEventAction.start)
+  }))
 
   // Start DB Transaction
   const trx = await BatchPositionModel.startDbTransaction()
@@ -148,12 +148,12 @@ const positions = async (error, messages) => {
     await trx.commit()
 
     // Loop through results and produce notification messages and audit messages
-    for (const item of result.notifyMessages) {
+    await Promise.all(result.notifyMessages.map(item => {
       // Produce notification message and audit message
       const action = item.binItem.message?.value.metadata.event.action
       const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
-      await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
-    }
+      return Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
+    }))
     histTimerEnd({ success: true })
   } catch (err) {
     // If Bin Processor returns failure
