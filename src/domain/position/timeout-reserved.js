@@ -26,7 +26,6 @@ const processPositionTimeoutReservedBin = async (
   transferInfoList
 ) => {
   const transferStateChanges = []
-  const fxTransferStateChanges = []
   const participantPositionChanges = []
   const resultMessages = []
   const accumulatedTransferStatesCopy = Object.assign({}, accumulatedTransferStates)
@@ -78,7 +77,6 @@ const processPositionTimeoutReservedBin = async (
     accumulatedTransferStates: accumulatedTransferStatesCopy, // finalized transfer state after fulfil processing
     accumulatedPositionReservedValue, // not used but kept for consistency
     accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
-    accumulatedFxTransferStateChanges: fxTransferStateChanges, // fx-transfer state changes to be persisted in order
     accumulatedPositionChanges: participantPositionChanges, // participant position changes to be persisted in order
     notifyMessages: resultMessages // array of objects containing bin item and result message. {binItem, message}
   }
