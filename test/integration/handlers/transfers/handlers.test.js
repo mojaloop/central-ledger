@@ -27,7 +27,6 @@
 
 const Test = require('tape')
 const { randomUUID } = require('crypto')
-const retry = require('async-retry')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
 const Time = require('@mojaloop/central-services-shared').Util.Time
@@ -1004,14 +1003,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1044,14 +1044,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1103,14 +1104,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1141,14 +1143,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1179,14 +1182,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#3 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1218,14 +1222,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferInternalState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#4 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1257,14 +1262,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#5 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1304,14 +1310,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#6 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1366,20 +1373,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        const retryTimeoutOpts = {
-          retries: Number(retryOpts.retries) * 2,
-          minTimeout: retryOpts.minTimeout,
-          maxTimeout: retryOpts.maxTimeout
-        }
-
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`#7   Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryTimeoutOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
