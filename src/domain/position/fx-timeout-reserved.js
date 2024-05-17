@@ -24,7 +24,7 @@ const processPositionFxTimeoutReservedBin = async (
   accumulatedPositionReservedValue,
   accumulatedTransferStates,
   accumulatedFxTransferStates,
-  latestInitiatingFxTransferInfoByFxCommitRequestId,
+  latestInitiatingFxTransferInfoByFxCommitRequestId
 ) => {
   const transferStateChanges = []
   const fxTransferStateChanges = []
@@ -64,7 +64,7 @@ const processPositionFxTimeoutReservedBin = async (
 
         // Revert payer's position for the amount of the transfer
         const { participantPositionChange, fxTransferStateChange, transferStateId, updatedRunningPosition } =
-          _handleParticipantPositionChange(runningPosition, transferAmount, transferId, accumulatedPositionReservedValue)
+          _handleParticipantPositionChange(runningPosition, transferAmount, commitRequestId, accumulatedPositionReservedValue)
         Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
         runningPosition = updatedRunningPosition
         binItem.result = { success: true }
@@ -89,7 +89,7 @@ const processPositionFxTimeoutReservedBin = async (
   }
 }
 
-const _constructFxTimeoutReservedResultMessage = (binItem, transferId, payeeFsp, payerFsp) => {
+const _constructFxTimeoutReservedResultMessage = (binItem, transferId, fxp, payerFsp) => {
   // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
   //            notify the payer and payee of the timeout.
   //            As long as the `to` and `from` message values are the payer and payee,

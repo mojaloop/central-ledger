@@ -96,7 +96,6 @@ const processBins = async (bins, trx) => {
     Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
   )
 
-
   // Pre fetch transfers for all reserve action fulfils
   const reservedActionTransfers = await BatchPositionModel.getTransferByIdsForReserve(
     trx,
@@ -153,7 +152,7 @@ const processBins = async (bins, trx) => {
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
       accumulatedFxTransferStates,
-      latestInitiatingFxTransferInfoByFxCommitRequestId,
+      latestInitiatingFxTransferInfoByFxCommitRequestId
     )
 
     // Update accumulated values
@@ -166,7 +165,6 @@ const processBins = async (bins, trx) => {
     accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(fxTimeoutReservedActionResult.accumulatedTransferStateChanges)
     accumulatedPositionChanges = accumulatedPositionChanges.concat(fxTimeoutReservedActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(fxTimeoutReservedActionResult.notifyMessages)
-
 
     // If fulfil action found then call processPositionPrepareBin function
     // We don't need to change the position for FX transfers. All the position changes happen when actual transfer is done
@@ -187,7 +185,7 @@ const processBins = async (bins, trx) => {
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
-      latestTransferInfoByTransferId,
+      latestTransferInfoByTransferId
     )
 
     // Update accumulated values

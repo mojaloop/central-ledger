@@ -23,7 +23,7 @@ const processPositionTimeoutReservedBin = async (
   accumulatedPositionValue,
   accumulatedPositionReservedValue,
   accumulatedTransferStates,
-  transferInfoList,
+  transferInfoList
 ) => {
   const transferStateChanges = []
   const participantPositionChanges = []
@@ -79,7 +79,7 @@ const processPositionTimeoutReservedBin = async (
     accumulatedPositionReservedValue, // not used but kept for consistency
     accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
     accumulatedPositionChanges: participantPositionChanges, // participant position changes to be persisted in order
-    notifyMessages: resultMessages, // array of objects containing bin item and result message. {binItem, message}
+    notifyMessages: resultMessages // array of objects containing bin item and result message. {binItem, message}
   }
 }
 
