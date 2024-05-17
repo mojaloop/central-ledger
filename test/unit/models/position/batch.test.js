@@ -555,5 +555,36 @@ Test('Batch model', async (positionBatchTest) => {
     }
   })
 
+  await positionBatchTest.test('getFxTransferInfoList', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        transacting: sandbox.stub().returns({
+          where: sandbox.stub().returns({
+            whereIn: sandbox.stub().returns({
+              select: sandbox.stub().returns([{ commitRequestId: 1 }, { commitRequestId: 2 }, { commitRequestId: 2 }])
+            })
+          })
+        })
+      })
+
+      await Model.getFxTransferInfoList(trxStub, [1, 2], 3, 4)
+      test.pass('completed successfully')
+      test.ok(knexStub.withArgs('fxTransferParticipant').calledOnce, 'knex called with fxTransferParticipant once')
+      test.end()
+    } catch (err) {
+      Logger.error(`getFxTransferInfoList failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
   positionBatchTest.end()
 })

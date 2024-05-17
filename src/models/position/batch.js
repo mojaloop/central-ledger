@@ -227,8 +227,8 @@ const getFxTransferInfoList = async (trx, commitRequestId, transferParticipantRo
     const info = {}
     // This should key the transfer info with the latest transferStateChangeId
     for (const transferInfo of transferInfos) {
-      if (!(transferInfo.transferId in info)) {
-        info[transferInfo.transferId] = transferInfo
+      if (!(transferInfo.commitRequestId in info)) {
+        info[transferInfo.commitRequestId] = transferInfo
       }
     }
     return info
