@@ -40,10 +40,10 @@ const timeoutMessage1 = {
       },
       headers: {
         accept: 'application/vnd.interoperability.transfers+json;version=1.0',
-        'fspiop-destination': 'perffsp1',
+        'fspiop-destination': 'perffsp2',
         'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.0',
         date: 'Tue, 14 May 2024 00:13:15 GMT',
-        'fspiop-source': 'switch'
+        'fspiop-source': 'perffsp1'
       },
       payload: {
         errorInformation: {
@@ -53,7 +53,7 @@ const timeoutMessage1 = {
             extension: [
               {
                 key: 'cause',
-                value: 'FSPIOPError at Object.createFSPIOPError (/home/kleyow/mojaloop/central-ledger/node_modules/@mojaloop/central-services-error-handling/src/factory.js:198:12) at CronJob.timeout (/home/kleyow/moj...'
+                value: 'FSPIOPError at Object.createFSPIOPError...'
               }
             ]
           }
@@ -113,10 +113,10 @@ const timeoutMessage2 = {
       },
       headers: {
         accept: 'application/vnd.interoperability.transfers+json;version=1.0',
-        'fspiop-destination': 'perffsp1',
+        'fspiop-destination': 'perffsp2',
         'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.0',
         date: 'Tue, 14 May 2024 00:13:15 GMT',
-        'fspiop-source': 'switch'
+        'fspiop-source': 'perffsp1'
       },
       payload: {
         errorInformation: {
@@ -126,7 +126,7 @@ const timeoutMessage2 = {
             extension: [
               {
                 key: 'cause',
-                value: 'FSPIOPError at Object.createFSPIOPError (/home/kleyow/mojaloop/central-ledger/node_modules/@mojaloop/central-services-error-handling/src/factory.js:198:12) at CronJob.timeout (/home/kleyow/moj...'
+                value: 'FSPIOPError at Object.createFSPIOPError...'
               }
             ]
           }
@@ -201,7 +201,7 @@ Test('timeout reserved domain', positionIndexTest => {
     t.end()
   })
 
-  positionIndexTest.skip('processPositionTimeoutReservedBin should', changeParticipantPositionTest => {
+  positionIndexTest.test('processPositionTimeoutReservedBin should', changeParticipantPositionTest => {
     changeParticipantPositionTest.test('produce abort message for transfers not in the right transfer state', async (test) => {
       try {
         await processPositionTimeoutReservedBin(
