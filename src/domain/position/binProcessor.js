@@ -168,7 +168,6 @@ const processBins = async (bins, trx) => {
       accountBin[Enum.Events.Event.Action.FX_TIMEOUT_RESERVED],
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
-      accumulatedTransferStates,
       accumulatedFxTransferStates,
       latestInitiatingFxTransferInfoByFxCommitRequestId
     )
@@ -176,11 +175,9 @@ const processBins = async (bins, trx) => {
     // Update accumulated values
     accumulatedPositionValue = fxTimeoutReservedActionResult.accumulatedPositionValue
     accumulatedPositionReservedValue = fxTimeoutReservedActionResult.accumulatedPositionReservedValue
-    accumulatedTransferStates = fxTimeoutReservedActionResult.accumulatedTransferStates
     accumulatedFxTransferStates = fxTimeoutReservedActionResult.accumulatedFxTransferStates
-
     // Append accumulated arrays
-    accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(fxTimeoutReservedActionResult.accumulatedTransferStateChanges)
+    accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fxTimeoutReservedActionResult.accumulatedFxTransferStateChanges)
     accumulatedPositionChanges = accumulatedPositionChanges.concat(fxTimeoutReservedActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(fxTimeoutReservedActionResult.notifyMessages)
 

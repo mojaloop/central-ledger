@@ -14,24 +14,20 @@ const Logger = require('@mojaloop/central-services-logger')
  * @param {array} fxTimeoutReservedBins - an array containing timeout-reserved action bins
  * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
  * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
- * @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
+ * @param {object} accumulatedFxTransferStates - object with commitRequest id keys and fxTransfer state id values. Used to check if fxTransfer is in correct state for processing. Clone and update states for output.
  * @param {object} transferInfoList - object with transfer id keys and transfer info values. Used to pass transfer info to domain function.
- * @returns {object} - Returns an object containing accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, accumulatedTransferStates, resultMessages, limitAlarms or throws an error if failed
+ * @returns {object} - Returns an object containing accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, accumulatedFxTransferStates, resultMessages, limitAlarms or throws an error if failed
  */
 const processPositionFxTimeoutReservedBin = async (
   fxTimeoutReservedBins,
   accumulatedPositionValue,
   accumulatedPositionReservedValue,
-  accumulatedTransferStates,
   accumulatedFxTransferStates,
   latestInitiatingFxTransferInfoByFxCommitRequestId
 ) => {
-  const transferStateChanges = []
   const fxTransferStateChanges = []
   const participantPositionChanges = []
   const resultMessages = []
-  const followupMessages = []
-  const accumulatedTransferStatesCopy = Object.assign({}, accumulatedTransferStates)
   const accumulatedFxTransferStatesCopy = Object.assign({}, accumulatedFxTransferStates)
   let runningPosition = new MLNumber(accumulatedPositionValue)
   // Position action FX_RESERVED_TIMEOUT event messages are keyed with payer account id.
@@ -49,7 +45,7 @@ const processPositionFxTimeoutReservedBin = async (
       if (accumulatedFxTransferStates[commitRequestId] !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
         throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
       } else {
-        Logger.isDebugEnabled && Logger.debug(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
+        Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates: ${JSON.stringify(accumulatedFxTransferStates)}`)
 
         const transferAmount = latestInitiatingFxTransferInfoByFxCommitRequestId[commitRequestId].amount
 
@@ -69,8 +65,8 @@ const processPositionFxTimeoutReservedBin = async (
         runningPosition = updatedRunningPosition
         binItem.result = { success: true }
         participantPositionChanges.push(participantPositionChange)
-        fxTransferStateChange.push(fxTransferStateChange)
-        accumulatedFxTransferStatesCopy[fxTransferStateChange] = transferStateId
+        fxTransferStateChanges.push(fxTransferStateChange)
+        accumulatedFxTransferStatesCopy[commitRequestId] = transferStateId
         resultMessages.push({ binItem, message: resultMessage })
       }
     }
@@ -78,14 +74,11 @@ const processPositionFxTimeoutReservedBin = async (
 
   return {
     accumulatedPositionValue: runningPosition.toNumber(),
-    accumulatedTransferStates: accumulatedTransferStatesCopy, // finalized transfer state after fulfil processing
     accumulatedFxTransferStates: accumulatedFxTransferStatesCopy, // finalized transfer state after fx fulfil processing
     accumulatedPositionReservedValue, // not used but kept for consistency
-    accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
     accumulatedFxTransferStateChanges: fxTransferStateChanges, // fx-transfer state changes to be persisted in order
     accumulatedPositionChanges: participantPositionChanges, // participant position changes to be persisted in order
-    notifyMessages: resultMessages, // array of objects containing bin item and result message. {binItem, message}
-    followupMessages // array of objects containing bin item, message key and followup message. {binItem, messageKey, message}
+    notifyMessages: resultMessages // array of objects containing bin item and result message. {binItem, message}
   }
 }
 
