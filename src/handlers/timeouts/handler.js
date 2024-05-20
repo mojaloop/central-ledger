@@ -46,7 +46,9 @@ const EventSdk = require('@mojaloop/event-sdk')
 const resourceVersions = require('@mojaloop/central-services-shared').Util.resourceVersions
 const Logger = require('@mojaloop/central-services-logger')
 let timeoutJob
+let fxTimeoutJob
 let isRegistered
+let isFxRegistered
 let running = false
 let fxRunning = false
 
@@ -247,6 +249,17 @@ const isRunning = async () => {
 }
 
 /**
+  * @function isFxRunning
+  *
+  * @description Function to determine if the fx-timeoutJob is running
+  *
+  * @returns {boolean} Returns true if the fx-timeoutJob is running
+  */
+const isFxRunning = async () => {
+  return isFxRegistered
+}
+
+/**
   * @function stop
   *
   * @description Function to stop the timeoutJob if running
@@ -257,6 +270,20 @@ const stop = async () => {
   if (isRegistered) {
     await timeoutJob.stop()
     isRegistered = undefined
+  }
+}
+
+/**
+  * @function stopFx
+  *
+  * @description Function to stop the fx-timeoutJob if running
+  *
+  * @returns {boolean} Returns true when the job is stopped
+  */
+const stopFx = async () => {
+  if (isFxRegistered) {
+    await fxTimeoutJob.stop()
+    isFxRegistered = undefined
   }
 }
 
@@ -290,6 +317,35 @@ const registerTimeoutHandler = async () => {
 }
 
 /**
+  * @function RegisterFxTimeoutHandlers
+  *
+  * @async
+  * @description Registers the fx-timeout handler by starting the timeoutJob cron
+  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+  */
+const registerFxTimeoutHandler = async () => {
+  try {
+    if (isFxRegistered) {
+      await stopFx()
+    }
+
+    fxTimeoutJob = CronJob.from({
+      cronTime: Config.HANDLERS_TIMEOUT_TIMEXP,
+      onTick: fxTimeout,
+      start: false,
+      timeZone: Config.HANDLERS_TIMEOUT_TIMEZONE
+    })
+    isFxRegistered = true
+
+    await fxTimeoutJob.start()
+    return true
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+/**
   * @function RegisterAllHandlers
   *
   * @async
@@ -301,6 +357,7 @@ const registerAllHandlers = async () => {
   try {
     if (!Config.HANDLERS_TIMEOUT_DISABLED) {
       await registerTimeoutHandler()
+      await registerFxTimeoutHandler()
     }
     return true
   } catch (err) {
@@ -314,6 +371,8 @@ module.exports = {
   fxTimeout,
   registerAllHandlers,
   registerTimeoutHandler,
+  registerFxTimeoutHandler,
   isRunning,
+  isFxRunning,
   stop
 }

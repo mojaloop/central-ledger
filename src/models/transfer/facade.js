@@ -724,6 +724,8 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
     .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantCurrencyId',
       'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
       'bta.bulkTransferId')
+
+  // TODO: Get all the participant position changes involved in the transfer using table participantPositionChange
 }
 
 const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
@@ -879,26 +881,38 @@ const fxTimeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
         await _processFxTimeoutEntries(knex, trx, transactionTimestamp)
         
         // Insert `transferTimeout` records for the related transfers, or update if exists. The expiration date will be of the fxTransfer and not from transfer
-        await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
-          .insert(function () {
-            this.from('fxTransfer AS ft')
-              .innerJoin(knex('fxTransferTimeout AS ftt')
-                .select('ftt.commitRequestId')
-                .innerJoin(knex('fxTransferStateChange AS ftsc1')
-                  .select('ftsc1.commitRequestId')
-                  .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
-                  .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
-                  .groupBy('ftsc1.commitRequestId').as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
+        await knex
+        .from(knex.raw('transferTimeout (transferId, expirationDate)'))
+        .transacting(trx)
+        .insert(function () {
+          this.from('fxTransfer AS ft')
+            .innerJoin(
+              knex('fxTransferTimeout AS ftt')
+                .select('ftt.commitRequestId', 'ftt.expirationDate')
+                .innerJoin(
+                  knex('fxTransferStateChange AS ftsc1')
+                    .select('ftsc1.commitRequestId')
+                    .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
+                    .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
+                    .groupBy('ftsc1.commitRequestId')
+                    .as('fts'),
+                  'fts.commitRequestId', 'ftt.commitRequestId'
                 )
                 .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
                 .where('ftt.expirationDate', '<', transactionTimestamp)
-                .whereIn('ftsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`, `${Enum.Transfers.TransferState.EXPIRED_PREPARED}`]) //TODO: need to check this for fx
+                .whereIn('ftsc.transferStateId', [
+                  `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
+                  `${Enum.Transfers.TransferState.EXPIRED_PREPARED}`
+                ]) //TODO: need to check this for fx
+                .as('ftt1'),
+                'ft.commitRequestId', 'ftt1.commitRequestId'
               )
-              .where('ft.determiningTransferId', 'ftt.transferId')
-              .select('ft.commitRequestId', 'tt.expirationDate')
+              .select('ft.determiningTransferId as transferId', 'ftt1.expirationDate')
           })
           .onConflict('commitRequestId')
-          .merge()
+          .merge({
+            expirationDate: knex.raw('VALUES(expirationDate)')
+          })
 
         await _processTimeoutEntries(knex, trx, transactionTimestamp)
 
