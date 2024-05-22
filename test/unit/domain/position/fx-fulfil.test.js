@@ -153,8 +153,8 @@ Test('Fx Fulfil domain', processPositionFxFulfilBinTest => {
 
   processPositionFxFulfilBinTest.test('should process a bin of position-commit messages', async (test) => {
     const accumulatedFxTransferStates = {
-      [fxTransferCallbackTestData1.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
-      [fxTransferCallbackTestData2.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
+      [fxTransferCallbackTestData1.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT,
+      [fxTransferCallbackTestData2.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT,
       [fxTransferCallbackTestData3.message.value.id]: 'INVALID_STATE'
     }
     // Call the function

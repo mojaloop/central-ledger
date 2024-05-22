@@ -668,6 +668,84 @@ module.exports = {
         },
         span: {}
       }
+    ],
+    'timeout-reserved': [
+      {
+        message: {
+          value: {
+            from: 'payerFsp69185571',
+            to: 'payeeFsp69186326',
+            id: '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5',
+            content: {
+              uriParams: {
+                id: '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5'
+              },
+              headers: {
+                accept: 'application/vnd.interoperability.transfers+json;version=1.0',
+                'FSPIOP-Destination': 'payerFsp69185571',
+                'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.0',
+                date: 'Tue, 14 May 2024 00:13:15 GMT',
+                'FSPIOP-Source': 'switch'
+              },
+              payload: {
+                errorInformation: {
+                  errorCode: '3303',
+                  errorDescription: 'Transfer expired',
+                  extensionList: {
+                    extension: [
+                      {
+                        key: 'cause',
+                        value: 'FSPIOPError at Object.createFSPIOPError (/home/kleyow/mojaloop/central-ledger/node_modules/@mojaloop/central-services-error-handling/src/factory.js:198:12) at CronJob.timeout (/home/kleyow/moj...'
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            type: 'application/vnd.interoperability.transfers+json;version=1.0',
+            metadata: {
+              correlationId: '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5',
+              event: {
+                type: 'position',
+                action: 'timeout-reserved',
+                createdAt: '2024-05-14T00:13:15.092Z',
+                state: {
+                  status: 'error',
+                  code: '3303',
+                  description: 'Transfer expired'
+                },
+                id: '1ef2f45c-f7a4-4b67-a0fc-7164ed43f0f1'
+              },
+              trace: {
+                service: 'cl_transfer_timeout',
+                traceId: 'de8e410463b73e45203fc916d68cf98c',
+                spanId: 'bb0abd2ea5fdfbbd',
+                startTimestamp: '2024-05-14T00:13:15.092Z',
+                tags: {
+                  tracestate: 'acmevendor=eyJzcGFuSWQiOiJiYjBhYmQyZWE1ZmRmYmJkIn0=',
+                  transactionType: 'transfer',
+                  transactionAction: 'timeout-received',
+                  source: 'switch',
+                  destination: 'payerFsp69185571'
+                },
+                tracestates: {
+                  acmevendor: {
+                    spanId: 'bb0abd2ea5fdfbbd'
+                  }
+                }
+              },
+              'protocol.createdAt': 1715645595093
+            }
+          },
+          size: 3489,
+          key: 51,
+          topic: 'topic-transfer-position',
+          offset: 4073,
+          partition: 0,
+          timestamp: 1694175690401
+        },
+        span: {}
+      }
     ]
   },
   15: {

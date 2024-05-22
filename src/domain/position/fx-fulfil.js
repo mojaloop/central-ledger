@@ -34,8 +34,9 @@ const processPositionFxFulfilBin = async (
       const fxTransfer = binItem.decodedPayload
       Logger.isDebugEnabled && Logger.debug(`processPositionFxFulfilBin::fxTransfer:processingMessage: ${JSON.stringify(fxTransfer)}`)
       Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates: ${JSON.stringify(accumulatedFxTransferStates)}`)
-      // Inform sender if transfer is not in RECEIVED_FULFIL state, skip making any transfer state changes
-      if (accumulatedFxTransferStates[commitRequestId] !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
+      Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates[commitRequestId]: ${accumulatedFxTransferStates[commitRequestId]}`)
+      // Inform sender if transfer is not in RECEIVED_FULFIL_DEPENDENT state, skip making any transfer state changes
+      if (accumulatedFxTransferStates[commitRequestId] !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT) {
         // forward same headers from the request, except the content-length header
         // set destination to counterPartyFsp and source to switch
         const headers = { ...binItem.message.value.content.headers }
@@ -48,7 +49,7 @@ const processPositionFxFulfilBin = async (
         reason = 'FxFulfil in incorrect state'
 
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
-          `Invalid State: ${accumulatedFxTransferStates[commitRequestId]} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`
+          `Invalid State: ${accumulatedFxTransferStates[commitRequestId]} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`
         ).toApiErrorObject(Config.ERROR_HANDLING)
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.FAILURE.status,
