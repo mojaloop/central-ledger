@@ -135,12 +135,29 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
         message.to = message.from
         message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
         // event & type set above when `const metadata` is initialized to NOTIFICATION / TIMEOUT_RECEIVED
-        await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state, null, span)
+        await Kafka.produceGeneralMessage(
+          Config.KAFKA_CONFIG, Producer,
+          Enum.Kafka.Topics.NOTIFICATION,
+          Enum.Events.Event.Action.TIMEOUT_RECEIVED,
+          message,
+          state,
+          null,
+          span
+        )
       } else if (fxTransferTimeoutList[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
         message.metadata.event.type = Enum.Events.Event.Type.POSITION
         message.metadata.event.action = Enum.Events.Event.Action.TIMEOUT_RESERVED
         // Key position timeouts with payer account id
-        await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, fxTransferTimeoutList[i].initiatingParticipantCurrencyId?.toString(), span)
+        await Kafka.produceGeneralMessage(
+          Config.KAFKA_CONFIG, Producer,
+          Enum.Kafka.Topics.POSITION,
+          Enum.Events.Event.Action.TIMEOUT_RESERVED,
+          message,
+          state,
+          fxTransferTimeoutList[i].initiatingParticipantCurrencyId?.toString(),
+          span,
+          Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.TIMEOUT_RESERVED
+        )
       }
     } catch (err) {
       Logger.isErrorEnabled && Logger.error(err)

@@ -29,7 +29,6 @@ exports.up = async (knex) => {
     if (!exists) {
       return knex.schema.createTable('fxTransferError', (t) => {
         t.string('commitRequestId', 36).primary().notNullable()
-        t.foreign('commitRequestId').references('commitRequestId').inTable('fxTransferErrorDuplicateCheck')
         t.bigInteger('fxTransferStateChangeId').unsigned().notNullable()
         t.foreign('fxTransferStateChangeId').references('fxTransferStateChangeId').inTable('fxTransferStateChange')
         t.integer('errorCode').unsigned().notNullable()

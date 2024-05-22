@@ -907,7 +907,26 @@ const fxTimeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
                 .as('ftt1'),
                 'ft.commitRequestId', 'ftt1.commitRequestId'
               )
-              .select('ft.determiningTransferId as transferId', 'ftt1.expirationDate')
+            .innerJoin(
+              knex('transferStateChange AS tsc')
+                .select('tsc.transferId')
+                .innerJoin(
+                  knex('transferStateChange AS tsc1')
+                    .select('tsc1.transferId')
+                    .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+                    .groupBy('tsc1.transferId')
+                    .as('ts'),
+                  'ts.transferId', 'tsc.transferId'
+                )
+                .whereRaw('tsc.transferStateChangeId = ts.maxTransferStateChangeId')
+                .whereIn('tsc.transferStateId', [
+                  `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
+                  `${Enum.Transfers.TransferState.EXPIRED_PREPARED}`
+                ])
+                .as('tt1'),
+                'ft.determiningTransferId', 'tt1.transferId'
+              )
+              .select('tt1.transferId', 'ftt1.expirationDate')
           })
           .onConflict('commitRequestId')
           .merge({
@@ -921,7 +940,7 @@ const fxTimeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
           const segment = {
             segmentType: 'timeout',
             enumeration: 0,
-            tableName: 'transferStateChange',
+            tableName: 'fxTransferStateChange',
             value: intervalMax
           }
           await knex('segment').transacting(trx).insert(segment)
