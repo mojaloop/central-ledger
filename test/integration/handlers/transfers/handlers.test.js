@@ -42,6 +42,7 @@ const ParticipantEndpointHelper = require('#test/integration/helpers/participant
 const SettlementHelper = require('#test/integration/helpers/settlementModels')
 const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
 const TransferService = require('#src/domain/transfer/index')
+const FxTransferModels = require('#src/models/fxTransfer/index')
 const ParticipantService = require('#src/domain/participant/index')
 const TransferExtensionModel = require('#src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
@@ -79,6 +80,7 @@ const retryOpts = {
   minTimeout: retryDelay,
   maxTimeout: retryDelay
 }
+const TOPIC_POSITION_BATCH = 'topic-transfer-position-batch'
 
 const testData = {
   amount: {
@@ -328,6 +330,10 @@ const testFxData = {
     name: 'payerFsp',
     limit: 5000
   },
+  payee: {
+    name: 'payeeFsp',
+    limit: 5000
+  },
   fxp: {
     name: 'fxp',
     limit: 3000
@@ -342,27 +348,41 @@ const testFxData = {
 
 const prepareFxTestData = async (dataObj) => {
   try {
-    const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.sourceAmount.currency)
-    const fxp = await ParticipantHelper.prepareData(dataObj.fxp.name, dataObj.sourceAmount.currency)
+    const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.sourceAmount.currency, dataObj.targetAmount.currency)
+    const fxp = await ParticipantHelper.prepareData(dataObj.fxp.name, dataObj.sourceAmount.currency, dataObj.targetAmount.currency)
+    const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.targetAmount.currency)
 
     const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.sourceAmount.currency,
       limit: { value: dataObj.payer.limit }
     })
-    const fxpLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
-      currency: dataObj.sourceAmount.currency,
-      limit: { value: dataObj.fxp.limit }
-    })
+    // Due to an issue with the participant currency validation, we need to create the target currency for payer for now
     await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.targetAmount.currency,
       limit: { value: dataObj.payer.limit }
     })
-    await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
+    const fxpLimitAndInitialPositionSourceCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
+      currency: dataObj.sourceAmount.currency,
+      limit: { value: dataObj.fxp.limit }
+    })
+    const fxpLimitAndInitialPositionTargetCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
       currency: dataObj.targetAmount.currency,
       limit: { value: dataObj.fxp.limit }
     })
+    const payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
+      currency: dataObj.targetAmount.currency,
+      limit: { value: dataObj.payee.limit }
+    })
     await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
       currency: dataObj.sourceAmount.currency,
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyId2, {
+      currency: dataObj.sourceAmount.currency,
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyIdSecondary2, {
+      currency: dataObj.targetAmount.currency,
       amount: 10000
     })
 
@@ -380,11 +400,13 @@ const prepareFxTestData = async (dataObj) => {
       await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}/error`)
     }
 
-    const transferPayload = {
+    const transferId = randomUUID()
+
+    const fxTransferPayload = {
       commitRequestId: randomUUID(),
-      determiningTransferId: randomUUID(),
+      determiningTransferId: transferId,
       condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-      expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)), // tomorrow
+      expiration: dataObj.expiration,
       initiatingFsp: payer.participant.name,
       counterPartyFsp: fxp.participant.name,
       sourceAmount: {
@@ -403,6 +425,38 @@ const prepareFxTestData = async (dataObj) => {
       'content-type': 'application/vnd.interoperability.fxTransfers+json;version=1.1'
     }
 
+
+    const transfer1Payload = {
+      transferId: transferId,
+      payerFsp: payer.participant.name,
+      payeeFsp: payee.participant.name,
+      amount: {
+        currency: dataObj.targetAmount.currency,
+        amount: dataObj.targetAmount.amount
+      },
+      ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
+      condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
+      expiration: dataObj.expiration,
+      extensionList: {
+        extension: [
+          {
+            key: 'key1',
+            value: 'value1'
+          },
+          {
+            key: 'key2',
+            value: 'value2'
+          }
+        ]
+      }
+    }
+
+    const prepare1Headers = {
+      'fspiop-source': payer.participant.name,
+      'fspiop-destination': payee.participant.name,
+      'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
+    }
+
     const errorPayload = ErrorHandler.Factory.createFSPIOPError(
       ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN
     ).toApiErrorObject()
@@ -415,12 +469,12 @@ const prepareFxTestData = async (dataObj) => {
 
     const messageProtocolPayerInitiatedConversionFxPrepare = {
       id: randomUUID(),
-      from: transferPayload.initiatingFsp,
-      to: transferPayload.counterPartyFsp,
+      from: fxTransferPayload.initiatingFsp,
+      to: fxTransferPayload.counterPartyFsp,
       type: 'application/json',
       content: {
         headers: fxPrepareHeaders,
-        payload: transferPayload
+        payload: fxTransferPayload
       },
       metadata: {
         event: {
@@ -436,21 +490,57 @@ const prepareFxTestData = async (dataObj) => {
       }
     }
 
+    const messageProtocolPrepare1 = {
+      id: randomUUID(),
+      from: transfer1Payload.payerFsp,
+      to: transfer1Payload.payeeFsp,
+      type: 'application/json',
+      content: {
+        headers: prepare1Headers,
+        payload: transfer1Payload
+      },
+      metadata: {
+        event: {
+          id: randomUUID(),
+          type: TransferEventAction.PREPARE,
+          action: TransferEventType.PREPARE,
+          createdAt: dataObj.now,
+          state: {
+            status: 'success',
+            code: 0
+          }
+        }
+      }
+    }
+
     const topicConfFxTransferPrepare = Utility.createGeneralTopicConf(
       Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
       TransferEventType.TRANSFER,
       TransferEventAction.PREPARE
     )
 
+    const topicConfTransferPrepare = Utility.createGeneralTopicConf(
+      Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+      TransferEventType.TRANSFER,
+      TransferEventType.PREPARE
+    )
+
+
     return {
-      transferPayload,
+      fxTransferPayload,
+      transfer1Payload,
       errorPayload,
       messageProtocolPayerInitiatedConversionFxPrepare,
+      messageProtocolPrepare1,
+      topicConfTransferPrepare,
       topicConfFxTransferPrepare,
       payer,
       payerLimitAndInitialPosition,
       fxp,
-      fxpLimitAndInitialPosition
+      fxpLimitAndInitialPositionSourceCurrency,
+      fxpLimitAndInitialPositionTargetCurrency,
+      payee,
+      payeeLimitAndInitialPosition
     }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -507,6 +597,15 @@ Test('Handlers test', async handlersTest => {
         Enum.Events.Event.Type.TRANSFER,
         Enum.Events.Event.Action.POSITION
       ),
+      config: Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.CONSUMER,
+        Enum.Events.Event.Type.TRANSFER.toUpperCase(),
+        Enum.Events.Event.Action.POSITION.toUpperCase()
+      )
+    },
+    {
+      topicName: TOPIC_POSITION_BATCH,
       config: Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.CONSUMER,
@@ -1345,7 +1444,8 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('timeout should', async timeoutTest => {
-    testData.expiration = new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
+    const expiration = new Date((new Date()).getTime() + (10 * 1000)) // 10 seconds
+    testData.expiration = expiration.toISOString()
     const td = await prepareTestData(testData)
 
     await timeoutTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
@@ -1450,8 +1550,8 @@ Test('Handlers test', async handlersTest => {
     await timeoutTest.test('transfer position timeout should be keyed with payer account id', async (test) => {
       try {
         const positionTimeout = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-          topicFilter: 'topic-transfer-position',
-          action: 'timeout-reserved',
+          topicFilter: TOPIC_POSITION_BATCH,
+          action: Enum.Events.Event.Action.TIMEOUT_RESERVED,
           keyFilter: td.payer.participantCurrencyId.toString()
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(positionTimeout[0], 'Position timeout message with key found')
@@ -1483,6 +1583,349 @@ Test('Handlers test', async handlersTest => {
     timeoutTest.end()
   })
 
+  await handlersTest.test('When only fxTransfer is sent, fxTimeout should', async timeoutTest => {
+    const expiration = new Date((new Date()).getTime() + (10 * 1000)) // 10 seconds
+    const newTestFxData = {
+      ...testFxData,
+      expiration: expiration.toISOString()
+    }
+    const td = await prepareFxTestData(newTestFxData)
+
+    await timeoutTest.test('update fxTransfer state to RESERVED by PREPARE request', async (test) => {
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventAction.PREPARE.toUpperCase()
+      )
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(
+        td.messageProtocolPayerInitiatedConversionFxPrepare,
+        td.topicConfFxTransferPrepare,
+        prepareConfig
+      )
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: TOPIC_POSITION_BATCH,
+          action: 'fx-prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      try {
+        await wrapWithRetries(async () => {
+          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+          if (fxTransfer?.transferState !== TransferInternalState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return fxTransfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    await timeoutTest.test('update fxTransfer after timeout with timeout status & error', async (test) => {
+      // Arrange
+      // Nothing to do here...
+
+      // Act
+
+      // Re-try function with conditions
+      const inspectTransferState = async () => {
+        try {
+          // Fetch FxTransfer record
+          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+
+          // Check Transfer for correct state
+          // if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
+          // TODO: Change the following line to the correct state when the timeout position is implemented
+          if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+            // We have a Transfer with the correct state, lets check if we can get the TransferError record
+            try {
+              // Fetch the TransferError record
+              const fxTransferError = await FxTransferModels.fxTransferError.getByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId)
+              // FxTransferError record found, so lets return it
+              return {
+                fxTransfer,
+                fxTransferError
+              }
+            } catch (err) {
+              // NO FxTransferError record found, so lets return the fxTransfer and the error
+              return {
+                fxTransfer,
+                err
+              }
+            }
+          } else {
+            // NO FxTransfer with the correct state was found, so we return false
+            return false
+          }
+        } catch (err) {
+          // NO FxTransfer with the correct state was found, so we return false
+          Logger.error(err)
+          return false
+        }
+      }
+
+      // wait until we inspect a fxTransfer with the correct status, or return false if all re-try attempts have failed
+      const result = await wrapWithRetries(inspectTransferState, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      // Assert
+      if (result === false) {
+        test.fail(`FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.end()
+      } else {
+        // test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        // TODO: Change the following line to the correct state when the timeout position is implemented
+        test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`)
+        test.equal(result.fxTransferError && result.fxTransferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
+        test.equal(result.fxTransferError && result.fxTransferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
+        test.pass()
+        test.end()
+      }
+    })
+
+    await timeoutTest.test('fxTransfer position timeout should be keyed with proper account id', async (test) => {
+      try {
+        const positionTimeout = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: TOPIC_POSITION_BATCH,
+          action: Enum.Events.Event.Action.TIMEOUT_RESERVED,
+          // TODO: Enable the following line when the fx-timeout position is implemented
+          // action: Enum.Events.Event.Action.FX_TIMEOUT_RESERVED,
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionTimeout[0], 'Position timeout message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      test.end()
+    })
+
+    // TODO: Enable the following test when the fx-timeout position is implemented
+    // await timeoutTest.test('position resets after a timeout', async (test) => {
+    //   // Arrange
+    //   const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+
+    //   // Act
+    //   const payerPositionDidReset = async () => {
+    //     const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
+    //     return payerCurrentPosition.value === payerInitialPosition
+    //   }
+    //   // wait until we know the position reset, or throw after 5 tries
+    //   await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+    //   const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+
+    //   // Assert
+    //   test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
+    //   test.end()
+    // })
+
+    timeoutTest.end()
+  })
+
+  await handlersTest.test('When fxTransfer followed by a transfer are sent, fxTimeout should', async timeoutTest => {
+    const td = await prepareFxTestData(testFxData)
+    // Modify expiration of only fxTransfer
+    const expiration = new Date((new Date()).getTime() + (10 * 1000)) // 10 seconds
+    td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.expiration = expiration.toISOString()
+
+    await timeoutTest.test('update fxTransfer state to RESERVED by PREPARE request', async (test) => {
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventAction.PREPARE.toUpperCase()
+      )
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(
+        td.messageProtocolPayerInitiatedConversionFxPrepare,
+        td.topicConfFxTransferPrepare,
+        prepareConfig
+      )
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: TOPIC_POSITION_BATCH,
+          action: 'fx-prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      try {
+        await wrapWithRetries(async () => {
+          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+          if (fxTransfer?.transferState !== TransferInternalState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return fxTransfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    await timeoutTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
+      const config = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      config.logger = Logger
+
+      const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare1, td.topicConfTransferPrepare, config)
+      Logger.info(producerResponse)
+
+      try {
+        await wrapWithRetries(async () => {
+          const transfer = await TransferService.getById(td.messageProtocolPrepare1.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    await timeoutTest.test('update fxTransfer after timeout with timeout status & error', async (test) => {
+      // Arrange
+      // Nothing to do here...
+
+      // Act
+
+      // Re-try function with conditions
+      const inspectTransferState = async () => {
+        try {
+          // Fetch FxTransfer record
+          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+
+          // Check Transfer for correct state
+          // if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
+          // TODO: Change the following line to the correct state when the timeout position is implemented
+          if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+            // We have a Transfer with the correct state, lets check if we can get the TransferError record
+            try {
+              // Fetch the TransferError record
+              const fxTransferError = await FxTransferModels.fxTransferError.getByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId)
+              // FxTransferError record found, so lets return it
+              return {
+                fxTransfer,
+                fxTransferError
+              }
+            } catch (err) {
+              // NO FxTransferError record found, so lets return the fxTransfer and the error
+              return {
+                fxTransfer,
+                err
+              }
+            }
+          } else {
+            // NO FxTransfer with the correct state was found, so we return false
+            return false
+          }
+        } catch (err) {
+          // NO FxTransfer with the correct state was found, so we return false
+          Logger.error(err)
+          return false
+        }
+      }
+
+      // wait until we inspect a fxTransfer with the correct status, or return false if all re-try attempts have failed
+      const result = await wrapWithRetries(inspectTransferState, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      // Assert
+      if (result === false) {
+        test.fail(`FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.end()
+      } else {
+        // test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        // TODO: Change the following line to the correct state when the timeout position is implemented
+        test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`)
+        test.equal(result.fxTransferError && result.fxTransferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
+        test.equal(result.fxTransferError && result.fxTransferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
+        test.pass()
+        test.end()
+      }
+    })
+
+    await timeoutTest.test('fxTransfer position timeout should be keyed with proper account id', async (test) => {
+      try {
+        const positionTimeout = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: TOPIC_POSITION_BATCH,
+          action: Enum.Events.Event.Action.TIMEOUT_RESERVED,
+          // TODO: Enable the following line when the fx-timeout position is implemented
+          // action: Enum.Events.Event.Action.FX_TIMEOUT_RESERVED,
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionTimeout[0], 'Position timeout message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      test.end()
+    })
+
+    await timeoutTest.test('transfer position timeout should be keyed with proper account id', async (test) => {
+      try {
+        const positionTimeout = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: TOPIC_POSITION_BATCH,
+          action: Enum.Events.Event.Action.TIMEOUT_RESERVED,
+          keyFilter: td.fxp.participantCurrencyIdSecondary.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionTimeout[0], 'Position timeout message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      test.end()
+    })
+
+    // TODO: Enable the following test when the fx-timeout position is implemented
+    // await timeoutTest.test('position resets after a timeout', async (test) => {
+    //   // Arrange
+    //   const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+
+    //   // Act
+    //   const payerPositionDidReset = async () => {
+    //     const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
+    //     return payerCurrentPosition.value === payerInitialPosition
+    //   }
+    //   // wait until we know the position reset, or throw after 5 tries
+    //   await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+    //   const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+
+    //   // Assert
+    //   test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
+    //   test.end()
+    // })
+
+    timeoutTest.end()
+  })
+
   await handlersTest.test('fxTransferPrepare should', async fxTransferPrepare => {
     await fxTransferPrepare.test('should handle payer initiated conversion fxTransfer', async (test) => {
       const td = await prepareFxTestData(testFxData)
@@ -1501,7 +1944,7 @@ Test('Handlers test', async handlersTest => {
 
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-          topicFilter: 'topic-transfer-position',
+          topicFilter: TOPIC_POSITION_BATCH,
           action: 'fx-prepare',
           keyFilter: td.payer.participantCurrencyId.toString()
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)

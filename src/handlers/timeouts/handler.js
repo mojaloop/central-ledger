@@ -46,11 +46,8 @@ const EventSdk = require('@mojaloop/event-sdk')
 const resourceVersions = require('@mojaloop/central-services-shared').Util.resourceVersions
 const Logger = require('@mojaloop/central-services-logger')
 let timeoutJob
-let fxTimeoutJob
 let isRegistered
-let isFxRegistered
 let running = false
-let fxRunning = false
 
 const _processTimedOutTransfers = async (transferTimeoutList) => {
   const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED).toApiErrorObject(Config.ERROR_HANDLING)
@@ -88,7 +85,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
             Enum.Events.Event.Action.TIMEOUT_RESERVED,
             message,
             state,
-            result[i].payerParticipantCurrencyId?.toString(),
+            transferTimeoutList[i].effectedParticipantCurrencyId?.toString(),
             span,
             Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.TIMEOUT_RESERVED
           )
@@ -162,9 +159,11 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
           Config.KAFKA_CONFIG, Producer,
           Enum.Kafka.Topics.POSITION,
           Enum.Events.Event.Action.TIMEOUT_RESERVED,
+          // TODO: Enable the following line when the fx-timeout position is implemented
+          // Enum.Events.Event.Action.FX_TIMEOUT_RESERVED,
           message,
           state,
-          fxTransferTimeoutList[i].initiatingParticipantCurrencyId?.toString(),
+          fxTransferTimeoutList[i].effectedParticipantCurrencyId?.toString(),
           span,
           Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.TIMEOUT_RESERVED
         )
@@ -205,14 +204,23 @@ const timeout = async () => {
     const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
     const cleanup = await TimeoutService.cleanupTransferTimeout()
     const latestTransferStateChange = await TimeoutService.getLatestTransferStateChange()
+    const fxTimeoutSegment = await TimeoutService.getFxTimeoutSegment()
     const intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
-    const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+    const fxIntervalMin = fxTimeoutSegment ? fxTimeoutSegment.value : 0
+    const fxSegmentId = fxTimeoutSegment ? fxTimeoutSegment.segmentId : 0
+    const fxCleanup = await TimeoutService.cleanupFxTransferTimeout()
+    const latestFxTransferStateChange = await TimeoutService.getLatestFxTransferStateChange()
+    const fxIntervalMax = (latestFxTransferStateChange && parseInt(latestFxTransferStateChange.fxTransferStateChangeId)) || 0
+    const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
     transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
     fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
     return {
       intervalMin,
       cleanup,
       intervalMax,
+      fxIntervalMin,
+      fxCleanup,
+      fxIntervalMax,
       transferTimeoutList,
       fxTransferTimeoutList
     }
@@ -224,45 +232,6 @@ const timeout = async () => {
   }
 }
 
-/**
-  * @function FxTransferTimeoutHandler
-  *
-  * @async
-  * @description This is the consumer callback function that gets registered to a cron job.
-  *
-  * ... called to validate/insert ...
-  *
-  * @param {error} error - error thrown if something fails within Cron
-  *
-  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
-  */
-const fxTimeout = async () => {
-  if (fxRunning) return
-  try {
-    fxRunning = true
-    const timeoutSegment = await TimeoutService.getFxTimeoutSegment()
-    const intervalMin = timeoutSegment ? timeoutSegment.value : 0
-    const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
-    const cleanup = await TimeoutService.cleanupTransferTimeout()
-    const latestFxTransferStateChange = await TimeoutService.getLatestFxTransferStateChange()
-    const intervalMax = (latestFxTransferStateChange && parseInt(latestFxTransferStateChange.fxTransferStateChangeId)) || 0
-    const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.fxTimeoutExpireReserved(segmentId, intervalMin, intervalMax)
-    fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
-    transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
-    return {
-      intervalMin,
-      cleanup,
-      intervalMax,
-      transferTimeoutList,
-      fxTransferTimeoutList
-    }
-  } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  } finally {
-    fxRunning = false
-  }
-}
 
 /**
   * @function isRunning
@@ -275,16 +244,6 @@ const isRunning = async () => {
   return isRegistered
 }
 
-/**
-  * @function isFxRunning
-  *
-  * @description Function to determine if the fx-timeoutJob is running
-  *
-  * @returns {boolean} Returns true if the fx-timeoutJob is running
-  */
-const isFxRunning = async () => {
-  return isFxRegistered
-}
 
 /**
   * @function stop
@@ -300,19 +259,6 @@ const stop = async () => {
   }
 }
 
-/**
-  * @function stopFx
-  *
-  * @description Function to stop the fx-timeoutJob if running
-  *
-  * @returns {boolean} Returns true when the job is stopped
-  */
-const stopFx = async () => {
-  if (isFxRegistered) {
-    await fxTimeoutJob.stop()
-    isFxRegistered = undefined
-  }
-}
 
 /**
   * @function RegisterTimeoutHandlers
@@ -343,34 +289,6 @@ const registerTimeoutHandler = async () => {
   }
 }
 
-/**
-  * @function RegisterFxTimeoutHandlers
-  *
-  * @async
-  * @description Registers the fx-timeout handler by starting the timeoutJob cron
-  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
-  */
-const registerFxTimeoutHandler = async () => {
-  try {
-    if (isFxRegistered) {
-      await stopFx()
-    }
-
-    fxTimeoutJob = CronJob.from({
-      cronTime: Config.HANDLERS_TIMEOUT_TIMEXP,
-      onTick: fxTimeout,
-      start: false,
-      timeZone: Config.HANDLERS_TIMEOUT_TIMEZONE
-    })
-    isFxRegistered = true
-
-    await fxTimeoutJob.start()
-    return true
-  } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
 
 /**
   * @function RegisterAllHandlers
@@ -384,7 +302,6 @@ const registerAllHandlers = async () => {
   try {
     if (!Config.HANDLERS_TIMEOUT_DISABLED) {
       await registerTimeoutHandler()
-      await registerFxTimeoutHandler()
     }
     return true
   } catch (err) {
@@ -395,11 +312,8 @@ const registerAllHandlers = async () => {
 
 module.exports = {
   timeout,
-  fxTimeout,
   registerAllHandlers,
   registerTimeoutHandler,
-  registerFxTimeoutHandler,
   isRunning,
-  isFxRunning,
   stop
 }

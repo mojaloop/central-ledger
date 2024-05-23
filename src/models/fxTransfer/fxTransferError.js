@@ -18,45 +18,30 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Vijaya Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
 'use strict'
 
+/**
+ * @module src/models/transfer/transferError/
+ */
+
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const Enum = require('@mojaloop/central-services-shared').Enum
-const TS = Enum.Transfers.TransferInternalState
 
-const cleanup = async () => {
-  Logger.isDebugEnabled && Logger.debug('cleanup transferTimeout')
+const getByCommitRequestId = async (id) => {
   try {
-    const knex = await Db.getKnex()
-
-    const ttIdList = await Db.from('transferTimeout').query(async (builder) => {
-      const b = await builder
-        .whereIn('tsc.transferStateId', [`${TS.RECEIVED_FULFIL}`, `${TS.COMMITTED}`, `${TS.FAILED}`, `${TS.RESERVED_TIMEOUT}`,
-          `${TS.RECEIVED_REJECT}`, `${TS.EXPIRED_PREPARED}`, `${TS.EXPIRED_RESERVED}`, `${TS.ABORTED_REJECTED}`, `${TS.ABORTED_ERROR}`])
-        .innerJoin(
-          knex('transferTimeout AS tt1')
-            .select('tsc1.transferId')
-            .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-            .innerJoin('transferStateChange AS tsc1', 'tsc1.transferId', 'tt1.transferId')
-            .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'transferTimeout.transferId'
-        )
-        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-        .select('transferTimeout.transferTimeoutId')
-      return b
+    const fxTransferError = await Db.from('fxTransferError').query(async (builder) => {
+      const result = builder
+        .where({ commitRequestId: id })
+        .select('*')
+        .first()
+      return result
     })
-
-    await Db.from('transferTimeout').query(async (builder) => {
-      const b = await builder
-        .whereIn('transferTimeout.transferTimeoutId', ttIdList.map(elem => elem.transferTimeoutId))
-        .del()
-      return b
-    })
-    return ttIdList
+    fxTransferError.errorCode = fxTransferError.errorCode.toString()
+    return fxTransferError
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -64,5 +49,5 @@ const cleanup = async () => {
 }
 
 module.exports = {
-  cleanup
+  getByCommitRequestId
 }

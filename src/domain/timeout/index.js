@@ -30,6 +30,7 @@
 
 const SegmentModel = require('../../models/misc/segment')
 const TransferTimeoutModel = require('../../models/transfer/transferTimeout')
+const FxTransferTimeoutModel = require('../../models/fxTransfer/fxTransferTimeout')
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
 const FxTransferStateChangeModel = require('../../models/fxTransfer/stateChange')
 const TransferFacade = require('../../models/transfer/facade')
@@ -60,7 +61,7 @@ const cleanupTransferTimeout = async () => {
 }
 
 const cleanupFxTransferTimeout = async () => {
-  const result = await TransferTimeoutModel.fxCleanup()
+  const result = await FxTransferTimeoutModel.cleanup()
   return result
 }
 
@@ -74,8 +75,8 @@ const getLatestFxTransferStateChange = async () => {
   return result
 }
 
-const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
-  return TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
+  return TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
 }
 
 const fxTimeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {

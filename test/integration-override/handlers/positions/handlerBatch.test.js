@@ -40,7 +40,7 @@ const ParticipantEndpointHelper = require('#test/integration/helpers/participant
 const SettlementHelper = require('#test/integration/helpers/settlementModels')
 const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
 const TransferService = require('#src/domain/transfer/index')
-const FxTransferModel = require('#src/models/fxTransfer/fxTransfer')
+const FxTransferModels = require('#src/models/fxTransfer/index')
 const ParticipantService = require('#src/domain/participant/index')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -1271,7 +1271,7 @@ Test('Handlers test', async handlersTest => {
       // Check that the fx transfer state for fxTransfers is RESERVED
       try {
         for (const tdTest of td.transfersArray) {
-          const fxTransfer = await FxTransferModel.getByIdLight(tdTest.fxTransferPayload.commitRequestId) || {}
+          const fxTransfer = await FxTransferModels.fxTransfer.getByIdLight(tdTest.fxTransferPayload.commitRequestId) || {}
           test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED, 'FX Transfer state updated to RESERVED')
         }
       } catch (err) {
@@ -1346,7 +1346,7 @@ Test('Handlers test', async handlersTest => {
       // Check that the fx transfer state for fxTransfers is RESERVED
       try {
         for (const tdTest of td.transfersArray) {
-          const fxTransfer = await FxTransferModel.getByIdLight(tdTest.fxTransferPayload.commitRequestId) || {}
+          const fxTransfer = await FxTransferModels.fxTransfer.getByIdLight(tdTest.fxTransferPayload.commitRequestId) || {}
           test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED, 'FX Transfer state updated to RESERVED')
         }
       } catch (err) {
@@ -1637,7 +1637,7 @@ Test('Handlers test', async handlersTest => {
       // Check that the fx transfer state for fxTransfers is RESERVED
       try {
         for (const tdTest of td.transfersArray) {
-          const fxTransfer = await FxTransferModel.getByIdLight(tdTest.fxTransferPayload.commitRequestId) || {}
+          const fxTransfer = await FxTransferModels.fxTransfer.getByIdLight(tdTest.fxTransferPayload.commitRequestId) || {}
           test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED, 'FX Transfer state updated to RESERVED')
         }
       } catch (err) {
