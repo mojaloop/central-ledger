@@ -1435,6 +1435,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const segmentId = 1
           const intervalMin = 1
           const intervalMax = 10
+          const fxSegmentId = 1
+          const fxIntervalMin = 1
+          const fxIntervalMax = 10
 
           const knexStub = sandbox.stub()
           sandbox.stub(Db, 'getKnex').returns(knexStub)
@@ -1442,7 +1445,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           knexStub.from = sandbox.stub().throws(new Error('Custom error'))
 
-          await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+          await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -1457,6 +1460,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
           let segmentId
           const intervalMin = 1
           const intervalMax = 10
+          let fxSegmentId
+          const fxIntervalMin = 1
+          const fxIntervalMax = 10
           const transferTimeoutListMock = 1
           const fxTransferTimeoutListMock = undefined
           const expectedResult = {
@@ -1471,8 +1477,16 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const context = sandbox.stub()
           context.from = sandbox.stub().returns({
             innerJoin: sandbox.stub().returns({
+              select: sandbox.stub(),
               innerJoin: sandbox.stub().returns({
                 leftJoin: sandbox.stub().returns({
+                  leftJoin: sandbox.stub().returns({
+                    whereNull: sandbox.stub().returns({
+                      whereIn: sandbox.stub().returns({
+                        select: sandbox.stub()
+                      })
+                    })
+                  }),
                   whereNull: sandbox.stub().returns({
                     whereIn: sandbox.stub().returns({
                       select: sandbox.stub()
@@ -1483,7 +1497,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
                   andWhere: sandbox.stub().returns({
                     select: sandbox.stub()
                   })
-                })
+                }),
+                select: sandbox.stub()
               }),
               where: sandbox.stub().returns({
                 select: sandbox.stub()
@@ -1492,7 +1507,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
           })
           context.on = sandbox.stub().returns({
             andOn: sandbox.stub().returns({
-              andOn: sandbox.stub()
+              andOn: sandbox.stub().returns({
+                andOn: sandbox.stub()
+              })
             })
           })
           knexStub.returns({
@@ -1509,13 +1526,25 @@ Test('Transfer facade', async (transferFacadeTest) => {
                   groupBy: sandbox.stub().returns({
                     as: sandbox.stub()
                   })
+                }),
+                groupBy: sandbox.stub().returns({
+                  as: sandbox.stub()
                 })
               }),
               innerJoin: sandbox.stub().returns({
                 innerJoin: sandbox.stub().returns({
                   where: sandbox.stub().returns({
                     whereIn: sandbox.stub().returns({
+                      as: sandbox.stub()
                     })
+                  }),
+                  innerJoin: sandbox.stub().returns({
+                    as: sandbox.stub()
+                  })
+                }),
+                whereRaw: sandbox.stub().returns({
+                  whereIn: sandbox.stub().returns({
+                    as: sandbox.stub()
                   })
                 })
               })
@@ -1536,6 +1565,18 @@ Test('Transfer facade', async (transferFacadeTest) => {
                           innerJoin: sandbox.stub().returns({
                             where: sandbox.stub().returns({ // This is for _getFxTransferTimeoutList
                               select: sandbox.stub()
+                            }),
+                            innerJoin: sandbox.stub().returns({
+                              where: sandbox.stub().returns({ // This is for _getFxTransferTimeoutList
+                                select: sandbox.stub()
+                              }),
+                              leftJoin: sandbox.stub().returns({
+                                where: sandbox.stub().returns({
+                                  select: sandbox.stub().returns(
+                                    Promise.resolve(transferTimeoutListMock)
+                                  )
+                                })
+                              })
                             }),
                             leftJoin: sandbox.stub().returns({
                               where: sandbox.stub().returns({
@@ -1567,7 +1608,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
           let result
           try {
             segmentId = 0
-            result = await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+            fxSegmentId = 0
+            result = await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
             test.equal(result.transferTimeoutList, expectedResult.transferTimeoutList, 'Expected transferTimeoutList returned.')
             test.equal(result.fxTransferTimeoutList, expectedResult.fxTransferTimeoutList, 'Expected fxTransferTimeoutList returned.')
           } catch (err) {
@@ -1576,7 +1618,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
           }
           try {
             segmentId = 1
-            await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+            fxSegmentId = 1
+            await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
             test.equal(result.transferTimeoutList, expectedResult.transferTimeoutList, 'Expected transferTimeoutList returned.')
             test.equal(result.fxTransferTimeoutList, expectedResult.fxTransferTimeoutList, 'Expected fxTransferTimeoutList returned.')
           } catch (err) {
