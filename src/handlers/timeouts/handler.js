@@ -145,7 +145,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
         await Kafka.produceGeneralMessage(
           Config.KAFKA_CONFIG, Producer,
           Enum.Kafka.Topics.NOTIFICATION,
-          Enum.Events.Event.Action.TIMEOUT_RECEIVED,
+          Enum.Events.Event.Action.FX_TIMEOUT_RESERVED,
           message,
           state,
           null,
@@ -153,19 +153,17 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
         )
       } else if (fxTransferTimeoutList[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
         message.metadata.event.type = Enum.Events.Event.Type.POSITION
-        message.metadata.event.action = Enum.Events.Event.Action.TIMEOUT_RESERVED
+        message.metadata.event.action = Enum.Events.Event.Action.FX_TIMEOUT_RESERVED
         // Key position timeouts with payer account id
         await Kafka.produceGeneralMessage(
           Config.KAFKA_CONFIG, Producer,
           Enum.Kafka.Topics.POSITION,
-          Enum.Events.Event.Action.TIMEOUT_RESERVED,
-          // TODO: Enable the following line when the fx-timeout position is implemented
-          // Enum.Events.Event.Action.FX_TIMEOUT_RESERVED,
+          Enum.Events.Event.Action.FX_TIMEOUT_RESERVED,
           message,
           state,
           fxTransferTimeoutList[i].effectedParticipantCurrencyId?.toString(),
           span,
-          Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.TIMEOUT_RESERVED
+          Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_TIMEOUT_RESERVED
         )
       }
     } catch (err) {
