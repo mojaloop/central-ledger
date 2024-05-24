@@ -2,6 +2,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const TransferError = require('../../models/transfer/transferError')
 const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
+const { logger } = require('../../shared/logger')
 
 const table = TABLE_NAMES.fxTransferStateChange
 
@@ -34,7 +35,7 @@ const getLatest = async () => {
         .first()
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
+    logger.error('getLatest::fxTransferStateChange', err)
     throw err
   }
 }

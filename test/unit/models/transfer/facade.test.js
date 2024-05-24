@@ -1535,7 +1535,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
                         innerJoin: sandbox.stub().returns({
                           innerJoin: sandbox.stub().returns({
                             where: sandbox.stub().returns({ // This is for _getFxTransferTimeoutList
-                              select:  sandbox.stub()
+                              select: sandbox.stub()
                             }),
                             leftJoin: sandbox.stub().returns({
                               where: sandbox.stub().returns({

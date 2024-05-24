@@ -43,7 +43,7 @@ const TransferService = require('#src/domain/transfer/index')
 const FxTransferModels = require('#src/models/fxTransfer/index')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const {
-  wrapWithRetries,
+  wrapWithRetries
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
 
@@ -184,9 +184,8 @@ const prepareFxTestData = async (dataObj) => {
       'content-type': 'application/vnd.interoperability.fxTransfers+json;version=1.1'
     }
 
-
     const transfer1Payload = {
-      transferId: transferId,
+      transferId,
       payerFsp: payer.participant.name,
       payeeFsp: payee.participant.name,
       amount: {
@@ -284,7 +283,6 @@ const prepareFxTestData = async (dataObj) => {
       TransferEventType.PREPARE
     )
 
-
     return {
       fxTransferPayload,
       transfer1Payload,
@@ -372,7 +370,6 @@ Test('Handlers test', async handlersTest => {
 
   await handlersTest.test('Setup kafka consumer should', async registerAllHandlers => {
     await registerAllHandlers.test('start consumer', async (test) => {
-
       // Set up the testConsumer here
       await testConsumer.startListening()
 

@@ -230,7 +230,6 @@ const timeout = async () => {
   }
 }
 
-
 /**
   * @function isRunning
   *
@@ -241,7 +240,6 @@ const timeout = async () => {
 const isRunning = async () => {
   return isRegistered
 }
-
 
 /**
   * @function stop
@@ -256,7 +254,6 @@ const stop = async () => {
     isRegistered = undefined
   }
 }
-
 
 /**
   * @function RegisterTimeoutHandlers
@@ -286,7 +283,6 @@ const registerTimeoutHandler = async () => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
 
 /**
   * @function RegisterAllHandlers
