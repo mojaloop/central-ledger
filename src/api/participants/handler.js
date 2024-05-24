@@ -38,7 +38,7 @@ const LocalEnum = {
   disabled: 'disabled'
 }
 
-const entityItem = ({ name, createdDate, isActive, currencyList }, ledgerAccountIds) => {
+const entityItem = ({ name, createdDate, isActive, currencyList, isProxy }, ledgerAccountIds) => {
   const link = UrlParser.toParticipantUri(name)
   const accounts = currencyList.map((currentValue) => {
     return {
@@ -58,7 +58,8 @@ const entityItem = ({ name, createdDate, isActive, currencyList }, ledgerAccount
     links: {
       self: link
     },
-    accounts
+    accounts,
+    isProxy
   }
 }
 
@@ -103,6 +104,9 @@ const create = async function (request, h) {
       } else {
         participant.currencyList = await Promise.all([ParticipantService.getParticipantCurrencyById(participantCurrencyId1), ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
       }
+    }
+    if (request.payload.isProxy) {
+      await ParticipantService.createParticipantProxy(participant.participantId, request.payload.isProxy)
     }
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {

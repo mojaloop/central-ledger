@@ -1326,6 +1326,10 @@
           "description": "Currency code",
           "$ref" : "#/definitions/Currency"
 
+        },
+        "isProxy": {
+          "type": "boolean",
+          "description": "Is the participant a proxy"
         }
       },
       "required": [
