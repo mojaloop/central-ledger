@@ -125,7 +125,24 @@ Test('Timeout handler', TimeoutHandlerTest => {
         effectedParticipantCurrencyId: 0
       }
     ]
-    const fxTransferTimeoutListMock = []
+    const fxTransferTimeoutListMock = [
+      {
+        commitRequestId: randomUUID(),
+        initiatingFsp: 'dfsp1',
+        counterPartyFsp: 'dfsp2',
+        transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED,
+        payerParticipantCurrencyId: 0,
+        effectedParticipantCurrencyId: 0
+      },
+      {
+        commitRequestId: randomUUID(),
+        initiatingFsp: 'dfsp1',
+        counterPartyFsp: 'dfsp2',
+        transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT,
+        payerParticipantCurrencyId: 0,
+        effectedParticipantCurrencyId: 0
+      }
+    ]
     const resultMock = {
       transferTimeoutList: transferTimeoutListMock,
       fxTransferTimeoutList: fxTransferTimeoutListMock
@@ -173,7 +190,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(null)
       const resultMock1 = {
         transferTimeoutList: transferTimeoutListMock[0],
-        fxTransferTimeoutList: fxTransferTimeoutListMock
+        fxTransferTimeoutList: fxTransferTimeoutListMock[0]
       }
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock1)
       Utility.produceGeneralMessage = sandbox.stub()
