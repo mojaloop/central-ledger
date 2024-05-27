@@ -52,7 +52,9 @@ let running = false
 const _processTimedOutTransfers = async (transferTimeoutList) => {
   const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED).toApiErrorObject(Config.ERROR_HANDLING)
   if (!Array.isArray(transferTimeoutList)) {
-    transferTimeoutList[0] = transferTimeoutList
+    transferTimeoutList = [
+      { ...transferTimeoutList }
+    ]
   }
   for (let i = 0; i < transferTimeoutList.length; i++) {
     const span = EventSdk.Tracer.createSpan('cl_transfer_timeout')
@@ -122,7 +124,9 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
 const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED).toApiErrorObject(Config.ERROR_HANDLING)
   if (!Array.isArray(fxTransferTimeoutList)) {
-    fxTransferTimeoutList[0] = fxTransferTimeoutList
+    fxTransferTimeoutList = [
+      { ...fxTransferTimeoutList }
+    ]
   }
   for (let i = 0; i < fxTransferTimeoutList.length; i++) {
     const span = EventSdk.Tracer.createSpan('cl_fx_transfer_timeout')
