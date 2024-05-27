@@ -88,11 +88,13 @@
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
         "PREPARE": null,
+        "FX_PREPARE": "topic-transfer-position-batch",
         "BULK_PREPARE": null,
         "COMMIT": null,
         "BULK_COMMIT": null,
         "RESERVE": null,
-        "TIMEOUT_RESERVED": null
+        "TIMEOUT_RESERVED": null,
+        "FX_TIMEOUT_RESERVED": "topic-transfer-position-batch"
       }
     },
     "TOPIC_TEMPLATES": {
