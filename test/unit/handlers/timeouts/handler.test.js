@@ -273,7 +273,6 @@ Test('Timeout handler', TimeoutHandlerTest => {
     })
 
     timeoutTest.test('handle fx message errors', async (test) => {
-
       const resultMock1 = {
         transferTimeoutList: [],
         fxTransferTimeoutList: fxTransferTimeoutListMock[0]
