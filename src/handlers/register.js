@@ -97,7 +97,8 @@ module.exports = {
   },
   timeouts: {
     registerAllHandlers: TimeoutHandlers.registerAllHandlers,
-    registerTimeoutHandler: TimeoutHandlers.registerTimeoutHandler
+    registerTimeoutHandler: TimeoutHandlers.registerTimeoutHandler,
+    registerFxTimeoutHandler: TimeoutHandlers.registerFxTimeoutHandler
   },
   admin: {
     registerAdminHandlers: AdminHandlers.registerAllHandlers

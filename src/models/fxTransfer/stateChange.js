@@ -2,6 +2,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const TransferError = require('../../models/transfer/transferError')
 const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
+const { logger } = require('../../shared/logger')
 
 const table = TABLE_NAMES.fxTransferStateChange
 
@@ -25,7 +26,22 @@ const logTransferError = async (id, errorCode, errorDescription) => {
   }
 }
 
+const getLatest = async () => {
+  try {
+    return await Db.from('fxTransferStateChange').query(async (builder) => {
+      return builder
+        .select('fxTransferStateChangeId')
+        .orderBy('fxTransferStateChangeId', 'desc')
+        .first()
+    })
+  } catch (err) {
+    logger.error('getLatest::fxTransferStateChange', err)
+    throw err
+  }
+}
+
 module.exports = {
   getByCommitRequestId,
-  logTransferError
+  logTransferError,
+  getLatest
 }

@@ -18,27 +18,36 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- - Eugen Klymniuk <eugen.klymniuk@infitx.com>
+ * Vijaya Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
 'use strict'
 
-exports.up = async (knex) => {
-  return await knex.schema.hasTable('fxTransferError').then(function(exists) {
-    if (!exists) {
-      return knex.schema.createTable('fxTransferError', (t) => {
-        t.string('commitRequestId', 36).primary().notNullable()
-        t.bigInteger('fxTransferStateChangeId').unsigned().notNullable()
-        t.foreign('fxTransferStateChangeId').references('fxTransferStateChangeId').inTable('fxTransferStateChange')
-        t.integer('errorCode').unsigned().notNullable()
-        t.string('errorDescription', 128).notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-      })
-    }
-  })
+/**
+ * @module src/models/transfer/transferError/
+ */
+
+const Db = require('../../lib/db')
+const Logger = require('@mojaloop/central-services-logger')
+
+const getByCommitRequestId = async (id) => {
+  try {
+    const fxTransferError = await Db.from('fxTransferError').query(async (builder) => {
+      const result = builder
+        .where({ commitRequestId: id })
+        .select('*')
+        .first()
+      return result
+    })
+    fxTransferError.errorCode = fxTransferError.errorCode.toString()
+    return fxTransferError
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
 }
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists('fxTransferError')
+module.exports = {
+  getByCommitRequestId
 }
