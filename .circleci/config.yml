@@ -164,7 +164,7 @@ executors:
       BASH_ENV: /etc/profile ## Ref: https://circleci.com/docs/env-vars/#alpine-linux
       NVM_ARCH_UNOFFICIAL_OVERRIDE: x64-musl ## Ref: https://github.com/nvm-sh/nvm/issues/1102#issuecomment-550572252
     docker:
-      - image: node:18-alpine3.19 # Ref: https://hub.docker.com/_/node?tab=tags&page=1&name=alpine
+      - image: node:18.20.3-alpine3.19 # Ref: https://hub.docker.com/_/node/tags?name=18.20.3-alpine3.19
 
   default-machine:
     working_directory: *WORKING_DIR
@@ -309,8 +309,8 @@ jobs:
           name: Build Docker local image
           command: |
             source ~/.profile
-            export DOCKER_NODE_VERSION="$NVMRC_VERSION-alpine"
-            echo "export DOCKER_NODE_VERSION=$NVMRC_VERSION-alpine" >> $BASH_ENV
+            export DOCKER_NODE_VERSION="$NVMRC_VERSION-alpine3.19"
+            echo "export DOCKER_NODE_VERSION=$NVMRC_VERSION-alpine3.19" >> $BASH_ENV
             echo "Building Docker image: ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local --build-arg NODE_VERSION=$DOCKER_NODE_VERSION"
             docker build -t ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local --build-arg NODE_VERSION=$DOCKER_NODE_VERSION .
       - run:
