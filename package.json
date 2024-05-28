@@ -80,6 +80,16 @@
     "snapshot": "npx standard-version --no-verify --skip.changelog --prerelease snapshot --releaseCommitMessageFormat 'chore(snapshot): {{currentTag}}'",
     "wait-4-docker": "node ./scripts/_wait4_all.js"
   },
+  "overrides": {
+    "shins": {
+      "ejs": "^3.1.7",
+      "sanitize-html": "2.12.1",
+      "jsonpointer": "5.0.0",
+      "markdown-it": "12.3.2",
+      "yargs-parser": "13.1.2",
+      "postcss": "8.4.31"
+    }
+  },
   "dependencies": {
     "@hapi/catbox-memory": "6.0.1",
     "@hapi/good": "9.0.1",
@@ -117,6 +127,7 @@
     "lodash": "4.17.21",
     "moment": "2.30.1",
     "mongo-uri-builder": "^4.0.0",
+    "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8",
     "require-glob": "^4.1.0"
   },

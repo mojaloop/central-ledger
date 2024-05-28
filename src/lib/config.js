@@ -1,4 +1,4 @@
-const RC = require('rc')('CLEDG', require('../../config/default.json'))
+const RC = require('parse-strings-in-object')(require('rc')('CLEDG', require('../../config/default.json')))
 
 module.exports = {
   HOSTNAME: RC.HOSTNAME.replace(/\/$/, ''),
@@ -9,8 +9,8 @@ module.exports = {
   MONGODB_USER: RC.MONGODB.USER,
   MONGODB_PASSWORD: RC.MONGODB.PASSWORD,
   MONGODB_DATABASE: RC.MONGODB.DATABASE,
-  MONGODB_DEBUG: (RC.MONGODB.DEBUG === true || RC.MONGODB.DEBUG === 'true'),
-  MONGODB_DISABLED: (RC.MONGODB.DISABLED === true || RC.MONGODB.DISABLED === 'true'),
+  MONGODB_DEBUG: RC.MONGODB.DEBUG === true,
+  MONGODB_DISABLED: RC.MONGODB.DISABLED === true,
   AMOUNT: RC.AMOUNT,
   EXPIRES_TIMEOUT: RC.EXPIRES_TIMEOUT,
   ERROR_HANDLING: RC.ERROR_HANDLING,
