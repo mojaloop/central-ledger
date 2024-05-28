@@ -79,7 +79,6 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
   return TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
 }
 
-
 module.exports = {
   getTimeoutSegment,
   getFxTimeoutSegment,

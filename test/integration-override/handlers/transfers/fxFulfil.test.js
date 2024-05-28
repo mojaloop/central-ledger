@@ -108,7 +108,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
 
   const [payer, fxp] = await Promise.all([
     ParticipantHelper.prepareData(dfspNamePrefix, sourceAmount.currency),
-    ParticipantHelper.prepareData(fxpNamePrefix, sourceAmount.currency)
+    ParticipantHelper.prepareData(fxpNamePrefix, sourceAmount.currency, targetAmount.currency)
   ])
   const DFSP_1 = payer.participant.name
   const FXP = fxp.participant.name
