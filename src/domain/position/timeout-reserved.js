@@ -127,7 +127,7 @@ const _constructTimeoutReservedResultMessage = (binItem, transferId, payeeFsp, p
 
 const _handleParticipantPositionChange = (runningPosition, transferAmount, transferId, accumulatedPositionReservedValue) => {
   // NOTE: The transfer info amount is pulled from the payee records in a batch `SELECT` query.
-  //       And will have a negative value. We add that value to the payer's or fxp's position
+  //       And will have a negative value. We add that value to the payer's(in regular transfer) or fxp's(in fx transfer) position
   //       to revert the position for the amount of the transfer.
   const transferStateId = Enum.Transfers.TransferInternalState.EXPIRED_RESERVED
   // Revert payer's or fxp's position for the amount of the transfer

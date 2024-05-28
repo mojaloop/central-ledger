@@ -82,7 +82,7 @@ const processPositionFxTimeoutReservedBin = async (
   }
 }
 
-const _constructFxTimeoutReservedResultMessage = (binItem, transferId, fxp, payerFsp) => {
+const _constructFxTimeoutReservedResultMessage = (binItem, commitRequestId, fxp, payerFsp) => {
   // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
   //            notify the payer and payee of the timeout.
   //            As long as the `to` and `from` message values are the payer and payee,
@@ -105,19 +105,19 @@ const _constructFxTimeoutReservedResultMessage = (binItem, transferId, fxp, paye
   // Create metadata for the message, associating the payee notification
   // with the position event fx-timeout-reserved action
   const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-    transferId,
+    commitRequestId,
     Enum.Kafka.Topics.POSITION,
     Enum.Events.Event.Action.FX_TIMEOUT_RESERVED,
     state
   )
   const resultMessage = Utility.StreamingProtocol.createMessage(
-    transferId,
+    commitRequestId,
     fxp,
     payerFsp,
     metadata,
     binItem.message.value.content.headers, // Headers don't really matter here. ml-api-adapter will ignore them and create their own.
     fspiopError,
-    { id: transferId },
+    { id: commitRequestId },
     'application/json'
   )
 
@@ -125,12 +125,12 @@ const _constructFxTimeoutReservedResultMessage = (binItem, transferId, fxp, paye
 }
 
 const _handleParticipantPositionChange = (runningPosition, transferAmount, commitRequestId, accumulatedPositionReservedValue) => {
-  // NOTE: The transfer info amount is pulled from the payee records in a batch `SELECT` query.
-  //       And will have a negative value. We add that value to the payer's position
+  // NOTE: The transfer info amount is pulled from the initiating fsp records in a batch `SELECT` query.
+  //       And will have a positive value. We subtract that value to the initiating fsp's position
   //       to revert the position for the amount of the transfer.
   const transferStateId = Enum.Transfers.TransferInternalState.EXPIRED_RESERVED
   // Revert payer's position for the amount of the transfer
-  const updatedRunningPosition = new MLNumber(runningPosition.add(transferAmount).toFixed(Config.AMOUNT.SCALE))
+  const updatedRunningPosition = new MLNumber(runningPosition.subtract(transferAmount).toFixed(Config.AMOUNT.SCALE))
   Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::_handleParticipantPositionChange::updatedRunningPosition: ${updatedRunningPosition.toString()}`)
   Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::_handleParticipantPositionChange::transferAmount: ${transferAmount}`)
   // Construct participant position change object

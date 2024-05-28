@@ -41,6 +41,7 @@ const SettlementHelper = require('#test/integration/helpers/settlementModels')
 const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
 const TransferService = require('#src/domain/transfer/index')
 const FxTransferModels = require('#src/models/fxTransfer/index')
+const ParticipantService = require('#src/domain/participant/index')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const {
   wrapWithRetries
@@ -481,9 +482,7 @@ Test('Handlers test', async handlersTest => {
           const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
 
           // Check Transfer for correct state
-          // if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
-          // TODO: Change the following line to the correct state when the timeout position is implemented
-          if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+          if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
             // We have a Transfer with the correct state, lets check if we can get the TransferError record
             try {
               // Fetch the TransferError record
@@ -519,9 +518,7 @@ Test('Handlers test', async handlersTest => {
         test.fail(`FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
         test.end()
       } else {
-        // test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
-        // TODO: Change the following line to the correct state when the timeout position is implemented
-        test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`)
+        test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
         test.equal(result.fxTransferError && result.fxTransferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
         test.equal(result.fxTransferError && result.fxTransferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
         test.pass()
@@ -544,24 +541,26 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    // TODO: Enable the following test when the fx-timeout position is implemented, but it needs batch handler to be started.
-    // await timeoutTest.test('position resets after a timeout', async (test) => {
-    //   // Arrange
-    //   const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+    await timeoutTest.test('position resets after a timeout', async (test) => {
+      // Arrange
+      const payerInitialPosition = td.fxpLimitAndInitialPositionTargetCurrency.participantPosition.value
 
-    //   // Act
-    //   const payerPositionDidReset = async () => {
-    //     const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
-    //     return payerCurrentPosition.value === payerInitialPosition
-    //   }
-    //   // wait until we know the position reset, or throw after 5 tries
-    //   await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //   const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+      // Act
+      const payerPositionDidReset = async () => {
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyId)
+        console.log(td.payerLimitAndInitialPosition)
+        console.log(payerInitialPosition)
+        console.log(payerCurrentPosition)
+        return payerCurrentPosition.value === payerInitialPosition
+      }
+      // wait until we know the position reset, or throw after 5 tries
+      await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
-    //   // Assert
-    //   test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
-    //   test.end()
-    // })
+      // Assert
+      test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
+      test.end()
+    })
 
     timeoutTest.end()
   })
@@ -656,9 +655,7 @@ Test('Handlers test', async handlersTest => {
           const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
 
           // Check Transfer for correct state
-          // if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
-          // TODO: Change the following line to the correct state when the timeout position is implemented
-          if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+          if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
             // We have a Transfer with the correct state, lets check if we can get the TransferError record
             try {
               // Fetch the TransferError record
@@ -694,9 +691,7 @@ Test('Handlers test', async handlersTest => {
         test.fail(`FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
         test.end()
       } else {
-        // test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
-        // TODO: Change the following line to the correct state when the timeout position is implemented
-        test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`)
+        test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
         test.equal(result.fxTransferError && result.fxTransferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
         test.equal(result.fxTransferError && result.fxTransferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
         test.pass()
@@ -734,24 +729,42 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    // TODO: Enable the following test when the fx-timeout position is implemented, but it needs batch handler to be started.
-    // await timeoutTest.test('position resets after a timeout', async (test) => {
-    //   // Arrange
-    //   const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+    await timeoutTest.test('payer position resets after a timeout', async (test) => {
+      // Arrange
+      const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
 
-    //   // Act
-    //   const payerPositionDidReset = async () => {
-    //     const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
-    //     return payerCurrentPosition.value === payerInitialPosition
-    //   }
-    //   // wait until we know the position reset, or throw after 5 tries
-    //   await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //   const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+      // Act
+      const payerPositionDidReset = async () => {
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
+        return payerCurrentPosition.value === payerInitialPosition
+      }
+      // wait until we know the position reset, or throw after 5 tries
+      await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
-    //   // Assert
-    //   test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
-    //   test.end()
-    // })
+      // Assert
+      test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
+      test.end()
+    })
+
+    await timeoutTest.test('fxp target currency position resets after a timeout', async (test) => {
+      // td.fxp.participantCurrencyIdSecondary is the fxp's target currency
+      // Arrange
+      const fxpInitialPosition = td.fxpLimitAndInitialPositionTargetCurrency.participantPosition.value
+
+      // Act
+      const fxpPositionDidReset = async () => {
+        const fxpCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyIdSecondary)
+        return fxpCurrentPosition.value === fxpInitialPosition
+      }
+      // wait until we know the position reset, or throw after 5 tries
+      await wrapWithRetries(fxpPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      const fxpCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyIdSecondary) || {}
+
+      // Assert
+      test.equal(fxpCurrentPosition.value, fxpInitialPosition, 'Position resets after a timeout')
+      test.end()
+    })
 
     timeoutTest.end()
   })

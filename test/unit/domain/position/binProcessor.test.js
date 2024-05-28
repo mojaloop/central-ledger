@@ -385,9 +385,11 @@ Test('BinProcessor', async (binProcessorTest) => {
       }
     })
 
+    // The binProcessor retrieves the initiating fsp record for
+    // a fxTransfer. And the corresponding value will be positive
     BatchPositionModel.getFxTransferInfoList.returns({
       'ed6848e0-e2a8-45b0-9f98-59a2ffba8c10': {
-        amount: -100
+        amount: 100
       }
     })
 
