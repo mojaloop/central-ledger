@@ -113,12 +113,14 @@ NOTE: Only POSITION.PREPARE and POSITION.COMMIT is supported at this time, with 
 
 Batch processing can be enabled in the transfer execution flow. Follow the steps below to enable batch processing for a more efficient transfer execution:
 
+Note: The position messages with action 'FX_PREPARE', 'FX_COMMIT' and 'FX_TIMEOUT_RESERVED' are only supported in batch processing.
+
 - **Step 1:** **Create a New Kafka Topic**
 
   Create a new Kafka topic named `topic-transfer-position-batch` to handle batch processing events.
 - **Step 2:** **Configure Action Type Mapping**
 
-  Point the prepare handler to the newly created topic for the action type `prepare` using the `KAFKA.EVENT_TYPE_ACTION_TOPIC_MAP` configuration as shown below:
+  Point the prepare handler to the newly created topic for the action types those are supported in batch processing using the `KAFKA.EVENT_TYPE_ACTION_TOPIC_MAP` configuration as shown below:
   ```
     "KAFKA": {
       "EVENT_TYPE_ACTION_TOPIC_MAP" : {
@@ -126,8 +128,12 @@ Batch processing can be enabled in the transfer execution flow. Follow the steps
           "PREPARE": "topic-transfer-position-batch",
           "BULK_PREPARE": "topic-transfer-position",
           "COMMIT": "topic-transfer-position-batch",
+          "FX_COMMIT": "topic-transfer-position-batch",
           "BULK_COMMIT": "topic-transfer-position",
           "RESERVE": "topic-transfer-position",
+          "FX_PREPARE": "topic-transfer-position-batch",
+          "TIMEOUT_RESERVED": "topic-transfer-position-batch",
+          "FX_TIMEOUT_RESERVED": "topic-transfer-position-batch"
         }
       }
     }
@@ -246,13 +252,17 @@ npm run migrate
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_TIMEOUT_RESERVED=topic-transfer-position-batch
 npm start
 ```
 - Additionally, run position batch handler in a new terminal
 ```
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_PREPARE=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_TIMEOUT_RESERVED=topic-transfer-position-batch
 export CLEDG_HANDLERS__API__DISABLED=true
 node src/handlers/index.js handler --positionbatch
 ```

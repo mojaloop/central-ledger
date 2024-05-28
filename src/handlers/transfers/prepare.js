@@ -160,13 +160,16 @@ const sendPositionPrepareMessage = async ({ isFx, payload, action, params }) => 
     ...params.message.value.content.context,
     cyrilResult
   }
-  // We route bulk-prepare and prepare messages differently based on the topic configured for it.
+  // We route fx-prepare, bulk-prepare and prepare messages differently based on the topic configured for it.
   // Note: The batch handler does not currently support bulk-prepare messages, only prepare messages are supported.
+  // And non batch processing is not supported for fx-prepare messages.
   // Therefore, it is necessary to check the action to determine the topic to route to.
-  const topicNameOverride =
-    action === Action.BULK_PREPARE
-      ? Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.BULK_PREPARE
-      : Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE
+  let topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE
+  if (action === Action.BULK_PREPARE) {
+    topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.BULK_PREPARE
+  } else if (action === Action.FX_PREPARE) {
+    topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_PREPARE
+  }
   await Kafka.proceed(Config.KAFKA_CONFIG, params, {
     consumerCommit,
     eventDetail,
