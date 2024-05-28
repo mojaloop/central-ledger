@@ -113,6 +113,7 @@ const positions = async (error, messages) => {
       Logger.isErrorEnabled && Logger.error(fspiopError)
       throw fspiopError
     }
+
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { method: 'positions' }))
 
@@ -233,7 +234,14 @@ const positions = async (error, messages) => {
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED, null, null, null, payload.extensionList)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail })
+        await Kafka.proceed(
+          Config.KAFKA_CONFIG,
+          params,
+          {
+            consumerCommit,
+            fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING),
+            eventDetail
+          })
         throw fspiopError
       }
     } else {

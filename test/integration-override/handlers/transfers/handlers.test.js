@@ -45,7 +45,6 @@ const {
   wrapWithRetries
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
-const KafkaHelper = require('#test/integration/helpers/kafkaHelper')
 
 const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
@@ -131,9 +130,6 @@ const prepareTestData = async (dataObj) => {
     const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
     const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
 
-    const kafkacat = 'GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare'
-    if (debug) console.error(kafkacat)
-
     const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.amount.currency,
       limit: { value: dataObj.payer.limit }
@@ -155,6 +151,10 @@ const prepareTestData = async (dataObj) => {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${dataObj.endpoint.base}/bulkTransfers/{{id}}`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${dataObj.endpoint.base}/bulkTransfers/{{id}}/error`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_QUOTES', `${dataObj.endpoint.base}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${dataObj.endpoint.base}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${dataObj.endpoint.base}/fxTransfers`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}/error`)
     }
 
     const transferPayload = {
@@ -327,9 +327,9 @@ Test('Handlers test', async handlersTest => {
 
       // Set up the testConsumer here
       await testConsumer.startListening()
-      await KafkaHelper.producers.connect()
       // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
       await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
+      testConsumer.clearEvents()
 
       test.pass('done')
       test.end()

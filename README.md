@@ -243,12 +243,16 @@ npm run wait-4-docker
 ```
 nvm use
 npm run migrate
-env "CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch" npm start
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE=topic-transfer-position-batch
+npm start
 ```
 - Additionally, run position batch handler in a new terminal
 ```
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE=topic-transfer-position-batch
 export CLEDG_HANDLERS__API__DISABLED=true
 node src/handlers/index.js handler --positionbatch
 ```
@@ -263,7 +267,11 @@ It will handle docker start up, migration, service starting and testing. Be sure
 If you want to run functional tests locally utilizing the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness), you can run the following commands:
 
 ```bash
-docker build -t mojaloop/central-ledger:local .
+export NODE_VERSION="$(cat .nvmrc)-alpine"
+docker build \
+  --build-arg NODE_VERSION=$NODE_VERSION \
+  -t mojaloop/central-ledger:local \
+  .
 ```
 
 ```bash
@@ -380,4 +388,4 @@ push a release triggering another subsequent build that also publishes a docker 
   is a boon.
 
 - It is unknown if a race condition might occur with multiple merges with main in
-  quick succession, but this is a suspected edge case.
+  quick succession, but this is a suspected edge case. 

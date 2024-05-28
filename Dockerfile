@@ -3,11 +3,11 @@ ARG NODE_VERSION=lts-alpine
 
 # NOTE: Ensure you set NODE_VERSION Build Argument as follows...
 #
-#  export NODE_VERSION="$(cat .nvmrc)-alpine" \
-#  docker build \
-#    --build-arg NODE_VERSION=$NODE_VERSION \
-#    -t mojaloop/central-ledger:local \
-#    . \
+# export NODE_VERSION="$(cat .nvmrc)-alpine"
+# docker build \
+#   --build-arg NODE_VERSION=$NODE_VERSION \
+#   -t mojaloop/central-ledger:local \
+#   .
 #
 
 # Build Image
@@ -32,7 +32,7 @@ RUN mkdir ./logs && touch ./logs/combined.log
 RUN ln -sf /dev/stdout ./logs/combined.log
 
 # Create a non-root user: ml-user
-RUN adduser -D ml-user 
+RUN adduser -D ml-user
 USER ml-user
 
 COPY --chown=ml-user --from=builder /opt/app .

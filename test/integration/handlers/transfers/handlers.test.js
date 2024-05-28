@@ -27,7 +27,6 @@
 
 const Test = require('tape')
 const { randomUUID } = require('crypto')
-const retry = require('async-retry')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
 const Time = require('@mojaloop/central-services-shared').Util.Time
@@ -160,9 +159,6 @@ const prepareTestData = async (dataObj) => {
     const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
     const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
 
-    const kafkacat = 'GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare'
-    if (debug) console.error(kafkacat)
-
     const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.amount.currency,
       limit: { value: dataObj.payer.limit }
@@ -184,6 +180,10 @@ const prepareTestData = async (dataObj) => {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${dataObj.endpoint.base}/bulkTransfers/{{id}}`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${dataObj.endpoint.base}/bulkTransfers/{{id}}/error`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_QUOTES', `${dataObj.endpoint.base}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${dataObj.endpoint.base}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${dataObj.endpoint.base}/fxTransfers`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}/error`)
     }
 
     const transferPayload = {
@@ -315,6 +315,148 @@ const prepareTestData = async (dataObj) => {
   }
 }
 
+const testFxData = {
+  sourceAmount: {
+    currency: 'USD',
+    amount: 433.88
+  },
+  targetAmount: {
+    currency: 'XXX',
+    amount: 200.00
+  },
+  payer: {
+    name: 'payerFsp',
+    limit: 5000
+  },
+  fxp: {
+    name: 'fxp',
+    limit: 3000
+  },
+  endpoint: {
+    base: 'http://localhost:1080',
+    email: 'test@example.com'
+  },
+  now: new Date(),
+  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
+}
+
+const prepareFxTestData = async (dataObj) => {
+  try {
+    const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.sourceAmount.currency)
+    const fxp = await ParticipantHelper.prepareData(dataObj.fxp.name, dataObj.sourceAmount.currency)
+
+    const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
+      currency: dataObj.sourceAmount.currency,
+      limit: { value: dataObj.payer.limit }
+    })
+    const fxpLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
+      currency: dataObj.sourceAmount.currency,
+      limit: { value: dataObj.fxp.limit }
+    })
+    await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
+      currency: dataObj.targetAmount.currency,
+      limit: { value: dataObj.payer.limit }
+    })
+    await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
+      currency: dataObj.targetAmount.currency,
+      limit: { value: dataObj.fxp.limit }
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
+      currency: dataObj.sourceAmount.currency,
+      amount: 10000
+    })
+
+    for (const name of [payer.participant.name, fxp.participant.name]) {
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${dataObj.endpoint.base}/transfers/{{transferId}}`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${dataObj.endpoint.base}/transfers/{{transferId}}/error`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${dataObj.endpoint.base}/bulkTransfers`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${dataObj.endpoint.base}/bulkTransfers/{{id}}`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${dataObj.endpoint.base}/bulkTransfers/{{id}}/error`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_QUOTES', `${dataObj.endpoint.base}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${dataObj.endpoint.base}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${dataObj.endpoint.base}/fxTransfers`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}`)
+      await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}/error`)
+    }
+
+    const transferPayload = {
+      commitRequestId: randomUUID(),
+      determiningTransferId: randomUUID(),
+      condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+      expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)), // tomorrow
+      initiatingFsp: payer.participant.name,
+      counterPartyFsp: fxp.participant.name,
+      sourceAmount: {
+        currency: dataObj.sourceAmount.currency,
+        amount: dataObj.sourceAmount.amount
+      },
+      targetAmount: {
+        currency: dataObj.targetAmount.currency,
+        amount: dataObj.targetAmount.amount
+      }
+    }
+
+    const fxPrepareHeaders = {
+      'fspiop-source': payer.participant.name,
+      'fspiop-destination': fxp.participant.name,
+      'content-type': 'application/vnd.interoperability.fxTransfers+json;version=1.1'
+    }
+
+    const errorPayload = ErrorHandler.Factory.createFSPIOPError(
+      ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN
+    ).toApiErrorObject()
+    errorPayload.errorInformation.extensionList = {
+      extension: [{
+        key: 'errorDetail',
+        value: 'This is an abort extension'
+      }]
+    }
+
+    const messageProtocolPayerInitiatedConversionFxPrepare = {
+      id: randomUUID(),
+      from: transferPayload.initiatingFsp,
+      to: transferPayload.counterPartyFsp,
+      type: 'application/json',
+      content: {
+        headers: fxPrepareHeaders,
+        payload: transferPayload
+      },
+      metadata: {
+        event: {
+          id: randomUUID(),
+          type: TransferEventType.TRANSFER,
+          action: TransferEventAction.FX_PREPARE,
+          createdAt: dataObj.now,
+          state: {
+            status: 'success',
+            code: 0
+          }
+        }
+      }
+    }
+
+    const topicConfFxTransferPrepare = Utility.createGeneralTopicConf(
+      Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+      TransferEventType.TRANSFER,
+      TransferEventAction.PREPARE
+    )
+
+    return {
+      transferPayload,
+      errorPayload,
+      messageProtocolPayerInitiatedConversionFxPrepare,
+      topicConfFxTransferPrepare,
+      payer,
+      payerLimitAndInitialPosition,
+      fxp,
+      fxpLimitAndInitialPosition
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 Test('Handlers test', async handlersTest => {
   const startTime = new Date()
   await Db.connect(Config.DATABASE)
@@ -389,6 +531,7 @@ Test('Handlers test', async handlersTest => {
 
       // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
       await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
+      testConsumer.clearEvents()
 
       test.pass('done')
       test.end()
@@ -860,14 +1003,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -900,14 +1044,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -959,14 +1104,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -997,14 +1143,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1035,14 +1182,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#3 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1074,14 +1222,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferInternalState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#4 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1113,14 +1262,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#5 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1160,14 +1310,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#6 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1222,20 +1373,15 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        const retryTimeoutOpts = {
-          retries: Number(retryOpts.retries) * 2,
-          minTimeout: retryOpts.minTimeout,
-          maxTimeout: retryOpts.maxTimeout
-        }
-
-        await retry(async () => { // use bail(new Error('to break before max retries'))
+        await wrapWithRetries(async () => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer?.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`#7   Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            return null
           }
-          return tests()
-        }, retryTimeoutOpts)
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
@@ -1335,6 +1481,40 @@ Test('Handlers test', async handlersTest => {
     })
 
     timeoutTest.end()
+  })
+
+  await handlersTest.test('fxTransferPrepare should', async fxTransferPrepare => {
+    await fxTransferPrepare.test('should handle payer initiated conversion fxTransfer', async (test) => {
+      const td = await prepareFxTestData(testFxData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventAction.PREPARE.toUpperCase()
+      )
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(
+        td.messageProtocolPayerInitiatedConversionFxPrepare,
+        td.topicConfFxTransferPrepare,
+        prepareConfig
+      )
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position',
+          action: 'fx-prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      test.end()
+    })
+
+    fxTransferPrepare.end()
   })
 
   await handlersTest.test('teardown', async (assert) => {
