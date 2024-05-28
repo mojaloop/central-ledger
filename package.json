@@ -79,7 +79,6 @@
     "wait-4-docker": "node ./scripts/_wait4_all.js"
   },
   "overrides": {
-    "@mojaloop/event-sdk": "14.0.3-snapshot.5",
     "shins": {
       "ejs": "^3.1.7",
       "sanitize-html": "2.12.1",
@@ -103,11 +102,11 @@
     "@mojaloop/central-services-metrics": "12.0.8",
     "@mojaloop/central-services-shared": "18.3.6",
     "@mojaloop/central-services-stream": "11.3.0",
-    "@mojaloop/event-sdk": "14.0.3-snapshot.5",
+    "@mojaloop/event-sdk": "14.1.0",
     "@mojaloop/ml-number": "11.2.4",
     "@mojaloop/object-store-lib": "12.0.3",
     "@now-ims/hapi-now-auth": "2.1.0",
-    "ajv": "8.13.0",
+    "ajv": "8.14.0",
     "ajv-keywords": "5.1.0",
     "base64url": "3.0.1",
     "blipp": "4.0.2",
@@ -139,7 +138,7 @@
     "get-port": "5.1.1",
     "jsdoc": "4.0.3",
     "jsonpath": "1.1.1",
-    "nodemon": "3.1.0",
+    "nodemon": "3.1.1",
     "npm-check-updates": "16.14.20",
     "nyc": "15.1.0",
     "pre-commit": "1.2.2",
