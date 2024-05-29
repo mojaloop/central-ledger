@@ -237,6 +237,37 @@ const getFxTransferInfoList = async (trx, commitRequestId, transferParticipantRo
     throw err
   }
 }
+
+const getReservedPositionChangesByCommitRequestIds = async (trx, commitRequestIdList) => {
+  try {
+    const knex = await Db.getKnex()
+    const participantPositionChanges = await knex('fxTransferStateChange')
+      .transacting(trx)
+      .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)
+      .where('fxTransferStateChange.transferStateId', Enum.Transfers.TransferInternalState.RESERVED)
+      .leftJoin('participantPositionChange AS ppc', 'ppc.fxTransferStateChangeId', 'fxTransferStateChange.fxTransferStateChangeId')
+      .leftJoin('participantPosition AS pp', 'pp.participantPositionId', 'ppc.participantPositionId')
+      .select(
+        'ppc.*',
+        'fxTransferStateChange.commitRequestId AS commitRequestId',
+        'pp.participantCurrencyId AS participantCurrencyId'
+      )
+    const info = {}
+    for (const participantPositionChange of participantPositionChanges) {
+      if (!(participantPositionChange.commitRequestId in info)) {
+        info[participantPositionChange.commitRequestId] = {}
+      }
+      if (participantPositionChange.participantCurrencyId) {
+        info[participantPositionChange.commitRequestId][participantPositionChange.participantCurrencyId] = participantPositionChange
+      }
+    }
+    return info
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
 module.exports = {
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
@@ -249,5 +280,6 @@ module.exports = {
   getAllParticipantCurrency,
   getTransferInfoList,
   getTransferByIdsForReserve,
-  getFxTransferInfoList
+  getFxTransferInfoList,
+  getReservedPositionChangesByCommitRequestIds
 }

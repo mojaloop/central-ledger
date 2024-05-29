@@ -23,7 +23,7 @@ const processPositionFxTimeoutReservedBin = async (
   accumulatedPositionValue,
   accumulatedPositionReservedValue,
   accumulatedFxTransferStates,
-  latestInitiatingFxTransferInfoByFxCommitRequestId
+  fetchedReservedPositionChangesByCommitRequestIds
 ) => {
   const fxTransferStateChanges = []
   const participantPositionChanges = []
@@ -36,6 +36,7 @@ const processPositionFxTimeoutReservedBin = async (
   if (fxTimeoutReservedBins && fxTimeoutReservedBins.length > 0) {
     for (const binItem of fxTimeoutReservedBins) {
       Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::binItem: ${JSON.stringify(binItem.message.value)}`)
+      const participantAccountId = binItem.message.key.toString()
       const commitRequestId = binItem.message.value.content.uriParams.id
       const fxp = binItem.message.value.to
       const payerFsp = binItem.message.value.from
@@ -47,7 +48,7 @@ const processPositionFxTimeoutReservedBin = async (
       } else {
         Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates: ${JSON.stringify(accumulatedFxTransferStates)}`)
 
-        const transferAmount = latestInitiatingFxTransferInfoByFxCommitRequestId[commitRequestId].amount
+        const transferAmount = fetchedReservedPositionChangesByCommitRequestIds[commitRequestId][participantAccountId].value
 
         // Construct payee notification message
         const resultMessage = _constructFxTimeoutReservedResultMessage(
@@ -125,9 +126,6 @@ const _constructFxTimeoutReservedResultMessage = (binItem, commitRequestId, fxp,
 }
 
 const _handleParticipantPositionChange = (runningPosition, transferAmount, commitRequestId, accumulatedPositionReservedValue) => {
-  // NOTE: The transfer info amount is pulled from the initiating fsp records in a batch `SELECT` query.
-  //       And will have a positive value. We subtract that value to the initiating fsp's position
-  //       to revert the position for the amount of the transfer.
   const transferStateId = Enum.Transfers.TransferInternalState.EXPIRED_RESERVED
   // Revert payer's position for the amount of the transfer
   const updatedRunningPosition = new MLNumber(runningPosition.subtract(transferAmount).toFixed(Config.AMOUNT.SCALE))

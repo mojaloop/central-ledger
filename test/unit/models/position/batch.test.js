@@ -555,7 +555,7 @@ Test('Batch model', async (positionBatchTest) => {
     }
   })
 
-  await positionBatchTest.test('getFxTransferInfoList', async (test) => {
+  await positionBatchTest.test('getReservedPositionChangesByCommitRequestIds', async (test) => {
     try {
       sandbox.stub(Db, 'getKnex')
 
@@ -567,20 +567,30 @@ Test('Batch model', async (positionBatchTest) => {
 
       knexStub.returns({
         transacting: sandbox.stub().returns({
-          where: sandbox.stub().returns({
-            whereIn: sandbox.stub().returns({
-              select: sandbox.stub().returns([{ commitRequestId: 1 }, { commitRequestId: 2 }, { commitRequestId: 2 }])
+          whereIn: sandbox.stub().returns({
+            where: sandbox.stub().returns({
+              leftJoin: sandbox.stub().returns({
+                leftJoin: sandbox.stub().returns({
+                  select: sandbox.stub().returns([{
+                    1: {
+                      2: {
+                        value: 1
+                      }
+                    }
+                  }])
+                })
+              })
             })
           })
         })
       })
 
-      await Model.getFxTransferInfoList(trxStub, [1, 2], 3, 4)
+      await Model.getReservedPositionChangesByCommitRequestIds(trxStub, [1, 2], 3, 4)
       test.pass('completed successfully')
-      test.ok(knexStub.withArgs('fxTransferParticipant').calledOnce, 'knex called with fxTransferParticipant once')
+      test.ok(knexStub.withArgs('fxTransferStateChange').calledOnce, 'knex called with fxTransferStateChange once')
       test.end()
     } catch (err) {
-      Logger.error(`getFxTransferInfoList failed with error - ${err}`)
+      Logger.error(`getReservedPositionChangesByCommitRequestIds failed with error - ${err}`)
       test.fail()
       test.end()
     }

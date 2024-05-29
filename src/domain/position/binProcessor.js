@@ -89,12 +89,14 @@ const processBins = async (bins, trx) => {
     Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
   )
 
-  const latestInitiatingFxTransferInfoByFxCommitRequestId = await BatchPositionModel.getFxTransferInfoList(
-    trx,
-    commitRequestIdList,
-    Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP,
-    Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
-  )
+  // Fetch all RESERVED participantPositionChanges associated with a commitRequestId
+  // These will contain the value that was reserved for the fxTransfer
+  // We will use these values to revert the position on timeouts
+  const fetchedReservedPositionChangesByCommitRequestIds =
+    await BatchPositionModel.getReservedPositionChangesByCommitRequestIds(
+      trx,
+      commitRequestIdList
+    )
 
   // Pre fetch transfers for all reserve action fulfils
   const reservedActionTransfers = await BatchPositionModel.getTransferByIdsForReserve(
@@ -160,7 +162,7 @@ const processBins = async (bins, trx) => {
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedFxTransferStates,
-      latestInitiatingFxTransferInfoByFxCommitRequestId
+      fetchedReservedPositionChangesByCommitRequestIds
     )
 
     // Update accumulated values

@@ -738,7 +738,7 @@ module.exports = {
             }
           },
           size: 3489,
-          key: 51,
+          key: 7,
           topic: 'topic-transfer-position',
           offset: 4073,
           partition: 0,
@@ -1244,7 +1244,7 @@ module.exports = {
             }
           },
           size: 3489,
-          key: 51,
+          key: 15,
           topic: 'topic-transfer-position',
           offset: 4073,
           partition: 0,
