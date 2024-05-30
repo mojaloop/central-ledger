@@ -38,8 +38,8 @@ const processPositionFxTimeoutReservedBin = async (
       Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::binItem: ${JSON.stringify(binItem.message.value)}`)
       const participantAccountId = binItem.message.key.toString()
       const commitRequestId = binItem.message.value.content.uriParams.id
-      const fxp = binItem.message.value.to
-      const payerFsp = binItem.message.value.from
+      const counterPartyFsp = binItem.message.value.to
+      const initiatingFsp = binItem.message.value.from
 
       // If the transfer is not in `RESERVED_TIMEOUT`, a position fx-timeout-reserved message was incorrectly published.
       // i.e Something has gone extremely wrong.
@@ -54,8 +54,8 @@ const processPositionFxTimeoutReservedBin = async (
         const resultMessage = _constructFxTimeoutReservedResultMessage(
           binItem,
           commitRequestId,
-          fxp,
-          payerFsp
+          counterPartyFsp,
+          initiatingFsp
         )
         Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::resultMessage: ${JSON.stringify(resultMessage)}`)
 
@@ -83,7 +83,7 @@ const processPositionFxTimeoutReservedBin = async (
   }
 }
 
-const _constructFxTimeoutReservedResultMessage = (binItem, commitRequestId, fxp, payerFsp) => {
+const _constructFxTimeoutReservedResultMessage = (binItem, commitRequestId, counterPartyFsp, initiatingFsp) => {
   // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
   //            notify the payer and payee of the timeout.
   //            As long as the `to` and `from` message values are the payer and payee,
@@ -113,8 +113,8 @@ const _constructFxTimeoutReservedResultMessage = (binItem, commitRequestId, fxp,
   )
   const resultMessage = Utility.StreamingProtocol.createMessage(
     commitRequestId,
-    fxp,
-    payerFsp,
+    counterPartyFsp,
+    initiatingFsp,
     metadata,
     binItem.message.value.content.headers, // Headers don't really matter here. ml-api-adapter will ignore them and create their own.
     fspiopError,
