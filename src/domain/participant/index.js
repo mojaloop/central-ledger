@@ -33,7 +33,6 @@ const ParticipantCurrencyModel = require('../../models/participant/participantCu
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
-const ParticipantProxyModel = require('../../models/participant/participantProxy')
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
@@ -71,7 +70,6 @@ const getAll = async () => {
     const all = await ParticipantModel.getAll()
     await Promise.all(all.map(async (participant) => {
       participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
-      participant.isProxy = await ParticipantProxyModel.checkParticipantProxy(participant.participantId)
     }))
     return all
   } catch (err) {
@@ -83,7 +81,6 @@ const getById = async (id) => {
   const participant = await ParticipantModel.getById(id)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
-    participant.isProxy = await ParticipantProxyModel.checkParticipantProxy(participant.participantId)
   }
   return participant
 }
@@ -92,7 +89,6 @@ const getByName = async (name) => {
   const participant = await ParticipantModel.getByName(name)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
-    participant.isProxy = await ParticipantProxyModel.checkParticipantProxy(participant.participantId)
   }
   return participant
 }
@@ -152,7 +148,6 @@ const destroyByName = async (name) => {
     await ParticipantLimitModel.destroyByParticipantId(participant.participantId)
     await ParticipantPositionModel.destroyByParticipantId(participant.participantId)
     await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
-    await ParticipantProxyModel.destroyByParticipantId(participant.participantId)
     await destroyParticipantEndpointByParticipantId(participant.participantId)
     return await ParticipantModel.destroyByName(name)
   } catch (err) {
@@ -769,15 +764,6 @@ const createAssociatedParticipantAccounts = async (currency, ledgerAccountTypeId
   }
 }
 
-const createParticipantProxy = async (participantId, isProxy) => {
-  try {
-    const participantProxy = await ParticipantProxyModel.create(participantId, isProxy)
-    return participantProxy
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
 module.exports = {
   create,
   getAll,
@@ -809,6 +795,5 @@ module.exports = {
   hubAccountExists: ParticipantCurrencyModel.hubAccountExists,
   getLimitsForAllParticipants,
   validateHubAccounts,
-  createAssociatedParticipantAccounts,
-  createParticipantProxy
+  createAssociatedParticipantAccounts
 }

@@ -105,9 +105,6 @@ const create = async function (request, h) {
         participant.currencyList = await Promise.all([ParticipantService.getParticipantCurrencyById(participantCurrencyId1), ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
       }
     }
-    if (request.payload.isProxy) {
-      await ParticipantService.createParticipantProxy(participant.participantId, request.payload.isProxy)
-    }
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)

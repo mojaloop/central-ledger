@@ -34,7 +34,6 @@ const ParticipantModelCached = require('../../../../src/models/participant/parti
 const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrencyCached')
 const ParticipantPositionModel = require('../../../../src/models/participant/participantPosition')
 const ParticipantLimitModel = require('../../../../src/models/participant/participantLimit')
-const ParticipantProxyModel = require('../../../../src/models/participant/participantProxy')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
 const PositionFacade = require('../../../../src/models/position/facade')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
@@ -169,8 +168,6 @@ Test('Participant service', async (participantTest) => {
 
     sandbox.stub(ParticipantPositionChangeModel, 'getByParticipantPositionId')
 
-    sandbox.stub(ParticipantProxyModel, 'checkParticipantProxy')
-
     sandbox.stub(PositionFacade, 'getByNameAndCurrency')
     sandbox.stub(PositionFacade, 'getAllByNameAndCurrency')
 
@@ -217,7 +214,6 @@ Test('Participant service', async (participantTest) => {
         isActive: 1
       })
       ParticipantCurrencyModel.getByParticipantId.withArgs(participant.participantId, 1).returns(participant.currency)
-      ParticipantProxyModel.checkParticipantProxy.withArgs(participant.participantId).returns(0)
       ParticipantModelCached.destroyByName.withArgs(participant.name).returns(Promise.resolve(true))
       ParticipantCurrencyModel.destroyByParticipantId.withArgs(participant.participantId).returns(Promise.resolve(true))
       Db.participant.destroy.withArgs({ name: participant.name }).returns(Promise.resolve(true))
