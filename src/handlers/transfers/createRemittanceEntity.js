@@ -31,10 +31,16 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.getByIdLight(id)
     },
 
-    async getPositionParticipant (payload) {
+    async checkIfDeterminingTransferExists (payload) {
       return isFx
-        ? cyril.getParticipantAndCurrencyForFxTransferMessage(payload)
-        : cyril.getParticipantAndCurrencyForTransferMessage(payload)
+        ? cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+        : cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload)
+    },
+
+    async getPositionParticipant (payload, determiningTransferCheckResult) {
+      return isFx
+        ? cyril.getParticipantAndCurrencyForFxTransferMessage(payload, determiningTransferCheckResult)
+        : cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult)
     },
 
     async logTransferError (id, errorCode, errorDescription) {

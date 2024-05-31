@@ -189,8 +189,6 @@ Test('transfer validator', validatorTest => {
     validatePrepareTest.test('fail validation for inactive account', async (test) => {
       Participant.getByName.withArgs('dfsp1').returns(Promise.resolve({ isActive: true }))
       Participant.getByName.withArgs('dfsp2').returns(Promise.resolve({ isActive: true }))
-      Participant.getAccountByNameAndCurrency.withArgs('dfsp1', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: true }))
-      Participant.getAccountByNameAndCurrency.withArgs('dfsp2', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: false }))
       CryptoConditions.validateCondition.returns(true)
 
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
@@ -244,8 +242,6 @@ Test('transfer validator', validatorTest => {
       test.equal(validationPassed, true)
       test.ok(Participant.getByName.calledWith('fx_dfsp1'))
       test.ok(Participant.getByName.calledWith('fx_dfsp2'))
-      test.ok(Participant.getAccountByNameAndCurrency.calledWith('fx_dfsp1', 'USD', Enum.Accounts.LedgerAccountType.POSITION))
-      test.ok(Participant.getAccountByNameAndCurrency.calledWith('fx_dfsp2', 'EUR', Enum.Accounts.LedgerAccountType.POSITION))
       test.end()
     })
 

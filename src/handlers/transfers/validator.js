@@ -189,7 +189,7 @@ const isAmountValid = (payload, isFx) => isFx
   ? validateAmount(payload.sourceAmount) && validateAmount(payload.targetAmount)
   : validateAmount(payload.amount)
 
-const validatePrepare = async (payload, headers, isFx = false) => {
+const validatePrepare = async (payload, headers, isFx = false, determiningTransferCheckResult) => {
   const histTimerValidatePrepareEnd = Metrics.getHistogram(
     'handlers_transfer_validator',
     'validatePrepare - Metrics for transfer handler',
@@ -204,21 +204,26 @@ const validatePrepare = async (payload, headers, isFx = false) => {
     return { validationPassed, reasons }
   }
 
-  const payer = isFx ? payload.initiatingFsp : payload.payerFsp
-  const payee = isFx ? payload.counterPartyFsp : payload.payeeFsp
-  const payerAmount = isFx ? payload.sourceAmount : payload.amount
-  const payeeAmount = isFx ? payload.targetAmount : payload.amount
+  const initiatingFsp = isFx ? payload.initiatingFsp : payload.payerFsp
+  const counterPartyFsp = isFx ? payload.counterPartyFsp : payload.payeeFsp
 
-  // todo: implement validation in parallel
   validationPassed = (validateFspiopSourceMatchesPayer(payer, headers) &&
     isAmountValid(payload, isFx) &&
-    await validateParticipantByName(payer) &&
-    await validatePositionAccountByNameAndCurrency(payer, payerAmount.currency) &&
-    await validateParticipantByName(payee) &&
-    await validatePositionAccountByNameAndCurrency(payee, payeeAmount.currency) &&
+    await validateParticipantByName(initiatingFsp) &&
+    await validateParticipantByName(counterPartyFsp) &&
     await validateConditionAndExpiration(payload) &&
-    validateDifferentDfsp(payer, payee)
+    validateDifferentDfsp(initiatingFsp, counterPartyFsp)
   )
+
+  // validate participant accounts from determiningTransferCheckResult
+  if (validationPassed && determiningTransferCheckResult) {
+    for (const participantCurrency of determiningTransferCheckResult.participantCurrencyValidationList) {
+      if (!await validatePositionAccountByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId)) {
+        validationPassed = false;
+        break; // Exit the loop if validation fails
+      }
+    }
+  }
   histTimerValidatePrepareEnd({ success: true, funcName: 'validatePrepare' })
 
   return {

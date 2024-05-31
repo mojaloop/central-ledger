@@ -69,5 +69,7 @@ module.exports = {
     debug: RC.DATABASE.DEBUG
   },
   API_DOC_ENDPOINTS_ENABLED: RC.API_DOC_ENDPOINTS_ENABLED || false,
+  // If this is set to true, payee side currency conversion will not be allowed due to a limitation in the current implementation
+  PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED: (RC.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED === true || RC.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED === 'true'),
   SETTLEMENT_MODELS: RC.SETTLEMENT_MODELS
 }

@@ -134,9 +134,9 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, f
   }
 }
 
-const definePositionParticipant = async ({ isFx, payload }) => {
+const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult }) => {
   const cyrilResult = await createRemittanceEntity(isFx)
-    .getPositionParticipant(payload)
+    .getPositionParticipant(payload, determiningTransferCheckResult)
   const account = await Participant.getAccountByNameAndCurrency(
     cyrilResult.participantName,
     cyrilResult.currencyId,
@@ -149,12 +149,12 @@ const definePositionParticipant = async ({ isFx, payload }) => {
   }
 }
 
-const sendPositionPrepareMessage = async ({ isFx, payload, action, params }) => {
+const sendPositionPrepareMessage = async ({ isFx, payload, action, params, determiningTransferCheckResult }) => {
   const eventDetail = {
     functionality: Type.POSITION,
     action
   }
-  const { messageKey, cyrilResult } = await definePositionParticipant({ payload, isFx })
+  const { messageKey, cyrilResult } = await definePositionParticipant({ payload, isFx, determiningTransferCheckResult })
 
   params.message.value.content.context = {
     ...params.message.value.content.context,
@@ -245,7 +245,9 @@ const prepare = async (error, messages) => {
       return success
     }
 
-    const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers, isFx)
+    const determiningTransferCheckResult = await createRemittanceEntity(isFx).checkIfDeterminingTransferExists(payload)
+
+    const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers, isFx, determiningTransferCheckResult)
     await savePreparedRequest({
       validationPassed, reasons, payload, isFx, functionality, params, location
     })
@@ -270,7 +272,7 @@ const prepare = async (error, messages) => {
     }
 
     logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
-    const success = await sendPositionPrepareMessage({ isFx, payload, action, params })
+    const success = await sendPositionPrepareMessage({ isFx, payload, action, params, determiningTransferCheckResult })
 
     histTimerEnd({ success, fspId })
     return success
