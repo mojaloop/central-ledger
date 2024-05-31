@@ -66,6 +66,15 @@
         "tags": [
           "participants"
         ],
+        "parameters": [
+          {
+            "type": "boolean",
+            "description": "Filter by if participant is a proxy",
+            "name": "isProxy",
+            "in": "query",
+            "required": false
+          }
+        ],
         "responses": {
           "default": {
             "schema": {
