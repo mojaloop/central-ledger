@@ -555,5 +555,46 @@ Test('Batch model', async (positionBatchTest) => {
     }
   })
 
+  await positionBatchTest.test('getReservedPositionChangesByCommitRequestIds', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        transacting: sandbox.stub().returns({
+          whereIn: sandbox.stub().returns({
+            where: sandbox.stub().returns({
+              leftJoin: sandbox.stub().returns({
+                leftJoin: sandbox.stub().returns({
+                  select: sandbox.stub().returns([{
+                    1: {
+                      2: {
+                        value: 1
+                      }
+                    }
+                  }])
+                })
+              })
+            })
+          })
+        })
+      })
+
+      await Model.getReservedPositionChangesByCommitRequestIds(trxStub, [1, 2], 3, 4)
+      test.pass('completed successfully')
+      test.ok(knexStub.withArgs('fxTransferStateChange').calledOnce, 'knex called with fxTransferStateChange once')
+      test.end()
+    } catch (err) {
+      Logger.error(`getReservedPositionChangesByCommitRequestIds failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
   positionBatchTest.end()
 })

@@ -38,6 +38,7 @@ const PositionFxPrepareDomain = require('./fx-prepare')
 const PositionFulfilDomain = require('./fulfil')
 const PositionFxFulfilDomain = require('./fx-fulfil')
 const PositionTimeoutReservedDomain = require('./timeout-reserved')
+const PositionFxTimeoutReservedDomain = require('./fx-timeout-reserved')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -88,6 +89,15 @@ const processBins = async (bins, trx) => {
     Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
   )
 
+  // Fetch all RESERVED participantPositionChanges associated with a commitRequestId
+  // These will contain the value that was reserved for the fxTransfer
+  // We will use these values to revert the position on timeouts
+  const fetchedReservedPositionChangesByCommitRequestIds =
+    await BatchPositionModel.getReservedPositionChangesByCommitRequestIds(
+      trx,
+      commitRequestIdList
+    )
+
   // Pre fetch transfers for all reserve action fulfils
   const reservedActionTransfers = await BatchPositionModel.getTransferByIdsForReserve(
     trx,
@@ -106,15 +116,17 @@ const processBins = async (bins, trx) => {
       array2.every((element) => array1.includes(element))
     // If non-prepare/non-commit action found, log error
     // We need to remove this once we implement all the actions
-    if (!isSubset([
+    const allowedActions = [
       Enum.Events.Event.Action.PREPARE,
       Enum.Events.Event.Action.FX_PREPARE,
       Enum.Events.Event.Action.COMMIT,
       Enum.Events.Event.Action.RESERVE,
       Enum.Events.Event.Action.FX_RESERVE,
-      Enum.Events.Event.Action.TIMEOUT_RESERVED
-    ], actions)) {
-      Logger.isErrorEnabled && Logger.error('Only prepare/fx-prepare/commit/reserve/timeout reserved actions are allowed in a batch')
+      Enum.Events.Event.Action.TIMEOUT_RESERVED,
+      Enum.Events.Event.Action.FX_TIMEOUT_RESERVED
+    ]
+    if (!isSubset(allowedActions, actions)) {
+      Logger.isErrorEnabled && Logger.error(`Only ${allowedActions.join()} are allowed in a batch`)
     }
 
     const settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
@@ -143,6 +155,24 @@ const processBins = async (bins, trx) => {
       accountBin[Enum.Events.Event.Action.FX_RESERVE],
       accumulatedFxTransferStates
     )
+
+    // If fx-timeout-reserved action found then call processPositionTimeoutReserveBin function
+    const fxTimeoutReservedActionResult = await PositionFxTimeoutReservedDomain.processPositionFxTimeoutReservedBin(
+      accountBin[Enum.Events.Event.Action.FX_TIMEOUT_RESERVED],
+      accumulatedPositionValue,
+      accumulatedPositionReservedValue,
+      accumulatedFxTransferStates,
+      fetchedReservedPositionChangesByCommitRequestIds
+    )
+
+    // Update accumulated values
+    accumulatedPositionValue = fxTimeoutReservedActionResult.accumulatedPositionValue
+    accumulatedPositionReservedValue = fxTimeoutReservedActionResult.accumulatedPositionReservedValue
+    accumulatedFxTransferStates = fxTimeoutReservedActionResult.accumulatedFxTransferStates
+    // Append accumulated arrays
+    accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fxTimeoutReservedActionResult.accumulatedFxTransferStateChanges)
+    accumulatedPositionChanges = accumulatedPositionChanges.concat(fxTimeoutReservedActionResult.accumulatedPositionChanges)
+    notifyMessages = notifyMessages.concat(fxTimeoutReservedActionResult.notifyMessages)
 
     // Update accumulated values
     accumulatedFxTransferStates = fxFulfilActionResult.accumulatedFxTransferStates
@@ -330,6 +360,8 @@ const _getTransferIdList = async (bins) => {
     } else if (action === Enum.Events.Event.Action.FX_PREPARE) {
       commitRequestIdList.push(item.decodedPayload.commitRequestId)
     } else if (action === Enum.Events.Event.Action.FX_RESERVE) {
+      commitRequestIdList.push(item.message.value.content.uriParams.id)
+    } else if (action === Enum.Events.Event.Action.FX_TIMEOUT_RESERVED) {
       commitRequestIdList.push(item.message.value.content.uriParams.id)
     }
   })

@@ -211,6 +211,66 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
   return {}
 }
 
+const getFxTransferInfoList = async (trx, commitRequestId, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
+  try {
+    const knex = await Db.getKnex()
+    const transferInfos = await knex('fxTransferParticipant')
+      .transacting(trx)
+      .where({
+        'fxTransferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
+        'fxTransferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
+      })
+      .whereIn('fxTransferParticipant.commitRequestId', commitRequestId)
+      .select(
+        'fxTransferParticipant.*'
+      )
+    const info = {}
+    // This should key the transfer info with the latest transferStateChangeId
+    for (const transferInfo of transferInfos) {
+      if (!(transferInfo.commitRequestId in info)) {
+        info[transferInfo.commitRequestId] = transferInfo
+      }
+    }
+    return info
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
+// This model assumes that there is only one RESERVED participantPositionChange per commitRequestId and participantPositionId.
+// If an fxTransfer use case changes in the future where more than one reservation happens to a participant's account
+// for the same commitRequestId, this model will need to be updated.
+const getReservedPositionChangesByCommitRequestIds = async (trx, commitRequestIdList) => {
+  try {
+    const knex = await Db.getKnex()
+    const participantPositionChanges = await knex('fxTransferStateChange')
+      .transacting(trx)
+      .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)
+      .where('fxTransferStateChange.transferStateId', Enum.Transfers.TransferInternalState.RESERVED)
+      .leftJoin('participantPositionChange AS ppc', 'ppc.fxTransferStateChangeId', 'fxTransferStateChange.fxTransferStateChangeId')
+      .leftJoin('participantPosition AS pp', 'pp.participantPositionId', 'ppc.participantPositionId')
+      .select(
+        'ppc.*',
+        'fxTransferStateChange.commitRequestId AS commitRequestId',
+        'pp.participantCurrencyId AS participantCurrencyId'
+      )
+    const info = {}
+    for (const participantPositionChange of participantPositionChanges) {
+      if (!(participantPositionChange.commitRequestId in info)) {
+        info[participantPositionChange.commitRequestId] = {}
+      }
+      if (participantPositionChange.participantCurrencyId) {
+        info[participantPositionChange.commitRequestId][participantPositionChange.participantCurrencyId] = participantPositionChange
+      }
+    }
+    return info
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
 module.exports = {
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
@@ -222,5 +282,7 @@ module.exports = {
   bulkInsertParticipantPositionChanges,
   getAllParticipantCurrency,
   getTransferInfoList,
-  getTransferByIdsForReserve
+  getTransferByIdsForReserve,
+  getFxTransferInfoList,
+  getReservedPositionChangesByCommitRequestIds
 }
