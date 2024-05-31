@@ -38,7 +38,6 @@ const ParticipantService = require('../../../../src/domain/participant')
 const ParticipantCached = require('../../../../src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('../../../../src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../../../src/models/participant/participantLimitCached')
-const ParticipantProxy = require('../../../../src/models/participant/participantProxy')
 const ParticipantHelper = require('../../helpers/participant')
 const ParticipantEndpointHelper = require('../../helpers/participantEndpoint')
 const ParticipantLimitHelper = require('../../helpers/participantLimit')
@@ -418,8 +417,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('create participant with proxy', async (assert) => {
     try {
       const getByNameResult = await ParticipantService.getByName(testData.proxyParticipant)
-      const result = await ParticipantHelper.prepareData(testData.proxyParticipant, testData.currency, undefined, !!getByNameResult)
-      await ParticipantProxy.create(result.participant.participantId, true)
+      const result = await ParticipantHelper.prepareData(testData.proxyParticipant, testData.currency, undefined, !!getByNameResult, true)
       participantProxyFixtures.push(result.participant)
 
       for (const participant of participantProxyFixtures) {

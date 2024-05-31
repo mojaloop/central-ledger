@@ -42,13 +42,14 @@ const testParticipant = {
   createdDate: new Date()
 }
 
-exports.prepareData = async (name, currencyId = 'USD', secondaryCurrencyId = 'XXX', isUnique = true) => {
+exports.prepareData = async (name, currencyId = 'USD', secondaryCurrencyId = 'XXX', isUnique = true, isProxy = false) => {
   try {
     const participantId = await Model.create(Object.assign(
       {},
       testParticipant,
       {
-        name: (name || testParticipant.name) + (isUnique ? time.msToday().toString() : '')
+        name: (name || testParticipant.name) + (isUnique ? time.msToday().toString() : ''),
+        isProxy
       }
     ))
     const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.POSITION, false)
