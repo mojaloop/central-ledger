@@ -49,6 +49,7 @@ Test('Participant service', async (participantTest) => {
   let sandbox
   const participantFixtures = []
   const endpointsFixtures = []
+  const participantProxyFixtures = []
   const participantMap = new Map()
 
   const testData = {
@@ -59,7 +60,8 @@ Test('Participant service', async (participantTest) => {
     fsp3Name: 'payerfsp',
     fsp4Name: 'payeefsp',
     simulatorBase: 'http://localhost:8444',
-    notificationEmail: 'test@example.com'
+    notificationEmail: 'test@example.com',
+    proxyParticipant: 'xnProxy'
   }
 
   await participantTest.test('setup', async (test) => {
@@ -172,6 +174,7 @@ Test('Participant service', async (participantTest) => {
       for (const participantId of participantMap.keys()) {
         const participant = await ParticipantService.getById(participantId)
         assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId)))
+        assert.equal(participant.isProxy, 0, 'isProxy flag set to false')
       }
       assert.end()
     } catch (err) {
@@ -406,6 +409,30 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     } catch (err) {
       Logger.error(`update participant failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('create participant with proxy', async (assert) => {
+    try {
+      const getByNameResult = await ParticipantService.getByName(testData.proxyParticipant)
+      const result = await ParticipantHelper.prepareData(testData.proxyParticipant, testData.currency, undefined, !!getByNameResult, true)
+      participantProxyFixtures.push(result.participant)
+
+      for (const participant of participantProxyFixtures) {
+        const read = await ParticipantService.getById(participant.participantId)
+        participantMap.set(participant.participantId, read)
+        if (debug) assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
+        assert.equal(read.name, participant.name, 'names are equal')
+        assert.deepEqual(read.currencyList, participant.currencyList, 'currency match')
+        assert.equal(read.isActive, participant.isActive, 'isActive flag matches')
+        assert.equal(read.createdDate.toString(), participant.createdDate.toString(), 'created date matches')
+        assert.equal(read.isProxy, 1, 'isProxy flag set to true')
+      }
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
       assert.fail()
       assert.end()
     }

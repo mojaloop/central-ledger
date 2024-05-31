@@ -52,14 +52,16 @@ Test('Participant service', async (participantTest) => {
       name: 'fsp1',
       currency: 'USD',
       isActive: 1,
-      createdDate: new Date()
+      createdDate: new Date(),
+      isProxy: 0
     },
     {
       participantId: 1,
       name: 'fsp2',
       currency: 'EUR',
       isActive: 1,
-      createdDate: new Date()
+      createdDate: new Date(),
+      isProxy: 0
     }
 
   ]
@@ -70,7 +72,8 @@ Test('Participant service', async (participantTest) => {
       currency: 'USD',
       isActive: 1,
       createdDate: new Date(),
-      currencyList: ['USD']
+      currencyList: ['USD'],
+      isProxy: 0
     },
     {
       participantId: 1,
@@ -78,7 +81,8 @@ Test('Participant service', async (participantTest) => {
       currency: 'EUR',
       isActive: 1,
       createdDate: new Date(),
-      currencyList: ['EUR']
+      currencyList: ['EUR'],
+      isProxy: 0
     }
   ]
   const participantCurrencyResult = [
@@ -195,7 +199,7 @@ Test('Participant service', async (participantTest) => {
     participantFixtures.forEach((participant, index) => {
       participantMap.set(index + 1, participantResult[index])
       Db.participant.insert.withArgs({ participant }).returns(index)
-      ParticipantModelCached.create.withArgs({ name: participant.name }).returns((index + 1))
+      ParticipantModelCached.create.withArgs({ name: participant.name, isProxy: !!participant.isProxy }).returns((index + 1))
       ParticipantModelCached.getByName.withArgs(participant.name).returns(participantResult[index])
       ParticipantModelCached.getById.withArgs(index).returns(participantResult[index])
       ParticipantModelCached.update.withArgs(participant, 1).returns((index + 1))
@@ -250,7 +254,7 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('create false participant', async (assert) => {
-    const falseParticipant = { name: 'fsp3' }
+    const falseParticipant = { name: 'fsp3', isProxy: false }
     ParticipantModelCached.create.withArgs(falseParticipant).throws(new Error())
     try {
       await Service.create(falseParticipant)
