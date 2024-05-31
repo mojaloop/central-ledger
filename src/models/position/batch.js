@@ -238,6 +238,7 @@ const getFxTransferInfoList = async (trx, commitRequestId, transferParticipantRo
   }
 }
 
+// This model assumes that there is only one RESERVED participantPositionChange per commitRequestId and participantPositionId
 const getReservedPositionChangesByCommitRequestIds = async (trx, commitRequestIdList) => {
   try {
     const knex = await Db.getKnex()
