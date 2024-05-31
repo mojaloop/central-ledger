@@ -161,6 +161,9 @@ const getAll = async function (request) {
   const results = await ParticipantService.getAll()
   const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
   const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
+  if (request.query.isProxy) {
+    return results.map(record => entityItem(record, ledgerAccountIds)).filter(record => record.isProxy)
+  }
   return results.map(record => entityItem(record, ledgerAccountIds))
 }
 

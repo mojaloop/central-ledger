@@ -68,6 +68,18 @@ Test('Participant', participantHandlerTest => {
         { participantCurrencyId: 5, currencyId: 'USD', ledgerAccountTypeId: 5, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
       ],
       isProxy: 0
+    },
+    {
+      participantId: 4,
+      name: 'xnProxy',
+      currency: 'EUR',
+      isActive: 1,
+      createdDate: '2018-07-17T16:04:24.185Z',
+      currencyList: [
+        { participantCurrencyId: 6, currencyId: 'EUR', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' },
+        { participantCurrencyId: 7, currencyId: 'EUR', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
+      ],
+      isProxy: 1
     }
   ]
 
@@ -112,6 +124,20 @@ Test('Participant', participantHandlerTest => {
         { id: 5, currency: 'USD', ledgerAccountType: 'HUB_FEE', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') }
       ],
       isProxy: 0
+    },
+    {
+      name: 'xnProxy',
+      id: 'http://central-ledger/participants/xnProxy',
+      created: '2018-07-17T16:04:24.185Z',
+      isActive: 1,
+      links: {
+        self: 'http://central-ledger/participants/xnProxy'
+      },
+      accounts: [
+        { id: 6, currency: 'EUR', ledgerAccountType: 'POSITION', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') },
+        { id: 7, currency: 'EUR', ledgerAccountType: 'SETTLEMENT', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') }
+      ],
+      isProxy: 1
     }
   ]
   const settlementModelFixtures = [
@@ -152,6 +178,13 @@ Test('Participant', participantHandlerTest => {
       Participant.getAll.returns(Promise.resolve(participantFixtures))
       const result = await Handler.getAll(createRequest({}))
       test.deepEqual(result, participantResults, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getAll should return all proxies when isProxy query is true', async function (test) {
+      Participant.getAll.returns(Promise.resolve(participantFixtures))
+      const result = await Handler.getAll(createRequest({ query: { isProxy: true } }))
+      test.deepEqual(result, participantResults.filter(record => record.isProxy), 'The results match')
       test.end()
     })
 
