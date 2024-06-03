@@ -38,7 +38,7 @@ const LocalEnum = {
   disabled: 'disabled'
 }
 
-const entityItem = ({ name, createdDate, isActive, currencyList, isProxy }, ledgerAccountIds) => {
+const entityItem = ({ name, createdDate, isActive, currencyList }, ledgerAccountIds) => {
   const link = UrlParser.toParticipantUri(name)
   const accounts = currencyList.map((currentValue) => {
     return {
@@ -58,8 +58,7 @@ const entityItem = ({ name, createdDate, isActive, currencyList, isProxy }, ledg
     links: {
       self: link
     },
-    accounts,
-    isProxy
+    accounts
   }
 }
 
@@ -161,9 +160,6 @@ const getAll = async function (request) {
   const results = await ParticipantService.getAll()
   const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
   const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
-  if (request.query.isProxy) {
-    return results.map(record => entityItem(record, ledgerAccountIds)).filter(record => record.isProxy)
-  }
   return results.map(record => entityItem(record, ledgerAccountIds))
 }
 

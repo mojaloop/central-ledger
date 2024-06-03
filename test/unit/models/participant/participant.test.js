@@ -42,7 +42,6 @@ Test('Participant model', async (participantTest) => {
       name: 'fsp1z',
       currency: 'USD',
       isActive: 1,
-      isProxy: false,
       createdDate: new Date()
     },
     {
@@ -50,7 +49,6 @@ Test('Participant model', async (participantTest) => {
       name: 'fsp2',
       currency: 'EUR',
       isActive: 1,
-      isProxy: true,
       createdDate: new Date()
     }
   ]
@@ -99,8 +97,7 @@ Test('Participant model', async (participantTest) => {
     try {
       Db.participant.insert.withArgs({
         name: participantFixtures[0].name,
-        createdBy: 'unknown',
-        isProxy: false
+        createdBy: 'unknown'
       }).returns(1)
       const result = await Model.create(participantFixtures[0])
       assert.equal(result, 1, ` returns ${result}`)
@@ -116,8 +113,7 @@ Test('Participant model', async (participantTest) => {
     try {
       Db.participant.insert.withArgs({
         name: participantFixtures[0].name,
-        createdBy: 'unknown',
-        isProxy: false
+        createdBy: 'unknown'
       }).throws(new Error())
       const result = await Model.create(participantFixtures[0])
       test.equal(result, 1, ` returns ${result}`)

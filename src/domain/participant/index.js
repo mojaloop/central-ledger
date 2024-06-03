@@ -59,7 +59,7 @@ const { destroyParticipantEndpointByParticipantId } = require('../../models/part
 
 const create = async (payload) => {
   try {
-    return ParticipantModel.create({ name: payload.name, isProxy: !!payload.isProxy })
+    return ParticipantModel.create({ name: payload.name })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
