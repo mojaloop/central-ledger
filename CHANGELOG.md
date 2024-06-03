@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.7.0](https://github.com/mojaloop/central-ledger/compare/v17.6.2...v17.7.0) (2024-05-31)
+
+
+### Features
+
+* extend admin api to support proxy participants ([#1038](https://github.com/mojaloop/central-ledger/issues/1038)) ([5316df3](https://github.com/mojaloop/central-ledger/commit/5316df3817c2f1066c116bfec64ac2cef1fe5d64))
+
 ### [17.6.2](https://github.com/mojaloop/central-ledger/compare/v17.6.1...v17.6.2) (2024-04-30)
 
 
