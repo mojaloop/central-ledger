@@ -22,6 +22,8 @@
   "GHSA-5854-jvxx-2cg9", // hapi-auth-basic>hapi>subtext
   "GHSA-2mvq-xp48-4c77", // hapi-auth-basic>hapi>subtext
   "GHSA-w5p7-h5w8-2hfq", // tap-spec>tap-out>trim
-  "GHSA-p9pc-299p-vxgp"  // widdershins>yargs>yargs-parser
+  "GHSA-p9pc-299p-vxgp", // widdershins>yargs>yargs-parser
+  "GHSA-ghr5-ch3p-vcr6", // https://github.com/advisories/GHSA-ghr5-ch3p-vcr6
+  "GHSA-cgfm-xwp7-2cvr"  // https://github.com/advisories/GHSA-cgfm-xwp7-2cvr
   ]
 }
