@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.7.1](https://github.com/mojaloop/central-ledger/compare/v17.7.0...v17.7.1) (2024-06-04)
+
+
+### Chore
+
+* "revert feat: extend admin api to support proxy participants ([#1038](https://github.com/mojaloop/central-ledger/issues/1038))" ([#1042](https://github.com/mojaloop/central-ledger/issues/1042)) ([182142e](https://github.com/mojaloop/central-ledger/commit/182142ee76231ac4899b910c8ea2673997056b6e))
+* dependency updates to use latest libraries with patches ([#1040](https://github.com/mojaloop/central-ledger/issues/1040)) ([dc672ae](https://github.com/mojaloop/central-ledger/commit/dc672ae8554732a3d9920ef45fc122fa85522488))
+
 ## [17.7.0](https://github.com/mojaloop/central-ledger/compare/v17.6.2...v17.7.0) (2024-05-31)
 
 
