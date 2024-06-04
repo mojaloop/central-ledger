@@ -96,7 +96,7 @@
     "@mojaloop/ml-number": "11.2.4",
     "@mojaloop/object-store-lib": "12.0.3",
     "@now-ims/hapi-now-auth": "2.1.0",
-    "ajv": "8.14.0",
+    "ajv": "8.15.0",
     "ajv-keywords": "5.1.0",
     "base64url": "3.0.1",
     "blipp": "4.0.2",
@@ -140,6 +140,13 @@
     "tap-xunit": "2.4.1",
     "tape": "4.16.2",
     "tapes": "4.1.0"
+  },
+  "overrides": {
+    "shins": {
+      "ejs": "3.1.10",
+      "sanitize-html": "2.12.1",
+      "@hapi/hoek": "9.3.0"
+    }
   },
   "config": {
     "knex": "--knexfile ./config/knexfile.js",
