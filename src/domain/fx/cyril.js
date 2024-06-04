@@ -80,7 +80,7 @@ const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload) => 
       currencyId: payload.targetAmount.currency
     }
   ]
-  if (determiningTransferCheckResult.determiningTransferExistsInTransferList) {
+  if (determiningTransferExistsInTransferList) {
     // If there's a currency conversion which is not the first message, then it must be issued by the creditor party
     participantCurrencyValidationList.push({
       participantName: payload.initiatingFsp,
@@ -127,7 +127,7 @@ const getParticipantAndCurrencyForTransferMessage = async (payload, determiningT
     amount = payload.amount.amount
   }
 
-  histTimerGetParticipantAndCurrencyForTransferMessage({ success: true, determiningTransferExists: determiningTransferExistsInWatchList })
+  histTimerGetParticipantAndCurrencyForTransferMessage({ success: true, determiningTransferExists: determiningTransferCheckResult.determiningTransferExistsInWatchList })
   return {
     participantName,
     currencyId,
@@ -168,7 +168,7 @@ const getParticipantAndCurrencyForFxTransferMessage = async (payload, determinin
     })
   }
 
-  histTimerGetParticipantAndCurrencyForFxTransferMessage({ success: true, determiningTransferExists: determiningTransferExistsInTransferList })
+  histTimerGetParticipantAndCurrencyForFxTransferMessage({ success: true, determiningTransferExists: determiningTransferCheckResult.determiningTransferExistsInTransferList })
   return {
     participantName,
     currencyId,

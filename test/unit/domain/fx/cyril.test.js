@@ -74,7 +74,8 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForTransferMessageTest.test('return details about regular transfer', async (test) => {
       try {
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve([]))
-        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult)
 
         test.deepEqual(result, {
           participantName: 'dfsp1',
@@ -109,7 +110,8 @@ Test('Cyril', cyrilTest => {
             counterPartyFspName: 'fx_dfsp2'
           }
         ))
-        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult)
 
         test.deepEqual(result, {
           participantName: 'fx_dfsp2',
@@ -133,7 +135,8 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForFxTransferMessageTest.test('return details about fxtransfer debtor party initited msg', async (test) => {
       try {
         TransferModel.getById.returns(Promise.resolve(null))
-        const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload)
+        const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload, determiningTransferCheckResult)
 
         test.ok(watchList.addToWatchList.calledWith({
           commitRequestId: fxPayload.commitRequestId,
@@ -156,7 +159,8 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForFxTransferMessageTest.test('return details about fxtransfer creditor party initited msg', async (test) => {
       try {
         TransferModel.getById.returns(Promise.resolve({}))
-        const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload)
+        const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload, determiningTransferCheckResult)
 
         test.ok(watchList.addToWatchList.calledWith({
           commitRequestId: fxPayload.commitRequestId,

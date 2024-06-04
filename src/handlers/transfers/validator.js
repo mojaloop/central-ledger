@@ -207,7 +207,7 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
   const initiatingFsp = isFx ? payload.initiatingFsp : payload.payerFsp
   const counterPartyFsp = isFx ? payload.counterPartyFsp : payload.payeeFsp
 
-  validationPassed = (validateFspiopSourceMatchesPayer(payer, headers) &&
+  validationPassed = (validateFspiopSourceMatchesPayer(initiatingFsp, headers) &&
     isAmountValid(payload, isFx) &&
     await validateParticipantByName(initiatingFsp) &&
     await validateParticipantByName(counterPartyFsp) &&
