@@ -28,7 +28,7 @@ const registerPlugins = async (server) => {
   })
 
   await server.register({
-    plugin: require('hapi-auth-basic')
+    plugin: require('@hapi/basic')
   })
 
   await server.register({

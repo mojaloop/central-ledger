@@ -81,6 +81,7 @@
   "dependencies": {
     "@hapi/good": "9.0.1",
     "@hapi/hapi": "21.3.9",
+    "@hapi/basic": "7.0.2",
     "@hapi/inert": "7.1.0",
     "@hapi/joi": "17.1.1",
     "@hapi/vision": "7.0.3",
@@ -96,7 +97,7 @@
     "@mojaloop/ml-number": "11.2.4",
     "@mojaloop/object-store-lib": "12.0.3",
     "@now-ims/hapi-now-auth": "2.1.0",
-    "ajv": "8.15.0",
+    "ajv": "8.16.0",
     "ajv-keywords": "5.1.0",
     "base64url": "3.0.1",
     "blipp": "4.0.2",
@@ -107,7 +108,6 @@
     "event-stream": "4.0.1",
     "five-bells-condition": "5.0.1",
     "glob": "10.4.1",
-    "hapi-auth-basic": "5.0.0",
     "hapi-auth-bearer-token": "8.0.0",
     "hapi-swagger": "17.2.1",
     "ilp-packet": "2.2.0",
@@ -143,9 +143,10 @@
   },
   "overrides": {
     "shins": {
-      "ejs": "3.1.10",
-      "sanitize-html": "2.12.1",
-      "@hapi/hoek": "9.3.0"
+      "ejs": "^3.1.10",
+      "sanitize-html": "^2.12.1",
+      "jsonpointer": "^5.0.0",
+      "jsonwebtoken": "^9.0.0"
     }
   },
   "config": {
