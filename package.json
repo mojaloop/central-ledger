@@ -143,13 +143,14 @@
   },
   "overrides": {
     "shins": {
+      "ajv": "6.12.3",
       "ejs": "3.1.10",
       "sanitize-html": "2.12.1",
-      "jsonpointer": "5.0.0",
-      "jsonwebtoken": "9.0.0",
-      "yargs-parser": "13.1.2",
+      "yargs-parser": "18.1.1",
       "markdown-it": "12.3.2"
-    }
+    },
+    "jsonwebtoken": "9.0.0",
+    "jsonpointer": "5.0.0"
   },
   "config": {
     "knex": "--knexfile ./config/knexfile.js",
