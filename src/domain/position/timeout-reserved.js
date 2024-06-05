@@ -30,9 +30,10 @@ const processPositionTimeoutReservedBin = async (
   const resultMessages = []
   const accumulatedTransferStatesCopy = Object.assign({}, accumulatedTransferStates)
   let runningPosition = new MLNumber(accumulatedPositionValue)
-  // Position action RESERVED_TIMEOUT event messages are keyed with payer account id.
-  // We need to revert the payer's position for the amount of the transfer.
-  // We need to notify the payee of the timeout.
+  // Position action RESERVED_TIMEOUT event messages are keyed either with the
+  // payer's account id or an fxp target currency account of an associated fxTransfer.
+  // We need to revert the payer's/fxp's position for the amount of the transfer.
+  // The payer and payee are notified from the singular NOTIFICATION event RESERVED_TIMEOUT action
   if (timeoutReservedBins && timeoutReservedBins.length > 0) {
     for (const binItem of timeoutReservedBins) {
       Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::binItem: ${JSON.stringify(binItem.message.value)}`)
@@ -49,7 +50,7 @@ const processPositionTimeoutReservedBin = async (
 
         const transferAmount = transferInfoList[transferId].amount
 
-        // Construct payee notification message
+        // Construct notification message
         const resultMessage = _constructTimeoutReservedResultMessage(
           binItem,
           transferId,
@@ -58,7 +59,7 @@ const processPositionTimeoutReservedBin = async (
         )
         Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::resultMessage: ${JSON.stringify(resultMessage)}`)
 
-        // Revert payer's position for the amount of the transfer
+        // Revert payer's or fxp's position for the amount of the transfer
         const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
           _handleParticipantPositionChange(runningPosition, transferAmount, transferId, accumulatedPositionReservedValue)
         Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
@@ -126,10 +127,10 @@ const _constructTimeoutReservedResultMessage = (binItem, transferId, payeeFsp, p
 
 const _handleParticipantPositionChange = (runningPosition, transferAmount, transferId, accumulatedPositionReservedValue) => {
   // NOTE: The transfer info amount is pulled from the payee records in a batch `SELECT` query.
-  //       And will have a negative value. We add that value to the payer's position
+  //       And will have a negative value. We add that value to the payer's(in regular transfer) or fxp's(in fx transfer) position
   //       to revert the position for the amount of the transfer.
   const transferStateId = Enum.Transfers.TransferInternalState.EXPIRED_RESERVED
-  // Revert payer's position for the amount of the transfer
+  // Revert payer's or fxp's position for the amount of the transfer
   const updatedRunningPosition = new MLNumber(runningPosition.add(transferAmount).toFixed(Config.AMOUNT.SCALE))
   Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::_handleParticipantPositionChange::updatedRunningPosition: ${updatedRunningPosition.toString()}`)
   Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::_handleParticipantPositionChange::transferAmount: ${transferAmount}`)
