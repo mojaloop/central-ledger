@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.7.4](https://github.com/mojaloop/central-ledger/compare/v17.7.3...v17.7.4) (2024-06-06)
+
+
+### Chore
+
+* more dep updates to fix dependabot alerts ([#1046](https://github.com/mojaloop/central-ledger/issues/1046)) ([1ab8aa9](https://github.com/mojaloop/central-ledger/commit/1ab8aa9d0401d9019968d908774d6e19ca94374e))
+
 ### [17.7.3](https://github.com/mojaloop/central-ledger/compare/v17.7.2...v17.7.3) (2024-06-05)
 
 
