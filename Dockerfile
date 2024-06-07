@@ -23,6 +23,7 @@ RUN apk add --no-cache -t build-dependencies make gcc g++ python3 libtool openss
 COPY package.json package-lock.json* /opt/app/
 
 RUN npm ci
+RUN npm prune --omit=dev
 
 FROM node:${NODE_VERSION}
 WORKDIR /opt/app
@@ -42,8 +43,6 @@ COPY config /opt/app/config
 COPY migrations /opt/app/migrations
 COPY seeds /opt/app/seeds
 COPY test /opt/app/test
-
-RUN npm prune --production
 
 EXPOSE 3001
 CMD ["npm", "run", "start"]
