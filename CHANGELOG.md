@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.7.7](https://github.com/mojaloop/central-ledger/compare/v17.7.6...v17.7.7) (2024-06-07)
+
+
+### Chore
+
+* updates to fix ajv vulns ([#1049](https://github.com/mojaloop/central-ledger/issues/1049)) ([6e64d28](https://github.com/mojaloop/central-ledger/commit/6e64d287be51b40e98d6ae6cefc712c5228f42f5))
+
 ### [17.7.6](https://github.com/mojaloop/central-ledger/compare/v17.7.5...v17.7.6) (2024-06-07)
 
 
