@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.7.6](https://github.com/mojaloop/central-ledger/compare/v17.7.5...v17.7.6) (2024-06-07)
+
+
+### Chore
+
+* dependency updates, cs shared ([#1048](https://github.com/mojaloop/central-ledger/issues/1048)) ([5844ee0](https://github.com/mojaloop/central-ledger/commit/5844ee0720a861da27f33649aff62be37fcdfaca))
+
 ### [17.7.5](https://github.com/mojaloop/central-ledger/compare/v17.7.4...v17.7.5) (2024-06-06)
 
 
