@@ -514,7 +514,7 @@ jobs:
             aws s3 cp anchore-reports ${AWS_S3_DIR_ANCHORE_REPORTS}/latest/ --recursive
       - run:
           name: Evaluate failures
-          command: /tmp/ci-config/container-scanning/anchore-result-diff.js anchore-reports/node_${NVMRC_VERSION}-alpine-policy.json anchore-reports/${CIRCLE_PROJECT_REPONAME}*-policy.json
+          command: /tmp/ci-config/container-scanning/anchore-result-diff.js anchore-reports/node_${NVMRC_VERSION}-alpine3.19-policy.json anchore-reports/${CIRCLE_PROJECT_REPONAME}*-policy.json
       - store_artifacts:
           path: anchore-reports
       - slack/notify:
