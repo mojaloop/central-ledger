@@ -150,7 +150,7 @@
       "markdown-it": "12.3.2"
     },
     "widdershins": {
-      "ajv": "6.12.3",
+      "swagger2openapi": "7.0.8",
       "yargs-parser": "13.1.2",
       "markdown-it": "12.3.2"
     },
