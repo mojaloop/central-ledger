@@ -241,11 +241,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         }
         batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
         histTimerPersistTransferStateChangeEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_PersistTransferState' })
-        await trx.commit()
         histTimerChangeParticipantPositionTransEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
       } catch (err) {
         Logger.isErrorEnabled && Logger.error(err)
-        await trx.rollback()
         histTimerChangeParticipantPositionTransEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
@@ -298,10 +296,8 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
           createdDate: transactionTimestamp
         }
         await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
-        await trx.commit()
         histTimerChangeParticipantPositionTransactionEnd({ success: true, queryName: 'facade_changeParticipantPositionTransaction' })
       } catch (err) {
-        await trx.rollback()
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
