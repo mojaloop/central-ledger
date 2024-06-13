@@ -1569,6 +1569,16 @@ Test('Transfer facade', async (transferFacadeTest) => {
                     innerJoin: sandbox.stub().returns({
                       innerJoin: sandbox.stub().returns({
                         innerJoin: sandbox.stub().returns({
+                          where: sandbox.stub().returns({ // This is for _getFxTransferTimeoutList
+                            select: sandbox.stub()
+                          }),
+                          leftJoin: sandbox.stub().returns({
+                            where: sandbox.stub().returns({
+                              select: sandbox.stub().returns(
+                                Promise.resolve(transferTimeoutListMock)
+                              )
+                            })
+                          }),
                           innerJoin: sandbox.stub().returns({
                             where: sandbox.stub().returns({ // This is for _getFxTransferTimeoutList
                               select: sandbox.stub()
@@ -2025,6 +2035,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
           knexStub.withArgs('participantCurrency').returns({
             select: sandbox.stub().returns({
               where: sandbox.stub().returns({
+                first: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns(
+                    Promise.resolve({
+                      participantId: 1
+                    })
+                  )
+                }),
                 andWhere: sandbox.stub().returns({
                   first: sandbox.stub().returns({
                     transacting: sandbox.stub().returns(
@@ -2042,7 +2059,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const result = await TransferFacade.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trxStub)
           test.equal(result, 0, 'Result for successful operation returned')
           test.equal(knexStub.withArgs('transfer').callCount, 1)
-          test.equal(knexStub.withArgs('participantCurrency').callCount, 1)
+          test.equal(knexStub.withArgs('participantCurrency').callCount, 2)
           test.equal(knexStub.withArgs('transferParticipant').callCount, 2)
           test.equal(knexStub.withArgs('transferStateChange').callCount, 1)
           test.equal(knexStub.withArgs('transferExtension').callCount, 3)
@@ -2095,6 +2112,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
           knexStub.returns({
             select: sandbox.stub().returns({
               where: sandbox.stub().returns({
+                first: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    participantId: 1
+                  })
+                }),
                 andWhere: sandbox.stub().returns({
                   first: sandbox.stub().returns({
                     transacting: sandbox.stub().returns({
@@ -2142,6 +2164,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
           knexStub.withArgs('participantCurrency').returns({
             select: sandbox.stub().returns({
               where: sandbox.stub().returns({
+                first: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns(
+                    Promise.resolve({
+                      participantId: 1
+                    })
+                  )
+                }),
                 andWhere: sandbox.stub().returns({
                   first: sandbox.stub().returns({
                     transacting: sandbox.stub().returns(
