@@ -8,6 +8,7 @@ const Db = require('../../lib/db')
 const participant = require('../participant/facade')
 const { TABLE_NAMES } = require('../../shared/constants')
 const { logger } = require('../../shared/logger')
+const ParticipantCachedModel = require('../participant/participantCached')
 
 const { TransferInternalState } = Enum.Transfers
 
@@ -73,14 +74,14 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
         // INITIATING_FSP
         .innerJoin('fxTransferParticipant AS tp1', 'tp1.commitRequestId', 'fxTransfer.commitRequestId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
-        .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
-        .innerJoin('participant AS da', 'da.participantId', 'pc1.participantId')
+        .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
+        .leftJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
         // COUNTER_PARTY_FSP SOURCE currency
         .innerJoin('fxTransferParticipant AS tp21', 'tp21.commitRequestId', 'fxTransfer.commitRequestId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp21.transferParticipantRoleTypeId')
         .innerJoin('fxParticipantCurrencyType AS fpct1', 'fpct1.fxParticipantCurrencyTypeId', 'tp21.fxParticipantCurrencyTypeId')
-        .innerJoin('participantCurrency AS pc21', 'pc21.participantCurrencyId', 'tp21.participantCurrencyId')
-        .innerJoin('participant AS ca', 'ca.participantId', 'pc21.participantId')
+        .innerJoin('participant AS ca', 'ca.participantId', 'tp21.participantId')
+        .leftJoin('participantCurrency AS pc21', 'pc21.participantCurrencyId', 'tp21.participantCurrencyId')
         // COUNTER_PARTY_FSP TARGET currency
         .innerJoin('fxTransferParticipant AS tp22', 'tp22.commitRequestId', 'fxTransfer.commitRequestId')
         .innerJoin('transferParticipantRoleType AS tprt3', 'tprt3.transferParticipantRoleTypeId', 'tp22.transferParticipantRoleTypeId')
@@ -143,7 +144,7 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
 
   try {
     const [initiatingParticipant, counterParticipant1, counterParticipant2] = await Promise.all([
-      getParticipant(payload.initiatingFsp, payload.sourceAmount.currency),
+      ParticipantCachedModel.getByName(payload.initiatingFsp),
       getParticipant(payload.counterPartyFsp, payload.sourceAmount.currency),
       getParticipant(payload.counterPartyFsp, payload.targetAmount.currency)
     ])
@@ -169,7 +170,8 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
 
     const initiatingParticipantRecord = {
       commitRequestId: payload.commitRequestId,
-      participantCurrencyId: initiatingParticipant.participantCurrencyId,
+      participantId: initiatingParticipant.participantId,
+      participantCurrencyId: null,
       amount: payload.sourceAmount.amount,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
@@ -177,6 +179,7 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
 
     const counterPartyParticipantRecord1 = {
       commitRequestId: payload.commitRequestId,
+      participantId: counterParticipant1.participantId,
       participantCurrencyId: counterParticipant1.participantCurrencyId,
       amount: -payload.sourceAmount.amount,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
@@ -186,6 +189,7 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
 
     const counterPartyParticipantRecord2 = {
       commitRequestId: payload.commitRequestId,
+      participantId: counterParticipant2.participantId,
       participantCurrencyId: counterParticipant2.participantCurrencyId,
       amount: -payload.targetAmount.amount,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,

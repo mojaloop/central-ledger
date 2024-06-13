@@ -114,13 +114,13 @@ const processDuplication = async ({
   return true
 }
 
-const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, functionality, params, location }) => {
+const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, functionality, params, location, determiningTransferCheckResult }) => {
   const logMessage = Util.breadcrumb(location, 'savePreparedRequest')
   try {
     logger.info(logMessage, { validationPassed, reasons })
     const reason = validationPassed ? null : reasons.toString()
     await createRemittanceEntity(isFx)
-      .savePreparedRequest(payload, reason, validationPassed)
+      .savePreparedRequest(payload, reason, validationPassed, determiningTransferCheckResult)
   } catch (err) {
     logger.error(`${logMessage} error - ${err.message}`)
     const fspiopError = reformatFSPIOPError(err, FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
@@ -249,7 +249,7 @@ const prepare = async (error, messages) => {
 
     const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers, isFx, determiningTransferCheckResult)
     await savePreparedRequest({
-      validationPassed, reasons, payload, isFx, functionality, params, location
+      validationPassed, reasons, payload, isFx, functionality, params, location, determiningTransferCheckResult
     })
     if (!validationPassed) {
       logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))

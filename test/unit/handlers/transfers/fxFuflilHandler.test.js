@@ -389,7 +389,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.equal(messageProtocol.metadata.event.action, action)
     t.deepEqual(messageProtocol.metadata.event.state, fixtures.metadataEventStateDto())
     t.deepEqual(messageProtocol.content, kafkaMessage.value.content)
-    t.equal(topicConfig.topicName, TOPICS.transferPosition)
+    t.equal(topicConfig.topicName, TOPICS.transferPositionBatch)
     t.equal(topicConfig.key, String(fxTransferDetails.counterPartyFspSourceParticipantCurrencyId))
     t.end()
   })

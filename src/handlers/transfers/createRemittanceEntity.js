@@ -18,11 +18,11 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.saveTransferDuplicateCheck(id, hash)
     },
 
-    async savePreparedRequest (payload, reason, isValid) {
+    async savePreparedRequest (payload, reason, isValid, determiningTransferCheckResult) {
       // todo: add histoTimer and try/catch here
       return isFx
-        ? fxTransferModel.fxTransfer.savePreparedRequest(payload, reason, isValid)
-        : TransferService.prepare(payload, reason, isValid)
+        ? fxTransferModel.fxTransfer.savePreparedRequest(payload, reason, isValid, determiningTransferCheckResult)
+        : TransferService.prepare(payload, reason, isValid, determiningTransferCheckResult)
     },
 
     async getByIdLight (id) {

@@ -390,7 +390,6 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
       test.equal(kafkaCallOne.args[2].messageKey, '0')
-      test.equal(kafkaCallOne.args[2].topicNameOverride, null)
       test.equal(result, true)
       test.end()
     })

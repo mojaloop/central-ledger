@@ -39,6 +39,7 @@ const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
+const ParticipantCachedModel = require('../participant/participantCached')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const Config = require('../../lib/config')
@@ -60,18 +61,16 @@ const getById = async (id) => {
           'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
           'tprt2.name': 'PAYEE_DFSP'
         })
-        .whereRaw('pc1.currencyId = transfer.currencyId')
-        .whereRaw('pc2.currencyId = transfer.currencyId')
         // PAYER
         .innerJoin('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
-        .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
-        .innerJoin('participant AS da', 'da.participantId', 'pc1.participantId')
+        .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
+        .leftJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
         // PAYEE
         .innerJoin('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId')
-        .innerJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
-        .innerJoin('participant AS ca', 'ca.participantId', 'pc2.participantId')
+        .innerJoin('participant AS ca', 'ca.participantId', 'tp2.participantId')
+        .leftJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
         // OTHER JOINS
         .innerJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
@@ -238,8 +237,10 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
           'transferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
         })
         .innerJoin('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId')
+        .innerJoin('transfer AS t', 't.transferId', 'transferParticipant.transferId')
         .select(
           'transferParticipant.*',
+          't.currencyId',
           'tsc.transferStateId',
           'tsc.reason'
         )
@@ -401,25 +402,32 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   }
 }
 
-const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
+const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true, determiningTransferCheckResult) => {
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
     'facade_saveTransferPrepared - Metrics for transfer model',
     ['success', 'queryName']
   ).startTimer()
   try {
-    const participants = []
-    const names = [payload.payeeFsp, payload.payerFsp]
-
-    for (const name of names) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
-      if (participant) {
-        participants.push(participant)
-      }
+    const participants = {
+      [payload.payeeFsp]: {},
+      [payload.payerFsp]: {}
     }
 
-    const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
-      _.set(m, acct.name, acct.participantCurrencyId), {})
+    // Iterate over the participants and get the details
+    const names = Object.keys(participants)
+    for (const name of names) {
+      const participant = await ParticipantCachedModel.getByName(name)
+      if(participant) {
+        participants[name]['id'] = participant.participantId
+      }
+      // If determiningTransferCheckResult.participantCurrencyValidationList contains the participant name, then get the participantCurrencyId
+      const participantCurrency = determiningTransferCheckResult && determiningTransferCheckResult.participantCurrencyValidationList.find(participantCurrencyItem => participantCurrencyItem.participantName === name)
+      if (participantCurrency) {
+        const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
+        participants[name]['participantCurrencyId'] = participantCurrencyRecord.participantCurrencyId
+      }
+    }
 
     const transferRecord = {
       transferId: payload.transferId,
@@ -445,7 +453,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     const payerTransferParticipantRecord = {
       transferId: payload.transferId,
-      participantCurrencyId: participantCurrencyIds[payload.payerFsp],
+      participantId: participants[payload.payerFsp].id,
+      participantCurrencyId: participants[payload.payerFsp].participantCurrencyId,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
       amount: payload.amount.amount
@@ -453,7 +462,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     const payeeTransferParticipantRecord = {
       transferId: payload.transferId,
-      participantCurrencyId: participantCurrencyIds[payload.payeeFsp],
+      participantId: participants[payload.payeeFsp].id,
+      participantCurrencyId: participants[payload.payeeFsp].participantCurrencyId,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
       amount: -payload.amount.amount
@@ -716,11 +726,8 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
         .andOn('tp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP)
         .andOn('tp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
     })
-    .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
-    .innerJoin('participant AS p1', 'p1.participantId', 'pc1.participantId')
-
-    .innerJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
-    .innerJoin('participant AS p2', 'p2.participantId', 'pc2.participantId')
+    .innerJoin('participant AS p1', 'p1.participantId', 'tp1.participantId')
+    .innerJoin('participant AS p2', 'p2.participantId', 'tp2.participantId')
     .innerJoin(knex('transferStateChange AS tsc2')
       .select('tsc2.transferId', 'tsc2.transferStateChangeId', 'pp1.participantCurrencyId')
       .innerJoin('transferTimeout AS tt2', 'tt2.transferId', 'tsc2.transferId')
@@ -757,11 +764,8 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
         .andOn('ftp2.fxParticipantCurrencyTypeId', Enum.Fx.FxParticipantCurrencyType.TARGET)
         .andOn('ftp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
     })
-    .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'ftp1.participantCurrencyId')
-    .innerJoin('participant AS p1', 'p1.participantId', 'pc1.participantId')
-
-    .innerJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'ftp2.participantCurrencyId')
-    .innerJoin('participant AS p2', 'p2.participantId', 'pc2.participantId')
+    .innerJoin('participant AS p1', 'p1.participantId', 'ftp1.participantId')
+    .innerJoin('participant AS p2', 'p2.participantId', 'ftp2.participantId')
     .innerJoin(knex('fxTransferStateChange AS ftsc2')
       .select('ftsc2.commitRequestId', 'ftsc2.fxTransferStateChangeId', 'pp1.participantCurrencyId')
       .innerJoin('fxTransferTimeout AS ftt2', 'ftt2.commitRequestId', 'ftsc2.commitRequestId')
@@ -934,9 +938,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
         } else {
           await knex('segment').transacting(trx).where({ segmentId: fxSegmentId }).update({ value: fxIntervalMax })
         }
-        await trx.commit
       } catch (err) {
-        await trx.rollback
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
@@ -1120,6 +1122,13 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           .first()
           .transacting(trx)
 
+        // Get participantId based on participantCurrencyId
+        const { participantId } = await knex('participantCurrency')
+          .select('participantId')
+          .where('participantCurrencyId', payload.participantCurrencyId)
+          .first()
+          .transacting(trx)
+
         let ledgerEntryTypeId, amount
         if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN) {
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_IN
@@ -1135,6 +1144,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         await knex('transferParticipant')
           .insert({
             transferId: payload.transferId,
+            participantId: Config.HUB_ID,
             participantCurrencyId: reconciliationAccountId,
             transferParticipantRoleTypeId: enums.transferParticipantRoleType.HUB,
             ledgerEntryTypeId,
@@ -1145,6 +1155,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         await knex('transferParticipant')
           .insert({
             transferId: payload.transferId,
+            participantId: participantId,
             participantCurrencyId: payload.participantCurrencyId,
             transferParticipantRoleTypeId: enums.transferParticipantRoleType.DFSP_SETTLEMENT,
             ledgerEntryTypeId,

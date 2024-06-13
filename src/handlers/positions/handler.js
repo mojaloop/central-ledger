@@ -43,6 +43,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const TransferService = require('../../domain/transfer')
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const PositionService = require('../../domain/position')
+const participantFacade = require('../../models/participant/facade')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
@@ -174,6 +175,7 @@ const positions = async (error, messages) => {
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+      const participantCurrency = await participantFacade.getByIDAndCurrency(transferInfo.participantId, transferInfo.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
       if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
         Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid State: ${transferInfo.transferStateId} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`)
@@ -186,7 +188,7 @@ const positions = async (error, messages) => {
           transferId: transferInfo.transferId,
           transferStateId: Enum.Transfers.TransferState.COMMITTED
         }
-        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
+        await PositionService.changeParticipantPosition(participantCurrency.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         if (action === Enum.Events.Event.Action.RESERVE) {
           const transfer = await TransferService.getById(transferInfo.transferId)
           message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
@@ -198,6 +200,7 @@ const positions = async (error, messages) => {
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.REJECT, Enum.Events.Event.Action.ABORT, Enum.Events.Event.Action.ABORT_VALIDATION, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: action }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+      const participantCurrency = await participantFacade.getByIDAndCurrency(transferInfo.participantId, transferInfo.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
       let transferStateId
 
       if (action === Enum.Events.Event.Action.REJECT) {
@@ -213,7 +216,7 @@ const positions = async (error, messages) => {
         transferStateId,
         reason: transferInfo.reason
       }
-      await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
+      await PositionService.changeParticipantPosition(participantCurrency.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
       return true
@@ -221,6 +224,7 @@ const positions = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'timeout' }))
       span.setTags({ transactionId: transferId })
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+      const participantCurrency = await participantFacade.getByIDAndCurrency(transferInfo.participantId, transferInfo.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
       if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
         Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
         throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
@@ -232,7 +236,7 @@ const positions = async (error, messages) => {
           transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_RESERVED,
           reason: ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message
         }
-        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
+        await PositionService.changeParticipantPosition(participantCurrency.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED, null, null, null, payload.extensionList)
         await Kafka.proceed(
           Config.KAFKA_CONFIG,
