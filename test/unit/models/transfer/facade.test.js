@@ -98,7 +98,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
     const findStub = sandbox.stub().returns([{
       createdDate: now,
       participantId: 1,
-      name: 'test',
+      name: 'test'
     }])
     Db.transfer = {
       insert: sandbox.stub(),
@@ -130,13 +130,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
     sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
     sandbox.stub(ParticipantModelCached, 'getByName')
     ParticipantModelCached.getByName.returns(Promise.resolve({
-        participantId: 0,
-        name: 'fsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date(),
-        currencyList: ['USD']
-      }))
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      currencyList: ['USD']
+    }))
     t.end()
   })
 
@@ -295,7 +295,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           })
         })
       })
-      
+
       const found2 = await TransferFacade.getById(transferId2)
       // TODO: extend testing for the current code branch
       test.deepEqual(found2, transfers[1])

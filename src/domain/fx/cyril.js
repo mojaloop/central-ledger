@@ -30,7 +30,6 @@ const ParticipantFacade = require('../../models/participant/facade')
 const { fxTransfer, watchList } = require('../../models/fxTransfer')
 const Config = require('../../lib/config')
 
-
 const checkIfDeterminingTransferExistsForTransferMessage = async (payload) => {
   // Does this determining transfer ID appear on the watch list?
   const watchListRecords = await watchList.getItemsInWatchListByDeterminingTransferId(payload.transferId)
@@ -51,7 +50,7 @@ const checkIfDeterminingTransferExistsForTransferMessage = async (payload) => {
     })
     // If it is a normal transfer, we need to validate payeeFsp against the currency of the transfer.
     // But its tricky to differentiate between normal transfer and payee side currency conversion.
-    if(Config.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED) {
+    if (Config.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED) {
       participantCurrencyValidationList.push({
         participantName: payload.payeeFsp,
         currencyId: payload.amount.currency

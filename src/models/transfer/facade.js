@@ -43,7 +43,6 @@ const ParticipantCachedModel = require('../participant/participantCached')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const Config = require('../../lib/config')
-const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -417,14 +416,14 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const names = Object.keys(participants)
     for (const name of names) {
       const participant = await ParticipantCachedModel.getByName(name)
-      if(participant) {
-        participants[name]['id'] = participant.participantId
+      if (participant) {
+        participants[name].id = participant.participantId
       }
       // If determiningTransferCheckResult.participantCurrencyValidationList contains the participant name, then get the participantCurrencyId
       const participantCurrency = determiningTransferCheckResult && determiningTransferCheckResult.participantCurrencyValidationList.find(participantCurrencyItem => participantCurrencyItem.participantName === name)
       if (participantCurrency) {
         const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
-        participants[name]['participantCurrencyId'] = participantCurrencyRecord.participantCurrencyId
+        participants[name].participantCurrencyId = participantCurrencyRecord.participantCurrencyId
       }
     }
 
@@ -1152,7 +1151,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         await knex('transferParticipant')
           .insert({
             transferId: payload.transferId,
-            participantId: participantId,
+            participantId,
             participantCurrencyId: payload.participantCurrencyId,
             transferParticipantRoleTypeId: enums.transferParticipantRoleType.DFSP_SETTLEMENT,
             ledgerEntryTypeId,

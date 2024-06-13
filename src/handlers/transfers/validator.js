@@ -219,8 +219,8 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
   if (validationPassed && determiningTransferCheckResult) {
     for (const participantCurrency of determiningTransferCheckResult.participantCurrencyValidationList) {
       if (!await validatePositionAccountByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId)) {
-        validationPassed = false;
-        break; // Exit the loop if validation fails
+        validationPassed = false
+        break // Exit the loop if validation fails
       }
     }
   }
