@@ -211,10 +211,8 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
           counterPartyParticipantRecord2.name = payload.counterPartyFsp
 
           await knex(TABLE_NAMES.fxTransferStateChange).transacting(trx).insert(fxTransferStateChangeRecord)
-          await trx.commit()
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveFxTransferPrepared_transaction' })
         } catch (err) {
-          await trx.rollback()
           histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveFxTransferPrepared_transaction' })
           throw err
         }
@@ -398,7 +396,6 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
         result.savePayeeTransferResponseExecuted = true
         logger.debug('saveFxFulfilResponse::success')
       } catch (err) {
-        await trx.rollback()
         histTFxFulfilResponseValidationPassedEnd({ success: false, queryName: 'facade_saveFxFulfilResponse_transaction' })
         logger.error('saveFxFulfilResponse::failure')
         throw err

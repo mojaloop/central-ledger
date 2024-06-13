@@ -387,7 +387,6 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
         result.savePayeeTransferResponseExecuted = true
         Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::success')
       } catch (err) {
-        await trx.rollback()
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
         Logger.isErrorEnabled && Logger.error('savePayeeTransferResponse::failure')
         throw err
@@ -486,10 +485,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           }
           await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
           await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-          await trx.commit()
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         } catch (err) {
-          await trx.rollback()
           histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
           throw err
         }
