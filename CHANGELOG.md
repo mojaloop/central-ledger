@@ -2,6 +2,63 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.7.7](https://github.com/mojaloop/central-ledger/compare/v17.7.6...v17.7.7) (2024-06-07)
+
+
+### Chore
+
+* updates to fix ajv vulns ([#1049](https://github.com/mojaloop/central-ledger/issues/1049)) ([6e64d28](https://github.com/mojaloop/central-ledger/commit/6e64d287be51b40e98d6ae6cefc712c5228f42f5))
+
+### [17.7.6](https://github.com/mojaloop/central-ledger/compare/v17.7.5...v17.7.6) (2024-06-07)
+
+
+### Chore
+
+* dependency updates, cs shared ([#1048](https://github.com/mojaloop/central-ledger/issues/1048)) ([5844ee0](https://github.com/mojaloop/central-ledger/commit/5844ee0720a861da27f33649aff62be37fcdfaca))
+
+### [17.7.5](https://github.com/mojaloop/central-ledger/compare/v17.7.4...v17.7.5) (2024-06-06)
+
+
+### Chore
+
+* dependency updates, overrides ([#1047](https://github.com/mojaloop/central-ledger/issues/1047)) ([8bd1dcd](https://github.com/mojaloop/central-ledger/commit/8bd1dcd43e9730af087a96f845cde5e7454c1a4a))
+
+### [17.7.4](https://github.com/mojaloop/central-ledger/compare/v17.7.3...v17.7.4) (2024-06-06)
+
+
+### Chore
+
+* more dep updates to fix dependabot alerts ([#1046](https://github.com/mojaloop/central-ledger/issues/1046)) ([1ab8aa9](https://github.com/mojaloop/central-ledger/commit/1ab8aa9d0401d9019968d908774d6e19ca94374e))
+
+### [17.7.3](https://github.com/mojaloop/central-ledger/compare/v17.7.2...v17.7.3) (2024-06-05)
+
+
+### Chore
+
+* dependency upgrades and one migration  ([#1045](https://github.com/mojaloop/central-ledger/issues/1045)) ([3a94cdf](https://github.com/mojaloop/central-ledger/commit/3a94cdf0eafc6e9b53d796357b68c6d82eaa5277))
+
+### [17.7.2](https://github.com/mojaloop/central-ledger/compare/v17.7.1...v17.7.2) (2024-06-04)
+
+
+### Chore
+
+* dependency updates to address dependabot alerts ([#1044](https://github.com/mojaloop/central-ledger/issues/1044)) ([d6bb4b9](https://github.com/mojaloop/central-ledger/commit/d6bb4b912d24f07f21822cc8079338146e0f0be6))
+
+### [17.7.1](https://github.com/mojaloop/central-ledger/compare/v17.7.0...v17.7.1) (2024-06-04)
+
+
+### Chore
+
+* "revert feat: extend admin api to support proxy participants ([#1038](https://github.com/mojaloop/central-ledger/issues/1038))" ([#1042](https://github.com/mojaloop/central-ledger/issues/1042)) ([182142e](https://github.com/mojaloop/central-ledger/commit/182142ee76231ac4899b910c8ea2673997056b6e))
+* dependency updates to use latest libraries with patches ([#1040](https://github.com/mojaloop/central-ledger/issues/1040)) ([dc672ae](https://github.com/mojaloop/central-ledger/commit/dc672ae8554732a3d9920ef45fc122fa85522488))
+
+## [17.7.0](https://github.com/mojaloop/central-ledger/compare/v17.6.2...v17.7.0) (2024-05-31)
+
+
+### Features
+
+* extend admin api to support proxy participants ([#1038](https://github.com/mojaloop/central-ledger/issues/1038)) ([5316df3](https://github.com/mojaloop/central-ledger/commit/5316df3817c2f1066c116bfec64ac2cef1fe5d64))
+
 ### [17.6.2](https://github.com/mojaloop/central-ledger/compare/v17.6.1...v17.6.2) (2024-04-30)
 
 
