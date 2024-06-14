@@ -4,6 +4,6 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
-  "GHSA-w5p7-h5w8-2hfq" // tap-spec>tap-out>trim
+  "GHSA-w5p7-h5w8-2hfq" // tap-spec>tap-out>trim; This has been analyzed and this is acceptable as it is used to run tests.
   ]
 }
