@@ -4,21 +4,6 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
-  "GHSA-v88g-cgmw-v5xw", // widdershins>swagger2openapi>oas-validator>ajv
-  "GHSA-phwq-j96m-2c2q", // @mojaloop/central-services-shared>shins>ejs
-  "GHSA-c429-5p7v-vgjp", // hapi>boom>hoek
-  "GHSA-282f-qqgm-c34q", // widdershins>swagger2openapi>better-ajv-errors>jsonpointer
-  "GHSA-8cf7-32gw-wr33", // @now-ims/hapi-now-auth>jsonwebtoken
-  "GHSA-hjrf-2m68-5959", // @now-ims/hapi-now-auth>jsonwebtoken
-  "GHSA-qwph-4952-7xr6", // @now-ims/hapi-now-auth>jsonwebtoken
-  "GHSA-6vfc-qv3f-vr6c", // widdershins>markdown-it
-  "GHSA-7fh5-64p2-3v2j", // @mojaloop/central-services-shared>shins>sanitize-html>postcss
-  "GHSA-mjxr-4v3x-q3m4", // @mojaloop/central-services-shared>shins>sanitize-html
-  "GHSA-rjqq-98f6-6j3r", // @mojaloop/central-services-shared>shins>sanitize-html
-  "GHSA-rm97-x556-q36h", // @mojaloop/central-services-shared>shins>sanitize-html
-  "GHSA-w5p7-h5w8-2hfq", // tap-spec>tap-out>trim
-  "GHSA-p9pc-299p-vxgp", // widdershins>yargs>yargs-parser
-  "GHSA-ghr5-ch3p-vcr6", // https://github.com/advisories/GHSA-ghr5-ch3p-vcr6
-  "GHSA-cgfm-xwp7-2cvr"  // https://github.com/advisories/GHSA-cgfm-xwp7-2cvr
+  "GHSA-w5p7-h5w8-2hfq" // tap-spec>tap-out>trim; This has been analyzed and this is acceptable as it is used to run tests.
   ]
 }
