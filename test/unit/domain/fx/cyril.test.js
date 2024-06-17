@@ -199,7 +199,6 @@ Test('Cyril', cyrilTest => {
     processFxFulfilMessageTest.test('should return fxTransferRecord when commitRequestId is in watchlist', async (test) => {
       try {
         const fxTransferRecordDetails = {
-          initiatingFspParticipantCurrencyId: 1,
           initiatingFspParticipantId: 1,
           initiatingFspName: 'fx_dfsp1',
           counterPartyFspSourceParticipantCurrencyId: 1,
@@ -261,7 +260,7 @@ Test('Cyril', cyrilTest => {
         ))
         fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
           {
-            initiatingFspParticipantCurrencyId: 1,
+            initiatingFspParticipantId: 2,
             targetAmount: fxPayload.targetAmount.amount,
             commitRequestId: fxPayload.commitRequestId,
             counterPartyFspSourceParticipantCurrencyId: 1,
@@ -322,7 +321,7 @@ Test('Cyril', cyrilTest => {
         ))
         fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
           {
-            initiatingFspParticipantCurrencyId: 1,
+            initiatingFspParticipantId: 1,
             targetAmount: fxPayload.targetAmount.amount,
             commitRequestId: fxPayload.commitRequestId,
             counterPartyFspSourceParticipantCurrencyId: 1,
@@ -381,7 +380,7 @@ Test('Cyril', cyrilTest => {
         ))
         fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
           {
-            initiatingFspParticipantCurrencyId: 1,
+            initiatingFspParticipantId: 1,
             targetAmount: fxPayload.targetAmount.amount,
             commitRequestId: fxPayload.commitRequestId,
             counterPartyFspSourceParticipantCurrencyId: 1,

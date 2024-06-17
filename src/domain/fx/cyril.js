@@ -188,7 +188,6 @@ const processFxFulfilMessage = async (commitRequestId, payload) => {
   }
   const fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(commitRequestId)
   const {
-    initiatingFspParticipantCurrencyId,
     initiatingFspParticipantId,
     initiatingFspName,
     counterPartyFspSourceParticipantCurrencyId,
@@ -201,7 +200,6 @@ const processFxFulfilMessage = async (commitRequestId, payload) => {
 
   histTimerGetParticipantAndCurrencyForFxTransferMessage({ success: true })
   return {
-    initiatingFspParticipantCurrencyId,
     initiatingFspParticipantId,
     initiatingFspName,
     counterPartyFspSourceParticipantCurrencyId,
@@ -244,10 +242,17 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
         receivingFxpExists = true
         receivingFxpRecord = fxTransferRecord
         // Create obligation between FXP and FX requesting party in currency of reservation
+        // Find out the participantCurrencyId of the initiatingFsp
+        // The following is hardcoded for Payer side conversion with SEND amountType.
+        const participantCurrency = await ParticipantFacade.getByNameAndCurrency(
+          fxTransferRecord.initiatingFspName,
+          fxTransferRecord.targetCurrency,
+          Enum.Accounts.LedgerAccountType.POSITION
+        )
         result.positionChanges.push({
           isFxTransferStateChange: false,
           transferId,
-          participantCurrencyId: fxTransferRecord.initiatingFspParticipantCurrencyId,
+          participantCurrencyId: participantCurrency.participantCurrencyId,
           amount: -fxTransferRecord.targetAmount
         })
         // TODO: Send PATCH notification to FXP

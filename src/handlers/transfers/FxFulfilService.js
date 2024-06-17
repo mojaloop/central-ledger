@@ -103,7 +103,8 @@ class FxFulfilService {
         eventDetail,
         fromSwitch,
         toDestination: transfer.initiatingFspName,
-        messageKey: transfer.initiatingFspParticipantCurrencyId.toString()
+        // The message key doesn't matter here, as there are no position changes for FX Fulfil
+        messageKey: transfer.counterPartyFspSourceParticipantCurrencyId.toString()
       })
       throw fspiopError
     }

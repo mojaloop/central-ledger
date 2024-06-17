@@ -62,20 +62,16 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
       const transferResult = await builder
         .where({
           'fxTransfer.commitRequestId': commitRequestId,
-          'tprt1.name': 'INITIATING_FSP', // TODO: refactor to use transferParticipantRoleTypeId
+          'tprt1.name': 'INITIATING_FSP',
           'tprt2.name': 'COUNTER_PARTY_FSP',
           'tprt3.name': 'COUNTER_PARTY_FSP',
           'fpct1.name': 'SOURCE',
           'fpct2.name': 'TARGET'
         })
-        .whereRaw('pc1.currencyId = fxTransfer.sourceCurrency')
-        // .whereRaw('pc21.currencyId = fxTransfer.sourceCurrency')
-        // .whereRaw('pc22.currencyId = fxTransfer.targetCurrency')
         // INITIATING_FSP
         .innerJoin('fxTransferParticipant AS tp1', 'tp1.commitRequestId', 'fxTransfer.commitRequestId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
         .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
-        .leftJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
         // COUNTER_PARTY_FSP SOURCE currency
         .innerJoin('fxTransferParticipant AS tp21', 'tp21.commitRequestId', 'fxTransfer.commitRequestId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp21.transferParticipantRoleTypeId')
@@ -94,8 +90,6 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
         // .leftJoin('transferError as te', 'te.commitRequestId', 'transfer.commitRequestId') // currently transferError.transferId is PK ensuring one error per transferId
         .select(
           'fxTransfer.*',
-          'pc1.participantCurrencyId AS initiatingFspParticipantCurrencyId',
-          'tp1.amount AS initiatingFspAmount',
           'da.participantId AS initiatingFspParticipantId',
           'da.name AS initiatingFspName',
           // 'pc21.participantCurrencyId AS counterPartyFspSourceParticipantCurrencyId',

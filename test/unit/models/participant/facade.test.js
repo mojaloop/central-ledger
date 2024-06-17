@@ -56,7 +56,7 @@ Test('Participant facade', async (facadeTest) => {
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantLimitModel, 'invalidateParticipantLimitCache')
     sandbox.stub(SettlementModel, 'getAll')
-    sandbox.stub(Cache)
+    sandbox.stub(Cache, 'isCacheEnabled')
     Db.participant = {
       query: sandbox.stub()
     }
@@ -273,6 +273,120 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     }
   })
+
+  await facadeTest.test('getByIDAndCurrency (cache off)', async (assert) => {
+    try {
+      const builderStub = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+      builderStub.where = sandbox.stub()
+
+      builderStub.where.returns({
+        andWhere: sandbox.stub().returns({
+          andWhere: sandbox.stub().returns({
+            innerJoin: sandbox.stub().returns({
+              select: sandbox.stub().returns({
+                first: sandbox.stub().returns(participant)
+              })
+            })
+          })
+        })
+      })
+
+      const result = await Model.getByIDAndCurrency(1, 'USD', Enum.Accounts.LedgerAccountType.POSITION)
+      assert.deepEqual(result, participant)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByIDAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getByIDAndCurrency (cache off)', async (assert) => {
+    try {
+      const builderStub = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+      builderStub.where = sandbox.stub()
+
+      builderStub.where.returns({
+        andWhere: sandbox.stub().returns({
+          andWhere: sandbox.stub().returns({
+            innerJoin: sandbox.stub().returns({
+              select: sandbox.stub().returns({
+                first: sandbox.stub().returns({
+                  andWhere: sandbox.stub().returns(participant)
+                })
+              })
+            })
+          })
+        })
+      })
+
+      const result = await Model.getByIDAndCurrency(1, 'USD', Enum.Accounts.LedgerAccountType.POSITION, true)
+      assert.deepEqual(result, participant)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByIDAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getByIDAndCurrency should throw error when participant not found (cache off)', async (assert) => {
+    try {
+      Db.participant.query.throws(new Error('message'))
+      await Model.getByIDAndCurrency(1, 'USD', Enum.Accounts.LedgerAccountType.POSITION, true)
+      assert.fail('should throw')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByIDAndCurrency failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getByIDAndCurrency (cache on)', async (assert) => {
+    try {
+      Cache.isCacheEnabled.returns(true)
+
+      ParticipantModel.getById.withArgs(participant.participantId).returns(participant)
+      ParticipantCurrencyModel.findOneByParams.withArgs({
+        participantId: participant.participantId,
+        currencyId: participant.currency,
+        ledgerAccountTypeId: Enum.Accounts.LedgerAccountType.POSITION
+      }).returns(participant)
+
+      const result = await Model.getByIDAndCurrency(participant.participantId, participant.currency, Enum.Accounts.LedgerAccountType.POSITION)
+      assert.deepEqual(result, participant)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByIDAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  // await facadeTest.test('getByIDAndCurrency isCurrencyActive:true (cache on)', async (assert) => {
+  //   try {
+  //     Cache.isCacheEnabled.returns(true)
+
+  //     ParticipantModel.getByName.withArgs(participant.participantId).returns(participant)
+  //     ParticipantCurrencyModel.findOneByParams.withArgs({
+  //       participantId: participant.participantId,
+  //       currencyId: participant.currency,
+  //       ledgerAccountTypeId: Enum.Accounts.LedgerAccountType.POSITION,
+  //       isActive: true
+  //     }).returns(participant)
+
+  //     const result = await Model.getByIDAndCurrency(participant.participantId, participant.currency, Enum.Accounts.LedgerAccountType.POSITION, true)
+  //     assert.deepEqual(result, participant)
+  //     assert.end()
+  //   } catch (err) {
+  //     Logger.error(`getByIDAndCurrency failed with error - ${err}`)
+  //     assert.fail()
+  //     assert.end()
+  //   }
+  // })
 
   await facadeTest.test('getEndpoint', async (assert) => {
     try {

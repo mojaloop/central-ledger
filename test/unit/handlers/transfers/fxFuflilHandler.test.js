@@ -174,7 +174,6 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT_VALIDATION)
     checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxHeaderSourceValidationError())
     t.equal(topicConfig.topicName, TOPICS.transferPosition)
-    t.equal(topicConfig.key, String(fxTransferDetailsFromDb.initiatingFspParticipantCurrencyId))
     t.end()
   })
 
