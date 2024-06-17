@@ -394,6 +394,30 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    prepareTest.test('fail when messages array is empty', async (test) => {
+      const localMessages = []
+      // here copy
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      try {
+        await allTransferHandlers.prepare(null, localMessages)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.end()
+      }
+    })
+
     prepareTest.test('use topic name override if specified in config', async (test) => {
       Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP.POSITION.PREPARE = 'topic-test-override'
       const localMessages = MainUtil.clone(messages)

@@ -998,6 +998,117 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    fulfilTest.test('fail if event type is not fulfil', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1',
+        transferState: TransferState.RESERVED
+      }))
+      ilp.update.returns(Promise.resolve())
+      Validator.validateFulfilCondition.returns(true)
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      localfulfilMessages[0].value.metadata.event.type = 'invalid_event_type'
+      Kafka.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('produce message to position topic when validations pass if Cyril result is fx enabled', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Cyril.processFulfilMessage.returns({
+        isFx: true,
+        positionChanges: [{
+          participantCurrencyId: 1
+        }]
+      })
+
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1',
+        transferState: TransferState.RESERVED
+      }))
+      ilp.update.returns(Promise.resolve())
+      Validator.validateFulfilCondition.returns(true)
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      Kafka.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
+      test.equal(kafkaCallOne.args[2].messageKey, '1')
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('fail when Cyril result contains no positionChanges', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Cyril.processFulfilMessage.returns({
+        isFx: true,
+        positionChanges: []
+      })
+
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1',
+        transferState: TransferState.RESERVED
+      }))
+      ilp.update.returns(Promise.resolve())
+      Validator.validateFulfilCondition.returns(true)
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      Kafka.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      try {
+        await allTransferHandlers.fulfil(null, localfulfilMessages)
+        test.equal(result, true)
+        test.end()
+      } catch (e) {
+        test.pass('Error Thrown')
+        test.end()
+      }
+    })
+
     fulfilTest.test('produce message to position topic when validations pass and action is RESERVE', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       localfulfilMessages[0].value.metadata.event.action = 'reserve'

@@ -330,6 +330,12 @@ Test('Cyril', cyrilTest => {
             targetCurrency: fxPayload.targetAmount.currency
           }
         ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'payeeFsp',
+          isActive: 1
+        }))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
         test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
@@ -389,6 +395,12 @@ Test('Cyril', cyrilTest => {
             targetCurrency: fxPayload.targetAmount.currency
           }
         ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'payeeFsp',
+          isActive: 1
+        }))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
         test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
