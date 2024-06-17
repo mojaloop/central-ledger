@@ -1099,14 +1099,9 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateId: false,
         hasDuplicateHash: false
       }))
-      try {
-        await allTransferHandlers.fulfil(null, localfulfilMessages)
-        test.equal(result, true)
-        test.end()
-      } catch (e) {
-        test.pass('Error Thrown')
-        test.end()
-      }
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      test.equal(result, true)
+      test.end()
     })
 
     fulfilTest.test('produce message to position topic when validations pass and action is RESERVE', async (test) => {
