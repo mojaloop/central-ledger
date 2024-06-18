@@ -343,6 +343,7 @@ jobs:
           command: mkdir -p ./test/results
       - run:
           name: Execute integration tests
+          no_output_timeout: 15m
           command: |
             # Set Node version to default (Note: this is needed on Ubuntu)
             nvm use default
