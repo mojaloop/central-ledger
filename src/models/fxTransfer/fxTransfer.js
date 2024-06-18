@@ -90,9 +90,11 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
         .leftJoin('fxTransferStateChange AS tsc', 'tsc.commitRequestId', 'fxTransfer.commitRequestId')
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .leftJoin('fxTransferFulfilment AS tf', 'tf.commitRequestId', 'fxTransfer.commitRequestId')
+        .leftJoin('fxWatchList AS wl', 'wl.commitRequestId', 'fxTransfer.commitRequestId')
         // .leftJoin('transferError as te', 'te.commitRequestId', 'transfer.commitRequestId') // currently transferError.transferId is PK ensuring one error per transferId
         .select(
           'fxTransfer.*',
+          'wl.fxWatchListId',
           'pc1.participantCurrencyId AS initiatingFspParticipantCurrencyId',
           'tp1.amount AS initiatingFspAmount',
           'da.participantId AS initiatingFspParticipantId',

@@ -27,11 +27,6 @@ const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
 const { logger } = require('../../shared/logger')
 
-const getItemInWatchListByCommitRequestId = async (commitRequestId) => {
-  logger.debug(`get item in watch list (commitRequestId=${commitRequestId})`)
-  return Db.from(TABLE_NAMES.fxWatchList).findOne({ commitRequestId })
-}
-
 const getItemsInWatchListByDeterminingTransferId = async (determiningTransferId) => {
   logger.debug(`get item in watch list (determiningTransferId=${determiningTransferId})`)
   return Db.from(TABLE_NAMES.fxWatchList).find({ determiningTransferId })
@@ -43,7 +38,6 @@ const addToWatchList = async (record) => {
 }
 
 module.exports = {
-  getItemInWatchListByCommitRequestId,
   getItemsInWatchListByDeterminingTransferId,
   addToWatchList
 }

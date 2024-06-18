@@ -178,53 +178,6 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForFxTransferMessageTest.end()
   })
 
-  cyrilTest.test('processFxFulfilMessage should', processFxFulfilMessageTest => {
-    processFxFulfilMessageTest.test('throws error when commitRequestId not in watchlist', async (test) => {
-      try {
-        watchList.getItemInWatchListByCommitRequestId.returns(Promise.resolve(null))
-        await Cyril.processFxFulfilMessage(fxPayload.commitRequestId)
-        test.ok(watchList.getItemInWatchListByCommitRequestId.calledWith(fxPayload.commitRequestId))
-        test.fail('Error not thrown')
-        test.end()
-      } catch (e) {
-        test.pass('Error Thrown')
-        test.end()
-      }
-    })
-
-    processFxFulfilMessageTest.test('should return fxTransferRecord when commitRequestId is in watchlist', async (test) => {
-      try {
-        const fxTransferRecordDetails = {
-          initiatingFspParticipantCurrencyId: 1,
-          initiatingFspParticipantId: 1,
-          initiatingFspName: 'fx_dfsp1',
-          counterPartyFspSourceParticipantCurrencyId: 1,
-          counterPartyFspTargetParticipantCurrencyId: 2,
-          counterPartyFspParticipantId: 2,
-          counterPartyFspName: 'fx_dfsp2'
-        }
-        watchList.getItemInWatchListByCommitRequestId.returns(Promise.resolve({
-          commitRequestId: fxPayload.commitRequestId,
-          determiningTransferId: fxPayload.determiningTransferId,
-          fxTransferTypeId: Enum.Fx.FxTransferType.PAYER_CONVERSION,
-          createdDate: new Date()
-        }))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(fxTransferRecordDetails))
-        const result = await Cyril.processFxFulfilMessage(fxPayload.commitRequestId)
-        test.ok(watchList.getItemInWatchListByCommitRequestId.calledWith(fxPayload.commitRequestId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
-        test.deepEqual(result, fxTransferRecordDetails)
-        test.pass('Error not thrown')
-        test.end()
-      } catch (e) {
-        test.fail('Error Thrown')
-        test.end()
-      }
-    })
-
-    processFxFulfilMessageTest.end()
-  })
-
   cyrilTest.test('processFulfilMessage should', processFulfilMessageTest => {
     processFulfilMessageTest.test('return false if transferId is not in watchlist', async (test) => {
       try {
