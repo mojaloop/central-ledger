@@ -117,7 +117,7 @@ const getParticipantAndCurrencyForFxTransferMessage = async (payload) => {
   }
 }
 
-const processFxFulfilMessage = async (commitRequestId, payload) => {
+const processFxFulfilMessage = async (commitRequestId) => {
   const histTimerGetParticipantAndCurrencyForFxTransferMessage = Metrics.getHistogram(
     'fx_domain_cyril_processFxFulfilMessage',
     'fx_domain_cyril_processFxFulfilMessage - Metrics for fx cyril',
@@ -128,29 +128,11 @@ const processFxFulfilMessage = async (commitRequestId, payload) => {
   if (!watchListRecord) {
     throw new Error(`Commit request ID ${commitRequestId} not found in watch list`)
   }
-  const fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(commitRequestId)
-  const {
-    initiatingFspParticipantCurrencyId,
-    initiatingFspParticipantId,
-    initiatingFspName,
-    counterPartyFspSourceParticipantCurrencyId,
-    counterPartyFspTargetParticipantCurrencyId,
-    counterPartyFspParticipantId,
-    counterPartyFspName
-  } = fxTransferRecord
 
   // TODO: May need to update the watchList record to indicate that the fxTransfer has been fulfilled
 
   histTimerGetParticipantAndCurrencyForFxTransferMessage({ success: true })
-  return {
-    initiatingFspParticipantCurrencyId,
-    initiatingFspParticipantId,
-    initiatingFspName,
-    counterPartyFspSourceParticipantCurrencyId,
-    counterPartyFspTargetParticipantCurrencyId,
-    counterPartyFspParticipantId,
-    counterPartyFspName
-  }
+  return true
 }
 
 const processFulfilMessage = async (transferId, payload, transfer) => {
