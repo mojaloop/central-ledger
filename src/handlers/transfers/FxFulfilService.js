@@ -307,7 +307,7 @@ class FxFulfilService {
 
   async processFxFulfil({ transfer, payload, action }) {
     await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, action)
-    await this.cyril.processFxFulfilMessage(transfer)
+    await this.cyril.processFxFulfilMessage(transfer.commitRequestId)
     const eventDetail = {
       functionality: Type.POSITION,
       action
