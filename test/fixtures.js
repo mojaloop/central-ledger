@@ -254,6 +254,7 @@ const fxtGetAllDetailsByCommitRequestIdDto = ({
 } = fxTransferDto()) => ({
   commitRequestId,
   determiningTransferId,
+  fxWatchListId: 100,
   sourceAmount: sourceAmount.amount,
   sourceCurrency: sourceAmount.currency,
   targetAmount: targetAmount.amount,

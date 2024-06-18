@@ -307,17 +307,19 @@ class FxFulfilService {
 
   async processFxFulfil({ transfer, payload, action }) {
     await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, action)
-    const cyrilOutput = await this.cyril.processFxFulfilMessage(transfer.commitRequestId, payload)
+    if (!transfer.fxWatchListId) {
+      throw new Error(`Commit request ID ${transfer.commitRequestId} not found in watch list`)
+    }
     const eventDetail = {
       functionality: Type.POSITION,
       action
     }
-    this.log.info('handle fxFulfilResponse', { eventDetail, cyrilOutput })
+    this.log.info('handle fxFulfilResponse', { eventDetail })
 
     await this.kafkaProceed({
       consumerCommit,
       eventDetail,
-      messageKey: cyrilOutput.counterPartyFspSourceParticipantCurrencyId.toString(),
+      messageKey: transfer.counterPartyFspSourceParticipantCurrencyId.toString(),
       topicNameOverride: this.Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
     })
     return true

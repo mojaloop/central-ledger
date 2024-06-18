@@ -339,7 +339,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
   fxFulfilTest.test('should process fxFulfil callback - just skip message if no commitRequestId in watchList', async (t) => {
     // todo: clarify this behaviuor
     const fxTransferDetails = fixtures.fxtGetAllDetailsByCommitRequestIdDto()
-    sandbox.stub(FxFulfilService.prototype, 'getFxTransferDetails').resolves(fxTransferDetails)
+    sandbox.stub(FxFulfilService.prototype, 'getFxTransferDetails').resolves({ ...fxTransferDetails, fxWatchListId: null })
     sandbox.stub(FxFulfilService.prototype, 'validateHeaders').resolves()
     sandbox.stub(FxFulfilService.prototype, 'validateEventType').resolves()
     sandbox.stub(FxFulfilService.prototype, 'validateFulfilment').resolves()
@@ -350,7 +350,6 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
       hasDuplicateHash: false
     })
     Validator.validateFulfilCondition.returns(true)
-    fxTransferModel.watchList.getItemInWatchListByCommitRequestId.resolves(null)
     const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_COMMIT })
     const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
@@ -375,7 +374,6 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     })
     Validator.validateFulfilCondition.returns(true)
     fxTransferModel.fxTransfer.getAllDetailsByCommitRequestId.resolves(fxTransferDetails)
-    fxTransferModel.watchList.getItemInWatchListByCommitRequestId.resolves(fixtures.watchListItemDto())
 
     const action = Action.FX_COMMIT
     const metadata = fixtures.fulfilMetadataDto({ action })
