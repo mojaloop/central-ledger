@@ -1,4 +1,4 @@
-name: Build javascript project
+name: Build Software Bill of Materials
 on: push
 jobs:
   build:
