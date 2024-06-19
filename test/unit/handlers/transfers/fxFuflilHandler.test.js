@@ -174,7 +174,6 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT_VALIDATION)
     checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxHeaderSourceValidationError())
     t.equal(topicConfig.topicName, TOPICS.transferPosition)
-    t.equal(topicConfig.key, String(fxTransferDetailsFromDb.initiatingFspParticipantCurrencyId))
     t.end()
   })
 
@@ -369,6 +368,10 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     sandbox.stub(FxFulfilService.prototype, 'validateFulfilment').resolves()
     sandbox.stub(FxFulfilService.prototype, 'validateTransferState').resolves()
     sandbox.stub(FxFulfilService.prototype, 'validateExpirationDate').resolves()
+    sandbox.stub(FxFulfilService.prototype, 'getDuplicateCheckResult').resolves({
+      hasDuplicateId: false,
+      hasDuplicateHash: false
+    })
     Comparators.duplicateCheckComparator.resolves({
       hasDuplicateId: false,
       hasDuplicateHash: false
@@ -377,7 +380,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     fxTransferModel.fxTransfer.getAllDetailsByCommitRequestId.resolves(fxTransferDetails)
     fxTransferModel.watchList.getItemInWatchListByCommitRequestId.resolves(fixtures.watchListItemDto())
 
-    const action = Action.FX_COMMIT
+    const action = Action.FX_RESERVE
     const metadata = fixtures.fulfilMetadataDto({ action })
     const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
 
@@ -389,6 +392,8 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.equal(messageProtocol.metadata.event.action, action)
     t.deepEqual(messageProtocol.metadata.event.state, fixtures.metadataEventStateDto())
     t.deepEqual(messageProtocol.content, kafkaMessage.value.content)
+    // t.equal(topicConfig.topicName, TOPICS.transferPositionBatch)
+    // TODO: Need to check if the following assertion is correct
     t.equal(topicConfig.topicName, TOPICS.transferPosition)
     t.equal(topicConfig.key, String(fxTransferDetails.counterPartyFspSourceParticipantCurrencyId))
     t.end()

@@ -86,7 +86,8 @@ const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', a
   }
 
   if (addToWatchList) {
-    await cyril.getParticipantAndCurrencyForFxTransferMessage(fxTransfer)
+    const determiningTransferCheckResult = await cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxTransfer)
+    await cyril.getParticipantAndCurrencyForFxTransferMessage(fxTransfer, determiningTransferCheckResult)
     log.info('fxTransfer is added to watchList', { fxTransfer })
   }
 }

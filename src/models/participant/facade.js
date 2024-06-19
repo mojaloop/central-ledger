@@ -106,6 +106,72 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
   }
 }
 
+const getByIDAndCurrency = async (participantId, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
+  const histTimerParticipantGetByIDAndCurrencyEnd = Metrics.getHistogram(
+    'model_participant',
+    'facade_getByIDAndCurrency - Metrics for participant model',
+    ['success', 'queryName']
+  ).startTimer()
+
+  try {
+    let participant
+    if (Cache.isCacheEnabled()) {
+      /* Cached version - fetch data from Models (which we trust are cached) */
+      /* find paricipant by ID */
+      participant = await ParticipantModelCached.getById(participantId)
+      if (participant) {
+        /* use the paricipant id and incoming params to prepare the filter */
+        const searchFilter = {
+          participantId,
+          currencyId,
+          ledgerAccountTypeId
+        }
+        if (isCurrencyActive !== undefined) {
+          searchFilter.isActive = isCurrencyActive
+        }
+
+        /* find the participantCurrency by prepared filter */
+        const participantCurrency = await ParticipantCurrencyModelCached.findOneByParams(searchFilter)
+
+        if (participantCurrency) {
+          /* mix requested data from participantCurrency */
+          participant.participantCurrencyId = participantCurrency.participantCurrencyId
+          participant.currencyId = participantCurrency.currencyId
+          participant.currencyIsActive = participantCurrency.isActive
+        }
+      }
+    } else {
+      /* Non-cached version - direct call to DB */
+      participant = await Db.from('participant').query(async (builder) => {
+        let b = builder
+          .where({ 'participant.participantId': participantId })
+          .andWhere({ 'pc.currencyId': currencyId })
+          .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
+          .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+          .select(
+            'participant.*',
+            'pc.participantCurrencyId',
+            'pc.currencyId',
+            'pc.isActive AS currencyIsActive'
+          )
+          .first()
+
+        if (isCurrencyActive !== undefined) {
+          b = b.andWhere({ 'pc.isActive': isCurrencyActive })
+        }
+        return b
+      })
+    }
+
+    histTimerParticipantGetByIDAndCurrencyEnd({ success: true, queryName: 'facade_getByIDAndCurrency' })
+
+    return participant
+  } catch (err) {
+    histTimerParticipantGetByIDAndCurrencyEnd({ success: false, queryName: 'facade_getByIDAndCurrency' })
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.from('participant').query(async (builder) => {
@@ -740,6 +806,7 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
 module.exports = {
   addHubAccountAndInitPosition,
   getByNameAndCurrency,
+  getByIDAndCurrency,
   getParticipantLimitByParticipantIdAndCurrencyId,
   getEndpoint,
   getAllEndpoints,

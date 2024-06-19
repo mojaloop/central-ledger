@@ -108,17 +108,12 @@ const testFxData = {
 
 const prepareFxTestData = async (dataObj) => {
   try {
-    const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.sourceAmount.currency, dataObj.targetAmount.currency)
+    const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.sourceAmount.currency)
     const fxp = await ParticipantHelper.prepareData(dataObj.fxp.name, dataObj.sourceAmount.currency, dataObj.targetAmount.currency)
     const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.targetAmount.currency)
 
     const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.sourceAmount.currency,
-      limit: { value: dataObj.payer.limit }
-    })
-    // Due to an issue with the participant currency validation, we need to create the target currency for payer for now
-    await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
-      currency: dataObj.targetAmount.currency,
       limit: { value: dataObj.payer.limit }
     })
     const fxpLimitAndInitialPositionSourceCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
