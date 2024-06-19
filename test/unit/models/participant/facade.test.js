@@ -366,28 +366,6 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
-  // await facadeTest.test('getByIDAndCurrency isCurrencyActive:true (cache on)', async (assert) => {
-  //   try {
-  //     Cache.isCacheEnabled.returns(true)
-
-  //     ParticipantModel.getByName.withArgs(participant.participantId).returns(participant)
-  //     ParticipantCurrencyModel.findOneByParams.withArgs({
-  //       participantId: participant.participantId,
-  //       currencyId: participant.currency,
-  //       ledgerAccountTypeId: Enum.Accounts.LedgerAccountType.POSITION,
-  //       isActive: true
-  //     }).returns(participant)
-
-  //     const result = await Model.getByIDAndCurrency(participant.participantId, participant.currency, Enum.Accounts.LedgerAccountType.POSITION, true)
-  //     assert.deepEqual(result, participant)
-  //     assert.end()
-  //   } catch (err) {
-  //     Logger.error(`getByIDAndCurrency failed with error - ${err}`)
-  //     assert.fail()
-  //     assert.end()
-  //   }
-  // })
-
   await facadeTest.test('getEndpoint', async (assert) => {
     try {
       const builderStub = sandbox.stub()
