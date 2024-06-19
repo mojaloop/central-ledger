@@ -196,27 +196,17 @@ Test('Cyril', cyrilTest => {
       }
     })
 
-    processFxFulfilMessageTest.test('should return fxTransferRecord when commitRequestId is in watchlist', async (test) => {
+    processFxFulfilMessageTest.test('should return true when commitRequestId is in watchlist', async (test) => {
       try {
-        const fxTransferRecordDetails = {
-          initiatingFspParticipantId: 1,
-          initiatingFspName: 'fx_dfsp1',
-          counterPartyFspSourceParticipantCurrencyId: 1,
-          counterPartyFspTargetParticipantCurrencyId: 2,
-          counterPartyFspParticipantId: 2,
-          counterPartyFspName: 'fx_dfsp2'
-        }
         watchList.getItemInWatchListByCommitRequestId.returns(Promise.resolve({
           commitRequestId: fxPayload.commitRequestId,
           determiningTransferId: fxPayload.determiningTransferId,
           fxTransferTypeId: Enum.Fx.FxTransferType.PAYER_CONVERSION,
           createdDate: new Date()
         }))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(fxTransferRecordDetails))
         const result = await Cyril.processFxFulfilMessage(fxPayload.commitRequestId)
         test.ok(watchList.getItemInWatchListByCommitRequestId.calledWith(fxPayload.commitRequestId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
-        test.deepEqual(result, fxTransferRecordDetails)
+        test.ok(result)
         test.pass('Error not thrown')
         test.end()
       } catch (e) {
