@@ -18,11 +18,11 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.saveTransferDuplicateCheck(id, hash)
     },
 
-    async savePreparedRequest (payload, reason, isValid) {
+    async savePreparedRequest (payload, reason, isValid, determiningTransferCheckResult) {
       // todo: add histoTimer and try/catch here
       return isFx
-        ? fxTransferModel.fxTransfer.savePreparedRequest(payload, reason, isValid)
-        : TransferService.prepare(payload, reason, isValid)
+        ? fxTransferModel.fxTransfer.savePreparedRequest(payload, reason, isValid, determiningTransferCheckResult)
+        : TransferService.prepare(payload, reason, isValid, determiningTransferCheckResult)
     },
 
     async getByIdLight (id) {
@@ -31,10 +31,16 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.getByIdLight(id)
     },
 
-    async getPositionParticipant (payload) {
+    async checkIfDeterminingTransferExists (payload) {
       return isFx
-        ? cyril.getParticipantAndCurrencyForFxTransferMessage(payload)
-        : cyril.getParticipantAndCurrencyForTransferMessage(payload)
+        ? cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload)
+        : cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+    },
+
+    async getPositionParticipant (payload, determiningTransferCheckResult) {
+      return isFx
+        ? cyril.getParticipantAndCurrencyForFxTransferMessage(payload, determiningTransferCheckResult)
+        : cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult)
     },
 
     async logTransferError (id, errorCode, errorDescription) {

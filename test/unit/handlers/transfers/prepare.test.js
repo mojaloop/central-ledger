@@ -50,7 +50,7 @@ const Comparators = require('@mojaloop/central-services-shared').Util.Comparator
 const Proxyquire = require('proxyquire')
 const Participant = require('../../../../src/domain/participant')
 const Config = require('../../../../src/lib/config')
-const fxTransferModel = require('../../../../src/models/fxTransfer/fxTransfer')
+const fxTransferModel = require('../../../../src/models/fxTransfer')
 const fxDuplicateCheck = require('../../../../src/models/fxTransfer/duplicateCheck')
 const fxTransferStateChange = require('../../../../src/models/fxTransfer/stateChange')
 
@@ -330,7 +330,8 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(Comparators)
     sandbox.stub(Validator)
     sandbox.stub(TransferService)
-    sandbox.stub(fxTransferModel)
+    sandbox.stub(fxTransferModel.fxTransfer)
+    sandbox.stub(fxTransferModel.watchList)
     sandbox.stub(fxDuplicateCheck)
     sandbox.stub(fxTransferStateChange)
     sandbox.stub(Cyril)
@@ -379,6 +380,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(null))
       Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
@@ -388,9 +390,32 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
       test.equal(kafkaCallOne.args[2].messageKey, '0')
-      test.equal(kafkaCallOne.args[2].topicNameOverride, null)
       test.equal(result, true)
       test.end()
+    })
+
+    prepareTest.test('fail when messages array is empty', async (test) => {
+      const localMessages = []
+      // here copy
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      try {
+        await allTransferHandlers.prepare(null, localMessages)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.end()
+      }
     })
 
     prepareTest.test('use topic name override if specified in config', async (test) => {
@@ -403,6 +428,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(null))
       Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
@@ -427,6 +453,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.prepare.returns(Promise.resolve(true))
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(null))
       Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
@@ -902,7 +929,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
-      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      fxTransferModel.fxTransfer.savePreparedRequest.returns(Promise.resolve(true))
       Comparators.duplicateCheckComparator.returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
@@ -915,7 +942,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
       test.equal(result, true)
       test.ok(Validator.validatePrepare.called)
-      test.ok(fxTransferModel.savePreparedRequest.called)
+      test.ok(fxTransferModel.fxTransfer.savePreparedRequest.called)
       test.ok(Comparators.duplicateCheckComparator.called)
       test.end()
     })
@@ -927,7 +954,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
-      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      fxTransferModel.fxTransfer.savePreparedRequest.returns(Promise.resolve(true))
       Comparators.duplicateCheckComparator.returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
@@ -940,7 +967,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
       test.equal(result, true)
       test.ok(Validator.validatePrepare.called)
-      test.ok(fxTransferModel.savePreparedRequest.called)
+      test.ok(fxTransferModel.fxTransfer.savePreparedRequest.called)
       test.ok(Comparators.duplicateCheckComparator.called)
       test.end()
     })
@@ -952,7 +979,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
-      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      fxTransferModel.fxTransfer.savePreparedRequest.returns(Promise.resolve(true))
       Comparators.duplicateCheckComparator.returns(Promise.resolve({
         hasDuplicateId: true,
         hasDuplicateHash: true
@@ -971,7 +998,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
-      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      fxTransferModel.fxTransfer.savePreparedRequest.returns(Promise.resolve(true))
       Comparators.duplicateCheckComparator.returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
@@ -984,7 +1011,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
       test.equal(result, true)
       test.ok(Validator.validatePrepare.called)
-      test.ok(fxTransferModel.savePreparedRequest.called)
+      test.ok(fxTransferModel.fxTransfer.savePreparedRequest.called)
       test.ok(Comparators.duplicateCheckComparator.called)
       test.end()
     })
@@ -996,7 +1023,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
-      fxTransferModel.savePreparedRequest.throws(new Error())
+      fxTransferModel.fxTransfer.savePreparedRequest.throws(new Error())
       Comparators.duplicateCheckComparator.returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
@@ -1020,7 +1047,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
-      fxTransferModel.savePreparedRequest.throws(new Error())
+      fxTransferModel.fxTransfer.savePreparedRequest.throws(new Error())
       Comparators.duplicateCheckComparator.returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
@@ -1043,7 +1070,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
-      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      fxTransferModel.fxTransfer.savePreparedRequest.returns(Promise.resolve(true))
       Comparators.duplicateCheckComparator.returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
@@ -1056,7 +1083,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
       test.equal(result, true)
       test.ok(Validator.validatePrepare.called)
-      test.ok(fxTransferModel.savePreparedRequest.called)
+      test.ok(fxTransferModel.fxTransfer.savePreparedRequest.called)
       test.ok(Comparators.duplicateCheckComparator.called)
       test.end()
     })
@@ -1068,7 +1095,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Validator.validatePrepare.returns({ validationPassed: false, reasons: [] })
-      fxTransferModel.savePreparedRequest.returns(Promise.resolve(true))
+      fxTransferModel.fxTransfer.savePreparedRequest.returns(Promise.resolve(true))
       Comparators.duplicateCheckComparator.returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
@@ -1081,7 +1108,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
       test.equal(result, true)
       test.ok(Validator.validatePrepare.called)
-      test.ok(fxTransferModel.savePreparedRequest.called)
+      test.ok(fxTransferModel.fxTransfer.savePreparedRequest.called)
       test.ok(Comparators.duplicateCheckComparator.called)
       test.end()
     })

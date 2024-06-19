@@ -41,14 +41,14 @@ const TransferErrorDuplicateCheckModel = require('../../models/transfer/transfer
 const TransferError = require('../../models/transfer/transferError')
 const TransferObjectTransform = require('./transform')
 
-const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
+const prepare = async (payload, stateReason = null, hasPassedValidation = true, determiningTransferCheckResult) => {
   const histTimerTransferServicePrepareEnd = Metrics.getHistogram(
     'domain_transfer',
     'prepare - Metrics for transfer domain',
     ['success', 'funcName']
   ).startTimer()
   try {
-    const result = await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
+    const result = await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation, determiningTransferCheckResult)
     histTimerTransferServicePrepareEnd({ success: true, funcName: 'prepare' })
     return result
   } catch (err) {

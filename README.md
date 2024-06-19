@@ -258,6 +258,7 @@ npm start
 ```
 - Additionally, run position batch handler in a new terminal
 ```
+nvm use
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_PREPARE=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
@@ -266,7 +267,11 @@ export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_TIMEOUT_RESERVED=t
 export CLEDG_HANDLERS__API__DISABLED=true
 node src/handlers/index.js handler --positionbatch
 ```
-- Run tests using `npx tape 'test/integration-override/**/handlerBatch.test.js'`
+- Run tests using the following commands in a new terminal
+```
+nvm use
+npm run test:int-override
+```
 
 
 If you want to just run all of the integration suite non-interactively then use npm run `test:integration`.

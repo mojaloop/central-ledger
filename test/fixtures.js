@@ -261,7 +261,6 @@ const fxtGetAllDetailsByCommitRequestIdDto = ({
   ilpCondition: condition,
   initiatingFspName: initiatingFsp,
   initiatingFspParticipantId: 1,
-  initiatingFspParticipantCurrencyId: 11,
   counterPartyFspName: counterPartyFsp,
   counterPartyFspParticipantId: 2,
   counterPartyFspTargetParticipantCurrencyId: 22,
