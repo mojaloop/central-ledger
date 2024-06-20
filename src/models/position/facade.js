@@ -52,17 +52,22 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const knex = await Db.getKnex()
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
-    const allSettlementModels = await SettlementModelCached.getAll()
-    let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
-    if (settlementModels.length === 0) {
-      settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
-      if (settlementModels.length === 0) {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
-      }
-    }
-    const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)
-    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
-    const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
+    // const allSettlementModels = await SettlementModelCached.getAll()
+    // let settlementModels = allSettlementModels.filter(model => model.currencyId === currencyId)
+    // if (settlementModels.length === 0) {
+    //   settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
+    //   if (settlementModels.length === 0) {
+    //     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.GENERIC_SETTLEMENT_ERROR, 'Unable to find a matching or default, Settlement Model')
+    //   }
+    // }
+    // const settlementModel = settlementModels.find(sm => sm.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION)    
+    // const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
+    // const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
+
+    // const settlementModel = transferList[0].value.content.context.settlementModel
+    const participantCurrency = transferList[0].value.content.context.participants.payer.accounts.POSITION
+    const settlementParticipantCurrency = transferList[0].value.content.context.participants.payer.accounts.SETTLEMENT
+
     const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
     const reservedTransfers = []
     const abortedTransfers = []
