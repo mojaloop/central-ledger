@@ -61,7 +61,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
     try {
       const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
       const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(transferTimeoutList[i].transferId, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, state)
-      const headers = Utility.Http.SwitchDefaultHeaders(transferTimeoutList[i].payerFsp, Enum.Http.HeaderResources.TRANSFERS, Enum.Http.Headers.FSPIOP.SWITCH.value, resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion)
+      const headers = Utility.Http.SwitchDefaultHeaders(transferTimeoutList[i].payerFsp, Enum.Http.HeaderResources.TRANSFERS, Config.HUB_NAME, resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion)
       const message = Utility.StreamingProtocol.createMessage(transferTimeoutList[i].transferId, transferTimeoutList[i].payeeFsp, transferTimeoutList[i].payerFsp, metadata, headers, fspiopError, { id: transferTimeoutList[i].transferId }, `application/vnd.interoperability.${Enum.Http.HeaderResources.TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion}`)
       span.setTags(Utility.EventFramework.getTransferSpanTags({ payload: message.content.payload, headers }, Enum.Events.Event.Type.TRANSFER, Enum.Events.Event.Action.TIMEOUT_RECEIVED))
       await span.audit({
@@ -73,7 +73,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
       if (transferTimeoutList[i].bulkTransferId === null) { // regular transfer
         if (transferTimeoutList[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
           message.to = message.from
-          message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
+          message.from = Config.HUB_NAME
           // event & type set above when `const metadata` is initialized to NOTIFICATION / TIMEOUT_RECEIVED
           await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state, null, span)
         } else if (transferTimeoutList[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
@@ -95,7 +95,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
       } else { // individual transfer from a bulk
         if (transferTimeoutList[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
           message.to = message.from
-          message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
+          message.from = Config.HUB_NAME
           message.metadata.event.type = Enum.Events.Event.Type.BULK_PROCESSING
           message.metadata.event.action = Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED
           await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.BULK_PROCESSING, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, message, state, null, span)
@@ -133,7 +133,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
     try {
       const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
       const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(fxTransferTimeoutList[i].commitRequestId, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, state)
-      const headers = Utility.Http.SwitchDefaultHeaders(fxTransferTimeoutList[i].initiatingFsp, Enum.Http.HeaderResources.FX_TRANSFERS, Enum.Http.Headers.FSPIOP.SWITCH.value, resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion)
+      const headers = Utility.Http.SwitchDefaultHeaders(fxTransferTimeoutList[i].initiatingFsp, Enum.Http.HeaderResources.FX_TRANSFERS, Config.HUB_NAME, resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion)
       const message = Utility.StreamingProtocol.createMessage(fxTransferTimeoutList[i].commitRequestId, fxTransferTimeoutList[i].counterPartyFsp, fxTransferTimeoutList[i].initiatingFsp, metadata, headers, fspiopError, { id: fxTransferTimeoutList[i].commitRequestId }, `application/vnd.interoperability.${Enum.Http.HeaderResources.FX_TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion}`)
       span.setTags(Utility.EventFramework.getTransferSpanTags({ payload: message.content.payload, headers }, Enum.Events.Event.Type.FX_TRANSFER, Enum.Events.Event.Action.TIMEOUT_RECEIVED))
       await span.audit({
@@ -144,7 +144,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
       }, EventSdk.AuditEventAction.start)
       if (fxTransferTimeoutList[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
         message.to = message.from
-        message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
+        message.from = Config.HUB_NAME
         // event & type set above when `const metadata` is initialized to NOTIFICATION / TIMEOUT_RECEIVED
         await Kafka.produceGeneralMessage(
           Config.KAFKA_CONFIG, Producer,

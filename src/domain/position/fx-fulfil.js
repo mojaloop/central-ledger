@@ -41,7 +41,7 @@ const processPositionFxFulfilBin = async (
         // set destination to counterPartyFsp and source to switch
         const headers = { ...binItem.message.value.content.headers }
         headers[Enum.Http.Headers.FSPIOP.DESTINATION] = counterPartyFsp
-        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
         delete headers['content-length']
 
         // TODO: Confirm if this setting transferStateId to ABORTED_REJECTED is correct. There is no such logic in the fulfil handler.
@@ -67,7 +67,7 @@ const processPositionFxFulfilBin = async (
         resultMessage = Utility.StreamingProtocol.createMessage(
           commitRequestId,
           counterPartyFsp,
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          Config.HUB_NAME,
           metadata,
           headers,
           fspiopError,
