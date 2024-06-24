@@ -51,25 +51,16 @@ class FxFulfilService {
   }
 
   async getFxTransferDetails(commitRequestId, functionality) {
-    const transfer =
-      await this.FxTransferModel.fxTransfer.getAllDetailsByCommitRequestId(
-        commitRequestId
-      )
+    const transfer = await this.FxTransferModel.fxTransfer.getAllDetailsByCommitRequestId(commitRequestId)
 
     if (!transfer) {
       const fspiopError = fspiopErrorFactory.fxTransferNotFound()
-      const apiFSPIOPError = fspiopError.toApiErrorObject(
-        this.Config.ERROR_HANDLING
-      )
+      const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
         functionality,
         action: Action.FX_RESERVE
       }
-      this.log.warn('fxTransfer not found', {
-        commitRequestId,
-        eventDetail,
-        apiFSPIOPError
-      })
+      this.log.warn('fxTransfer not found', { commitRequestId, eventDetail, apiFSPIOPError })
 
       await this.kafkaProceed({
         consumerCommit,
@@ -87,39 +78,23 @@ class FxFulfilService {
   async validateHeaders({ transfer, headers, payload }) {
     let fspiopError = null
 
-    if (
-      headers[SOURCE]?.toLowerCase() !==
-      transfer.counterPartyFspName.toLowerCase()
-    ) {
+    if (headers[SOURCE]?.toLowerCase() !== transfer.counterPartyFspName.toLowerCase()) {
       fspiopError = fspiopErrorFactory.fxHeaderSourceValidationError()
     }
-    if (
-      headers[DESTINATION]?.toLowerCase() !==
-      transfer.initiatingFspName.toLowerCase()
-    ) {
+    if (headers[DESTINATION]?.toLowerCase() !== transfer.initiatingFspName.toLowerCase()) {
       fspiopError = fspiopErrorFactory.fxHeaderDestinationValidationError()
     }
 
     if (fspiopError) {
-      const apiFSPIOPError = fspiopError.toApiErrorObject(
-        this.Config.ERROR_HANDLING
-      )
+      const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
         functionality: Type.POSITION,
         action: Action.FX_ABORT_VALIDATION
       }
-      this.log.warn('headers validation error', {
-        eventDetail,
-        apiFSPIOPError
-      })
+      this.log.warn('headers validation error', { eventDetail, apiFSPIOPError })
 
       // Lets handle the abort validation and change the fxTransfer state to reflect this
-      await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(
-        transfer.commitRequestId,
-        payload,
-        eventDetail.action,
-        apiFSPIOPError
-      )
+      await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
       // Publish message to FX Position Handler
       await this.kafkaProceed({
@@ -154,19 +129,9 @@ class FxFulfilService {
     )
   }
 
-  async checkDuplication({
-    dupCheckResult,
-    transfer,
-    functionality,
-    action,
-    type
-  }) {
+  async checkDuplication({ dupCheckResult, transfer, functionality, action, type }) {
     const transferStateEnum = transfer?.transferStateEnumeration
-    this.log.info('fxTransfer checkDuplication...', {
-      dupCheckResult,
-      action,
-      transferStateEnum
-    })
+    this.log.info('fxTransfer checkDuplication...', { dupCheckResult, action, transferStateEnum })
 
     if (!dupCheckResult.hasDuplicateId) {
       this.log.debug('No duplication found')
@@ -176,20 +141,12 @@ class FxFulfilService {
     if (!dupCheckResult.hasDuplicateHash) {
       // ERROR: We've seen fxTransfer of this ID before, but it's message hash doesn't match the previous message hash.
       const fspiopError = fspiopErrorFactory.noFxDuplicateHash()
-      const apiFSPIOPError = fspiopError.toApiErrorObject(
-        this.Config.ERROR_HANDLING
-      )
+      const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
         functionality,
-        action:
-          action === Action.FX_ABORT
-            ? Action.FX_ABORT_DUPLICATE
-            : Action.FX_FULFIL_DUPLICATE
+        action: action === Action.FX_ABORT ? Action.FX_ABORT_DUPLICATE : Action.FX_FULFIL_DUPLICATE
       }
-      this.log.warn('callbackErrorModified - no hasDuplicateHash', {
-        eventDetail,
-        apiFSPIOPError
-      })
+      this.log.warn('callbackErrorModified - no hasDuplicateHash', { eventDetail, apiFSPIOPError })
 
       await this.kafkaProceed({
         consumerCommit,
@@ -202,30 +159,18 @@ class FxFulfilService {
 
     // This is a duplicate message for a fxTransfer that is already in a finalized state
     // respond as if we received a GET /fxTransfers/{ID} from the client
-    if (
-      [TransferState.COMMITTED, TransferState.ABORTED].includes(
-        transferStateEnum
-      )
-    ) {
-      this.params.message.value.content.payload =
-        this.transform.toFulfil(transfer)
+    if ([TransferState.COMMITTED, TransferState.ABORTED].includes(transferStateEnum)) {
+      this.params.message.value.content.payload = this.transform.toFulfil(transfer)
       const eventDetail = {
         functionality,
-        action:
-          action === Action.FX_ABORT
-            ? Action.FX_ABORT_DUPLICATE
-            : Action.FX_FULFIL_DUPLICATE
+        action: action === Action.FX_ABORT ? Action.FX_ABORT_DUPLICATE : Action.FX_FULFIL_DUPLICATE
       }
       this.log.info('eventDetail:', { eventDetail })
       await this.kafkaProceed({ consumerCommit, eventDetail, fromSwitch })
       return true
     }
 
-    if (
-      [TransferState.RECEIVED, TransferState.RESERVED].includes(
-        transferStateEnum
-      )
-    ) {
+    if ([TransferState.RECEIVED, TransferState.RESERVED].includes(transferStateEnum)) {
       this.log.info('state: RECEIVED or RESERVED')
       await this.kafkaProceed({ consumerCommit })
       // this code doesn't publish any message to kafka, coz we don't provide eventDetail:
@@ -234,22 +179,13 @@ class FxFulfilService {
     }
 
     // Error scenario - fxTransfer.transferStateEnumeration is in some invalid state
-    const fspiopError = fspiopErrorFactory.invalidFxTransferState({
-      transferStateEnum,
-      action,
-      type
-    })
-    const apiFSPIOPError = fspiopError.toApiErrorObject(
-      this.Config.ERROR_HANDLING
-    )
+    const fspiopError = fspiopErrorFactory.invalidFxTransferState({ transferStateEnum, action, type })
+    const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
     const eventDetail = {
       functionality,
       action: Action.FX_RESERVE
     }
-    this.log.warn('callbackErrorInvalidTransferStateEnum', {
-      eventDetail,
-      apiFSPIOPError
-    })
+    this.log.warn('callbackErrorInvalidTransferStateEnum', { eventDetail, apiFSPIOPError })
     await this.kafkaProceed({
       consumerCommit,
       fspiopError: apiFSPIOPError,
@@ -263,18 +199,12 @@ class FxFulfilService {
   async validateEventType(type, functionality) {
     if (type !== Type.FULFIL) {
       const fspiopError = fspiopErrorFactory.invalidEventType(type)
-      const apiFSPIOPError = fspiopError.toApiErrorObject(
-        this.Config.ERROR_HANDLING
-      )
+      const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
         functionality,
         action: Action.FX_RESERVE
       }
-      this.log.warn('callbackErrorInvalidEventType', {
-        type,
-        eventDetail,
-        apiFSPIOPError
-      })
+      this.log.warn('callbackErrorInvalidEventType', { type, eventDetail, apiFSPIOPError })
 
       await this.kafkaProceed({
         consumerCommit,
@@ -288,39 +218,23 @@ class FxFulfilService {
   }
 
   async validateFulfilment(transfer, payload) {
-    const isValid = this.validateFulfilCondition(
-      payload.fulfilment,
-      transfer.ilpCondition
-    )
+    const isValid = this.validateFulfilCondition(payload.fulfilment, transfer.ilpCondition)
 
     if (!isValid) {
       const fspiopError = fspiopErrorFactory.fxInvalidFulfilment()
-      const apiFSPIOPError = fspiopError.toApiErrorObject(
-        this.Config.ERROR_HANDLING
-      )
+      const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
         functionality: Type.POSITION,
         action: Action.FX_ABORT_VALIDATION
       }
-      this.log.warn('callbackErrorInvalidFulfilment', {
-        eventDetail,
-        apiFSPIOPError,
-        transfer,
-        payload
-      })
-      await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(
-        transfer.commitRequestId,
-        payload,
-        eventDetail.action,
-        apiFSPIOPError
-      )
+      this.log.warn('callbackErrorInvalidFulfilment', { eventDetail, apiFSPIOPError, transfer, payload })
+      await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
       await this.kafkaProceed({
         consumerCommit,
         fspiopError: apiFSPIOPError,
         eventDetail,
-        messageKey:
-          transfer.counterPartyFspTargetParticipantCurrencyId.toString()
+        messageKey: transfer.counterPartyFspTargetParticipantCurrencyId.toString()
       })
       throw fspiopError
     }
@@ -332,18 +246,12 @@ class FxFulfilService {
   async validateTransferState(transfer, functionality) {
     if (transfer.transferState !== TransferState.RESERVED) {
       const fspiopError = fspiopErrorFactory.fxTransferNonReservedState()
-      const apiFSPIOPError = fspiopError.toApiErrorObject(
-        this.Config.ERROR_HANDLING
-      )
+      const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
         functionality,
         action: Action.FX_RESERVE
       }
-      this.log.warn('callbackErrorNonReservedState', {
-        eventDetail,
-        apiFSPIOPError,
-        transfer
-      })
+      this.log.warn('callbackErrorNonReservedState', { eventDetail, apiFSPIOPError, transfer })
 
       await this.kafkaProceed({
         consumerCommit,
@@ -358,21 +266,14 @@ class FxFulfilService {
   }
 
   async validateExpirationDate(transfer, functionality) {
-    if (
-      transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
-    ) {
+    if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
       const fspiopError = fspiopErrorFactory.fxTransferExpired()
-      const apiFSPIOPError = fspiopError.toApiErrorObject(
-        this.Config.ERROR_HANDLING
-      )
+      const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
         functionality,
         action: Action.FX_RESERVE
       }
-      this.log.warn('callbackErrorTransferExpired', {
-        eventDetail,
-        apiFSPIOPError
-      })
+      this.log.warn('callbackErrorTransferExpired', { eventDetail, apiFSPIOPError })
 
       await this.kafkaProceed({
         consumerCommit,
@@ -385,30 +286,20 @@ class FxFulfilService {
   }
 
   async processFxAbortAction({ transfer, payload, action }) {
-    const fspiopError = fspiopErrorFactory.fromErrorInformation(
-      payload.errorInformation
-    )
-    const apiFSPIOPError = fspiopError.toApiErrorObject(
-      this.Config.ERROR_HANDLING
-    )
+    const fspiopError = fspiopErrorFactory.fromErrorInformation(payload.errorInformation)
+    const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
     const eventDetail = {
       functionality: Type.POSITION,
       action
     }
     this.log.warn('FX_ABORT case', { eventDetail, apiFSPIOPError })
 
-    await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(
-      transfer.commitRequestId,
-      payload,
-      action,
-      apiFSPIOPError
-    )
+    await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, action, apiFSPIOPError)
     await this.kafkaProceed({
       consumerCommit,
       fspiopError: apiFSPIOPError,
       eventDetail,
-      messageKey:
-        transfer.counterPartyFspTargetParticipantCurrencyId.toString()
+      messageKey: transfer.counterPartyFspTargetParticipantCurrencyId.toString()
       // todo: think if we need to use cyrilOutput to get counterPartyFspTargetParticipantCurrencyId?
     })
 
@@ -435,27 +326,18 @@ class FxFulfilService {
 
   async kafkaProceed(kafkaOpts) {
     return this.Kafka.proceed(this.Config.KAFKA_CONFIG, this.params, {
-      hubName: this.Config.HUB_NAME,
-      ...kafkaOpts
+      ...kafkaOpts,
+      hubName: this.Config.HUB_NAME
     })
   }
 
   validateFulfilCondition(fulfilment, condition) {
     try {
-      const isValid =
-        fulfilment &&
-        this.Validator.validateFulfilCondition(fulfilment, condition)
-      this.log.debug('validateFulfilCondition result:', {
-        isValid,
-        fulfilment,
-        condition
-      })
+      const isValid = fulfilment && this.Validator.validateFulfilCondition(fulfilment, condition)
+      this.log.debug('validateFulfilCondition result:', { isValid, fulfilment, condition })
       return isValid
     } catch (err) {
-      this.log.warn(`validateFulfilCondition error: ${err?.message}`, {
-        fulfilment,
-        condition
-      })
+      this.log.warn(`validateFulfilCondition error: ${err?.message}`, { fulfilment, condition })
       return false
     }
   }
@@ -464,9 +346,7 @@ class FxFulfilService {
     if (!message?.value) {
       throw TypeError('Invalid message format!')
     }
-    const payload = Util.StreamingProtocol.decodePayload(
-      message.value.content.payload
-    )
+    const payload = Util.StreamingProtocol.decodePayload(message.value.content.payload)
     const { headers } = message.value.content
     const { type, action } = message.value.metadata.event
     const commitRequestId = message.value.content.uriParams.id
