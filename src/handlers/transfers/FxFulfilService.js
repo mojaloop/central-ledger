@@ -128,7 +128,8 @@ class FxFulfilService {
         eventDetail,
         fromSwitch,
         toDestination: transfer.initiatingFspName,
-        messageKey: transfer.initiatingFspParticipantCurrencyId.toString()
+        // The message key doesn't matter here, as there are no position changes for FX Fulfil
+        messageKey: transfer.counterPartyFspSourceParticipantCurrencyId.toString()
       })
       throw fspiopError
     }
@@ -415,28 +416,19 @@ class FxFulfilService {
   }
 
   async processFxFulfil({ transfer, payload, action }) {
-    await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(
-      transfer.commitRequestId,
-      payload,
-      action
-    )
-    const cyrilOutput = await this.cyril.processFxFulfilMessage(
-      transfer.commitRequestId,
-      payload
-    )
+    await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, action)
+    await this.cyril.processFxFulfilMessage(transfer.commitRequestId)
     const eventDetail = {
       functionality: Type.POSITION,
       action
     }
-    this.log.info('handle fxFulfilResponse', { eventDetail, cyrilOutput })
+    this.log.info('handle fxFulfilResponse', { eventDetail })
 
     await this.kafkaProceed({
       consumerCommit,
       eventDetail,
-      messageKey:
-        cyrilOutput.counterPartyFspSourceParticipantCurrencyId.toString(),
-      topicNameOverride:
-        this.Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+      messageKey: transfer.counterPartyFspSourceParticipantCurrencyId.toString(),
+      topicNameOverride: this.Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
     })
     return true
   }

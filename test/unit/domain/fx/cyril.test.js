@@ -74,7 +74,8 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForTransferMessageTest.test('return details about regular transfer', async (test) => {
       try {
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve([]))
-        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult)
 
         test.deepEqual(result, {
           participantName: 'dfsp1',
@@ -109,7 +110,8 @@ Test('Cyril', cyrilTest => {
             counterPartyFspName: 'fx_dfsp2'
           }
         ))
-        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult)
 
         test.deepEqual(result, {
           participantName: 'fx_dfsp2',
@@ -133,7 +135,8 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForFxTransferMessageTest.test('return details about fxtransfer debtor party initited msg', async (test) => {
       try {
         TransferModel.getById.returns(Promise.resolve(null))
-        const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload)
+        const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload, determiningTransferCheckResult)
 
         test.ok(watchList.addToWatchList.calledWith({
           commitRequestId: fxPayload.commitRequestId,
@@ -156,7 +159,8 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForFxTransferMessageTest.test('return details about fxtransfer creditor party initited msg', async (test) => {
       try {
         TransferModel.getById.returns(Promise.resolve({}))
-        const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload)
+        const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload, determiningTransferCheckResult)
 
         test.ok(watchList.addToWatchList.calledWith({
           commitRequestId: fxPayload.commitRequestId,
@@ -192,28 +196,17 @@ Test('Cyril', cyrilTest => {
       }
     })
 
-    processFxFulfilMessageTest.test('should return fxTransferRecord when commitRequestId is in watchlist', async (test) => {
+    processFxFulfilMessageTest.test('should return true when commitRequestId is in watchlist', async (test) => {
       try {
-        const fxTransferRecordDetails = {
-          initiatingFspParticipantCurrencyId: 1,
-          initiatingFspParticipantId: 1,
-          initiatingFspName: 'fx_dfsp1',
-          counterPartyFspSourceParticipantCurrencyId: 1,
-          counterPartyFspTargetParticipantCurrencyId: 2,
-          counterPartyFspParticipantId: 2,
-          counterPartyFspName: 'fx_dfsp2'
-        }
         watchList.getItemInWatchListByCommitRequestId.returns(Promise.resolve({
           commitRequestId: fxPayload.commitRequestId,
           determiningTransferId: fxPayload.determiningTransferId,
           fxTransferTypeId: Enum.Fx.FxTransferType.PAYER_CONVERSION,
           createdDate: new Date()
         }))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(fxTransferRecordDetails))
         const result = await Cyril.processFxFulfilMessage(fxPayload.commitRequestId)
         test.ok(watchList.getItemInWatchListByCommitRequestId.calledWith(fxPayload.commitRequestId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
-        test.deepEqual(result, fxTransferRecordDetails)
+        test.ok(result)
         test.pass('Error not thrown')
         test.end()
       } catch (e) {
@@ -257,7 +250,7 @@ Test('Cyril', cyrilTest => {
         ))
         fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
           {
-            initiatingFspParticipantCurrencyId: 1,
+            initiatingFspParticipantId: 2,
             targetAmount: fxPayload.targetAmount.amount,
             commitRequestId: fxPayload.commitRequestId,
             counterPartyFspSourceParticipantCurrencyId: 1,
@@ -318,7 +311,7 @@ Test('Cyril', cyrilTest => {
         ))
         fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
           {
-            initiatingFspParticipantCurrencyId: 1,
+            initiatingFspParticipantId: 1,
             targetAmount: fxPayload.targetAmount.amount,
             commitRequestId: fxPayload.commitRequestId,
             counterPartyFspSourceParticipantCurrencyId: 1,
@@ -327,6 +320,12 @@ Test('Cyril', cyrilTest => {
             targetCurrency: fxPayload.targetAmount.currency
           }
         ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'payeeFsp',
+          isActive: 1
+        }))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
         test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
@@ -377,7 +376,7 @@ Test('Cyril', cyrilTest => {
         ))
         fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
           {
-            initiatingFspParticipantCurrencyId: 1,
+            initiatingFspParticipantId: 1,
             targetAmount: fxPayload.targetAmount.amount,
             commitRequestId: fxPayload.commitRequestId,
             counterPartyFspSourceParticipantCurrencyId: 1,
@@ -386,6 +385,12 @@ Test('Cyril', cyrilTest => {
             targetCurrency: fxPayload.targetAmount.currency
           }
         ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'payeeFsp',
+          isActive: 1
+        }))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
         test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
