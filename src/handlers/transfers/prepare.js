@@ -88,7 +88,8 @@ const processDuplication = async ({
       consumerCommit,
       fspiopError: error.toApiErrorObject(Config.ERROR_HANDLING),
       eventDetail: { functionality, action },
-      fromSwitch
+      fromSwitch,
+      hubName: Config.HUB_NAME
     })
     throw error
   }
@@ -105,10 +106,10 @@ const processDuplication = async ({
     params.message.value.content.payload = TransferObjectTransform.toFulfil(transfer, isFx)
     params.message.value.content.uriParams = { id: ID }
     const eventDetail = { functionality, action: Action.PREPARE_DUPLICATE }
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch, hubName: Config.HUB_NAME })
   } else {
     logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
   }
 
   return true
@@ -128,7 +129,8 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, f
       consumerCommit,
       fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING),
       eventDetail: { functionality, action: Action.PREPARE },
-      fromSwitch
+      fromSwitch,
+      hubName: Config.HUB_NAME
     })
     throw fspiopError
   }
@@ -174,7 +176,8 @@ const sendPositionPrepareMessage = async ({ isFx, payload, action, params, deter
     consumerCommit,
     eventDetail,
     messageKey,
-    topicNameOverride
+    topicNameOverride,
+    hubName: Config.HUB_NAME
   })
 
   return true
@@ -266,7 +269,8 @@ const prepare = async (error, messages) => {
         consumerCommit,
         fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING),
         eventDetail: { functionality, action },
-        fromSwitch
+        fromSwitch,
+        hubName: Config.HUB_NAME
       })
       throw fspiopError
     }

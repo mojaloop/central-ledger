@@ -141,7 +141,7 @@ const positions = async (error, messages) => {
     for (const message of Object.values(lastPerPartition)) {
       const params = { message, kafkaTopic: message.topic, consumer: Consumer }
       // We are using Kafka.proceed() to just commit the offset of the last message in the array
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
     }
 
     // Commit DB transaction

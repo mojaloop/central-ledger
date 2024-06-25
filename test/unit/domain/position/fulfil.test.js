@@ -29,6 +29,7 @@ const { Enum } = require('@mojaloop/central-services-shared')
 const Sinon = require('sinon')
 const { processPositionFulfilBin } = require('../../../../src/domain/position/fulfil')
 const { randomUUID } = require('crypto')
+const Config = require('../../../../src/lib/config')
 
 const constructTransferCallbackTestData = (payerFsp, payeeFsp, transferState, eventAction, amount, currency) => {
   const transferId = randomUUID()
@@ -429,13 +430,13 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
 
     test.equal(result.notifyMessages[0].message.content.headers.accept, transferTestData1.message.value.content.headers.accept)
     test.equal(result.notifyMessages[0].message.content.headers['fspiop-destination'], transferTestData1.message.value.content.headers['fspiop-source'])
-    test.equal(result.notifyMessages[0].message.content.headers['fspiop-source'], Enum.Http.Headers.FSPIOP.SWITCH.value)
+    test.equal(result.notifyMessages[0].message.content.headers['fspiop-source'], Config.HUB_NAME)
     test.equal(result.notifyMessages[0].message.content.headers['content-type'], transferTestData1.message.value.content.headers['content-type'])
     test.equal(result.accumulatedTransferStates[transferTestData1.message.value.id], Enum.Transfers.TransferInternalState.INVALID)
 
     test.equal(result.notifyMessages[1].message.content.headers.accept, transferTestData2.message.value.content.headers.accept)
     test.equal(result.notifyMessages[1].message.content.headers['fspiop-destination'], transferTestData2.message.value.content.headers['fspiop-source'])
-    test.equal(result.notifyMessages[1].message.content.headers['fspiop-source'], Enum.Http.Headers.FSPIOP.SWITCH.value)
+    test.equal(result.notifyMessages[1].message.content.headers['fspiop-source'], Config.HUB_NAME)
     test.equal(result.notifyMessages[1].message.content.headers['content-type'], transferTestData2.message.value.content.headers['content-type'])
     test.equal(result.accumulatedTransferStates[transferTestData2.message.value.id], Enum.Transfers.TransferInternalState.INVALID)
 
@@ -474,7 +475,7 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
 
     test.equal(result.notifyMessages[0].message.content.headers.accept, transferTestData1.message.value.content.headers.accept)
     test.equal(result.notifyMessages[0].message.content.headers['fspiop-destination'], transferTestData1.message.value.content.headers['fspiop-source'])
-    test.equal(result.notifyMessages[0].message.content.headers['fspiop-source'], Enum.Http.Headers.FSPIOP.SWITCH.value)
+    test.equal(result.notifyMessages[0].message.content.headers['fspiop-source'], Config.HUB_NAME)
     test.equal(result.notifyMessages[0].message.content.headers['content-type'], transferTestData1.message.value.content.headers['content-type'])
     test.equal(result.accumulatedTransferStates[transferTestData1.message.value.id], Enum.Transfers.TransferInternalState.INVALID)
 

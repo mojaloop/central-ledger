@@ -129,7 +129,7 @@ const _handleIncorrectTransferState = (binItem, payeeFsp, transferId, accumulate
   // set destination to payeefsp and source to switch
   const headers = { ...binItem.message.value.content.headers }
   headers[Enum.Http.Headers.FSPIOP.DESTINATION] = payeeFsp
-  headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+  headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
   delete headers['content-length']
 
   const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
@@ -151,7 +151,7 @@ const _handleIncorrectTransferState = (binItem, payeeFsp, transferId, accumulate
   return Utility.StreamingProtocol.createMessage(
     transferId,
     payeeFsp,
-    Enum.Http.Headers.FSPIOP.SWITCH.value,
+    Config.HUB_NAME,
     metadata,
     headers,
     fspiopError,

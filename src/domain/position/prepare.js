@@ -67,7 +67,7 @@ const processPositionPrepareBin = async (
         // set destination to payerfsp and source to switch
         const headers = { ...binItem.message.value.content.headers }
         headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
-        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
         delete headers['content-length']
 
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
@@ -90,7 +90,7 @@ const processPositionPrepareBin = async (
         resultMessage = Utility.StreamingProtocol.createMessage(
           transfer.transferId,
           transfer.payerFsp,
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          Config.HUB_NAME,
           metadata,
           headers,
           fspiopError,
@@ -109,7 +109,7 @@ const processPositionPrepareBin = async (
         // set destination to payerfsp and source to switch
         const headers = { ...binItem.message.value.content.headers }
         headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
-        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
         delete headers['content-length']
 
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
@@ -132,7 +132,7 @@ const processPositionPrepareBin = async (
         resultMessage = Utility.StreamingProtocol.createMessage(
           transfer.transferId,
           transfer.payerFsp,
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          Config.HUB_NAME,
           metadata,
           headers,
           fspiopError,
@@ -151,7 +151,7 @@ const processPositionPrepareBin = async (
         // set destination to payerfsp and source to switch
         const headers = { ...binItem.message.value.content.headers }
         headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
-        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
         delete headers['content-length']
 
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
@@ -174,7 +174,7 @@ const processPositionPrepareBin = async (
         resultMessage = Utility.StreamingProtocol.createMessage(
           transfer.transferId,
           transfer.payerFsp,
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          Config.HUB_NAME,
           metadata,
           headers,
           fspiopError,

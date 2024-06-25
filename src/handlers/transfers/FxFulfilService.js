@@ -325,11 +325,10 @@ class FxFulfilService {
   }
 
   async kafkaProceed(kafkaOpts) {
-    return this.Kafka.proceed(
-      this.Config.KAFKA_CONFIG,
-      this.params,
-      kafkaOpts
-    )
+    return this.Kafka.proceed(this.Config.KAFKA_CONFIG, this.params, {
+      ...kafkaOpts,
+      hubName: this.Config.HUB_NAME
+    })
   }
 
   validateFulfilCondition(fulfilment, condition) {

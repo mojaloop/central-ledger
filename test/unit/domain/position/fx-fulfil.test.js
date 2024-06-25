@@ -29,6 +29,7 @@ const { Enum } = require('@mojaloop/central-services-shared')
 const Sinon = require('sinon')
 const { processPositionFxFulfilBin } = require('../../../../src/domain/position/fx-fulfil')
 const { randomUUID } = require('crypto')
+const Config = require('../../../../src/lib/config')
 
 const constructFxTransferCallbackTestData = (initiatingFsp, counterPartyFsp) => {
   const commitRequestId = randomUUID()
@@ -180,7 +181,7 @@ Test('Fx Fulfil domain', processPositionFxFulfilBinTest => {
     test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, fxTransferCallbackTestData3.message.value.id)
     test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, fxTransferCallbackTestData3.message.value.content.headers.accept)
     test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], fxTransferCallbackTestData3.message.value.content.headers['fspiop-source'])
-    test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Enum.Http.Headers.FSPIOP.SWITCH.value)
+    test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
     test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], fxTransferCallbackTestData3.message.value.content.headers['content-type'])
     test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
     test.equal(processedMessages.accumulatedFxTransferStates[fxTransferCallbackTestData3.message.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
