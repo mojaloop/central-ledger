@@ -30,7 +30,8 @@ exports.up = async (knex) => {
     if (exists) {
       return knex.schema.alterTable('transferParticipant', (t) => {
         t.integer('participantId').unsigned().notNullable()
-        t.foreign('participantId').references('participantId').inTable('participant')
+        // Disabling this as its throwing error while running the migration with existing data in the table
+        // t.foreign('participantId').references('participantId').inTable('participant')
         t.index('participantId')
         t.integer('participantCurrencyId').unsigned().nullable().alter()
       })
