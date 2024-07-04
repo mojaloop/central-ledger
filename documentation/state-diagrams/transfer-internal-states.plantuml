@@ -8,6 +8,8 @@ state RECEIVED {
 state RESERVED_ {
   state RESERVED {
   }
+  state RESERVED_FORWARDED {
+  }
   state RECEIVED_FULFIL {
   }
   state RECEIVED_FULFIL_DEPENDENT {
@@ -55,10 +57,14 @@ RECEIVED_PREPARE --> EXPIRED_PREPARED : Timeout handler \n detects T. being EXPI
 
 RESERVED --> RECEIVED_FULFIL : Fulfil callback from Payee \n with status "COMMITTED" \n [Fulfil handler]: \n <i>fulfilment check passed</i>
 RESERVED --> RECEIVED_ERROR : Fulfil callback from Payee fails validation\n [Fulfil handler]
+RESERVED --> RESERVED_FORWARDED : Fulfil callback from Payee \n with status "COMMITTED" \n [Fulfil handler]: \n <i>fulfilment check passed</i>
+RESERVED_FORWARDED --> RECEIVED_FULFIL : Fulfil callback from Payee \n with status "COMMITTED" \n [Fulfil handler]: \n <i>fulfilment check passed</i>
+RESERVED_FORWARDED --> RECEIVED_ERROR : Fulfil callback from Payee fails validation\n [Fulfil handler]
 RESERVED --> RESERVED_TIMEOUT : Timeout handler
 RESERVED_TIMEOUT --> EXPIRED_RESERVED : Hub aborts T. due to being EXPIRED
 
 RESERVED --> RECEIVED_FULFIL_DEPENDENT : Recieved FX transfer fulfilment
+RESERVED_FORWARDED --> RECEIVED_FULFIL_DEPENDENT : Recieved FX transfer fulfilment
 RECEIVED_FULFIL_DEPENDENT --> COMMITTED : Dependant transfer committed [Position handler] \n <i>(commit funds, assign T. to settlement window)</i>
 RECEIVED_FULFIL_DEPENDENT --> RESERVED_TIMEOUT : Dependant transfer is timed out
 

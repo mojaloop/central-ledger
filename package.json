@@ -135,7 +135,7 @@
     "mysql": "2.18.1"
   },
   "devDependencies": {
-    "audit-ci": "^7.0.1",
+    "audit-ci": "^7.1.0",
     "get-port": "5.1.1",
     "jsdoc": "4.0.3",
     "jsonpath": "1.1.1",
