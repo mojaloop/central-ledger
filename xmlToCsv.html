@@ -1,0 +1,149 @@
+<html>
+    <head>
+        <title>Parse XML with Javascript</title>
+    </head>
+    <body>
+        <a><button>Download</button></a>
+        <script>
+            fetch("new-sbom.xml").then(response =>{
+                return response.text();
+            }).then(xmlString => {
+                const xmlDocument=new DOMParser().parseFromString(xmlString,"text/xml");
+                
+                //parsing metadata
+                let meta_output='';
+                const metadata=xmlDocument.querySelector("metadata");
+                const timestamp=(metadata.querySelector("timestamp")?.textContent ?? '').trim();
+                const tool=metadata.querySelector("tools tool");
+                const tool_vendor = (tool.querySelector("vendor")?.textContent ?? '').trim();
+                const tool_name=(tool.querySelector("name")?.textContent ?? '').trim();
+                const tool_version=(tool.querySelector("version")?.textContent ?? '').trim();
+                const meta_comp=metadata.querySelector("component");
+                const meta_type=meta_comp.getAttribute("type");
+                const meta_bom_ref=meta_comp.getAttribute("bom-ref");
+                const meta_author=(meta_comp.querySelector("author")?.textContent ?? '').trim();
+                const meta_group=(meta_comp.querySelector("group")?.textContent ?? '').trim();
+                const meta_name=(meta_comp.querySelector("name")?.textContent ?? '').trim();
+                const meta_version=(meta_comp.querySelector("version")?.textContent ?? '').trim();
+                const meta_description=(meta_comp.querySelector("description")?.textContent.replace(/,/g , '~') ?? '').trim();
+                const meta_license_id=(meta_comp.querySelector("licenses license id")?.textContent ?? '').trim();
+                const meta_purl=(meta_comp.querySelector("purl")?.textContent ?? '').trim();
+                const meta_externalReferences=meta_comp.querySelectorAll("externalReferences reference");
+                let meta_website='';
+                let meta_issueTracker='';
+                let meta_vcs='';
+                for(const reference of meta_externalReferences){
+                    const refType=reference.getAttribute("type");
+                    const url=(reference.querySelector("url")?.textContent ?? '').trim();
+                    switch(refType){
+                        case 'website':
+                            meta_website=url;
+                            break;
+                        case 'issue-tracker':
+                            meta_issueTracker=url;
+                            break;
+                        case 'vcs':
+                            meta_vcs=url;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                console.log(timestamp+","+tool_vendor+","+tool_name+","+tool_version+","+meta_type+","+meta_bom_ref+","+meta_author+","+meta_group+","+meta_name+","+meta_version+","+meta_description+","+meta_license_id+","+meta_purl+","+meta_website+","+meta_issueTracker+","+meta_vcs);
+                meta_output="timestamp,tool_vendor,tool_name,tool_version,type,bom_ref,author,group,name,version,description,license_id,purl,website,issueTracker,vcs"+"\n";
+                meta_output+=timestamp+","+tool_vendor+","+tool_name+","+tool_version+","+meta_type+","+meta_bom_ref+","+meta_author+","+meta_group+","+meta_name+","+meta_version+","+meta_description+","+meta_license_id+","+meta_purl+","+meta_website+","+meta_issueTracker+","+meta_vcs;
+                const blob1=new Blob([meta_output],{ type: 'text/csv' });
+                const url1=URL.createObjectURL(blob1);
+                console.log(url1);
+                const m=document.createElement('a');
+                m.href=url1;
+                m.download='metadata.csv';
+                document.body.appendChild(m);
+                m.click();
+                document.body.removeChild(m);
+                URL.revokeObjectURL(url1);
+
+                //parsing components 
+                const components=xmlDocument.querySelectorAll("components component");
+                let output_comp='';
+                output_comp+="type,bom_ref,group,name,version,description,algorithm,hash_text,license_id,purl,website,issueTracker,vcs"+"\n";
+                for(const component of components){
+                    const type=component.getAttribute("type");
+                    const bom_ref=component.getAttribute("bom-ref");
+                    const group=component.querySelector("group")?.textContent ?? '';
+                    const name=component.querySelector("name")?.textContent ?? '';
+                    const version=component.querySelector("version")?.textContent ?? '';
+                    const description=(component.querySelector("description")?.textContent.replace(/,/g , '~') ?? '').trim();
+                    const hash=component.querySelector("hashes hash");
+                    let alg='';
+                    let hash_text='';
+                    if(hash){
+                        alg=hash.getAttribute("alg");
+                        hash_text=hash?.textContent ?? '';
+                    }
+                    const license_id=component.querySelector("licenses license id")?.textContent ?? '';
+                    const purl=component.querySelector("purl")?.textContent ?? '';
+                    const externalReferences=component.querySelectorAll("externalReferences reference");
+                    let website='';
+                    let issueTracker='';
+                    let vcs='';
+                    for(const reference of externalReferences){
+                        const refType=reference.getAttribute("type");
+                        const url=reference.querySelector("url")?.textContent ?? '';
+                        switch(refType){
+                            case 'website':
+                                website=url;
+                                break;
+                            case 'issue-tracker':
+                                issueTracker=url;
+                                break;
+                            case 'vcs':
+                                vcs=url;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    console.log(type+","+bom_ref+","+group+","+name+","+version+","+description+","+alg+","+hash_text+","+license_id+","+purl+","+website+","+issueTracker+","+vcs);
+                    output_comp+=type+","+bom_ref+","+group+","+name+","+version+","+description+","+alg+","+hash_text+","+license_id+","+purl+","+website+","+issueTracker+","+vcs+"\n";
+                }
+                const blob2=new Blob([output_comp],{ type: 'text/csv' });
+                const url2=URL.createObjectURL(blob2);
+                console.log(url2);
+                const c=document.createElement('a');
+                c.href=url2;
+                c.download='components.csv';
+                document.body.appendChild(c);
+                c.click();
+                document.body.removeChild(c);
+                URL.revokeObjectURL(url2);
+
+                //parsing dependencies 
+                const dependencies = xmlDocument.querySelectorAll("dependencies > dependency");
+                let output_depend="dependency"+"\n";
+                function parseDependencies(dependencies) {
+                    for (const dependency of dependencies) {
+                        console.log(dependency.getAttribute("ref"));
+                        output_depend+=dependency.getAttribute("ref")+"\n";
+                        const childDependencies = dependency.querySelectorAll("dependency");
+                        if (childDependencies.length > 0) {
+                            parseDependencies(childDependencies);
+                        }
+                    }
+                }
+                parseDependencies(dependencies);
+                const blob3=new Blob([output_depend],{ type: 'text/csv' });
+                const url3=URL.createObjectURL(blob3);
+                console.log(url3);
+                const d=document.createElement('a');
+                d.href=url3;
+                d.download='dependencies.csv';
+                document.body.appendChild(d);
+                d.click();
+                document.body.removeChild(d);
+                URL.revokeObjectURL(d);
+                
+            });
+        </script>
+    </body>
+</html>
