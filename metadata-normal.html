@@ -1,0 +1,59 @@
+<html>
+<head>
+<style>
+                                /* CSS styles for the table */
+                                table {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    margin-bottom: 20px;
+                                    font-size: 14px; /* Adjust font size */
+                                }
+                                table, th, td {
+                                    border: 1px solid black;
+                                    padding: 6px; /* Reduce padding */
+                                    text-align: left;
+                                }
+                                th {
+                                    background-color: #f2f2f2;
+                                }
+                                /* Wrap specific fields */
+                                td {
+                                    white-space: nowrap; /* Prevent wrapping by default */
+                                }
+                                td.name {
+                                    white-space: normal; /* Allow wrapping for 'Name' field */
+                                    max-width: 150px; /* Limit maximum width */
+                                }
+                            </style>
+</head>
+<table border="1">
+  <thead>
+    <tr>
+      <th>timestamp</th>
+      <th>tool_vendor</th>
+      <th>tool_name</th>
+      <th>tool_version</th>
+      <th>type</th>
+      <th>author</th>
+      <th>group</th>
+      <th>name</th>
+      <th>version</th>
+      <th>license_id</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2024-07-05T08:33:58.589Z</td>
+      <td></td>
+      <td>npm</td>
+      <td>10.7.0</td>
+      <td>application</td>
+      <td>ModusBox</td>
+      <td>@mojaloop</td>
+      <td>central-ledger</td>
+      <td>17.7.8</td>
+      <td>Apache-2.0</td>
+    </tr>
+  </tbody>
+</table>
+</html>
