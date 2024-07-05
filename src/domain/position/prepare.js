@@ -51,6 +51,9 @@ const processPositionPrepareBin = async (
       let reason
       let resultMessage
       const transfer = binItem.decodedPayload
+      const cyrilResult = binItem.message.value.content.context?.cyrilResult
+      const transferAmount = cyrilResult ? cyrilResult.amount : transfer.amount.amount
+
       Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
 
       // Check if transfer is in correct state for processing, produce an internal error message
@@ -64,7 +67,7 @@ const processPositionPrepareBin = async (
         // set destination to payerfsp and source to switch
         const headers = { ...binItem.message.value.content.headers }
         headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
-        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
         delete headers['content-length']
 
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
@@ -87,7 +90,7 @@ const processPositionPrepareBin = async (
         resultMessage = Utility.StreamingProtocol.createMessage(
           transfer.transferId,
           transfer.payerFsp,
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          Config.HUB_NAME,
           metadata,
           headers,
           fspiopError,
@@ -98,7 +101,7 @@ const processPositionPrepareBin = async (
         binItem.result = { success: false }
 
         // Check if payer has insufficient liquidity, produce an error message and abort transfer
-      } else if (availablePositionBasedOnLiquidityCover.toNumber() < transfer.amount.amount) {
+      } else if (availablePositionBasedOnLiquidityCover.toNumber() < transferAmount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
 
@@ -106,7 +109,7 @@ const processPositionPrepareBin = async (
         // set destination to payerfsp and source to switch
         const headers = { ...binItem.message.value.content.headers }
         headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
-        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
         delete headers['content-length']
 
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
@@ -129,7 +132,7 @@ const processPositionPrepareBin = async (
         resultMessage = Utility.StreamingProtocol.createMessage(
           transfer.transferId,
           transfer.payerFsp,
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          Config.HUB_NAME,
           metadata,
           headers,
           fspiopError,
@@ -140,7 +143,7 @@ const processPositionPrepareBin = async (
         binItem.result = { success: false }
 
         // Check if payer has surpassed their limit, produce an error message and abort transfer
-      } else if (availablePositionBasedOnPayerLimit.toNumber() < transfer.amount.amount) {
+      } else if (availablePositionBasedOnPayerLimit.toNumber() < transferAmount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
 
@@ -148,7 +151,7 @@ const processPositionPrepareBin = async (
         // set destination to payerfsp and source to switch
         const headers = { ...binItem.message.value.content.headers }
         headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
-        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
+        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
         delete headers['content-length']
 
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
@@ -171,7 +174,7 @@ const processPositionPrepareBin = async (
         resultMessage = Utility.StreamingProtocol.createMessage(
           transfer.transferId,
           transfer.payerFsp,
-          Enum.Http.Headers.FSPIOP.SWITCH.value,
+          Config.HUB_NAME,
           metadata,
           headers,
           fspiopError,
@@ -184,9 +187,9 @@ const processPositionPrepareBin = async (
         // Payer has sufficient liquidity and limit
       } else {
         transferStateId = Enum.Transfers.TransferState.RESERVED
-        currentPosition = currentPosition.add(transfer.amount.amount)
-        availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transfer.amount.amount)
-        availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.add(transfer.amount.amount)
+        currentPosition = currentPosition.add(transferAmount)
+        availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transferAmount)
+        availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.add(transferAmount)
 
         // forward same headers from the prepare message, except the content-length header
         const headers = { ...binItem.message.value.content.headers }

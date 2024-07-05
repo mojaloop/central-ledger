@@ -28,9 +28,11 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const TimeoutService = require('../../../../src/domain/timeout')
 const TransferTimeoutModel = require('../../../../src/models/transfer/transferTimeout')
+const FxTransferTimeoutModel = require('../../../../src/models/fxTransfer/fxTransferTimeout')
 const TransferFacade = require('../../../../src/models/transfer/facade')
 const SegmentModel = require('../../../../src/models/misc/segment')
 const TransferStateChangeModel = require('../../../../src/models/transfer/transferStateChange')
+const FxTransferStateChangeModel = require('../../../../src/models/fxTransfer/stateChange')
 const Logger = require('@mojaloop/central-services-logger')
 
 Test('Timeout Service', timeoutTest => {
@@ -39,8 +41,10 @@ Test('Timeout Service', timeoutTest => {
   timeoutTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(TransferTimeoutModel)
+    sandbox.stub(FxTransferTimeoutModel)
     sandbox.stub(TransferFacade)
     sandbox.stub(TransferStateChangeModel)
+    sandbox.stub(FxTransferStateChangeModel)
     sandbox.stub(SegmentModel)
     t.end()
   })
@@ -82,6 +86,38 @@ Test('Timeout Service', timeoutTest => {
     getTimeoutSegmentTest.end()
   })
 
+  timeoutTest.test('getFxTimeoutSegment should', getFxTimeoutSegmentTest => {
+    getFxTimeoutSegmentTest.test('return the segment', async (test) => {
+      try {
+        const params = {
+          segmentType: 'timeout',
+          enumeration: 0,
+          tableName: 'fxTransferStateChange'
+        }
+
+        const segment = {
+          segmentId: 1,
+          segmentType: 'timeout',
+          enumeration: 0,
+          tableName: 'fxTransferStateChange',
+          value: 4,
+          changedDate: '2018-10-10 21:57:00'
+        }
+
+        SegmentModel.getByParams.withArgs(params).returns(Promise.resolve(segment))
+        const result = await TimeoutService.getFxTimeoutSegment()
+        test.deepEqual(result, segment, 'Results Match')
+        test.end()
+      } catch (e) {
+        Logger.error(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    getFxTimeoutSegmentTest.end()
+  })
+
   timeoutTest.test('cleanupTransferTimeout should', cleanupTransferTimeoutTest => {
     cleanupTransferTimeoutTest.test('cleanup the timed out transfers and return the id', async (test) => {
       try {
@@ -97,6 +133,23 @@ Test('Timeout Service', timeoutTest => {
     })
 
     cleanupTransferTimeoutTest.end()
+  })
+
+  timeoutTest.test('cleanupFxTransferTimeout should', cleanupFxTransferTimeoutTest => {
+    cleanupFxTransferTimeoutTest.test('cleanup the timed out fx-transfers and return the id', async (test) => {
+      try {
+        FxTransferTimeoutModel.cleanup.returns(Promise.resolve(1))
+        const result = await TimeoutService.cleanupFxTransferTimeout()
+        test.equal(result, 1, 'Results Match')
+        test.end()
+      } catch (e) {
+        Logger.error(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    cleanupFxTransferTimeoutTest.end()
   })
 
   timeoutTest.test('getLatestTransferStateChange should', getLatestTransferStateChangeTest => {
@@ -115,6 +168,24 @@ Test('Timeout Service', timeoutTest => {
     })
 
     getLatestTransferStateChangeTest.end()
+  })
+
+  timeoutTest.test('getLatestFxTransferStateChange should', getLatestFxTransferStateChangeTest => {
+    getLatestFxTransferStateChangeTest.test('get the latest fx-transfer state change id', async (test) => {
+      try {
+        const record = { fxTransferStateChangeId: 1 }
+        FxTransferStateChangeModel.getLatest.returns(Promise.resolve(record))
+        const result = await TimeoutService.getLatestFxTransferStateChange()
+        test.equal(result, record, 'Results Match')
+        test.end()
+      } catch (e) {
+        Logger.error(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    getLatestFxTransferStateChangeTest.end()
   })
 
   timeoutTest.test('timeoutExpireReserved should', timeoutExpireReservedTest => {

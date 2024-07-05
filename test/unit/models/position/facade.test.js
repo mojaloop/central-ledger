@@ -217,7 +217,14 @@ Test('Position facade', async (positionFacadeTest) => {
         type: 'application/json',
         content: {
           header: '',
-          payload: transfer
+          payload: transfer,
+          context: {
+            cyrilResult: {
+              participantName: 'dfsp1',
+              currencyId: 'USD',
+              amount: '100'
+            }
+          }
         },
         metadata: {
           event: {

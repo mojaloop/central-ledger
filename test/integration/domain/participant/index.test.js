@@ -223,6 +223,10 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS', testData.endpointBase)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${testData.endpointBase}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${testData.endpointBase}/fxTransfers`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}/error`)
       participant = participantFixtures[2]
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.simulatorBase}/${participant.name}/transfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.simulatorBase}/${participant.name}/transfers/{{transferId}}`)
@@ -236,6 +240,10 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS', testData.endpointBase)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${testData.endpointBase}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${testData.endpointBase}/fxTransfers`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}/error`)
       participant = participantFixtures[3]
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.simulatorBase}/${participant.name}/transfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.simulatorBase}/${participant.name}/transfers/{{transferId}}`)
@@ -249,6 +257,10 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS', testData.endpointBase)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${testData.endpointBase}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${testData.endpointBase}/fxTransfers`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}/error`)
       assert.end()
     } catch (err) {
       console.log(err)

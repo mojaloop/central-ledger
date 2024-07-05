@@ -1,0 +1,68 @@
+@startuml
+
+state RECEIVED {
+  state RECEIVED_PREPARE {
+  }
+}
+
+state RESERVED_ {
+  state RESERVED {
+  }
+  state RECEIVED_FULFIL {
+  }
+  state RECEIVED_FULFIL_DEPENDENT {
+  }
+  state RESERVED_TIMEOUT {
+  }
+  state RECEIVED_REJECT {
+  }
+  state RECEIVED_ERROR {
+  }
+}
+
+state COMMITTED {
+}
+
+state ABORTED {
+  state ABORTED_ERROR {
+  }
+  state ABORTED_REJECTED {
+  }
+  state EXPIRED_PREPARED {
+  }
+  state EXPIRED_RESERVED {
+  }
+  state FAILED {
+  }
+  state INVALID {
+  }
+}
+
+RECEIVED_FULFIL_DEPENDENT : only FX-transfer
+RECEIVED_FULFIL : only transfer
+
+[*] --> RECEIVED_PREPARE : Transfer Prepare Request [Prepare handler] \n <i>(validation & dupl.check passed)</i>
+[*] --> INVALID : Validation failed \n [Prepare handler]
+RECEIVED_PREPARE --> RESERVED : [Position handler]: Liquidity check passed, \n funds reserved
+RECEIVED_PREPARE --> RECEIVED_REJECT : Reject callback from Payee with status "ABORTED"
+RECEIVED_PREPARE --> RECEIVED_ERROR : Transfer Error callback from Payee
+
+RECEIVED_FULFIL --> COMMITTED : Transfer committed [Position handler] \n <i>(commit funds, assign T. to settlement window)</i>
+
+RECEIVED_REJECT --> ABORTED_REJECTED : Transfer Aborted by Payee
+RECEIVED_ERROR --> ABORTED_ERROR : Hub aborts T.
+RECEIVED_PREPARE --> EXPIRED_PREPARED : Timeout handler \n detects T. being EXPIRED
+
+RESERVED --> RECEIVED_FULFIL : Fulfil callback from Payee \n with status "COMMITTED" \n [Fulfil handler]: \n <i>fulfilment check passed</i>
+RESERVED --> RECEIVED_ERROR : Fulfil callback from Payee fails validation\n [Fulfil handler]
+RESERVED --> RESERVED_TIMEOUT : Timeout handler
+RESERVED_TIMEOUT --> EXPIRED_RESERVED : Hub aborts T. due to being EXPIRED
+
+RESERVED --> RECEIVED_FULFIL_DEPENDENT : Recieved FX transfer fulfilment
+RECEIVED_FULFIL_DEPENDENT --> COMMITTED : Dependant transfer committed [Position handler] \n <i>(commit funds, assign T. to settlement window)</i>
+RECEIVED_FULFIL_DEPENDENT --> RESERVED_TIMEOUT : Dependant transfer is timed out
+
+COMMITTED --> [*]
+ABORTED --> [*]
+
+@enduml

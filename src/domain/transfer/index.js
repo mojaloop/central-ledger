@@ -29,6 +29,8 @@
  * @module src/domain/transfer/
  */
 
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
 const TransferFacade = require('../../models/transfer/facade')
 const TransferModel = require('../../models/transfer/transfer')
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
@@ -36,19 +38,17 @@ const TransferErrorModel = require('../../models/transfer/transferError')
 const TransferDuplicateCheckModel = require('../../models/transfer/transferDuplicateCheck')
 const TransferFulfilmentDuplicateCheckModel = require('../../models/transfer/transferFulfilmentDuplicateCheck')
 const TransferErrorDuplicateCheckModel = require('../../models/transfer/transferErrorDuplicateCheck')
-const TransferObjectTransform = require('./transform')
 const TransferError = require('../../models/transfer/transferError')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Metrics = require('@mojaloop/central-services-metrics')
+const TransferObjectTransform = require('./transform')
 
-const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
+const prepare = async (payload, stateReason = null, hasPassedValidation = true, determiningTransferCheckResult) => {
   const histTimerTransferServicePrepareEnd = Metrics.getHistogram(
     'domain_transfer',
     'prepare - Metrics for transfer domain',
     ['success', 'funcName']
   ).startTimer()
   try {
-    const result = await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
+    const result = await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation, determiningTransferCheckResult)
     histTimerTransferServicePrepareEnd({ success: true, funcName: 'prepare' })
     return result
   } catch (err) {

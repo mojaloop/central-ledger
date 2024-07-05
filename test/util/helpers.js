@@ -24,7 +24,9 @@
 
 'use strict'
 
+const { FSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 const Logger = require('@mojaloop/central-services-logger')
+const Config = require('#src/lib/config')
 
 /* Helper Functions */
 
@@ -167,7 +169,17 @@ function getMessagePayloadOrThrow (message) {
   }
 }
 
+const checkErrorPayload = test => (actualPayload, expectedFspiopError) => {
+  if (!(expectedFspiopError instanceof FSPIOPError)) {
+    throw new TypeError('Not a FSPIOPError')
+  }
+  const { errorCode, errorDescription } = expectedFspiopError.toApiErrorObject(Config.ERROR_HANDLING).errorInformation
+  test.equal(actualPayload.errorInformation?.errorCode, errorCode, 'errorCode matches')
+  test.equal(actualPayload.errorInformation?.errorDescription, errorDescription, 'errorDescription matches')
+}
+
 module.exports = {
+  checkErrorPayload,
   currentEventLoopEnd,
   createRequest,
   sleepPromise,

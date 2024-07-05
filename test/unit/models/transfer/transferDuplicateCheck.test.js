@@ -109,7 +109,6 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
         await Model.saveTransferDuplicateCheck(transferId, hash)
         test.fail(' should throw')
         test.end()
-        test.end()
       } catch (err) {
         test.pass('Error thrown')
         test.end()

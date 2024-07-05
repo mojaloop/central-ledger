@@ -1,0 +1,81 @@
+# Visualize on https://erd.surge.sh
+# or https://quick-erd.surge.sh
+#
+# Relationship Types
+#  -    - one to one
+#  -<   - one to many
+#  >-   - many to one
+#  >-<  - many to many
+#  -0   - one to zero or one
+#  0-   - zero or one to one
+#  0-0  - zero or one to zero or one
+#  -0<  - one to zero or many
+#  >0-  - zero or many to one
+#
+////////////////////////////////////
+
+transfer
+---------------------
+transferId  varchar(36) PK
+amount  decimal(18,4)
+currencyId  varchar(3) FK - currency.currencyId
+ilpCondition  varchar(256)
+expirationDate  datetime
+createdDate  datetime
+
+
+transferStateChange__TSC
+---------------------
+transferStateChangeId  bigint UN AI PK
+transferId  varchar(36) FK >- transfer.transferId
+transferStateId  varchar(50) FK - transferState.transferStateId
+reason  varchar(512)
+createdDate  datetime
+
+
+transferTimeout__TT
+---------------------
+transferTimeoutId  bigint UN AI PK
+transferId  varchar(36) UNIQUE FK - transfer.transferId
+expirationDate	datetime
+createdDate  datetime
+
+
+transferError__TE
+---------------------
+transferId  varchar(36) PK
+transferStateChangeId  bigint UN FK - transferStateChange.transferStateChangeId
+errorCode  int UN
+errorDescription  varchar(128)
+createdDate  datetime
+
+
+segment
+---------------------
+segmentId  int UN AI PK
+segmentType  varchar(50)
+enumeration  int
+tableName  varchar(50)
+value  bigint
+changedDate  datetime
+# row example:  1, 'timeout', 0, 'transferStateChange', 255, '2024-04-24 18:07:15'
+
+
+expiringTransfer
+---------------------
+expiringTransferId  bigint UN AI PK
+transferId  varchar(36) UNIQUE FK - transfer.transferId
+expirationDate  datetime INDEX
+createdDate  datetime
+# todo: clarify, how we use this table
+
+
+
+# transfer (557, 340)
+# segment (348, 608)
+# expiringTransfer (1033, 574)
+# view: (5, -16)
+# zoom: 1.089
+# transferStateChange__TSC (38, 236)
+# transferTimeout__TT (974, 204)
+# transferError__TE (518, 34)

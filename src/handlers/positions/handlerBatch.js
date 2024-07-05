@@ -89,7 +89,7 @@ const positions = async (error, messages) => {
   // Iterate through consumedMessages
   const bins = {}
   const lastPerPartition = {}
-  for (const message of consumedMessages) {
+  await Promise.all(consumedMessages.map(message => {
     const histTimerMsgEnd = Metrics.getHistogram(
       'transfer_position',
       'Process a prepare transfer message',
@@ -126,8 +126,8 @@ const positions = async (error, messages) => {
       lastPerPartition[message.partition] = message
     }
 
-    await span.audit(message, EventSdk.AuditEventAction.start)
-  }
+    return span.audit(message, EventSdk.AuditEventAction.start)
+  }))
 
   // Start DB Transaction
   const trx = await BatchPositionModel.startDbTransaction()
@@ -141,19 +141,37 @@ const positions = async (error, messages) => {
     for (const message of Object.values(lastPerPartition)) {
       const params = { message, kafkaTopic: message.topic, consumer: Consumer }
       // We are using Kafka.proceed() to just commit the offset of the last message in the array
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
     }
 
     // Commit DB transaction
     await trx.commit()
 
     // Loop through results and produce notification messages and audit messages
-    for (const item of result.notifyMessages) {
+    await Promise.all(result.notifyMessages.map(item => {
       // Produce notification message and audit message
       const action = item.binItem.message?.value.metadata.event.action
       const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
-      await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
-    }
+      return Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
+    }).concat(
+      // Loop through followup messages and produce position messages for further processing of the transfer
+      result.followupMessages.map(item => {
+        // Produce position message and audit message
+        const action = item.binItem.message?.value.metadata.event.action
+        const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
+        return Kafka.produceGeneralMessage(
+          Config.KAFKA_CONFIG,
+          Producer,
+          Enum.Events.Event.Type.POSITION,
+          action,
+          item.message,
+          eventStatus,
+          item.messageKey,
+          item.binItem.span,
+          Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+        )
+      })
+    ))
     histTimerEnd({ success: true })
   } catch (err) {
     // If Bin Processor returns failure

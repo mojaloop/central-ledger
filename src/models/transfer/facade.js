@@ -23,6 +23,7 @@
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
@@ -38,10 +39,10 @@ const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
+const ParticipantCachedModel = require('../participant/participantCached')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const Config = require('../../lib/config')
-const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -59,18 +60,16 @@ const getById = async (id) => {
           'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
           'tprt2.name': 'PAYEE_DFSP'
         })
-        .whereRaw('pc1.currencyId = transfer.currencyId')
-        .whereRaw('pc2.currencyId = transfer.currencyId')
         // PAYER
         .innerJoin('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
-        .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
-        .innerJoin('participant AS da', 'da.participantId', 'pc1.participantId')
+        .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
+        .leftJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
         // PAYEE
         .innerJoin('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId')
-        .innerJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
-        .innerJoin('participant AS ca', 'ca.participantId', 'pc2.participantId')
+        .innerJoin('participant AS ca', 'ca.participantId', 'tp2.participantId')
+        .leftJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
         // OTHER JOINS
         .innerJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
@@ -237,8 +236,10 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
           'transferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
         })
         .innerJoin('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId')
+        .innerJoin('transfer AS t', 't.transferId', 'transferParticipant.transferId')
         .select(
           'transferParticipant.*',
+          't.currencyId',
           'tsc.transferStateId',
           'tsc.reason'
         )
@@ -386,7 +387,6 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
         result.savePayeeTransferResponseExecuted = true
         Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::success')
       } catch (err) {
-        await trx.rollback()
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
         Logger.isErrorEnabled && Logger.error('savePayeeTransferResponse::failure')
         throw err
@@ -400,25 +400,32 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   }
 }
 
-const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
+const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true, determiningTransferCheckResult) => {
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
     'facade_saveTransferPrepared - Metrics for transfer model',
     ['success', 'queryName']
   ).startTimer()
   try {
-    const participants = []
-    const names = [payload.payeeFsp, payload.payerFsp]
-
-    for (const name of names) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
-      if (participant) {
-        participants.push(participant)
-      }
+    const participants = {
+      [payload.payeeFsp]: {},
+      [payload.payerFsp]: {}
     }
 
-    const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
-      _.set(m, acct.name, acct.participantCurrencyId), {})
+    // Iterate over the participants and get the details
+    const names = Object.keys(participants)
+    for (const name of names) {
+      const participant = await ParticipantCachedModel.getByName(name)
+      if (participant) {
+        participants[name].id = participant.participantId
+      }
+      // If determiningTransferCheckResult.participantCurrencyValidationList contains the participant name, then get the participantCurrencyId
+      const participantCurrency = determiningTransferCheckResult && determiningTransferCheckResult.participantCurrencyValidationList.find(participantCurrencyItem => participantCurrencyItem.participantName === name)
+      if (participantCurrency) {
+        const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
+        participants[name].participantCurrencyId = participantCurrencyRecord.participantCurrencyId
+      }
+    }
 
     const transferRecord = {
       transferId: payload.transferId,
@@ -444,7 +451,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     const payerTransferParticipantRecord = {
       transferId: payload.transferId,
-      participantCurrencyId: participantCurrencyIds[payload.payerFsp],
+      participantId: participants[payload.payerFsp].id,
+      participantCurrencyId: participants[payload.payerFsp].participantCurrencyId,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
       amount: payload.amount.amount
@@ -452,7 +460,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     const payeeTransferParticipantRecord = {
       transferId: payload.transferId,
-      participantCurrencyId: participantCurrencyIds[payload.payeeFsp],
+      participantId: participants[payload.payeeFsp].id,
+      participantCurrencyId: participants[payload.payeeFsp].participantCurrencyId,
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
       amount: -payload.amount.amount
@@ -485,10 +494,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           }
           await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
           await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-          await trx.commit()
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         } catch (err) {
-          await trx.rollback()
           histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
           throw err
         }
@@ -592,7 +599,182 @@ const getTransferStateByTransferId = async (id) => {
   }
 }
 
-const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
+const _processTimeoutEntries = async (knex, trx, transactionTimestamp) => {
+  // Insert `transferStateChange` records for RECEIVED_PREPARE
+  await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
+    .insert(function () {
+      this.from('transferTimeout AS tt')
+        .innerJoin(knex('transferStateChange AS tsc1')
+          .select('tsc1.transferId')
+          .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+          .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+          .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+        )
+        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+        .where('tt.expirationDate', '<', transactionTimestamp)
+        .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
+        .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
+    })
+
+  // Insert `transferStateChange` records for RESERVED
+  await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
+    .insert(function () {
+      this.from('transferTimeout AS tt')
+        .innerJoin(knex('transferStateChange AS tsc1')
+          .select('tsc1.transferId')
+          .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+          .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+          .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+        )
+        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+        .where('tt.expirationDate', '<', transactionTimestamp)
+        .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferState.RESERVED}`)
+        .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
+    })
+}
+
+const _insertTransferErrorEntries = async (knex, trx, transactionTimestamp) => {
+  // Insert `transferError` records
+  await knex.from(knex.raw('transferError (transferId, transferStateChangeId, errorCode, errorDescription)')).transacting(trx)
+    .insert(function () {
+      this.from('transferTimeout AS tt')
+        .innerJoin(knex('transferStateChange AS tsc1')
+          .select('tsc1.transferId')
+          .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+          .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+          .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+        )
+        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+        .where('tt.expirationDate', '<', transactionTimestamp)
+        .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`)
+        .select('tt.transferId', 'tsc.transferStateChangeId', knex.raw('?', ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code), knex.raw('?', ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message))
+    })
+}
+
+const _processFxTimeoutEntries = async (knex, trx, transactionTimestamp) => {
+  // Insert `fxTransferStateChange` records for RECEIVED_PREPARE
+  await knex.from(knex.raw('fxTransferStateChange (commitRequestId, transferStateId, reason)')).transacting(trx)
+    .insert(function () {
+      this.from('fxTransferTimeout AS ftt')
+        .innerJoin(knex('fxTransferStateChange AS ftsc1')
+          .select('ftsc1.commitRequestId')
+          .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
+          .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
+          .groupBy('ftsc1.commitRequestId').as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
+        )
+        .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+        .where('ftt.expirationDate', '<', transactionTimestamp)
+        .andWhere('ftsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
+        .select('ftt.commitRequestId', knex.raw('?', Enum.Transfers.TransferInternalState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
+    })
+
+  // Insert `fxTransferStateChange` records for RESERVED
+  await knex.from(knex.raw('fxTransferStateChange (commitRequestId, transferStateId, reason)')).transacting(trx)
+    .insert(function () {
+      this.from('fxTransferTimeout AS ftt')
+        .innerJoin(knex('fxTransferStateChange AS ftsc1')
+          .select('ftsc1.commitRequestId')
+          .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
+          .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
+          .groupBy('ftsc1.commitRequestId').as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
+        )
+        .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+        .where('ftt.expirationDate', '<', transactionTimestamp)
+        .andWhere('ftsc.transferStateId', `${Enum.Transfers.TransferState.RESERVED}`)
+        .select('ftt.commitRequestId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
+    })
+}
+
+const _insertFxTransferErrorEntries = async (knex, trx, transactionTimestamp) => {
+  // Insert `fxTransferError` records
+  await knex.from(knex.raw('fxTransferError (commitRequestId, fxTransferStateChangeId, errorCode, errorDescription)')).transacting(trx)
+    .insert(function () {
+      this.from('fxTransferTimeout AS ftt')
+        .innerJoin(knex('fxTransferStateChange AS ftsc1')
+          .select('ftsc1.commitRequestId')
+          .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
+          .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
+          .groupBy('ftsc1.commitRequestId').as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
+        )
+        .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+        .where('ftt.expirationDate', '<', transactionTimestamp)
+        .andWhere('ftsc.transferStateId', `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`)
+        .select('ftt.commitRequestId', 'ftsc.fxTransferStateChangeId', knex.raw('?', ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code), knex.raw('?', ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message))
+    })
+}
+
+const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
+  return knex('transferTimeout AS tt')
+    .innerJoin(knex('transferStateChange AS tsc1')
+      .select('tsc1.transferId')
+      .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+      .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+      .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+    )
+    .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+    .innerJoin('transferParticipant AS tp1', function () {
+      this.on('tp1.transferId', 'tt.transferId')
+        .andOn('tp1.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP)
+        .andOn('tp1.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+    })
+    .innerJoin('transferParticipant AS tp2', function () {
+      this.on('tp2.transferId', 'tt.transferId')
+        .andOn('tp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP)
+        .andOn('tp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+    })
+    .innerJoin('participant AS p1', 'p1.participantId', 'tp1.participantId')
+    .innerJoin('participant AS p2', 'p2.participantId', 'tp2.participantId')
+    .innerJoin(knex('transferStateChange AS tsc2')
+      .select('tsc2.transferId', 'tsc2.transferStateChangeId', 'pp1.participantCurrencyId')
+      .innerJoin('transferTimeout AS tt2', 'tt2.transferId', 'tsc2.transferId')
+      .innerJoin('participantPositionChange AS ppc1', 'ppc1.transferStateChangeId', 'tsc2.transferStateChangeId')
+      .innerJoin('participantPosition AS pp1', 'pp1.participantPositionId', 'ppc1.participantPositionId')
+      .as('tpc'), 'tpc.transferId', 'tt.transferId'
+    )
+
+    .leftJoin('bulkTransferAssociation AS bta', 'bta.transferId', 'tt.transferId')
+
+    .where('tt.expirationDate', '<', transactionTimestamp)
+    .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantCurrencyId',
+      'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
+      'bta.bulkTransferId', 'tpc.participantCurrencyId AS effectedParticipantCurrencyId')
+}
+
+const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
+  return knex('fxTransferTimeout AS ftt')
+    .innerJoin(knex('fxTransferStateChange AS ftsc1')
+      .select('ftsc1.commitRequestId')
+      .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
+      .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
+      .groupBy('ftsc1.commitRequestId').as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
+    )
+    .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+    .innerJoin('fxTransferParticipant AS ftp1', function () {
+      this.on('ftp1.commitRequestId', 'ftt.commitRequestId')
+        .andOn('ftp1.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP)
+        .andOn('ftp1.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+    })
+    .innerJoin('fxTransferParticipant AS ftp2', function () {
+      this.on('ftp2.commitRequestId', 'ftt.commitRequestId')
+        .andOn('ftp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP)
+        .andOn('ftp2.fxParticipantCurrencyTypeId', Enum.Fx.FxParticipantCurrencyType.TARGET)
+        .andOn('ftp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+    })
+    .innerJoin('participant AS p1', 'p1.participantId', 'ftp1.participantId')
+    .innerJoin('participant AS p2', 'p2.participantId', 'ftp2.participantId')
+    .innerJoin(knex('fxTransferStateChange AS ftsc2')
+      .select('ftsc2.commitRequestId', 'ftsc2.fxTransferStateChangeId', 'pp1.participantCurrencyId')
+      .innerJoin('fxTransferTimeout AS ftt2', 'ftt2.commitRequestId', 'ftsc2.commitRequestId')
+      .innerJoin('participantPositionChange AS ppc1', 'ppc1.fxTransferStateChangeId', 'ftsc2.fxTransferStateChangeId')
+      .innerJoin('participantPosition AS pp1', 'pp1.participantPositionId', 'ppc1.participantPositionId')
+      .as('ftpc'), 'ftpc.commitRequestId', 'ftt.commitRequestId'
+    )
+    .where('ftt.expirationDate', '<', transactionTimestamp)
+    .select('ftt.*', 'ftsc.transferStateId', 'ftp1.participantCurrencyId AS initiatingParticipantCurrencyId',
+      'p1.name AS initiatingFsp', 'p2.name AS counterPartyFsp', 'ftp2.participantCurrencyId AS counterPartyParticipantCurrencyId', 'ftpc.participantCurrencyId AS effectedParticipantCurrencyId')
+}
+
+const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
   try {
     const transactionTimestamp = Time.getUTCString(new Date())
     const knex = await Db.getKnex()
@@ -614,59 +796,121 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               .whereNull('tt.transferId')
               .whereIn('tsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, `${Enum.Transfers.TransferState.RESERVED}`])
               .select('t.transferId', 't.expirationDate')
-          }) // .toSQL().sql
-        // console.log('SQL: ' + q1)
+          })
 
-        // Insert `transferStateChange` records for RECEIVED_PREPARE
-        await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
+        // Insert `fxTransferTimeout` records for fxTransfers found between the interval intervalMin <= intervalMax and related fxTransfers
+        await knex.from(knex.raw('fxTransferTimeout (commitRequestId, expirationDate)')).transacting(trx)
           .insert(function () {
-            this.from('transferTimeout AS tt')
-              .innerJoin(knex('transferStateChange AS tsc1')
-                .select('tsc1.transferId')
-                .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-                .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
-                .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+            this.from('fxTransfer AS ft')
+              .innerJoin(knex('fxTransferStateChange')
+                .select('commitRequestId')
+                .max('fxTransferStateChangeId AS maxFxTransferStateChangeId')
+                .where('fxTransferStateChangeId', '>', fxIntervalMin)
+                .andWhere('fxTransferStateChangeId', '<=', fxIntervalMax)
+                .groupBy('commitRequestId').as('fts'), 'fts.commitRequestId', 'ft.commitRequestId'
               )
-              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-              .where('tt.expirationDate', '<', transactionTimestamp)
-              .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
-              .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
-          }) // .toSQL().sql
-        // console.log('SQL: ' + q2)
+              .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+              .leftJoin('fxTransferTimeout AS ftt', 'ftt.commitRequestId', 'ft.commitRequestId')
+              .leftJoin('fxTransfer AS ft1', 'ft1.determiningTransferId', 'ft.determiningTransferId')
+              .whereNull('ftt.commitRequestId')
+              .whereIn('ftsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, `${Enum.Transfers.TransferState.RESERVED}`]) // TODO: this needs to be updated to proper states for fx
+              .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timedout fxTransfer for all related fxTransfers
+          })
 
-        // Insert `transferStateChange` records for RESERVED
-        await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
-          .insert(function () {
-            this.from('transferTimeout AS tt')
-              .innerJoin(knex('transferStateChange AS tsc1')
-                .select('tsc1.transferId')
-                .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-                .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
-                .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
-              )
-              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-              .where('tt.expirationDate', '<', transactionTimestamp)
-              .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferState.RESERVED}`)
-              .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
-          }) // .toSQL().sql
-        // console.log('SQL: ' + q3)
+        await _processTimeoutEntries(knex, trx, transactionTimestamp)
+        await _processFxTimeoutEntries(knex, trx, transactionTimestamp)
 
-        // Insert `transferError` records
-        await knex.from(knex.raw('transferError (transferId, transferStateChangeId, errorCode, errorDescription)')).transacting(trx)
+        // Insert `fxTransferTimeout` records for the related fxTransfers, or update if exists. The expiration date will be of the transfer and not from fxTransfer
+        await knex
+          .from(knex.raw('fxTransferTimeout (commitRequestId, expirationDate)'))
+          .transacting(trx)
           .insert(function () {
-            this.from('transferTimeout AS tt')
-              .innerJoin(knex('transferStateChange AS tsc1')
-                .select('tsc1.transferId')
-                .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-                .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
-                .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+            this.from('fxTransfer AS ft')
+              .innerJoin(
+                knex('transferTimeout AS tt')
+                  .select('tt.transferId', 'tt.expirationDate')
+                  .innerJoin(
+                    knex('transferStateChange as tsc1')
+                      .select('tsc1.transferId')
+                      .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+                      .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+                      .groupBy('tsc1.transferId')
+                      .as('ts'),
+                    'ts.transferId', 'tt.transferId'
+                  )
+                  .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+                  .where('tt.expirationDate', '<', transactionTimestamp)
+                  .whereIn('tsc.transferStateId', [
+                  `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
+                  `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
+                  ])
+                  .as('tt1'),
+                'ft.determiningTransferId', 'tt1.transferId'
               )
-              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-              .where('tt.expirationDate', '<', transactionTimestamp)
-              .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`)
-              .select('tt.transferId', 'tsc.transferStateChangeId', knex.raw('?', ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code), knex.raw('?', ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message))
-          }) // .toSQL().sql
-        // console.log('SQL: ' + q4)
+              .select('ft.commitRequestId', 'tt1.expirationDate')
+          })
+          .onConflict('commitRequestId')
+          .merge({
+            expirationDate: knex.raw('VALUES(expirationDate)')
+          })
+
+        // Insert `transferTimeout` records for the related transfers, or update if exists. The expiration date will be of the fxTransfer and not from transfer
+        await knex
+          .from(knex.raw('transferTimeout (transferId, expirationDate)'))
+          .transacting(trx)
+          .insert(function () {
+            this.from('fxTransfer AS ft')
+              .innerJoin(
+                knex('fxTransferTimeout AS ftt')
+                  .select('ftt.commitRequestId', 'ftt.expirationDate')
+                  .innerJoin(
+                    knex('fxTransferStateChange AS ftsc1')
+                      .select('ftsc1.commitRequestId')
+                      .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
+                      .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
+                      .groupBy('ftsc1.commitRequestId')
+                      .as('fts'),
+                    'fts.commitRequestId', 'ftt.commitRequestId'
+                  )
+                  .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+                  .where('ftt.expirationDate', '<', transactionTimestamp)
+                  .whereIn('ftsc.transferStateId', [
+                  `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
+                  `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
+                  ]) // TODO: need to check this for fx
+                  .as('ftt1'),
+                'ft.commitRequestId', 'ftt1.commitRequestId'
+              )
+              .innerJoin(
+                knex('transferStateChange AS tsc')
+                  .select('tsc.transferId')
+                  .innerJoin(
+                    knex('transferStateChange AS tsc1')
+                      .select('tsc1.transferId')
+                      .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+                      .groupBy('tsc1.transferId')
+                      .as('ts'),
+                    'ts.transferId', 'tsc.transferId'
+                  )
+                  .whereRaw('tsc.transferStateChangeId = ts.maxTransferStateChangeId')
+                  .whereIn('tsc.transferStateId', [
+                  `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
+                  `${Enum.Transfers.TransferState.RESERVED}`
+                  ])
+                  .as('tt1'),
+                'ft.determiningTransferId', 'tt1.transferId'
+              )
+              .select('tt1.transferId', 'ftt1.expirationDate')
+          })
+          .onConflict('transferId')
+          .merge({
+            expirationDate: knex.raw('VALUES(expirationDate)')
+          })
+
+        await _processTimeoutEntries(knex, trx, transactionTimestamp)
+        await _processFxTimeoutEntries(knex, trx, transactionTimestamp)
+        await _insertTransferErrorEntries(knex, trx, transactionTimestamp)
+        await _insertFxTransferErrorEntries(knex, trx, transactionTimestamp)
 
         if (segmentId === 0) {
           const segment = {
@@ -679,45 +923,31 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
         } else {
           await knex('segment').transacting(trx).where({ segmentId }).update({ value: intervalMax })
         }
-        await trx.commit
+        if (fxSegmentId === 0) {
+          const fxSegment = {
+            segmentType: 'timeout',
+            enumeration: 0,
+            tableName: 'fxTransferStateChange',
+            value: fxIntervalMax
+          }
+          await knex('segment').transacting(trx).insert(fxSegment)
+        } else {
+          await knex('segment').transacting(trx).where({ segmentId: fxSegmentId }).update({ value: fxIntervalMax })
+        }
       } catch (err) {
-        await trx.rollback
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
 
-    return knex('transferTimeout AS tt')
-      .innerJoin(knex('transferStateChange AS tsc1')
-        .select('tsc1.transferId')
-        .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-        .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
-        .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
-      )
-      .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-      .innerJoin('transferParticipant AS tp1', function () {
-        this.on('tp1.transferId', 'tt.transferId')
-          .andOn('tp1.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP)
-          .andOn('tp1.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
-      })
-      .innerJoin('transferParticipant AS tp2', function () {
-        this.on('tp2.transferId', 'tt.transferId')
-          .andOn('tp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP)
-          .andOn('tp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
-      })
-      .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
-      .innerJoin('participant AS p1', 'p1.participantId', 'pc1.participantId')
+    const transferTimeoutList = await _getTransferTimeoutList(knex, transactionTimestamp)
+    const fxTransferTimeoutList = await _getFxTransferTimeoutList(knex, transactionTimestamp)
 
-      .innerJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
-      .innerJoin('participant AS p2', 'p2.participantId', 'pc2.participantId')
-
-      .leftJoin('bulkTransferAssociation AS bta', 'bta.transferId', 'tt.transferId')
-
-      .where('tt.expirationDate', '<', transactionTimestamp)
-      .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantCurrencyId',
-        'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
-        'bta.bulkTransferId')
+    return {
+      transferTimeoutList,
+      fxTransferTimeoutList
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -888,6 +1118,13 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           .first()
           .transacting(trx)
 
+        // Get participantId based on participantCurrencyId
+        const { participantId } = await knex('participantCurrency')
+          .select('participantId')
+          .where('participantCurrencyId', payload.participantCurrencyId)
+          .first()
+          .transacting(trx)
+
         let ledgerEntryTypeId, amount
         if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN) {
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_IN
@@ -903,6 +1140,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         await knex('transferParticipant')
           .insert({
             transferId: payload.transferId,
+            participantId: Config.HUB_ID,
             participantCurrencyId: reconciliationAccountId,
             transferParticipantRoleTypeId: enums.transferParticipantRoleType.HUB,
             ledgerEntryTypeId,
@@ -913,6 +1151,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         await knex('transferParticipant')
           .insert({
             transferId: payload.transferId,
+            participantId,
             participantCurrencyId: payload.participantCurrencyId,
             transferParticipantRoleTypeId: enums.transferParticipantRoleType.DFSP_SETTLEMENT,
             ledgerEntryTypeId,

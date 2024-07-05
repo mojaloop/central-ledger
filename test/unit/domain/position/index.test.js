@@ -51,6 +51,7 @@ Test('Position Service', positionIndexTest => {
         test.pass('Error not thrown')
         test.end()
       } catch (e) {
+        console.log(e)
         test.fail('Error Thrown')
         test.end()
       }
@@ -67,6 +68,7 @@ Test('Position Service', positionIndexTest => {
         test.pass('Error not thrown')
         test.end()
       } catch (e) {
+        console.log(e)
         test.fail('Error Thrown')
         test.end()
       }

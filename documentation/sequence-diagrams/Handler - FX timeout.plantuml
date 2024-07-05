@@ -1,0 +1,123 @@
+@startuml
+title Transfer/ FX transfer Timeout-Handler Flow
+
+autonumber
+hide footbox
+skinparam ParticipantPadding 10
+
+box "Central Services" #MistyRose
+participant "Timeout \n handler <i>(cron)</i>"      as toh
+participant "Position \n handler"                   as ph
+database    "central-ledger\nDB"                    as clDb
+end box
+box Kafka
+queue       "topic-\n transfer-position"            as topicTP
+queue       "topic-\n notification-event"           as topicNE
+end box
+box "ML API Adapter Services" #LightBlue
+participant "Notification \n handler"               as nh
+end box
+participant "FXP"                                   as fxp
+actor       "DFSP_1 \n<i>Payer</i>"                 as payer
+actor       "DFSP_2 \n<i>Payee</i>"                 as payee
+
+legend
+<i>DB tables:</i>
+
+<b>TT</b> - transferTimeout                  <b>fxTT</b> - fxTransferTimeout
+<b>TSC</b> - transferStateChange       <b>fxTSC</b> - fxTransferStateChange
+<b>TE</b> - transferError                        <b>fxTE</b> - fxTransferError
+end legend
+
+
+autonumber 1
+toh --> toh : run on <i>cronTime</i>\n HANDLERS_TIMEOUT_TIMEXP (default: 15sec)
+activate toh
+toh -> clDb  : cleanup <b>TT</b> for <i>transfers</i> in particular states: \n [COMMITTED, ABORTED, RECEIVED_FULFIL, RECEIVED_REJECT, RESERVED_TIMEOUT]
+
+toh -> clDb : Insert <i>(transferId, expirationDate)</i> into <b>TT</b> for transfers in particular states:\n <i>[RECEIVED_PREPARE, RESERVED]</i>
+toh -> clDb : Insert <i>EXPIRED_PREPARED</i> state into <b>TSC</b> for transfers in <i>RECEIVED_PREPARE</i> states
+toh -> clDb : Insert <i>RESERVED_TIMEOUT</i> state into <b>TSC</b> for transfers in <i>RESERVED</i> state
+toh -> clDb : Insert <i>expired error info</i> into <b>TE</b>
+
+toh -> clDb : get <i>expired</i> transfers details from <b>TT</b>
+
+toh --> toh : for each expired transfer
+activate toh
+autonumber 8.1
+alt state === EXPIRED_PREPARED
+toh ->o topicNE : produce <i>notification timeout-received</i> message
+else state === RESERVED_TIMEOUT
+toh ->o topicTP : produce <i>position timeout-reserved</i> message
+end
+toh -> clDb : find related <i>fxTransfer</i> using <i>cyril</i> and check if it's NOT expeired yet
+alt related <i>NOT expired</i> fxTransfer found
+toh -> clDb : Upsert row with <i>(fxTransferId, expirationDate)</i> into <b>fxTT</b>
+note right: expirationDate === transfer.expirationDate \n OR now?
+alt fxState === RESERVED or RECEIVED_FULFIL_DEPENDENT
+toh -> clDb : Update fxState to <i>RESERVED_TIMEOUT</i> into <b>fxTSC</b>
+toh ->o topicTP : produce <i>position fx-timeout-reserved</i> message
+else fxState === RECEIVED_PREPARE
+toh -> clDb : Update fxState to <i>EXPIRED_PREPARED</i> into <b>fxTSC</b>
+toh ->o topicNE : produce <i>notification fx-timeout-received</i> message
+end
+end
+deactivate toh
+deactivate toh
+
+autonumber 9
+toh --> toh : run fxTimeout logic on <i>cronTime</i>\n HANDLERS_TIMEOUT_TIMEXP (default: 15sec)
+activate toh
+toh -> clDb  : cleanup <b>fxTT</b> for <i>fxTransfers</i> in particular states: \n [COMMITTED, ABORTED, RECEIVED_FULFIL_DEPENDENT, RECEIVED_REJECT, RESERVED_TIMEOUT]
+
+toh -> clDb : Insert <i>(fxTransferId, expirationDate)</i> into <b>fxTT</b> for fxTransfers in particular states:\n <i>[RECEIVED_PREPARE, RESERVED]</i>
+toh -> clDb : Insert <i>EXPIRED_PREPARED</i> state into <b>fxTSC</b> for fxTransfers in <i>RECEIVED_PREPARE</i> states
+toh -> clDb : Insert <i>RESERVED_TIMEOUT</i> state into <b>fxTSC</b> for fxTransfers in <i>RESERVED</i> state
+toh -> clDb : Insert <i>expired error info</i> into <b>fxTE</b>
+
+toh -> clDb : get <i>expired</i> fxTransfers details from <b>fxTT</b>
+
+toh --> toh : for each expired fxTransfer
+activate toh
+autonumber 16.1
+alt state === EXPIRED_PREPARED
+toh ->o topicNE : produce <i>notification fx-timeout-received</i> message
+else state === RESERVED_TIMEOUT
+toh ->o topicTP : produce <i>position fx-timeout-reserved</i> message
+end
+toh -> clDb : find related <i>transfer</i> using <i>cyril</i> and check it's NOT expired yet
+note right: think, what if related transfer is already commited?
+alt related NOT expired transfer found
+toh -> clDb : Upsert <i>(transferId, expirationDate)</i> into <b>TT</b>
+toh -> clDb : Insert <i>expired error info</i> into <b>TE</b>
+alt state === RECEIVED_PREPARE
+toh -> clDb : Insert <i>EXPIRED_PREPARED</i> state into <b>TSC</b> with reason <i>"related fxTransfer expired"</i>
+toh ->o topicNE : produce <i>notification timeout-received</i> message
+else state === RESERVED
+toh -> clDb : Insert <i>RESERVED_TIMEOUT</i> state into <b>TSC</b> with reason <i>"related fxTransfer expired"</i>
+toh ->o topicTP : produce <i>position timeout-reserved</i> message
+end
+end
+
+deactivate toh
+deactivate toh
+
+autonumber 17
+topicNE o-> nh : consume <i>notification</i>\n message
+activate nh
+nh -> payer : send error <i>notification</i>\n callback to <i>payer</i>
+deactivate nh
+
+topicTP o-> ph : consume <i>position timeout/fx-timeout</i>\n message
+activate ph
+ph --> ph : process <i>timeout / fx-timeout</i> transfer
+ph ->o topicNE : produce notification <i>timeout / fx-timeout</i> messages
+
+deactivate ph
+
+topicNE o-> nh : consume <i>notification</i>\n message
+activate nh
+nh -> payee : send error <i>notification</i>\n callback to <i>payee</i>
+deactivate nh
+
+@enduml

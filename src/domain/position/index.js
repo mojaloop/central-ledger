@@ -23,6 +23,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
 
  --------------
  ******/

@@ -42,6 +42,11 @@ const transferStates = [
     description: 'The switch has reserved the transfer, and has been assigned to a settlement window.'
   },
   {
+    transferStateId: 'RECEIVED_FULFIL_DEPENDENT',
+    enumeration: 'RESERVED',
+    description: 'The switch has reserved the fxTransfer fulfilment.'
+  },
+  {
     transferStateId: 'COMMITTED',
     enumeration: 'COMMITTED',
     description: 'The switch has successfully performed the transfer.'
