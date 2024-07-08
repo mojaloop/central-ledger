@@ -392,7 +392,7 @@ Test('Handlers test', async handlersTest => {
     transferPrepare.end()
   })
 
-  await handlersTest.test('transferPrepare forwarded should', async transferPrepare => {
+  await handlersTest.test('transferForwarded should', async transferPrepare => {
     await transferPrepare.test('should update transfer internal state on prepare event forwarded action', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
@@ -429,10 +429,7 @@ Test('Handlers test', async handlersTest => {
       testConsumer.clearEvents()
       test.end()
     })
-    transferPrepare.end()
-  })
 
-  await handlersTest.test('timeout should', async transferPrepare => {
     await transferPrepare.test('not timeout transfer in RESERVED_FORWARDED internal transfer state', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
@@ -471,6 +468,126 @@ Test('Handlers test', async handlersTest => {
       try {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state is still RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPrepare.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_FULFIL and COMMITED on fulfil', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.payee.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.COMMITTED, 'Transfer state updated to COMMITTED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPrepare.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_ERROR and ABORTED_ERROR on fulfil error', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      await Producer.produceMessage(td.messageProtocolError, td.topicConfTransferFulfil, fulfilConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.ABORTED_ERROR, 'Transfer state updated to ABORTED_ERROR')
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
