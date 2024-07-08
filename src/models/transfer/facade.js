@@ -1093,7 +1093,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
 const updatePrepareReservedForwarded = async function (transferId) {
   try {
     const knex = await Db.getKnex()
-    await knex('transferStateChange')
+    return await knex('transferStateChange')
       .insert({
         transferId,
         transferStateId: TransferInternalState.RESERVED_FORWARDED,

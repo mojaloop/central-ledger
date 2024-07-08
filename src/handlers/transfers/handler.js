@@ -448,7 +448,7 @@ const processFulfilMessage = async (message, functionality, span) => {
 
   if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
       transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
-    ) {
+  ) {
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state')
     const eventDetail = { functionality, action: TransferEventAction.COMMIT }

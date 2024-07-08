@@ -187,6 +187,32 @@ const fxMessageProtocol = {
   pp: ''
 }
 
+const messageForwardedProtocol = {
+  id: randomUUID(),
+  from: '',
+  to: '',
+  type: 'application/json',
+  content: {
+    uriParams: { id: transfer.transferId },
+    payload: {
+      proxyId: ''
+    }
+  },
+  metadata: {
+    event: {
+      id: randomUUID(),
+      type: 'prepare',
+      action: 'forwarded',
+      createdAt: new Date(),
+      state: {
+        status: 'success',
+        code: 0
+      }
+    }
+  },
+  pp: ''
+}
+
 const messageProtocolBulkPrepare = MainUtil.clone(messageProtocol)
 messageProtocolBulkPrepare.metadata.event.action = 'bulk-prepare'
 const messageProtocolBulkCommit = MainUtil.clone(messageProtocol)
@@ -209,6 +235,13 @@ const fxMessages = [
   {
     topic: topicName,
     value: fxMessageProtocol
+  }
+]
+
+const forwardedMessages = [
+  {
+    topic: topicName,
+    value: messageForwardedProtocol
   }
 ]
 
@@ -887,6 +920,21 @@ Test('Transfer handler', transferHandlerTest => {
         test.pass('Error Thrown')
         test.end()
       }
+    })
+
+    prepareTest.test('update reserved transfer on forwarded prepare message', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      TransferService.getById.returns(Promise.resolve({ transferState: Enum.Transfers.TransferInternalState.RESERVED }))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, forwardedMessages[0])
+      test.ok(TransferService.forwardedPrepare.called)
+      test.equal(result, true)
+      test.end()
     })
 
     prepareTest.end()
