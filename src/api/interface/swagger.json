@@ -66,6 +66,15 @@
         "tags": [
           "participants"
         ],
+        "parameters": [
+          {
+            "type": "boolean",
+            "description": "Filter by if participant is a proxy",
+            "name": "isProxy",
+            "in": "query",
+            "required": false
+          }
+        ],
         "responses": {
           "default": {
             "schema": {
@@ -1326,6 +1335,10 @@
           "description": "Currency code",
           "$ref" : "#/definitions/Currency"
 
+        },
+        "isProxy": {
+          "type": "boolean",
+          "description": "Is the participant a proxy"
         }
       },
       "required": [
