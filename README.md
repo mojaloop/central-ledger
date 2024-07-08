@@ -56,7 +56,7 @@ Or via docker build directly:
 
 ```bash
 docker build \
-  --build-arg NODE_VERSION="$(cat .nvmrc)-alpine" \
+  --build-arg NODE_VERSION="$(cat .nvmrc)-alpine3.19" \
   -t mojaloop/ml-api-adapter:local \
   .
 ```
@@ -403,4 +403,4 @@ push a release triggering another subsequent build that also publishes a docker 
   is a boon.
 
 - It is unknown if a race condition might occur with multiple merges with main in
-  quick succession, but this is a suspected edge case. 
+  quick succession, but this is a suspected edge case.

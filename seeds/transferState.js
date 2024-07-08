@@ -103,7 +103,7 @@ const transferStates = [
   },
   {
     transferStateId: 'RESERVED_FORWARDED',
-    enumeration: 'RESERVED_FORWARDED',
+    enumeration: 'RESERVED',
     description: 'The switch has forwarded the transfer to a proxy participant'
   }
 ]
