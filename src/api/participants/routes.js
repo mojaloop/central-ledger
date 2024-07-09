@@ -68,7 +68,8 @@ module.exports = [
         payload: Joi.object({
           name: nameValidator,
           // password: passwordValidator,
-          currency: currencyValidator // ,
+          currency: currencyValidator,
+          isProxy: Joi.boolean()
           // emailAddress: Joi.string().email().required()
         })
       }
