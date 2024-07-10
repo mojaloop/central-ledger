@@ -35,6 +35,7 @@ optionally within square brackets <email>.
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
 const Cyril = require('../../../../src/domain/fx/cyril')
@@ -934,6 +935,36 @@ Test('Transfer handler', transferHandlerTest => {
       const result = await allTransferHandlers.prepare(null, forwardedMessages[0])
       test.ok(TransferService.forwardedPrepare.called)
       test.equal(result, true)
+      test.end()
+    })
+
+    prepareTest.test('produce error for unexpected state', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      TransferService.getById.returns(Promise.resolve({ transferState: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT }))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, forwardedMessages[0])
+      test.equal(Kafka.proceed.getCall(0).args[2].fspiopError.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+      test.equal(result, true)
+      test.end()
+    })
+
+    prepareTest.test('produce error on transfer not found', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      TransferService.getById.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, forwardedMessages[0])
+      test.equal(result, true)
+      test.equal(Kafka.proceed.getCall(0).args[2].fspiopError.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND.code)
       test.end()
     })
 
