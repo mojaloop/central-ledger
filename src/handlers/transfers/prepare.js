@@ -242,9 +242,54 @@ const prepare = async (error, messages) => {
 
     if (isForwarded) {
       const transfer = await TransferService.getById(ID)
-      console.log(transfer)
+      if (!transfer) {
+        const eventDetail = {
+          functionality: Enum.Events.Event.Type.NOTIFICATION,
+          action: Enum.Events.Event.Action.FORWARDED
+        }
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+          'Forwarded transfer could not be found.'
+        ).toApiErrorObject(Config.ERROR_HANDLING)
+        // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+        //            notify the payerFsp and proxy of the error.
+        //            As long as the `to` and `from` message values are the payer and payee,
+        //            and the action is `forwarded`, the ml-api-adapter will notify both.
+        await Kafka.proceed(
+          Config.KAFKA_CONFIG,
+          params,
+          {
+            consumerCommit,
+            fspiopError,
+            eventDetail
+          }
+        )
+        return true
+      }
+
       if (transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED) {
         await TransferService.forwardedPrepare(ID)
+      } else {
+        const eventDetail = {
+          functionality: Enum.Events.Event.Type.NOTIFICATION,
+          action: Enum.Events.Event.Action.FORWARDED
+        }
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
+          `Invalid State: ${transfer.transferState} - expected: ${Enum.Transfers.TransferInternalState.RESERVED}`
+        ).toApiErrorObject(Config.ERROR_HANDLING)
+        // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+        //            notify the payerFsp and proxy of the error.
+        //            As long as the `to` and `from` message values are the payer and payee,
+        //            and the action is `forwarded`, the ml-api-adapter will notify both.
+        await Kafka.proceed(
+          Config.KAFKA_CONFIG,
+          params,
+          {
+            consumerCommit,
+            fspiopError,
+            eventDetail
+          }
+        )
       }
       return true
     }

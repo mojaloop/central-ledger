@@ -10,5 +10,7 @@ reject: [
   # sinon v17.0.1 causes 58 tests to fail. This will need to be resolved in a future story.
   # Issue is tracked here: https://github.com/mojaloop/project/issues/3616
   "sinon",
-  "@mojaloop/central-services-shared"
+  "@mojaloop/central-services-shared",
+  # Built for node 20+ support
+  "glob"
 ]
