@@ -405,8 +405,8 @@ Test('Handlers test', async handlersTest => {
     transferPrepare.end()
   })
 
-  await handlersTest.test('transferForwarded should', async transferPrepare => {
-    await transferPrepare.test('should update transfer internal state on prepare event forwarded action', async (test) => {
+  await handlersTest.test('transferForwarded should', async transferForwarded => {
+    await transferForwarded.test('should update transfer internal state on prepare event forwarded action', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -443,7 +443,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.test('not timeout transfer in RESERVED_FORWARDED internal transfer state', async (test) => {
+    await transferForwarded.test('not timeout transfer in RESERVED_FORWARDED internal transfer state', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -490,7 +490,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_FULFIL and COMMITED on fulfil', async (test) => {
+    await transferForwarded.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_FULFIL and COMMITED on fulfil', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -555,7 +555,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_ERROR and ABORTED_ERROR on fulfil error', async (test) => {
+    await transferForwarded.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_ERROR and ABORTED_ERROR on fulfil error', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -610,7 +610,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.test('should create notification message if transfer is not found', async (test) => {
+    await transferForwarded.test('should create notification message if transfer is not found', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -642,10 +642,10 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.test('should create notification message if transfer is found in incorrect state', async (test) => {
-      const expiredtestData = testData
-      expiredtestData.expiration = new Date((new Date()).getTime() + 1000)
-      const td = await prepareTestData(testData)
+    await transferForwarded.test('should create notification message if transfer is found in incorrect state', async (test) => {
+      const expiredTestData = Util.clone(testData)
+      expiredTestData.expiration = new Date((new Date()).getTime() + 1000)
+      const td = await prepareTestData(expiredTestData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -654,8 +654,19 @@ Test('Handlers test', async handlersTest => {
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
 
-      // Let the prepare message timeout
-      await new Promise(resolve => setTimeout(resolve, 10000))
+      try {
+        await wrapWithRetries(async () => {
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferInternalState.EXPIRED_RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
 
       // Send the prepare forwarded message after the prepare message has timed out
       await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
@@ -680,7 +691,7 @@ Test('Handlers test', async handlersTest => {
       testConsumer.clearEvents()
       test.end()
     })
-    transferPrepare.end()
+    transferForwarded.end()
   })
 
   await handlersTest.test('transferFulfil should', async transferFulfil => {
