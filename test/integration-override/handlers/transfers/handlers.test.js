@@ -376,7 +376,7 @@ Test('Handlers test', async handlersTest => {
     })
   })
 
-  await handlersTest.skip('transferPrepare should', async transferPrepare => {
+  await handlersTest.test('transferPrepare should', async transferPrepare => {
     await transferPrepare.test('should create position prepare message to override topic name in config', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
@@ -406,7 +406,7 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferForwarded should', async transferPrepare => {
-    await transferPrepare.skip('should update transfer internal state on prepare event forwarded action', async (test) => {
+    await transferPrepare.test('should update transfer internal state on prepare event forwarded action', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -443,7 +443,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.skip('not timeout transfer in RESERVED_FORWARDED internal transfer state', async (test) => {
+    await transferPrepare.test('not timeout transfer in RESERVED_FORWARDED internal transfer state', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -490,7 +490,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.skip('should be able to transition from RESERVED_FORWARDED to RECEIVED_FULFIL and COMMITED on fulfil', async (test) => {
+    await transferPrepare.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_FULFIL and COMMITED on fulfil', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -555,7 +555,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.skip('should be able to transition from RESERVED_FORWARDED to RECEIVED_ERROR and ABORTED_ERROR on fulfil error', async (test) => {
+    await transferPrepare.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_ERROR and ABORTED_ERROR on fulfil error', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -683,7 +683,7 @@ Test('Handlers test', async handlersTest => {
     transferPrepare.end()
   })
 
-  await handlersTest.skip('transferFulfil should', async transferFulfil => {
+  await handlersTest.test('transferFulfil should', async transferFulfil => {
     await transferFulfil.test('should create position fulfil message to override topic name in config', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(

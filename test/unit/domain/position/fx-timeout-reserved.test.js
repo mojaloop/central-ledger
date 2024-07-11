@@ -202,7 +202,7 @@ Test('timeout reserved domain', positionIndexTest => {
     t.end()
   })
 
-  positionIndexTest.skip('processPositionFxTimeoutReservedBin should', changeParticipantPositionTest => {
+  positionIndexTest.test('processPositionFxTimeoutReservedBin should', changeParticipantPositionTest => {
     changeParticipantPositionTest.test('produce abort message for transfers not in the right transfer state', async (test) => {
       try {
         await processPositionFxTimeoutReservedBin(
@@ -233,10 +233,14 @@ Test('timeout reserved domain', positionIndexTest => {
         },
         {
           'd6a036a5-65a3-48af-a0c7-ee089c412ada': {
-            amount: -10
+            51: {
+              value: 10
+            }
           },
           '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': {
-            amount: -5
+            51: {
+              value: 5
+            }
           }
         }
       )

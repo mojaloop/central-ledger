@@ -1891,6 +1891,36 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    fulfilTest.test('set transfer ABORTED when valid errorInformation is provided from RESERVED_FORWARDED state', async (test) => {
+      const invalidEventMessage = MainUtil.clone(fulfilMessages)[0]
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Validator.validateFulfilCondition.returns(true)
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1',
+        transferState: TransferInternalState.RESERVED_FORWARDED
+      }))
+      TransferService.handlePayeeResponse.returns(Promise.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
+      invalidEventMessage.value.metadata.event.action = 'abort'
+      invalidEventMessage.value.content.payload = errInfo
+      invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
+      invalidEventMessage.value.content.headers['fspiop-destination'] = 'dfsp1'
+      Kafka.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, invalidEventMessage.value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
+      test.equal(result, true)
+      test.end()
+    })
+
     fulfilTest.test('log error', async (test) => { // TODO: extend and enable unit test
       const invalidEventMessage = MainUtil.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
