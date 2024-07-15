@@ -998,6 +998,41 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    fulfilTest.test('produce message to position topic when validations pass with RESERVED_FORWARDED state', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payerFsp: 'proxyFsp',
+        transferState: TransferInternalState.RESERVED_FORWARDED
+      }))
+      ilp.update.returns(Promise.resolve())
+      Validator.validateFulfilCondition.returns(true)
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'proxyFsp'
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      Kafka.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
+      test.equal(kafkaCallOne.args[2].messageKey, '1')
+      test.equal(result, true)
+      test.end()
+    })
+
     fulfilTest.test('fail if event type is not fulfil', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
@@ -1046,6 +1081,47 @@ Test('Transfer handler', transferHandlerTest => {
         payeeFsp: 'dfsp2',
         payerFsp: 'dfsp1',
         transferState: TransferState.RESERVED
+      }))
+      ilp.update.returns(Promise.resolve())
+      Validator.validateFulfilCondition.returns(true)
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      Kafka.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
+      test.equal(kafkaCallOne.args[2].messageKey, '1')
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('produce message to position topic when validations pass if Cyril result is fx enabled on RESERVED_FORWARDED transfer state', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Cyril.processFulfilMessage.returns({
+        isFx: true,
+        positionChanges: [{
+          participantCurrencyId: 1
+        }]
+      })
+
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1',
+        transferState: TransferInternalState.RESERVED_FORWARDED
       }))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
@@ -1795,6 +1871,36 @@ Test('Transfer handler', transferHandlerTest => {
         payeeFsp: 'dfsp2',
         payerFsp: 'dfsp1',
         transferState: TransferState.RESERVED
+      }))
+      TransferService.handlePayeeResponse.returns(Promise.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
+      invalidEventMessage.value.metadata.event.action = 'abort'
+      invalidEventMessage.value.content.payload = errInfo
+      invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
+      invalidEventMessage.value.content.headers['fspiop-destination'] = 'dfsp1'
+      Kafka.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, invalidEventMessage.value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('set transfer ABORTED when valid errorInformation is provided from RESERVED_FORWARDED state', async (test) => {
+      const invalidEventMessage = MainUtil.clone(fulfilMessages)[0]
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Validator.validateFulfilCondition.returns(true)
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1',
+        transferState: TransferInternalState.RESERVED_FORWARDED
       }))
       TransferService.handlePayeeResponse.returns(Promise.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
       invalidEventMessage.value.metadata.event.action = 'abort'

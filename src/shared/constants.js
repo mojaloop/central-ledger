@@ -12,10 +12,11 @@ const TABLE_NAMES = Object.freeze({
 })
 
 const FX_METRIC_PREFIX = 'fx_'
+const FORWARDED_METRIC_PREFIX = 'fwd_'
 
 const PROM_METRICS = Object.freeze({
   transferGet: (isFx) => `${isFx ? FX_METRIC_PREFIX : ''}transfer_get`,
-  transferPrepare: (isFx) => `${isFx ? FX_METRIC_PREFIX : ''}transfer_prepare`,
+  transferPrepare: (isFx, isForwarded) => `${isFx ? FX_METRIC_PREFIX : ''}${isForwarded ? FORWARDED_METRIC_PREFIX : ''}transfer_prepare`,
   transferFulfil: (isFx) => `${isFx ? FX_METRIC_PREFIX : ''}transfer_fulfil`,
   transferFulfilError: (isFx) => `${isFx ? FX_METRIC_PREFIX : ''}transfer_fulfil_error`
 })

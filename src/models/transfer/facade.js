@@ -988,7 +988,9 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           .first()
           .transacting(trx)
 
-        if (param1.transferStateId === enums.transferState.COMMITTED) {
+        if (param1.transferStateId === enums.transferState.COMMITTED ||
+            param1.transferStateId === TransferInternalState.RESERVED_FORWARDED
+        ) {
           await knex('transferStateChange')
             .insert({
               transferId: param1.transferId,
@@ -1083,6 +1085,21 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
     } else {
       return await knex.transaction(trxFunction)
     }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const updatePrepareReservedForwarded = async function (transferId) {
+  try {
+    const knex = await Db.getKnex()
+    return await knex('transferStateChange')
+      .insert({
+        transferId,
+        transferStateId: TransferInternalState.RESERVED_FORWARDED,
+        reason: null,
+        createdDate: Time.getUTCString(new Date())
+      })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -1436,7 +1453,8 @@ const TransferFacade = {
   reconciliationTransferCommit,
   reconciliationTransferAbort,
   getTransferParticipant,
-  recordFundsIn
+  recordFundsIn,
+  updatePrepareReservedForwarded
 }
 
 module.exports = TransferFacade

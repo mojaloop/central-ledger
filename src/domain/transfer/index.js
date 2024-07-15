@@ -57,6 +57,22 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true, 
   }
 }
 
+const forwardedPrepare = async (transferId) => {
+  const histTimerTransferServicePrepareEnd = Metrics.getHistogram(
+    'domain_transfer',
+    'prepare - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+  try {
+    const result = await TransferFacade.updatePrepareReservedForwarded(transferId)
+    histTimerTransferServicePrepareEnd({ success: true, funcName: 'forwardedPrepare' })
+    return result
+  } catch (err) {
+    histTimerTransferServicePrepareEnd({ success: false, funcName: 'forwardedPrepare' })
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 const handlePayeeResponse = async (transferId, payload, action, fspiopError) => {
   const histTimerTransferServiceHandlePayeeResponseEnd = Metrics.getHistogram(
     'domain_transfer',
@@ -104,6 +120,7 @@ const TransferService = {
   prepare,
   handlePayeeResponse,
   logTransferError,
+  forwardedPrepare,
   getTransferErrorByTransferId: TransferErrorModel.getByTransferId,
   getTransferById: TransferModel.getById,
   getById: TransferFacade.getById,

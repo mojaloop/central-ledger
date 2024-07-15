@@ -100,6 +100,11 @@ const transferStates = [
     transferStateId: 'SETTLED',
     enumeration: 'SETTLED',
     description: 'The switch has settled the transfer.'
+  },
+  {
+    transferStateId: 'RESERVED_FORWARDED',
+    enumeration: 'RESERVED',
+    description: 'The switch has forwarded the transfer to a proxy participant'
   }
 ]
 

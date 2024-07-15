@@ -36,6 +36,7 @@ const Participant = require('../../domain/participant')
 const createRemittanceEntity = require('./createRemittanceEntity')
 const Validator = require('./validator')
 const dto = require('./dto')
+const TransferService = require('#src/domain/transfer/index')
 
 const { Kafka, Comparators } = Util
 const { TransferState } = Enum.Transfers
@@ -99,7 +100,7 @@ const processDuplication = async ({
     .getByIdLight(ID)
 
   const isFinalized = [TransferState.COMMITTED, TransferState.ABORTED].includes(transfer?.transferStateEnumeration)
-  const isPrepare = [Action.PREPARE, Action.FX_PREPARE].includes(action)
+  const isPrepare = [Action.PREPARE, Action.FX_PREPARE, Action.FORWARDED].includes(action)
 
   if (isFinalized && isPrepare) {
     logger.info(Util.breadcrumb(location, `finalized callback--${actionLetter}1`))
@@ -219,7 +220,7 @@ const prepare = async (error, messages) => {
   }
 
   const {
-    message, payload, isFx, ID, headers, action, actionLetter, functionality
+    message, payload, isFx, ID, headers, action, actionLetter, functionality, isForwarded
   } = input
 
   const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
@@ -237,6 +238,60 @@ const prepare = async (error, messages) => {
       span,
       consumer: Consumer,
       producer: Producer
+    }
+
+    if (isForwarded) {
+      const transfer = await TransferService.getById(ID)
+      if (!transfer) {
+        const eventDetail = {
+          functionality: Enum.Events.Event.Type.NOTIFICATION,
+          action: Enum.Events.Event.Action.FORWARDED
+        }
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+          'Forwarded transfer could not be found.'
+        ).toApiErrorObject(Config.ERROR_HANDLING)
+        // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+        //            notify the payerFsp and proxy of the error.
+        //            As long as the `to` and `from` message values are the payer and payee,
+        //            and the action is `forwarded`, the ml-api-adapter will notify both.
+        await Kafka.proceed(
+          Config.KAFKA_CONFIG,
+          params,
+          {
+            consumerCommit,
+            fspiopError,
+            eventDetail
+          }
+        )
+        return true
+      }
+
+      if (transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED) {
+        await TransferService.forwardedPrepare(ID)
+      } else {
+        const eventDetail = {
+          functionality: Enum.Events.Event.Type.NOTIFICATION,
+          action: Enum.Events.Event.Action.FORWARDED
+        }
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
+          `Invalid State: ${transfer.transferState} - expected: ${Enum.Transfers.TransferInternalState.RESERVED}`
+        ).toApiErrorObject(Config.ERROR_HANDLING)
+        // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+        //            notify the payerFsp and proxy of the error.
+        //            As long as the `to` and `from` message values are the payer and payee,
+        //            and the action is `forwarded`, the ml-api-adapter will notify both.
+        await Kafka.proceed(
+          Config.KAFKA_CONFIG,
+          params,
+          {
+            consumerCommit,
+            fspiopError,
+            eventDetail
+          }
+        )
+      }
+      return true
     }
 
     const duplication = await checkDuplication({ payload, isFx, ID, location })

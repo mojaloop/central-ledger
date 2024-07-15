@@ -16,10 +16,11 @@ const prepareInputDto = (error, messages) => {
   if (!message) throw new Error('No input kafka message')
 
   const payload = decodePayload(message.value.content.payload)
-  const isFx = !payload.transferId
+  const isForwarded = message.value.metadata.event.action === Action.FORWARDED
+  const isFx = !payload.transferId && !isForwarded
 
   const { action } = message.value.metadata.event
-  const isPrepare = [Action.PREPARE, Action.FX_PREPARE].includes(action)
+  const isPrepare = [Action.PREPARE, Action.FX_PREPARE, Action.FORWARDED].includes(action)
 
   const actionLetter = isPrepare
     ? Enum.Events.ActionLetter.prepare
@@ -39,9 +40,10 @@ const prepareInputDto = (error, messages) => {
     action,
     functionality,
     isFx,
-    ID: payload.transferId || payload.commitRequestId,
+    isForwarded,
+    ID: payload.transferId || payload.commitRequestId || message.value.id,
     headers: message.value.content.headers,
-    metric: PROM_METRICS.transferPrepare(isFx),
+    metric: PROM_METRICS.transferPrepare(isFx, isForwarded),
     actionLetter // just for logging
   }
 }
