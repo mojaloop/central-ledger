@@ -30,7 +30,7 @@
 const { randomUUID } = require('crypto')
 const Sinon = require('sinon')
 const Proxyquire = require('proxyquire')
-const ProxyCache = require('../../../src/lib/proxyCache')
+const ProxyCache = require('#src/lib/proxyCache')
 const Test = require('tapes')(require('tape'))
 const EventSdk = require('@mojaloop/event-sdk')
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka

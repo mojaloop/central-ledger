@@ -29,7 +29,7 @@ const Sinon = require('sinon')
 
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../src/lib/config')
-const ProxyCache = require('../../../src/lib/proxyCache')
+const ProxyCache = require('#src/lib/proxyCache')
 const Routes = require('../../../src/api/routes')
 const Setup = require('../../../src/shared/setup')
 

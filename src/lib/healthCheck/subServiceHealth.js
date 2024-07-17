@@ -83,9 +83,11 @@ const getSubServiceHealthDatastore = async () => {
 }
 
 const getSubServiceHealthProxyCache = async () => {
+  const proxyCache = ProxyCache.getCache()
+  const healthCheck = await proxyCache.healthCheck()
   return {
     name: 'proxyCache',
-    status: ProxyCache.getCache().healthCheck() ? statusEnum.OK : statusEnum.DOWN
+    status: healthCheck ? statusEnum.OK : statusEnum.DOWN
   }
 }
 

@@ -15,6 +15,7 @@ Test('setup', setupTest => {
   let oldMongoDbHost
   let oldMongoDbPort
   let oldMongoDbDatabase
+  let oldProxyCacheEnabled
   let mongoDbUri
   const hostName = 'http://test.com'
   let Setup
@@ -72,8 +73,8 @@ Test('setup', setupTest => {
     ProxyCacheStub = {
       getCache: sandbox.stub().returns(
         {
-          connect: sandbox.stub().returns(Promise.resolve()),
-          disconnect: sandbox.stub().returns(Promise.resolve())
+          connect: sandbox.stub().returns(Promise.resolve(true)),
+          disconnect: sandbox.stub().returns(Promise.resolve(true))
         }
       )
     }
@@ -126,7 +127,8 @@ Test('setup', setupTest => {
       bulk: {
         registerBulkPrepareHandler: sandbox.stub().returns(Promise.resolve()),
         registerBulkFulfilHandler: sandbox.stub().returns(Promise.resolve()),
-        registerBulkProcessingHandler: sandbox.stub().returns(Promise.resolve())
+        registerBulkProcessingHandler: sandbox.stub().returns(Promise.resolve()),
+        registerBulkGetHandler: sandbox.stub().returns(Promise.resolve())
       }
     }
     const ConfigStub = Config
@@ -158,12 +160,14 @@ Test('setup', setupTest => {
     oldMongoDbHost = Config.MONGODB_HOST
     oldMongoDbPort = Config.MONGODB_PORT
     oldMongoDbDatabase = Config.MONGODB_DATABASE
+    oldProxyCacheEnabled = Config.PROXY_CACHE_CONFIG.enabled
     Config.HOSTNAME = hostName
     Config.MONGODB_HOST = 'testhost'
     Config.MONGODB_PORT = '1111'
     Config.MONGODB_USER = 'user'
     Config.MONGODB_PASSWORD = 'pass'
     Config.MONGODB_DATABASE = 'mlos'
+    Config.PROXY_CACHE_CONFIG.enabled = true
     mongoDbUri = MongoUriBuilder({
       username: Config.MONGODB_USER,
       password: Config.MONGODB_PASSWORD,
@@ -184,6 +188,7 @@ Test('setup', setupTest => {
     Config.MONGODB_USER = oldMongoDbUsername
     Config.MONGODB_PASSWORD = oldMongoDbPassword
     Config.MONGODB_DATABASE = oldMongoDbDatabase
+    Config.PROXY_CACHE_CONFIG.enabled = oldProxyCacheEnabled
 
     test.end()
   })
@@ -564,6 +569,11 @@ Test('setup', setupTest => {
         enabled: true
       }
 
+      const bulkGetHandler = {
+        type: 'bulkget',
+        enabled: true
+      }
+
       const unknownHandler = {
         type: 'undefined',
         enabled: true
@@ -580,6 +590,7 @@ Test('setup', setupTest => {
         bulkBrepareHandler,
         bulkFulfilHandler,
         bulkProcessingHandler,
+        bulkGetHandler,
         unknownHandler
         // rejectHandler
       ]
@@ -595,6 +606,7 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.bulk.registerBulkPrepareHandler.called)
         test.ok(RegisterHandlersStub.bulk.registerBulkFulfilHandler.called)
         test.ok(RegisterHandlersStub.bulk.registerBulkProcessingHandler.called)
+        test.ok(RegisterHandlersStub.bulk.registerBulkGetHandler.called)
         test.ok(processExitStub.called)
         test.end()
       }).catch(err => {
