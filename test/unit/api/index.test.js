@@ -67,7 +67,11 @@ Test('Api index', indexTest => {
         runMigrations: true,
         runHandlers: !Config.HANDLERS_DISABLED
       }))
-      await proxyCache.disconnect()
+      try {
+        await proxyCache.disconnect()
+      } catch (error) {
+        // do nothing
+      }
       test.end()
     })
     exportTest.end()

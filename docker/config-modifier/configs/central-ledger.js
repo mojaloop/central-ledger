@@ -12,6 +12,14 @@ module.exports = {
     PASSWORD: '',
     DATABASE: 'mlos'
   },
+  PROXY_CACHE: {
+    enabled: true,
+    type: 'redis',
+    proxyConfig: {
+      host: 'redis',
+      port: 6379
+    }
+  },
   KAFKA: {
     EVENT_TYPE_ACTION_TOPIC_MAP: {
       POSITION: {
