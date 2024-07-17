@@ -8,20 +8,11 @@ const proxyCache = createProxyCache(
   Config.PROXY_CACHE_CONFIG.proxyConfig
 )
 
-const getDebtorProxy = async (debtorDfspId) => {
-  const participant = await ParticipantService.getByName(debtorDfspId)
-  console.log(proxyCache)
+const getFSPProxy = async (dfspId) => {
+  const participant = await ParticipantService.getByName(dfspId)
   return {
     inScheme: !!participant,
-    proxyId: !participant ? await proxyCache.lookupProxyByDfspId(debtorDfspId) : null
-  }
-}
-
-const getCreditorProxy = async (creditorDfspId) => {
-  const participant = await ParticipantService.getByName(creditorDfspId)
-  return {
-    inScheme: !!participant,
-    proxyId: !participant ? await proxyCache.lookupProxyByDfspId(creditorDfspId) : null
+    proxyId: !participant ? await proxyCache.lookupProxyByDfspId(dfspId) : null
   }
 }
 
@@ -33,7 +24,6 @@ const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
 
 module.exports = {
   proxyCache,
-  getDebtorProxy,
-  getCreditorProxy,
+  getFSPProxy,
   checkSameCreditorDebtorProxy
 }
