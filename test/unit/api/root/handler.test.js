@@ -67,7 +67,8 @@ Test('Root', rootHandlerTest => {
       const expectedStatus = 200
       const expectedServices = [
         { name: 'datastore', status: 'OK' },
-        { name: 'broker', status: 'OK' }
+        { name: 'broker', status: 'OK' },
+        { name: 'proxyCache', status: 'OK' }
       ]
 
       // Act

@@ -26,7 +26,7 @@
 const { statusEnum, serviceName } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
 const Logger = require('@mojaloop/central-services-logger')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
-
+const { proxyCache } = require('../proxyCache')
 const MigrationLockModel = require('../../models/misc/migrationLock')
 
 /**
@@ -82,7 +82,15 @@ const getSubServiceHealthDatastore = async () => {
   }
 }
 
+const getSubServiceHealthProxyCache = async () => {
+  return {
+    name: 'proxyCache',
+    status: proxyCache.healthCheck() ? statusEnum.OK : statusEnum.DOWN
+  }
+}
+
 module.exports = {
   getSubServiceHealthBroker,
-  getSubServiceHealthDatastore
+  getSubServiceHealthDatastore,
+  getSubServiceHealthProxyCache
 }

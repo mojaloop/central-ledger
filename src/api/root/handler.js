@@ -30,13 +30,23 @@ const { defaultHealthHandler } = require('@mojaloop/central-services-health')
 const packageJson = require('../../../package.json')
 const {
   getSubServiceHealthDatastore,
-  getSubServiceHealthBroker
+  getSubServiceHealthBroker,
+  getSubServiceHealthProxyCache
 } = require('../../lib/healthCheck/subServiceHealth')
+const Config = require('../../lib/config')
 
-const healthCheck = new HealthCheck(packageJson, [
-  getSubServiceHealthDatastore,
-  getSubServiceHealthBroker
-])
+const subServiceChecks = Config.PROXY_CACHE_CONFIG.enabled
+  ? [
+      getSubServiceHealthDatastore,
+      getSubServiceHealthBroker,
+      getSubServiceHealthProxyCache
+    ]
+  : [
+      getSubServiceHealthDatastore,
+      getSubServiceHealthBroker
+    ]
+
+const healthCheck = new HealthCheck(packageJson, subServiceChecks)
 
 /**
  * @function getHealth

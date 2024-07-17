@@ -31,6 +31,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../src/lib/config')
 const Routes = require('../../../src/api/routes')
 const Setup = require('../../../src/shared/setup')
+const { proxyCache } = require('../../../src/lib/proxyCache')
 
 Test('Api index', indexTest => {
   let sandbox
@@ -66,6 +67,7 @@ Test('Api index', indexTest => {
         runMigrations: true,
         runHandlers: !Config.HANDLERS_DISABLED
       }))
+      await proxyCache.disconnect()
       test.end()
     })
     exportTest.end()

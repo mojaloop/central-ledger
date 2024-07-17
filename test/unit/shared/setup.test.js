@@ -19,6 +19,7 @@ Test('setup', setupTest => {
   const hostName = 'http://test.com'
   let Setup
   let DbStub
+  let ProxyCacheStub
   let CacheStub
   let ObjStoreStub
   // let ObjStoreStubThrows
@@ -66,6 +67,13 @@ Test('setup', setupTest => {
     DbStub = {
       connect: sandbox.stub().returns(Promise.resolve()),
       disconnect: sandbox.stub().returns(Promise.resolve())
+    }
+
+    ProxyCacheStub = {
+      proxyCache: {
+        connect: sandbox.stub().returns(Promise.resolve()),
+        disconnect: sandbox.stub().returns(Promise.resolve())
+      }
     }
 
     CacheStub = {
@@ -130,6 +138,7 @@ Test('setup', setupTest => {
       },
       '../handlers/register': RegisterHandlersStub,
       '../lib/db': DbStub,
+      '../lib/proxyCache': ProxyCacheStub,
       '../lib/cache': CacheStub,
       '@mojaloop/object-store-lib': ObjStoreStub,
       '../lib/migrator': MigratorStub,
@@ -193,6 +202,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -245,6 +255,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -361,6 +372,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -394,6 +406,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -428,6 +441,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -464,6 +478,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -706,6 +721,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
