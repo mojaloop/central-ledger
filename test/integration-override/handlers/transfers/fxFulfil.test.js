@@ -30,6 +30,7 @@ const { Producer } = require('@mojaloop/central-services-stream').Kafka
 
 const Config = require('#src/lib/config')
 const Cache = require('#src/lib/cache')
+const ProxyCache = require('#src/lib/proxyCache')
 const fspiopErrorFactory = require('#src/shared/fspiopErrorFactory')
 const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
@@ -275,6 +276,10 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
       producer.disconnect(),
       testConsumer.destroy()
     ])
+    try {
+      await ProxyCache.proxyCache.disconnect()
+    } catch (err) {
+    }
     await new Promise(resolve => setTimeout(resolve, 5_000))
     t.pass('teardown is finished')
     t.end()

@@ -31,6 +31,7 @@
 const Test = require('tape')
 const Db = require('../../../../src/lib/db')
 const Cache = require('../../../../src/lib/cache')
+const ProxyCache = require('../../../../src/lib/proxyCache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferExtension')
@@ -52,6 +53,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('setup', async (assert) => {
     try {
+      await ProxyCache.proxyCache.connect()
       await Db.connect(Config.DATABASE).then(() => {
         assert.pass('setup OK')
         assert.end()
@@ -196,6 +198,11 @@ Test('Extension model test', async (extensionTest) => {
     try {
       await Cache.destroyCache()
       await Db.disconnect()
+      try {
+        await ProxyCache.proxyCache.disconnect()
+      } catch (err) {
+
+      }
       assert.pass('database connection closed')
       assert.end()
     } catch (err) {

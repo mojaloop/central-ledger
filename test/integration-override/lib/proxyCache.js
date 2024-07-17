@@ -2,15 +2,15 @@
 
 const Test = require('tape')
 const Sinon = require('sinon')
-const Db = require('../../../src/lib/db')
-const Cache = require('../../../src/lib/cache')
+const Db = require('#src/lib/db')
+const Cache = require('#src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
-const Config = require('../../../src/lib/config')
-const ProxyCache = require('../../../src/lib/proxyCache')
-const ParticipantService = require('../../../src/domain/participant')
-const ParticipantCached = require('../../../src/models/participant/participantCached')
-const ParticipantCurrencyCached = require('../../../src/models/participant/participantCurrencyCached')
-const ParticipantLimitCached = require('../../../src/models/participant/participantLimitCached')
+const Config = require('#src/lib/config')
+const ProxyCache = require('#src/lib/proxyCache')
+const ParticipantService = require('#src/domain/participant')
+const ParticipantCached = require('#src/models/participant/participantCached')
+const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
+const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const ParticipantHelper = require('../../integration/helpers/participant')
 
 const debug = false
@@ -159,7 +159,11 @@ Test('Participant service', async (participantTest) => {
       }
       await Cache.destroyCache()
       await Db.disconnect()
-      await ProxyCache.proxyCache.disconnect()
+      try {
+        await ProxyCache.proxyCache.disconnect()
+      } catch (err) {
+      }
+
       assert.pass('database connection closed')
       // @ggrg: Having the following 3 lines commented prevents the current test from exiting properly when run individually,
       // BUT it is required in order to have successful run of all integration test scripts as a sequence, where

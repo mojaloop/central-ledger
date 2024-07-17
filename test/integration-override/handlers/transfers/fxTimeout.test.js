@@ -30,6 +30,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
 const Db = require('@mojaloop/database-lib').Db
 const Cache = require('#src/lib/cache')
+const ProxyCache = require('#src/lib/proxyCache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -773,6 +774,10 @@ Test('Handlers test', async handlersTest => {
       await testConsumer.destroy() // this disconnects the consumers
 
       await Producer.disconnect()
+      try {
+        await ProxyCache.proxyCache.disconnect()
+      } catch (err) {
+      }
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
