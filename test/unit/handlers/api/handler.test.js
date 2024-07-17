@@ -29,6 +29,7 @@ const Sinon = require('sinon')
 const Handler = require('../../../../src/handlers/api/routes')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
+const ProxyCache = require('src/lib/proxyCache')
 
 function createRequest (routes) {
   const value = routes || []
@@ -61,6 +62,10 @@ Test('route handler', (handlerTest) => {
       // Arrange
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
       sandbox.stub(Consumer, 'isConnected').returns(Promise.resolve())
+      sandbox.stub(ProxyCache, 'getCache').returns({
+        connect: sandbox.stub(),
+        disconnect: sandbox.stub()
+      })
       const jp = require('jsonpath')
       const healthHandler = jp.query(Handler, '$[?(@.path=="/health")]')
 

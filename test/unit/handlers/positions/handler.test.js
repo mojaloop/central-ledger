@@ -22,6 +22,7 @@ const Clone = require('lodash').clone
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const Proxyquire = require('proxyquire')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -143,6 +144,10 @@ Test('Position handler', transferHandlerTest => {
 
   transferHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     SpanStub = {
       audit: sandbox.stub().callsFake(),
       error: sandbox.stub().callsFake(),

@@ -52,6 +52,7 @@ const Participant = require('../../../../src/domain/participant')
 const Cyril = require('../../../../src/domain/fx/cyril')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const ilp = require('../../../../src/models/transfer/ilpPacket')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const { getMessagePayloadOrThrow } = require('../../../util/helpers')
 const mocks = require('./mocks')
@@ -261,7 +262,10 @@ Test('Transfer handler', transferHandlerTest => {
 
   transferHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     const stubs = mocks.createTracerStub(sandbox)
     SpanStub = stubs.SpanStub
 

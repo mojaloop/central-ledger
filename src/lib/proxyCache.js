@@ -8,6 +8,10 @@ const proxyCache = createProxyCache(
   Config.PROXY_CACHE_CONFIG.proxyConfig
 )
 
+const getCache = () => {
+  return proxyCache
+}
+
 const getFSPProxy = async (dfspId) => {
   const participant = await ParticipantService.getByName(dfspId)
   return {
@@ -24,6 +28,7 @@ const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
 
 module.exports = {
   proxyCache,
+  getCache,
   getFSPProxy,
   checkSameCreditorDebtorProxy
 }

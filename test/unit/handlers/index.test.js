@@ -7,6 +7,7 @@ const Proxyquire = require('proxyquire')
 const Plugin = require('../../../src/handlers/api/plugin')
 const MetricsPlugin = require('../../../src/api/metrics/plugin')
 const Logger = require('@mojaloop/central-services-logger')
+const ProxyCache = require('#src/lib/proxyCache')
 
 Test('cli', async (cliTest) => {
   let sandbox
@@ -35,7 +36,10 @@ Test('cli', async (cliTest) => {
 
     commanderTest.beforeEach(test => {
       sandbox = Sinon.createSandbox()
-
+      sandbox.stub(ProxyCache, 'getCache').returns({
+        connect: sandbox.stub(),
+        disconnect: sandbox.stub()
+      })
       SetupStub = {
         initialize: sandbox.stub().returns(Promise.resolve())
       }

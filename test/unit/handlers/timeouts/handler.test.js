@@ -36,6 +36,7 @@ const CronJob = require('cron').CronJob
 const TimeoutService = require('../../../../src/domain/timeout')
 const Config = require('../../../../src/lib/config')
 const { randomUUID } = require('crypto')
+const ProxyCache = require('#src/lib/proxyCache')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 
@@ -49,6 +50,10 @@ Test('Timeout handler', TimeoutHandlerTest => {
     sandbox.stub(CronJob.prototype, 'constructor').returns(Promise.resolve())
     sandbox.stub(CronJob.prototype, 'start').returns(Promise.resolve(true))
     sandbox.stub(CronJob.prototype, 'stop').returns(Promise.resolve(true))
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     Config.HANDLERS_TIMEOUT_DISABLED = false
     test.end()
   })

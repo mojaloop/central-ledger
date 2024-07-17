@@ -29,6 +29,7 @@ const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-logger')
 const Handler = require('../../../../src/api/ledgerAccountTypes/handler')
 const LedgerAccountTypeService = require('../../../../src/domain/ledgerAccountTypes')
+const ProxyCache = require('#src/lib/proxyCache')
 
 Test('LedgerAccountTypes', ledgerAccountTypesHandlerTest => {
   let sandbox
@@ -37,6 +38,11 @@ Test('LedgerAccountTypes', ledgerAccountTypesHandlerTest => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Logger)
     sandbox.stub(LedgerAccountTypeService)
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub(),
+      healthCheck: sandbox.stub().returns(Promise.resolve())
+    })
     test.end()
   })
 

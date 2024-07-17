@@ -43,6 +43,7 @@ const BulkTransferService = require('#src/domain/bulkTransfer/index')
 const BulkTransferModel = require('#src/models/bulkTransfer/bulkTransfer')
 const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTransfer
 const ilp = require('#src/models/transfer/ilpPacket')
+const ProxyCache = require('#src/lib/proxyCache')
 
 // Sample Bulk Transfer Message received by the Bulk API Adapter
 const fspiopBulkTransferMsg = {
@@ -159,6 +160,10 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
 
   handlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     SpanStub = {
       audit: sandbox.stub().callsFake(),
       error: sandbox.stub().callsFake(),

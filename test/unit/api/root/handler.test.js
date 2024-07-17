@@ -31,6 +31,8 @@ const Sinon = require('sinon')
 const Handler = require('../../../../src/api/root/handler')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
+const ProxyCache = require('#src/lib/proxyCache')
+
 const {
   createRequest,
   unwrapResponse
@@ -41,6 +43,11 @@ Test('Root', rootHandlerTest => {
 
   rootHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub(),
+      healthCheck: sandbox.stub().returns(Promise.resolve())
+    })
 
     test.end()
   })

@@ -70,10 +70,12 @@ Test('setup', setupTest => {
     }
 
     ProxyCacheStub = {
-      proxyCache: {
-        connect: sandbox.stub().returns(Promise.resolve()),
-        disconnect: sandbox.stub().returns(Promise.resolve())
-      }
+      getCache: sandbox.stub().returns(
+        {
+          connect: sandbox.stub().returns(Promise.resolve()),
+          disconnect: sandbox.stub().returns(Promise.resolve())
+        }
+      )
     }
 
     CacheStub = {
