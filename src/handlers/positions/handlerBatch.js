@@ -89,7 +89,7 @@ const positions = async (error, messages) => {
   // Iterate through consumedMessages
   const bins = {}
   const lastPerPartition = {}
-  await Promise.all(consumedMessages.map(async (message) => {
+  await Promise.all(consumedMessages.map(message => {
     const histTimerMsgEnd = Metrics.getHistogram(
       'transfer_position',
       'Process a prepare transfer message',
