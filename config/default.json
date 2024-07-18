@@ -89,7 +89,8 @@
     "type": "redis",
     "proxyConfig": {
       "host": "localhost",
-      "port": 6379
+      "port": 6379,
+      "lazyConnect": true
     }
   },
   "API_DOC_ENDPOINTS_ENABLED": true,

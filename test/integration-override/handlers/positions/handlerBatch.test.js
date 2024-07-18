@@ -1840,7 +1840,7 @@ Test('Handlers test', async handlersTest => {
 
       await Producer.disconnect()
       try {
-        await ProxyCache.proxyCache.disconnect()
+        await ProxyCache.disconnect()
       } catch (err) {
       }
 

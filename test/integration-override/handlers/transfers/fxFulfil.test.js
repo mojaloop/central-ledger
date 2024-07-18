@@ -277,7 +277,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
       testConsumer.destroy()
     ])
     try {
-      await ProxyCache.proxyCache.disconnect()
+      await ProxyCache.disconnect()
     } catch (err) {
     }
     await new Promise(resolve => setTimeout(resolve, 5_000))

@@ -69,7 +69,7 @@ Test('Participant service', async (participantTest) => {
     try {
       sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE)
-      await ProxyCache.proxyCache.connect()
+      await ProxyCache.connect()
       await ParticipantCached.initialize()
       await ParticipantCurrencyCached.initialize()
       await ParticipantLimitCached.initialize()
@@ -468,7 +468,7 @@ Test('Participant service', async (participantTest) => {
       await Cache.destroyCache()
       await Db.disconnect()
       try {
-        await ProxyCache.proxyCache.disconnect()
+        await ProxyCache.disconnect()
       } catch (err) {
 
       }

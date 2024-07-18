@@ -3,12 +3,24 @@ const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 const Config = require('./config.js')
 const ParticipantService = require('../../src/domain/participant')
 
-const proxyCache = createProxyCache(
-  Config.PROXY_CACHE_CONFIG.type,
-  Config.PROXY_CACHE_CONFIG.proxyConfig
-)
+let proxyCache
+
+const connect = async () => {
+  return getCache().connect()
+}
+
+const disconnect = async () => {
+  return proxyCache?.disconnect()
+}
+
 const getCache = () => {
-  return proxyCache
+  if (!proxyCache) {
+    proxyCache = createProxyCache(
+      Config.PROXY_CACHE_CONFIG.type,
+      Config.PROXY_CACHE_CONFIG.proxyConfig
+    )
+  }
+  return Object.freeze(proxyCache)
 }
 
 const getFSPProxy = async (dfspId) => {
@@ -26,7 +38,8 @@ const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
 }
 
 module.exports = {
-  proxyCache,
+  connect,
+  disconnect,
   getCache,
   getFSPProxy,
   checkSameCreditorDebtorProxy

@@ -49,7 +49,7 @@ Test('Ilp service tests', async (ilpTest) => {
 
   await ilpTest.test('setup', async (assert) => {
     try {
-      await ProxyCache.proxyCache.connect()
+      await ProxyCache.connect()
       await Db.connect(Config.DATABASE).then(() => {
         assert.pass('setup OK')
         assert.end()
@@ -181,7 +181,7 @@ Test('Ilp service tests', async (ilpTest) => {
       await Cache.destroyCache()
       await Db.disconnect()
       try {
-        await ProxyCache.proxyCache.disconnect()
+        await ProxyCache.disconnect()
       } catch (err) {
 
       }
