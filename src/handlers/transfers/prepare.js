@@ -143,14 +143,15 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
   const cyrilResult = await createRemittanceEntity(isFx)
     .getPositionParticipant(payload, determiningTransferCheckResult)
 
-  let messageKey;
-  
+  let messageKey
+  const [debtorFsp, creditorFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
+
   /**
    * Interscheme accounting rules:
    *  - If the participant has a proxy representation, the proxy's account should be used for the position change.
-   *  - If the payer and the payee DFSPs are represented by the same proxy, no position adjustment is needed.
+   *  - If the debtor and the creditor DFSPs are represented by the same proxy, no position adjustment is needed.
    */
-  const isSameProxy = proxyEnabled && await ProxyCache.checkSameCreditorDebtorProxy(payload.payerFsp, payload.payeeFsp);
+  const isSameProxy = proxyEnabled && await ProxyCache.checkSameCreditorDebtorProxy(debtorFsp, creditorFsp)
 
   if (isSameProxy) {
     messageKey = 0
