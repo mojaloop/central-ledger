@@ -27,6 +27,7 @@
 const Test = require('tape')
 const Db = require('../../../../src/lib/db')
 const Cache = require('../../../../src/lib/cache')
+const ProxyCache = require('../../../../src/lib/proxyCache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferError')
@@ -38,6 +39,7 @@ Test('Transfer Error model test', async (transferErrorTest) => {
     try {
       await Db.connect(Config.DATABASE).then(async () => {
         await Cache.initCache()
+        await ProxyCache.connect()
         assert.pass('setup OK')
         assert.end()
       }).catch(err => {
@@ -90,6 +92,7 @@ Test('Transfer Error model test', async (transferErrorTest) => {
     try {
       await Cache.destroyCache()
       await Db.disconnect()
+      await ProxyCache.disconnect()
       assert.pass('database connection closed')
       assert.end()
     } catch (err) {

@@ -32,6 +32,7 @@
 const Test = require('tape')
 const Db = require('../../../../src/lib/db')
 const Cache = require('../../../../src/lib/cache')
+const ProxyCache = require('../../../../src/lib/proxyCache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const TransferFacade = require('../../../../src/models/transfer/facade')
@@ -44,6 +45,7 @@ Test('Transfer read model test', async (transferReadModelTest) => {
     try {
       await Db.connect(Config.DATABASE).then(async () => {
         await Cache.initCache()
+        await ProxyCache.connect()
         transferPrepareResult = await HelperModule.prepareNeededData('transferModel')
         assert.pass('setup OK')
         assert.end()
@@ -88,6 +90,7 @@ Test('Transfer read model test', async (transferReadModelTest) => {
     try {
       await Cache.destroyCache()
       await Db.disconnect()
+      await ProxyCache.disconnect()
       assert.pass('database connection closed')
       assert.end()
     } catch (err) {

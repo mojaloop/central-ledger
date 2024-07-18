@@ -30,6 +30,7 @@
 
 const Test = require('tape')
 const Db = require('../../../../src/lib/db')
+const ProxyCache = require('../../../../src/lib/proxyCache')
 const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
@@ -48,6 +49,7 @@ Test('Ilp service tests', async (ilpTest) => {
 
   await ilpTest.test('setup', async (assert) => {
     try {
+      await ProxyCache.connect()
       await Db.connect(Config.DATABASE).then(() => {
         assert.pass('setup OK')
         assert.end()
@@ -178,6 +180,7 @@ Test('Ilp service tests', async (ilpTest) => {
     try {
       await Cache.destroyCache()
       await Db.disconnect()
+      await ProxyCache.disconnect()
       assert.pass('database connection closed')
       assert.end()
     } catch (err) {

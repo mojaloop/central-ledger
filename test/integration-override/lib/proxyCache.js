@@ -2,15 +2,15 @@
 
 const Test = require('tape')
 const Sinon = require('sinon')
-const Db = require('../../../src/lib/db')
-const Cache = require('../../../src/lib/cache')
+const Db = require('#src/lib/db')
+const Cache = require('#src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
-const Config = require('../../../src/lib/config')
-const ProxyCache = require('../../../src/lib/proxyCache')
-const ParticipantService = require('../../../src/domain/participant')
-const ParticipantCached = require('../../../src/models/participant/participantCached')
-const ParticipantCurrencyCached = require('../../../src/models/participant/participantCurrencyCached')
-const ParticipantLimitCached = require('../../../src/models/participant/participantLimitCached')
+const Config = require('#src/lib/config')
+const ProxyCache = require('#src/lib/proxyCache')
+const ParticipantService = require('#src/domain/participant')
+const ParticipantCached = require('#src/models/participant/participantCached')
+const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
+const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const ParticipantHelper = require('../../integration/helpers/participant')
 
 const debug = false
@@ -40,7 +40,7 @@ Test('Participant service', async (participantTest) => {
       await ParticipantCurrencyCached.initialize()
       await ParticipantLimitCached.initialize()
       await Cache.initCache()
-      await ProxyCache.proxyCache.connect()
+      await ProxyCache.connect()
       test.pass()
       test.end()
     } catch (err) {
@@ -84,11 +84,12 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getFSPProxy should return proxyId if fsp not in scheme', async (assert) => {
     try {
-      ProxyCache.proxyCache.addDfspIdToProxyMapping('notInSchemeFsp', 'proxyId')
+      const proxyCache = ProxyCache.getCache()
+      proxyCache.addDfspIdToProxyMapping('notInSchemeFsp', 'proxyId')
       const result = await ProxyCache.getFSPProxy('notInSchemeFsp')
       assert.equal(result.inScheme, false, 'not in scheme')
       assert.equal(result.proxyId, 'proxyId', 'proxy id matches')
-      ProxyCache.proxyCache.removeDfspIdFromProxyMapping('notInSchemeFsp')
+      proxyCache.removeDfspIdFromProxyMapping('notInSchemeFsp')
       assert.end()
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
@@ -99,11 +100,12 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getFSPProxy should not return proxyId if fsp is in scheme', async (assert) => {
     try {
-      ProxyCache.proxyCache.addDfspIdToProxyMapping('dfsp1', 'proxyId')
+      const proxyCache = ProxyCache.getCache()
+      proxyCache.addDfspIdToProxyMapping('dfsp1', 'proxyId')
       const result = await ProxyCache.getFSPProxy('dfsp1')
       assert.equal(result.inScheme, true, 'is in scheme')
       assert.equal(result.proxyId, null, 'proxy id is null')
-      ProxyCache.proxyCache.removeDfspIdFromProxyMapping('dfsp1')
+      proxyCache.removeDfspIdFromProxyMapping('dfsp1')
       assert.end()
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
@@ -114,12 +116,13 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('checkSameCreditorDebtorProxy should return true if debtor and creditor proxy are the same', async (assert) => {
     try {
-      ProxyCache.proxyCache.addDfspIdToProxyMapping('dfsp1', 'proxyId')
-      ProxyCache.proxyCache.addDfspIdToProxyMapping('dfsp2', 'proxyId')
+      const proxyCache = ProxyCache.getCache()
+      proxyCache.addDfspIdToProxyMapping('dfsp1', 'proxyId')
+      proxyCache.addDfspIdToProxyMapping('dfsp2', 'proxyId')
       const result = await ProxyCache.checkSameCreditorDebtorProxy('dfsp1', 'dfsp2')
       assert.equal(result, true, 'returned true')
-      ProxyCache.proxyCache.removeDfspIdFromProxyMapping('dfsp1')
-      ProxyCache.proxyCache.removeDfspIdFromProxyMapping('dfsp2')
+      proxyCache.removeDfspIdFromProxyMapping('dfsp1')
+      proxyCache.removeDfspIdFromProxyMapping('dfsp2')
       assert.end()
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
@@ -130,12 +133,13 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('checkSameCreditorDebtorProxy should return false if debtor and creditor proxy are not the same', async (assert) => {
     try {
-      ProxyCache.proxyCache.addDfspIdToProxyMapping('dfsp1', 'proxyId')
-      ProxyCache.proxyCache.addDfspIdToProxyMapping('dfsp2', 'proxyId2')
+      const proxyCache = ProxyCache.getCache()
+      proxyCache.addDfspIdToProxyMapping('dfsp1', 'proxyId')
+      proxyCache.addDfspIdToProxyMapping('dfsp2', 'proxyId2')
       const result = await ProxyCache.checkSameCreditorDebtorProxy('dfsp1', 'dfsp2')
       assert.equal(result, false, 'returned false')
-      ProxyCache.proxyCache.removeDfspIdFromProxyMapping('dfsp1')
-      ProxyCache.proxyCache.removeDfspIdFromProxyMapping('dfsp2')
+      proxyCache.removeDfspIdFromProxyMapping('dfsp1')
+      proxyCache.removeDfspIdFromProxyMapping('dfsp2')
       assert.end()
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
@@ -159,7 +163,8 @@ Test('Participant service', async (participantTest) => {
       }
       await Cache.destroyCache()
       await Db.disconnect()
-      await ProxyCache.proxyCache.disconnect()
+      await ProxyCache.disconnect()
+
       assert.pass('database connection closed')
       // @ggrg: Having the following 3 lines commented prevents the current test from exiting properly when run individually,
       // BUT it is required in order to have successful run of all integration test scripts as a sequence, where

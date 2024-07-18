@@ -30,6 +30,7 @@
 const { randomUUID } = require('crypto')
 const Sinon = require('sinon')
 const Proxyquire = require('proxyquire')
+const ProxyCache = require('#src/lib/proxyCache')
 const Test = require('tapes')(require('tape'))
 const EventSdk = require('@mojaloop/event-sdk')
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
@@ -152,6 +153,10 @@ Test('Bulk Transfer GET handler', getHandlerTest => {
 
   getHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     SpanStub = {
       audit: sandbox.stub().callsFake(),
       error: sandbox.stub().callsFake(),

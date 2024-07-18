@@ -30,6 +30,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Db = require('@mojaloop/database-lib').Db
 
 const Config = require('../../../src/lib/config')
+const ProxyCache = require('../../../src/lib/proxyCache')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 // const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const rootApiHandler = require('../../../src/api/root/handler')
@@ -52,6 +53,7 @@ Test('Root handler test', async handlersTest => {
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
       await Db.connect(Config.DATABASE)
+      await ProxyCache.connect()
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
@@ -88,7 +90,8 @@ Test('Root handler test', async handlersTest => {
       const expectedStatus = 200
       const expectedServices = [
         { name: 'datastore', status: 'OK' },
-        { name: 'broker', status: 'OK' }
+        { name: 'broker', status: 'OK' },
+        { name: 'proxyCache', status: 'OK' }
       ]
 
       // Act
@@ -112,7 +115,7 @@ Test('Root handler test', async handlersTest => {
     try {
       await Db.disconnect()
       assert.pass('database connection closed')
-
+      await ProxyCache.disconnect()
       // TODO: Replace this with KafkaHelper.topics
       const topics = [
         'topic-transfer-prepare',

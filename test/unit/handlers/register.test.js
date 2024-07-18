@@ -12,6 +12,7 @@ const BulkProcessingHandlers = require('../../../src/handlers/bulk/processing/ha
 const BulkFulfilHandlers = require('../../../src/handlers/bulk/fulfil/handler')
 const BulkGetHandlers = require('../../../src/handlers/bulk/get/handler')
 const Proxyquire = require('proxyquire')
+const ProxyCache = require('#src/lib/proxyCache')
 
 Test('handlers', handlersTest => {
   let sandbox
@@ -26,6 +27,10 @@ Test('handlers', handlersTest => {
     sandbox.stub(BulkProcessingHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
     sandbox.stub(BulkFulfilHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
     sandbox.stub(BulkGetHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     test.end()
   })
 

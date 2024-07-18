@@ -34,6 +34,7 @@ const Enums = require('../../../src/lib/enumCached')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Db = require('@mojaloop/database-lib').Db
 const Cache = require('../../../src/lib/cache')
+const ProxyCache = require('../../../src/lib/proxyCache')
 const ParticipantCached = require('../../../src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('../../../src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../../src/models/participant/participantLimitCached')
@@ -66,6 +67,7 @@ const settlementModels = [
 
 exports.prepareData = async () => {
   await Db.connect(Config.DATABASE)
+  await ProxyCache.connect()
   await Enums.initialize()
   await ParticipantCached.initialize()
   await ParticipantCurrencyCached.initialize()

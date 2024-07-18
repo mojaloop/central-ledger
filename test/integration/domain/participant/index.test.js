@@ -32,6 +32,7 @@ const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Cache = require('../../../../src/lib/cache')
+const ProxyCache = require('../../../../src/lib/proxyCache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const ParticipantService = require('../../../../src/domain/participant')
@@ -68,6 +69,7 @@ Test('Participant service', async (participantTest) => {
     try {
       sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE)
+      await ProxyCache.connect()
       await ParticipantCached.initialize()
       await ParticipantCurrencyCached.initialize()
       await ParticipantLimitCached.initialize()
@@ -465,6 +467,8 @@ Test('Participant service', async (participantTest) => {
       }
       await Cache.destroyCache()
       await Db.disconnect()
+      await ProxyCache.disconnect()
+
       assert.pass('database connection closed')
       // @ggrg: Having the following 3 lines commented prevents the current test from exiting properly when run individually,
       // BUT it is required in order to have successful run of all integration test scripts as a sequence, where

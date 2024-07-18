@@ -49,6 +49,7 @@ const { logger } = require('../../../../src/shared/logger')
 const { checkErrorPayload } = require('../../../util/helpers')
 const fixtures = require('../../../fixtures')
 const mocks = require('./mocks')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const { Kafka, Comparators } = Util
 const { Action, Type } = Enum.Events.Event
@@ -82,6 +83,10 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
       commitMessageSync: async () => true
     })
     sandbox.stub(Consumer, 'isConsumerAutoCommitEnabled').returns(false)
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     test.end()
   })
 

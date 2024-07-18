@@ -27,12 +27,21 @@
 const Test = require('tape')
 const Base = require('../base')
 const ApiRoutes = require('../../../src/api/routes')
+const ProxyCache = require('#src/lib/proxyCache')
+const Sinon = require('sinon')
 
 Test('test health', async function (assert) {
+  const sandbox = Sinon.createSandbox()
+  sandbox.stub(ProxyCache, 'getCache').returns({
+    connect: sandbox.stub(),
+    disconnect: sandbox.stub(),
+    healthCheck: sandbox.stub().returns(Promise.resolve())
+  })
   const req = Base.buildRequest({ url: '/health', method: 'GET' })
   const server = await Base.setup(ApiRoutes)
   const res = await server.inject(req)
   assert.ok(res)
   await server.stop()
+  sandbox.restore()
   assert.end()
 })

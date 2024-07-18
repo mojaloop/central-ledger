@@ -28,6 +28,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Handler = require('../../../../src/api/transactions/handler')
 const TransactionsService = require('../../../../src/domain/transactions')
+const ProxyCache = require('#src/lib/proxyCache')
 
 Test('IlpPackets', IlpPacketsHandlerTest => {
   let sandbox
@@ -74,6 +75,11 @@ Test('IlpPackets', IlpPacketsHandlerTest => {
   IlpPacketsHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(TransactionsService)
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub(),
+      healthCheck: sandbox.stub().returns(Promise.resolve())
+    })
     test.end()
   })
 

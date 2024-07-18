@@ -36,6 +36,7 @@ const FxTransferModel = require('../../../../src/models/fxTransfer')
 const Config = require('../../../../src/lib/config')
 const { ERROR_MESSAGES } = require('../../../../src/shared/constants')
 const { Logger } = require('../../../../src/shared/logger')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const fixtures = require('../../../fixtures')
 const mocks = require('./mocks')
@@ -87,6 +88,10 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
     sandbox.stub(Db)
     sandbox.stub(FxTransferModel.fxTransfer)
     sandbox.stub(FxTransferModel.duplicateCheck)
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     span = mocks.createTracerStub(sandbox).SpanStub
     test.end()
   })
