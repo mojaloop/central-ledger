@@ -37,21 +37,23 @@ const { statusEnum, serviceName } = require('@mojaloop/central-services-shared')
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Logger = require('@mojaloop/central-services-logger')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const {
   getSubServiceHealthBroker,
-  getSubServiceHealthDatastore
+  getSubServiceHealthDatastore,
+  getSubServiceHealthProxyCache
 } = require('../../../../src/lib/healthCheck/subServiceHealth.js')
 
 Test('SubServiceHealth test', subServiceHealthTest => {
   let sandbox
-
+  let proxyCacheStub
   subServiceHealthTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Consumer, 'getListOfTopics')
     sandbox.stub(Consumer, 'isConnected')
     sandbox.stub(Logger, 'isDebugEnabled').value(true)
-
+    proxyCacheStub = sandbox.stub(ProxyCache, 'getCache')
     t.end()
   })
 
@@ -149,6 +151,39 @@ Test('SubServiceHealth test', subServiceHealthTest => {
     })
 
     datastoreTest.end()
+  })
+
+  subServiceHealthTest.test('getSubServiceHealthProxyCache', proxyCacheTest => {
+    proxyCacheTest.test('Reports up when not health', async test => {
+      // Arrange
+      proxyCacheStub.returns({
+        healthCheck: sandbox.stub().returns(Promise.resolve(true))
+      })
+      const expected = { name: 'proxyCache', status: statusEnum.OK }
+
+      // Act
+      const result = await getSubServiceHealthProxyCache()
+
+      // Assert
+      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result')
+      test.end()
+    })
+
+    proxyCacheTest.test('Reports down when not health', async test => {
+      // Arrange
+      proxyCacheStub.returns({
+        healthCheck: sandbox.stub().returns(Promise.resolve(false))
+      })
+      const expected = { name: 'proxyCache', status: statusEnum.DOWN }
+
+      // Act
+      const result = await getSubServiceHealthProxyCache()
+
+      // Assert
+      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result')
+      test.end()
+    })
+    proxyCacheTest.end()
   })
 
   subServiceHealthTest.end()

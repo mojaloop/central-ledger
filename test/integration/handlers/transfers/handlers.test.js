@@ -29,6 +29,7 @@ const Test = require('tape')
 const { randomUUID } = require('crypto')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
+const ProxyCache = require('#src/lib/proxyCache')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const Db = require('@mojaloop/database-lib').Db
 const Cache = require('#src/lib/cache')
@@ -318,6 +319,7 @@ const prepareTestData = async (dataObj) => {
 Test('Handlers test', async handlersTest => {
   const startTime = new Date()
   await Db.connect(Config.DATABASE)
+  await ProxyCache.connect()
   await ParticipantCached.initialize()
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
@@ -1346,6 +1348,7 @@ Test('Handlers test', async handlersTest => {
       await Handlers.timeouts.stop()
       await Cache.destroyCache()
       await Db.disconnect()
+      await ProxyCache.disconnect()
       assert.pass('database connection closed')
       await testConsumer.destroy() // this disconnects the consumers
 

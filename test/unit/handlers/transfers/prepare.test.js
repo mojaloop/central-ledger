@@ -54,6 +54,7 @@ const Config = require('../../../../src/lib/config')
 const fxTransferModel = require('../../../../src/models/fxTransfer')
 const fxDuplicateCheck = require('../../../../src/models/fxTransfer/duplicateCheck')
 const fxTransferStateChange = require('../../../../src/models/fxTransfer/stateChange')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const { Action } = Enum.Events.Event
 
@@ -318,6 +319,10 @@ Test('Transfer handler', transferHandlerTest => {
 
   transferHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     SpanStub = {
       audit: sandbox.stub().callsFake(),
       error: sandbox.stub().callsFake(),

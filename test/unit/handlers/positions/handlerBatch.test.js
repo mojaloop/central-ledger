@@ -40,6 +40,7 @@ const SettlementModelCached = require('../../../../src/models/settlement/settlem
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Proxyquire = require('proxyquire')
 const Logger = require('@mojaloop/central-services-logger')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const topicName = 'topic-transfer-position-batch'
 
@@ -128,6 +129,10 @@ Test('Position handler', positionBatchHandlerTest => {
 
   positionBatchHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     SpanStub = {
       audit: sandbox.stub().callsFake(),
       error: sandbox.stub().callsFake(),

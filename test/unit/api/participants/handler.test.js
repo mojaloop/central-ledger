@@ -9,6 +9,7 @@ const Participant = require('../../../../src/domain/participant')
 const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 const SettlementModel = require('../../../../src/domain/settlement')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const createRequest = ({ payload, params, query }) => {
   const sandbox = Sinon.createSandbox()
@@ -163,6 +164,11 @@ Test('Participant', participantHandlerTest => {
     sandbox.stub(Participant)
     sandbox.stub(EnumCached)
     sandbox.stub(SettlementModel, 'getAll')
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub(),
+      healthCheck: sandbox.stub().resolves()
+    })
     EnumCached.getEnums.returns(Promise.resolve({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 }))
     Logger.isDebugEnabled = true
     test.end()

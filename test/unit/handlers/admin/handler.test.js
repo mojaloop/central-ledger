@@ -11,6 +11,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const TransferService = require('../../../../src/domain/transfer')
 const Db = require('../../../../src/lib/db')
+const ProxyCache = require('#src/lib/proxyCache')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
@@ -299,6 +300,10 @@ Test('Admin handler', adminHandlerTest => {
 
   adminHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     sandbox.stub(KafkaConsumer.prototype, 'constructor').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'connect').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'consume').resolves()

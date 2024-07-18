@@ -29,6 +29,7 @@ const Sinon = require('sinon')
 
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../src/lib/config')
+const ProxyCache = require('#src/lib/proxyCache')
 const Routes = require('../../../src/api/routes')
 const Setup = require('../../../src/shared/setup')
 
@@ -39,6 +40,10 @@ Test('Api index', indexTest => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Setup)
     sandbox.stub(Logger)
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     test.end()
   })
 
@@ -66,6 +71,7 @@ Test('Api index', indexTest => {
         runMigrations: true,
         runHandlers: !Config.HANDLERS_DISABLED
       }))
+
       test.end()
     })
     exportTest.end()

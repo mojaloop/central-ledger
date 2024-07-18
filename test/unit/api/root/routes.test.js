@@ -29,18 +29,31 @@ const Base = require('../../base')
 const AdminRoutes = require('../../../../src/api/routes')
 const Sinon = require('sinon')
 const Enums = require('../../../../src/lib/enumCached')
+const ProxyCache = require('#src/lib/proxyCache')
 
 Test('test root routes - health', async function (assert) {
+  const sandbox = Sinon.createSandbox()
+  sandbox.stub(ProxyCache, 'getCache').returns({
+    connect: sandbox.stub(),
+    disconnect: sandbox.stub(),
+    healthCheck: sandbox.stub().resolves()
+  })
   const req = Base.buildRequest({ url: '/health', method: 'GET' })
   const server = await Base.setup(AdminRoutes)
   const res = await server.inject(req)
   assert.ok(res)
   await server.stop()
+  sandbox.restore()
   assert.end()
 })
 
 Test('test root routes - enums', async function (assert) {
   const sandbox = Sinon.createSandbox()
+  sandbox.stub(ProxyCache, 'getCache').returns({
+    connect: sandbox.stub(),
+    disconnect: sandbox.stub(),
+    healthCheck: sandbox.stub().resolves()
+  })
   sandbox.stub(Enums, 'getEnums').returns(Promise.resolve({}))
   const req = Base.buildRequest({ url: '/enums', method: 'GET' })
   const server = await Base.setup(AdminRoutes)
@@ -52,10 +65,17 @@ Test('test root routes - enums', async function (assert) {
 })
 
 Test('test root routes - /', async function (assert) {
+  const sandbox = Sinon.createSandbox()
+  sandbox.stub(ProxyCache, 'getCache').returns({
+    connect: sandbox.stub(),
+    disconnect: sandbox.stub(),
+    healthCheck: sandbox.stub().resolves()
+  })
   const req = Base.buildRequest({ url: '/', method: 'GET' })
   const server = await Base.setup(AdminRoutes)
   const res = await server.inject(req)
   assert.ok(res)
   await server.stop()
+  sandbox.restore()
   assert.end()
 })

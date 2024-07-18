@@ -36,6 +36,7 @@
 const Hapi = require('@hapi/hapi')
 const Migrator = require('../lib/migrator')
 const Db = require('../lib/db')
+const ProxyCache = require('../lib/proxyCache')
 const ObjStoreDb = require('@mojaloop/object-store-lib').Db
 const Plugins = require('./plugins')
 const Config = require('../lib/config')
@@ -265,6 +266,9 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     await connectDatabase()
     await connectMongoose()
     await initializeCache()
+    if (Config.PROXY_CACHE_CONFIG.enabled) {
+      await ProxyCache.connect()
+    }
 
     let server
     switch (service) {
@@ -303,6 +307,9 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`)
 
     await Db.disconnect()
+    if (Config.PROXY_CACHE_CONFIG.enabled) {
+      await ProxyCache.disconnect()
+    }
     process.exit(1)
   }
 }
