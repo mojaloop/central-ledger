@@ -48,6 +48,7 @@ const { randomUUID } = require('crypto')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const BatchPositionModel = require('../../models/position/batch')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
+const { proxyCache, checkSameCreditorDebtorProxy } = require('../../lib/proxyCache')
 
 const consumerCommit = true
 
@@ -104,9 +105,14 @@ const positions = async (error, messages) => {
       binId
     })
 
+    /**
+     * Inter-scheme accounting rule:
+     * - If the debtor and creditor are represented by the same proxy, 
+     *  no position changes should be effected (zero adjustment) i.e. accountID should be set to 0.
+     */
+    const accountID = checkSameCreditorDebtorProxy(message.value.from, message.value.to) ? 0 : message.key.toString()
     // Assign message to account-bin by accountID and child action-bin by action
     // (References to the messages to be stored in bins, no duplication of messages)
-    const accountID = message.key.toString()
     const action = message.value.metadata.event.action
     const accountBin = bins[accountID] || (bins[accountID] = {})
     const actionBin = accountBin[action] || (accountBin[action] = [])

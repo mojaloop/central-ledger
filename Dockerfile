@@ -16,7 +16,7 @@ FROM node:${NODE_VERSION} as builder
 WORKDIR /opt/app
 
 RUN apk --no-cache add git
-RUN apk add --no-cache -t build-dependencies make gcc g++ python3 libtool openssl-dev autoconf automake bash \
+RUN apk add --no-cache -t build-dependencies make gcc g++ python3 py3-setuptools libtool openssl-dev autoconf automake bash \
     && cd $(npm root -g)/npm \
     && npm install -g node-gyp
 
