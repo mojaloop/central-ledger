@@ -39,7 +39,7 @@ Test('Transfer Error model test', async (transferErrorTest) => {
     try {
       await Db.connect(Config.DATABASE).then(async () => {
         await Cache.initCache()
-        await ProxyCache.proxyCache.connect()
+        await ProxyCache.connect()
         assert.pass('setup OK')
         assert.end()
       }).catch(err => {
@@ -92,11 +92,7 @@ Test('Transfer Error model test', async (transferErrorTest) => {
     try {
       await Cache.destroyCache()
       await Db.disconnect()
-      try {
-        await ProxyCache.proxyCache.disconnect()
-      } catch (err) {
-
-      }
+      await ProxyCache.disconnect()
       assert.pass('database connection closed')
       assert.end()
     } catch (err) {

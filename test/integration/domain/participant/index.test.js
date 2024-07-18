@@ -69,7 +69,7 @@ Test('Participant service', async (participantTest) => {
     try {
       sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE)
-      await ProxyCache.proxyCache.connect()
+      await ProxyCache.connect()
       await ParticipantCached.initialize()
       await ParticipantCurrencyCached.initialize()
       await ParticipantLimitCached.initialize()
@@ -467,11 +467,7 @@ Test('Participant service', async (participantTest) => {
       }
       await Cache.destroyCache()
       await Db.disconnect()
-      try {
-        await ProxyCache.proxyCache.disconnect()
-      } catch (err) {
-
-      }
+      await ProxyCache.disconnect()
 
       assert.pass('database connection closed')
       // @ggrg: Having the following 3 lines commented prevents the current test from exiting properly when run individually,

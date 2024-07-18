@@ -774,10 +774,7 @@ Test('Handlers test', async handlersTest => {
       await testConsumer.destroy() // this disconnects the consumers
 
       await Producer.disconnect()
-      try {
-        await ProxyCache.proxyCache.disconnect()
-      } catch (err) {
-      }
+      await ProxyCache.disconnect()
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10

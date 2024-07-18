@@ -67,7 +67,7 @@ const settlementModels = [
 
 exports.prepareData = async () => {
   await Db.connect(Config.DATABASE)
-  await ProxyCache.proxyCache.connect()
+  await ProxyCache.connect()
   await Enums.initialize()
   await ParticipantCached.initialize()
   await ParticipantCurrencyCached.initialize()

@@ -319,7 +319,7 @@ const prepareTestData = async (dataObj) => {
 Test('Handlers test', async handlersTest => {
   const startTime = new Date()
   await Db.connect(Config.DATABASE)
-  await ProxyCache.proxyCache.connect()
+  await ProxyCache.connect()
   await ParticipantCached.initialize()
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
@@ -1348,11 +1348,7 @@ Test('Handlers test', async handlersTest => {
       await Handlers.timeouts.stop()
       await Cache.destroyCache()
       await Db.disconnect()
-      try {
-        await ProxyCache.proxyCache.disconnect()
-      } catch (err) {
-
-      }
+      await ProxyCache.disconnect()
       assert.pass('database connection closed')
       await testConsumer.destroy() // this disconnects the consumers
 

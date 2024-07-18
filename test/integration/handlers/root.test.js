@@ -53,7 +53,7 @@ Test('Root handler test', async handlersTest => {
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
       await Db.connect(Config.DATABASE)
-      await ProxyCache.proxyCache.connect()
+      await ProxyCache.connect()
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
@@ -115,11 +115,7 @@ Test('Root handler test', async handlersTest => {
     try {
       await Db.disconnect()
       assert.pass('database connection closed')
-      try {
-        await ProxyCache.proxyCache.disconnect()
-      } catch (err) {
-
-      }
+      await ProxyCache.disconnect()
       // TODO: Replace this with KafkaHelper.topics
       const topics = [
         'topic-transfer-prepare',

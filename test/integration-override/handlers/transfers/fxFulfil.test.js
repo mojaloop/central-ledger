@@ -276,10 +276,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
       producer.disconnect(),
       testConsumer.destroy()
     ])
-    try {
-      await ProxyCache.proxyCache.disconnect()
-    } catch (err) {
-    }
+    await ProxyCache.disconnect()
     await new Promise(resolve => setTimeout(resolve, 5_000))
     t.pass('teardown is finished')
     t.end()

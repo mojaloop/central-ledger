@@ -46,7 +46,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
   await stateChangeTest.test('setup', async (assert) => {
     try {
       await Db.connect(Config.DATABASE).then(async () => {
-        await ProxyCache.proxyCache.connect()
+        await ProxyCache.connect()
         await ParticipantCached.initialize()
         await ParticipantCurrencyCached.initialize()
         await ParticipantLimitCached.initialize()
@@ -129,11 +129,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
     try {
       await Cache.destroyCache()
       await Db.disconnect()
-      try {
-        await ProxyCache.proxyCache.disconnect()
-      } catch (err) {
-
-      }
+      await ProxyCache.disconnect()
       assert.pass('database connection closed')
       assert.end()
     } catch (err) {
