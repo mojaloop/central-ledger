@@ -5,6 +5,8 @@ const Sinon = require('sinon')
 const ParticipantService = require('../../../src/domain/participant')
 const Proxyquire = require('proxyquire')
 
+const connectStub = Sinon.stub()
+const disconnectStub = Sinon.stub()
 const lookupProxyByDfspIdStub = Sinon.stub()
 lookupProxyByDfspIdStub.withArgs('existingDfspId1').resolves('proxyId')
 lookupProxyByDfspIdStub.withArgs('existingDfspId2').resolves('proxyId')
@@ -15,6 +17,8 @@ lookupProxyByDfspIdStub.withArgs('nonExistingDfspId2').resolves(null)
 const ProxyCache = Proxyquire('../../../src/lib/proxyCache', {
   '@mojaloop/inter-scheme-proxy-cache-lib': {
     createProxyCache: Sinon.stub().returns({
+      connect: connectStub,
+      disconnect: disconnectStub,
       lookupProxyByDfspId: lookupProxyByDfspIdStub
     })
   }
@@ -32,6 +36,26 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
   proxyCacheTest.afterEach(t => {
     sandbox.restore()
     t.end()
+  })
+
+  await proxyCacheTest.test('connect', async (connectTest) => {
+    await connectTest.test('connect to cache', async (test) => {
+      await ProxyCache.connect()
+      Sinon.assert.calledOnce(connectStub)
+      test.end()
+    })
+
+    connectTest.end()
+  })
+
+  await proxyCacheTest.test('disconnect', async (disconnectTest) => {
+    await disconnectTest.test('disconnect from cache', async (test) => {
+      await ProxyCache.disconnect()
+      Sinon.assert.calledOnce(disconnectStub)
+      test.end()
+    })
+
+    disconnectTest.end()
   })
 
   await proxyCacheTest.test('getCache', async (getCacheTest) => {
