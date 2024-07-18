@@ -36,7 +36,7 @@ Test('test root routes - health', async function (assert) {
   sandbox.stub(ProxyCache, 'getCache').returns({
     connect: sandbox.stub(),
     disconnect: sandbox.stub(),
-    healthCheck: sandbox.stub().returns(Promise.resolve())
+    healthCheck: sandbox.stub().resolves()
   })
   const req = Base.buildRequest({ url: '/health', method: 'GET' })
   const server = await Base.setup(AdminRoutes)
@@ -52,7 +52,7 @@ Test('test root routes - enums', async function (assert) {
   sandbox.stub(ProxyCache, 'getCache').returns({
     connect: sandbox.stub(),
     disconnect: sandbox.stub(),
-    healthCheck: sandbox.stub().returns(Promise.resolve())
+    healthCheck: sandbox.stub().resolves()
   })
   sandbox.stub(Enums, 'getEnums').returns(Promise.resolve({}))
   const req = Base.buildRequest({ url: '/enums', method: 'GET' })
@@ -69,7 +69,7 @@ Test('test root routes - /', async function (assert) {
   sandbox.stub(ProxyCache, 'getCache').returns({
     connect: sandbox.stub(),
     disconnect: sandbox.stub(),
-    healthCheck: sandbox.stub().returns(Promise.resolve())
+    healthCheck: sandbox.stub().resolves()
   })
   const req = Base.buildRequest({ url: '/', method: 'GET' })
   const server = await Base.setup(AdminRoutes)

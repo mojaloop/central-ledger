@@ -38,7 +38,7 @@ Test('setup', setupTest => {
     sandbox = Sinon.createSandbox()
     processExitStub = sandbox.stub(process, 'exit')
     PluginsStub = {
-      registerPlugins: sandbox.stub().returns(Promise.resolve())
+      registerPlugins: sandbox.stub().resolves()
     }
 
     serverStub = {
@@ -61,13 +61,13 @@ Test('setup', setupTest => {
     }
 
     requestLoggerStub = {
-      logRequest: sandbox.stub().returns(Promise.resolve()),
-      logResponse: sandbox.stub().returns(Promise.resolve())
+      logRequest: sandbox.stub().resolves(),
+      logResponse: sandbox.stub().resolves()
     }
 
     DbStub = {
-      connect: sandbox.stub().returns(Promise.resolve()),
-      disconnect: sandbox.stub().returns(Promise.resolve())
+      connect: sandbox.stub().resolves(),
+      disconnect: sandbox.stub().resolves()
     }
 
     ProxyCacheStub = {
@@ -81,12 +81,12 @@ Test('setup', setupTest => {
     }
 
     CacheStub = {
-      initCache: sandbox.stub().returns(Promise.resolve())
+      initCache: sandbox.stub().resolves()
     }
 
     ObjStoreStub = {
       Db: {
-        connect: sandbox.stub().returns(Promise.resolve()),
+        connect: sandbox.stub().resolves(),
         Mongoose: {
           set: sandbox.stub()
         }
@@ -101,35 +101,35 @@ Test('setup', setupTest => {
     uuidStub = sandbox.stub()
 
     MigratorStub = {
-      migrate: sandbox.stub().returns(Promise.resolve())
+      migrate: sandbox.stub().resolves()
     }
 
     RegisterHandlersStub = {
-      registerAllHandlers: sandbox.stub().returns(Promise.resolve()),
+      registerAllHandlers: sandbox.stub().resolves(),
       transfers: {
-        registerPrepareHandler: sandbox.stub().returns(Promise.resolve()),
-        registerGetHandler: sandbox.stub().returns(Promise.resolve()),
-        registerFulfilHandler: sandbox.stub().returns(Promise.resolve())
-        // registerRejectHandler: sandbox.stub().returns(Promise.resolve())
+        registerPrepareHandler: sandbox.stub().resolves(),
+        registerGetHandler: sandbox.stub().resolves(),
+        registerFulfilHandler: sandbox.stub().resolves()
+        // registerRejectHandler: sandbox.stub().resolves()
       },
       positions: {
-        registerPositionHandler: sandbox.stub().returns(Promise.resolve())
+        registerPositionHandler: sandbox.stub().resolves()
       },
       positionsBatch: {
-        registerPositionHandler: sandbox.stub().returns(Promise.resolve())
+        registerPositionHandler: sandbox.stub().resolves()
       },
       timeouts: {
-        registerAllHandlers: sandbox.stub().returns(Promise.resolve()),
-        registerTimeoutHandler: sandbox.stub().returns(Promise.resolve())
+        registerAllHandlers: sandbox.stub().resolves(),
+        registerTimeoutHandler: sandbox.stub().resolves()
       },
       admin: {
-        registerAdminHandlers: sandbox.stub().returns(Promise.resolve())
+        registerAdminHandlers: sandbox.stub().resolves()
       },
       bulk: {
-        registerBulkPrepareHandler: sandbox.stub().returns(Promise.resolve()),
-        registerBulkFulfilHandler: sandbox.stub().returns(Promise.resolve()),
-        registerBulkProcessingHandler: sandbox.stub().returns(Promise.resolve()),
-        registerBulkGetHandler: sandbox.stub().returns(Promise.resolve())
+        registerBulkPrepareHandler: sandbox.stub().resolves(),
+        registerBulkFulfilHandler: sandbox.stub().resolves(),
+        registerBulkProcessingHandler: sandbox.stub().resolves(),
+        registerBulkGetHandler: sandbox.stub().resolves()
       }
     }
     const ConfigStub = Config

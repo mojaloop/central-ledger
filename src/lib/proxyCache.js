@@ -32,8 +32,10 @@ const getFSPProxy = async (dfspId) => {
 }
 
 const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
-  const debtorProxyId = await getCache().lookupProxyByDfspId(debtorDfspId)
-  const creditorProxyId = await getCache().lookupProxyByDfspId(creditorDfspId)
+  const [debtorProxyId, creditorProxyId] = await Promise.all([
+    await getCache().lookupProxyByDfspId(debtorDfspId),
+    await getCache().lookupProxyByDfspId(creditorDfspId)
+  ])
   return debtorProxyId && creditorProxyId ? debtorProxyId === creditorProxyId : false
 }
 

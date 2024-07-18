@@ -41,7 +41,7 @@ Test('cli', async (cliTest) => {
         disconnect: sandbox.stub()
       })
       SetupStub = {
-        initialize: sandbox.stub().returns(Promise.resolve())
+        initialize: sandbox.stub().resolves()
       }
 
       process.argv = []

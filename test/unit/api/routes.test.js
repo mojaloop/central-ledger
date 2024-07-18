@@ -35,7 +35,7 @@ Test('test health', async function (assert) {
   sandbox.stub(ProxyCache, 'getCache').returns({
     connect: sandbox.stub(),
     disconnect: sandbox.stub(),
-    healthCheck: sandbox.stub().returns(Promise.resolve())
+    healthCheck: sandbox.stub().resolves()
   })
   const req = Base.buildRequest({ url: '/health', method: 'GET' })
   const server = await Base.setup(ApiRoutes)
