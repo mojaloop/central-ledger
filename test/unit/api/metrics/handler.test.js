@@ -49,7 +49,7 @@ Test('metrics handler', (handlerTest) => {
     sandbox.stub(ProxyCache, 'getCache').returns({
       connect: sandbox.stub(),
       disconnect: sandbox.stub(),
-      healthCheck: sandbox.stub().returns(Promise.resolve())
+      healthCheck: sandbox.stub().resolves()
     })
     t.end()
   })

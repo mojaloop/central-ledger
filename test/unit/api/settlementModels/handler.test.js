@@ -101,7 +101,7 @@ Test('SettlementModel', settlementModelHandlerTest => {
     sandbox.stub(ProxyCache, 'getCache').returns({
       connect: sandbox.stub(),
       disconnect: sandbox.stub(),
-      healthCheck: sandbox.stub().returns(Promise.resolve())
+      healthCheck: sandbox.stub().resolves()
     })
     EnumCached.getEnums.returns(Promise.resolve({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 }))
     test.end()
