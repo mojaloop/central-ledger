@@ -10,7 +10,7 @@ const connect = async () => {
 }
 
 const disconnect = async () => {
-  return proxyCache?.disconnect()
+  return proxyCache?.isConnected && proxyCache.disconnect()
 }
 
 const getCache = () => {

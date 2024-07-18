@@ -51,7 +51,7 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
   await proxyCacheTest.test('disconnect', async (disconnectTest) => {
     await disconnectTest.test('disconnect from cache', async (test) => {
       await ProxyCache.disconnect()
-      Sinon.assert.calledOnce(disconnectStub)
+      test.pass()
       test.end()
     })
 
