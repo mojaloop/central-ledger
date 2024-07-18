@@ -129,11 +129,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
     try {
       await Cache.destroyCache()
       await Db.disconnect()
-      try {
-        await ProxyCache.disconnect()
-      } catch (err) {
-
-      }
+      await ProxyCache.disconnect()
       assert.pass('database connection closed')
       assert.end()
     } catch (err) {

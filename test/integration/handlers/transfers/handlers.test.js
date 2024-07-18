@@ -1348,11 +1348,7 @@ Test('Handlers test', async handlersTest => {
       await Handlers.timeouts.stop()
       await Cache.destroyCache()
       await Db.disconnect()
-      try {
-        await ProxyCache.disconnect()
-      } catch (err) {
-
-      }
+      await ProxyCache.disconnect()
       assert.pass('database connection closed')
       await testConsumer.destroy() // this disconnects the consumers
 

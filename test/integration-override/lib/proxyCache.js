@@ -163,10 +163,7 @@ Test('Participant service', async (participantTest) => {
       }
       await Cache.destroyCache()
       await Db.disconnect()
-      try {
-        await ProxyCache.disconnect()
-      } catch (err) {
-      }
+      await ProxyCache.disconnect()
 
       assert.pass('database connection closed')
       // @ggrg: Having the following 3 lines commented prevents the current test from exiting properly when run individually,
