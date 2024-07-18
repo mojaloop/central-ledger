@@ -15,12 +15,12 @@ const disconnect = async () => {
 
 const getCache = () => {
   if (!proxyCache) {
-    proxyCache = createProxyCache(
+    proxyCache = Object.freeze(createProxyCache(
       Config.PROXY_CACHE_CONFIG.type,
       Config.PROXY_CACHE_CONFIG.proxyConfig
-    )
+    ))
   }
-  return Object.freeze(proxyCache)
+  return proxyCache
 }
 
 const getFSPProxy = async (dfspId) => {
