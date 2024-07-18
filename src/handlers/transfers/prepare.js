@@ -37,6 +37,7 @@ const createRemittanceEntity = require('./createRemittanceEntity')
 const Validator = require('./validator')
 const dto = require('./dto')
 const TransferService = require('#src/domain/transfer/index')
+const ProxyCache = require('../../lib/proxyCache')
 
 const { Kafka, Comparators } = Util
 const { TransferState } = Enum.Transfers
@@ -47,6 +48,7 @@ const { fspId } = Config.INSTRUMENTATION_METRICS_LABELS
 
 const consumerCommit = true
 const fromSwitch = true
+const proxyEnabled = Config.PROXY_CACHE_CONFIG.enabled
 
 const checkDuplication = async ({ payload, isFx, ID, location }) => {
   const funcName = 'prepare_duplicateCheckComparator'
@@ -140,14 +142,31 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, f
 const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult }) => {
   const cyrilResult = await createRemittanceEntity(isFx)
     .getPositionParticipant(payload, determiningTransferCheckResult)
-  const account = await Participant.getAccountByNameAndCurrency(
-    cyrilResult.participantName,
-    cyrilResult.currencyId,
-    Enum.Accounts.LedgerAccountType.POSITION
-  )
+
+  let messageKey;
+  
+  /**
+   * Interscheme accounting rules:
+   *  - If the participant has a proxy representation, the proxy's account should be used for the position change.
+   *  - If the payer and the payee DFSPs are represented by the same proxy, no position adjustment is needed.
+   */
+  const isSameProxy = proxyEnabled && await ProxyCache.checkSameCreditorDebtorProxy(payload.payerFsp, payload.payeeFsp);
+
+  if (isSameProxy) {
+    messageKey = 0
+  } else {
+    const proxyId = proxyEnabled && (await ProxyCache.getFSPProxy(cyrilResult.participantName)).proxyId
+    const participantName = proxyId || cyrilResult.participantName
+    const account = await Participant.getAccountByNameAndCurrency(
+      participantName,
+      cyrilResult.currencyId,
+      Enum.Accounts.LedgerAccountType.POSITION
+    )
+    messageKey = account.participantCurrencyId.toString()
+  }
 
   return {
-    messageKey: account.participantCurrencyId.toString(),
+    messageKey,
     cyrilResult
   }
 }

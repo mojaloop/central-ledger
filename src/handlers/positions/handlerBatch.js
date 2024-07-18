@@ -48,7 +48,6 @@ const { randomUUID } = require('crypto')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const BatchPositionModel = require('../../models/position/batch')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
-const { proxyCache, checkSameCreditorDebtorProxy } = require('../../lib/proxyCache')
 
 const consumerCommit = true
 
@@ -90,7 +89,7 @@ const positions = async (error, messages) => {
   // Iterate through consumedMessages
   const bins = {}
   const lastPerPartition = {}
-  await Promise.all(consumedMessages.map(message => {
+  await Promise.all(consumedMessages.map(async (message) => {
     const histTimerMsgEnd = Metrics.getHistogram(
       'transfer_position',
       'Process a prepare transfer message',
@@ -105,14 +104,19 @@ const positions = async (error, messages) => {
       binId
     })
 
-    /**
-     * Inter-scheme accounting rule:
-     * - If the debtor and creditor are represented by the same proxy, 
-     *  no position changes should be effected (zero adjustment) i.e. accountID should be set to 0.
-     */
-    const accountID = checkSameCreditorDebtorProxy(message.value.from, message.value.to) ? 0 : message.key.toString()
     // Assign message to account-bin by accountID and child action-bin by action
     // (References to the messages to be stored in bins, no duplication of messages)
+    const accountID = message.key.toString()
+    /**
+     * Interscheme accounting rule:
+     *  - If the creditor and debtor are represented by the same proxy, the message key will be 0.
+     *    In such cases, we skip position changes.
+     */
+    if (accountID === '0') {
+      histTimerEnd({ success: true, action: 'skip' })
+      return span.finish()
+    }
+
     const action = message.value.metadata.event.action
     const accountBin = bins[accountID] || (bins[accountID] = {})
     const actionBin = accountBin[action] || (accountBin[action] = [])
