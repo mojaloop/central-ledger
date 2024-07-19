@@ -54,6 +54,7 @@ const prepareMessageValue = {
     payload: {}
   }
 }
+
 const commitMessageValue = {
   metadata: {
     event: {
@@ -557,6 +558,37 @@ Test('Position handler', positionBatchHandlerTest => {
         test.equal(Kafka.produceGeneralMessage.getCall(0).args[2], Enum.Events.Event.Type.POSITION, 'produceGeneralMessage should be called with eventType POSITION')
         test.equal(Kafka.produceGeneralMessage.getCall(0).args[3], Enum.Events.Event.Action.PREPARE, 'produceGeneralMessage should be called with eventAction PREPARE')
         test.equal(Kafka.produceGeneralMessage.getCall(0).args[5], Enum.Events.EventStatus.FAILURE, 'produceGeneralMessage should be called with eventStatus as Enum.Events.EventStatus.FAILURE')
+        test.end()
+      } catch (err) {
+        Logger.info(err)
+        test.fail('Error should not be thrown')
+        test.end()
+      }
+    })
+
+    positionsTest.test('skip processing if message key is 0', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+      BinProcessor.processBins.resolves({
+        notifyMessages: [],
+        followupMessages: []
+      })
+
+      const message = {
+        key: '0',
+        value: prepareMessageValue,
+        topic: topicName
+      }
+
+      // Act
+      try {
+        await allTransferHandlers.positions(null, [message])
+        test.ok(BatchPositionModel.startDbTransaction.notCalled, 'startDbTransaction should not be called')
+        test.ok(BinProcessor.processBins.notCalled, 'processBins should not be called')
+        test.ok(Kafka.proceed.notCalled, 'kafkaProceed should not be called')
         test.end()
       } catch (err) {
         Logger.info(err)
