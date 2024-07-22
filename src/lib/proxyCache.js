@@ -65,7 +65,9 @@ const deriveCurrencyId = async (fspName, currency) => {
         currency,
         Enum.Accounts.LedgerAccountType.POSITION
       )
-      return participantCurrency.participantCurrencyId
+      if (participantCurrency) {
+        return participantCurrency.participantCurrencyId
+      }
     }
   }
   return null
