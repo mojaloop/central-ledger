@@ -31,7 +31,7 @@ const Config = require('#src/lib/config')
 const ProxyCache = require('#src/lib/proxyCache')
 const Db = require('@mojaloop/database-lib').Db
 const Cache = require('#src/lib/cache')
-const Producer = require('@mojaloop/central-services-stream').Util.Producer
+const { Producer, Consumer } = require('@mojaloop/central-services-stream').Util
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantHelper = require('#test/integration/helpers/participant')
@@ -58,6 +58,7 @@ const SettlementModelCached = require('#src/models/settlement/settlementModelCac
 const Handlers = {
   index: require('#src/handlers/register'),
   positions: require('#src/handlers/positions/handler'),
+  positionsBatch: require('#src/handlers/positions/handlerBatch'),
   transfers: require('#src/handlers/transfers/handler'),
   timeouts: require('#src/handlers/timeouts/handler')
 }
@@ -984,8 +985,14 @@ Test('Handlers test', async handlersTest => {
       Enum.Kafka.Config.PRODUCER,
       TransferEventType.TRANSFER.toUpperCase(),
       TransferEventType.FULFIL.toUpperCase())
+    const positionConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventType.POSITION.toUpperCase())
     prepareConfig.logger = Logger
     fulfilConfig.logger = Logger
+    positionConfig.logger = Logger
 
     await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
@@ -1028,14 +1035,14 @@ Test('Handlers test', async handlersTest => {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+               `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
             )
           }
           totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
             payer: tdTest.payer,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
-                totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+                 totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
             ) + tdTest.transferPayload.amount.amount
           }
         }
@@ -1400,14 +1407,14 @@ Test('Handlers test', async handlersTest => {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+               `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
             )
           }
           totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
             payer: tdTest.payer,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
-                totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+                 totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
             ) + tdTest.transferPayload.amount.amount
           }
         }
@@ -1456,14 +1463,14 @@ Test('Handlers test', async handlersTest => {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+               `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
             )
           }
           totalTransferAmounts[tdTest.payee.participantCurrencyId] = {
             payee: tdTest.payee,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payee.participantCurrencyId] &&
-                totalTransferAmounts[tdTest.payee.participantCurrencyId].totalTransferAmount) || 0
+                 totalTransferAmounts[tdTest.payee.participantCurrencyId].totalTransferAmount) || 0
             ) - tdTest.transferPayload.amount.amount
           }
         }
@@ -1517,14 +1524,14 @@ Test('Handlers test', async handlersTest => {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+               `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
             )
           }
           totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
             payer: tdTest.payer,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
-                totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+                 totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
             ) + tdTest.transferPayload.amount.amount
           }
         }
@@ -1573,14 +1580,14 @@ Test('Handlers test', async handlersTest => {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+               `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
             )
           }
           totalTransferAmounts[tdTest.payee.participantCurrencyId] = {
             payee: tdTest.payee,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payee.participantCurrencyId] &&
-                totalTransferAmounts[tdTest.payee.participantCurrencyId].totalTransferAmount) || 0
+                 totalTransferAmounts[tdTest.payee.participantCurrencyId].totalTransferAmount) || 0
             ) - tdTest.transferPayload.amount.amount
           }
         }
@@ -1687,6 +1694,63 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
+    await transferPositionPrepare.test('skip processing of prepare/commit message if messageKey is 0', async (test) => {
+      await Handlers.positionsBatch.registerPositionHandler()
+      const topicNameOverride = 'topic-transfer-position-batch'
+      const message = {
+        value: {
+          content: {},
+          from: 'payerFsp',
+          to: 'testFxp',
+          id: randomUUID(),
+          metadata: {
+            event: {
+              id: randomUUID(),
+              type: 'position',
+              action: 'prepare',
+              createdAt: new Date(),
+              state: { status: 'success', code: 0 }
+            },
+            type: 'application/json'
+          }
+        }
+      }
+      const params = {
+        message,
+        producer: Producer,
+        kafkaTopic: topicNameOverride,
+        consumer: Consumer,
+        decodedPayload: message.value,
+        span: null
+      }
+      const opts = {
+        consumerCommit: false,
+        eventDetail: { functionality: 'position', action: 'prepare' },
+        fromSwitch: false,
+        toDestination: 'payerFsp',
+        messageKey: '0',
+        topicNameOverride
+      }
+      await Utility.proceed(Config.KAFKA_CONFIG, params, opts)
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      let notificationPrepareFiltered = []
+      try {
+        const notificationPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'perpare'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+        notificationPrepareFiltered = notificationPrepare.filter((notification) => notification.to !== 'Hub')
+        test.notOk('Error should be thrown')
+      } catch (err) {
+        test.equal(notificationPrepareFiltered.length, 0, 'Notification Messages not received for transfer with accountId 0')
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
     await transferPositionPrepare.test('timeout should', async timeoutTest => {
       const td = await prepareTestData(testData)
 
@@ -1729,14 +1793,14 @@ Test('Handlers test', async handlersTest => {
               if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
               throw ErrorHandler.Factory.createFSPIOPError(
                 ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-                `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+                 `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
               )
             }
             totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
               payer: tdTest.payer,
               totalTransferAmount: (
                 (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
-                  totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+                   totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
               ) + tdTest.transferPayload.amount.amount
             }
           }
@@ -1837,9 +1901,13 @@ Test('Handlers test', async handlersTest => {
       await Db.disconnect()
       assert.pass('database connection closed')
       await testConsumer.destroy() // this disconnects the consumers
-
-      await Producer.disconnect()
       await ProxyCache.disconnect()
+      await Producer.disconnect()
+      // Disconnect all consumers
+      await Promise.all(Consumer.getListOfTopics().map(async (topic) => {
+        Logger.info(`Disconnecting consumer for topic: ${topic}`)
+        return Consumer.getConsumer(topic).disconnect()
+      }))
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10

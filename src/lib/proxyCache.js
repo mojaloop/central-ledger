@@ -1,24 +1,38 @@
 'use strict'
-const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
-const Config = require('./config.js')
+const { createProxyCache, STORAGE_TYPES } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 const ParticipantService = require('../../src/domain/participant')
+const Config = require('./config.js')
 
 let proxyCache
 
+const init = async () => {
+  // enforce lazy connection for redis
+  const proxyConfig =
+    Config.PROXY_CACHE_CONFIG.type === STORAGE_TYPES.redis
+      ? { ...Config.PROXY_CACHE_CONFIG.proxyConfig, lazyConnect: true }
+      : Config.PROXY_CACHE_CONFIG.proxyConfig
+
+  proxyCache = Object.freeze(
+    createProxyCache(Config.PROXY_CACHE_CONFIG.type, proxyConfig)
+  )
+}
+
 const connect = async () => {
-  return getCache().connect()
+  return !proxyCache?.isConnected && getCache().connect()
 }
 
 const disconnect = async () => {
   return proxyCache?.isConnected && proxyCache.disconnect()
 }
 
+const reset = async () => {
+  await disconnect()
+  proxyCache = null
+}
+
 const getCache = () => {
   if (!proxyCache) {
-    proxyCache = Object.freeze(createProxyCache(
-      Config.PROXY_CACHE_CONFIG.type,
-      Config.PROXY_CACHE_CONFIG.proxyConfig
-    ))
+    init()
   }
   return proxyCache
 }
@@ -40,6 +54,7 @@ const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
 }
 
 module.exports = {
+  reset, // for testing
   connect,
   disconnect,
   getCache,

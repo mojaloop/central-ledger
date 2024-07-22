@@ -30,8 +30,8 @@
 'use strict'
 
 /**
- * @module src/handlers/positions
- */
+  * @module src/handlers/positions
+  */
 
 const Logger = require('@mojaloop/central-services-logger')
 const EventSdk = require('@mojaloop/event-sdk')
@@ -52,16 +52,16 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const consumerCommit = true
 
 /**
- * @function positions
- *
- * @async
- * @description This is the consumer callback function that gets registered to a topic. This then gets a list of messages.
- *
- * @param {error} error - error thrown if something fails within Kafka
- * @param {array} messages - a list of messages to consume for the relevant topic
- *
- * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
- */
+  * @function positions
+  *
+  * @async
+  * @description This is the consumer callback function that gets registered to a topic. This then gets a list of messages.
+  *
+  * @param {error} error - error thrown if something fails within Kafka
+  * @param {array} messages - a list of messages to consume for the relevant topic
+  *
+  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+  */
 
 const positions = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
@@ -104,9 +104,20 @@ const positions = async (error, messages) => {
       binId
     })
 
+    const accountID = message.key.toString()
+
+    /**
+      * Interscheme accounting rule:
+      *  - If the creditor and debtor are represented by the same proxy, the message key will be 0.
+      *    In such cases, we skip position changes.
+      */
+    if (accountID === '0') {
+      histTimerEnd({ success: true })
+      return span.finish()
+    }
+
     // Assign message to account-bin by accountID and child action-bin by action
     // (References to the messages to be stored in bins, no duplication of messages)
-    const accountID = message.key.toString()
     const action = message.value.metadata.event.action
     const accountBin = bins[accountID] || (bins[accountID] = {})
     const actionBin = accountBin[action] || (accountBin[action] = [])
@@ -129,54 +140,56 @@ const positions = async (error, messages) => {
     return span.audit(message, EventSdk.AuditEventAction.start)
   }))
 
-  // Start DB Transaction
-  const trx = await BatchPositionModel.startDbTransaction()
+  // Start DB Transaction if there are any bins to process
+  const trx = !!Object.keys(bins).length && await BatchPositionModel.startDbTransaction()
 
   try {
-    // Call Bin Processor with the list of account-bins and trx
-    const result = await BinProcessor.processBins(bins, trx)
+    if (trx) {
+      // Call Bin Processor with the list of account-bins and trx
+      const result = await BinProcessor.processBins(bins, trx)
 
-    // If Bin Processor processed bins successfully, commit Kafka offset
-    // Commit the offset of last message in the array
-    for (const message of Object.values(lastPerPartition)) {
-      const params = { message, kafkaTopic: message.topic, consumer: Consumer }
-      // We are using Kafka.proceed() to just commit the offset of the last message in the array
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
-    }
+      // If Bin Processor processed bins successfully, commit Kafka offset
+      // Commit the offset of last message in the array
+      for (const message of Object.values(lastPerPartition)) {
+        const params = { message, kafkaTopic: message.topic, consumer: Consumer }
+        // We are using Kafka.proceed() to just commit the offset of the last message in the array
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
+      }
 
-    // Commit DB transaction
-    await trx.commit()
+      // Commit DB transaction
+      await trx.commit()
 
-    // Loop through results and produce notification messages and audit messages
-    await Promise.all(result.notifyMessages.map(item => {
-      // Produce notification message and audit message
-      const action = item.binItem.message?.value.metadata.event.action
-      const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
-      return Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
-    }).concat(
-      // Loop through followup messages and produce position messages for further processing of the transfer
-      result.followupMessages.map(item => {
-        // Produce position message and audit message
+      // Loop through results and produce notification messages and audit messages
+      await Promise.all(result.notifyMessages.map(item => {
+        // Produce notification message and audit message
         const action = item.binItem.message?.value.metadata.event.action
         const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
-        return Kafka.produceGeneralMessage(
-          Config.KAFKA_CONFIG,
-          Producer,
-          Enum.Events.Event.Type.POSITION,
-          action,
-          item.message,
-          eventStatus,
-          item.messageKey,
-          item.binItem.span,
-          Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
-        )
-      })
-    ))
+        return Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
+      }).concat(
+        // Loop through followup messages and produce position messages for further processing of the transfer
+        result.followupMessages.map(item => {
+          // Produce position message and audit message
+          const action = item.binItem.message?.value.metadata.event.action
+          const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
+          return Kafka.produceGeneralMessage(
+            Config.KAFKA_CONFIG,
+            Producer,
+            Enum.Events.Event.Type.POSITION,
+            action,
+            item.message,
+            eventStatus,
+            item.messageKey,
+            item.binItem.span,
+            Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+          )
+        })
+      ))
+    }
     histTimerEnd({ success: true })
   } catch (err) {
     // If Bin Processor returns failure
     // -  Rollback DB transaction
-    await trx.rollback()
+    await trx?.rollback()
 
     // - Audit Error for each message
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -199,24 +212,24 @@ const positions = async (error, messages) => {
 }
 
 /**
- * @function registerPositionHandler
- *
- * @async
- * @description Registers the handler for position topic. Gets Kafka config from default.json
- *
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
+  * @function registerPositionHandler
+  *
+  * @async
+  * @description Registers the handler for position topic. Gets Kafka config from default.json
+  *
+  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+  */
 const registerPositionHandler = async () => {
   try {
     await SettlementModelCached.initialize()
     // If there is no mapping, use default transformGeneralTopicName
     const topicName =
-      Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE ||
-      Kafka.transformGeneralTopicName(
-        Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
-        Enum.Events.Event.Type.POSITION,
-        Enum.Events.Event.Action.PREPARE
-      )
+       Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE ||
+       Kafka.transformGeneralTopicName(
+         Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+         Enum.Events.Event.Type.POSITION,
+         Enum.Events.Event.Action.PREPARE
+       )
     const positionHandler = {
       command: positions,
       topicName,
@@ -233,13 +246,13 @@ const registerPositionHandler = async () => {
 }
 
 /**
- * @function RegisterAllHandlers
- *
- * @async
- * @description Registers all handlers in positions
- *
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
+  * @function RegisterAllHandlers
+  *
+  * @async
+  * @description Registers all handlers in positions
+  *
+  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+  */
 const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()
