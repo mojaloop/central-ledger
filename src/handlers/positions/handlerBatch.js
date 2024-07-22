@@ -30,8 +30,8 @@
 'use strict'
 
 /**
-  * @module src/handlers/positions
-  */
+ * @module src/handlers/positions
+ */
 
 const Logger = require('@mojaloop/central-services-logger')
 const EventSdk = require('@mojaloop/event-sdk')
@@ -224,12 +224,12 @@ const registerPositionHandler = async () => {
     await SettlementModelCached.initialize()
     // If there is no mapping, use default transformGeneralTopicName
     const topicName =
-       Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE ||
-       Kafka.transformGeneralTopicName(
-         Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
-         Enum.Events.Event.Type.POSITION,
-         Enum.Events.Event.Action.PREPARE
-       )
+      Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE ||
+      Kafka.transformGeneralTopicName(
+        Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+        Enum.Events.Event.Type.POSITION,
+        Enum.Events.Event.Action.PREPARE
+      )
     const positionHandler = {
       command: positions,
       topicName,
