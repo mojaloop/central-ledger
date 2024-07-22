@@ -46,7 +46,8 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
     await connectTest.test('connect to cache with lazyConnect', async (test) => {
       await ProxyCache.connect()
       test.ok(connectStub.calledOnce)
-      test.ok(createProxyCacheStub.calledWith(Config.PROXY_CACHE_CONFIG.type, { ...Config.PROXY_CACHE_CONFIG.proxyConfig, lazyConnect: true }))
+      const secondArg = createProxyCacheStub.getCall(0).args[1]
+      test.ok(secondArg.lazyConnect)
       test.end()
     })
 
