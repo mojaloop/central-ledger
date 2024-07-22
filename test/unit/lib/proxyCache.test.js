@@ -2,8 +2,9 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const ParticipantService = require('../../../src/domain/participant')
 const Proxyquire = require('proxyquire')
+const ParticipantService = require('../../../src/domain/participant')
+const Config = require('../../../src/lib/config')
 
 const connectStub = Sinon.stub()
 const disconnectStub = Sinon.stub()
@@ -14,13 +15,14 @@ lookupProxyByDfspIdStub.withArgs('existingDfspId3').resolves('proxyId1')
 lookupProxyByDfspIdStub.withArgs('nonExistingDfspId1').resolves(null)
 lookupProxyByDfspIdStub.withArgs('nonExistingDfspId2').resolves(null)
 
+const createProxyCacheStub = Sinon.stub().returns({
+  connect: connectStub,
+  disconnect: disconnectStub,
+  lookupProxyByDfspId: lookupProxyByDfspIdStub
+})
 const ProxyCache = Proxyquire('../../../src/lib/proxyCache', {
   '@mojaloop/inter-scheme-proxy-cache-lib': {
-    createProxyCache: Sinon.stub().returns({
-      connect: connectStub,
-      disconnect: disconnectStub,
-      lookupProxyByDfspId: lookupProxyByDfspIdStub
-    })
+    createProxyCache: createProxyCacheStub
   }
 })
 
@@ -29,6 +31,8 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
 
   proxyCacheTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(Config.PROXY_CACHE_CONFIG, 'type')
+    sandbox.stub(Config.PROXY_CACHE_CONFIG, 'proxyConfig')
     sandbox.stub(ParticipantService)
     t.end()
   })
@@ -39,9 +43,20 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
   })
 
   await proxyCacheTest.test('connect', async (connectTest) => {
-    await connectTest.test('connect to cache', async (test) => {
+    await connectTest.test('connect to cache with lazyConnect', async (test) => {
       await ProxyCache.connect()
-      Sinon.assert.calledOnce(connectStub)
+      test.ok(connectStub.calledOnce)
+      test.ok(createProxyCacheStub.calledWith(Config.PROXY_CACHE_CONFIG.type, { ...Config.PROXY_CACHE_CONFIG.proxyConfig, lazyConnect: true }))
+      test.end()
+    })
+
+    await connectTest.test('connect to cache with default config if not redis storage type', async (test) => {
+      await ProxyCache.disconnect()
+      connectStub.resetHistory()
+      Config.PROXY_CACHE_CONFIG.type = 'mysql'
+      await ProxyCache.connect()
+      test.ok(connectStub.calledOnce)
+      test.ok(createProxyCacheStub.calledWith(Config.PROXY_CACHE_CONFIG.type, Config.PROXY_CACHE_CONFIG.proxyConfig))
       test.end()
     })
 

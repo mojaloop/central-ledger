@@ -1,7 +1,7 @@
 'use strict'
 const { createProxyCache, STORAGE_TYPES } = require('@mojaloop/inter-scheme-proxy-cache-lib')
-const Config = require('./config.js')
 const ParticipantService = require('../../src/domain/participant')
+const Config = require('./config.js')
 
 let proxyCache
 
@@ -22,7 +22,9 @@ const connect = async () => {
 }
 
 const disconnect = async () => {
-  return proxyCache?.isConnected && proxyCache.disconnect()
+  // return proxyCache?.isConnected && proxyCache.disconnect()
+  proxyCache?.isConnected && await proxyCache.disconnect()
+  proxyCache = null
 }
 
 const getCache = () => {
