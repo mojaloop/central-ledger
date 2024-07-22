@@ -22,7 +22,7 @@ const connect = async () => {
 }
 
 const disconnect = async () => {
-  proxyCache?.isConnected && await proxyCache.disconnect()
+  return proxyCache?.isConnected && proxyCache.disconnect()
 }
 
 const reset = async () => {
