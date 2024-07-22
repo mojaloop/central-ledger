@@ -1901,9 +1901,13 @@ Test('Handlers test', async handlersTest => {
       await Db.disconnect()
       assert.pass('database connection closed')
       await testConsumer.destroy() // this disconnects the consumers
-
-      await Producer.disconnect()
       await ProxyCache.disconnect()
+      await Producer.disconnect()
+      // Disconnect all consumers
+      await Promise.all(Consumer.getListOfTopics().map(async (topic) => {
+        Logger.info(`Disconnecting consumer for topic: ${topic}`)
+        return Consumer.getConsumer(topic).disconnect()
+      }))
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10

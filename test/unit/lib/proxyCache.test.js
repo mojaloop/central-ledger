@@ -52,7 +52,7 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
     })
 
     await connectTest.test('connect to cache with default config if not redis storage type', async (test) => {
-      await ProxyCache.disconnect()
+      await ProxyCache.reset()
       connectStub.resetHistory()
       createProxyCacheStub.resetHistory()
       Config.PROXY_CACHE_CONFIG.type = 'mysql'

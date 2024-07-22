@@ -23,6 +23,10 @@ const connect = async () => {
 
 const disconnect = async () => {
   proxyCache?.isConnected && await proxyCache.disconnect()
+}
+
+const reset = async () => {
+  await disconnect()
   proxyCache = null
 }
 
@@ -50,6 +54,7 @@ const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
 }
 
 module.exports = {
+  reset, // for testing
   connect,
   disconnect,
   getCache,
