@@ -49,10 +49,33 @@ const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
   return debtorProxyId && creditorProxyId ? debtorProxyId === creditorProxyId : false
 }
 
+const deriveCurrencyId = async (fspName, currency) => {
+  const proxyLookupResult = await getFSPProxy(fspName)
+  if (proxyLookupResult.inScheme) {
+    const participantCurrency = await ParticipantService.getAccountByNameAndCurrency(
+      fspName,
+      currency,
+      Enum.Accounts.LedgerAccountType.POSITION
+    )
+    return participantCurrency.participantCurrencyId
+  } else {
+    if (proxyLookupResult.proxyId) {
+      const participantCurrency = await ParticipantService.getAccountByNameAndCurrency(
+        proxyLookupResult.proxyId,
+        currency,
+        Enum.Accounts.LedgerAccountType.POSITION
+      )
+      return participantCurrency.participantCurrencyId
+    }
+  }
+  return null
+}
+
 module.exports = {
   connect,
   disconnect,
   getCache,
   getFSPProxy,
+  deriveCurrencyId,
   checkSameCreditorDebtorProxy
 }
