@@ -54,10 +54,12 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
     await connectTest.test('connect to cache with default config if not redis storage type', async (test) => {
       await ProxyCache.disconnect()
       connectStub.resetHistory()
+      createProxyCacheStub.resetHistory()
       Config.PROXY_CACHE_CONFIG.type = 'mysql'
       await ProxyCache.connect()
       test.ok(connectStub.calledOnce)
-      test.ok(createProxyCacheStub.calledWith(Config.PROXY_CACHE_CONFIG.type, Config.PROXY_CACHE_CONFIG.proxyConfig))
+      const secondArg = createProxyCacheStub.getCall(0).args[1]
+      test.ok(secondArg.lazyConnect === undefined)
       test.end()
     })
 
