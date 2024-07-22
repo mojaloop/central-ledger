@@ -105,9 +105,6 @@ services:
       - REDIS_TLS_ENABLED=no
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     ports:
       - "6379:6379"
     networks:
@@ -237,16 +234,3 @@ services:
       - cl-mojaloop-net
     environment:
       - KAFKA_BROKERS=kafka:29092
-
-  redis:
-    image: redis:6.2.4-alpine
-    restart: "unless-stopped"
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-      - REDIS_PORT=6379
-      - REDIS_REPLICATION_MODE=master
-      - REDIS_TLS_ENABLED=no
-    ports:
-      - "6379:6379"
-    networks:
-      - cl-mojaloop-net
