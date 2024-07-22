@@ -22,7 +22,6 @@ const connect = async () => {
 }
 
 const disconnect = async () => {
-  // return proxyCache?.isConnected && proxyCache.disconnect()
   proxyCache?.isConnected && await proxyCache.disconnect()
   proxyCache = null
 }
