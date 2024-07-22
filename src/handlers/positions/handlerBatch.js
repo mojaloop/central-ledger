@@ -52,16 +52,16 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const consumerCommit = true
 
 /**
-  * @function positions
-  *
-  * @async
-  * @description This is the consumer callback function that gets registered to a topic. This then gets a list of messages.
-  *
-  * @param {error} error - error thrown if something fails within Kafka
-  * @param {array} messages - a list of messages to consume for the relevant topic
-  *
-  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
-  */
+ * @function positions
+ *
+ * @async
+ * @description This is the consumer callback function that gets registered to a topic. This then gets a list of messages.
+ *
+ * @param {error} error - error thrown if something fails within Kafka
+ * @param {array} messages - a list of messages to consume for the relevant topic
+ *
+ * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ */
 
 const positions = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
@@ -107,10 +107,10 @@ const positions = async (error, messages) => {
     const accountID = message.key.toString()
 
     /**
-      * Interscheme accounting rule:
-      *  - If the creditor and debtor are represented by the same proxy, the message key will be 0.
-      *    In such cases, we skip position changes.
-      */
+     * Interscheme accounting rule:
+     *  - If the creditor and debtor are represented by the same proxy, the message key will be 0.
+     *    In such cases, we skip position changes.
+     */
     if (accountID === '0') {
       histTimerEnd({ success: true })
       return span.finish()
@@ -212,13 +212,13 @@ const positions = async (error, messages) => {
 }
 
 /**
-  * @function registerPositionHandler
-  *
-  * @async
-  * @description Registers the handler for position topic. Gets Kafka config from default.json
-  *
-  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
-  */
+ * @function registerPositionHandler
+ *
+ * @async
+ * @description Registers the handler for position topic. Gets Kafka config from default.json
+ *
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const registerPositionHandler = async () => {
   try {
     await SettlementModelCached.initialize()
@@ -246,13 +246,13 @@ const registerPositionHandler = async () => {
 }
 
 /**
-  * @function RegisterAllHandlers
-  *
-  * @async
-  * @description Registers all handlers in positions
-  *
-  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
-  */
+ * @function RegisterAllHandlers
+ *
+ * @async
+ * @description Registers all handlers in positions
+ *
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()

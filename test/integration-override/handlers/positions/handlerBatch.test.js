@@ -1035,14 +1035,14 @@ Test('Handlers test', async handlersTest => {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-               `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
             )
           }
           totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
             payer: tdTest.payer,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
-                 totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+                totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
             ) + tdTest.transferPayload.amount.amount
           }
         }
@@ -1407,14 +1407,14 @@ Test('Handlers test', async handlersTest => {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-               `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
             )
           }
           totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
             payer: tdTest.payer,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
-                 totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+                totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
             ) + tdTest.transferPayload.amount.amount
           }
         }
@@ -1463,14 +1463,14 @@ Test('Handlers test', async handlersTest => {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-               `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
             )
           }
           totalTransferAmounts[tdTest.payee.participantCurrencyId] = {
             payee: tdTest.payee,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payee.participantCurrencyId] &&
-                 totalTransferAmounts[tdTest.payee.participantCurrencyId].totalTransferAmount) || 0
+                totalTransferAmounts[tdTest.payee.participantCurrencyId].totalTransferAmount) || 0
             ) - tdTest.transferPayload.amount.amount
           }
         }
@@ -1524,14 +1524,14 @@ Test('Handlers test', async handlersTest => {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-               `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
             )
           }
           totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
             payer: tdTest.payer,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
-                 totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+                totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
             ) + tdTest.transferPayload.amount.amount
           }
         }
@@ -1580,14 +1580,14 @@ Test('Handlers test', async handlersTest => {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-               `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+              `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
             )
           }
           totalTransferAmounts[tdTest.payee.participantCurrencyId] = {
             payee: tdTest.payee,
             totalTransferAmount: (
               (totalTransferAmounts[tdTest.payee.participantCurrencyId] &&
-                 totalTransferAmounts[tdTest.payee.participantCurrencyId].totalTransferAmount) || 0
+                totalTransferAmounts[tdTest.payee.participantCurrencyId].totalTransferAmount) || 0
             ) - tdTest.transferPayload.amount.amount
           }
         }
@@ -1793,14 +1793,14 @@ Test('Handlers test', async handlersTest => {
               if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
               throw ErrorHandler.Factory.createFSPIOPError(
                 ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-                 `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
+                `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail. TRANSFER STATE: ${transfer?.transferState}`
               )
             }
             totalTransferAmounts[tdTest.payer.participantCurrencyId] = {
               payer: tdTest.payer,
               totalTransferAmount: (
                 (totalTransferAmounts[tdTest.payer.participantCurrencyId] &&
-                   totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
+                  totalTransferAmounts[tdTest.payer.participantCurrencyId].totalTransferAmount) || 0
               ) + tdTest.transferPayload.amount.amount
             }
           }
