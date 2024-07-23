@@ -152,7 +152,7 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
   const isSameProxy = proxyEnabled && await ProxyCache.checkSameCreditorDebtorProxy(debtorFsp, creditorFsp)
 
   if (isSameProxy) {
-    messageKey = 0
+    messageKey = '0'
   } else {
     const participantName = cyrilResult.participantName
     const account = await Participant.getAccountByNameAndCurrency(
@@ -257,7 +257,7 @@ const prepare = async (error, messages) => {
       producer: Producer
     }
 
-    if (isForwarded) {
+    if (proxyEnabled && isForwarded) {
       const transfer = await TransferService.getById(ID)
       if (!transfer) {
         const eventDetail = {
@@ -311,38 +311,40 @@ const prepare = async (error, messages) => {
       return true
     }
 
-    // The initiatingFsp isn't always the debtor participant in all scenarios of /fxTransfers.
-    // It is always the debtor in the current implementation of /fxTransfers.
-    // The naming will have to be revisited after /fxTransfers implements receive type /fxTransfers.
-    const [debtorFsp, creditorFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
-    const [debtorProxyOrParticipantId, creditorProxyOrParticipantId] = await Promise.all([
-      ProxyCache.getFSPProxy(debtorFsp),
-      ProxyCache.getFSPProxy(creditorFsp)
-    ])
+    if (proxyEnabled) {
+      // The initiatingFsp isn't always the debtor participant in all scenarios of /fxTransfers.
+      // It is always the debtor in the current implementation of /fxTransfers.
+      // The naming will have to be revisited after /fxTransfers implements receive type /fxTransfers.
+      const [debtorFsp, creditorFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
+      const [debtorProxyOrParticipantId, creditorProxyOrParticipantId] = await Promise.all([
+        ProxyCache.getFSPProxy(debtorFsp),
+        ProxyCache.getFSPProxy(creditorFsp)
+      ])
 
-    if (isFx) {
-      payload.initiatingFsp = debtorProxyOrParticipantId.inScheme ? payload.initiatingFsp : debtorProxyOrParticipantId.proxyId
-      payload.counterPartyFsp = creditorProxyOrParticipantId.inScheme ? payload.counterPartyFsp : creditorProxyOrParticipantId.proxyId
-    } else {
-      payload.payerFsp = debtorProxyOrParticipantId.inScheme ? payload.payerFsp : debtorProxyOrParticipantId.proxyId
-      payload.payeeFsp = creditorProxyOrParticipantId.inScheme ? payload.payeeFsp : creditorProxyOrParticipantId.proxyId
-    }
+      if (isFx) {
+        payload.initiatingFsp = debtorProxyOrParticipantId.inScheme ? payload.initiatingFsp : debtorProxyOrParticipantId.proxyId
+        payload.counterPartyFsp = creditorProxyOrParticipantId.inScheme ? payload.counterPartyFsp : creditorProxyOrParticipantId.proxyId
+      } else {
+        payload.payerFsp = debtorProxyOrParticipantId.inScheme ? payload.payerFsp : debtorProxyOrParticipantId.proxyId
+        payload.payeeFsp = creditorProxyOrParticipantId.inScheme ? payload.payeeFsp : creditorProxyOrParticipantId.proxyId
+      }
 
-    // If either debtor participant or creditor participant aren't in the scheme and have no proxy representative, then throw an error.
-    if ((isFx && (payload.initiatingFsp === null || payload.counterPartyFsp === null)) ||
-        (!isFx && (payload.payerFsp === null || payload.payeeFsp === null))) {
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-        `Payer proxy or payee proxy not found: payerFsp: ${payload.payerFsp} payeeFsp: ${payload.payeeFsp}`
-      ).toApiErrorObject(Config.ERROR_HANDLING)
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
-        consumerCommit,
-        fspiopError,
-        eventDetail: { functionality, action },
-        fromSwitch,
-        hubName: Config.HUB_NAME
-      })
-      throw fspiopError
+      // If either debtor participant or creditor participant aren't in the scheme and have no proxy representative, then throw an error.
+      if ((isFx && (payload.initiatingFsp === null || payload.counterPartyFsp === null)) ||
+          (!isFx && (payload.payerFsp === null || payload.payeeFsp === null))) {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+          `Payer proxy or payee proxy not found: payerFsp: ${payload.payerFsp} payeeFsp: ${payload.payeeFsp}`
+        ).toApiErrorObject(Config.ERROR_HANDLING)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+          consumerCommit,
+          fspiopError,
+          eventDetail: { functionality, action },
+          fromSwitch,
+          hubName: Config.HUB_NAME
+        })
+        throw fspiopError
+      }
     }
 
     const duplication = await checkDuplication({ payload, isFx, ID, location })

@@ -415,6 +415,7 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
     Kafka.produceGeneralMessage.returns(Promise.resolve())
+    Config.PROXY_CACHE_CONFIG.enabled = true
     getFSPProxyStub = sandbox.stub(ProxyCache, 'getFSPProxy')
     checkSameCreditorDebtorProxyStub = sandbox.stub(ProxyCache, 'checkSameCreditorDebtorProxy')
     getFSPProxyStub.withArgs(transfer.payerFsp).returns({
@@ -1005,11 +1006,6 @@ Test('Transfer handler', transferHandlerTest => {
         proxyId: 'payeeProxy'
       })
 
-      const expectedTransfer = {
-        ...transfer,
-        payerFsp: 'payerProxy',
-        payeeFsp: 'payeeProxy'
-      }
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
@@ -1019,17 +1015,66 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
       TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
       fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(null))
-      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, expectedTransfer).returns(Promise.resolve({
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages[0])
-      console.log(Validator.validatePrepare.getCall(0))
       test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
         ...transfer,
         payerFsp: 'payerProxy',
         payeeFsp: 'payeeProxy'
       })
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].messageKey, '3')
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.equal(result, true)
+      test.ok(Validator.validatePrepare.called)
+      test.ok(Comparators.duplicateCheckComparator.called)
+      test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
+        ...transfer,
+        payerFsp: 'payerProxy',
+        payeeFsp: 'payeeProxy'
+      })
+      test.end()
+    })
+
+    prepareProxyTest.test('produce message with key=0 if both proxies for debtor and creditor are the same in /transfers msg', async (test) => {
+      getFSPProxyStub.withArgs(transfer.payerFsp).returns({
+        inScheme: false,
+        proxyId: 'sameProxy'
+      })
+      getFSPProxyStub.withArgs(transfer.payeeFsp).returns({
+        inScheme: false,
+        proxyId: 'sameProxy'
+      })
+      checkSameCreditorDebtorProxyStub.resolves(true)
+
+      const localMessages = MainUtil.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.prepare.returns(Promise.resolve(true))
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, localMessages[0])
+      test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
+        ...transfer,
+        payerFsp: 'sameProxy',
+        payeeFsp: 'sameProxy'
+      })
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
       test.equal(result, true)
       test.end()
     })
@@ -1057,6 +1102,7 @@ Test('Transfer handler', transferHandlerTest => {
       const result = await allTransferHandlers.prepare(null, localMessages)
       const kafkaCallOne = Kafka.proceed.getCall(0)
 
+      test.equal(kafkaCallOne.args[2].messageKey, '3')
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
       test.equal(result, true)
@@ -1067,6 +1113,46 @@ Test('Transfer handler', transferHandlerTest => {
         ...fxTransfer,
         initiatingFsp: 'initiatingFspProxy',
         counterPartyFsp: 'counterPartyFspProxy'
+      })
+      test.end()
+    })
+
+    prepareProxyTest.test('produce message with key=0 if both proxies for debtor and creditor are the same in /fxTransfers msg', async (test) => {
+      getFSPProxyStub.withArgs(fxTransfer.initiatingFsp).returns({
+        inScheme: false,
+        proxyId: 'sameProxy'
+      })
+      getFSPProxyStub.withArgs(fxTransfer.counterPartyFsp).returns({
+        inScheme: false,
+        proxyId: 'sameProxy'
+      })
+      checkSameCreditorDebtorProxyStub.resolves(true)
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      fxTransferModel.fxTransfer.savePreparedRequest.returns(Promise.resolve(true))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
+      test.equal(result, true)
+
+      test.ok(Validator.validatePrepare.called)
+      test.ok(fxTransferModel.fxTransfer.savePreparedRequest.called)
+      test.ok(Comparators.duplicateCheckComparator.called)
+      test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
+        ...fxTransfer,
+        initiatingFsp: 'sameProxy',
+        counterPartyFsp: 'sameProxy'
       })
       test.end()
     })
