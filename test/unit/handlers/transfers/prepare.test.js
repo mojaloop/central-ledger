@@ -54,7 +54,7 @@ const Config = require('../../../../src/lib/config')
 const fxTransferModel = require('../../../../src/models/fxTransfer')
 const fxDuplicateCheck = require('../../../../src/models/fxTransfer/duplicateCheck')
 const fxTransferStateChange = require('../../../../src/models/fxTransfer/stateChange')
-const ProxyCache = require('#src/lib/proxyCache')
+const ProxyCache = require('../../../../src/lib/proxyCache')
 
 const { Action } = Enum.Events.Event
 
