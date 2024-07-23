@@ -37,6 +37,7 @@ const createRemittanceEntity = require('./createRemittanceEntity')
 const Validator = require('./validator')
 const dto = require('./dto')
 const TransferService = require('#src/domain/transfer/index')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const { Kafka, Comparators } = Util
 const { TransferState } = Enum.Transfers
@@ -47,6 +48,7 @@ const { fspId } = Config.INSTRUMENTATION_METRICS_LABELS
 
 const consumerCommit = true
 const fromSwitch = true
+const proxyEnabled = Config.PROXY_CACHE_CONFIG.enabled
 
 const checkDuplication = async ({ payload, isFx, ID, location }) => {
   const funcName = 'prepare_duplicateCheckComparator'
@@ -140,14 +142,29 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, f
 const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult }) => {
   const cyrilResult = await createRemittanceEntity(isFx)
     .getPositionParticipant(payload, determiningTransferCheckResult)
-  const account = await Participant.getAccountByNameAndCurrency(
-    cyrilResult.participantName,
-    cyrilResult.currencyId,
-    Enum.Accounts.LedgerAccountType.POSITION
-  )
+  let messageKey
+  const [debtorFsp, creditorFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
+  /**
+   * Interscheme accounting rules:
+   *  - If the participant has a proxy representation, the proxy's account should be used for the position change.
+   *  - If the debtor and the creditor DFSPs are represented by the same proxy, no position adjustment is needed.
+   */
+  const isSameProxy = proxyEnabled && await ProxyCache.checkSameCreditorDebtorProxy(debtorFsp, creditorFsp)
+
+  if (isSameProxy) {
+    messageKey = 0
+  } else {
+    const participantName = cyrilResult.participantName
+    const account = await Participant.getAccountByNameAndCurrency(
+      participantName,
+      cyrilResult.currencyId,
+      Enum.Accounts.LedgerAccountType.POSITION
+    )
+    messageKey = account.participantCurrencyId.toString()
+  }
 
   return {
-    messageKey: account.participantCurrencyId.toString(),
+    messageKey,
     cyrilResult
   }
 }
@@ -292,6 +309,40 @@ const prepare = async (error, messages) => {
         )
       }
       return true
+    }
+
+    // The initiatingFsp isn't always the debtor participant in all scenarios of /fxTransfers.
+    // It is always the debtor in the current implementation of /fxTransfers.
+    // The naming will have to be revisited after /fxTransfers implements receive type /fxTransfers.
+    const [debtorFsp, creditorFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
+    const [debtorProxyOrParticipantId, creditorProxyOrParticipantId] = await Promise.all([
+      ProxyCache.getFSPProxy(debtorFsp),
+      ProxyCache.getFSPProxy(creditorFsp)
+    ])
+
+    if (isFx) {
+      payload.initiatingFsp = debtorProxyOrParticipantId.inScheme ? payload.initiatingFsp : debtorProxyOrParticipantId.proxyId
+      payload.counterPartyFsp = creditorProxyOrParticipantId.inScheme ? payload.counterPartyFsp : creditorProxyOrParticipantId.proxyId
+    } else {
+      payload.payerFsp = debtorProxyOrParticipantId.inScheme ? payload.payerFsp : debtorProxyOrParticipantId.proxyId
+      payload.payeeFsp = creditorProxyOrParticipantId.inScheme ? payload.payeeFsp : creditorProxyOrParticipantId.proxyId
+    }
+
+    // If either debtor participant or creditor participant aren't in the scheme and have no proxy representative, then throw an error.
+    if ((isFx && (payload.initiatingFsp === null || payload.counterPartyFsp === null)) ||
+        (!isFx && (payload.payerFsp === null || payload.payeeFsp === null))) {
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+        `Payer proxy or payee proxy not found: payerFsp: ${payload.payerFsp} payeeFsp: ${payload.payeeFsp}`
+      ).toApiErrorObject(Config.ERROR_HANDLING)
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+        consumerCommit,
+        fspiopError,
+        eventDetail: { functionality, action },
+        fromSwitch,
+        hubName: Config.HUB_NAME
+      })
+      throw fspiopError
     }
 
     const duplication = await checkDuplication({ payload, isFx, ID, location })

@@ -316,10 +316,14 @@ const cyrilStub = async (payload) => {
 
 Test('Transfer handler', transferHandlerTest => {
   let sandbox
+  let getProxyCacheStub
+  let getFSPProxyStub
+  let checkSameCreditorDebtorProxyStub
 
   transferHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(ProxyCache, 'getCache').returns({
+    getProxyCacheStub = sandbox.stub(ProxyCache, 'getCache')
+    getProxyCacheStub.returns({
       connect: sandbox.stub(),
       disconnect: sandbox.stub()
     })
@@ -399,8 +403,37 @@ Test('Transfer handler', transferHandlerTest => {
           participantCurrencyId: 1
         }
       }
+      if (args[0] === 'payerProxy' || args[0] === 'initiatingFspProxy') {
+        return {
+          participantCurrencyId: 3
+        }
+      }
+      if (args[0] === 'payeeProxy' || args[0] === 'counterPartyFspProxy') {
+        return {
+          participantCurrencyId: 4
+        }
+      }
     })
     Kafka.produceGeneralMessage.returns(Promise.resolve())
+    getFSPProxyStub = sandbox.stub(ProxyCache, 'getFSPProxy')
+    checkSameCreditorDebtorProxyStub = sandbox.stub(ProxyCache, 'checkSameCreditorDebtorProxy')
+    getFSPProxyStub.withArgs(transfer.payerFsp).returns({
+      inScheme: true,
+      proxyId: null
+    })
+    getFSPProxyStub.withArgs(transfer.payeeFsp).returns({
+      inScheme: true,
+      proxyId: null
+    })
+    getFSPProxyStub.withArgs(fxTransfer.initiatingFsp).returns({
+      inScheme: true,
+      proxyId: null
+    })
+    getFSPProxyStub.withArgs(fxTransfer.counterPartyFsp).returns({
+      inScheme: true,
+      proxyId: null
+    })
+    checkSameCreditorDebtorProxyStub.resolves(false)
     test.end()
   })
 
@@ -928,21 +961,6 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    prepareTest.test('update reserved transfer on forwarded prepare message', async (test) => {
-      await Consumer.createHandler(topicName, config, command)
-      Kafka.transformAccountToTopicName.returns(topicName)
-      Kafka.proceed.returns(true)
-      TransferService.getById.returns(Promise.resolve({ transferState: Enum.Transfers.TransferInternalState.RESERVED }))
-      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
-        hasDuplicateId: false,
-        hasDuplicateHash: false
-      }))
-      const result = await allTransferHandlers.prepare(null, forwardedMessages[0])
-      test.ok(TransferService.forwardedPrepare.called)
-      test.equal(result, true)
-      test.end()
-    })
-
     prepareTest.test('produce error for unexpected state', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
@@ -974,6 +992,220 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     prepareTest.end()
+  })
+
+  transferHandlerTest.test('prepare proxy scenarios should', prepareProxyTest => {
+    prepareProxyTest.test('substitute debtor(payer) and creditor(payee) if not in scheme and found in proxy cache in /transfers msg', async (test) => {
+      getFSPProxyStub.withArgs(transfer.payerFsp).returns({
+        inScheme: false,
+        proxyId: 'payerProxy'
+      })
+      getFSPProxyStub.withArgs(transfer.payeeFsp).returns({
+        inScheme: false,
+        proxyId: 'payeeProxy'
+      })
+
+      const expectedTransfer = {
+        ...transfer,
+        payerFsp: 'payerProxy',
+        payeeFsp: 'payeeProxy'
+      }
+      const localMessages = MainUtil.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.prepare.returns(Promise.resolve(true))
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, expectedTransfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, localMessages[0])
+      console.log(Validator.validatePrepare.getCall(0))
+      test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
+        ...transfer,
+        payerFsp: 'payerProxy',
+        payeeFsp: 'payeeProxy'
+      })
+      test.equal(result, true)
+      test.end()
+    })
+
+    prepareProxyTest.test('substitute debtor(payer) and creditor(payee) if not in scheme and found in proxy cache for /fxTransfers msg', async (test) => {
+      getFSPProxyStub.withArgs(fxTransfer.initiatingFsp).returns({
+        inScheme: false,
+        proxyId: 'initiatingFspProxy'
+      })
+      getFSPProxyStub.withArgs(fxTransfer.counterPartyFsp).returns({
+        inScheme: false,
+        proxyId: 'counterPartyFspProxy'
+      })
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      fxTransferModel.fxTransfer.savePreparedRequest.returns(Promise.resolve(true))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
+      test.equal(result, true)
+      test.ok(Validator.validatePrepare.called)
+      test.ok(fxTransferModel.fxTransfer.savePreparedRequest.called)
+      test.ok(Comparators.duplicateCheckComparator.called)
+      test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
+        ...fxTransfer,
+        initiatingFsp: 'initiatingFspProxy',
+        counterPartyFsp: 'counterPartyFspProxy'
+      })
+      test.end()
+    })
+
+    prepareProxyTest.test('throw error if debtor(payer) if not in scheme and not found in proxy cache in /transfers msg', async (test) => {
+      getFSPProxyStub.withArgs(transfer.payerFsp).returns({
+        inScheme: false,
+        proxyId: null
+      })
+      getFSPProxyStub.withArgs(transfer.payeeFsp).returns({
+        inScheme: false,
+        proxyId: 'payeeProxy'
+      })
+
+      const localMessages = MainUtil.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.prepare.returns(Promise.resolve(true))
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.equal(result, true)
+      test.end()
+    })
+
+    prepareProxyTest.test('throw error if creditor(payee) if not in scheme and not found in proxy cache in /transfers msg', async (test) => {
+      getFSPProxyStub.withArgs(transfer.payerFsp).returns({
+        inScheme: false,
+        proxyId: 'payerProxy'
+      })
+      getFSPProxyStub.withArgs(transfer.payeeFsp).returns({
+        inScheme: false,
+        proxyId: null
+      })
+      const localMessages = MainUtil.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      TransferService.prepare.returns(Promise.resolve(true))
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.PREPARE)
+      test.equal(result, true)
+      test.end()
+    })
+
+    prepareProxyTest.test('throw error if debtor(initiatingFsp) if not in scheme and not found in proxy cache in /fxTransfers msg', async (test) => {
+      getFSPProxyStub.withArgs(fxTransfer.initiatingFsp).returns({
+        inScheme: false,
+        proxyId: null
+      })
+      getFSPProxyStub.withArgs(fxTransfer.counterPartyFsp).returns({
+        inScheme: false,
+        proxyId: 'counterPartyFspProxy'
+      })
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      fxTransferModel.fxTransfer.savePreparedRequest.returns(Promise.resolve(true))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
+      test.equal(result, true)
+      test.end()
+    })
+
+    prepareProxyTest.test('throw error if debtor(counterpartyFsp) if not in scheme and not found in proxy cache in /fxTransfers msg', async (test) => {
+      getFSPProxyStub.withArgs(fxTransfer.initiatingFsp).returns({
+        inScheme: false,
+        proxyId: 'initiatingFspProxy'
+      })
+      getFSPProxyStub.withArgs(fxTransfer.counterPartyFsp).returns({
+        inScheme: false,
+        proxyId: null
+      })
+      const localMessages = MainUtil.clone(fxMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
+      fxTransferModel.fxTransfer.savePreparedRequest.returns(Promise.resolve(true))
+      Comparators.duplicateCheckComparator.returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, localMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.FX_PREPARE)
+      test.equal(result, true)
+      test.end()
+    })
+
+    prepareProxyTest.test('update reserved transfer on forwarded prepare message', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      TransferService.getById.returns(Promise.resolve({ transferState: Enum.Transfers.TransferInternalState.RESERVED }))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+      const result = await allTransferHandlers.prepare(null, forwardedMessages[0])
+      test.ok(TransferService.forwardedPrepare.called)
+      test.equal(result, true)
+      test.end()
+    })
+
+    prepareProxyTest.end()
   })
 
   transferHandlerTest.test('processDuplication', processDuplicationTest => {
