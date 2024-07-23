@@ -139,18 +139,15 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, f
   }
 }
 
-const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult }) => {
+const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult, isSameProxy }) => {
   const cyrilResult = await createRemittanceEntity(isFx)
     .getPositionParticipant(payload, determiningTransferCheckResult)
   let messageKey
-  const [debtorFsp, creditorFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
   /**
    * Interscheme accounting rules:
    *  - If the participant has a proxy representation, the proxy's account should be used for the position change.
    *  - If the debtor and the creditor DFSPs are represented by the same proxy, no position adjustment is needed.
    */
-  const isSameProxy = proxyEnabled && await ProxyCache.checkSameCreditorDebtorProxy(debtorFsp, creditorFsp)
-
   if (isSameProxy) {
     messageKey = '0'
   } else {
@@ -169,12 +166,12 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
   }
 }
 
-const sendPositionPrepareMessage = async ({ isFx, payload, action, params, determiningTransferCheckResult }) => {
+const sendPositionPrepareMessage = async ({ isFx, payload, action, params, determiningTransferCheckResult, isSameProxy }) => {
   const eventDetail = {
     functionality: Type.POSITION,
     action
   }
-  const { messageKey, cyrilResult } = await definePositionParticipant({ payload, isFx, determiningTransferCheckResult })
+  const { messageKey, cyrilResult } = await definePositionParticipant({ payload, isFx, determiningTransferCheckResult, isSameProxy })
 
   params.message.value.content.context = {
     ...params.message.value.content.context,
@@ -311,6 +308,8 @@ const prepare = async (error, messages) => {
       return true
     }
 
+    let isDebtorProxy = false
+    let isSameProxy = false
     if (proxyEnabled) {
       // The initiatingFsp isn't always the debtor participant in all scenarios of /fxTransfers.
       // It is always the debtor in the current implementation of /fxTransfers.
@@ -320,6 +319,8 @@ const prepare = async (error, messages) => {
         ProxyCache.getFSPProxy(debtorFsp),
         ProxyCache.getFSPProxy(creditorFsp)
       ])
+      isSameProxy = await ProxyCache.checkSameCreditorDebtorProxy(debtorFsp, creditorFsp)
+      isDebtorProxy = !debtorProxyOrParticipantId.inScheme && debtorProxyOrParticipantId.proxyId !== null
 
       if (isFx) {
         payload.initiatingFsp = debtorProxyOrParticipantId.inScheme ? payload.initiatingFsp : debtorProxyOrParticipantId.proxyId
@@ -358,7 +359,13 @@ const prepare = async (error, messages) => {
 
     const determiningTransferCheckResult = await createRemittanceEntity(isFx).checkIfDeterminingTransferExists(payload)
 
-    const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers, isFx, determiningTransferCheckResult)
+    const { validationPassed, reasons } = await Validator.validatePrepare(
+      payload,
+      headers,
+      isFx,
+      determiningTransferCheckResult,
+      isDebtorProxy
+    )
     await savePreparedRequest({
       validationPassed, reasons, payload, isFx, functionality, params, location, determiningTransferCheckResult
     })
@@ -384,7 +391,7 @@ const prepare = async (error, messages) => {
     }
 
     logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
-    const success = await sendPositionPrepareMessage({ isFx, payload, action, params, determiningTransferCheckResult })
+    const success = await sendPositionPrepareMessage({ isFx, payload, action, params, determiningTransferCheckResult, isSameProxy })
 
     histTimerEnd({ success, fspId })
     return success

@@ -87,6 +87,14 @@ const testData = {
     name: 'payeeFsp',
     limit: 300
   },
+  proxyAlpha: {
+    name: 'proxyAlpha',
+    limit: 99999
+  },
+  proxyBeta: {
+    name: 'proxyBeta',
+    limit: 99999
+  },
   endpoint: {
     base: 'http://localhost:1080',
     email: 'test@example.com'
@@ -131,6 +139,8 @@ const prepareTestData = async (dataObj) => {
 
     const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
     const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
+    const proxyAlpha = await ParticipantHelper.prepareData(dataObj.proxyAlpha.name, dataObj.amount.currency)
+    const proxyBeta = await ParticipantHelper.prepareData(dataObj.proxyBeta.name, dataObj.amount.currency)
 
     const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.amount.currency,
@@ -140,12 +150,28 @@ const prepareTestData = async (dataObj) => {
       currency: dataObj.amount.currency,
       limit: { value: dataObj.payee.limit }
     })
+    const proxyAlphaLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(proxyAlpha.participant.name, {
+      currency: dataObj.amount.currency,
+      limit: { value: dataObj.proxyAlpha.limit }
+    })
+    const proxyBetaLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(proxyBeta.participant.name, {
+      currency: dataObj.amount.currency,
+      limit: { value: dataObj.proxyBeta.limit }
+    })
     await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
       currency: dataObj.amount.currency,
       amount: 10000
     })
+    await ParticipantFundsInOutHelper.recordFundsIn(proxyAlpha.participant.name, proxyAlpha.participantCurrencyId2, {
+      currency: dataObj.amount.currency,
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(proxyBeta.participant.name, proxyBeta.participantCurrencyId2, {
+      currency: dataObj.amount.currency,
+      amount: 10000
+    })
 
-    for (const name of [payer.participant.name, payee.participant.name]) {
+    for (const name of [payer.participant.name, payee.participant.name, proxyAlpha.participant.name, proxyBeta.participant.name]) {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${dataObj.endpoint.base}/transfers/{{transferId}}`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${dataObj.endpoint.base}/transfers/{{transferId}}/error`)
@@ -306,7 +332,11 @@ const prepareTestData = async (dataObj) => {
       payer,
       payerLimitAndInitialPosition,
       payee,
-      payeeLimitAndInitialPosition
+      payeeLimitAndInitialPosition,
+      proxyAlpha,
+      proxyAlphaLimitAndInitialPosition,
+      proxyBeta,
+      proxyBetaLimitAndInitialPosition
     }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -369,8 +399,8 @@ Test('Handlers test', async handlersTest => {
       await testConsumer.startListening()
       // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
       await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
+      await ProxyCache.connect()
       testConsumer.clearEvents()
-
       test.pass('done')
       test.end()
       registerAllHandlers.end()
@@ -743,6 +773,154 @@ Test('Handlers test', async handlersTest => {
     })
 
     transferFulfil.end()
+  })
+
+  await handlersTest.test('transferProxyPrepare should', async transferPrepare => {
+    await transferPrepare.test('should substitute debtor if not found in scheme and found in proxy cache', async (test) => {
+      const debtor = 'notInSchemeFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAlpha.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      // IMPORTANT: fspiop headers will always be the e2e parties, those are not the ones that will be substituted
+      // Substitute /transfer `payerFsp` with fsp not in scheme
+      td.messageProtocolPrepare.content.payload.payerFsp = debtor
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.proxyAlpha.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with proxy key found')
+        test.equal(positionPrepare[0].value.content.payload.payerFsp, td.proxyAlpha.participant.name, 'Proxy participant substituted')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPrepare.test('should substitute creditor if not found in scheme and found in proxy cache', async (test) => {
+      const creditor = 'notInSchemeFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAlpha.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      // IMPORTANT: fspiop headers will always be the e2e parties, those are not the ones that will be substituted
+      // Substitute /transfer `payerFsp` with fsp not in scheme
+      td.messageProtocolPrepare.content.payload.payeeFsp = creditor
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+        test.equal(positionPrepare[0].value.content.payload.payeeFsp, td.proxyAlpha.participant.name, 'Proxy participant substituted')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPrepare.test('should substitute debtor & creditor if not found in scheme and found in proxy cache', async (test) => {
+      const debtor = 'notInSchemeFspDebtor'
+      const creditor = 'notInSchemeFspCreditor'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAlpha.participant.name)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyBeta.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      // IMPORTANT: fspiop headers will always be the e2e parties, those are not the ones that will be substituted
+      // Substitute /transfer `payerFsp` with fsp not in scheme
+      td.messageProtocolPrepare.content.payload.payerFsp = debtor
+      td.messageProtocolPrepare.content.payload.payeeFsp = creditor
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.proxyAlpha.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+        test.equal(positionPrepare[0].value.content.payload.payerFsp, td.proxyAlpha.participant.name, 'Proxy participant substituted')
+        test.equal(positionPrepare[0].value.content.payload.payeeFsp, td.proxyBeta.participant.name, 'Proxy participant substituted')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferPrepare.test('should produce position message with "0" key if both debtor and creditor are substitute with same proxy', async (test) => {
+      const debtor = 'notInSchemeFspDebtor'
+      const creditor = 'notInSchemeFspCreditor'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAlpha.participant.name)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAlpha.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      // IMPORTANT: fspiop headers will always be the e2e parties, those are not the ones that will be substituted
+      // Substitute /transfer `payerFsp` with fsp not in scheme
+      td.messageProtocolPrepare.content.payload.payerFsp = debtor
+      td.messageProtocolPrepare.content.payload.payeeFsp = creditor
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: '0'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+        test.equal(positionPrepare[0].value.content.payload.payerFsp, td.proxyAlpha.participant.name, 'Proxy participant substituted')
+        test.equal(positionPrepare[0].value.content.payload.payeeFsp, td.proxyAlpha.participant.name, 'Proxy participant substituted')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    transferPrepare.end()
   })
 
   await handlersTest.test('teardown', async (assert) => {

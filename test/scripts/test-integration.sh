@@ -20,7 +20,7 @@ mkdir ./test/results
 
 ## Start backend services
 echo "==> Starting Docker backend services"
-docker compose pull mysql kafka init-kafka
+docker compose pull mysql kafka init-kafka redis
 docker compose up -d mysql kafka init-kafka redis
 docker compose ps
 npm run wait-4-docker
