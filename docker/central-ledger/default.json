@@ -86,7 +86,7 @@
     "enabled": true,
     "type": "redis",
     "proxyConfig": {
-      "host": "localhost",
+      "host": "redis",
       "port": 6379
     }
   },
