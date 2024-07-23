@@ -94,7 +94,7 @@ services:
       retries: 10
       start_period: 40s
       interval: 30s
-   
+  
   redis:
     image: redis:6.2.4-alpine
     restart: "unless-stopped"

@@ -26,6 +26,11 @@ const disconnect = async () => {
   proxyCache = null
 }
 
+const reset = async () => {
+  await disconnect()
+  proxyCache = null
+}
+
 const getCache = () => {
   if (!proxyCache) {
     init()
@@ -74,6 +79,7 @@ const deriveCurrencyId = async (fspName, currency) => {
 }
 
 module.exports = {
+  reset, // for testing
   connect,
   disconnect,
   getCache,
