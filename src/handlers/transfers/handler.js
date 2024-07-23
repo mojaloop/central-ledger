@@ -540,15 +540,20 @@ const processFulfilMessage = async (message, functionality, span) => {
           throw fspiopError
         }
       } else {
-        const participantCurrencyId = await ProxyCache.deriveCurrencyId(transfer.payeeFsp, transfer.currency)
-        if (participantCurrencyId) {
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: participantCurrencyId.toString(), topicNameOverride, hubName: Config.HUB_NAME })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        } else {
-          histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Unknown error: Invalid participantCurrencyId')
-          throw fspiopError
+        let messageKey = 0
+        const checkSameCreditorDebtorProxyResult = await ProxyCache.checkSameCreditorDebtorProxy
+        if (!checkSameCreditorDebtorProxyResult) {
+          const participantCurrencyId = await ProxyCache.deriveCurrencyId(transfer.payeeFsp, transfer.currency)
+          if (participantCurrencyId) {
+            messageKey = participantCurrencyId.toString()
+          } else {
+            histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+            const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Unknown error: Invalid participantCurrencyId')
+            throw fspiopError
+          }
         }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey, topicNameOverride, hubName: Config.HUB_NAME })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       }
       return true
     }
