@@ -20,6 +20,7 @@ const createProxyCacheStub = Sinon.stub().returns({
   disconnect: disconnectStub,
   lookupProxyByDfspId: lookupProxyByDfspIdStub
 })
+
 const ProxyCache = Proxyquire('../../../src/lib/proxyCache', {
   '@mojaloop/inter-scheme-proxy-cache-lib': {
     createProxyCache: createProxyCacheStub
@@ -43,14 +44,6 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
   })
 
   await proxyCacheTest.test('connect', async (connectTest) => {
-    await connectTest.test('connect to cache with lazyConnect', async (test) => {
-      await ProxyCache.connect()
-      test.ok(connectStub.calledOnce)
-      const secondArg = createProxyCacheStub.getCall(0).args[1]
-      test.ok(secondArg.lazyConnect)
-      test.end()
-    })
-
     await connectTest.test('connect to cache with default config if not redis storage type', async (test) => {
       await ProxyCache.reset()
       connectStub.resetHistory()
@@ -136,4 +129,29 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
   })
 
   proxyCacheTest.end()
+})
+
+Test('proxyCacheLib Tests with mocking ioredis', (proxyTest) => {
+  const redisClient = {
+    on: Sinon.stub().returnsThis()
+  }
+  const Cluster = Sinon.stub().returns(redisClient)
+
+  const { createProxyCache } = Proxyquire('@mojaloop/inter-scheme-proxy-cache-lib', {
+    ioredis: { Cluster }
+  })
+
+  proxyTest.test('createProxyCache test', (test) => {
+    const { type, proxyConfig } = Config.PROXY_CACHE_CONFIG
+    const proxy = createProxyCache(type, proxyConfig)
+    test.ok(proxy)
+    test.ok(Cluster.calledOnce)
+    const [connConfig, redisOpts] = Cluster.getCall(0).args
+
+    test.ok(redisOpts.lazyConnect)
+    test.deepEqual(connConfig, proxyConfig.cluster)
+    test.end()
+  })
+
+  proxyTest.end()
 })
