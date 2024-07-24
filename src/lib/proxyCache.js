@@ -1,5 +1,6 @@
 'use strict'
 const { createProxyCache, STORAGE_TYPES } = require('@mojaloop/inter-scheme-proxy-cache-lib')
+const { Enum } = require('@mojaloop/central-services-shared')
 const ParticipantService = require('../../src/domain/participant')
 const Config = require('./config.js')
 
@@ -62,7 +63,7 @@ const deriveCurrencyId = async (fspName, currency) => {
       currency,
       Enum.Accounts.LedgerAccountType.POSITION
     )
-    return participantCurrency.participantCurrencyId
+    return participantCurrency?.participantCurrencyId || null
   } else {
     if (proxyLookupResult.proxyId) {
       const participantCurrency = await ParticipantService.getAccountByNameAndCurrency(
