@@ -432,6 +432,156 @@ Test('Cyril', cyrilTest => {
         test.end()
       }
     })
+
+    processFulfilMessageTest.test('process watchlist with only payer conversion found, but derived currencyId is null', async (test) => {
+      try {
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
+          [{
+            commitRequestId: fxPayload.commitRequestId,
+            determiningTransferId: fxPayload.determiningTransferId,
+            fxTransferTypeId: Enum.Fx.FxTransferType.PAYER_CONVERSION,
+            createdDate: new Date()
+          }]
+        ))
+        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+          {
+            initiatingFspParticipantId: 2,
+            targetAmount: fxPayload.targetAmount.amount,
+            commitRequestId: fxPayload.commitRequestId,
+            counterPartyFspSourceParticipantCurrencyId: 1,
+            counterPartyFspTargetParticipantCurrencyId: 2,
+            sourceAmount: fxPayload.sourceAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency
+          }
+        ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'fx_dfsp1',
+          isActive: 1
+        }))
+        ProxyCache.deriveCurrencyId.returns(Promise.resolve(null))
+        const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
+        test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(ProxyCache.deriveCurrencyId.calledWith(
+          'dfsp2',
+          fxPayload.targetAmount.currency
+        ))
+
+        test.deepEqual(result, {
+          isFx: true,
+          positionChanges: [],
+          patchNotifications: []
+        })
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    processFulfilMessageTest.test('process watchlist with only payee conversion found but derived currencyId is null', async (test) => {
+      try {
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
+          [{
+            commitRequestId: fxPayload.commitRequestId,
+            determiningTransferId: fxPayload.determiningTransferId,
+            fxTransferTypeId: Enum.Fx.FxTransferType.PAYEE_CONVERSION,
+            createdDate: new Date()
+          }]
+        ))
+        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+          {
+            initiatingFspParticipantId: 1,
+            targetAmount: fxPayload.targetAmount.amount,
+            commitRequestId: fxPayload.commitRequestId,
+            counterPartyFspSourceParticipantCurrencyId: 1,
+            counterPartyFspTargetParticipantCurrencyId: 2,
+            sourceAmount: fxPayload.sourceAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency
+          }
+        ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'payeeFsp',
+          isActive: 1
+        }))
+        ProxyCache.deriveCurrencyId.returns(Promise.resolve(null))
+        const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
+        test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.deepEqual(result, {
+          isFx: true,
+          positionChanges: [],
+          patchNotifications: []
+        }
+        )
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    processFulfilMessageTest.test('process watchlist with both payer and payee conversion found, but derived currencyId is null', async (test) => {
+      try {
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
+          [
+            {
+              commitRequestId: fxPayload.commitRequestId,
+              determiningTransferId: fxPayload.determiningTransferId,
+              fxTransferTypeId: Enum.Fx.FxTransferType.PAYEE_CONVERSION,
+              createdDate: new Date()
+            },
+            {
+              commitRequestId: fxPayload.commitRequestId,
+              determiningTransferId: fxPayload.determiningTransferId,
+              fxTransferTypeId: Enum.Fx.FxTransferType.PAYER_CONVERSION,
+              createdDate: new Date()
+            }
+          ]
+        ))
+        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+          {
+            initiatingFspParticipantId: 1,
+            targetAmount: fxPayload.targetAmount.amount,
+            commitRequestId: fxPayload.commitRequestId,
+            counterPartyFspSourceParticipantCurrencyId: 1,
+            counterPartyFspTargetParticipantCurrencyId: 2,
+            sourceAmount: fxPayload.sourceAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency
+          }
+        ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'payeeFsp',
+          isActive: 1
+        }))
+        ProxyCache.deriveCurrencyId.returns(Promise.resolve(null))
+        const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
+        test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.deepEqual(result, {
+          isFx: true,
+          positionChanges: [],
+          patchNotifications: []
+        }
+        )
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
     processFulfilMessageTest.end()
   })
 
