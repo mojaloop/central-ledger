@@ -266,6 +266,8 @@ Test('Transfer handler', transferHandlerTest => {
       connect: sandbox.stub(),
       disconnect: sandbox.stub()
     })
+    sandbox.stub(ProxyCache, 'deriveCurrencyId').resolves(1)
+    sandbox.stub(ProxyCache, 'checkSameCreditorDebtorProxy').resolves(false)
     const stubs = mocks.createTracerStub(sandbox)
     SpanStub = stubs.SpanStub
 

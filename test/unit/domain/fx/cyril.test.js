@@ -8,6 +8,7 @@ const { Enum } = require('@mojaloop/central-services-shared')
 const TransferModel = require('../../../../src/models/transfer/transfer')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
 const { fxTransfer, watchList } = require('../../../../src/models/fxTransfer')
+const ProxyCache = require('../../../../src/lib/proxyCache')
 
 Test('Cyril', cyrilTest => {
   let sandbox
@@ -20,6 +21,7 @@ Test('Cyril', cyrilTest => {
     sandbox.stub(fxTransfer)
     sandbox.stub(TransferModel)
     sandbox.stub(ParticipantFacade)
+    sandbox.stub(ProxyCache)
     payload = {
       transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
       payerFsp: 'dfsp1',
@@ -265,14 +267,15 @@ Test('Cyril', cyrilTest => {
           participantName: 'fx_dfsp1',
           isActive: 1
         }))
+        ProxyCache.deriveCurrencyId.returns(Promise.resolve(1))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
         test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
-        test.ok(ParticipantFacade.getByNameAndCurrency.calledWith(
+        test.ok(ProxyCache.deriveCurrencyId.calledWith(
           'dfsp2',
-          fxPayload.targetAmount.currency,
-          Enum.Accounts.LedgerAccountType.POSITION
+          fxPayload.targetAmount.currency
         ))
+
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [{
@@ -326,6 +329,7 @@ Test('Cyril', cyrilTest => {
           participantName: 'payeeFsp',
           isActive: 1
         }))
+        ProxyCache.deriveCurrencyId.returns(Promise.resolve(1))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
         test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
@@ -391,6 +395,7 @@ Test('Cyril', cyrilTest => {
           participantName: 'payeeFsp',
           isActive: 1
         }))
+        ProxyCache.deriveCurrencyId.returns(Promise.resolve(1))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
         test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))

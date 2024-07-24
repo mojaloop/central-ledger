@@ -56,6 +56,7 @@ const TransferObjectTransform = require('../../domain/transfer/transform')
 const Participant = require('../../domain/participant')
 const Validator = require('./validator')
 const FxFulfilService = require('./FxFulfilService')
+const ProxyCache = require('../../lib/proxyCache')
 
 // particular handlers
 const { prepare } = require('./prepare')
@@ -541,7 +542,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         }
       } else {
         let messageKey = 0
-        const checkSameCreditorDebtorProxyResult = await ProxyCache.checkSameCreditorDebtorProxy
+        const checkSameCreditorDebtorProxyResult = await ProxyCache.checkSameCreditorDebtorProxy(transfer.payerFsp, transfer.payeeFsp)
         if (!checkSameCreditorDebtorProxyResult) {
           const participantCurrencyId = await ProxyCache.deriveCurrencyId(transfer.payeeFsp, transfer.currency)
           if (participantCurrencyId) {
