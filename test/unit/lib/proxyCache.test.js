@@ -141,7 +141,7 @@ Test('proxyCacheLib Tests with mocking ioredis', (proxyTest) => {
     ioredis: { Cluster }
   })
 
-  proxyTest.test('createProxyCache test', (test) => {
+  proxyTest.test('should create proxyCache with lazyConnect === true', (test) => {
     const { type, proxyConfig } = Config.PROXY_CACHE_CONFIG
     const proxy = createProxyCache(type, proxyConfig)
     test.ok(proxy)
