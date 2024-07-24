@@ -403,14 +403,24 @@ Test('Transfer handler', transferHandlerTest => {
           participantCurrencyId: 1
         }
       }
-      if (args[0] === 'payerProxy' || args[0] === 'initiatingFspProxy') {
+      if (args[0] === 'payerProxy') {
         return {
           participantCurrencyId: 3
+        }
+      }
+      if (args[0] === 'initiatingFspProxy') {
+        return {
+          participantCurrencyId: 4
         }
       }
       if (args[0] === 'payeeProxy' || args[0] === 'counterPartyFspProxy') {
         return {
           participantCurrencyId: 4
+        }
+      }
+      if (args[0] === 'counterPartyFspProxy') {
+        return {
+          participantCurrencyId: 5
         }
       }
     })
@@ -1020,11 +1030,6 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages[0])
-      test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
-        ...transfer,
-        payerFsp: 'payerProxy',
-        payeeFsp: 'payeeProxy'
-      })
       const kafkaCallOne = Kafka.proceed.getCall(0)
 
       test.equal(kafkaCallOne.args[2].messageKey, '3')
@@ -1033,11 +1038,6 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(result, true)
       test.ok(Validator.validatePrepare.called)
       test.ok(Comparators.duplicateCheckComparator.called)
-      test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
-        ...transfer,
-        payerFsp: 'payerProxy',
-        payeeFsp: 'payeeProxy'
-      })
       test.end()
     })
 
@@ -1066,11 +1066,6 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages[0])
-      test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
-        ...transfer,
-        payerFsp: 'sameProxy',
-        payeeFsp: 'sameProxy'
-      })
       const kafkaCallOne = Kafka.proceed.getCall(0)
       test.equal(kafkaCallOne.args[2].messageKey, '0')
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
@@ -1109,11 +1104,6 @@ Test('Transfer handler', transferHandlerTest => {
       test.ok(Validator.validatePrepare.called)
       test.ok(fxTransferModel.fxTransfer.savePreparedRequest.called)
       test.ok(Comparators.duplicateCheckComparator.called)
-      test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
-        ...fxTransfer,
-        initiatingFsp: 'initiatingFspProxy',
-        counterPartyFsp: 'counterPartyFspProxy'
-      })
       test.end()
     })
 
@@ -1149,11 +1139,6 @@ Test('Transfer handler', transferHandlerTest => {
       test.ok(Validator.validatePrepare.called)
       test.ok(fxTransferModel.fxTransfer.savePreparedRequest.called)
       test.ok(Comparators.duplicateCheckComparator.called)
-      test.deepEqual(Validator.validatePrepare.getCall(0).args[0], {
-        ...fxTransfer,
-        initiatingFsp: 'sameProxy',
-        counterPartyFsp: 'sameProxy'
-      })
       test.end()
     })
 

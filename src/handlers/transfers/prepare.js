@@ -310,6 +310,7 @@ const prepare = async (error, messages) => {
 
     let isDebtorProxy = false
     let isSameProxy = false
+    let isCreditorProxy = false
     if (proxyEnabled) {
       // The initiatingFsp isn't always the debtor participant in all scenarios of /fxTransfers.
       // It is always the debtor in the current implementation of /fxTransfers.
@@ -321,14 +322,7 @@ const prepare = async (error, messages) => {
       ])
       isSameProxy = await ProxyCache.checkSameCreditorDebtorProxy(debtorFsp, creditorFsp)
       isDebtorProxy = !debtorProxyOrParticipantId.inScheme && debtorProxyOrParticipantId.proxyId !== null
-
-      if (isFx) {
-        payload.initiatingFsp = debtorProxyOrParticipantId.inScheme ? payload.initiatingFsp : debtorProxyOrParticipantId.proxyId
-        payload.counterPartyFsp = creditorProxyOrParticipantId.inScheme ? payload.counterPartyFsp : creditorProxyOrParticipantId.proxyId
-      } else {
-        payload.payerFsp = debtorProxyOrParticipantId.inScheme ? payload.payerFsp : debtorProxyOrParticipantId.proxyId
-        payload.payeeFsp = creditorProxyOrParticipantId.inScheme ? payload.payeeFsp : creditorProxyOrParticipantId.proxyId
-      }
+      isCreditorProxy = !debtorProxyOrParticipantId.inScheme && debtorProxyOrParticipantId.proxyId !== null
 
       // If either debtor participant or creditor participant aren't in the scheme and have no proxy representative, then throw an error.
       if ((isFx && (payload.initiatingFsp === null || payload.counterPartyFsp === null)) ||
