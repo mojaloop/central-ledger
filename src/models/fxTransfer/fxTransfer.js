@@ -145,8 +145,13 @@ const savePreparedRequest = async (
     ['success', 'queryName']
   ).startTimer()
 
+  // Substitute out of scheme participants with their proxy representatives
   const initiatingFsp = isDebtorProxy ? debtorProxyOrParticipantId?.proxyId : payload.initiatingFsp
   const counterPartyFsp = isCreditorProxy ? creditorProxyOrParticipantId?.proxyId : payload.counterPartyFsp
+
+  // If creditor(counterPartyFsp) is a proxy in a jurisdictional scenario,
+  // they would not hold a position account for the target currency,
+  // so we skip adding records of the target currency for the creditor.
   try {
     const [initiatingParticipant, counterParticipant1, counterParticipant2] = await Promise.all([
       ParticipantCachedModel.getByName(initiatingFsp),

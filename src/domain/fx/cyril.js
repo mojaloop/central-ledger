@@ -75,6 +75,8 @@ const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload, isC
       currencyId: payload.sourceAmount.currency
     }
   ]
+  // If creditor is a proxy in a jurisdictional scenario, they would not hold a position account for the target currency
+  // for a /fxTransfer. So we skip adding this to accounts to be validated.
   if (!isCreditorProxy) {
     participantCurrencyValidationList.push({
       participantName: payload.counterPartyFsp,
