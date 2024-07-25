@@ -127,10 +127,7 @@ const savePreparedRequest = async ({
   params,
   location,
   determiningTransferCheckResult,
-  isDebtorProxy,
-  debtorProxyOrParticipantId,
-  isCreditorProxy,
-  creditorProxyOrParticipantId
+  proxyObligation
 }) => {
   const logMessage = Util.breadcrumb(location, 'savePreparedRequest')
   try {
@@ -142,10 +139,7 @@ const savePreparedRequest = async ({
         reason,
         validationPassed,
         determiningTransferCheckResult,
-        isDebtorProxy,
-        debtorProxyOrParticipantId,
-        isCreditorProxy,
-        creditorProxyOrParticipantId
+        proxyObligation
       )
   } catch (err) {
     logger.error(`${logMessage} error - ${err.message}`)
@@ -161,7 +155,7 @@ const savePreparedRequest = async ({
   }
 }
 
-const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult, isSameProxy }) => {
+const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult, proxyObligation }) => {
   const cyrilResult = await createRemittanceEntity(isFx)
     .getPositionParticipant(payload, determiningTransferCheckResult)
   let messageKey
@@ -170,7 +164,7 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
    *  - If the participant has a proxy representation, the proxy's account should be used for the position change.
    *  - If the debtor and the creditor DFSPs are represented by the same proxy, no position adjustment is needed.
    */
-  if (isSameProxy) {
+  if (proxyObligation.isSameProxy) {
     messageKey = '0'
   } else {
     const participantName = cyrilResult.participantName
@@ -194,24 +188,19 @@ const sendPositionPrepareMessage = async ({
   action,
   params,
   determiningTransferCheckResult,
-  isSameProxy,
-  debtorProxyOrParticipantId,
-  creditorProxyOrParticipantId
+  proxyObligation
 }) => {
   const eventDetail = {
     functionality: Type.POSITION,
     action
   }
-  const cyrilPayloadClone = { ...payload }
-  if (isFx) {
-    cyrilPayloadClone.initiatingFsp = !debtorProxyOrParticipantId?.inScheme && debtorProxyOrParticipantId?.proxyId ? debtorProxyOrParticipantId.proxyId : payload.initiatingFsp
-    cyrilPayloadClone.counterPartyFsp = !creditorProxyOrParticipantId?.inScheme && creditorProxyOrParticipantId?.proxyId ? creditorProxyOrParticipantId.proxyId : payload.counterPartyFsp
-  } else {
-    cyrilPayloadClone.payerFsp = !debtorProxyOrParticipantId?.inScheme && debtorProxyOrParticipantId?.proxyId ? debtorProxyOrParticipantId.proxyId : payload.payerFsp
-    cyrilPayloadClone.payeeFsp = !creditorProxyOrParticipantId?.inScheme && creditorProxyOrParticipantId?.proxyId ? creditorProxyOrParticipantId.proxyId : payload.payeeFsp
-  }
 
-  const { messageKey, cyrilResult } = await definePositionParticipant({ payload: cyrilPayloadClone, isFx, determiningTransferCheckResult, isSameProxy })
+  const { messageKey, cyrilResult } = await definePositionParticipant({
+    payload: proxyObligation.payloadClone,
+    isFx,
+    determiningTransferCheckResult,
+    proxyObligation
+  })
 
   params.message.value.content.context = {
     ...params.message.value.content.context,
@@ -348,28 +337,40 @@ const prepare = async (error, messages) => {
       return true
     }
 
-    let isDebtorProxy = false
-    let isSameProxy = false
-    let isCreditorProxy = false
     let debtorProxyOrParticipantId
     let creditorProxyOrParticipantId
-
+    const proxyObligation = {
+      isDebtorProxy: false,
+      isCreditorProxy: false,
+      isSameProxy: false,
+      debtorProxyOrParticipantId: null,
+      creditorProxyOrParticipantId: null,
+      payloadClone: { ...payload }
+    }
     if (proxyEnabled) {
       // The initiatingFsp isn't always the debtor participant in all scenarios of /fxTransfers.
       // It is always the debtor in the current implementation of /fxTransfers.
       // The naming will have to be revisited after /fxTransfers implements receive type /fxTransfers.
       const [debtorFsp, creditorFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
-      ;[debtorProxyOrParticipantId, creditorProxyOrParticipantId] = await Promise.all([
+      ;[proxyObligation.debtorProxyOrParticipantId, proxyObligation.creditorProxyOrParticipantId] = await Promise.all([
         ProxyCache.getFSPProxy(debtorFsp),
         ProxyCache.getFSPProxy(creditorFsp)
       ])
-      isSameProxy = await ProxyCache.checkSameCreditorDebtorProxy(debtorFsp, creditorFsp)
-      isDebtorProxy = !debtorProxyOrParticipantId.inScheme && debtorProxyOrParticipantId.proxyId !== null
-      isCreditorProxy = !creditorProxyOrParticipantId.inScheme && creditorProxyOrParticipantId.proxyId !== null
+      proxyObligation.isSameProxy = await ProxyCache.checkSameCreditorDebtorProxy(debtorFsp, creditorFsp)
+      proxyObligation.isDebtorProxy = !proxyObligation.debtorProxyOrParticipantId.inScheme && proxyObligation.debtorProxyOrParticipantId.proxyId !== null
+      proxyObligation.isCreditorProxy = !proxyObligation.creditorProxyOrParticipantId.inScheme && proxyObligation.creditorProxyOrParticipantId.proxyId !== null
+
+      if (isFx) {
+        proxyObligation.payloadClone.initiatingFsp = !proxyObligation.debtorProxyOrParticipantId?.inScheme && proxyObligation.debtorProxyOrParticipantId?.proxyId ? proxyObligation.debtorProxyOrParticipantId.proxyId : payload.initiatingFsp
+        proxyObligation.payloadClone.counterPartyFsp = !proxyObligation.creditorProxyOrParticipantId?.inScheme && proxyObligation.creditorProxyOrParticipantId?.proxyId ? proxyObligation.creditorProxyOrParticipantId.proxyId : payload.counterPartyFsp
+      } else {
+        proxyObligation.payloadClone.payerFsp = !proxyObligation.debtorProxyOrParticipantId?.inScheme && proxyObligation.debtorProxyOrParticipantId?.proxyId ? proxyObligation.debtorProxyOrParticipantId.proxyId : payload.payerFsp
+        proxyObligation.payloadClone.payeeFsp = !proxyObligation.creditorProxyOrParticipantId?.inScheme && proxyObligation.creditorProxyOrParticipantId?.proxyId ? proxyObligation.creditorProxyOrParticipantId.proxyId : payload.payeeFsp
+      }
 
       // If either debtor participant or creditor participant aren't in the scheme and have no proxy representative, then throw an error.
-      if ((debtorProxyOrParticipantId.inScheme === false && debtorProxyOrParticipantId.proxyId === null) ||
-          (creditorProxyOrParticipantId.inScheme === false && creditorProxyOrParticipantId.proxyId === null)) {
+      if ((proxyObligation.debtorProxyOrParticipantId.inScheme === false && proxyObligation.debtorProxyOrParticipantId.proxyId === null) ||
+          (proxyObligation.creditorProxyOrParticipantId.inScheme === false && proxyObligation.creditorProxyOrParticipantId.proxyId === null)) {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
           `Payer proxy or payee proxy not found: debtor: ${debtorProxyOrParticipantId} creditor: ${creditorProxyOrParticipantId}`
@@ -394,17 +395,9 @@ const prepare = async (error, messages) => {
       return success
     }
 
-    const determiningTransferCheckResultClone = { ...payload }
-    if (isFx) {
-      determiningTransferCheckResultClone.initiatingFsp = !debtorProxyOrParticipantId?.inScheme && debtorProxyOrParticipantId?.proxyId ? debtorProxyOrParticipantId.proxyId : payload.initiatingFsp
-      determiningTransferCheckResultClone.counterPartyFsp = !creditorProxyOrParticipantId?.inScheme && creditorProxyOrParticipantId?.proxyId ? creditorProxyOrParticipantId.proxyId : payload.counterPartyFsp
-    } else {
-      determiningTransferCheckResultClone.payerFsp = !debtorProxyOrParticipantId?.inScheme && debtorProxyOrParticipantId?.proxyId ? debtorProxyOrParticipantId.proxyId : payload.payerFsp
-      determiningTransferCheckResultClone.payeeFsp = !creditorProxyOrParticipantId?.inScheme && creditorProxyOrParticipantId?.proxyId ? creditorProxyOrParticipantId.proxyId : payload.payeeFsp
-    }
     const determiningTransferCheckResult = await createRemittanceEntity(isFx).checkIfDeterminingTransferExists(
-      determiningTransferCheckResultClone,
-      isCreditorProxy
+      proxyObligation.payloadClone,
+      proxyObligation
     )
 
     const { validationPassed, reasons } = await Validator.validatePrepare(
@@ -412,8 +405,7 @@ const prepare = async (error, messages) => {
       headers,
       isFx,
       determiningTransferCheckResult,
-      isDebtorProxy,
-      isCreditorProxy
+      proxyObligation
     )
 
     await savePreparedRequest({
@@ -425,11 +417,7 @@ const prepare = async (error, messages) => {
       params,
       location,
       determiningTransferCheckResult,
-      isSameProxy,
-      isCreditorProxy,
-      isDebtorProxy,
-      debtorProxyOrParticipantId,
-      creditorProxyOrParticipantId
+      proxyObligation
     })
     if (!validationPassed) {
       logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
@@ -439,7 +427,7 @@ const prepare = async (error, messages) => {
       /**
        * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
        * HOWTO: For regular transfers this branch may be triggered by sending
-       * a tansfer in a currency not supported by either dfsp. Not sure if it
+       * a transfer in a currency not supported by either dfsp. Not sure if it
        * will be triggered for bulk, because of the BulkPrepareHandler.
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, {
@@ -454,7 +442,7 @@ const prepare = async (error, messages) => {
 
     logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
     const success = await sendPositionPrepareMessage({
-      isFx, payload, action, params, determiningTransferCheckResult, isSameProxy, debtorProxyOrParticipantId, creditorProxyOrParticipantId
+      isFx, payload, action, params, determiningTransferCheckResult, proxyObligation
     })
 
     histTimerEnd({ success, fspId })

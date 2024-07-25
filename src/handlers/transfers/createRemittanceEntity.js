@@ -23,10 +23,7 @@ const createRemittanceEntity = (isFx) => {
       reason,
       isValid,
       determiningTransferCheckResult,
-      isDebtorProxy,
-      debtorProxyOrParticipantId,
-      isCreditorProxy,
-      creditorProxyOrParticipantId
+      proxyObligation
     ) {
       // todo: add histoTimer and try/catch here
       return isFx
@@ -35,20 +32,14 @@ const createRemittanceEntity = (isFx) => {
           reason,
           isValid,
           determiningTransferCheckResult,
-          isDebtorProxy,
-          debtorProxyOrParticipantId,
-          isCreditorProxy,
-          creditorProxyOrParticipantId
+          proxyObligation
         )
         : TransferService.prepare(
           payload,
           reason,
           isValid,
           determiningTransferCheckResult,
-          isDebtorProxy,
-          debtorProxyOrParticipantId,
-          isCreditorProxy,
-          creditorProxyOrParticipantId
+          proxyObligation
         )
     },
 
@@ -58,9 +49,9 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.getByIdLight(id)
     },
 
-    async checkIfDeterminingTransferExists (payload, isCreditorProxy) {
+    async checkIfDeterminingTransferExists (payload, proxyObligation) {
       return isFx
-        ? cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, isCreditorProxy)
+        ? cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, proxyObligation)
         : cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
     },
 

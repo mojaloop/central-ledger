@@ -135,7 +135,9 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForFxTransferMessageTest.test('return details about fxtransfer debtor party initited msg', async (test) => {
       try {
         TransferModel.getById.returns(Promise.resolve(null))
-        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload, {
+          isCreditorProxy: false
+        })
         const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload, determiningTransferCheckResult)
 
         test.ok(watchList.addToWatchList.calledWith({
@@ -151,6 +153,7 @@ Test('Cyril', cyrilTest => {
         test.pass('Error not thrown')
         test.end()
       } catch (e) {
+        console.log(e.stack)
         test.fail('Error Thrown')
         test.end()
       }
@@ -159,7 +162,9 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForFxTransferMessageTest.test('return details about fxtransfer creditor party initited msg', async (test) => {
       try {
         TransferModel.getById.returns(Promise.resolve({}))
-        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload, {
+          isCreditorProxy: false
+        })
         const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload, determiningTransferCheckResult)
 
         test.ok(watchList.addToWatchList.calledWith({

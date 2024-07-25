@@ -64,7 +64,7 @@ const checkIfDeterminingTransferExistsForTransferMessage = async (payload) => {
   }
 }
 
-const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload, isCreditorProxy) => {
+const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload, proxyObligation) => {
   // Does this determining transfer ID appear on the transfer list?
   const transferRecord = await TransferModel.getById(payload.determiningTransferId)
   const determiningTransferExistsInTransferList = (transferRecord !== null)
@@ -77,7 +77,7 @@ const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload, isC
   ]
   // If creditor is a proxy in a jurisdictional scenario, they would not hold a position account for the target currency
   // for a /fxTransfer. So we skip adding this to accounts to be validated.
-  if (!isCreditorProxy) {
+  if (!proxyObligation.isCreditorProxy) {
     participantCurrencyValidationList.push({
       participantName: payload.counterPartyFsp,
       currencyId: payload.targetAmount.currency

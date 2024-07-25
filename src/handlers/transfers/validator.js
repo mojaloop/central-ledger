@@ -189,7 +189,7 @@ const isAmountValid = (payload, isFx) => isFx
   ? validateAmount(payload.sourceAmount) && validateAmount(payload.targetAmount)
   : validateAmount(payload.amount)
 
-const validatePrepare = async (payload, headers, isFx = false, determiningTransferCheckResult, isDebtorProxy = false, isCreditorProxy = false) => {
+const validatePrepare = async (payload, headers, isFx = false, determiningTransferCheckResult, proxyObligation) => {
   const histTimerValidatePrepareEnd = Metrics.getHistogram(
     'handlers_transfer_validator',
     'validatePrepare - Metrics for transfer handler',
@@ -208,7 +208,7 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
   const counterPartyFsp = isFx ? payload.counterPartyFsp : payload.payeeFsp
 
   // Skip usual validation if preparing a proxy transfer or fxTransfer
-  if (!(isDebtorProxy || isCreditorProxy)) {
+  if (!(proxyObligation?.isDebtorProxy || proxyObligation?.isCreditorProxy)) {
     validationPassed = (
       validateFspiopSourceMatchesPayer(initiatingFsp, headers) &&
       isAmountValid(payload, isFx) &&
