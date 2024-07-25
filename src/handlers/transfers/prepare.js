@@ -118,13 +118,35 @@ const processDuplication = async ({
   return true
 }
 
-const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, functionality, params, location, determiningTransferCheckResult }) => {
+const savePreparedRequest = async ({
+  validationPassed,
+  reasons,
+  payload,
+  isFx,
+  functionality,
+  params,
+  location,
+  determiningTransferCheckResult,
+  isDebtorProxy,
+  debtorProxyOrParticipantId,
+  isCreditorProxy,
+  creditorProxyOrParticipantId
+}) => {
   const logMessage = Util.breadcrumb(location, 'savePreparedRequest')
   try {
     logger.info(logMessage, { validationPassed, reasons })
     const reason = validationPassed ? null : reasons.toString()
     await createRemittanceEntity(isFx)
-      .savePreparedRequest(payload, reason, validationPassed, determiningTransferCheckResult)
+      .savePreparedRequest(
+        payload,
+        reason,
+        validationPassed,
+        determiningTransferCheckResult,
+        isDebtorProxy,
+        debtorProxyOrParticipantId,
+        isCreditorProxy,
+        creditorProxyOrParticipantId
+      )
   } catch (err) {
     logger.error(`${logMessage} error - ${err.message}`)
     const fspiopError = reformatFSPIOPError(err, FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
@@ -166,12 +188,30 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
   }
 }
 
-const sendPositionPrepareMessage = async ({ isFx, payload, action, params, determiningTransferCheckResult, isSameProxy }) => {
+const sendPositionPrepareMessage = async ({
+  isFx,
+  payload,
+  action,
+  params,
+  determiningTransferCheckResult,
+  isSameProxy,
+  debtorProxyOrParticipantId,
+  creditorProxyOrParticipantId
+}) => {
   const eventDetail = {
     functionality: Type.POSITION,
     action
   }
-  const { messageKey, cyrilResult } = await definePositionParticipant({ payload, isFx, determiningTransferCheckResult, isSameProxy })
+  const cyrilPayloadClone = { ...payload }
+  if (isFx) {
+    cyrilPayloadClone.initiatingFsp = !debtorProxyOrParticipantId?.inScheme && debtorProxyOrParticipantId?.proxyId ? debtorProxyOrParticipantId.proxyId : payload.initiatingFsp
+    cyrilPayloadClone.counterPartyFsp = !creditorProxyOrParticipantId?.inScheme && creditorProxyOrParticipantId?.proxyId ? creditorProxyOrParticipantId.proxyId : payload.counterPartyFsp
+  } else {
+    cyrilPayloadClone.payerFsp = !debtorProxyOrParticipantId?.inScheme && debtorProxyOrParticipantId?.proxyId ? debtorProxyOrParticipantId.proxyId : payload.payerFsp
+    cyrilPayloadClone.payeeFsp = !creditorProxyOrParticipantId?.inScheme && creditorProxyOrParticipantId?.proxyId ? creditorProxyOrParticipantId.proxyId : payload.payeeFsp
+  }
+
+  const { messageKey, cyrilResult } = await definePositionParticipant({ payload: cyrilPayloadClone, isFx, determiningTransferCheckResult, isSameProxy })
 
   params.message.value.content.context = {
     ...params.message.value.content.context,
@@ -311,25 +351,28 @@ const prepare = async (error, messages) => {
     let isDebtorProxy = false
     let isSameProxy = false
     let isCreditorProxy = false
+    let debtorProxyOrParticipantId
+    let creditorProxyOrParticipantId
+
     if (proxyEnabled) {
       // The initiatingFsp isn't always the debtor participant in all scenarios of /fxTransfers.
       // It is always the debtor in the current implementation of /fxTransfers.
       // The naming will have to be revisited after /fxTransfers implements receive type /fxTransfers.
       const [debtorFsp, creditorFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
-      const [debtorProxyOrParticipantId, creditorProxyOrParticipantId] = await Promise.all([
+      ;[debtorProxyOrParticipantId, creditorProxyOrParticipantId] = await Promise.all([
         ProxyCache.getFSPProxy(debtorFsp),
         ProxyCache.getFSPProxy(creditorFsp)
       ])
       isSameProxy = await ProxyCache.checkSameCreditorDebtorProxy(debtorFsp, creditorFsp)
       isDebtorProxy = !debtorProxyOrParticipantId.inScheme && debtorProxyOrParticipantId.proxyId !== null
-      isCreditorProxy = !debtorProxyOrParticipantId.inScheme && debtorProxyOrParticipantId.proxyId !== null
+      isCreditorProxy = !creditorProxyOrParticipantId.inScheme && creditorProxyOrParticipantId.proxyId !== null
 
       // If either debtor participant or creditor participant aren't in the scheme and have no proxy representative, then throw an error.
-      if ((isFx && (payload.initiatingFsp === null || payload.counterPartyFsp === null)) ||
-          (!isFx && (payload.payerFsp === null || payload.payeeFsp === null))) {
+      if ((debtorProxyOrParticipantId.inScheme === false && debtorProxyOrParticipantId.proxyId === null) ||
+          (creditorProxyOrParticipantId.inScheme === false && creditorProxyOrParticipantId.proxyId === null)) {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-          `Payer proxy or payee proxy not found: payerFsp: ${payload.payerFsp} payeeFsp: ${payload.payeeFsp}`
+          `Payer proxy or payee proxy not found: debtor: ${debtorProxyOrParticipantId} creditor: ${creditorProxyOrParticipantId}`
         ).toApiErrorObject(Config.ERROR_HANDLING)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, {
           consumerCommit,
@@ -351,17 +394,42 @@ const prepare = async (error, messages) => {
       return success
     }
 
-    const determiningTransferCheckResult = await createRemittanceEntity(isFx).checkIfDeterminingTransferExists(payload)
+    const determiningTransferCheckResultClone = { ...payload }
+    if (isFx) {
+      determiningTransferCheckResultClone.initiatingFsp = !debtorProxyOrParticipantId?.inScheme && debtorProxyOrParticipantId?.proxyId ? debtorProxyOrParticipantId.proxyId : payload.initiatingFsp
+      determiningTransferCheckResultClone.counterPartyFsp = !creditorProxyOrParticipantId?.inScheme && creditorProxyOrParticipantId?.proxyId ? creditorProxyOrParticipantId.proxyId : payload.counterPartyFsp
+    } else {
+      determiningTransferCheckResultClone.payerFsp = !debtorProxyOrParticipantId?.inScheme && debtorProxyOrParticipantId?.proxyId ? debtorProxyOrParticipantId.proxyId : payload.payerFsp
+      determiningTransferCheckResultClone.payeeFsp = !creditorProxyOrParticipantId?.inScheme && creditorProxyOrParticipantId?.proxyId ? creditorProxyOrParticipantId.proxyId : payload.payeeFsp
+    }
+    const determiningTransferCheckResult = await createRemittanceEntity(isFx).checkIfDeterminingTransferExists(
+      determiningTransferCheckResultClone,
+      isCreditorProxy
+    )
 
     const { validationPassed, reasons } = await Validator.validatePrepare(
       payload,
       headers,
       isFx,
       determiningTransferCheckResult,
-      isDebtorProxy
+      isDebtorProxy,
+      isCreditorProxy
     )
+
     await savePreparedRequest({
-      validationPassed, reasons, payload, isFx, functionality, params, location, determiningTransferCheckResult
+      validationPassed,
+      reasons,
+      payload,
+      isFx,
+      functionality,
+      params,
+      location,
+      determiningTransferCheckResult,
+      isSameProxy,
+      isCreditorProxy,
+      isDebtorProxy,
+      debtorProxyOrParticipantId,
+      creditorProxyOrParticipantId
     })
     if (!validationPassed) {
       logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
@@ -385,7 +453,9 @@ const prepare = async (error, messages) => {
     }
 
     logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
-    const success = await sendPositionPrepareMessage({ isFx, payload, action, params, determiningTransferCheckResult, isSameProxy })
+    const success = await sendPositionPrepareMessage({
+      isFx, payload, action, params, determiningTransferCheckResult, isSameProxy, debtorProxyOrParticipantId, creditorProxyOrParticipantId
+    })
 
     histTimerEnd({ success, fspId })
     return success
@@ -393,6 +463,7 @@ const prepare = async (error, messages) => {
     histTimerEnd({ success: false, fspId })
     const fspiopError = reformatFSPIOPError(err)
     logger.error(`${Util.breadcrumb(location)}::${err.message}--P0`)
+    logger.error(err.stack)
     const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
     await span.finish(fspiopError.message, state)

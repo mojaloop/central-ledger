@@ -18,11 +18,38 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.saveTransferDuplicateCheck(id, hash)
     },
 
-    async savePreparedRequest (payload, reason, isValid, determiningTransferCheckResult) {
+    async savePreparedRequest (
+      payload,
+      reason,
+      isValid,
+      determiningTransferCheckResult,
+      isDebtorProxy,
+      debtorProxyOrParticipantId,
+      isCreditorProxy,
+      creditorProxyOrParticipantId
+    ) {
       // todo: add histoTimer and try/catch here
       return isFx
-        ? fxTransferModel.fxTransfer.savePreparedRequest(payload, reason, isValid, determiningTransferCheckResult)
-        : TransferService.prepare(payload, reason, isValid, determiningTransferCheckResult)
+        ? fxTransferModel.fxTransfer.savePreparedRequest(
+          payload,
+          reason,
+          isValid,
+          determiningTransferCheckResult,
+          isDebtorProxy,
+          debtorProxyOrParticipantId,
+          isCreditorProxy,
+          creditorProxyOrParticipantId
+        )
+        : TransferService.prepare(
+          payload,
+          reason,
+          isValid,
+          determiningTransferCheckResult,
+          isDebtorProxy,
+          debtorProxyOrParticipantId,
+          isCreditorProxy,
+          creditorProxyOrParticipantId
+        )
     },
 
     async getByIdLight (id) {
@@ -31,9 +58,9 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.getByIdLight(id)
     },
 
-    async checkIfDeterminingTransferExists (payload) {
+    async checkIfDeterminingTransferExists (payload, isCreditorProxy) {
       return isFx
-        ? cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload)
+        ? cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, isCreditorProxy)
         : cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
     },
 

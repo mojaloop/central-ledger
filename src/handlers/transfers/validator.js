@@ -189,7 +189,7 @@ const isAmountValid = (payload, isFx) => isFx
   ? validateAmount(payload.sourceAmount) && validateAmount(payload.targetAmount)
   : validateAmount(payload.amount)
 
-const validatePrepare = async (payload, headers, isFx = false, determiningTransferCheckResult, isDebtorProxy = false) => {
+const validatePrepare = async (payload, headers, isFx = false, determiningTransferCheckResult, isDebtorProxy = false, isCreditorProxy = false) => {
   const histTimerValidatePrepareEnd = Metrics.getHistogram(
     'handlers_transfer_validator',
     'validatePrepare - Metrics for transfer handler',
@@ -207,16 +207,19 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
   const initiatingFsp = isFx ? payload.initiatingFsp : payload.payerFsp
   const counterPartyFsp = isFx ? payload.counterPartyFsp : payload.payeeFsp
 
-  validationPassed = (
-    isDebtorProxy
-      ? true
-      : validateFspiopSourceMatchesPayer(initiatingFsp, headers) &&
-    isAmountValid(payload, isFx) &&
-    await validateParticipantByName(initiatingFsp) &&
-    await validateParticipantByName(counterPartyFsp) &&
-    await validateConditionAndExpiration(payload) &&
-    validateDifferentDfsp(initiatingFsp, counterPartyFsp)
-  )
+  // Skip usual validation if preparing a proxy transfer or fxTransfer
+  if (!(isDebtorProxy || isCreditorProxy)) {
+    validationPassed = (
+      validateFspiopSourceMatchesPayer(initiatingFsp, headers) &&
+      isAmountValid(payload, isFx) &&
+      await validateParticipantByName(initiatingFsp) &&
+      await validateParticipantByName(counterPartyFsp) &&
+      await validateConditionAndExpiration(payload) &&
+      validateDifferentDfsp(initiatingFsp, counterPartyFsp)
+    )
+  } else {
+    validationPassed = true
+  }
 
   // validate participant accounts from determiningTransferCheckResult
   if (validationPassed && determiningTransferCheckResult) {

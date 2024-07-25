@@ -129,18 +129,29 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
 const getParticipant = async (name, currency) =>
   participant.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
 
-const savePreparedRequest = async (payload, stateReason, hasPassedValidation) => {
+const savePreparedRequest = async (
+  payload,
+  stateReason,
+  hasPassedValidation,
+  determiningTransferCheckResult,
+  isDebtorProxy,
+  debtorProxyOrParticipantId,
+  isCreditorProxy,
+  creditorProxyOrParticipantId
+) => {
   const histTimerSaveFxTransferEnd = Metrics.getHistogram(
     'model_fx_transfer',
     'facade_saveFxTransferPrepared - Metrics for transfer model',
     ['success', 'queryName']
   ).startTimer()
 
+  const initiatingFsp = isDebtorProxy ? debtorProxyOrParticipantId?.proxyId : payload.initiatingFsp
+  const counterPartyFsp = isCreditorProxy ? creditorProxyOrParticipantId?.proxyId : payload.counterPartyFsp
   try {
     const [initiatingParticipant, counterParticipant1, counterParticipant2] = await Promise.all([
-      ParticipantCachedModel.getByName(payload.initiatingFsp),
-      getParticipant(payload.counterPartyFsp, payload.sourceAmount.currency),
-      getParticipant(payload.counterPartyFsp, payload.targetAmount.currency)
+      ParticipantCachedModel.getByName(initiatingFsp),
+      getParticipant(counterPartyFsp, payload.sourceAmount.currency),
+      !isCreditorProxy ? getParticipant(counterPartyFsp, payload.targetAmount.currency) : null
     ])
     console.log([initiatingParticipant, counterParticipant1, counterParticipant2])
     // todo: clarify, what we should do if no initiatingParticipant or counterParticipant found?
@@ -182,14 +193,17 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
     }
 
-    const counterPartyParticipantRecord2 = {
-      commitRequestId: payload.commitRequestId,
-      participantId: counterParticipant2.participantId,
-      participantCurrencyId: counterParticipant2.participantCurrencyId,
-      amount: -payload.targetAmount.amount,
-      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
-      fxParticipantCurrencyTypeId: Enum.Fx.FxParticipantCurrencyType.TARGET,
-      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
+    let counterPartyParticipantRecord2 = null
+    if (!isCreditorProxy) {
+      counterPartyParticipantRecord2 = {
+        commitRequestId: payload.commitRequestId,
+        participantId: counterParticipant2.participantId,
+        participantCurrencyId: counterParticipant2.participantCurrencyId,
+        amount: -payload.targetAmount.amount,
+        transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
+        fxParticipantCurrencyTypeId: Enum.Fx.FxParticipantCurrencyType.TARGET,
+        ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
+      }
     }
 
     const knex = await Db.getKnex()
@@ -204,10 +218,14 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
           await knex(TABLE_NAMES.fxTransfer).transacting(trx).insert(fxTransferRecord)
           await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(initiatingParticipantRecord)
           await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord1)
-          await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord2)
+          if (!isCreditorProxy) {
+            await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord2)
+          }
           initiatingParticipantRecord.name = payload.initiatingFsp
           counterPartyParticipantRecord1.name = payload.counterPartyFsp
-          counterPartyParticipantRecord2.name = payload.counterPartyFsp
+          if (!isCreditorProxy) {
+            counterPartyParticipantRecord2.name = payload.counterPartyFsp
+          }
 
           await knex(TABLE_NAMES.fxTransferStateChange).transacting(trx).insert(fxTransferStateChangeRecord)
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveFxTransferPrepared_transaction' })
@@ -234,14 +252,18 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
 
       try {
         await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord1)
-        await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord2)
+        if (!isCreditorProxy) {
+          await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord2)
+        }
       } catch (err) {
         histTimerNoValidationEnd({ success: false, queryName })
         logger.warn(`Payee fxTransferParticipant insert error: ${err.message}`)
       }
       initiatingParticipantRecord.name = payload.initiatingFsp
       counterPartyParticipantRecord1.name = payload.counterPartyFsp
-      counterPartyParticipantRecord2.name = payload.counterPartyFsp
+      if (!isCreditorProxy) {
+        counterPartyParticipantRecord2.name = payload.counterPartyFsp
+      }
 
       try {
         await knex(TABLE_NAMES.fxTransferStateChange).insert(fxTransferStateChangeRecord)

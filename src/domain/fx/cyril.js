@@ -64,7 +64,7 @@ const checkIfDeterminingTransferExistsForTransferMessage = async (payload) => {
   }
 }
 
-const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload) => {
+const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload, isCreditorProxy) => {
   // Does this determining transfer ID appear on the transfer list?
   const transferRecord = await TransferModel.getById(payload.determiningTransferId)
   const determiningTransferExistsInTransferList = (transferRecord !== null)
@@ -73,12 +73,14 @@ const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload) => 
     {
       participantName: payload.counterPartyFsp,
       currencyId: payload.sourceAmount.currency
-    },
-    {
-      participantName: payload.counterPartyFsp,
-      currencyId: payload.targetAmount.currency
     }
   ]
+  if (!isCreditorProxy) {
+    participantCurrencyValidationList.push({
+      participantName: payload.counterPartyFsp,
+      currencyId: payload.targetAmount.currency
+    })
+  }
   if (determiningTransferExistsInTransferList) {
     // If there's a currency conversion which is not the first message, then it must be issued by the creditor party
     participantCurrencyValidationList.push({
