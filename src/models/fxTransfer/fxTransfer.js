@@ -126,22 +126,102 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
   }
 }
 
+// For proxied fxTransfers and transfers in a regional and jurisdictional scenario, proxy participants
+// are not expected to have a target currency account, so we need a slightly altered version of the above function.
+const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestId) => {
+  try {
+    /** @namespace Db.fxTransfer **/
+    return await Db.from('fxTransfer').query(async (builder) => {
+      const transferResult = await builder
+        .where({
+          'fxTransfer.commitRequestId': commitRequestId,
+          'tprt1.name': 'INITIATING_FSP',
+          'tprt2.name': 'COUNTER_PARTY_FSP',
+          'fpct1.name': 'SOURCE'
+        })
+        // INITIATING_FSP
+        .innerJoin('fxTransferParticipant AS tp1', 'tp1.commitRequestId', 'fxTransfer.commitRequestId')
+        .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
+        .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
+        // COUNTER_PARTY_FSP SOURCE currency
+        .innerJoin('fxTransferParticipant AS tp21', 'tp21.commitRequestId', 'fxTransfer.commitRequestId')
+        .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp21.transferParticipantRoleTypeId')
+        .innerJoin('fxParticipantCurrencyType AS fpct1', 'fpct1.fxParticipantCurrencyTypeId', 'tp21.fxParticipantCurrencyTypeId')
+        .innerJoin('participant AS ca', 'ca.participantId', 'tp21.participantId')
+        .leftJoin('participantCurrency AS pc21', 'pc21.participantCurrencyId', 'tp21.participantCurrencyId')
+        // .innerJoin('participantCurrency AS pc22', 'pc22.participantCurrencyId', 'tp22.participantCurrencyId')
+        // OTHER JOINS
+        .leftJoin('fxTransferStateChange AS tsc', 'tsc.commitRequestId', 'fxTransfer.commitRequestId')
+        .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
+        .leftJoin('fxTransferFulfilment AS tf', 'tf.commitRequestId', 'fxTransfer.commitRequestId')
+        // .leftJoin('transferError as te', 'te.commitRequestId', 'transfer.commitRequestId') // currently transferError.transferId is PK ensuring one error per transferId
+        .select(
+          'fxTransfer.*',
+          'da.participantId AS initiatingFspParticipantId',
+          'da.name AS initiatingFspName',
+          // 'pc21.participantCurrencyId AS counterPartyFspSourceParticipantCurrencyId',
+          // 'pc22.participantCurrencyId AS counterPartyFspTargetParticipantCurrencyId',
+          'tp21.participantCurrencyId AS counterPartyFspSourceParticipantCurrencyId',
+          'ca.participantId AS counterPartyFspParticipantId',
+          'ca.name AS counterPartyFspName',
+          'tsc.fxTransferStateChangeId',
+          'tsc.transferStateId AS transferState',
+          'tsc.reason AS reason',
+          'tsc.createdDate AS completedTimestamp',
+          'ts.enumeration as transferStateEnumeration',
+          'ts.description as transferStateDescription',
+          'tf.ilpFulfilment AS fulfilment'
+        )
+        .orderBy('tsc.fxTransferStateChangeId', 'desc')
+        .first()
+      if (transferResult) {
+        // transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
+        // if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+        //   if (!transferResult.extensionList) transferResult.extensionList = []
+        //   transferResult.extensionList.push({
+        //     key: 'cause',
+        //     value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128)
+        //   })
+        // }
+        transferResult.isTransferReadModel = true
+      }
+      return transferResult
+    })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 const getParticipant = async (name, currency) =>
   participant.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
 
-const savePreparedRequest = async (payload, stateReason, hasPassedValidation) => {
+const savePreparedRequest = async (
+  payload,
+  stateReason,
+  hasPassedValidation,
+  determiningTransferCheckResult,
+  proxyObligation
+) => {
   const histTimerSaveFxTransferEnd = Metrics.getHistogram(
     'model_fx_transfer',
     'facade_saveFxTransferPrepared - Metrics for transfer model',
     ['success', 'queryName']
   ).startTimer()
 
+  // Substitute out of scheme participants with their proxy representatives
+  const initiatingFsp = proxyObligation.isDebtorProxy ? proxyObligation.debtorProxyOrParticipantId?.proxyId : payload.initiatingFsp
+  const counterPartyFsp = proxyObligation.isCreditorProxy ? proxyObligation.creditorProxyOrParticipantId?.proxyId : payload.counterPartyFsp
+
+  // If creditor(counterPartyFsp) is a proxy in a jurisdictional scenario,
+  // they would not hold a position account for the target currency,
+  // so we skip adding records of the target currency for the creditor.
   try {
     const [initiatingParticipant, counterParticipant1, counterParticipant2] = await Promise.all([
-      ParticipantCachedModel.getByName(payload.initiatingFsp),
-      getParticipant(payload.counterPartyFsp, payload.sourceAmount.currency),
-      getParticipant(payload.counterPartyFsp, payload.targetAmount.currency)
+      ParticipantCachedModel.getByName(initiatingFsp),
+      getParticipant(counterPartyFsp, payload.sourceAmount.currency),
+      !proxyObligation.isCreditorProxy ? getParticipant(counterPartyFsp, payload.targetAmount.currency) : null
     ])
+    console.log([initiatingParticipant, counterParticipant1, counterParticipant2])
     // todo: clarify, what we should do if no initiatingParticipant or counterParticipant found?
 
     const fxTransferRecord = {
@@ -181,14 +261,17 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
     }
 
-    const counterPartyParticipantRecord2 = {
-      commitRequestId: payload.commitRequestId,
-      participantId: counterParticipant2.participantId,
-      participantCurrencyId: counterParticipant2.participantCurrencyId,
-      amount: -payload.targetAmount.amount,
-      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
-      fxParticipantCurrencyTypeId: Enum.Fx.FxParticipantCurrencyType.TARGET,
-      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
+    let counterPartyParticipantRecord2 = null
+    if (!proxyObligation.isCreditorProxy) {
+      counterPartyParticipantRecord2 = {
+        commitRequestId: payload.commitRequestId,
+        participantId: counterParticipant2.participantId,
+        participantCurrencyId: counterParticipant2.participantCurrencyId,
+        amount: -payload.targetAmount.amount,
+        transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
+        fxParticipantCurrencyTypeId: Enum.Fx.FxParticipantCurrencyType.TARGET,
+        ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
+      }
     }
 
     const knex = await Db.getKnex()
@@ -203,10 +286,14 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
           await knex(TABLE_NAMES.fxTransfer).transacting(trx).insert(fxTransferRecord)
           await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(initiatingParticipantRecord)
           await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord1)
-          await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord2)
+          if (!proxyObligation.isCreditorProxy) {
+            await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord2)
+          }
           initiatingParticipantRecord.name = payload.initiatingFsp
           counterPartyParticipantRecord1.name = payload.counterPartyFsp
-          counterPartyParticipantRecord2.name = payload.counterPartyFsp
+          if (!proxyObligation.isCreditorProxy) {
+            counterPartyParticipantRecord2.name = payload.counterPartyFsp
+          }
 
           await knex(TABLE_NAMES.fxTransferStateChange).transacting(trx).insert(fxTransferStateChangeRecord)
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveFxTransferPrepared_transaction' })
@@ -233,14 +320,18 @@ const savePreparedRequest = async (payload, stateReason, hasPassedValidation) =>
 
       try {
         await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord1)
-        await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord2)
+        if (!proxyObligation.isCreditorProxy) {
+          await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord2)
+        }
       } catch (err) {
         histTimerNoValidationEnd({ success: false, queryName })
         logger.warn(`Payee fxTransferParticipant insert error: ${err.message}`)
       }
       initiatingParticipantRecord.name = payload.initiatingFsp
       counterPartyParticipantRecord1.name = payload.counterPartyFsp
-      counterPartyParticipantRecord2.name = payload.counterPartyFsp
+      if (!proxyObligation.isCreditorProxy) {
+        counterPartyParticipantRecord2.name = payload.counterPartyFsp
+      }
 
       try {
         await knex(TABLE_NAMES.fxTransferStateChange).insert(fxTransferStateChangeRecord)
@@ -414,5 +505,6 @@ module.exports = {
   getAllDetailsByCommitRequestId,
   savePreparedRequest,
   saveFxFulfilResponse,
-  saveFxTransfer
+  saveFxTransfer,
+  getAllDetailsByCommitRequestIdForProxiedFxTransfer
 }

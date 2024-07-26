@@ -400,7 +400,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   }
 }
 
-const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true, determiningTransferCheckResult) => {
+const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true, determiningTransferCheckResult, proxyObligation) => {
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
     'facade_saveTransferPrepared - Metrics for transfer model',
@@ -424,6 +424,24 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       if (participantCurrency) {
         const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
         participants[name].participantCurrencyId = participantCurrencyRecord.participantCurrencyId
+      }
+
+      if (proxyObligation?.isDebtorProxy) {
+        const proxyId = proxyObligation.debtorProxyOrParticipantId.proxyId
+        const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
+        participants[proxyId] = {}
+        participants[proxyId].id = proxyParticipant.participantId
+        const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(
+          proxyId, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION
+        )
+        participants[proxyId].participantCurrencyId = participantCurrencyRecord.participantCurrencyId
+      }
+
+      if (proxyObligation?.isCreditorProxy) {
+        const proxyId = proxyObligation.creditorProxyOrParticipantId.proxyId
+        const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
+        participants[proxyId] = {}
+        participants[proxyId].id = proxyParticipant.participantId
       }
     }
 
@@ -449,22 +467,47 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       createdDate: Time.getUTCString(new Date())
     }
 
-    const payerTransferParticipantRecord = {
-      transferId: payload.transferId,
-      participantId: participants[payload.payerFsp].id,
-      participantCurrencyId: participants[payload.payerFsp].participantCurrencyId,
-      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
-      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
-      amount: payload.amount.amount
+    let payerTransferParticipantRecord
+    if (proxyObligation?.isDebtorProxy) {
+      payerTransferParticipantRecord = {
+        transferId: payload.transferId,
+        participantId: participants[proxyObligation.debtorProxyOrParticipantId.proxyId].id,
+        participantCurrencyId: participants[proxyObligation.debtorProxyOrParticipantId.proxyId].participantCurrencyId,
+        transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+        ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
+        amount: -payload.amount.amount
+      }
+    } else {
+      payerTransferParticipantRecord = {
+        transferId: payload.transferId,
+        participantId: participants[payload.payerFsp].id,
+        participantCurrencyId: participants[payload.payerFsp].participantCurrencyId,
+        transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
+        ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
+        amount: payload.amount.amount
+      }
     }
 
-    const payeeTransferParticipantRecord = {
-      transferId: payload.transferId,
-      participantId: participants[payload.payeeFsp].id,
-      participantCurrencyId: participants[payload.payeeFsp].participantCurrencyId,
-      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
-      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
-      amount: -payload.amount.amount
+    console.log(participants)
+    let payeeTransferParticipantRecord
+    if (proxyObligation?.isCreditorProxy) {
+      payeeTransferParticipantRecord = {
+        transferId: payload.transferId,
+        participantId: participants[proxyObligation.creditorProxyOrParticipantId.proxyId].id,
+        participantCurrencyId: null,
+        transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+        ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
+        amount: -payload.amount.amount
+      }
+    } else {
+      payeeTransferParticipantRecord = {
+        transferId: payload.transferId,
+        participantId: participants[payload.payeeFsp].id,
+        participantCurrencyId: participants[payload.payeeFsp].participantCurrencyId,
+        transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+        ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
+        amount: -payload.amount.amount
+      }
     }
 
     const knex = await Db.getKnex()

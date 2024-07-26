@@ -64,7 +64,7 @@ const checkIfDeterminingTransferExistsForTransferMessage = async (payload) => {
   }
 }
 
-const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload) => {
+const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload, proxyObligation) => {
   // Does this determining transfer ID appear on the transfer list?
   const transferRecord = await TransferModel.getById(payload.determiningTransferId)
   const determiningTransferExistsInTransferList = (transferRecord !== null)
@@ -73,12 +73,16 @@ const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload) => 
     {
       participantName: payload.counterPartyFsp,
       currencyId: payload.sourceAmount.currency
-    },
-    {
-      participantName: payload.counterPartyFsp,
-      currencyId: payload.targetAmount.currency
     }
   ]
+  // If creditor is a proxy in a jurisdictional scenario, they would not hold a position account for the target currency
+  // for a /fxTransfer. So we skip adding this to accounts to be validated.
+  if (!proxyObligation.isCreditorProxy) {
+    participantCurrencyValidationList.push({
+      participantName: payload.counterPartyFsp,
+      currencyId: payload.targetAmount.currency
+    })
+  }
   if (determiningTransferExistsInTransferList) {
     // If there's a currency conversion which is not the first message, then it must be issued by the creditor party
     participantCurrencyValidationList.push({
@@ -99,7 +103,7 @@ const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload) => 
   }
 }
 
-const getParticipantAndCurrencyForTransferMessage = async (payload, determiningTransferCheckResult) => {
+const getParticipantAndCurrencyForTransferMessage = async (payload, determiningTransferCheckResult, isProxiedFxTransfer = false) => {
   const histTimerGetParticipantAndCurrencyForTransferMessage = Metrics.getHistogram(
     'fx_domain_cyril_getParticipantAndCurrencyForTransferMessage',
     'fx_domain_cyril_getParticipantAndCurrencyForTransferMessage - Metrics for fx cyril',
@@ -107,14 +111,21 @@ const getParticipantAndCurrencyForTransferMessage = async (payload, determiningT
   ).startTimer()
 
   let participantName, currencyId, amount
-
+  console.log(determiningTransferCheckResult)
   if (determiningTransferCheckResult.determiningTransferExistsInWatchList) {
     // If there's a currency conversion before the transfer is requested, it must be the debtor who did it.
     // Get the FX request corresponding to this transaction ID
     // TODO: Can't we just use the following query in the first place above to check if the determining transfer exists instead of using the watch list?
     // const fxTransferRecord = await fxTransfer.getByDeterminingTransferId(payload.transferId)
-    const fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(determiningTransferCheckResult.watchListRecords[0].commitRequestId)
+    let fxTransferRecord
+    if (isProxiedFxTransfer) {
+      fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(determiningTransferCheckResult.watchListRecords[0].commitRequestId)
+    } else {
+      fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(determiningTransferCheckResult.watchListRecords[0].commitRequestId)
+    }
+
     // Liquidity check and reserve funds against FXP in FX target currency
+    console.log(fxTransferRecord)
     participantName = fxTransferRecord.counterPartyFspName
     currencyId = fxTransferRecord.targetCurrency
     amount = fxTransferRecord.targetAmount
