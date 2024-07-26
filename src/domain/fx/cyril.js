@@ -103,7 +103,7 @@ const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload, pro
   }
 }
 
-const getParticipantAndCurrencyForTransferMessage = async (payload, determiningTransferCheckResult) => {
+const getParticipantAndCurrencyForTransferMessage = async (payload, determiningTransferCheckResult, isProxiedFxTransfer = false) => {
   const histTimerGetParticipantAndCurrencyForTransferMessage = Metrics.getHistogram(
     'fx_domain_cyril_getParticipantAndCurrencyForTransferMessage',
     'fx_domain_cyril_getParticipantAndCurrencyForTransferMessage - Metrics for fx cyril',
@@ -111,14 +111,21 @@ const getParticipantAndCurrencyForTransferMessage = async (payload, determiningT
   ).startTimer()
 
   let participantName, currencyId, amount
-
+  console.log(determiningTransferCheckResult)
   if (determiningTransferCheckResult.determiningTransferExistsInWatchList) {
     // If there's a currency conversion before the transfer is requested, it must be the debtor who did it.
     // Get the FX request corresponding to this transaction ID
     // TODO: Can't we just use the following query in the first place above to check if the determining transfer exists instead of using the watch list?
     // const fxTransferRecord = await fxTransfer.getByDeterminingTransferId(payload.transferId)
-    const fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(determiningTransferCheckResult.watchListRecords[0].commitRequestId)
+    let fxTransferRecord
+    if (isProxiedFxTransfer) {
+      fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(determiningTransferCheckResult.watchListRecords[0].commitRequestId)
+    } else {
+      fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(determiningTransferCheckResult.watchListRecords[0].commitRequestId)
+    }
+
     // Liquidity check and reserve funds against FXP in FX target currency
+    console.log(fxTransferRecord)
     participantName = fxTransferRecord.counterPartyFspName
     currencyId = fxTransferRecord.targetCurrency
     amount = fxTransferRecord.targetAmount

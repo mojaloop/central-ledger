@@ -157,14 +157,22 @@ const savePreparedRequest = async ({
 
 const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult, proxyObligation }) => {
   const cyrilResult = await createRemittanceEntity(isFx)
-    .getPositionParticipant(payload, determiningTransferCheckResult)
+    .getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation.isCreditorProxy)
   let messageKey
   /**
    * Interscheme accounting rules:
    *  - If the participant has a proxy representation, the proxy's account should be used for the position change.
    *  - If the debtor and the creditor DFSPs are represented by the same proxy, no position adjustment is needed.
    */
-  if (proxyObligation.isSameProxy) {
+  // On a proxied transfer prepare if there is a corresponding fx transfer `getPositionParticipant`
+  // should return the fxp's proxy as the participantName since the fxp proxy would be saved as the counterpartyFsp
+  // in the prior fx transfer prepare.
+  // TODO: This ideally should compare the proxy's participantCurrency accounts to avoid some edge cases.
+  const counterPartyParticipantFXPProxy = cyrilResult.participantName
+  const isSameProxy = counterPartyParticipantFXPProxy && proxyObligation?.creditorProxyOrParticipantId?.proxyId
+    ? counterPartyParticipantFXPProxy === proxyObligation.creditorProxyOrParticipantId.proxyId
+    : false
+  if (isSameProxy) {
     messageKey = '0'
   } else {
     const participantName = cyrilResult.participantName
@@ -342,7 +350,6 @@ const prepare = async (error, messages) => {
     const proxyObligation = {
       isDebtorProxy: false,
       isCreditorProxy: false,
-      isSameProxy: false,
       debtorProxyOrParticipantId: null,
       creditorProxyOrParticipantId: null,
       payloadClone: { ...payload }
@@ -356,7 +363,7 @@ const prepare = async (error, messages) => {
         ProxyCache.getFSPProxy(debtorFsp),
         ProxyCache.getFSPProxy(creditorFsp)
       ])
-      proxyObligation.isSameProxy = await ProxyCache.checkSameCreditorDebtorProxy(debtorFsp, creditorFsp)
+
       proxyObligation.isDebtorProxy = !proxyObligation.debtorProxyOrParticipantId.inScheme && proxyObligation.debtorProxyOrParticipantId.proxyId !== null
       proxyObligation.isCreditorProxy = !proxyObligation.creditorProxyOrParticipantId.inScheme && proxyObligation.creditorProxyOrParticipantId.proxyId !== null
 

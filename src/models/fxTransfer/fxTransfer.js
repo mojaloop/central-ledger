@@ -126,6 +126,72 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
   }
 }
 
+// For proxied fxTransfers and transfers in a regional and jurisdictional scenario, proxy participants
+// are not expected to have a target currency account, so we need a slightly altered version of the above function.
+const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestId) => {
+  try {
+    /** @namespace Db.fxTransfer **/
+    return await Db.from('fxTransfer').query(async (builder) => {
+      const transferResult = await builder
+        .where({
+          'fxTransfer.commitRequestId': commitRequestId,
+          'tprt1.name': 'INITIATING_FSP',
+          'tprt2.name': 'COUNTER_PARTY_FSP',
+          'fpct1.name': 'SOURCE'
+        })
+        // INITIATING_FSP
+        .innerJoin('fxTransferParticipant AS tp1', 'tp1.commitRequestId', 'fxTransfer.commitRequestId')
+        .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
+        .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
+        // COUNTER_PARTY_FSP SOURCE currency
+        .innerJoin('fxTransferParticipant AS tp21', 'tp21.commitRequestId', 'fxTransfer.commitRequestId')
+        .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp21.transferParticipantRoleTypeId')
+        .innerJoin('fxParticipantCurrencyType AS fpct1', 'fpct1.fxParticipantCurrencyTypeId', 'tp21.fxParticipantCurrencyTypeId')
+        .innerJoin('participant AS ca', 'ca.participantId', 'tp21.participantId')
+        .leftJoin('participantCurrency AS pc21', 'pc21.participantCurrencyId', 'tp21.participantCurrencyId')
+        // .innerJoin('participantCurrency AS pc22', 'pc22.participantCurrencyId', 'tp22.participantCurrencyId')
+        // OTHER JOINS
+        .leftJoin('fxTransferStateChange AS tsc', 'tsc.commitRequestId', 'fxTransfer.commitRequestId')
+        .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
+        .leftJoin('fxTransferFulfilment AS tf', 'tf.commitRequestId', 'fxTransfer.commitRequestId')
+        // .leftJoin('transferError as te', 'te.commitRequestId', 'transfer.commitRequestId') // currently transferError.transferId is PK ensuring one error per transferId
+        .select(
+          'fxTransfer.*',
+          'da.participantId AS initiatingFspParticipantId',
+          'da.name AS initiatingFspName',
+          // 'pc21.participantCurrencyId AS counterPartyFspSourceParticipantCurrencyId',
+          // 'pc22.participantCurrencyId AS counterPartyFspTargetParticipantCurrencyId',
+          'tp21.participantCurrencyId AS counterPartyFspSourceParticipantCurrencyId',
+          'ca.participantId AS counterPartyFspParticipantId',
+          'ca.name AS counterPartyFspName',
+          'tsc.fxTransferStateChangeId',
+          'tsc.transferStateId AS transferState',
+          'tsc.reason AS reason',
+          'tsc.createdDate AS completedTimestamp',
+          'ts.enumeration as transferStateEnumeration',
+          'ts.description as transferStateDescription',
+          'tf.ilpFulfilment AS fulfilment'
+        )
+        .orderBy('tsc.fxTransferStateChangeId', 'desc')
+        .first()
+      if (transferResult) {
+        // transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
+        // if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+        //   if (!transferResult.extensionList) transferResult.extensionList = []
+        //   transferResult.extensionList.push({
+        //     key: 'cause',
+        //     value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128)
+        //   })
+        // }
+        transferResult.isTransferReadModel = true
+      }
+      return transferResult
+    })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 const getParticipant = async (name, currency) =>
   participant.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
 
@@ -439,5 +505,6 @@ module.exports = {
   getAllDetailsByCommitRequestId,
   savePreparedRequest,
   saveFxFulfilResponse,
-  saveFxTransfer
+  saveFxTransfer,
+  getAllDetailsByCommitRequestIdForProxiedFxTransfer
 }
