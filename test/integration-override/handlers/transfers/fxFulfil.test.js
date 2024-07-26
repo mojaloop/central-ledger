@@ -55,7 +55,12 @@ const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', a
   const { commitRequestId } = fxTransfer
   const isFx = true
   const log = new Logger({ commitRequestId })
-
+  const proxyObligation = {
+    isDebtorProxy: false,
+    isCreditorProxy: false,
+    debtorProxyOrParticipantId: null,
+    creditorProxyOrParticipantId: null
+  }
   const dupResult = await prepare.checkDuplication({
     payload: fxTransfer,
     isFx,
@@ -71,7 +76,8 @@ const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', a
     params: {},
     validationPassed: true,
     reasons: [],
-    location: {}
+    location: {},
+    proxyObligation
   })
 
   if (transferStateId) {
@@ -87,7 +93,10 @@ const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', a
   }
 
   if (addToWatchList) {
-    const determiningTransferCheckResult = await cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxTransfer)
+    const determiningTransferCheckResult = await cyril.checkIfDeterminingTransferExistsForFxTransferMessage(
+      fxTransfer,
+      proxyObligation
+    )
     await cyril.getParticipantAndCurrencyForFxTransferMessage(fxTransfer, determiningTransferCheckResult)
     log.info('fxTransfer is added to watchList', { fxTransfer })
   }
