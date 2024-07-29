@@ -55,7 +55,7 @@ const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
   return debtorProxyId && creditorProxyId ? debtorProxyId === creditorProxyId : false
 }
 
-const deriveCurrencyId = async (fspName, currency) => {
+const getProxyParticipantAccountDetails = async (fspName, currency) => {
   const proxyLookupResult = await getFSPProxy(fspName)
   if (proxyLookupResult.inScheme) {
     const participantCurrency = await ParticipantService.getAccountByNameAndCurrency(
@@ -63,7 +63,10 @@ const deriveCurrencyId = async (fspName, currency) => {
       currency,
       Enum.Accounts.LedgerAccountType.POSITION
     )
-    return participantCurrency?.participantCurrencyId || null
+    return {
+      inScheme: true,
+      participantCurrencyId: participantCurrency?.participantCurrencyId || null
+    }
   } else {
     if (proxyLookupResult.proxyId) {
       const participantCurrency = await ParticipantService.getAccountByNameAndCurrency(
@@ -71,12 +74,16 @@ const deriveCurrencyId = async (fspName, currency) => {
         currency,
         Enum.Accounts.LedgerAccountType.POSITION
       )
-      if (participantCurrency) {
-        return participantCurrency.participantCurrencyId
+      return {
+        inScheme: false,
+        participantCurrencyId: participantCurrency?.participantCurrencyId || null
       }
     }
+    return {
+      inScheme: false,
+      participantCurrencyId: null
+    }
   }
-  return null
 }
 
 module.exports = {
@@ -85,6 +92,6 @@ module.exports = {
   disconnect,
   getCache,
   getFSPProxy,
-  deriveCurrencyId,
+  getProxyParticipantAccountDetails,
   checkSameCreditorDebtorProxy
 }

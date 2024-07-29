@@ -544,7 +544,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         let messageKey = 0
         const checkSameCreditorDebtorProxyResult = await ProxyCache.checkSameCreditorDebtorProxy(transfer.payerFsp, transfer.payeeFsp)
         if (!checkSameCreditorDebtorProxyResult) {
-          const participantCurrencyId = await ProxyCache.deriveCurrencyId(transfer.payeeFsp, transfer.currency)
+          const { participantCurrencyId } = await ProxyCache.getProxyParticipantAccountDetails(transfer.payeeFsp, transfer.currency)
           if (participantCurrencyId) {
             messageKey = participantCurrencyId.toString()
           } else {
