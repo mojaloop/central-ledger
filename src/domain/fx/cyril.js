@@ -120,6 +120,9 @@ const getParticipantAndCurrencyForTransferMessage = async (payload, determiningT
     // const fxTransferRecord = await fxTransfer.getByDeterminingTransferId(payload.transferId)
     let fxTransferRecord
     if (proxyObligation.isCounterPartyFspProxy) {
+      // If a proxy is representing a FXP in a jurisdictional scenario,
+      // they would not hold a position account for the `targetAmount` currency
+      // for a /fxTransfer. So we skip adding this to accounts to be validated.
       fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(determiningTransferCheckResult.watchListRecords[0].commitRequestId)
     } else {
       fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(determiningTransferCheckResult.watchListRecords[0].commitRequestId)
