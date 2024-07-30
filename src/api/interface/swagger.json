@@ -384,9 +384,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -413,9 +410,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -451,9 +445,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -672,9 +663,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -710,9 +698,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -926,9 +911,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -988,9 +970,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -1026,9 +1005,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -1071,9 +1047,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -1118,9 +1091,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
