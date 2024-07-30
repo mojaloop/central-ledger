@@ -56,10 +56,10 @@ const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', a
   const isFx = true
   const log = new Logger({ commitRequestId })
   const proxyObligation = {
-    isDebtorProxy: false,
-    isCreditorProxy: false,
-    debtorProxyOrParticipantId: null,
-    creditorProxyOrParticipantId: null
+    isInitiatingFspProxy: false,
+    isCounterPartyFspProxy: false,
+    initiatingFspProxyOrParticipantId: null,
+    counterPartyFspProxyOrParticipantId: null
   }
   const dupResult = await prepare.checkDuplication({
     payload: fxTransfer,

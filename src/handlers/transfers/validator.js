@@ -208,7 +208,7 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
   const counterPartyFsp = isFx ? payload.counterPartyFsp : payload.payeeFsp
 
   // Skip usual validation if preparing a proxy transfer or fxTransfer
-  if (!(proxyObligation?.isDebtorProxy || proxyObligation?.isCreditorProxy)) {
+  if (!(proxyObligation?.isInitiatingFspProxy || proxyObligation?.isCounterPartyFspProxy)) {
     validationPassed = (
       validateFspiopSourceMatchesPayer(initiatingFsp, headers) &&
       isAmountValid(payload, isFx) &&

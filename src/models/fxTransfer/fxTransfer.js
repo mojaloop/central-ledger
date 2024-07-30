@@ -209,8 +209,12 @@ const savePreparedRequest = async (
   ).startTimer()
 
   // Substitute out of scheme participants with their proxy representatives
-  const initiatingFsp = proxyObligation.isDebtorProxy ? proxyObligation.debtorProxyOrParticipantId?.proxyId : payload.initiatingFsp
-  const counterPartyFsp = proxyObligation.isCreditorProxy ? proxyObligation.creditorProxyOrParticipantId?.proxyId : payload.counterPartyFsp
+  const initiatingFsp = proxyObligation.isInitiatingFspProxy
+    ? proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
+    : payload.initiatingFsp
+  const counterPartyFsp = proxyObligation.isCounterPartyFspProxy
+    ? proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
+    : payload.counterPartyFsp
 
   // If creditor(counterPartyFsp) is a proxy in a jurisdictional scenario,
   // they would not hold a position account for the target currency,
@@ -219,9 +223,8 @@ const savePreparedRequest = async (
     const [initiatingParticipant, counterParticipant1, counterParticipant2] = await Promise.all([
       ParticipantCachedModel.getByName(initiatingFsp),
       getParticipant(counterPartyFsp, payload.sourceAmount.currency),
-      !proxyObligation.isCreditorProxy ? getParticipant(counterPartyFsp, payload.targetAmount.currency) : null
+      !proxyObligation.isCounterPartyFspProxy ? getParticipant(counterPartyFsp, payload.targetAmount.currency) : null
     ])
-    console.log([initiatingParticipant, counterParticipant1, counterParticipant2])
     // todo: clarify, what we should do if no initiatingParticipant or counterParticipant found?
 
     const fxTransferRecord = {
@@ -262,7 +265,7 @@ const savePreparedRequest = async (
     }
 
     let counterPartyParticipantRecord2 = null
-    if (!proxyObligation.isCreditorProxy) {
+    if (!proxyObligation.isCounterPartyFspProxy) {
       counterPartyParticipantRecord2 = {
         commitRequestId: payload.commitRequestId,
         participantId: counterParticipant2.participantId,
@@ -286,12 +289,12 @@ const savePreparedRequest = async (
           await knex(TABLE_NAMES.fxTransfer).transacting(trx).insert(fxTransferRecord)
           await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(initiatingParticipantRecord)
           await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord1)
-          if (!proxyObligation.isCreditorProxy) {
+          if (!proxyObligation.isCounterPartyFspProxy) {
             await knex(TABLE_NAMES.fxTransferParticipant).transacting(trx).insert(counterPartyParticipantRecord2)
           }
           initiatingParticipantRecord.name = payload.initiatingFsp
           counterPartyParticipantRecord1.name = payload.counterPartyFsp
-          if (!proxyObligation.isCreditorProxy) {
+          if (!proxyObligation.isCounterPartyFspProxy) {
             counterPartyParticipantRecord2.name = payload.counterPartyFsp
           }
 
@@ -320,7 +323,7 @@ const savePreparedRequest = async (
 
       try {
         await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord1)
-        if (!proxyObligation.isCreditorProxy) {
+        if (!proxyObligation.isCounterPartyFspProxy) {
           await knex(TABLE_NAMES.fxTransferParticipant).insert(counterPartyParticipantRecord2)
         }
       } catch (err) {
@@ -329,7 +332,7 @@ const savePreparedRequest = async (
       }
       initiatingParticipantRecord.name = payload.initiatingFsp
       counterPartyParticipantRecord1.name = payload.counterPartyFsp
-      if (!proxyObligation.isCreditorProxy) {
+      if (!proxyObligation.isCounterPartyFspProxy) {
         counterPartyParticipantRecord2.name = payload.counterPartyFsp
       }
 
