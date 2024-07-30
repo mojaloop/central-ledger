@@ -97,6 +97,6 @@ function csvToHtml(csvFile, htmlFile) {
 }
 
 // Example usage
-csvToHtml('metadata.csv', 'metadata-detailed.html');
-csvToHtml('components.csv', 'components-detailed.html');
-csvToHtml('dependencies.csv', 'dependencies-detailed.html');
+csvToHtml('metadata-last-publish.csv', 'metadata-detailed.html');
+csvToHtml('components-last-publish.csv', 'components-detailed.html');
+csvToHtml('dependencies-last-publish.csv', 'dependencies.html');
