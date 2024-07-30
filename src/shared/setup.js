@@ -266,7 +266,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     await connectDatabase()
     await connectMongoose()
     await initializeCache()
-    if (Config.PROXY_CACHE_CONFIG.enabled) {
+    if (Config.PROXY_CACHE_CONFIG?.enabled) {
       await ProxyCache.connect()
     }
 
@@ -307,7 +307,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`)
 
     await Db.disconnect()
-    if (Config.PROXY_CACHE_CONFIG.enabled) {
+    if (Config.PROXY_CACHE_CONFIG?.enabled) {
       await ProxyCache.disconnect()
     }
     process.exit(1)
