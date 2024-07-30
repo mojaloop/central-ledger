@@ -478,7 +478,7 @@ Test('Cyril', cyrilTest => {
       }
     })
 
-    processFulfilMessageTest.test('process watchlist with only payer conversion found, but derived currencyId is null', async (test) => {
+    processFulfilMessageTest.test('process watchlist with only payer conversion found, but payee is a proxy and have no account in the currency', async (test) => {
       try {
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [{
@@ -505,7 +505,7 @@ Test('Cyril', cyrilTest => {
           participantName: 'fx_dfsp1',
           isActive: 1
         }))
-        ProxyCache.getProxyParticipantAccountDetails.returns(Promise.resolve({ inScheme: true, participantCurrencyId: null }))
+        ProxyCache.getProxyParticipantAccountDetails.returns(Promise.resolve({ inScheme: false, participantCurrencyId: null }))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
         test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
@@ -528,7 +528,131 @@ Test('Cyril', cyrilTest => {
       }
     })
 
-    processFulfilMessageTest.test('process watchlist with only payee conversion found but derived currencyId is null', async (test) => {
+    processFulfilMessageTest.test('process watchlist with only payer conversion found, but payee is a proxy and have account in the currency somehow', async (test) => {
+      try {
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
+          [{
+            commitRequestId: fxPayload.commitRequestId,
+            determiningTransferId: fxPayload.determiningTransferId,
+            fxTransferTypeId: Enum.Fx.FxTransferType.PAYER_CONVERSION,
+            createdDate: new Date()
+          }]
+        ))
+        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+          {
+            initiatingFspParticipantId: 2,
+            targetAmount: fxPayload.targetAmount.amount,
+            commitRequestId: fxPayload.commitRequestId,
+            counterPartyFspSourceParticipantCurrencyId: 1,
+            counterPartyFspTargetParticipantCurrencyId: 2,
+            sourceAmount: fxPayload.sourceAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency
+          }
+        ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'fx_dfsp1',
+          isActive: 1
+        }))
+        ProxyCache.getProxyParticipantAccountDetails.onCall(0).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 234 })) // FXP Source Currency
+        ProxyCache.getProxyParticipantAccountDetails.onCall(1).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 456 })) // Payee Target Currency
+        ProxyCache.getProxyParticipantAccountDetails.onCall(2).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 345 })) // FXP Target Currency
+        const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
+        test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(ProxyCache.getProxyParticipantAccountDetails.calledWith(
+          'dfsp2',
+          fxPayload.targetAmount.currency
+        ))
+
+        test.deepEqual(result, {
+          isFx: true,
+          positionChanges: [
+            {
+              isFxTransferStateChange: true,
+              commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
+              participantCurrencyId: 234,
+              amount: -433.88
+            },
+            {
+              isFxTransferStateChange: false,
+              transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+              participantCurrencyId: 456,
+              amount: -200 
+            }
+          ],
+          patchNotifications: []
+        })
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    processFulfilMessageTest.test('process watchlist with only payer conversion found, but payee is a proxy and have account in the currency somehow and it is same as fxp target account', async (test) => {
+      try {
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
+          [{
+            commitRequestId: fxPayload.commitRequestId,
+            determiningTransferId: fxPayload.determiningTransferId,
+            fxTransferTypeId: Enum.Fx.FxTransferType.PAYER_CONVERSION,
+            createdDate: new Date()
+          }]
+        ))
+        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+          {
+            initiatingFspParticipantId: 2,
+            targetAmount: fxPayload.targetAmount.amount,
+            commitRequestId: fxPayload.commitRequestId,
+            counterPartyFspSourceParticipantCurrencyId: 1,
+            counterPartyFspTargetParticipantCurrencyId: 2,
+            sourceAmount: fxPayload.sourceAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency
+          }
+        ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'fx_dfsp1',
+          isActive: 1
+        }))
+        ProxyCache.getProxyParticipantAccountDetails.onCall(0).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 234 })) // FXP Source Currency
+        ProxyCache.getProxyParticipantAccountDetails.onCall(1).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 456 })) // Payee Target Currency
+        ProxyCache.getProxyParticipantAccountDetails.onCall(2).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 456 })) // FXP Target Currency
+        const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
+        test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(ProxyCache.getProxyParticipantAccountDetails.calledWith(
+          'dfsp2',
+          fxPayload.targetAmount.currency
+        ))
+
+        test.deepEqual(result, {
+          isFx: true,
+          positionChanges: [
+            {
+              isFxTransferStateChange: true,
+              commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
+              participantCurrencyId: 234,
+              amount: -433.88
+            }
+          ],
+          patchNotifications: []
+        })
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    processFulfilMessageTest.test('process watchlist with only payee conversion found but fxp is proxy and have no account', async (test) => {
       try {
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [{
@@ -555,13 +679,129 @@ Test('Cyril', cyrilTest => {
           participantName: 'payeeFsp',
           isActive: 1
         }))
-        ProxyCache.getProxyParticipantAccountDetails.returns(Promise.resolve({ inScheme: true, participantCurrencyId: null }))
+        ProxyCache.getProxyParticipantAccountDetails.returns(Promise.resolve({ inScheme: false, participantCurrencyId: null }))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
         test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [],
+          patchNotifications: []
+        }
+        )
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    processFulfilMessageTest.test('process watchlist with only payee conversion found but fxp is proxy and have account in source currency somehow', async (test) => {
+      try {
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
+          [{
+            commitRequestId: fxPayload.commitRequestId,
+            determiningTransferId: fxPayload.determiningTransferId,
+            fxTransferTypeId: Enum.Fx.FxTransferType.PAYEE_CONVERSION,
+            createdDate: new Date()
+          }]
+        ))
+        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+          {
+            initiatingFspParticipantId: 1,
+            targetAmount: fxPayload.targetAmount.amount,
+            commitRequestId: fxPayload.commitRequestId,
+            counterPartyFspSourceParticipantCurrencyId: 1,
+            counterPartyFspTargetParticipantCurrencyId: 2,
+            sourceAmount: fxPayload.sourceAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency
+          }
+        ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'payeeFsp',
+          isActive: 1
+        }))
+        ProxyCache.getProxyParticipantAccountDetails.onCall(0).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 456 })) // Payee Target Currency
+        ProxyCache.getProxyParticipantAccountDetails.onCall(1).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 234 })) // FXP Source Currency
+        ProxyCache.getProxyParticipantAccountDetails.onCall(2).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 123 })) // Payer Source Currency
+        const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
+        test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.deepEqual(result, {
+          isFx: true,
+          positionChanges: [
+            {
+              isFxTransferStateChange: false,
+              transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+              participantCurrencyId: 456,
+              amount: -200
+            },
+            {
+              isFxTransferStateChange: true,
+              commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
+              participantCurrencyId: 234,
+              amount: -433.88
+            }
+          ],
+          patchNotifications: []
+        }
+        )
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    processFulfilMessageTest.test('process watchlist with only payee conversion found but fxp is proxy and have account in source currency somehow and it is same as payer account', async (test) => {
+      try {
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
+          [{
+            commitRequestId: fxPayload.commitRequestId,
+            determiningTransferId: fxPayload.determiningTransferId,
+            fxTransferTypeId: Enum.Fx.FxTransferType.PAYEE_CONVERSION,
+            createdDate: new Date()
+          }]
+        ))
+        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+          {
+            initiatingFspParticipantId: 1,
+            targetAmount: fxPayload.targetAmount.amount,
+            commitRequestId: fxPayload.commitRequestId,
+            counterPartyFspSourceParticipantCurrencyId: 1,
+            counterPartyFspTargetParticipantCurrencyId: 2,
+            sourceAmount: fxPayload.sourceAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency
+          }
+        ))
+        ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
+          participantId: 1,
+          participantCurrencyId: 1,
+          participantName: 'payeeFsp',
+          isActive: 1
+        }))
+        ProxyCache.getProxyParticipantAccountDetails.onCall(0).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 456 })) // Payee Target Currency
+        ProxyCache.getProxyParticipantAccountDetails.onCall(1).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 234 })) // FXP Source Currency
+        ProxyCache.getProxyParticipantAccountDetails.onCall(2).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 234 })) // Payer Source Currency
+        const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
+        test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.deepEqual(result, {
+          isFx: true,
+          positionChanges: [
+            {
+              isFxTransferStateChange: false,
+              transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+              participantCurrencyId: 456,
+              amount: -200
+            }
+          ],
           patchNotifications: []
         }
         )

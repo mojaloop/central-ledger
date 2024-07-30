@@ -297,7 +297,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
           // We are not expecting this. Payee participant is a proxy and have an account in the targetCurrency.
           // In this case we need to check if FXP is also a proxy and have the same account as payee.
           const proxyParticipantAccountDetails2 = await ProxyCache.getProxyParticipantAccountDetails(sendingFxpRecord.counterPartyFspName, sendingFxpRecord.targetCurrency)
-          if (proxyParticipantAccountDetails2.inScheme && (proxyParticipantAccountDetails.participantCurrencyId !== proxyParticipantAccountDetails2.participantCurrencyId)) {
+          if (!proxyParticipantAccountDetails2.inScheme && (proxyParticipantAccountDetails.participantCurrencyId !== proxyParticipantAccountDetails2.participantCurrencyId)) {
             isPositionChange = true
           }
         }
@@ -321,7 +321,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
           // We are not expecting this. FXP participant is a proxy and have an account in the sourceCurrency.
           // In this case we need to check if Payer is also a proxy and have the same account as FXP.
           const proxyParticipantAccountDetails2 = await ProxyCache.getProxyParticipantAccountDetails(transfer.payerFsp, receivingFxpRecord.sourceCurrency)
-          if (proxyParticipantAccountDetails2.inScheme && (proxyParticipantAccountDetails.participantCurrencyId !== proxyParticipantAccountDetails2.participantCurrencyId)) {
+          if (!proxyParticipantAccountDetails2.inScheme && (proxyParticipantAccountDetails.participantCurrencyId !== proxyParticipantAccountDetails2.participantCurrencyId)) {
             isPositionChange = true
           }
         }
