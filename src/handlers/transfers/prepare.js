@@ -156,18 +156,26 @@ const savePreparedRequest = async ({
 }
 
 const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult, proxyObligation }) => {
+  console.log(determiningTransferCheckResult)
   const cyrilResult = await createRemittanceEntity(isFx)
     .getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation)
+  console.log(cyrilResult)
   let messageKey
   // On a proxied transfer prepare if there is a corresponding fx transfer `getPositionParticipant`
   // should return the fxp's proxy as the participantName since the fxp proxy would be saved as the counterPartyFsp
   // in the prior fx transfer prepare.
   // Following interscheme rules, if the debtor(fxTransfer FXP) and the creditor(transfer payee) are
   // represented by the same proxy, no position adjustment is needed.
-  const counterPartyParticipantFXPProxy = cyrilResult.participantName
-  const isSameProxy = counterPartyParticipantFXPProxy && proxyObligation?.counterPartyFspProxyOrParticipantId?.proxyId
-    ? counterPartyParticipantFXPProxy === proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
-    : false
+  let isSameProxy = false
+  // Only check transfers that have a related fxTransfer
+  if (determiningTransferCheckResult?.watchListRecords?.length > 0) {
+    const counterPartyParticipantFXPProxy = cyrilResult.participantName
+    console.log(counterPartyParticipantFXPProxy)
+    console.log(proxyObligation?.counterPartyFspProxyOrParticipantId?.proxyId)
+    isSameProxy = counterPartyParticipantFXPProxy && proxyObligation?.counterPartyFspProxyOrParticipantId?.proxyId
+      ? counterPartyParticipantFXPProxy === proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+      : false
+  }
   if (isSameProxy) {
     messageKey = '0'
   } else {

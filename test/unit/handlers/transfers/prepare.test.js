@@ -308,6 +308,13 @@ const cyrilStub = async (payload) => {
       amount: payload.targetAmount.amount
     }
   }
+  if (payload.transferId === fxTransfer.determiningTransferId) {
+    return {
+      participantName: 'proxyAR',
+      currencyId: fxTransfer.targetAmount.currency,
+      amount: fxTransfer.targetAmount.amount
+    }
+  }
   return {
     participantName: payload.payerFsp,
     currencyId: payload.amount.currency,
@@ -1057,21 +1064,23 @@ Test('Transfer handler', transferHandlerTest => {
       should handle Scheme A: POST /transfer call I.e. Debtor: Proxy AR → Creditor: Proxy AR
       Do nothing
       produce message with key=0 if both proxies for debtor and creditor are the same in /transfers msg`, async (test) => {
-      // Stub payer and payee with same proxy
-      getFSPProxyStub.withArgs(transfer.payerFsp).returns({
-        inScheme: false,
-        proxyId: 'sameProxy'
-      })
+      // Stub payee with same proxy
       getFSPProxyStub.withArgs(transfer.payeeFsp).returns({
         inScheme: false,
-        proxyId: 'sameProxy'
+        proxyId: 'proxyAR'
+      })
+      getFSPProxyStub.withArgs(fxTransfer.counterPartyFsp).returns({
+        inScheme: false,
+        proxyId: 'proxyAR'
       })
       checkSameCreditorDebtorProxyStub.resolves(true)
-
       // Stub watchlist to mimic that transfer is part of fxTransfer
-      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve({ fxTransferId: 1 }))
+      fxTransferModel.watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve([{
+        fxTransferId: 1
+      }]))
 
       const localMessages = MainUtil.clone(messages)
+      localMessages[0].value.content.payload.transferId = 'c05c3f31-33b5-4e33-8bfd-7c3a2685fb6c'
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)

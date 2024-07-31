@@ -473,7 +473,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         transferId: payload.transferId,
         participantId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].id,
         participantCurrencyId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].participantCurrencyId,
-        transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+        transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
         amount: -payload.amount.amount
       }
