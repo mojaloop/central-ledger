@@ -1349,6 +1349,7 @@ Test('Handlers test', async handlersTest => {
 
       const td = await prepareTestData(testData)
       await ProxyCache.getCache().addDfspIdToProxyMapping(fxTransferPrepareTo, td.proxyAR.participant.name)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyAR.participant.name)
 
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -1387,8 +1388,8 @@ Test('Handlers test', async handlersTest => {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-transfer-position-batch',
           action: 'prepare',
-          // A position prepare message reserving the FXP's targeted currency account should be created
-          keyFilter: td.fxp.participantCurrencyIdSecondary.toString()
+          // A position prepare message without need for any position changes should be created (key 0)
+          keyFilter: '0'
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
       } catch (err) {
@@ -1396,39 +1397,32 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
 
-      // // Fulfil the transfer
-      // const fulfilConfig = Utility.getKafkaConfig(
-      //   Config.KAFKA_CONFIG,
-      //   Enum.Kafka.Config.PRODUCER,
-      //   TransferEventType.TRANSFER.toUpperCase(),
-      //   TransferEventType.FULFIL.toUpperCase())
-      // fulfilConfig.logger = Logger
+      // Fulfil the transfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
 
-      // td.messageProtocolFulfil.content.from = transferPrepareTo
-      // td.messageProtocolFulfil.content.to = transferPrepareFrom
-      // td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
-      // td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
+      td.messageProtocolFulfil.content.from = transferPrepareTo
+      td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
 
-      // testConsumer.clearEvents()
-      // await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
-
-      // try {
-      //   const positionFulfil1 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-      //     topicFilter: 'topic-transfer-position-batch',
-      //     action: 'commit',
-      //     keyFilter: td.fxp.participantCurrencyId.toString()
-      //   }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      //   const positionFulfil2 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-      //     topicFilter: 'topic-transfer-position-batch',
-      //     action: 'commit',
-      //     keyFilter: td.proxyRB.participantCurrencyIdSecondary.toString()
-      //   }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-      //   test.ok(positionFulfil1[0], 'Position fulfil message with key found')
-      //   test.ok(positionFulfil2[0], 'Position fulfil message with key found')
-      // } catch (err) {
-      //   test.notOk('Error should not be thrown')
-      //   console.error(err)
-      // }
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+      // TODO: It seems there is an issue in position handler. Its not processing the messages with key 0.
+      // It should change the state of the transfer to RESERVED in the prepare step.
+      try {
+        const positionFulfil1 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil1[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
       testConsumer.clearEvents()
       test.end()
