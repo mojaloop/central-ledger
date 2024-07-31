@@ -1,0 +1,16 @@
+name: Build Software Bill of Materials
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Install and build javascript
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - run: npm install
+      - name: Create SBOM with CycloneDX
+        uses: CycloneDX/gh-node-module-generatebom@v1
+        with: 
+          output: './test.app.bom.xml'
