@@ -157,20 +157,16 @@ const savePreparedRequest = async ({
 
 const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult, proxyObligation }) => {
   const cyrilResult = await createRemittanceEntity(isFx)
-    .getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation.isCreditorProxy)
+    .getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation)
   let messageKey
-  /**
-   * Interscheme accounting rules:
-   *  - If the participant has a proxy representation, the proxy's account should be used for the position change.
-   *  - If the debtor and the creditor DFSPs are represented by the same proxy, no position adjustment is needed.
-   */
   // On a proxied transfer prepare if there is a corresponding fx transfer `getPositionParticipant`
-  // should return the fxp's proxy as the participantName since the fxp proxy would be saved as the counterpartyFsp
+  // should return the fxp's proxy as the participantName since the fxp proxy would be saved as the counterPartyFsp
   // in the prior fx transfer prepare.
-  // TODO: This ideally should compare the proxy's participantCurrency accounts to avoid some edge cases.
+  // Following interscheme rules, if the debtor(fxTransfer FXP) and the creditor(transfer payee) are
+  // represented by the same proxy, no position adjustment is needed.
   const counterPartyParticipantFXPProxy = cyrilResult.participantName
-  const isSameProxy = counterPartyParticipantFXPProxy && proxyObligation?.creditorProxyOrParticipantId?.proxyId
-    ? counterPartyParticipantFXPProxy === proxyObligation.creditorProxyOrParticipantId.proxyId
+  const isSameProxy = counterPartyParticipantFXPProxy && proxyObligation?.counterPartyFspProxyOrParticipantId?.proxyId
+    ? counterPartyParticipantFXPProxy === proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
     : false
   if (isSameProxy) {
     messageKey = '0'
@@ -345,42 +341,54 @@ const prepare = async (error, messages) => {
       return true
     }
 
-    let debtorProxyOrParticipantId
-    let creditorProxyOrParticipantId
+    let initiatingFspProxyOrParticipantId
+    let counterPartyFspProxyOrParticipantId
     const proxyObligation = {
-      isDebtorProxy: false,
-      isCreditorProxy: false,
-      debtorProxyOrParticipantId: null,
-      creditorProxyOrParticipantId: null,
+      isInitiatingFspProxy: false,
+      isCounterPartyFspProxy: false,
+      initiatingFspProxyOrParticipantId: null,
+      counterPartyFspProxyOrParticipantId: null,
+      isFx,
       payloadClone: { ...payload }
     }
     if (proxyEnabled) {
-      // The initiatingFsp isn't always the debtor participant in all scenarios of /fxTransfers.
-      // It is always the debtor in the current implementation of /fxTransfers.
-      // The naming will have to be revisited after /fxTransfers implements receive type /fxTransfers.
-      const [debtorFsp, creditorFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
-      ;[proxyObligation.debtorProxyOrParticipantId, proxyObligation.creditorProxyOrParticipantId] = await Promise.all([
-        ProxyCache.getFSPProxy(debtorFsp),
-        ProxyCache.getFSPProxy(creditorFsp)
+      const [initiatingFsp, counterPartyFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
+      ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
+        ProxyCache.getFSPProxy(initiatingFsp),
+        ProxyCache.getFSPProxy(counterPartyFsp)
       ])
 
-      proxyObligation.isDebtorProxy = !proxyObligation.debtorProxyOrParticipantId.inScheme && proxyObligation.debtorProxyOrParticipantId.proxyId !== null
-      proxyObligation.isCreditorProxy = !proxyObligation.creditorProxyOrParticipantId.inScheme && proxyObligation.creditorProxyOrParticipantId.proxyId !== null
+      proxyObligation.isInitiatingFspProxy = !proxyObligation.initiatingFspProxyOrParticipantId.inScheme &&
+        proxyObligation.initiatingFspProxyOrParticipantId.proxyId !== null
+      proxyObligation.isCounterPartyFspProxy = !proxyObligation.counterPartyFspProxyOrParticipantId.inScheme &&
+        proxyObligation.counterPartyFspProxyOrParticipantId.proxyId !== null
 
       if (isFx) {
-        proxyObligation.payloadClone.initiatingFsp = !proxyObligation.debtorProxyOrParticipantId?.inScheme && proxyObligation.debtorProxyOrParticipantId?.proxyId ? proxyObligation.debtorProxyOrParticipantId.proxyId : payload.initiatingFsp
-        proxyObligation.payloadClone.counterPartyFsp = !proxyObligation.creditorProxyOrParticipantId?.inScheme && proxyObligation.creditorProxyOrParticipantId?.proxyId ? proxyObligation.creditorProxyOrParticipantId.proxyId : payload.counterPartyFsp
+        proxyObligation.payloadClone.initiatingFsp = !proxyObligation.initiatingFspProxyOrParticipantId?.inScheme &&
+          proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
+          ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+          : payload.initiatingFsp
+        proxyObligation.payloadClone.counterPartyFsp = !proxyObligation.counterPartyFspProxyOrParticipantId?.inScheme &&
+          proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
+          ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+          : payload.counterPartyFsp
       } else {
-        proxyObligation.payloadClone.payerFsp = !proxyObligation.debtorProxyOrParticipantId?.inScheme && proxyObligation.debtorProxyOrParticipantId?.proxyId ? proxyObligation.debtorProxyOrParticipantId.proxyId : payload.payerFsp
-        proxyObligation.payloadClone.payeeFsp = !proxyObligation.creditorProxyOrParticipantId?.inScheme && proxyObligation.creditorProxyOrParticipantId?.proxyId ? proxyObligation.creditorProxyOrParticipantId.proxyId : payload.payeeFsp
+        proxyObligation.payloadClone.payerFsp = !proxyObligation.initiatingFspProxyOrParticipantId?.inScheme &&
+          proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
+          ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+          : payload.payerFsp
+        proxyObligation.payloadClone.payeeFsp = !proxyObligation.counterPartyFspProxyOrParticipantId?.inScheme &&
+          proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
+          ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+          : payload.payeeFsp
       }
 
       // If either debtor participant or creditor participant aren't in the scheme and have no proxy representative, then throw an error.
-      if ((proxyObligation.debtorProxyOrParticipantId.inScheme === false && proxyObligation.debtorProxyOrParticipantId.proxyId === null) ||
-          (proxyObligation.creditorProxyOrParticipantId.inScheme === false && proxyObligation.creditorProxyOrParticipantId.proxyId === null)) {
+      if ((proxyObligation.initiatingFspProxyOrParticipantId.inScheme === false && proxyObligation.initiatingFspProxyOrParticipantId.proxyId === null) ||
+          (proxyObligation.counterPartyFspProxyOrParticipantId.inScheme === false && proxyObligation.counterPartyFspProxyOrParticipantId.proxyId === null)) {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-          `Payer proxy or payee proxy not found: debtor: ${debtorProxyOrParticipantId} creditor: ${creditorProxyOrParticipantId}`
+          `Payer proxy or payee proxy not found: initiatingFsp: ${initiatingFspProxyOrParticipantId} counterPartyFsp: ${counterPartyFspProxyOrParticipantId}`
         ).toApiErrorObject(Config.ERROR_HANDLING)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, {
           consumerCommit,

@@ -115,7 +115,11 @@ Test('Cyril', cyrilTest => {
           }
         ))
         const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
-        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult)
+        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(
+          payload,
+          determiningTransferCheckResult,
+          { isCounterPartyFspProxy: false }
+        )
 
         test.deepEqual(result, {
           participantName: 'fx_dfsp2',
@@ -153,7 +157,11 @@ Test('Cyril', cyrilTest => {
           }
         ))
         const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
-        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult, true)
+        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(
+          payload,
+          determiningTransferCheckResult,
+          { isCounterPartyFspProxy: true }
+        )
 
         test.deepEqual(result, {
           participantName: 'fx_dfsp2',
@@ -178,7 +186,7 @@ Test('Cyril', cyrilTest => {
       try {
         TransferModel.getById.returns(Promise.resolve(null))
         const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload, {
-          isCreditorProxy: false
+          isCounterPartyFspProxy: false
         })
         const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload, determiningTransferCheckResult)
 
@@ -205,7 +213,7 @@ Test('Cyril', cyrilTest => {
       try {
         TransferModel.getById.returns(Promise.resolve({}))
         const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload, {
-          isCreditorProxy: false
+          isCounterPartyFspProxy: false
         })
         const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload, determiningTransferCheckResult)
 

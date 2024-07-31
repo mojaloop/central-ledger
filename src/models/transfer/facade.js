@@ -426,8 +426,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         participants[name].participantCurrencyId = participantCurrencyRecord.participantCurrencyId
       }
 
-      if (proxyObligation?.isDebtorProxy) {
-        const proxyId = proxyObligation.debtorProxyOrParticipantId.proxyId
+      if (proxyObligation?.isInitiatingFspProxy) {
+        const proxyId = proxyObligation.initiatingFspProxyOrParticipantId.proxyId
         const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
         participants[proxyId] = {}
         participants[proxyId].id = proxyParticipant.participantId
@@ -437,8 +437,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         participants[proxyId].participantCurrencyId = participantCurrencyRecord.participantCurrencyId
       }
 
-      if (proxyObligation?.isCreditorProxy) {
-        const proxyId = proxyObligation.creditorProxyOrParticipantId.proxyId
+      if (proxyObligation?.isCounterPartyFspProxy) {
+        const proxyId = proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
         const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
         participants[proxyId] = {}
         participants[proxyId].id = proxyParticipant.participantId
@@ -468,11 +468,11 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
 
     let payerTransferParticipantRecord
-    if (proxyObligation?.isDebtorProxy) {
+    if (proxyObligation?.isInitiatingFspProxy) {
       payerTransferParticipantRecord = {
         transferId: payload.transferId,
-        participantId: participants[proxyObligation.debtorProxyOrParticipantId.proxyId].id,
-        participantCurrencyId: participants[proxyObligation.debtorProxyOrParticipantId.proxyId].participantCurrencyId,
+        participantId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].id,
+        participantCurrencyId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].participantCurrencyId,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
         amount: -payload.amount.amount
@@ -490,10 +490,10 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     console.log(participants)
     let payeeTransferParticipantRecord
-    if (proxyObligation?.isCreditorProxy) {
+    if (proxyObligation?.isCounterPartyFspProxy) {
       payeeTransferParticipantRecord = {
         transferId: payload.transferId,
-        participantId: participants[proxyObligation.creditorProxyOrParticipantId.proxyId].id,
+        participantId: participants[proxyObligation.counterPartyFspProxyOrParticipantId.proxyId].id,
         participantCurrencyId: null,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,

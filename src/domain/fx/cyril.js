@@ -75,9 +75,10 @@ const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload, pro
       currencyId: payload.sourceAmount.currency
     }
   ]
-  // If creditor is a proxy in a jurisdictional scenario, they would not hold a position account for the target currency
+  // If a proxy is representing a FXP in a jurisdictional scenario,
+  // they would not hold a position account for the `targetAmount` currency
   // for a /fxTransfer. So we skip adding this to accounts to be validated.
-  if (!proxyObligation.isCreditorProxy) {
+  if (!proxyObligation.isCounterPartyFspProxy) {
     participantCurrencyValidationList.push({
       participantName: payload.counterPartyFsp,
       currencyId: payload.targetAmount.currency
@@ -103,7 +104,7 @@ const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload, pro
   }
 }
 
-const getParticipantAndCurrencyForTransferMessage = async (payload, determiningTransferCheckResult, isProxiedFxTransfer = false) => {
+const getParticipantAndCurrencyForTransferMessage = async (payload, determiningTransferCheckResult, proxyObligation) => {
   const histTimerGetParticipantAndCurrencyForTransferMessage = Metrics.getHistogram(
     'fx_domain_cyril_getParticipantAndCurrencyForTransferMessage',
     'fx_domain_cyril_getParticipantAndCurrencyForTransferMessage - Metrics for fx cyril',
@@ -111,20 +112,23 @@ const getParticipantAndCurrencyForTransferMessage = async (payload, determiningT
   ).startTimer()
 
   let participantName, currencyId, amount
+
   if (determiningTransferCheckResult.determiningTransferExistsInWatchList) {
     // If there's a currency conversion before the transfer is requested, it must be the debtor who did it.
     // Get the FX request corresponding to this transaction ID
     // TODO: Can't we just use the following query in the first place above to check if the determining transfer exists instead of using the watch list?
     // const fxTransferRecord = await fxTransfer.getByDeterminingTransferId(payload.transferId)
     let fxTransferRecord
-    if (isProxiedFxTransfer) {
+    if (proxyObligation.isCounterPartyFspProxy) {
+      // If a proxy is representing a FXP in a jurisdictional scenario,
+      // they would not hold a position account for the `targetAmount` currency
+      // for a /fxTransfer. So we skip adding this to accounts to be validated.
       fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(determiningTransferCheckResult.watchListRecords[0].commitRequestId)
     } else {
       fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(determiningTransferCheckResult.watchListRecords[0].commitRequestId)
     }
 
     // Liquidity check and reserve funds against FXP in FX target currency
-    console.log(fxTransferRecord)
     participantName = fxTransferRecord.counterPartyFspName
     currencyId = fxTransferRecord.targetCurrency
     amount = fxTransferRecord.targetAmount
