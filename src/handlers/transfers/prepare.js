@@ -37,6 +37,7 @@ const createRemittanceEntity = require('./createRemittanceEntity')
 const Validator = require('./validator')
 const dto = require('./dto')
 const TransferService = require('#src/domain/transfer/index')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const { Kafka, Comparators } = Util
 const { TransferState } = Enum.Transfers
@@ -47,6 +48,7 @@ const { fspId } = Config.INSTRUMENTATION_METRICS_LABELS
 
 const consumerCommit = true
 const fromSwitch = true
+const proxyEnabled = Config.PROXY_CACHE_CONFIG.enabled
 
 const checkDuplication = async ({ payload, isFx, ID, location }) => {
   const funcName = 'prepare_duplicateCheckComparator'
@@ -116,13 +118,29 @@ const processDuplication = async ({
   return true
 }
 
-const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, functionality, params, location, determiningTransferCheckResult }) => {
+const savePreparedRequest = async ({
+  validationPassed,
+  reasons,
+  payload,
+  isFx,
+  functionality,
+  params,
+  location,
+  determiningTransferCheckResult,
+  proxyObligation
+}) => {
   const logMessage = Util.breadcrumb(location, 'savePreparedRequest')
   try {
     logger.info(logMessage, { validationPassed, reasons })
     const reason = validationPassed ? null : reasons.toString()
     await createRemittanceEntity(isFx)
-      .savePreparedRequest(payload, reason, validationPassed, determiningTransferCheckResult)
+      .savePreparedRequest(
+        payload,
+        reason,
+        validationPassed,
+        determiningTransferCheckResult,
+        proxyObligation
+      )
   } catch (err) {
     logger.error(`${logMessage} error - ${err.message}`)
     const fspiopError = reformatFSPIOPError(err, FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
@@ -137,27 +155,64 @@ const savePreparedRequest = async ({ validationPassed, reasons, payload, isFx, f
   }
 }
 
-const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult }) => {
+const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult, proxyObligation }) => {
+  console.log(determiningTransferCheckResult)
   const cyrilResult = await createRemittanceEntity(isFx)
-    .getPositionParticipant(payload, determiningTransferCheckResult)
-  const account = await Participant.getAccountByNameAndCurrency(
-    cyrilResult.participantName,
-    cyrilResult.currencyId,
-    Enum.Accounts.LedgerAccountType.POSITION
-  )
+    .getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation)
+  console.log(cyrilResult)
+  let messageKey
+  // On a proxied transfer prepare if there is a corresponding fx transfer `getPositionParticipant`
+  // should return the fxp's proxy as the participantName since the fxp proxy would be saved as the counterPartyFsp
+  // in the prior fx transfer prepare.
+  // Following interscheme rules, if the debtor(fxTransfer FXP) and the creditor(transfer payee) are
+  // represented by the same proxy, no position adjustment is needed.
+  let isSameProxy = false
+  // Only check transfers that have a related fxTransfer
+  if (determiningTransferCheckResult?.watchListRecords?.length > 0) {
+    const counterPartyParticipantFXPProxy = cyrilResult.participantName
+    console.log(counterPartyParticipantFXPProxy)
+    console.log(proxyObligation?.counterPartyFspProxyOrParticipantId?.proxyId)
+    isSameProxy = counterPartyParticipantFXPProxy && proxyObligation?.counterPartyFspProxyOrParticipantId?.proxyId
+      ? counterPartyParticipantFXPProxy === proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+      : false
+  }
+  if (isSameProxy) {
+    messageKey = '0'
+  } else {
+    const participantName = cyrilResult.participantName
+    const account = await Participant.getAccountByNameAndCurrency(
+      participantName,
+      cyrilResult.currencyId,
+      Enum.Accounts.LedgerAccountType.POSITION
+    )
+    messageKey = account.participantCurrencyId.toString()
+  }
 
   return {
-    messageKey: account.participantCurrencyId.toString(),
+    messageKey,
     cyrilResult
   }
 }
 
-const sendPositionPrepareMessage = async ({ isFx, payload, action, params, determiningTransferCheckResult }) => {
+const sendPositionPrepareMessage = async ({
+  isFx,
+  payload,
+  action,
+  params,
+  determiningTransferCheckResult,
+  proxyObligation
+}) => {
   const eventDetail = {
     functionality: Type.POSITION,
     action
   }
-  const { messageKey, cyrilResult } = await definePositionParticipant({ payload, isFx, determiningTransferCheckResult })
+
+  const { messageKey, cyrilResult } = await definePositionParticipant({
+    payload: proxyObligation.payloadClone,
+    isFx,
+    determiningTransferCheckResult,
+    proxyObligation
+  })
 
   params.message.value.content.context = {
     ...params.message.value.content.context,
@@ -240,7 +295,7 @@ const prepare = async (error, messages) => {
       producer: Producer
     }
 
-    if (isForwarded) {
+    if (proxyEnabled && isForwarded) {
       const transfer = await TransferService.getById(ID)
       if (!transfer) {
         const eventDetail = {
@@ -294,6 +349,66 @@ const prepare = async (error, messages) => {
       return true
     }
 
+    let initiatingFspProxyOrParticipantId
+    let counterPartyFspProxyOrParticipantId
+    const proxyObligation = {
+      isInitiatingFspProxy: false,
+      isCounterPartyFspProxy: false,
+      initiatingFspProxyOrParticipantId: null,
+      counterPartyFspProxyOrParticipantId: null,
+      isFx,
+      payloadClone: { ...payload }
+    }
+    if (proxyEnabled) {
+      const [initiatingFsp, counterPartyFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
+      ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
+        ProxyCache.getFSPProxy(initiatingFsp),
+        ProxyCache.getFSPProxy(counterPartyFsp)
+      ])
+
+      proxyObligation.isInitiatingFspProxy = !proxyObligation.initiatingFspProxyOrParticipantId.inScheme &&
+        proxyObligation.initiatingFspProxyOrParticipantId.proxyId !== null
+      proxyObligation.isCounterPartyFspProxy = !proxyObligation.counterPartyFspProxyOrParticipantId.inScheme &&
+        proxyObligation.counterPartyFspProxyOrParticipantId.proxyId !== null
+
+      if (isFx) {
+        proxyObligation.payloadClone.initiatingFsp = !proxyObligation.initiatingFspProxyOrParticipantId?.inScheme &&
+          proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
+          ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+          : payload.initiatingFsp
+        proxyObligation.payloadClone.counterPartyFsp = !proxyObligation.counterPartyFspProxyOrParticipantId?.inScheme &&
+          proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
+          ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+          : payload.counterPartyFsp
+      } else {
+        proxyObligation.payloadClone.payerFsp = !proxyObligation.initiatingFspProxyOrParticipantId?.inScheme &&
+          proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
+          ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+          : payload.payerFsp
+        proxyObligation.payloadClone.payeeFsp = !proxyObligation.counterPartyFspProxyOrParticipantId?.inScheme &&
+          proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
+          ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+          : payload.payeeFsp
+      }
+
+      // If either debtor participant or creditor participant aren't in the scheme and have no proxy representative, then throw an error.
+      if ((proxyObligation.initiatingFspProxyOrParticipantId.inScheme === false && proxyObligation.initiatingFspProxyOrParticipantId.proxyId === null) ||
+          (proxyObligation.counterPartyFspProxyOrParticipantId.inScheme === false && proxyObligation.counterPartyFspProxyOrParticipantId.proxyId === null)) {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+          `Payer proxy or payee proxy not found: initiatingFsp: ${initiatingFspProxyOrParticipantId} counterPartyFsp: ${counterPartyFspProxyOrParticipantId}`
+        ).toApiErrorObject(Config.ERROR_HANDLING)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+          consumerCommit,
+          fspiopError,
+          eventDetail: { functionality, action },
+          fromSwitch,
+          hubName: Config.HUB_NAME
+        })
+        throw fspiopError
+      }
+    }
+
     const duplication = await checkDuplication({ payload, isFx, ID, location })
     if (duplication.hasDuplicateId) {
       const success = await processDuplication({
@@ -303,11 +418,29 @@ const prepare = async (error, messages) => {
       return success
     }
 
-    const determiningTransferCheckResult = await createRemittanceEntity(isFx).checkIfDeterminingTransferExists(payload)
+    const determiningTransferCheckResult = await createRemittanceEntity(isFx).checkIfDeterminingTransferExists(
+      proxyObligation.payloadClone,
+      proxyObligation
+    )
 
-    const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers, isFx, determiningTransferCheckResult)
+    const { validationPassed, reasons } = await Validator.validatePrepare(
+      payload,
+      headers,
+      isFx,
+      determiningTransferCheckResult,
+      proxyObligation
+    )
+
     await savePreparedRequest({
-      validationPassed, reasons, payload, isFx, functionality, params, location, determiningTransferCheckResult
+      validationPassed,
+      reasons,
+      payload,
+      isFx,
+      functionality,
+      params,
+      location,
+      determiningTransferCheckResult,
+      proxyObligation
     })
     if (!validationPassed) {
       logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
@@ -317,7 +450,7 @@ const prepare = async (error, messages) => {
       /**
        * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
        * HOWTO: For regular transfers this branch may be triggered by sending
-       * a tansfer in a currency not supported by either dfsp. Not sure if it
+       * a transfer in a currency not supported by either dfsp. Not sure if it
        * will be triggered for bulk, because of the BulkPrepareHandler.
        */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, {
@@ -331,7 +464,9 @@ const prepare = async (error, messages) => {
     }
 
     logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
-    const success = await sendPositionPrepareMessage({ isFx, payload, action, params, determiningTransferCheckResult })
+    const success = await sendPositionPrepareMessage({
+      isFx, payload, action, params, determiningTransferCheckResult, proxyObligation
+    })
 
     histTimerEnd({ success, fspId })
     return success
@@ -339,6 +474,7 @@ const prepare = async (error, messages) => {
     histTimerEnd({ success: false, fspId })
     const fspiopError = reformatFSPIOPError(err)
     logger.error(`${Util.breadcrumb(location)}::${err.message}--P0`)
+    logger.error(err.stack)
     const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
     await span.finish(fspiopError.message, state)

@@ -75,6 +75,7 @@ const retryOpts = {
 }
 
 const testData = {
+  currencies: ['USD', 'XXX'],
   amount: {
     currency: 'USD',
     amount: 110
@@ -86,6 +87,31 @@ const testData = {
   payee: {
     name: 'payeeFsp',
     limit: 300
+  },
+  proxyAR: {
+    name: 'proxyAR',
+    limit: 99999
+  },
+  proxyRB: {
+    name: 'proxyRB',
+    limit: 99999
+  },
+  fxp: {
+    name: 'testFxp',
+    number: 1,
+    limit: 1000
+  },
+  fxTransfer: {
+    amount: {
+      currency: 'USD',
+      amount: 5
+    },
+    fx: {
+      targetAmount: {
+        currency: 'XXX',
+        amount: 50
+      }
+    }
   },
   endpoint: {
     base: 'http://localhost:1080',
@@ -130,22 +156,69 @@ const prepareTestData = async (dataObj) => {
     // }
 
     const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
-    const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
+    const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.currencies[0], dataObj.currencies[1])
+    const proxyAR = await ParticipantHelper.prepareData(dataObj.proxyAR.name, dataObj.amount.currency, undefined, undefined, true)
+    const proxyRB = await ParticipantHelper.prepareData(dataObj.proxyRB.name, dataObj.currencies[0], dataObj.currencies[1], undefined, true)
+    const fxp = await ParticipantHelper.prepareData(dataObj.fxp.name, dataObj.currencies[0], dataObj.currencies[1])
 
     const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.amount.currency,
       limit: { value: dataObj.payer.limit }
     })
     const payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
-      currency: dataObj.amount.currency,
+      currency: dataObj.currencies[0],
       limit: { value: dataObj.payee.limit }
+    })
+    const payeeLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
+      currency: dataObj.currencies[1],
+      limit: { value: dataObj.payee.limit }
+    })
+    const proxyARLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(proxyAR.participant.name, {
+      currency: dataObj.amount.currency,
+      limit: { value: dataObj.proxyAR.limit }
+    })
+    const proxyRBLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(proxyRB.participant.name, {
+      currency: dataObj.currencies[0],
+      limit: { value: dataObj.proxyRB.limit }
+    })
+    const proxyRBLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(proxyRB.participant.name, {
+      currency: dataObj.currencies[1],
+      limit: { value: dataObj.proxyRB.limit }
+    })
+    const fxpPayerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
+      currency: dataObj.currencies[0],
+      limit: { value: dataObj.fxp.limit }
+    })
+    const fxpPayerLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
+      currency: dataObj.currencies[1],
+      limit: { value: dataObj.fxp.limit }
     })
     await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
       currency: dataObj.amount.currency,
       amount: 10000
     })
+    await ParticipantFundsInOutHelper.recordFundsIn(proxyAR.participant.name, proxyAR.participantCurrencyId2, {
+      currency: dataObj.amount.currency,
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(proxyRB.participant.name, proxyRB.participantCurrencyId2, {
+      currency: dataObj.currencies[0],
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(proxyRB.participant.name, proxyRB.participantCurrencyIdSecondary2, {
+      currency: dataObj.currencies[1],
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyId2, {
+      currency: dataObj.currencies[0],
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyIdSecondary2, {
+      currency: dataObj.currencies[1],
+      amount: 10000
+    })
 
-    for (const name of [payer.participant.name, payee.participant.name]) {
+    for (const name of [payer.participant.name, payee.participant.name, proxyAR.participant.name, proxyRB.participant.name, fxp.participant.name]) {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${dataObj.endpoint.base}/transfers/{{transferId}}`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${dataObj.endpoint.base}/transfers/{{transferId}}/error`)
@@ -158,9 +231,9 @@ const prepareTestData = async (dataObj) => {
       await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}`)
       await ParticipantEndpointHelper.prepareData(name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${dataObj.endpoint.base}/fxTransfers/{{commitRequestId}}/error`)
     }
-
+    const transferId = randomUUID()
     const transferPayload = {
-      transferId: randomUUID(),
+      transferId,
       payerFsp: payer.participant.name,
       payeeFsp: payee.participant.name,
       amount: {
@@ -189,6 +262,11 @@ const prepareTestData = async (dataObj) => {
       'fspiop-destination': payee.participant.name,
       'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
     }
+    const fxPrepareHeaders = {
+      'fspiop-source': payer.participant.name,
+      'fspiop-destination': fxp.participant.name,
+      'content-type': 'application/vnd.interoperability.fxtransfers+json;version=2.0'
+    }
     const fulfilAbortRejectHeaders = {
       'fspiop-source': payee.participant.name,
       'fspiop-destination': payer.participant.name,
@@ -211,6 +289,23 @@ const prepareTestData = async (dataObj) => {
           }
         ]
       }
+    }
+
+    const fxTransferPayload = {
+      commitRequestId: randomUUID(),
+      determiningTransferId: transferId,
+      initiatingFsp: payer.participant.name,
+      counterPartyFsp: fxp.participant.name,
+      sourceAmount: {
+        currency: dataObj.fxTransfer.amount.currency,
+        amount: dataObj.fxTransfer.amount.amount.toString()
+      },
+      targetAmount: {
+        currency: dataObj.fxTransfer.fx?.targetAmount.currency || dataObj.fxTransfer.amount.currency,
+        amount: dataObj.fxTransfer.fx?.targetAmount.amount.toString() || dataObj.fxTransfer.amount.amount.toString()
+      },
+      condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
+      expiration: dataObj.expiration
     }
 
     const rejectPayload = Object.assign({}, fulfilPayload, { transferState: TransferInternalState.ABORTED_REJECTED })
@@ -265,6 +360,17 @@ const prepareTestData = async (dataObj) => {
       }
     }
 
+    const messageProtocolFxPrepare = Util.clone(messageProtocolPrepare)
+    messageProtocolFxPrepare.id = randomUUID()
+    messageProtocolFxPrepare.from = fxTransferPayload.initiatingFsp
+    messageProtocolFxPrepare.to = fxTransferPayload.counterPartyFsp
+    messageProtocolFxPrepare.content.headers = fxPrepareHeaders
+    messageProtocolFxPrepare.content.uriParams = { id: fxTransferPayload.commitRequestId }
+    messageProtocolFxPrepare.content.payload = fxTransferPayload
+    messageProtocolFxPrepare.metadata.event.id = randomUUID()
+    messageProtocolFxPrepare.metadata.event.type = TransferEventType.PREPARE
+    messageProtocolFxPrepare.metadata.event.action = TransferEventAction.FX_PREPARE
+
     const messageProtocolFulfil = Util.clone(messageProtocolPrepare)
     messageProtocolFulfil.id = randomUUID()
     messageProtocolFulfil.from = transferPayload.payeeFsp
@@ -293,11 +399,13 @@ const prepareTestData = async (dataObj) => {
 
     return {
       transferPayload,
+      fxTransferPayload,
       fulfilPayload,
       rejectPayload,
       errorPayload,
       messageProtocolPrepare,
       messageProtocolPrepareForwarded,
+      messageProtocolFxPrepare,
       messageProtocolFulfil,
       messageProtocolReject,
       messageProtocolError,
@@ -306,7 +414,16 @@ const prepareTestData = async (dataObj) => {
       payer,
       payerLimitAndInitialPosition,
       payee,
-      payeeLimitAndInitialPosition
+      payeeLimitAndInitialPosition,
+      payeeLimitAndInitialPositionSecondaryCurrency,
+      proxyAR,
+      proxyARLimitAndInitialPosition,
+      proxyRB,
+      proxyRBLimitAndInitialPosition,
+      proxyRBLimitAndInitialPositionSecondaryCurrency,
+      fxp,
+      fxpPayerLimitAndInitialPosition,
+      fxpPayerLimitAndInitialPositionSecondaryCurrency
     }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -369,8 +486,8 @@ Test('Handlers test', async handlersTest => {
       await testConsumer.startListening()
       // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
       await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
+      await ProxyCache.connect()
       testConsumer.clearEvents()
-
       test.pass('done')
       test.end()
       registerAllHandlers.end()
@@ -645,7 +762,8 @@ Test('Handlers test', async handlersTest => {
 
     await transferForwarded.test('should create notification message if transfer is found in incorrect state', async (test) => {
       const expiredTestData = Util.clone(testData)
-      expiredTestData.expiration = new Date((new Date()).getTime() + 1000)
+      expiredTestData.expiration = new Date((new Date()).getTime() + 3000)
+
       const td = await prepareTestData(expiredTestData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -654,6 +772,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      await new Promise(resolve => setTimeout(resolve, 3000))
 
       try {
         await wrapWithRetries(async () => {
@@ -743,6 +862,243 @@ Test('Handlers test', async handlersTest => {
     })
 
     transferFulfil.end()
+  })
+
+  await handlersTest.test('transferProxyPrepare should', async transferProxyPrepare => {
+    await transferProxyPrepare.test(`
+      Scheme A: POST /fxTransfer call I.e. Debtor: Payer DFSP → Creditor: Proxy AR
+      Payer DFSP position account must be updated (reserved)`, async (test) => {
+      const creditor = 'regionalSchemeFXP'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolFxPrepare.content.to = creditor
+      td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = creditor
+      td.messageProtocolFxPrepare.content.payload.counterPartyFsp = creditor
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Payer DFSP participantCurrencyId
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme A: POST /Transfer call I.e. Debtor: Proxy AR → Creditor: Proxy AR
+      Do nothing (produce message with key 0)`, async (test) => {
+      // Create dependent fxTransfer
+      let creditor = 'regionalSchemeFXP'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolFxPrepare.content.to = creditor
+      td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = creditor
+      td.messageProtocolFxPrepare.content.payload.counterPartyFsp = creditor
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Payer DFSP participantCurrencyId
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Create subsequent transfer
+      creditor = 'regionalSchemePayeeFsp'
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
+
+      td.messageProtocolPrepare.content.to = creditor
+      td.messageProtocolPrepare.content.headers['fspiop-destination'] = creditor
+      td.messageProtocolPrepare.content.payload.payeeFsp = creditor
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // To be keyed with 0
+          keyFilter: '0'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key 0 found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme R: POST /fxTransfer call I.e. Debtor: Proxy AR → Creditor: FXP
+      Proxy AR position account in source currency must be updated (reserved)`, async (test) => {
+      const debtor = 'jurisdictionalFspPayerFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolFxPrepare.content.from = debtor
+      td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
+      td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Proxy AR participantCurrencyId
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme R: POST /transfer call I.e. Debtor: FXP → Creditor: Proxy RB
+      FXP position account in targeted currency must be updated (reserved)`, async (test) => {
+      const debtor = 'jurisdictionalFspPayerFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolFxPrepare.content.from = debtor
+      td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
+      td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Proxy AR participantCurrencyId
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Create subsequent transfer
+      const creditor = 'regionalSchemePayeeFsp'
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyRB.participant.name)
+
+      td.messageProtocolPrepare.content.to = creditor
+      td.messageProtocolPrepare.content.headers['fspiop-destination'] = creditor
+      td.messageProtocolPrepare.content.payload.payeeFsp = creditor
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // A position prepare message reserving the FXP's targeted currency account should be created
+          // Specifically for this test the targetCurrency is XXX
+          keyFilter: td.fxp.participantCurrencyIdSecondary.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme B: POST /transfer call I.e. Debtor: Proxy RB → Creditor: Payee DFSP
+      Proxy RB position account must be updated (reserved)`, async (test) => {
+      const debtor = 'jurisdictionalFspPayerFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyRB.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolPrepare.content.from = debtor
+      td.messageProtocolPrepare.content.headers['fspiop-source'] = debtor
+      td.messageProtocolPrepare.content.payload.payerFsp = debtor
+      td.messageProtocolPrepare.content.payload.amount.currency = 'XXX'
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // A position prepare message reserving the proxy of ProxyRB on it's XXX participant currency account
+          keyFilter: td.proxyRB.participantCurrencyIdSecondary.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    transferProxyPrepare.end()
   })
 
   await handlersTest.test('teardown', async (assert) => {

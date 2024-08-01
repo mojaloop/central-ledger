@@ -111,7 +111,11 @@ Test('Cyril', cyrilTest => {
           }
         ))
         const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
-        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult)
+        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(
+          payload,
+          determiningTransferCheckResult,
+          { isCounterPartyFspProxy: false }
+        )
 
         test.deepEqual(result, {
           participantName: 'fx_dfsp2',
@@ -128,6 +132,48 @@ Test('Cyril', cyrilTest => {
         test.end()
       }
     })
+
+    getParticipantAndCurrencyForTransferMessageTest.test('return details about proxied fxtransfer', async (test) => {
+      try {
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve([
+          {
+            commitRequestId: fxPayload.commitRequestId,
+            determiningTransferId: fxPayload.determiningTransferId,
+            fxTransferTypeId: Enum.Fx.FxTransferType.PAYER_CONVERSION,
+            createdDate: new Date()
+          }
+        ]))
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.withArgs(
+          fxPayload.commitRequestId
+        ).returns(Promise.resolve(
+          {
+            targetAmount: fxPayload.targetAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: 'fx_dfsp2'
+          }
+        ))
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+        const result = await Cyril.getParticipantAndCurrencyForTransferMessage(
+          payload,
+          determiningTransferCheckResult,
+          { isCounterPartyFspProxy: true }
+        )
+
+        test.deepEqual(result, {
+          participantName: 'fx_dfsp2',
+          currencyId: 'EUR',
+          amount: '200.00'
+        })
+        test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
     getParticipantAndCurrencyForTransferMessageTest.end()
   })
 
@@ -135,7 +181,9 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForFxTransferMessageTest.test('return details about fxtransfer debtor party initited msg', async (test) => {
       try {
         TransferModel.getById.returns(Promise.resolve(null))
-        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload, {
+          isCounterPartyFspProxy: false
+        })
         const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload, determiningTransferCheckResult)
 
         test.ok(watchList.addToWatchList.calledWith({
@@ -151,6 +199,7 @@ Test('Cyril', cyrilTest => {
         test.pass('Error not thrown')
         test.end()
       } catch (e) {
+        console.log(e.stack)
         test.fail('Error Thrown')
         test.end()
       }
@@ -159,7 +208,9 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForFxTransferMessageTest.test('return details about fxtransfer creditor party initited msg', async (test) => {
       try {
         TransferModel.getById.returns(Promise.resolve({}))
-        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForFxTransferMessage(fxPayload, {
+          isCounterPartyFspProxy: false
+        })
         const result = await Cyril.getParticipantAndCurrencyForFxTransferMessage(fxPayload, determiningTransferCheckResult)
 
         test.ok(watchList.addToWatchList.calledWith({

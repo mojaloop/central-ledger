@@ -18,11 +18,29 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.saveTransferDuplicateCheck(id, hash)
     },
 
-    async savePreparedRequest (payload, reason, isValid, determiningTransferCheckResult) {
+    async savePreparedRequest (
+      payload,
+      reason,
+      isValid,
+      determiningTransferCheckResult,
+      proxyObligation
+    ) {
       // todo: add histoTimer and try/catch here
       return isFx
-        ? fxTransferModel.fxTransfer.savePreparedRequest(payload, reason, isValid, determiningTransferCheckResult)
-        : TransferService.prepare(payload, reason, isValid, determiningTransferCheckResult)
+        ? fxTransferModel.fxTransfer.savePreparedRequest(
+          payload,
+          reason,
+          isValid,
+          determiningTransferCheckResult,
+          proxyObligation
+        )
+        : TransferService.prepare(
+          payload,
+          reason,
+          isValid,
+          determiningTransferCheckResult,
+          proxyObligation
+        )
     },
 
     async getByIdLight (id) {
@@ -31,16 +49,16 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.getByIdLight(id)
     },
 
-    async checkIfDeterminingTransferExists (payload) {
+    async checkIfDeterminingTransferExists (payload, proxyObligation) {
       return isFx
-        ? cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload)
+        ? cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, proxyObligation)
         : cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
     },
 
-    async getPositionParticipant (payload, determiningTransferCheckResult) {
+    async getPositionParticipant (payload, determiningTransferCheckResult, proxyObligation) {
       return isFx
         ? cyril.getParticipantAndCurrencyForFxTransferMessage(payload, determiningTransferCheckResult)
-        : cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult)
+        : cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult, proxyObligation)
     },
 
     async logTransferError (id, errorCode, errorDescription) {
