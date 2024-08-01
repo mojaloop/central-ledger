@@ -68,7 +68,17 @@
         ],
         "parameters": [
           {
-            "type": "boolean",
+            "type": ["string", "boolean", "integer", "null"],
+            "enum": [
+              false,
+              "0",
+              "false",
+              "",
+              true,
+              "1",
+              "true",
+              null
+            ],
             "description": "Filter by if participant is a proxy",
             "name": "isProxy",
             "in": "query",

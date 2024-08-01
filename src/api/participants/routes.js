@@ -69,7 +69,7 @@ module.exports = [
           name: nameValidator,
           // password: passwordValidator,
           currency: currencyValidator,
-          isProxy: Joi.boolean()
+          isProxy: Joi.boolean().falsy(0, '0', '').truthy(1, '1').allow(true, false, 0, 1, '0', '1', null)
           // emailAddress: Joi.string().email().required()
         })
       }
