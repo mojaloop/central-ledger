@@ -219,6 +219,28 @@ const prepareTestData = async (dataObj) => {
     })
 
     for (const name of [payer.participant.name, payee.participant.name, proxyAR.participant.name, proxyRB.participant.name, fxp.participant.name]) {
+    await ParticipantFundsInOutHelper.recordFundsIn(proxyAR.participant.name, proxyAR.participantCurrencyId2, {
+      currency: dataObj.amount.currency,
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(proxyRB.participant.name, proxyRB.participantCurrencyId2, {
+      currency: dataObj.currencies[0],
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(proxyRB.participant.name, proxyRB.participantCurrencyIdSecondary2, {
+      currency: dataObj.currencies[1],
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyId2, {
+      currency: dataObj.currencies[0],
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyIdSecondary2, {
+      currency: dataObj.currencies[1],
+      amount: 10000
+    })
+
+    for (const name of [payer.participant.name, payee.participant.name, proxyAR.participant.name, proxyRB.participant.name, fxp.participant.name]) {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${dataObj.endpoint.base}/transfers/{{transferId}}`)
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${dataObj.endpoint.base}/transfers/{{transferId}}/error`)
@@ -400,11 +422,13 @@ const prepareTestData = async (dataObj) => {
     return {
       transferPayload,
       fxTransferPayload,
+      fxTransferPayload,
       fulfilPayload,
       rejectPayload,
       errorPayload,
       messageProtocolPrepare,
       messageProtocolPrepareForwarded,
+      messageProtocolFxPrepare,
       messageProtocolFxPrepare,
       messageProtocolFulfil,
       messageProtocolReject,
