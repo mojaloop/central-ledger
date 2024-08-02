@@ -494,850 +494,850 @@ Test('Handlers test', async handlersTest => {
     })
   })
 
-  // await handlersTest.test('transferPrepare should', async transferPrepare => {
-  //   await transferPrepare.test('should create position prepare message to override topic name in config', async (test) => {
-  //     const td = await prepareTestData(testData)
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-  //     await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'prepare',
-  //         keyFilter: td.payer.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   transferPrepare.end()
-  // })
-
-  // await handlersTest.test('transferForwarded should', async transferForwarded => {
-  //   await transferForwarded.test('should update transfer internal state on prepare event forwarded action', async (test) => {
-  //     const td = await prepareTestData(testData)
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-  //     await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'prepare',
-  //         keyFilter: td.payer.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
-
-  //     await new Promise(resolve => setTimeout(resolve, 5000))
-
-  //     try {
-  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //       test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   await transferForwarded.test('not timeout transfer in RESERVED_FORWARDED internal transfer state', async (test) => {
-  //     const td = await prepareTestData(testData)
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-  //     await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'prepare',
-  //         keyFilter: td.payer.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
-
-  //     await new Promise(resolve => setTimeout(resolve, 5000))
-
-  //     try {
-  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //       test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-
-  //     await new Promise(resolve => setTimeout(resolve, 5000))
-  //     try {
-  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //       test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state is still RESERVED_FORWARDED')
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   await transferForwarded.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_FULFIL and COMMITED on fulfil', async (test) => {
-  //     const td = await prepareTestData(testData)
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-  //     const fulfilConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.FULFIL.toUpperCase())
-  //     fulfilConfig.logger = Logger
-  //     await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'prepare',
-  //         keyFilter: td.payer.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
-
-  //     await new Promise(resolve => setTimeout(resolve, 5000))
-
-  //     try {
-  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //       test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-  //     await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
-
-  //     try {
-  //       const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'commit',
-  //         keyFilter: td.payee.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionFulfil[0], 'Position fulfil message with key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     try {
-  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //       test.equal(transfer?.transferState, TransferInternalState.COMMITTED, 'Transfer state updated to COMMITTED')
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   await transferForwarded.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_ERROR and ABORTED_ERROR on fulfil error', async (test) => {
-  //     const td = await prepareTestData(testData)
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-  //     const fulfilConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.FULFIL.toUpperCase())
-  //     fulfilConfig.logger = Logger
-  //     await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'prepare',
-  //         keyFilter: td.payer.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
-
-  //     await new Promise(resolve => setTimeout(resolve, 5000))
-
-  //     try {
-  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //       test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-  //     await Producer.produceMessage(td.messageProtocolError, td.topicConfTransferFulfil, fulfilConfig)
-
-  //     await new Promise(resolve => setTimeout(resolve, 5000))
-
-  //     try {
-  //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //       test.equal(transfer?.transferState, TransferInternalState.ABORTED_ERROR, 'Transfer state updated to ABORTED_ERROR')
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   await transferForwarded.test('should create notification message if transfer is not found', async (test) => {
-  //     const td = await prepareTestData(testData)
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-
-  //     await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const notificationMessages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-notification-event',
-  //         action: 'forwarded'
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(notificationMessages[0], 'notification message found')
-  //       test.equal(notificationMessages[0].value.to, 'proxyFsp')
-  //       test.equal(notificationMessages[0].value.from, 'payerFsp')
-  //       test.equal(
-  //         notificationMessages[0].value.content.payload.errorInformation.errorDescription,
-  //         'Generic ID not found - Forwarded transfer could not be found.'
-  //       )
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   await transferForwarded.test('should create notification message if transfer is found in incorrect state', async (test) => {
-  //     const expiredTestData = Util.clone(testData)
-  //     expiredTestData.expiration = new Date((new Date()).getTime() + 3000)
-
-  //     const td = await prepareTestData(expiredTestData)
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-  //     await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-  //     await new Promise(resolve => setTimeout(resolve, 3000))
-
-  //     try {
-  //       await wrapWithRetries(async () => {
-  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //         if (transfer?.transferState !== TransferInternalState.EXPIRED_RESERVED) {
-  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-  //           return null
-  //         }
-  //         return transfer
-  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-
-  //     // Send the prepare forwarded message after the prepare message has timed out
-  //     await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const notificationMessages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-notification-event',
-  //         action: 'forwarded'
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(notificationMessages[0], 'notification message found')
-  //       test.equal(notificationMessages[0].value.to, 'proxyFsp')
-  //       test.equal(notificationMessages[0].value.from, 'payerFsp')
-  //       test.equal(
-  //         notificationMessages[0].value.content.payload.errorInformation.errorDescription,
-  //         'Internal server error - Invalid State: EXPIRED_RESERVED - expected: RESERVED'
-  //       )
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-  //   transferForwarded.end()
-  // })
-
-  // await handlersTest.test('transferFulfil should', async transferFulfil => {
-  //   await transferFulfil.test('should create position fulfil message to override topic name in config', async (test) => {
-  //     const td = await prepareTestData(testData)
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-  //     const fulfilConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.FULFIL.toUpperCase())
-  //     fulfilConfig.logger = Logger
-
-  //     await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'prepare',
-  //         keyFilter: td.payer.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-  //     testConsumer.clearEvents()
-  //     await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
-
-  //     try {
-  //       const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'commit',
-  //         keyFilter: td.payee.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionFulfil[0], 'Position fulfil message with key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   transferFulfil.end()
-  // })
-
-  // await handlersTest.test('transferProxyPrepare should', async transferProxyPrepare => {
-  //   await transferProxyPrepare.test(`
-  //     Scheme A: POST /fxTransfer call I.e. Debtor: Payer DFSP → Creditor: Proxy AR
-  //     Payer DFSP position account must be updated (reserved)`, async (test) => {
-  //     const creditor = 'regionalSchemeFXP'
-
-  //     const td = await prepareTestData(testData)
-  //     await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
-
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-
-  //     td.messageProtocolFxPrepare.content.to = creditor
-  //     td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = creditor
-  //     td.messageProtocolFxPrepare.content.payload.counterPartyFsp = creditor
-  //     await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'fx-prepare',
-  //         // To be keyed with the Payer DFSP participantCurrencyId
-  //         keyFilter: td.payer.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   await transferProxyPrepare.test(`
-  //     Scheme A: POST /Transfer call I.e. Debtor: Proxy AR → Creditor: Proxy AR
-  //     Do nothing (produce message with key 0)`, async (test) => {
-  //     // Create dependent fxTransfer
-  //     let creditor = 'regionalSchemeFXP'
-
-  //     const td = await prepareTestData(testData)
-  //     await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
-
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-
-  //     td.messageProtocolFxPrepare.content.to = creditor
-  //     td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = creditor
-  //     td.messageProtocolFxPrepare.content.payload.counterPartyFsp = creditor
-  //     await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'fx-prepare',
-  //         // To be keyed with the Payer DFSP participantCurrencyId
-  //         keyFilter: td.payer.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     // Create subsequent transfer
-  //     creditor = 'regionalSchemePayeeFsp'
-  //     await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
-
-  //     td.messageProtocolPrepare.content.to = creditor
-  //     td.messageProtocolPrepare.content.headers['fspiop-destination'] = creditor
-  //     td.messageProtocolPrepare.content.payload.payeeFsp = creditor
-
-  //     await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'prepare',
-  //         // To be keyed with 0
-  //         keyFilter: '0'
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with key 0 found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   await transferProxyPrepare.test(`
-  //     Scheme R: POST /fxTransfer call I.e. Debtor: Proxy AR → Creditor: FXP
-  //     Proxy AR position account in source currency must be updated (reserved)`, async (test) => {
-  //     const debtor = 'jurisdictionalFspPayerFsp'
-
-  //     const td = await prepareTestData(testData)
-  //     await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
-
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-
-  //     td.messageProtocolFxPrepare.content.from = debtor
-  //     td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
-  //     td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
-  //     await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'fx-prepare',
-  //         // To be keyed with the Proxy AR participantCurrencyId
-  //         keyFilter: td.proxyAR.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   await transferProxyPrepare.test(`
-  //     Scheme R: POST /transfer call I.e. Debtor: FXP → Creditor: Proxy RB
-  //     FXP position account in targeted currency must be updated (reserved)`, async (test) => {
-  //     const debtor = 'jurisdictionalFspPayerFsp'
-
-  //     const td = await prepareTestData(testData)
-  //     await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
-
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-
-  //     td.messageProtocolFxPrepare.content.from = debtor
-  //     td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
-  //     td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
-  //     await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'fx-prepare',
-  //         // To be keyed with the Proxy AR participantCurrencyId
-  //         keyFilter: td.proxyAR.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     // Create subsequent transfer
-  //     const creditor = 'regionalSchemePayeeFsp'
-  //     await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyRB.participant.name)
-
-  //     td.messageProtocolPrepare.content.to = creditor
-  //     td.messageProtocolPrepare.content.headers['fspiop-destination'] = creditor
-  //     td.messageProtocolPrepare.content.payload.payeeFsp = creditor
-
-  //     await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'prepare',
-  //         // A position prepare message reserving the FXP's targeted currency account should be created
-  //         // Specifically for this test the targetCurrency is XXX
-  //         keyFilter: td.fxp.participantCurrencyIdSecondary.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   await transferProxyPrepare.test(`
-  //     Scheme B: POST /transfer call I.e. Debtor: Proxy RB → Creditor: Payee DFSP
-  //     Proxy RB position account must be updated (reserved)`, async (test) => {
-  //     const debtor = 'jurisdictionalFspPayerFsp'
-
-  //     const td = await prepareTestData(testData)
-  //     await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyRB.participant.name)
-
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     prepareConfig.logger = Logger
-
-  //     td.messageProtocolPrepare.content.from = debtor
-  //     td.messageProtocolPrepare.content.headers['fspiop-source'] = debtor
-  //     td.messageProtocolPrepare.content.payload.payerFsp = debtor
-  //     td.messageProtocolPrepare.content.payload.amount.currency = 'XXX'
-
-  //     await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: 'topic-transfer-position-batch',
-  //         action: 'prepare',
-  //         // A position prepare message reserving the proxy of ProxyRB on it's XXX participant currency account
-  //         keyFilter: td.proxyRB.participantCurrencyIdSecondary.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     testConsumer.clearEvents()
-  //     test.end()
-  //   })
-
-  //   transferProxyPrepare.end()
-  // })
+  await handlersTest.test('transferPrepare should', async transferPrepare => {
+    await transferPrepare.test('should create position prepare message to override topic name in config', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    transferPrepare.end()
+  })
+
+  await handlersTest.test('transferForwarded should', async transferForwarded => {
+    await transferForwarded.test('should update transfer internal state on prepare event forwarded action', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferForwarded.test('not timeout transfer in RESERVED_FORWARDED internal transfer state', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state is still RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferForwarded.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_FULFIL and COMMITED on fulfil', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.payee.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.COMMITTED, 'Transfer state updated to COMMITTED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferForwarded.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_ERROR and ABORTED_ERROR on fulfil error', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      await Producer.produceMessage(td.messageProtocolError, td.topicConfTransferFulfil, fulfilConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.ABORTED_ERROR, 'Transfer state updated to ABORTED_ERROR')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferForwarded.test('should create notification message if transfer is not found', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const notificationMessages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'forwarded'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(notificationMessages[0], 'notification message found')
+        test.equal(notificationMessages[0].value.to, 'proxyFsp')
+        test.equal(notificationMessages[0].value.from, 'payerFsp')
+        test.equal(
+          notificationMessages[0].value.content.payload.errorInformation.errorDescription,
+          'Generic ID not found - Forwarded transfer could not be found.'
+        )
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferForwarded.test('should create notification message if transfer is found in incorrect state', async (test) => {
+      const expiredTestData = Util.clone(testData)
+      expiredTestData.expiration = new Date((new Date()).getTime() + 3000)
+
+      const td = await prepareTestData(expiredTestData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      await new Promise(resolve => setTimeout(resolve, 3000))
+
+      try {
+        await wrapWithRetries(async () => {
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferInternalState.EXPIRED_RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      // Send the prepare forwarded message after the prepare message has timed out
+      await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const notificationMessages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'forwarded'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(notificationMessages[0], 'notification message found')
+        test.equal(notificationMessages[0].value.to, 'proxyFsp')
+        test.equal(notificationMessages[0].value.from, 'payerFsp')
+        test.equal(
+          notificationMessages[0].value.content.payload.errorInformation.errorDescription,
+          'Internal server error - Invalid State: EXPIRED_RESERVED - expected: RESERVED'
+        )
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+    transferForwarded.end()
+  })
+
+  await handlersTest.test('transferFulfil should', async transferFulfil => {
+    await transferFulfil.test('should create position fulfil message to override topic name in config', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.payee.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    transferFulfil.end()
+  })
+
+  await handlersTest.test('transferProxyPrepare should', async transferProxyPrepare => {
+    await transferProxyPrepare.test(`
+      Scheme A: POST /fxTransfer call I.e. Debtor: Payer DFSP → Creditor: Proxy AR
+      Payer DFSP position account must be updated (reserved)`, async (test) => {
+      const creditor = 'regionalSchemeFXP'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolFxPrepare.content.to = creditor
+      td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = creditor
+      td.messageProtocolFxPrepare.content.payload.counterPartyFsp = creditor
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Payer DFSP participantCurrencyId
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme A: POST /Transfer call I.e. Debtor: Proxy AR → Creditor: Proxy AR
+      Do nothing (produce message with key 0)`, async (test) => {
+      // Create dependent fxTransfer
+      let creditor = 'regionalSchemeFXP'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolFxPrepare.content.to = creditor
+      td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = creditor
+      td.messageProtocolFxPrepare.content.payload.counterPartyFsp = creditor
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Payer DFSP participantCurrencyId
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Create subsequent transfer
+      creditor = 'regionalSchemePayeeFsp'
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
+
+      td.messageProtocolPrepare.content.to = creditor
+      td.messageProtocolPrepare.content.headers['fspiop-destination'] = creditor
+      td.messageProtocolPrepare.content.payload.payeeFsp = creditor
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // To be keyed with 0
+          keyFilter: '0'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key 0 found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme R: POST /fxTransfer call I.e. Debtor: Proxy AR → Creditor: FXP
+      Proxy AR position account in source currency must be updated (reserved)`, async (test) => {
+      const debtor = 'jurisdictionalFspPayerFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolFxPrepare.content.from = debtor
+      td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
+      td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Proxy AR participantCurrencyId
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme R: POST /transfer call I.e. Debtor: FXP → Creditor: Proxy RB
+      FXP position account in targeted currency must be updated (reserved)`, async (test) => {
+      const debtor = 'jurisdictionalFspPayerFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolFxPrepare.content.from = debtor
+      td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
+      td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Proxy AR participantCurrencyId
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Create subsequent transfer
+      const creditor = 'regionalSchemePayeeFsp'
+      await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyRB.participant.name)
+
+      td.messageProtocolPrepare.content.to = creditor
+      td.messageProtocolPrepare.content.headers['fspiop-destination'] = creditor
+      td.messageProtocolPrepare.content.payload.payeeFsp = creditor
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // A position prepare message reserving the FXP's targeted currency account should be created
+          // Specifically for this test the targetCurrency is XXX
+          keyFilter: td.fxp.participantCurrencyIdSecondary.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme B: POST /transfer call I.e. Debtor: Proxy RB → Creditor: Payee DFSP
+      Proxy RB position account must be updated (reserved)`, async (test) => {
+      const debtor = 'jurisdictionalFspPayerFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyRB.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolPrepare.content.from = debtor
+      td.messageProtocolPrepare.content.headers['fspiop-source'] = debtor
+      td.messageProtocolPrepare.content.payload.payerFsp = debtor
+      td.messageProtocolPrepare.content.payload.amount.currency = 'XXX'
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // A position prepare message reserving the proxy of ProxyRB on it's XXX participant currency account
+          keyFilter: td.proxyRB.participantCurrencyIdSecondary.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    transferProxyPrepare.end()
+  })
 
   await handlersTest.test('transferProxyFulfil should', async transferProxyPrepare => {
 
-    // await transferProxyPrepare.test(`
-    //   Scheme B: PUT /transfers call I.e. From: Payee DFSP → To: Proxy RB
-    //   Payee DFSP position account must be updated`, async (test) => {
-    //   const transferPrepareFrom = 'schemeAPayerFsp'
+    await transferProxyPrepare.test(`
+      Scheme B: PUT /transfers call I.e. From: Payee DFSP → To: Proxy RB
+      Payee DFSP position account must be updated`, async (test) => {
+      const transferPrepareFrom = 'schemeAPayerFsp'
 
-    //   const td = await prepareTestData(testData)
-    //   await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyRB.participant.name)
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyRB.participant.name)
 
-    //   // Prepare the transfer
-    //   const prepareConfig = Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.PRODUCER,
-    //     TransferEventType.TRANSFER.toUpperCase(),
-    //     TransferEventType.PREPARE.toUpperCase())
-    //   prepareConfig.logger = Logger
+      // Prepare the transfer
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
 
-    //   td.messageProtocolPrepare.content.from = transferPrepareFrom
-    //   td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
-    //   td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
+      td.messageProtocolPrepare.content.from = transferPrepareFrom
+      td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
+      td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
 
-    //   await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
 
-    //   try {
-    //     const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-transfer-position-batch',
-    //       action: 'prepare',
-    //       // A position prepare message reserving the proxy of ProxyRB on it's XXX participant currency account
-    //       keyFilter: td.proxyRB.participantCurrencyId.toString()
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
-    //   } catch (err) {
-    //     test.notOk('Error should not be thrown')
-    //     console.error(err)
-    //   }
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // A position prepare message reserving the proxy of ProxyRB on it's XXX participant currency account
+          keyFilter: td.proxyRB.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
-    //   // Fulfil the transfer
-    //   const fulfilConfig = Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.PRODUCER,
-    //     TransferEventType.TRANSFER.toUpperCase(),
-    //     TransferEventType.FULFIL.toUpperCase())
-    //   fulfilConfig.logger = Logger
+      // Fulfil the transfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
 
-    //   td.messageProtocolFulfil.content.to = transferPrepareFrom
-    //   td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
+      td.messageProtocolFulfil.content.to = transferPrepareFrom
+      td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
 
-    //   testConsumer.clearEvents()
-    //   await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
 
-    //   try {
-    //     const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-transfer-position-batch',
-    //       action: 'commit',
-    //       keyFilter: td.payee.participantCurrencyId.toString()
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     test.ok(positionFulfil[0], 'Position fulfil message with key found')
-    //   } catch (err) {
-    //     test.notOk('Error should not be thrown')
-    //     console.error(err)
-    //   }
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.payee.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
-    //   testConsumer.clearEvents()
-    //   test.end()
-    // })
+      testConsumer.clearEvents()
+      test.end()
+    })
 
-    // await transferProxyPrepare.test(`
-    //   Scheme R: PUT /transfers call I.e. From: Proxy RB → To: Proxy AR
-    //   If it is a normal transfer without currency conversion
-    //   ProxyRB account must be updated`, async (test) => {
+    await transferProxyPrepare.test(`
+      Scheme R: PUT /transfers call I.e. From: Proxy RB → To: Proxy AR
+      If it is a normal transfer without currency conversion
+      ProxyRB account must be updated`, async (test) => {
       
-    //   const transferPrepareFrom = 'schemeAPayerFsp'
-    //   const transferPrepareTo = 'schemeBPayeeFsp'
+      const transferPrepareFrom = 'schemeAPayerFsp'
+      const transferPrepareTo = 'schemeBPayeeFsp'
 
-    //   const td = await prepareTestData(testData)
-    //   await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyAR.participant.name)
-    //   await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyRB.participant.name)
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyAR.participant.name)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyRB.participant.name)
 
-    //   const prepareConfig = Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.PRODUCER,
-    //     TransferEventType.TRANSFER.toUpperCase(),
-    //     TransferEventType.PREPARE.toUpperCase())
-    //   prepareConfig.logger = Logger
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
 
-    //   td.messageProtocolPrepare.content.from = transferPrepareFrom
-    //   td.messageProtocolPrepare.content.to = transferPrepareTo
-    //   td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
-    //   td.messageProtocolPrepare.content.headers['fspiop-destination'] = transferPrepareTo
-    //   td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
-    //   td.messageProtocolPrepare.content.payload.payeeFsp = transferPrepareTo
+      td.messageProtocolPrepare.content.from = transferPrepareFrom
+      td.messageProtocolPrepare.content.to = transferPrepareTo
+      td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
+      td.messageProtocolPrepare.content.headers['fspiop-destination'] = transferPrepareTo
+      td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
+      td.messageProtocolPrepare.content.payload.payeeFsp = transferPrepareTo
 
-    //   await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
 
-    //   try {
-    //     const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-transfer-position-batch',
-    //       action: 'prepare',
-    //       keyFilter: td.proxyAR.participantCurrencyId.toString()
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     test.ok(positionPrepare[0], 'Position prepare message with key of proxyAR account found')
-    //   } catch (err) {
-    //     test.notOk('Error should not be thrown')
-    //     console.error(err)
-    //   }
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of proxyAR account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
-    //   // Fulfil the transfer
-    //   const fulfilConfig = Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.PRODUCER,
-    //     TransferEventType.TRANSFER.toUpperCase(),
-    //     TransferEventType.FULFIL.toUpperCase())
-    //   fulfilConfig.logger = Logger
+      // Fulfil the transfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
 
-    //   td.messageProtocolFulfil.content.from = transferPrepareTo
-    //   td.messageProtocolFulfil.content.to = transferPrepareFrom
-    //   td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
-    //   td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
+      td.messageProtocolFulfil.content.from = transferPrepareTo
+      td.messageProtocolFulfil.content.to = transferPrepareFrom
+      td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
+      td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
 
-    //   testConsumer.clearEvents()
-    //   await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
 
-    //   try {
-    //     const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-transfer-position-batch',
-    //       action: 'commit',
-    //       keyFilter: td.proxyRB.participantCurrencyId.toString()
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     test.ok(positionFulfil[0], 'Position fulfil message with key found')
-    //   } catch (err) {
-    //     test.notOk('Error should not be thrown')
-    //     console.error(err)
-    //   }
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.proxyRB.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
-    //   testConsumer.clearEvents()
-    //   test.end()
-    // })
+      testConsumer.clearEvents()
+      test.end()
+    })
 
-    // await transferProxyPrepare.test(`
-    //   Scheme R: PUT /transfers call I.e. From: Proxy RB → To: Proxy AR
-    //   If it is a FX transfer with currency conversion
-    //   FXP and ProxyRB account must be updated`, async (test) => {
+    await transferProxyPrepare.test(`
+      Scheme R: PUT /transfers call I.e. From: Proxy RB → To: Proxy AR
+      If it is a FX transfer with currency conversion
+      FXP and ProxyRB account must be updated`, async (test) => {
       
-    //   const transferPrepareFrom = 'schemeAPayerFsp'
-    //   const transferPrepareTo = 'schemeBPayeeFsp'
+      const transferPrepareFrom = 'schemeAPayerFsp'
+      const transferPrepareTo = 'schemeBPayeeFsp'
 
-    //   const td = await prepareTestData(testData)
-    //   await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyAR.participant.name)
-    //   await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyRB.participant.name)
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyAR.participant.name)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyRB.participant.name)
 
-    //   const prepareConfig = Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.PRODUCER,
-    //     TransferEventType.TRANSFER.toUpperCase(),
-    //     TransferEventType.PREPARE.toUpperCase())
-    //   prepareConfig.logger = Logger
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
 
-    //   // FX Transfer from proxyAR to FXP
-    //   td.messageProtocolFxPrepare.content.from = transferPrepareFrom
-    //   td.messageProtocolFxPrepare.content.headers['fspiop-source'] = transferPrepareFrom
-    //   td.messageProtocolFxPrepare.content.payload.initiatingFsp = transferPrepareFrom
-    //   await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+      // FX Transfer from proxyAR to FXP
+      td.messageProtocolFxPrepare.content.from = transferPrepareFrom
+      td.messageProtocolFxPrepare.content.headers['fspiop-source'] = transferPrepareFrom
+      td.messageProtocolFxPrepare.content.payload.initiatingFsp = transferPrepareFrom
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
 
-    //   try {
-    //     const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-transfer-position-batch',
-    //       action: 'fx-prepare',
-    //       // To be keyed with the Proxy AR participantCurrencyId
-    //       keyFilter: td.proxyAR.participantCurrencyId.toString()
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     test.ok(positionPrepare[0], 'Position prepare message with proxyAR key found')
-    //   } catch (err) {
-    //     test.notOk('Error should not be thrown')
-    //     console.error(err)
-    //   }
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Proxy AR participantCurrencyId
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with proxyAR key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
-    //   // Create subsequent transfer
-    //   td.messageProtocolPrepare.content.from = transferPrepareFrom
-    //   td.messageProtocolPrepare.content.to = transferPrepareTo
-    //   td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
-    //   td.messageProtocolPrepare.content.headers['fspiop-destination'] = transferPrepareTo
-    //   td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
-    //   td.messageProtocolPrepare.content.payload.payeeFsp = transferPrepareTo
+      // Create subsequent transfer
+      td.messageProtocolPrepare.content.from = transferPrepareFrom
+      td.messageProtocolPrepare.content.to = transferPrepareTo
+      td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
+      td.messageProtocolPrepare.content.headers['fspiop-destination'] = transferPrepareTo
+      td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
+      td.messageProtocolPrepare.content.payload.payeeFsp = transferPrepareTo
 
-    //   await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
 
-    //   try {
-    //     const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-transfer-position-batch',
-    //       action: 'prepare',
-    //       // A position prepare message reserving the FXP's targeted currency account should be created
-    //       keyFilter: td.fxp.participantCurrencyIdSecondary.toString()
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
-    //   } catch (err) {
-    //     test.notOk('Error should not be thrown')
-    //     console.error(err)
-    //   }
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // A position prepare message reserving the FXP's targeted currency account should be created
+          keyFilter: td.fxp.participantCurrencyIdSecondary.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
-    //   // Fulfil the transfer
-    //   const fulfilConfig = Utility.getKafkaConfig(
-    //     Config.KAFKA_CONFIG,
-    //     Enum.Kafka.Config.PRODUCER,
-    //     TransferEventType.TRANSFER.toUpperCase(),
-    //     TransferEventType.FULFIL.toUpperCase())
-    //   fulfilConfig.logger = Logger
+      // Fulfil the transfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
 
-    //   td.messageProtocolFulfil.content.from = transferPrepareTo
-    //   td.messageProtocolFulfil.content.to = transferPrepareFrom
-    //   td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
-    //   td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
+      td.messageProtocolFulfil.content.from = transferPrepareTo
+      td.messageProtocolFulfil.content.to = transferPrepareFrom
+      td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
+      td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
 
-    //   testConsumer.clearEvents()
-    //   await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
 
-    //   try {
-    //     const positionFulfil1 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-transfer-position-batch',
-    //       action: 'commit',
-    //       keyFilter: td.fxp.participantCurrencyId.toString()
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     const positionFulfil2 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-    //       topicFilter: 'topic-transfer-position-batch',
-    //       action: 'commit',
-    //       keyFilter: td.proxyRB.participantCurrencyIdSecondary.toString()
-    //     }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-    //     test.ok(positionFulfil1[0], 'Position fulfil message with key found')
-    //     test.ok(positionFulfil2[0], 'Position fulfil message with key found')
-    //   } catch (err) {
-    //     test.notOk('Error should not be thrown')
-    //     console.error(err)
-    //   }
+      try {
+        const positionFulfil1 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.fxp.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        const positionFulfil2 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.proxyRB.participantCurrencyIdSecondary.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil1[0], 'Position fulfil message with key found')
+        test.ok(positionFulfil2[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
 
-    //   testConsumer.clearEvents()
-    //   test.end()
-    // })
+      testConsumer.clearEvents()
+      test.end()
+    })
 
     await transferProxyPrepare.test(`
       Scheme A: PUT /transfers call I.e. From: Proxy AR → To: Payer FSP
