@@ -135,5 +135,48 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
     checkSameCreditorDebtorProxyTest.end()
   })
 
+  await proxyCacheTest.test('getProxyParticipantAccountDetails', async (getProxyParticipantAccountDetailsTest) => {
+    await getProxyParticipantAccountDetailsTest.test('resolve participantCurrencyId if participant is in scheme', async (test) => {
+      ParticipantService.getByName.returns(Promise.resolve({ participantId: 1 }))
+      ParticipantService.getAccountByNameAndCurrency.returns(Promise.resolve({ participantCurrencyId: 123 }))
+      const result = await ProxyCache.getProxyParticipantAccountDetails('nonExistingDfspId1', 'XXX')
+      test.deepEqual(result, { inScheme: true, participantCurrencyId: 123 })
+      test.end()
+    })
+
+    await getProxyParticipantAccountDetailsTest.test('resolve participantCurrencyId of the proxy if participant is not in scheme', async (test) => {
+      ParticipantService.getByName.returns(Promise.resolve(null))
+      ParticipantService.getAccountByNameAndCurrency.returns(Promise.resolve({ participantCurrencyId: 456 }))
+      const result = await ProxyCache.getProxyParticipantAccountDetails('existingDfspId1', 'XXX')
+      test.deepEqual(result, { inScheme: false, participantCurrencyId: 456 })
+      test.end()
+    })
+
+    await getProxyParticipantAccountDetailsTest.test('resolve null if participant is in scheme and there is no account', async (test) => {
+      ParticipantService.getByName.returns(Promise.resolve({ participantId: 1 }))
+      ParticipantService.getAccountByNameAndCurrency.returns(Promise.resolve(null))
+      const result = await ProxyCache.getProxyParticipantAccountDetails('nonExistingDfspId1', 'XXX')
+      test.deepEqual(result, { inScheme: true, participantCurrencyId: null })
+      test.end()
+    })
+
+    await getProxyParticipantAccountDetailsTest.test('resolve null if participant is not in scheme and also there is no proxy in cache', async (test) => {
+      ParticipantService.getByName.returns(Promise.resolve(null))
+      const result = await ProxyCache.getProxyParticipantAccountDetails('nonExistingDfspId1', 'XXX')
+      test.deepEqual(result, { inScheme: false, participantCurrencyId: null })
+      test.end()
+    })
+
+    await getProxyParticipantAccountDetailsTest.test('resolve null if participant is not in scheme and proxy exists but no account', async (test) => {
+      ParticipantService.getByName.returns(Promise.resolve(null))
+      ParticipantService.getAccountByNameAndCurrency.returns(Promise.resolve(null))
+      const result = await ProxyCache.getProxyParticipantAccountDetails('existingDfspId1', 'XXX')
+      test.deepEqual(result, { inScheme: false, participantCurrencyId: null })
+      test.end()
+    })
+
+    getProxyParticipantAccountDetailsTest.end()
+  })
+
   proxyCacheTest.end()
 })

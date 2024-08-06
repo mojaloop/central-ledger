@@ -56,6 +56,10 @@ const participantFacade = require('../../models/participant/facade')
  * @returns {results} - Returns a list of bins with results or throws an error if failed
  */
 const processBins = async (bins, trx) => {
+  let notifyMessages = []
+  let followupMessages = []
+  let limitAlarms = []
+
   // Get transferIdList, reservedActionTransferIdList and commitRequestId for actions PREPARE, FX_PREPARE, FX_RESERVE, COMMIT and RESERVE
   const { transferIdList, reservedActionTransferIdList, commitRequestIdList } = await _getTransferIdList(bins)
 
@@ -103,10 +107,6 @@ const processBins = async (bins, trx) => {
     trx,
     reservedActionTransferIdList
   )
-
-  let notifyMessages = []
-  let followupMessages = []
-  let limitAlarms = []
 
   // For each account-bin in the list
   for (const accountID in bins) {

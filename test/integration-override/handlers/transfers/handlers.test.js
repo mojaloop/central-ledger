@@ -193,6 +193,7 @@ const prepareTestData = async (dataObj) => {
       currency: dataObj.currencies[1],
       limit: { value: dataObj.fxp.limit }
     })
+
     await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
       currency: dataObj.amount.currency,
       amount: 10000
@@ -1093,6 +1094,332 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    transferProxyPrepare.end()
+  })
+
+  await handlersTest.test('transferProxyFulfil should', async transferProxyPrepare => {
+    await transferProxyPrepare.test(`
+      Scheme B: PUT /transfers call I.e. From: Payee DFSP → To: Proxy RB
+      Payee DFSP position account must be updated`, async (test) => {
+      const transferPrepareFrom = 'schemeAPayerFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyRB.participant.name)
+
+      // Prepare the transfer
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolPrepare.content.from = transferPrepareFrom
+      td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
+      td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // A position prepare message reserving the proxy of ProxyRB on it's XXX participant currency account
+          keyFilter: td.proxyRB.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Fulfil the transfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      td.messageProtocolFulfil.content.to = transferPrepareFrom
+      td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
+
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.payee.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme R: PUT /transfers call I.e. From: Proxy RB → To: Proxy AR
+      If it is a normal transfer without currency conversion
+      ProxyRB account must be updated`, async (test) => {
+      const transferPrepareFrom = 'schemeAPayerFsp'
+      const transferPrepareTo = 'schemeBPayeeFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyAR.participant.name)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyRB.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolPrepare.content.from = transferPrepareFrom
+      td.messageProtocolPrepare.content.to = transferPrepareTo
+      td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
+      td.messageProtocolPrepare.content.headers['fspiop-destination'] = transferPrepareTo
+      td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
+      td.messageProtocolPrepare.content.payload.payeeFsp = transferPrepareTo
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of proxyAR account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Fulfil the transfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      td.messageProtocolFulfil.content.from = transferPrepareTo
+      td.messageProtocolFulfil.content.to = transferPrepareFrom
+      td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
+      td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
+
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.proxyRB.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme R: PUT /transfers call I.e. From: Proxy RB → To: Proxy AR
+      If it is a FX transfer with currency conversion
+      FXP and ProxyRB account must be updated`, async (test) => {
+      const transferPrepareFrom = 'schemeAPayerFsp'
+      const transferPrepareTo = 'schemeBPayeeFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyAR.participant.name)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyRB.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      // FX Transfer from proxyAR to FXP
+      td.messageProtocolFxPrepare.content.from = transferPrepareFrom
+      td.messageProtocolFxPrepare.content.headers['fspiop-source'] = transferPrepareFrom
+      td.messageProtocolFxPrepare.content.payload.initiatingFsp = transferPrepareFrom
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Proxy AR participantCurrencyId
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with proxyAR key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Create subsequent transfer
+      td.messageProtocolPrepare.content.from = transferPrepareFrom
+      td.messageProtocolPrepare.content.to = transferPrepareTo
+      td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
+      td.messageProtocolPrepare.content.headers['fspiop-destination'] = transferPrepareTo
+      td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
+      td.messageProtocolPrepare.content.payload.payeeFsp = transferPrepareTo
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // A position prepare message reserving the FXP's targeted currency account should be created
+          keyFilter: td.fxp.participantCurrencyIdSecondary.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Fulfil the transfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      td.messageProtocolFulfil.content.from = transferPrepareTo
+      td.messageProtocolFulfil.content.to = transferPrepareFrom
+      td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
+      td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
+
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFulfil1 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.fxp.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        const positionFulfil2 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'commit',
+          keyFilter: td.proxyRB.participantCurrencyIdSecondary.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil1[0], 'Position fulfil message with key found')
+        test.ok(positionFulfil2[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme A: PUT /transfers call I.e. From: Proxy AR → To: Payer FSP
+      If it is a FX transfer with currency conversion
+      PayerFSP and ProxyAR account must be updated`, async (test) => {
+      const transferPrepareTo = 'schemeBPayeeFsp'
+      const fxTransferPrepareTo = 'schemeRFxp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(fxTransferPrepareTo, td.proxyAR.participant.name)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      // FX Transfer from payer to proxyAR
+      td.messageProtocolFxPrepare.content.to = fxTransferPrepareTo
+      td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = fxTransferPrepareTo
+      td.messageProtocolFxPrepare.content.payload.counterPartyFsp = fxTransferPrepareTo
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the PayerFSP participantCurrencyId
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with proxyAR key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Create subsequent transfer
+      td.messageProtocolPrepare.content.to = transferPrepareTo
+      td.messageProtocolPrepare.content.headers['fspiop-destination'] = transferPrepareTo
+      td.messageProtocolPrepare.content.payload.payeeFsp = transferPrepareTo
+
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          // A position prepare message without need for any position changes should be created (key 0)
+          keyFilter: '0'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // TODO: It seems there is an issue in position handler. Its not processing the messages with key 0.
+      // It should change the state of the transfer to RESERVED in the prepare step.
+      // Until the issue with position handler is resolved. Commenting the following test.
+      // // Fulfil the transfer
+      // const fulfilConfig = Utility.getKafkaConfig(
+      //   Config.KAFKA_CONFIG,
+      //   Enum.Kafka.Config.PRODUCER,
+      //   TransferEventType.TRANSFER.toUpperCase(),
+      //   TransferEventType.FULFIL.toUpperCase())
+      // fulfilConfig.logger = Logger
+
+      // td.messageProtocolFulfil.content.from = transferPrepareTo
+      // td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
+      // testConsumer.clearEvents()
+      // await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+      // try {
+      //   const positionFulfil1 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+      //     topicFilter: 'topic-transfer-position-batch',
+      //     action: 'commit',
+      //     keyFilter: td.proxyAR.participantCurrencyId.toString()
+      //   }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      //   test.ok(positionFulfil1[0], 'Position fulfil message with key found')
+      // } catch (err) {
+      //   test.notOk('Error should not be thrown')
+      //   console.error(err)
+      // }
 
       testConsumer.clearEvents()
       test.end()

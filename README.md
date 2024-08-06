@@ -191,7 +191,7 @@ If you want to run integration tests in a repetitive manner, you can startup the
     Start containers required for Integration Tests
 
     ```bash
-    docker-compose -f docker-compose.yml up -d mysql kafka init-kafka kafka-debug-console
+    docker-compose -f docker-compose.yml up -d mysql kafka init-kafka kafka-debug-console redis
     ```
 
     Run wait script which will report once all required containers are up and running
@@ -242,7 +242,7 @@ If you want to run override position topic tests you can repeat the above and us
 #### For running integration tests for batch processing interactively
 - Run dependecies
 ```
-docker-compose up -d mysql kafka init-kafka kafka-debug-console
+docker-compose up -d mysql kafka init-kafka kafka-debug-console redis
 npm run wait-4-docker
 ```
 - Run central-ledger services

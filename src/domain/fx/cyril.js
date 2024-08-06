@@ -26,9 +26,9 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Enum } = require('@mojaloop/central-services-shared')
 const TransferModel = require('../../models/transfer/transfer')
-const ParticipantFacade = require('../../models/participant/facade')
 const { fxTransfer, watchList } = require('../../models/fxTransfer')
 const Config = require('../../lib/config')
+const ProxyCache = require('../../lib/proxyCache')
 
 const checkIfDeterminingTransferExistsForTransferMessage = async (payload) => {
   // Does this determining transfer ID appear on the watch list?
@@ -242,17 +242,15 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
         // Create obligation between FXP and FX requesting party in currency of reservation
         // Find out the participantCurrencyId of the initiatingFsp
         // The following is hardcoded for Payer side conversion with SEND amountType.
-        const participantCurrency = await ParticipantFacade.getByNameAndCurrency(
-          fxTransferRecord.initiatingFspName,
-          fxTransferRecord.targetCurrency,
-          Enum.Accounts.LedgerAccountType.POSITION
-        )
-        result.positionChanges.push({
-          isFxTransferStateChange: false,
-          transferId,
-          participantCurrencyId: participantCurrency.participantCurrencyId,
-          amount: -fxTransferRecord.targetAmount
-        })
+        const proxyParticipantAccountDetails = await ProxyCache.getProxyParticipantAccountDetails(fxTransferRecord.initiatingFspName, fxTransferRecord.targetCurrency)
+        if (proxyParticipantAccountDetails.participantCurrencyId) {
+          result.positionChanges.push({
+            isFxTransferStateChange: false,
+            transferId,
+            participantCurrencyId: proxyParticipantAccountDetails.participantCurrencyId,
+            amount: -fxTransferRecord.targetAmount
+          })
+        }
         // TODO: Send PATCH notification to FXP
       }
 
@@ -262,12 +260,15 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
         sendingFxpExists = true
         sendingFxpRecord = fxTransferRecord
         // Create obligation between FX requesting party and FXP in currency of reservation
-        result.positionChanges.push({
-          isFxTransferStateChange: true,
-          commitRequestId: fxTransferRecord.commitRequestId,
-          participantCurrencyId: fxTransferRecord.counterPartyFspSourceParticipantCurrencyId,
-          amount: -fxTransferRecord.sourceAmount
-        })
+        const proxyParticipantAccountDetails = await ProxyCache.getProxyParticipantAccountDetails(fxTransferRecord.counterPartyFspName, fxTransferRecord.sourceCurrency)
+        if (proxyParticipantAccountDetails.participantCurrencyId) {
+          result.positionChanges.push({
+            isFxTransferStateChange: true,
+            commitRequestId: fxTransferRecord.commitRequestId,
+            participantCurrencyId: proxyParticipantAccountDetails.participantCurrencyId,
+            amount: -fxTransferRecord.sourceAmount
+          })
+        }
         // TODO: Send PATCH notification to FXP
       }
     }
@@ -279,34 +280,64 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
 
     if (sendingFxpExists && receivingFxpExists) {
       // If we have both a sending and a receiving FXP, Create obligation between sending and receiving FXP in currency of transfer.
-      result.positionChanges.push({
-        isFxTransferStateChange: true,
-        commitRequestId: receivingFxpRecord.commitRequestId,
-        participantCurrencyId: receivingFxpRecord.counterPartyFspSourceParticipantCurrencyId,
-        amount: -receivingFxpRecord.sourceAmount
-      })
+      const proxyParticipantAccountDetails = await ProxyCache.getProxyParticipantAccountDetails(receivingFxpRecord.counterPartyFspName, receivingFxpRecord.sourceCurrency)
+      if (proxyParticipantAccountDetails.participantCurrencyId) {
+        result.positionChanges.push({
+          isFxTransferStateChange: true,
+          commitRequestId: receivingFxpRecord.commitRequestId,
+          participantCurrencyId: proxyParticipantAccountDetails.participantCurrencyId,
+          amount: -receivingFxpRecord.sourceAmount
+        })
+      }
     } else if (sendingFxpExists) {
       // If we have a sending FXP, Create obligation between FXP and creditor party to the transfer in currency of FX transfer
       // Get participantCurrencyId for transfer.payeeParticipantId/transfer.payeeFsp and sendingFxpRecord.targetCurrency
-      const participantCurrency = await ParticipantFacade.getByNameAndCurrency(
-        transfer.payeeFsp,
-        sendingFxpRecord.targetCurrency,
-        Enum.Accounts.LedgerAccountType.POSITION
-      )
-      result.positionChanges.push({
-        isFxTransferStateChange: false,
-        transferId,
-        participantCurrencyId: participantCurrency.participantCurrencyId,
-        amount: -sendingFxpRecord.targetAmount
-      })
+      const proxyParticipantAccountDetails = await ProxyCache.getProxyParticipantAccountDetails(transfer.payeeFsp, sendingFxpRecord.targetCurrency)
+      if (proxyParticipantAccountDetails.participantCurrencyId) {
+        let isPositionChange = false
+        if (proxyParticipantAccountDetails.inScheme) {
+          isPositionChange = true
+        } else {
+          // We are not expecting this. Payee participant is a proxy and have an account in the targetCurrency.
+          // In this case we need to check if FXP is also a proxy and have the same account as payee.
+          const proxyParticipantAccountDetails2 = await ProxyCache.getProxyParticipantAccountDetails(sendingFxpRecord.counterPartyFspName, sendingFxpRecord.targetCurrency)
+          if (!proxyParticipantAccountDetails2.inScheme && (proxyParticipantAccountDetails.participantCurrencyId !== proxyParticipantAccountDetails2.participantCurrencyId)) {
+            isPositionChange = true
+          }
+        }
+        if (isPositionChange) {
+          result.positionChanges.push({
+            isFxTransferStateChange: false,
+            transferId,
+            participantCurrencyId: proxyParticipantAccountDetails.participantCurrencyId,
+            amount: -sendingFxpRecord.targetAmount
+          })
+        }
+      }
     } else if (receivingFxpExists) {
       // If we have a receiving FXP, Create obligation between debtor party to the transfer and FXP in currency of transfer
-      result.positionChanges.push({
-        isFxTransferStateChange: true,
-        commitRequestId: receivingFxpRecord.commitRequestId,
-        participantCurrencyId: receivingFxpRecord.counterPartyFspSourceParticipantCurrencyId,
-        amount: -receivingFxpRecord.sourceAmount
-      })
+      const proxyParticipantAccountDetails = await ProxyCache.getProxyParticipantAccountDetails(receivingFxpRecord.counterPartyFspName, receivingFxpRecord.sourceCurrency)
+      if (proxyParticipantAccountDetails.participantCurrencyId) {
+        let isPositionChange = false
+        if (proxyParticipantAccountDetails.inScheme) {
+          isPositionChange = true
+        } else {
+          // We are not expecting this. FXP participant is a proxy and have an account in the sourceCurrency.
+          // In this case we need to check if Payer is also a proxy and have the same account as FXP.
+          const proxyParticipantAccountDetails2 = await ProxyCache.getProxyParticipantAccountDetails(transfer.payerFsp, receivingFxpRecord.sourceCurrency)
+          if (!proxyParticipantAccountDetails2.inScheme && (proxyParticipantAccountDetails.participantCurrencyId !== proxyParticipantAccountDetails2.participantCurrencyId)) {
+            isPositionChange = true
+          }
+        }
+        if (isPositionChange) {
+          result.positionChanges.push({
+            isFxTransferStateChange: true,
+            commitRequestId: receivingFxpRecord.commitRequestId,
+            participantCurrencyId: proxyParticipantAccountDetails.participantCurrencyId,
+            amount: -receivingFxpRecord.sourceAmount
+          })
+        }
+      }
     }
 
     // TODO: Remove entries from watchlist

@@ -1,5 +1,6 @@
 'use strict'
 const { createProxyCache, STORAGE_TYPES } = require('@mojaloop/inter-scheme-proxy-cache-lib')
+const { Enum } = require('@mojaloop/central-services-shared')
 const ParticipantService = require('../../src/domain/participant')
 const Config = require('./config.js')
 
@@ -54,11 +55,43 @@ const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
   return debtorProxyId && creditorProxyId ? debtorProxyId === creditorProxyId : false
 }
 
+const getProxyParticipantAccountDetails = async (fspName, currency) => {
+  const proxyLookupResult = await getFSPProxy(fspName)
+  if (proxyLookupResult.inScheme) {
+    const participantCurrency = await ParticipantService.getAccountByNameAndCurrency(
+      fspName,
+      currency,
+      Enum.Accounts.LedgerAccountType.POSITION
+    )
+    return {
+      inScheme: true,
+      participantCurrencyId: participantCurrency?.participantCurrencyId || null
+    }
+  } else {
+    if (proxyLookupResult.proxyId) {
+      const participantCurrency = await ParticipantService.getAccountByNameAndCurrency(
+        proxyLookupResult.proxyId,
+        currency,
+        Enum.Accounts.LedgerAccountType.POSITION
+      )
+      return {
+        inScheme: false,
+        participantCurrencyId: participantCurrency?.participantCurrencyId || null
+      }
+    }
+    return {
+      inScheme: false,
+      participantCurrencyId: null
+    }
+  }
+}
+
 module.exports = {
   reset, // for testing
   connect,
   disconnect,
   getCache,
   getFSPProxy,
+  getProxyParticipantAccountDetails,
   checkSameCreditorDebtorProxy
 }
