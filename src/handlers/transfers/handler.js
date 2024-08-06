@@ -204,8 +204,8 @@ const processFulfilMessage = async (message, functionality, span) => {
   ) {
     // Check if the payerFsp and payeeFsp are proxies and if they are, skip validating headers
     if (
-      (headers[Enum.Http.Headers.FSPIOP.SOURCE] && !transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) ||
-      (headers[Enum.Http.Headers.FSPIOP.DESTINATION] && !transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()))
+      (headers[Enum.Http.Headers.FSPIOP.SOURCE] && !transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) ||
+      (headers[Enum.Http.Headers.FSPIOP.DESTINATION] && !transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()))
     ) {
       /**
        * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
@@ -216,12 +216,12 @@ const processFulfilMessage = async (message, functionality, span) => {
       let fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'FSP does not match one of the fsp-id\'s associated with a transfer on the Fulfil callback response')
 
       // Lets make the error specific if the PayeeFSP IDs do not match
-      if (!transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) {
+      if (!transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) {
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.SOURCE} does not match payee fsp on the Fulfil callback response`)
       }
 
       // Lets make the error specific if the PayerFSP IDs do not match
-      if (!transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase())) {
+      if (!transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase())) {
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.DESTINATION} does not match payer fsp on the Fulfil callback response`)
       }
 
