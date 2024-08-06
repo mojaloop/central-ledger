@@ -243,7 +243,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
         // Find out the participantCurrencyId of the initiatingFsp
         // The following is hardcoded for Payer side conversion with SEND amountType.
         const proxyParticipantAccountDetails = await ProxyCache.getProxyParticipantAccountDetails(fxTransferRecord.initiatingFspName, fxTransferRecord.targetCurrency)
-        if(proxyParticipantAccountDetails.participantCurrencyId) {
+        if (proxyParticipantAccountDetails.participantCurrencyId) {
           result.positionChanges.push({
             isFxTransferStateChange: false,
             transferId,
@@ -281,7 +281,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
     if (sendingFxpExists && receivingFxpExists) {
       // If we have both a sending and a receiving FXP, Create obligation between sending and receiving FXP in currency of transfer.
       const proxyParticipantAccountDetails = await ProxyCache.getProxyParticipantAccountDetails(receivingFxpRecord.counterPartyFspName, receivingFxpRecord.sourceCurrency)
-      if(proxyParticipantAccountDetails.participantCurrencyId) {
+      if (proxyParticipantAccountDetails.participantCurrencyId) {
         result.positionChanges.push({
           isFxTransferStateChange: true,
           commitRequestId: receivingFxpRecord.commitRequestId,
@@ -293,7 +293,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
       // If we have a sending FXP, Create obligation between FXP and creditor party to the transfer in currency of FX transfer
       // Get participantCurrencyId for transfer.payeeParticipantId/transfer.payeeFsp and sendingFxpRecord.targetCurrency
       const proxyParticipantAccountDetails = await ProxyCache.getProxyParticipantAccountDetails(transfer.payeeFsp, sendingFxpRecord.targetCurrency)
-      if(proxyParticipantAccountDetails.participantCurrencyId) {
+      if (proxyParticipantAccountDetails.participantCurrencyId) {
         let isPositionChange = false
         if (proxyParticipantAccountDetails.inScheme) {
           isPositionChange = true
@@ -317,7 +317,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
     } else if (receivingFxpExists) {
       // If we have a receiving FXP, Create obligation between debtor party to the transfer and FXP in currency of transfer
       const proxyParticipantAccountDetails = await ProxyCache.getProxyParticipantAccountDetails(receivingFxpRecord.counterPartyFspName, receivingFxpRecord.sourceCurrency)
-      if(proxyParticipantAccountDetails.participantCurrencyId) {
+      if (proxyParticipantAccountDetails.participantCurrencyId) {
         let isPositionChange = false
         if (proxyParticipantAccountDetails.inScheme) {
           isPositionChange = true

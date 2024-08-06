@@ -587,7 +587,7 @@ Test('Cyril', cyrilTest => {
               isFxTransferStateChange: false,
               transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
               participantCurrencyId: 456,
-              amount: -200 
+              amount: -200
             }
           ],
           patchNotifications: []

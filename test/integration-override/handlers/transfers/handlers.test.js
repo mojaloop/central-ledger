@@ -193,32 +193,11 @@ const prepareTestData = async (dataObj) => {
       currency: dataObj.currencies[1],
       limit: { value: dataObj.fxp.limit }
     })
+
     await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
       currency: dataObj.amount.currency,
       amount: 10000
     })
-    await ParticipantFundsInOutHelper.recordFundsIn(proxyAR.participant.name, proxyAR.participantCurrencyId2, {
-      currency: dataObj.amount.currency,
-      amount: 10000
-    })
-    await ParticipantFundsInOutHelper.recordFundsIn(proxyRB.participant.name, proxyRB.participantCurrencyId2, {
-      currency: dataObj.currencies[0],
-      amount: 10000
-    })
-    await ParticipantFundsInOutHelper.recordFundsIn(proxyRB.participant.name, proxyRB.participantCurrencyIdSecondary2, {
-      currency: dataObj.currencies[1],
-      amount: 10000
-    })
-    await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyId2, {
-      currency: dataObj.currencies[0],
-      amount: 10000
-    })
-    await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyIdSecondary2, {
-      currency: dataObj.currencies[1],
-      amount: 10000
-    })
-
-    for (const name of [payer.participant.name, payee.participant.name, proxyAR.participant.name, proxyRB.participant.name, fxp.participant.name]) {
     await ParticipantFundsInOutHelper.recordFundsIn(proxyAR.participant.name, proxyAR.participantCurrencyId2, {
       currency: dataObj.amount.currency,
       amount: 10000
@@ -422,13 +401,11 @@ const prepareTestData = async (dataObj) => {
     return {
       transferPayload,
       fxTransferPayload,
-      fxTransferPayload,
       fulfilPayload,
       rejectPayload,
       errorPayload,
       messageProtocolPrepare,
       messageProtocolPrepareForwarded,
-      messageProtocolFxPrepare,
       messageProtocolFxPrepare,
       messageProtocolFulfil,
       messageProtocolReject,
@@ -1126,7 +1103,6 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferProxyFulfil should', async transferProxyPrepare => {
-
     await transferProxyPrepare.test(`
       Scheme B: PUT /transfers call I.e. From: Payee DFSP → To: Proxy RB
       Payee DFSP position account must be updated`, async (test) => {
@@ -1196,7 +1172,6 @@ Test('Handlers test', async handlersTest => {
       Scheme R: PUT /transfers call I.e. From: Proxy RB → To: Proxy AR
       If it is a normal transfer without currency conversion
       ProxyRB account must be updated`, async (test) => {
-      
       const transferPrepareFrom = 'schemeAPayerFsp'
       const transferPrepareTo = 'schemeBPayeeFsp'
 
@@ -1268,7 +1243,6 @@ Test('Handlers test', async handlersTest => {
       Scheme R: PUT /transfers call I.e. From: Proxy RB → To: Proxy AR
       If it is a FX transfer with currency conversion
       FXP and ProxyRB account must be updated`, async (test) => {
-      
       const transferPrepareFrom = 'schemeAPayerFsp'
       const transferPrepareTo = 'schemeBPayeeFsp'
 
@@ -1367,7 +1341,6 @@ Test('Handlers test', async handlersTest => {
       Scheme A: PUT /transfers call I.e. From: Proxy AR → To: Payer FSP
       If it is a FX transfer with currency conversion
       PayerFSP and ProxyAR account must be updated`, async (test) => {
-      
       const transferPrepareTo = 'schemeBPayeeFsp'
       const fxTransferPrepareTo = 'schemeRFxp'
 
@@ -1421,7 +1394,6 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
 
-      
       // TODO: It seems there is an issue in position handler. Its not processing the messages with key 0.
       // It should change the state of the transfer to RESERVED in the prepare step.
       // Until the issue with position handler is resolved. Commenting the following test.
@@ -1452,7 +1424,6 @@ Test('Handlers test', async handlersTest => {
       testConsumer.clearEvents()
       test.end()
     })
-
 
     transferProxyPrepare.end()
   })

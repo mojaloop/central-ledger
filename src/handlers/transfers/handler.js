@@ -201,7 +201,7 @@ const processFulfilMessage = async (message, functionality, span) => {
     // In interscheme scenario, we store proxy fsp id in transferParticipant table and hence we can't compare that data with fspiop headers in fulfil
   } else if (
     validActionsForRouteValidations.includes(action) // Lets only check headers for specific actions that need checking (i.e. bulk should not since its already done elsewhere)
-   ) {
+  ) {
     // Check if the payerFsp and payeeFsp are proxies and if they are, skip validating headers
     if (
       (headers[Enum.Http.Headers.FSPIOP.SOURCE] && !transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) ||
@@ -211,56 +211,56 @@ const processFulfilMessage = async (message, functionality, span) => {
        * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
        */
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorSourceNotMatchingTransferFSPs--${actionLetter}2`))
-  
+
       // Lets set a default non-matching error to fallback-on
       let fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'FSP does not match one of the fsp-id\'s associated with a transfer on the Fulfil callback response')
-  
+
       // Lets make the error specific if the PayeeFSP IDs do not match
       if (!transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) {
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.SOURCE} does not match payee fsp on the Fulfil callback response`)
       }
-  
+
       // Lets make the error specific if the PayerFSP IDs do not match
       if (!transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase())) {
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.DESTINATION} does not match payer fsp on the Fulfil callback response`)
       }
-  
+
       const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
-  
+
       // Set the event details to map to an ABORT_VALIDATION event targeted to the Position Handler
       const eventDetail = {
         functionality: TransferEventType.POSITION,
         action: TransferEventAction.ABORT_VALIDATION
       }
-  
+
       // Lets handle the abort validation and change the transfer state to reflect this
       const transferAbortResult = await TransferService.handlePayeeResponse(transferId, payload, TransferEventAction.ABORT_VALIDATION, apiFSPIOPError)
-  
+
       /**
        * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
        * HOWTO: For regular transfers, send the fulfil from non-payee dfsp.
        * Not sure if it will apply to bulk, as it could/should be captured
        * at BulkPrepareHander. To be verified as part of future story.
        */
-  
+
       // Publish message to Position Handler
       // Key position abort with payer account id
       const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, toDestination: transfer.payerFsp, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
-  
+
       /**
        * Send patch notification callback to original payee fsp if they asked for a a patch response.
        */
       if (action === TransferEventAction.RESERVE) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
-  
+
         // Set the event details to map to an RESERVE_ABORTED event targeted to the Notification Handler
         const reserveAbortedEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
-  
+
         // Extract error information
         const errorCode = apiFSPIOPError && apiFSPIOPError.errorInformation && apiFSPIOPError.errorInformation.errorCode
         const errorDescription = apiFSPIOPError && apiFSPIOPError.errorInformation && apiFSPIOPError.errorInformation.errorDescription
-  
+
         // TODO: This should be handled by a PATCH /transfers/{id}/error callback in the future FSPIOP v1.2 specification, and instead we should just send the FSPIOP-Error instead! Ref: https://github.com/mojaloop/mojaloop-specification/issues/106.
         const reservedAbortedPayload = {
           transferId: transferAbortResult && transferAbortResult.id,
@@ -278,7 +278,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         message.value.content.payload = reservedAbortedPayload
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail: reserveAbortedEventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
       }
-  
+
       throw apiFSPIOPError
     }
   }
