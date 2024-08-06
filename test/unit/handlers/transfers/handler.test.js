@@ -695,199 +695,198 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    // The following tests are disabled as the validation is disabled to accommodate proxy scenarios
-    // fulfilTest.test('fail validation when fspiop-destination does not match payerFsp', async (test) => {
-    //   // Setup
-    //   const localfulfilMessages = MainUtil.clone(fulfilMessages)
-    //   await Consumer.createHandler(topicName, config, command)
-    //   Kafka.transformGeneralTopicName.returns(topicName)
-    //   TransferService.getById.returns(Promise.resolve({
-    //     payeeFsp: 'dfsp2',
-    //     payerFsp: 'dfsp1'
-    //   }))
-    //   localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-    //   localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'fspdoesnotexist'
-    //   Kafka.proceed.returns(true)
+    fulfilTest.test('fail validation when fspiop-destination does not match payerFsp', async (test) => {
+      // Setup
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve({
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1'
+      }))
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'fspdoesnotexist'
+      Kafka.proceed.returns(true)
 
-    //   // Act
-    //   const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      // Act
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
-    //   // Assert
+      // Assert
 
-    //   test.equal(result, true)
-    //   test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
 
-    //   // fetch kafka proceed arguments
-    //   const kafkaCallOne = Kafka.proceed.getCall(0)
+      // fetch kafka proceed arguments
+      const kafkaCallOne = Kafka.proceed.getCall(0)
 
-    //   // lets check if the first kafka proceed message contains an applicable error
-    //   test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
-    //   test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response')
-    //   test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-    //   test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
-    //   test.equal(kafkaCallOne.args[2].fromSwitch, true)
-    //   test.equal(kafkaCallOne.args[2].messageKey, '0')
+      // lets check if the first kafka proceed message contains an applicable error
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response')
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      test.equal(kafkaCallOne.args[2].fromSwitch, true)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
 
-    //   test.end()
-    // })
+      test.end()
+    })
 
-    // fulfilTest.test('fail validation when fspiop-source does not match payeeFsp', async (test) => {
-    //   // Setup
-    //   const localfulfilMessages = MainUtil.clone(fulfilMessages)
-    //   await Consumer.createHandler(topicName, config, command)
-    //   Kafka.transformGeneralTopicName.returns(topicName)
-    //   TransferService.getById.returns(Promise.resolve({
-    //     payeeFsp: 'dfsp2',
-    //     payerFsp: 'dfsp1'
-    //   }))
-    //   localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
-    //   localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
-    //   Kafka.proceed.returns(true)
+    fulfilTest.test('fail validation when fspiop-source does not match payeeFsp', async (test) => {
+      // Setup
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve({
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1'
+      }))
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      Kafka.proceed.returns(true)
 
-    //   // Act
-    //   const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      // Act
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
-    //   // Assert
-    //   test.equal(result, true)
-    //   test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      // Assert
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
 
-    //   // fetch kafka proceed arguments
-    //   const kafkaCallOne = Kafka.proceed.getCall(0)
+      // fetch kafka proceed arguments
+      const kafkaCallOne = Kafka.proceed.getCall(0)
 
-    //   // lets check if the first kafka proceed message contains an applicable error
-    //   test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
-    //   test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response')
-    //   test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-    //   test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
-    //   test.equal(kafkaCallOne.args[2].fromSwitch, true)
-    //   test.equal(kafkaCallOne.args[2].messageKey, '0')
+      // lets check if the first kafka proceed message contains an applicable error
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response')
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      test.equal(kafkaCallOne.args[2].fromSwitch, true)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
 
-    //   test.end()
-    // })
+      test.end()
+    })
 
-    // fulfilTest.test('fail validation when fspiop-source does not match payeeFsp - autocommit is enabled', async (test) => {
-    //   // Setup
-    //   const localfulfilMessages = MainUtil.clone(fulfilMessages)
-    //   await Consumer.createHandler(topicName, config, command)
-    //   Consumer.isConsumerAutoCommitEnabled.returns(true)
-    //   Kafka.transformGeneralTopicName.returns(topicName)
-    //   TransferService.getById.returns(Promise.resolve({
-    //     payeeFsp: 'dfsp2',
-    //     payerFsp: 'dfsp1'
-    //   }))
-    //   localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
-    //   localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
-    //   Kafka.proceed.returns(true)
+    fulfilTest.test('fail validation when fspiop-source does not match payeeFsp - autocommit is enabled', async (test) => {
+      // Setup
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Consumer.isConsumerAutoCommitEnabled.returns(true)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve({
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1'
+      }))
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      Kafka.proceed.returns(true)
 
-    //   // Act
-    //   const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      // Act
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
-    //   // Assert
-    //   test.equal(result, true)
-    //   test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      // Assert
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
 
-    //   // fetch kafka proceed arguments
-    //   const kafkaCallOne = Kafka.proceed.getCall(0)
+      // fetch kafka proceed arguments
+      const kafkaCallOne = Kafka.proceed.getCall(0)
 
-    //   // lets check if the first kafka proceed message contains an applicable error
-    //   test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
-    //   test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response')
-    //   test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-    //   test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
-    //   test.equal(kafkaCallOne.args[2].fromSwitch, true)
-    //   test.equal(kafkaCallOne.args[2].messageKey, '0')
+      // lets check if the first kafka proceed message contains an applicable error
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response')
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      test.equal(kafkaCallOne.args[2].fromSwitch, true)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
 
-    //   test.end()
-    // })
+      test.end()
+    })
 
-    // fulfilTest.test('fail validation when fspiop-destination does not match payerFsp for RESERVED callback', async (test) => {
-    //   // Setup
-    //   const localfulfilMessages = MainUtil.clone(fulfilMessages)
-    //   await Consumer.createHandler(topicName, config, command)
-    //   Kafka.transformGeneralTopicName.returns(topicName)
-    //   TransferService.getById.returns(Promise.resolve({
-    //     payeeFsp: 'dfsp2',
-    //     payerFsp: 'dfsp1'
-    //   }))
-    //   localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-    //   localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'fspdoesnotexist'
-    //   localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.1'
-    //   localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
-    //   localfulfilMessages[0].value.metadata.event.action = Enum.Events.Event.Action.RESERVE
-    //   Kafka.proceed.returns(true)
+    fulfilTest.test('fail validation when fspiop-destination does not match payerFsp for RESERVED callback', async (test) => {
+      // Setup
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve({
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1'
+      }))
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'fspdoesnotexist'
+      localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.1'
+      localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
+      localfulfilMessages[0].value.metadata.event.action = Enum.Events.Event.Action.RESERVE
+      Kafka.proceed.returns(true)
 
-    //   // Act
-    //   const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      // Act
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
-    //   // Assert
+      // Assert
 
-    //   test.equal(result, true)
-    //   test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
 
-    //   // fetch kafka proceed arguments
-    //   const kafkaCallOne = Kafka.proceed.getCall(0)
-    //   const kafkaCallTwo = Kafka.proceed.getCall(1)
+      // fetch kafka proceed arguments
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      const kafkaCallTwo = Kafka.proceed.getCall(1)
 
-    //   // lets check if the first kafka proceed message contains an applicable error
-    //   test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
-    //   test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response')
-    //   test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-    //   test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
-    //   test.equal(kafkaCallOne.args[2].fromSwitch, true)
-    //   test.equal(kafkaCallOne.args[2].messageKey, '0')
+      // lets check if the first kafka proceed message contains an applicable error
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response')
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      test.equal(kafkaCallOne.args[2].fromSwitch, true)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
 
-    //   // lets check if the outbound event is sent to the notifications with the correct status
-    //   test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
-    //   test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
-    //   test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
-    //   test.equal(kafkaCallTwo.args[2].fromSwitch, true)
+      // lets check if the outbound event is sent to the notifications with the correct status
+      test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
+      test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
+      test.equal(kafkaCallTwo.args[2].fromSwitch, true)
 
-    //   test.end()
-    // })
+      test.end()
+    })
 
-    // fulfilTest.test('fail validation when fspiop-source does not match payeeFsp for RESERVED callback', async (test) => {
-    //   // Setup
-    //   const localfulfilMessages = MainUtil.clone(fulfilMessages)
-    //   await Consumer.createHandler(topicName, config, command)
-    //   Kafka.transformGeneralTopicName.returns(topicName)
-    //   TransferService.getById.returns(Promise.resolve({
-    //     payeeFsp: 'dfsp2',
-    //     payerFsp: 'dfsp1'
-    //   }))
-    //   localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
-    //   localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
-    //   localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.1'
-    //   localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
-    //   localfulfilMessages[0].value.metadata.event.action = Enum.Events.Event.Action.RESERVE
-    //   Kafka.proceed.returns(true)
+    fulfilTest.test('fail validation when fspiop-source does not match payeeFsp for RESERVED callback', async (test) => {
+      // Setup
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve({
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1'
+      }))
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'fspdoesnotexist'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.1'
+      localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
+      localfulfilMessages[0].value.metadata.event.action = Enum.Events.Event.Action.RESERVE
+      Kafka.proceed.returns(true)
 
-    //   // Act
-    //   const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      // Act
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
 
-    //   // Assert
-    //   test.equal(result, true)
-    //   test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
+      // Assert
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
 
-    //   // fetch kafka proceed arguments
-    //   const kafkaCallOne = Kafka.proceed.getCall(0)
-    //   const kafkaCallTwo = Kafka.proceed.getCall(1)
+      // fetch kafka proceed arguments
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      const kafkaCallTwo = Kafka.proceed.getCall(1)
 
-    //   // lets check if the first kafka proceed message contains an applicable error
-    //   test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
-    //   test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response')
-    //   test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-    //   test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
-    //   test.equal(kafkaCallOne.args[2].fromSwitch, true)
-    //   test.equal(kafkaCallOne.args[2].messageKey, '0')
+      // lets check if the first kafka proceed message contains an applicable error
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response')
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      test.equal(kafkaCallOne.args[2].fromSwitch, true)
+      test.equal(kafkaCallOne.args[2].messageKey, '0')
 
-    //   // lets check if the outbound event is sent to the notifications with the correct status
-    //   test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
-    //   test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
-    //   test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
-    //   test.equal(kafkaCallTwo.args[2].fromSwitch, true)
+      // lets check if the outbound event is sent to the notifications with the correct status
+      test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
+      test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
+      test.equal(kafkaCallTwo.args[2].fromSwitch, true)
 
-    //   test.end()
-    // })
+      test.end()
+    })
 
     fulfilTest.test('fail validation when condition from fulfilment does not match original condition', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
