@@ -8,7 +8,7 @@ exports.up = (knex) => {
         t.bigIncrements('fxQuoteErrorId').primary().notNullable()
         t.string('conversionRequestId', 36).notNullable()
         t.foreign('conversionRequestId').references('conversionRequestId').inTable('fxQuote')
-        t.bigInteger('fxQuoteResponseId').unsigned().defaultTo(null).nullable().comment('The response to the initial quote')
+        t.bigInteger('fxQuoteResponseId').unsigned().defaultTo(null).nullable().comment('The response to the initial fxQuote')
         t.foreign('fxQuoteResponseId').references('fxQuoteResponseId').inTable('fxQuoteResponse')
         t.integer('errorCode').unsigned().notNullable()
         t.string('errorDescription', 128).notNullable()

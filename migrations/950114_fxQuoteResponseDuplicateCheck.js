@@ -5,7 +5,7 @@ exports.up = (knex) => {
   return knex.schema.hasTable('fxQuoteResponseDuplicateCheck').then((exists) => {
     if (!exists) {
       return knex.schema.createTable('fxQuoteResponseDuplicateCheck', (t) => {
-        t.bigIncrements('fxQuoteResponseId').primary().unsigned().comment('The response to the intial quote')
+        t.bigIncrements('fxQuoteResponseId').primary().unsigned().comment('The response to the initial quote')
         t.foreign('fxQuoteResponseId').references('fxQuoteResponseId').inTable('fxQuoteResponse')
         t.string('conversionRequestId', 36).notNullable()
         t.foreign('conversionRequestId').references('conversionRequestId').inTable('fxQuote')
