@@ -26,6 +26,7 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Enum } = require('@mojaloop/central-services-shared')
 const TransferModel = require('../../models/transfer/transfer')
+const ParticipantPositionChangesModel = require('../../models/position/participantPositionChanges')
 const { fxTransfer, watchList } = require('../../models/fxTransfer')
 const Config = require('../../lib/config')
 const ProxyCache = require('../../lib/proxyCache')
@@ -105,7 +106,7 @@ const checkIfDeterminingTransferExistsForFxTransferMessage = async (payload, pro
 }
 
 const getParticipantAndCurrencyForTransferMessage = async (payload, determiningTransferCheckResult, proxyObligation) => {
-  const histTimerGetParticipantAndCurrencyForTransferMessage = Metrics.getHistogram(
+  const histTimer = Metrics.getHistogram(
     'fx_domain_cyril_getParticipantAndCurrencyForTransferMessage',
     'fx_domain_cyril_getParticipantAndCurrencyForTransferMessage - Metrics for fx cyril',
     ['success', 'determiningTransferExists']
@@ -116,8 +117,6 @@ const getParticipantAndCurrencyForTransferMessage = async (payload, determiningT
   if (determiningTransferCheckResult.determiningTransferExistsInWatchList) {
     // If there's a currency conversion before the transfer is requested, it must be the debtor who did it.
     // Get the FX request corresponding to this transaction ID
-    // TODO: Can't we just use the following query in the first place above to check if the determining transfer exists instead of using the watch list?
-    // const fxTransferRecord = await fxTransfer.getByDeterminingTransferId(payload.transferId)
     let fxTransferRecord
     if (proxyObligation.isCounterPartyFspProxy) {
       // If a proxy is representing a FXP in a jurisdictional scenario,
@@ -140,7 +139,7 @@ const getParticipantAndCurrencyForTransferMessage = async (payload, determiningT
     amount = payload.amount.amount
   }
 
-  histTimerGetParticipantAndCurrencyForTransferMessage({ success: true, determiningTransferExists: determiningTransferCheckResult.determiningTransferExistsInWatchList })
+  histTimer({ success: true, determiningTransferExists: determiningTransferCheckResult.determiningTransferExistsInWatchList })
   return {
     participantName,
     currencyId,
@@ -149,7 +148,7 @@ const getParticipantAndCurrencyForTransferMessage = async (payload, determiningT
 }
 
 const getParticipantAndCurrencyForFxTransferMessage = async (payload, determiningTransferCheckResult) => {
-  const histTimerGetParticipantAndCurrencyForFxTransferMessage = Metrics.getHistogram(
+  const histTimer = Metrics.getHistogram(
     'fx_domain_cyril_getParticipantAndCurrencyForFxTransferMessage',
     'fx_domain_cyril_getParticipantAndCurrencyForFxTransferMessage - Metrics for fx cyril',
     ['success', 'determiningTransferExists']
@@ -181,7 +180,7 @@ const getParticipantAndCurrencyForFxTransferMessage = async (payload, determinin
     })
   }
 
-  histTimerGetParticipantAndCurrencyForFxTransferMessage({ success: true, determiningTransferExists: determiningTransferCheckResult.determiningTransferExistsInTransferList })
+  histTimer({ success: true, determiningTransferExists: determiningTransferCheckResult.determiningTransferExistsInTransferList })
   return {
     participantName,
     currencyId,
@@ -190,7 +189,7 @@ const getParticipantAndCurrencyForFxTransferMessage = async (payload, determinin
 }
 
 const processFxFulfilMessage = async (commitRequestId) => {
-  const histTimerGetParticipantAndCurrencyForFxTransferMessage = Metrics.getHistogram(
+  const histTimer = Metrics.getHistogram(
     'fx_domain_cyril_processFxFulfilMessage',
     'fx_domain_cyril_processFxFulfilMessage - Metrics for fx cyril',
     ['success']
@@ -203,12 +202,84 @@ const processFxFulfilMessage = async (commitRequestId) => {
 
   // TODO: May need to update the watchList record to indicate that the fxTransfer has been fulfilled
 
-  histTimerGetParticipantAndCurrencyForFxTransferMessage({ success: true })
+  histTimer({ success: true })
   return true
+
+}
+
+const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
+  const positionChanges = []
+  for (const commitRequestId of commitRequestIdList) {
+    const fxRecord = await fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
+    const fxPositionChanges = await ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId(commitRequestId)
+    fxPositionChanges.forEach((fxPositionChange) => {
+      positionChanges.push({
+        isFxTransferStateChange: true,
+        commitRequestId,
+        initiatingFspName: fxRecord.initiatingFspName,
+        participantCurrencyId: fxPositionChange.participantCurrencyId,
+        amount: fxPositionChange.value
+      })
+    })
+  }
+
+  for (const transferId of transferIdList) {
+    const transferPositionChanges = await ParticipantPositionChangesModel.getReservedPositionChangesByTransferId(transferId)
+    transferPositionChanges.forEach((transferPositionChange) => {
+      positionChanges.push({
+        isFxTransferStateChange: false,
+        transferId,
+        participantCurrencyId: transferPositionChange.participantCurrencyId,
+        amount: transferPositionChange.value
+      })
+    })
+  }
+  return positionChanges
+}
+
+const processFxAbortMessage = async (commitRequestId) => {
+  const histTimer = Metrics.getHistogram(
+    'fx_domain_cyril_processFxAbortMessage',
+    'fx_domain_cyril_processFxAbortMessage - Metrics for fx cyril',
+    ['success']
+  ).startTimer()
+
+  // Get the fxTransfer record
+  const fxTransferRecord = await fxTransfer.getByCommitRequestId(commitRequestId)
+  // const fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(commitRequestId)
+  // Incase of reference currency, there might be multiple fxTransfers associated with a transfer.
+  const relatedFxTransferRecords = await fxTransfer.getByDeterminingTransferId(fxTransferRecord.determiningTransferId)
+
+  // Get position changes
+  const positionChanges = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [fxTransferRecord.determiningTransferId])
+
+  histTimer({ success: true })
+  return {
+    positionChanges
+  }
+}
+
+const processAbortMessage = async (transferId) => {
+  const histTimer = Metrics.getHistogram(
+    'fx_domain_cyril_processAbortMessage',
+    'fx_domain_cyril_processAbortMessage - Metrics for fx cyril',
+    ['success']
+  ).startTimer()
+
+  // Get all related fxTransfers
+  const relatedFxTransferRecords = await fxTransfer.getByDeterminingTransferId(transferId)
+
+  // Get position changes
+  const positionChanges = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId) , [transferId])
+
+  histTimer({ success: true })
+  return {
+    positionChanges
+  }
 }
 
 const processFulfilMessage = async (transferId, payload, transfer) => {
-  const histTimerGetParticipantAndCurrencyForFxTransferMessage = Metrics.getHistogram(
+  const histTimer = Metrics.getHistogram(
     'fx_domain_cyril_processFulfilMessage',
     'fx_domain_cyril_processFulfilMessage - Metrics for fx cyril',
     ['success']
@@ -345,7 +416,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
     // Normal transfer request, just return isFx = false
   }
 
-  histTimerGetParticipantAndCurrencyForFxTransferMessage({ success: true })
+  histTimer({ success: true })
   return result
 }
 
@@ -353,7 +424,9 @@ module.exports = {
   getParticipantAndCurrencyForTransferMessage,
   getParticipantAndCurrencyForFxTransferMessage,
   processFxFulfilMessage,
+  processFxAbortMessage,
   processFulfilMessage,
+  processAbortMessage,
   checkIfDeterminingTransferExistsForTransferMessage,
   checkIfDeterminingTransferExistsForFxTransferMessage
 }

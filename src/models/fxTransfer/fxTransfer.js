@@ -20,8 +20,8 @@ const getByCommitRequestId = async (commitRequestId) => {
 }
 
 const getByDeterminingTransferId = async (determiningTransferId) => {
-  logger.debug(`get fx transfer (determiningTransferId=${determiningTransferId})`)
-  return Db.from(TABLE_NAMES.fxTransfer).findOne({ determiningTransferId })
+  logger.debug(`get fx transfers (determiningTransferId=${determiningTransferId})`)
+  return Db.from(TABLE_NAMES.fxTransfer).find({ determiningTransferId })
 }
 
 const saveFxTransfer = async (record) => {

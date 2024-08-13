@@ -1547,9 +1547,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
                       as: sandbox.stub()
                     })
                   }),
-                  innerJoin: sandbox.stub().returns({
-                    as: sandbox.stub()
-                  })
+                  as: sandbox.stub()
                 }),
                 whereRaw: sandbox.stub().returns({
                   whereIn: sandbox.stub().returns({

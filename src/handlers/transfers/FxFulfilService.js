@@ -97,6 +97,7 @@ class FxFulfilService {
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
       // Publish message to FX Position Handler
+      // TODO: Cancel FX transfer and associated transfer here
       await this.kafkaProceed({
         consumerCommit,
         fspiopError: apiFSPIOPError,
@@ -230,6 +231,7 @@ class FxFulfilService {
       this.log.warn('callbackErrorInvalidFulfilment', { eventDetail, apiFSPIOPError, transfer, payload })
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
+      // TODO: Here we need to cancel the FX transfer and associated transfer
       await this.kafkaProceed({
         consumerCommit,
         fspiopError: apiFSPIOPError,
@@ -285,7 +287,7 @@ class FxFulfilService {
     }
   }
 
-  async processFxAbortAction({ transfer, payload, action }) {
+  async processFxAbort({ transfer, payload, action }) {
     const fspiopError = fspiopErrorFactory.fromErrorInformation(payload.errorInformation)
     const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
     const eventDetail = {
@@ -295,15 +297,25 @@ class FxFulfilService {
     this.log.warn('FX_ABORT case', { eventDetail, apiFSPIOPError })
 
     await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, action, apiFSPIOPError)
-    await this.kafkaProceed({
-      consumerCommit,
-      fspiopError: apiFSPIOPError,
-      eventDetail,
-      messageKey: transfer.counterPartyFspTargetParticipantCurrencyId.toString()
-      // todo: think if we need to use cyrilOutput to get counterPartyFspTargetParticipantCurrencyId?
-    })
+    const cyrilResult = await this.cyril.processFxAbortMessage(transfer.commitRequestId)
 
-    throw fspiopError
+    this.params.message.value.content.context = {
+      ...params.message.value.content.context,
+      cyrilResult
+    }
+    if (cyrilResult.positionChanges.length > 0) {
+      const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
+      await this.kafkaProceed({
+        consumerCommit,
+        eventDetail,
+        messageKey: participantCurrencyId.toString(),
+        topicNameOverride: this.Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_ABORT
+      })
+    } else {
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
+      throw fspiopError
+    }
+    return true
   }
 
   async processFxFulfil({ transfer, payload, action }) {

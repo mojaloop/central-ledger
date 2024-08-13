@@ -583,12 +583,30 @@ const processFulfilMessage = async (message, functionality, span) => {
       }
       await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
       const eventDetail = { functionality: TransferEventType.POSITION, action }
-      // Key position abort with payer account id
-      const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
-      // TODO(2556): I don't think we should emit an extra notification here
-      // this is the case where the Payee sent an ABORT, so we don't need to tell them to abort
-      throw fspiopError
+      const cyrilResult = await FxService.Cyril.processAbortMessage(transferId)
+
+      params.message.value.content.context = {
+        ...params.message.value.content.context,
+        cyrilResult
+      }
+      if (cyrilResult.positionChanges.length > 0) {
+        const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
+        await Kafka.proceed(
+          Config.KAFKA_CONFIG,
+          params,
+          {
+            consumerCommit,
+            fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING),
+            eventDetail,
+            messageKey: participantCurrencyId.toString(),
+            topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.ABORT,
+            hubName: Config.HUB_NAME
+          }
+        )
+      } else {
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
+        throw fspiopError
+      }
     }
   }
 }
@@ -625,6 +643,24 @@ const processFxFulfilMessage = async (message, functionality, span) => {
     log, Config, Comparators, Validator, FxTransferModel, Kafka, params
   })
 
+  // Validate event type
+  await fxFulfilService.validateEventType(type, functionality)
+
+  // Validate action
+  const validActions = [
+    TransferEventAction.FX_RESERVE,
+    TransferEventAction.FX_COMMIT,
+    // TransferEventAction.FX_REJECT,
+    TransferEventAction.FX_ABORT
+  ]
+  if (!validActions.includes(action)) {
+    const errorMessage = ERROR_MESSAGES.fxActionIsNotAllowed(action)
+    log.error(errorMessage)
+    span?.error(errorMessage)
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    return true
+  }
+
   const transfer = await fxFulfilService.getFxTransferDetails(commitRequestId, functionality)
   // todo: rename to fxTransfer
   await fxFulfilService.validateHeaders({ transfer, headers, payload })
@@ -647,33 +683,29 @@ const processFxFulfilMessage = async (message, functionality, span) => {
   }
 
   // Transfer is not a duplicate, or message hasn't been changed.
-  await fxFulfilService.validateEventType(type, functionality)
-  // todo: clarify, if we can make this validation earlier
 
   await fxFulfilService.validateFulfilment(transfer, payload)
   await fxFulfilService.validateTransferState(transfer, functionality)
   await fxFulfilService.validateExpirationDate(transfer, functionality)
 
-  // TODO: why do we let this logic get so far?
-  if (action === TransferEventAction.FX_REJECT) {
-    const errorMessage = ERROR_MESSAGES.fxActionIsNotAllowed(action)
-    log.error(errorMessage)
-    span?.error(errorMessage)
-    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    return true
-  }
   log.info('Validations Succeeded - process the fxFulfil...')
 
-  if (![TransferEventAction.FX_RESERVE, TransferEventAction.FX_COMMIT].includes(action)) {
-    // TODO: why do we let this logic get this far? Why not remove it from validActions array above?
-    await fxFulfilService.processFxAbortAction({ transfer, payload, action })
+  switch (action) {
+    case TransferEventAction.FX_RESERVE:
+    case TransferEventAction.FX_COMMIT: {
+      const success = await fxFulfilService.processFxFulfil({ transfer, payload, action })
+      log.info('fxFulfil handling is done', { success })
+      histTimerEnd({ success, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      return success
+    }
+    case TransferEventAction.FX_ABORT: {
+      await fxFulfilService.processFxAbort({ transfer, payload, action })
+      log.info('fxAbort handling is done', { success })
+      histTimerEnd({ success, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      return true
+    }
   }
 
-  const success = await fxFulfilService.processFxFulfil({ transfer, payload, action })
-  log.info('fxFulfil handling is done', { success })
-  histTimerEnd({ success, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-
-  return success
 }
 
 /**
