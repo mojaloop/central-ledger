@@ -9,9 +9,9 @@ const Logger = require('@mojaloop/central-services-logger')
  * @function processPositionAbortBin
  *
  * @async
- * @description This is the domain function to process a bin of abort messages of a single participant account.
+ * @description This is the domain function to process a bin of abort / fx-abort messages of a single participant account.
  *
- * @param {array} abortBins - an array containing abort action bins
+ * @param {array} abortBins - an array containing abort / fx-abort action bins
  * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
  * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
  * @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
@@ -23,7 +23,8 @@ const processPositionAbortBin = async (
   accumulatedPositionValue,
   accumulatedPositionReservedValue,
   accumulatedTransferStates,
-  accumulatedFxTransferStates
+  accumulatedFxTransferStates,
+  isFx
 ) => {
   const transferStateChanges = []
   const participantPositionChanges = []
@@ -37,13 +38,20 @@ const processPositionAbortBin = async (
   if (abortBins && abortBins.length > 0) {
     for (const binItem of abortBins) {
       Logger.isDebugEnabled && Logger.debug(`processPositionAbortBin::binItem: ${JSON.stringify(binItem.message.value)}`)
-      const transferId = binItem.message.value.content.uriParams.id
-
-      // If the transfer is not in `RECEIVED_ERROR`, a position abort message was incorrectly published.
-      // i.e Something has gone extremely wrong.
-      if (accumulatedTransferStates[transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_ERROR) {
-        throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
+      if (isFx) {
+        // If the transfer is not in `RECEIVED_ERROR`, a position fx-abort message was incorrectly published.
+        // i.e Something has gone extremely wrong.
+        if (accumulatedFxTransferStates[binItem.message.value.content.uriParams.id] !== Enum.Transfers.TransferInternalState.RECEIVED_ERROR) {
+          throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
+        }
+      } else {
+        // If the transfer is not in `RECEIVED_ERROR`, a position abort message was incorrectly published.
+        // i.e Something has gone extremely wrong.
+        if (accumulatedTransferStates[binItem.message.value.content.uriParams.id] !== Enum.Transfers.TransferInternalState.RECEIVED_ERROR) {
+          throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
+        }
       }
+
       
       const cyrilResult = binItem.message.value.content.context?.cyrilResult
       if (!cyrilResult || !cyrilResult.positionChanges || cyrilResult.positionChanges.length === 0) {
@@ -79,11 +87,13 @@ const processPositionAbortBin = async (
         for (const positionChange of cyrilResult.positionChanges) {
           if (positionChange.isFxTransferStateChange) {
             // Construct notification message for fx transfer state change
-            const resultMessage = _constructFxAbortResultMessage(binItem, positionChange.commitRequestId, Config.HUB_NAME, positionChange.initiatingFspName)
-            // const resultMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers)
+            const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, Config.HUB_NAME, positionChange.notifyTo, Enum.Events.Event.Action.FX_ABORT)
+            resultMessages.push({ binItem, message: resultMessage })
+          } else {
+            // Construct notification message for transfer state change
+            const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, Config.HUB_NAME, positionChange.notifyTo, Enum.Events.Event.Action.ABORT)
             resultMessages.push({ binItem, message: resultMessage })
           }
-          // Currently we are not expecting any dependent transfers for a transfer message. Only dependent fx transfers are expected.
         }
       } else {
         // There are still position changes to be processed
@@ -111,7 +121,7 @@ const processPositionAbortBin = async (
   }
 }
 
-const _constructFxAbortResultMessage = (binItem, commitRequestId, counterPartyFsp, initiatingFsp) => {
+const _constructAbortResultMessage = (binItem, id, from, notifyTo, action) => {
   const fspiopError = ErrorHandler.Factory.createFSPIOPError(
     ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTION, // TODO: Need clarification on this
     null,
@@ -128,19 +138,19 @@ const _constructFxAbortResultMessage = (binItem, commitRequestId, counterPartyFs
 
   // Create metadata for the message
   const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-    commitRequestId,
+    id,
     Enum.Kafka.Topics.POSITION,
-    Enum.Events.Event.Action.ABORT,
+    action,
     state
   )
   const resultMessage = Utility.StreamingProtocol.createMessage(
-    commitRequestId,
-    counterPartyFsp,
-    initiatingFsp,
+    id,
+    from,
+    notifyTo,
     metadata,
     binItem.message.value.content.headers, // Headers don't really matter here. ml-api-adapter will ignore them and create their own.
     fspiopError,
-    { id: commitRequestId },
+    { id: id },
     'application/json'
   )
 

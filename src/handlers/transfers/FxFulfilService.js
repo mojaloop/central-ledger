@@ -300,7 +300,7 @@ class FxFulfilService {
     const cyrilResult = await this.cyril.processFxAbortMessage(transfer.commitRequestId)
 
     this.params.message.value.content.context = {
-      ...params.message.value.content.context,
+      ...this.params.message.value.content.context,
       cyrilResult
     }
     if (cyrilResult.positionChanges.length > 0) {

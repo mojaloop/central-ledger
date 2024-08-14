@@ -26,6 +26,7 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Enum } = require('@mojaloop/central-services-shared')
 const TransferModel = require('../../models/transfer/transfer')
+const TransferFacade = require('../../models/transfer/facade')
 const ParticipantPositionChangesModel = require('../../models/position/participantPositionChanges')
 const { fxTransfer, watchList } = require('../../models/fxTransfer')
 const Config = require('../../lib/config')
@@ -216,7 +217,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
       positionChanges.push({
         isFxTransferStateChange: true,
         commitRequestId,
-        initiatingFspName: fxRecord.initiatingFspName,
+        notifyTo: fxRecord.initiatingFspName,
         participantCurrencyId: fxPositionChange.participantCurrencyId,
         amount: fxPositionChange.value
       })
@@ -224,11 +225,13 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
   }
 
   for (const transferId of transferIdList) {
+    const transferRecord = await TransferFacade.getById(transferId)
     const transferPositionChanges = await ParticipantPositionChangesModel.getReservedPositionChangesByTransferId(transferId)
     transferPositionChanges.forEach((transferPositionChange) => {
       positionChanges.push({
         isFxTransferStateChange: false,
         transferId,
+        notifyTo: transferRecord.payerFsp,
         participantCurrencyId: transferPositionChange.participantCurrencyId,
         amount: transferPositionChange.value
       })

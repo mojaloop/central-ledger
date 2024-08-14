@@ -179,7 +179,7 @@ const prepareFxTestData = async (dataObj) => {
     const fxPrepareHeaders = {
       'fspiop-source': payer.participant.name,
       'fspiop-destination': fxp.participant.name,
-      'content-type': 'application/vnd.interoperability.fxTransfers+json;version=1.1'
+      'content-type': 'application/vnd.interoperability.fxTransfers+json;version=2.0'
     }
 
     const transferPayload = {
@@ -225,6 +225,12 @@ const prepareFxTestData = async (dataObj) => {
       'fspiop-source': payee.participant.name,
       'fspiop-destination': payer.participant.name,
       'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
+    }
+
+    const fxFulfilHeaders = {
+      'fspiop-source': fxp.participant.name,
+      'fspiop-destination': payer.participant.name,
+      'content-type': 'application/vnd.interoperability.fxTransfers+json;version=2.0'
     }
 
     const errorPayload = ErrorHandler.Factory.createFSPIOPError(
@@ -294,17 +300,34 @@ const prepareFxTestData = async (dataObj) => {
     messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
     messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
 
+    const messageProtocolPayerInitiatedConversionFxFulfil = Util.clone(messageProtocolPayerInitiatedConversionFxPrepare)
+    messageProtocolPayerInitiatedConversionFxFulfil.id = randomUUID()
+    messageProtocolPayerInitiatedConversionFxFulfil.from = transferPayload.counterPartyFsp
+    messageProtocolPayerInitiatedConversionFxFulfil.to = transferPayload.initiatingFsp
+    messageProtocolPayerInitiatedConversionFxFulfil.content.headers = fxFulfilHeaders
+    messageProtocolPayerInitiatedConversionFxFulfil.content.uriParams = { id: fxTransferPayload.commitRequestId }
+    messageProtocolPayerInitiatedConversionFxFulfil.content.payload = fulfilPayload
+    messageProtocolPayerInitiatedConversionFxFulfil.metadata.event.id = randomUUID()
+    messageProtocolPayerInitiatedConversionFxFulfil.metadata.event.type = TransferEventType.FULFIL
+    messageProtocolPayerInitiatedConversionFxFulfil.metadata.event.action = TransferEventAction.FX_RESERVE
+
     const messageProtocolReject = Util.clone(messageProtocolFulfil)
     messageProtocolReject.id = randomUUID()
-    messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
+    messageProtocolReject.content.uriParams = { id: transferPayload.transferId }
     messageProtocolReject.content.payload = rejectPayload
     messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
 
     const messageProtocolError = Util.clone(messageProtocolFulfil)
     messageProtocolError.id = randomUUID()
-    messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
+    messageProtocolError.content.uriParams = { id: transferPayload.transferId }
     messageProtocolError.content.payload = errorPayload
     messageProtocolError.metadata.event.action = TransferEventAction.ABORT
+
+    const messageProtocolFxAbort = Util.clone(messageProtocolPayerInitiatedConversionFxFulfil)
+    messageProtocolFxAbort.id = randomUUID()
+    messageProtocolFxAbort.content.uriParams = { id: fxTransferPayload.commitRequestId }
+    messageProtocolFxAbort.content.payload = errorPayload
+    messageProtocolFxAbort.metadata.event.action = TransferEventAction.FX_ABORT
 
     const topicConfFxTransferPrepare = Utility.createGeneralTopicConf(
       Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
@@ -331,6 +354,8 @@ const prepareFxTestData = async (dataObj) => {
       rejectPayload,
       errorPayload,
       messageProtocolPayerInitiatedConversionFxPrepare,
+      messageProtocolPayerInitiatedConversionFxFulfil,
+      messageProtocolFxAbort,
       messageProtocolPrepare,
       messageProtocolFulfil,
       messageProtocolReject,
@@ -430,10 +455,73 @@ Test('Handlers test', async handlersTest => {
     })
   })
 
-  await handlersTest.test('When fxTransfer followed by a transfer and transferFulfilAbort are sent', async timeoutTest => {
+  // TODO: This is throwing some error in the prepare handler. Need to investigate and fix it.
+  // await handlersTest.test('When only tranfer is sent and followed by transfer abort', async abortTest => {
+  //   const td = await prepareFxTestData(testFxData)
+
+  //   await abortTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
+  //     const config = Utility.getKafkaConfig(
+  //       Config.KAFKA_CONFIG,
+  //       Enum.Kafka.Config.PRODUCER,
+  //       TransferEventType.TRANSFER.toUpperCase(),
+  //       TransferEventType.PREPARE.toUpperCase())
+  //     config.logger = Logger
+
+  //     const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
+  //     Logger.info(producerResponse)
+
+  //     try {
+  //       await wrapWithRetries(async () => {
+  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+  //         if (transfer?.transferState !== TransferState.RESERVED) {
+  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+  //           return null
+  //         }
+  //         return transfer
+  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+  //     } catch (err) {
+  //       Logger.error(err)
+  //       test.fail(err.message)
+  //     }
+
+  //     test.end()
+  //   })
+
+  //   await abortTest.test('update transfer state to ABORTED by FULFIL-ABORT callback', async (test) => {
+  //     const config = Utility.getKafkaConfig(
+  //       Config.KAFKA_CONFIG,
+  //       Enum.Kafka.Config.PRODUCER,
+  //       TransferEventType.TRANSFER.toUpperCase(),
+  //       TransferEventType.FULFIL.toUpperCase())
+  //     config.logger = Logger
+
+  //     await Producer.produceMessage(td.messageProtocolError, td.topicConfTransferFulfil, config)
+
+  //     // Check for the transfer state to be ABORTED
+  //     try {
+  //       await wrapWithRetries(async () => {
+  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+  //         if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
+  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+  //           return null
+  //         }
+  //         return transfer
+  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+  //     } catch (err) {
+  //       Logger.error(err)
+  //       test.fail(err.message)
+  //     }
+
+  //     test.end()
+  //   })
+
+  //   abortTest.end()
+  // })
+
+  await handlersTest.test('When fxTransfer followed by a transfer and transferFulfilAbort are sent', async abortTest => {
     const td = await prepareFxTestData(testFxData)
 
-    await timeoutTest.test('update fxTransfer state to RESERVED by PREPARE request', async (test) => {
+    await abortTest.test('update fxTransfer state to RESERVED by PREPARE request', async (test) => {
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -476,7 +564,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await timeoutTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
+    await abortTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -504,15 +592,13 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await timeoutTest.test('update transfer state to ABORTED by FULFIL-ABORT callback', async (test) => {
+    await abortTest.test('update transfer state to ABORTED by FULFIL-ABORT callback', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.FULFIL.toUpperCase())
       config.logger = Logger
-
-      const transfer1 = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
 
       await Producer.produceMessage(td.messageProtocolError, td.topicConfTransferFulfil, config)
 
@@ -549,8 +635,206 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    timeoutTest.end()
+    abortTest.end()
   })
+
+  await handlersTest.test('When there is an abort from FXP for fxTransfer', async abortTest => {
+    const td = await prepareFxTestData(testFxData)
+
+    await abortTest.test('update fxTransfer state to RESERVED by PREPARE request', async (test) => {
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventAction.PREPARE.toUpperCase()
+      )
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(
+        td.messageProtocolPayerInitiatedConversionFxPrepare,
+        td.topicConfFxTransferPrepare,
+        prepareConfig
+      )
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: TOPIC_POSITION_BATCH,
+          action: Enum.Events.Event.Action.FX_PREPARE,
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      try {
+        await wrapWithRetries(async () => {
+          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+          if (fxTransfer?.transferState !== TransferInternalState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return fxTransfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    await abortTest.test('update fxTransfer state to ABORTED by FULFIL-ABORT callback', async (test) => {
+      const config = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      config.logger = Logger
+
+      await Producer.produceMessage(td.messageProtocolFxAbort, td.topicConfTransferFulfil, config)
+
+      // Check for the fxTransfer state to be ABORTED
+      try {
+        await wrapWithRetries(async () => {
+          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+          if (fxTransfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return fxTransfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    abortTest.end()
+  })
+
+  // TODO: This is payee side currency conversion. As we didn't implement this yet, this test is failing. 
+  // await handlersTest.test('When a transfer followed by a transfer and fxAbort are sent', async abortTest => {
+  //   const td = await prepareFxTestData(testFxData)
+
+  //   await abortTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
+  //     const config = Utility.getKafkaConfig(
+  //       Config.KAFKA_CONFIG,
+  //       Enum.Kafka.Config.PRODUCER,
+  //       TransferEventType.TRANSFER.toUpperCase(),
+  //       TransferEventType.PREPARE.toUpperCase())
+  //     config.logger = Logger
+
+  //     const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
+  //     Logger.info(producerResponse)
+
+  //     try {
+  //       await wrapWithRetries(async () => {
+  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+  //         if (transfer?.transferState !== TransferState.RESERVED) {
+  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+  //           return null
+  //         }
+  //         return transfer
+  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+  //     } catch (err) {
+  //       Logger.error(err)
+  //       test.fail(err.message)
+  //     }
+
+  //     test.end()
+  //   })
+
+  //   await abortTest.test('update fxTransfer state to RESERVED by PREPARE request', async (test) => {
+  //     const prepareConfig = Utility.getKafkaConfig(
+  //       Config.KAFKA_CONFIG,
+  //       Enum.Kafka.Config.PRODUCER,
+  //       TransferEventType.TRANSFER.toUpperCase(),
+  //       TransferEventAction.PREPARE.toUpperCase()
+  //     )
+  //     prepareConfig.logger = Logger
+  //     await Producer.produceMessage(
+  //       td.messageProtocolPayerInitiatedConversionFxPrepare,
+  //       td.topicConfFxTransferPrepare,
+  //       prepareConfig
+  //     )
+
+  //     try {
+  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+  //         topicFilter: TOPIC_POSITION_BATCH,
+  //         action: Enum.Events.Event.Action.FX_PREPARE,
+  //         keyFilter: td.payer.participantCurrencyId.toString()
+  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+  //       test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
+  //     } catch (err) {
+  //       test.notOk('Error should not be thrown')
+  //       console.error(err)
+  //     }
+
+  //     try {
+  //       await wrapWithRetries(async () => {
+  //         const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+  //         if (fxTransfer?.transferState !== TransferInternalState.RESERVED) {
+  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+  //           return null
+  //         }
+  //         return fxTransfer
+  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+  //     } catch (err) {
+  //       Logger.error(err)
+  //       test.fail(err.message)
+  //     }
+
+  //     test.end()
+  //   })
+
+  //   await abortTest.test('update fxTransfer state to ABORTED by FULFIL-ABORT callback', async (test) => {
+  //     const config = Utility.getKafkaConfig(
+  //       Config.KAFKA_CONFIG,
+  //       Enum.Kafka.Config.PRODUCER,
+  //       TransferEventType.TRANSFER.toUpperCase(),
+  //       TransferEventType.FULFIL.toUpperCase())
+  //     config.logger = Logger
+
+  //     await Producer.produceMessage(td.messageProtocolFxAbort, td.topicConfTransferFulfil, config)
+
+  //     // Check for the fxTransfer state to be ABORTED
+  //     try {
+  //       await wrapWithRetries(async () => {
+  //         const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+  //         if (fxTransfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
+  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+  //           return null
+  //         }
+  //         return fxTransfer
+  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+  //     } catch (err) {
+  //       Logger.error(err)
+  //       test.fail(err.message)
+  //     }
+
+  //     // Check for the transfer state to be ABORTED
+  //     try {
+  //       await wrapWithRetries(async () => {
+  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+  //         if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
+  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+  //           return null
+  //         }
+  //         return transfer
+  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+  //     } catch (err) {
+  //       Logger.error(err)
+  //       test.fail(err.message)
+  //     }
+
+  //     test.end()
+  //   })
+
+  //   abortTest.end()
+  // })
 
   await handlersTest.test('teardown', async (assert) => {
     try {

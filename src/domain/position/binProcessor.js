@@ -216,7 +216,8 @@ const processBins = async (bins, trx) => {
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
-      accumulatedFxTransferStates
+      accumulatedFxTransferStates,
+      false
     )
 
     // Update accumulated values
@@ -229,6 +230,28 @@ const processBins = async (bins, trx) => {
     accumulatedPositionChanges = accumulatedPositionChanges.concat(abortReservedActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(abortReservedActionResult.notifyMessages)
     followupMessages = followupMessages.concat(abortReservedActionResult.followupMessages)
+
+    // ========== FX_ABORT  ==========
+    // If abort action found then call processPositionAbortBin function
+    const fxAbortReservedActionResult = await PositionAbortDomain.processPositionAbortBin(
+      accountBin[Enum.Events.Event.Action.FX_ABORT],
+      accumulatedPositionValue,
+      accumulatedPositionReservedValue,
+      accumulatedTransferStates,
+      accumulatedFxTransferStates,
+      true
+    )
+
+    // Update accumulated values
+    accumulatedPositionValue = fxAbortReservedActionResult.accumulatedPositionValue
+    accumulatedPositionReservedValue = fxAbortReservedActionResult.accumulatedPositionReservedValue
+    accumulatedTransferStates = fxAbortReservedActionResult.accumulatedTransferStates
+    // Append accumulated arrays
+    accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(fxAbortReservedActionResult.accumulatedTransferStateChanges)
+    accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fxAbortReservedActionResult.accumulatedFxTransferStateChanges)
+    accumulatedPositionChanges = accumulatedPositionChanges.concat(fxAbortReservedActionResult.accumulatedPositionChanges)
+    notifyMessages = notifyMessages.concat(fxAbortReservedActionResult.notifyMessages)
+    followupMessages = followupMessages.concat(fxAbortReservedActionResult.followupMessages)
 
     // ========== TIMEOUT_RESERVED  ==========
     // If timeout-reserved action found then call processPositionTimeoutReserveBin function

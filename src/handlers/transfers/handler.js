@@ -710,7 +710,7 @@ const processFxFulfilMessage = async (message, functionality, span) => {
 
   // Transfer is not a duplicate, or message hasn't been changed.
 
-  await fxFulfilService.validateFulfilment(transfer, payload)
+  payload.fulfilment && await fxFulfilService.validateFulfilment(transfer, payload)
   await fxFulfilService.validateTransferState(transfer, functionality)
   await fxFulfilService.validateExpirationDate(transfer, functionality)
 
@@ -725,7 +725,7 @@ const processFxFulfilMessage = async (message, functionality, span) => {
       return success
     }
     case TransferEventAction.FX_ABORT: {
-      await fxFulfilService.processFxAbort({ transfer, payload, action })
+      const success = await fxFulfilService.processFxAbort({ transfer, payload, action })
       log.info('fxAbort handling is done', { success })
       histTimerEnd({ success, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
