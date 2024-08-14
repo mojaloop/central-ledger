@@ -23,8 +23,7 @@ const processPositionAbortBin = async (
   accumulatedPositionValue,
   accumulatedPositionReservedValue,
   accumulatedTransferStates,
-  accumulatedFxTransferStates,
-  transferInfoList
+  accumulatedFxTransferStates
 ) => {
   const transferStateChanges = []
   const participantPositionChanges = []
@@ -34,13 +33,10 @@ const processPositionAbortBin = async (
   const accumulatedTransferStatesCopy = Object.assign({}, accumulatedTransferStates)
   const accumulatedFxTransferStatesCopy = Object.assign({}, accumulatedFxTransferStates)
   let runningPosition = new MLNumber(accumulatedPositionValue)
-  // Position action RESERVED_TIMEOUT event messages are keyed either with the
-  // payer's account id or an fxp target currency account of an associated fxTransfer.
-  // We need to revert the payer's/fxp's position for the amount of the transfer.
-  // The payer and payee are notified from the singular NOTIFICATION event RESERVED_TIMEOUT action
+
   if (abortBins && abortBins.length > 0) {
     for (const binItem of abortBins) {
-      Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::binItem: ${JSON.stringify(binItem.message.value)}`)
+      Logger.isDebugEnabled && Logger.debug(`processPositionAbortBin::binItem: ${JSON.stringify(binItem.message.value)}`)
       const transferId = binItem.message.value.content.uriParams.id
 
       // If the transfer is not in `RECEIVED_ERROR`, a position abort message was incorrectly published.
@@ -147,38 +143,6 @@ const _constructFxAbortResultMessage = (binItem, commitRequestId, counterPartyFs
     { id: commitRequestId },
     'application/json'
   )
-
-  return resultMessage
-}
-
-const _constructTransferAbortFollowupMessage = (binItem, transferId, payerFsp, payeeFsp, transfer) => {
-  // forward same headers from the prepare message, except the content-length header
-  const headers = { ...binItem.message.value.content.headers }
-  delete headers['content-length']
-
-  const state = Utility.StreamingProtocol.createEventState(
-    Enum.Events.EventStatus.SUCCESS.status,
-    null,
-    null
-  )
-  const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-    transferId,
-    Enum.Kafka.Topics.TRANSFER,
-    Enum.Events.Event.Action.COMMIT,
-    state
-  )
-
-  const resultMessage = Utility.StreamingProtocol.createMessage(
-    transferId,
-    payerFsp,
-    payeeFsp,
-    metadata,
-    headers,
-    transfer,
-    { id: transferId },
-    'application/json'
-  )
-
 
   return resultMessage
 }

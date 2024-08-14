@@ -216,8 +216,7 @@ const processBins = async (bins, trx) => {
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      latestTransferInfoByTransferId
+      accumulatedFxTransferStates
     )
 
     // Update accumulated values
