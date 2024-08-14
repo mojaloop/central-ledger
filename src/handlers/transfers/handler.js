@@ -558,10 +558,36 @@ const processFulfilMessage = async (message, functionality, span) => {
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
-    // TODO: why do we let this logic get this far? Why not remove it from validActions array above?
-    case TransferEventAction.ABORT:
-    case TransferEventAction.BULK_ABORT:
-    default: { // action === TransferEventAction.ABORT || action === TransferEventAction.BULK_ABORT // error-callback request to be processed
+    case TransferEventAction.BULK_ABORT: {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
+      let fspiopError
+      const eInfo = payload.errorInformation
+      try { // handle only valid errorCodes provided by the payee
+        fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(eInfo)
+      } catch (err) {
+        /**
+         * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
+         * so that such requests are rejected right away, instead of aborting the transfer here.
+         */
+        Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+        fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
+        await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
+        const eventDetail = { functionality: TransferEventType.POSITION, action }
+        // Key position abort with payer account id
+        const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
+        throw fspiopError
+      }
+      await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
+      const eventDetail = { functionality: TransferEventType.POSITION, action }
+      // Key position abort with payer account id
+      const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
+      // TODO(2556): I don't think we should emit an extra notification here
+      // this is the case where the Payee sent an ABORT, so we don't need to tell them to abort
+      throw fspiopError
+    }
+    case TransferEventAction.ABORT: {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
       let fspiopError
       const eInfo = payload.errorInformation
