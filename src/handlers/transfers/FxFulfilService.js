@@ -27,6 +27,7 @@ const { Enum, Util } = require('@mojaloop/central-services-shared')
 const cyril = require('../../domain/fx/cyril')
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const fspiopErrorFactory = require('../../shared/fspiopErrorFactory')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const { Type, Action } = Enum.Events.Event
 const { SOURCE, DESTINATION } = Enum.Http.Headers.FSPIOP

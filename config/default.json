@@ -104,7 +104,7 @@
         "RESERVE": null,
         "TIMEOUT_RESERVED": null,
         "FX_TIMEOUT_RESERVED": "topic-transfer-position-batch",
-        "ABORT": "topic-transfer-position-batch",
+        "ABORT": null,
         "FX_ABORT": "topic-transfer-position-batch"
       }
     },

@@ -740,7 +740,7 @@ Test('Handlers test', async handlersTest => {
     abortTest.end()
   })
 
-  // TODO: This is payee side currency conversion. As we didn't implement this yet, this test is failing. 
+  // TODO: This is payee side currency conversion. As we didn't implement this yet, this test is failing.
   // await handlersTest.test('When a transfer followed by a transfer and fxAbort are sent', async abortTest => {
   //   const td = await prepareFxTestData(testFxData)
 

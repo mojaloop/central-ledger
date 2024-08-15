@@ -731,7 +731,6 @@ const processFxFulfilMessage = async (message, functionality, span) => {
       return true
     }
   }
-
 }
 
 /**

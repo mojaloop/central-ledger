@@ -52,12 +52,11 @@ const processPositionAbortBin = async (
         }
       }
 
-      
       const cyrilResult = binItem.message.value.content.context?.cyrilResult
       if (!cyrilResult || !cyrilResult.positionChanges || cyrilResult.positionChanges.length === 0) {
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
       }
-      
+
       // Handle position movements
       // Iterate through positionChanges and handle each position movement, mark as done and publish a position-commit kafka message again for the next item
       // Find out the first item to be processed
@@ -105,7 +104,6 @@ const processPositionAbortBin = async (
         // followupMessage.content.context = binItem.message.value.content.context
         followupMessages.push({ binItem, messageKey: participantCurrencyId.toString(), message: followupMessage })
       }
-
     }
   }
 
@@ -150,7 +148,7 @@ const _constructAbortResultMessage = (binItem, id, from, notifyTo, action) => {
     metadata,
     binItem.message.value.content.headers, // Headers don't really matter here. ml-api-adapter will ignore them and create their own.
     fspiopError,
-    { id: id },
+    { id },
     'application/json'
   )
 

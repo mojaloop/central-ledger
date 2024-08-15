@@ -205,7 +205,6 @@ const processFxFulfilMessage = async (commitRequestId) => {
 
   histTimer({ success: true })
   return true
-
 }
 
 const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
@@ -273,7 +272,7 @@ const processAbortMessage = async (transferId) => {
   const relatedFxTransferRecords = await fxTransfer.getByDeterminingTransferId(transferId)
 
   // Get position changes
-  const positionChanges = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId) , [transferId])
+  const positionChanges = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [transferId])
 
   histTimer({ success: true })
   return {
