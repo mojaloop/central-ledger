@@ -112,6 +112,7 @@ const processPositionAbortBin = async (
     accumulatedTransferStates: accumulatedTransferStatesCopy, // finalized transfer state after fulfil processing
     accumulatedPositionReservedValue, // not used but kept for consistency
     accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
+    accumulatedFxTransferStates: accumulatedFxTransferStatesCopy, // finalized fx transfer state after fulfil processing
     accumulatedFxTransferStateChanges: fxTransferStateChanges, // fx transfer state changes to be persisted in order
     accumulatedPositionChanges: participantPositionChanges, // participant position changes to be persisted in order
     notifyMessages: resultMessages, // array of objects containing bin item and result message. {binItem, message}
@@ -170,7 +171,7 @@ const _handleParticipantPositionChange = (runningPosition, transferAmount, trans
   const transferStateChange = {
     transferId,
     transferStateId,
-    reason: ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message
+    reason: null
   }
   return { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition }
 }

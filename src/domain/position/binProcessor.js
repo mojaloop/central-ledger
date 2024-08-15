@@ -229,6 +229,7 @@ const processBins = async (bins, trx) => {
     accumulatedPositionValue = abortReservedActionResult.accumulatedPositionValue
     accumulatedPositionReservedValue = abortReservedActionResult.accumulatedPositionReservedValue
     accumulatedTransferStates = abortReservedActionResult.accumulatedTransferStates
+    accumulatedFxTransferStates = abortReservedActionResult.accumulatedFxTransferStates
     // Append accumulated arrays
     accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(abortReservedActionResult.accumulatedTransferStateChanges)
     accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(abortReservedActionResult.accumulatedFxTransferStateChanges)
@@ -254,6 +255,7 @@ const processBins = async (bins, trx) => {
     accumulatedPositionValue = fxAbortReservedActionResult.accumulatedPositionValue
     accumulatedPositionReservedValue = fxAbortReservedActionResult.accumulatedPositionReservedValue
     accumulatedTransferStates = fxAbortReservedActionResult.accumulatedTransferStates
+    accumulatedFxTransferStates = fxAbortReservedActionResult.accumulatedFxTransferStates
     // Append accumulated arrays
     accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(fxAbortReservedActionResult.accumulatedTransferStateChanges)
     accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fxAbortReservedActionResult.accumulatedFxTransferStateChanges)
@@ -315,7 +317,7 @@ const processBins = async (bins, trx) => {
     // Update accumulated values
     accumulatedPositionValue = fxPrepareActionResult.accumulatedPositionValue
     accumulatedPositionReservedValue = fxPrepareActionResult.accumulatedPositionReservedValue
-    accumulatedTransferStates = fxPrepareActionResult.accumulatedTransferStates
+    accumulatedFxTransferStates = fxPrepareActionResult.accumulatedFxTransferStates
     // Append accumulated arrays
     accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fxPrepareActionResult.accumulatedFxTransferStateChanges)
     accumulatedPositionChanges = accumulatedPositionChanges.concat(fxPrepareActionResult.accumulatedPositionChanges)
