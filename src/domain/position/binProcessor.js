@@ -126,7 +126,9 @@ const processBins = async (bins, trx) => {
       Enum.Events.Event.Action.TIMEOUT_RESERVED,
       Enum.Events.Event.Action.FX_TIMEOUT_RESERVED,
       Enum.Events.Event.Action.ABORT,
-      Enum.Events.Event.Action.FX_ABORT
+      Enum.Events.Event.Action.FX_ABORT,
+      Enum.Events.Event.Action.ABORT_VALIDATION,
+      Enum.Events.Event.Action.FX_ABORT_VALIDATION
     ]
     if (!isSubset(allowedActions, actions)) {
       Logger.isErrorEnabled && Logger.error(`Only ${allowedActions.join()} are allowed in a batch`)
@@ -212,7 +214,10 @@ const processBins = async (bins, trx) => {
     // ========== ABORT  ==========
     // If abort action found then call processPositionAbortBin function
     const abortReservedActionResult = await PositionAbortDomain.processPositionAbortBin(
-      accountBin[Enum.Events.Event.Action.ABORT],
+      [
+        ...(accountBin[Enum.Events.Event.Action.ABORT] || []),
+        ...(accountBin[Enum.Events.Event.Action.ABORT_VALIDATION] || [])
+      ],
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
@@ -234,7 +239,10 @@ const processBins = async (bins, trx) => {
     // ========== FX_ABORT  ==========
     // If abort action found then call processPositionAbortBin function
     const fxAbortReservedActionResult = await PositionAbortDomain.processPositionAbortBin(
-      accountBin[Enum.Events.Event.Action.FX_ABORT],
+      [
+        ...(accountBin[Enum.Events.Event.Action.FX_ABORT] || []),
+        ...(accountBin[Enum.Events.Event.Action.FX_ABORT_VALIDATION] || [])
+      ],
       accumulatedPositionValue,
       accumulatedPositionReservedValue,
       accumulatedTransferStates,
@@ -422,6 +430,10 @@ const _getTransferIdList = async (bins) => {
     } else if (action === Enum.Events.Event.Action.ABORT) {
       transferIdList.push(item.message.value.content.uriParams.id)
     } else if (action === Enum.Events.Event.Action.FX_ABORT) {
+      commitRequestIdList.push(item.message.value.content.uriParams.id)
+    } else if (action === Enum.Events.Event.Action.ABORT_VALIDATION) {
+      transferIdList.push(item.message.value.content.uriParams.id)
+    } else if (action === Enum.Events.Event.Action.FX_ABORT_VALIDATION) {
       commitRequestIdList.push(item.message.value.content.uriParams.id)
     }
   })

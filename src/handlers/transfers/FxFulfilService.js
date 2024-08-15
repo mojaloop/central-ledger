@@ -97,7 +97,6 @@ class FxFulfilService {
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
       // Publish message to FX Position Handler
-      // TODO: Cancel FX transfer and associated transfer here
       await this.kafkaProceed({
         consumerCommit,
         fspiopError: apiFSPIOPError,
@@ -231,7 +230,6 @@ class FxFulfilService {
       this.log.warn('callbackErrorInvalidFulfilment', { eventDetail, apiFSPIOPError, transfer, payload })
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
-      // TODO: Here we need to cancel the FX transfer and associated transfer
       await this.kafkaProceed({
         consumerCommit,
         fspiopError: apiFSPIOPError,
