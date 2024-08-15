@@ -529,6 +529,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventAction.PREPARE.toUpperCase()
       )
       prepareConfig.logger = Logger
+
       await Producer.produceMessage(
         td.messageProtocolPayerInitiatedConversionFxPrepare,
         td.topicConfFxTransferPrepare,
@@ -561,6 +562,10 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
+      // Check the position of the payer is updated
+      const payerPositionAfterReserve = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
+      test.equal(payerPositionAfterReserve.value, testFxData.sourceAmount.amount)
+
       test.end()
     })
 
@@ -588,6 +593,10 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+
+      // Check the position of the fxp is updated
+      const fxpTargetPositionAfterReserve = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyIdSecondary)
+      test.equal(fxpTargetPositionAfterReserve.value, testFxData.targetAmount.amount)
 
       test.end()
     })
@@ -631,6 +640,22 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+
+      // Check the position of the payer is reverted
+      const payerPositionAfterAbort = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
+      test.equal(payerPositionAfterAbort.value, 0)
+
+      // Check the position of the fxp is reverted
+      const fxpTargetPositionAfterAbort = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyIdSecondary)
+      test.equal(fxpTargetPositionAfterAbort.value, 0)
+
+      // Check the position of the payee is not changed
+      const payeePositionAfterAbort = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId)
+      test.equal(payeePositionAfterAbort.value, 0)
+
+      // Check the position of the fxp source currency is not changed
+      const fxpSourcePositionAfterAbort = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyId)
+      test.equal(fxpSourcePositionAfterAbort.value, 0)
 
       test.end()
     })
