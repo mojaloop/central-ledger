@@ -78,7 +78,6 @@ Test('Cyril', cyrilTest => {
     t.end()
   })
 
-
   cyrilTest.test('getParticipantAndCurrencyForTransferMessage should', getParticipantAndCurrencyForTransferMessageTest => {
     getParticipantAndCurrencyForTransferMessageTest.test('return details about regular transfer', async (test) => {
       try {
@@ -886,13 +885,12 @@ Test('Cyril', cyrilTest => {
   cyrilTest.test('processAbortMessage should', processAbortMessageTest => {
     processAbortMessageTest.test('return false if transferId is not in watchlist', async (test) => {
       try {
-
         fxTransfer.getByDeterminingTransferId.returns(Promise.resolve([
-            { commitRequestId: fxPayload.commitRequestId }
+          { commitRequestId: fxPayload.commitRequestId }
         ]))
         // Mocks for _getPositionChnages
         fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve({
-          initiatingFspName: fxPayload.initiatingFsp,
+          initiatingFspName: fxPayload.initiatingFsp
         }))
         ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.returns(Promise.resolve([
           {
@@ -901,7 +899,7 @@ Test('Cyril', cyrilTest => {
           }
         ]))
         TransferFacade.getById.returns(Promise.resolve({
-          payerFsp: payload.payerFsp,
+          payerFsp: payload.payerFsp
         }))
         ParticipantPositionChangesModel.getReservedPositionChangesByTransferId.returns(Promise.resolve([
           {
@@ -912,7 +910,7 @@ Test('Cyril', cyrilTest => {
 
         const result = await Cyril.processAbortMessage(payload.transferId)
 
-        test.deepEqual(result, { positionChanges: [ { isFxTransferStateChange: true, commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4', notifyTo: 'fx_dfsp1', participantCurrencyId: 1, amount: -433.88 }, { isFxTransferStateChange: false, transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999', notifyTo: 'dfsp1', participantCurrencyId: 1, amount: -433.88 } ] })
+        test.deepEqual(result, { positionChanges: [{ isFxTransferStateChange: true, commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4', notifyTo: 'fx_dfsp1', participantCurrencyId: 1, amount: -433.88 }, { isFxTransferStateChange: false, transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999', notifyTo: 'dfsp1', participantCurrencyId: 1, amount: -433.88 }] })
         test.pass('Error not thrown')
         test.end()
       } catch (e) {
@@ -927,16 +925,15 @@ Test('Cyril', cyrilTest => {
   cyrilTest.test('processFxAbortMessage should', processFxAbortMessageTest => {
     processFxAbortMessageTest.test('return false if transferId is not in watchlist', async (test) => {
       try {
-
         fxTransfer.getByCommitRequestId.returns(Promise.resolve({
-            determiningTransferId: fxPayload.determiningTransferId,
+          determiningTransferId: fxPayload.determiningTransferId
         }))
         fxTransfer.getByDeterminingTransferId.returns(Promise.resolve([
-            { commitRequestId: fxPayload.commitRequestId }
+          { commitRequestId: fxPayload.commitRequestId }
         ]))
         // Mocks for _getPositionChnages
         fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve({
-          initiatingFspName: fxPayload.initiatingFsp,
+          initiatingFspName: fxPayload.initiatingFsp
         }))
         ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.returns(Promise.resolve([
           {
@@ -945,7 +942,7 @@ Test('Cyril', cyrilTest => {
           }
         ]))
         TransferFacade.getById.returns(Promise.resolve({
-          payerFsp: payload.payerFsp,
+          payerFsp: payload.payerFsp
         }))
         ParticipantPositionChangesModel.getReservedPositionChangesByTransferId.returns(Promise.resolve([
           {
@@ -956,7 +953,7 @@ Test('Cyril', cyrilTest => {
 
         const result = await Cyril.processFxAbortMessage(payload.transferId)
 
-        test.deepEqual(result, { positionChanges: [ { isFxTransferStateChange: true, commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4', notifyTo: 'fx_dfsp1', participantCurrencyId: 1, amount: -433.88 }, { isFxTransferStateChange: false, transferId: 'c05c3f31-33b5-4e33-8bfd-7c3a2685fb6c', notifyTo: 'dfsp1', participantCurrencyId: 1, amount: -433.88 } ] })
+        test.deepEqual(result, { positionChanges: [{ isFxTransferStateChange: true, commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4', notifyTo: 'fx_dfsp1', participantCurrencyId: 1, amount: -433.88 }, { isFxTransferStateChange: false, transferId: 'c05c3f31-33b5-4e33-8bfd-7c3a2685fb6c', notifyTo: 'dfsp1', participantCurrencyId: 1, amount: -433.88 }] })
         test.pass('Error not thrown')
         test.end()
       } catch (e) {

@@ -359,7 +359,6 @@ const fxAbortMessage2 = {
   timestamp: 1694175690401
 }
 
-
 const span = {}
 
 const getAbortBinItems = () => {
@@ -420,7 +419,7 @@ Test('abort domain', positionIndexTest => {
             'a0000002-0000-0000-0000-000000000000': 'INVALID_STATE'
           },
           {
-            'b0000001-0000-0000-0000-000000000000': 'INVALID_STATE',
+            'b0000001-0000-0000-0000-000000000000': 'INVALID_STATE'
           },
           false
         )
@@ -446,7 +445,7 @@ Test('abort domain', positionIndexTest => {
             'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
           },
           {
-            'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+            'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
           },
           false
         )
@@ -469,7 +468,7 @@ Test('abort domain', positionIndexTest => {
             'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
           },
           {
-            'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+            'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
           },
           false
         )
@@ -485,7 +484,6 @@ Test('abort domain', positionIndexTest => {
         test.equal(processedResult.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_ERROR)
         test.equal(processedResult.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_ERROR)
         test.equal(processedResult.accumulatedPositionValue, -20)
-
       } catch (e) {
         test.fail('Error thrown')
       }
@@ -505,7 +503,7 @@ Test('abort domain', positionIndexTest => {
             'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
           },
           {
-            'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+            'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
           },
           false
         )
@@ -518,7 +516,6 @@ Test('abort domain', positionIndexTest => {
         test.equal(processedResult.accumulatedTransferStateChanges[0].transferId, abortMessage1.value.id)
         test.equal(processedResult.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_ERROR)
         test.equal(processedResult.accumulatedPositionValue, -10)
-
       } catch (e) {
         test.fail('Error thrown')
       }
@@ -602,7 +599,6 @@ Test('abort domain', positionIndexTest => {
         test.equal(processedResult.accumulatedFxTransferStates[fxAbortMessage1.value.id], Enum.Transfers.TransferInternalState.ABORTED_ERROR)
         test.equal(processedResult.accumulatedFxTransferStates[fxAbortMessage2.value.id], Enum.Transfers.TransferInternalState.ABORTED_ERROR)
         test.equal(processedResult.accumulatedPositionValue, -20)
-
       } catch (e) {
         test.fail('Error thrown')
       }
@@ -633,7 +629,6 @@ Test('abort domain', positionIndexTest => {
         test.equal(processedResult.accumulatedPositionChanges[0].value, -10)
         test.equal(processedResult.accumulatedFxTransferStates[fxAbortMessage1.value.id], Enum.Transfers.TransferInternalState.ABORTED_ERROR)
         test.equal(processedResult.accumulatedPositionValue, -10)
-
       } catch (e) {
         test.fail('Error thrown')
       }

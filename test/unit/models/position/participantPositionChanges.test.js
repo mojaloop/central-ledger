@@ -32,12 +32,6 @@ const Model = require('../../../../src/models/position/participantPositionChange
 
 Test('participantPositionChanges model', async (participantPositionChangesTest) => {
   let sandbox
-  const participantPosition1 = {
-    participantCurrencyId: 1,
-    value: 100,
-    reservedValue: 0,
-    changedDate: new Date()
-  }
 
   participantPositionChangesTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
@@ -50,7 +44,7 @@ Test('participantPositionChanges model', async (participantPositionChangesTest) 
             select: sandbox.stub().resolves({})
           })
         })
-      }),
+      })
     })
     Db.getKnex.returns(knexStub)
 
@@ -114,7 +108,6 @@ Test('participantPositionChanges model', async (participantPositionChangesTest) 
       assert.end()
     }
   })
-
 
   participantPositionChangesTest.end()
 })
