@@ -103,7 +103,9 @@
         "BULK_COMMIT": null,
         "RESERVE": null,
         "TIMEOUT_RESERVED": null,
-        "FX_TIMEOUT_RESERVED": "topic-transfer-position-batch"
+        "FX_TIMEOUT_RESERVED": "topic-transfer-position-batch",
+        "ABORT": null,
+        "FX_ABORT": "topic-transfer-position-batch"
       }
     },
     "TOPIC_TEMPLATES": {

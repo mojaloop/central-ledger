@@ -84,6 +84,13 @@ const fspiopErrorFactory = {
     )
   },
 
+  fxActionIsNotAllowed: (action, cause = null, replyTo = '') => {
+    return Factory.createInternalServerFSPIOPError(
+      ERROR_MESSAGES.fxActionIsNotAllowed(action),
+      cause, replyTo
+    )
+  },
+
   invalidFxTransferState: ({ transferStateEnum, action, type }, cause = null, replyTo = '') => {
     return Factory.createInternalServerFSPIOPError(
       ERROR_MESSAGES.invalidFxTransferState({ transferStateEnum, action, type }),

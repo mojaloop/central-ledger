@@ -770,10 +770,9 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
     .innerJoin('participant AS p1', 'p1.participantId', 'tp1.participantId')
     .innerJoin('participant AS p2', 'p2.participantId', 'tp2.participantId')
     .innerJoin(knex('transferStateChange AS tsc2')
-      .select('tsc2.transferId', 'tsc2.transferStateChangeId', 'pp1.participantCurrencyId')
+      .select('tsc2.transferId', 'tsc2.transferStateChangeId', 'ppc1.participantCurrencyId')
       .innerJoin('transferTimeout AS tt2', 'tt2.transferId', 'tsc2.transferId')
       .innerJoin('participantPositionChange AS ppc1', 'ppc1.transferStateChangeId', 'tsc2.transferStateChangeId')
-      .innerJoin('participantPosition AS pp1', 'pp1.participantPositionId', 'ppc1.participantPositionId')
       .as('tpc'), 'tpc.transferId', 'tt.transferId'
     )
 
@@ -808,10 +807,9 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
     .innerJoin('participant AS p1', 'p1.participantId', 'ftp1.participantId')
     .innerJoin('participant AS p2', 'p2.participantId', 'ftp2.participantId')
     .innerJoin(knex('fxTransferStateChange AS ftsc2')
-      .select('ftsc2.commitRequestId', 'ftsc2.fxTransferStateChangeId', 'pp1.participantCurrencyId')
+      .select('ftsc2.commitRequestId', 'ftsc2.fxTransferStateChangeId', 'ppc1.participantCurrencyId')
       .innerJoin('fxTransferTimeout AS ftt2', 'ftt2.commitRequestId', 'ftsc2.commitRequestId')
       .innerJoin('participantPositionChange AS ppc1', 'ppc1.fxTransferStateChangeId', 'ftsc2.fxTransferStateChangeId')
-      .innerJoin('participantPosition AS pp1', 'pp1.participantPositionId', 'ppc1.participantPositionId')
       .as('ftpc'), 'ftpc.commitRequestId', 'ftt.commitRequestId'
     )
     .where('ftt.expirationDate', '<', transactionTimestamp)
@@ -1078,6 +1076,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           await knex('participantPositionChange')
             .insert({
               participantPositionId: info.drPositionId,
+              participantCurrencyId: info.drAccountId,
               transferStateChangeId,
               value: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
               reservedValue: info.drReservedValue,
@@ -1101,6 +1100,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           await knex('participantPositionChange')
             .insert({
               participantPositionId: info.crPositionId,
+              participantCurrencyId: info.crAccountId,
               transferStateChangeId,
               value: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
               reservedValue: info.crReservedValue,

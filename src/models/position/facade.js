@@ -232,6 +232,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           const { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
           const participantPositionChange = {
             participantPositionId: initialParticipantPosition.participantPositionId,
+            participantCurrencyId: participantCurrency.participantCurrencyId,
             transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
             value: runningPosition,
             // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
@@ -290,6 +291,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
         const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({ transferId: transferStateChange.transferId }).forUpdate().first().orderBy('transferStateChangeId', 'desc')
         const participantPositionChange = {
           participantPositionId: participantPosition.participantPositionId,
+          participantCurrencyId,
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
           value: latestPosition,
           reservedValue: participantPosition.reservedValue,

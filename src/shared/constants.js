@@ -30,6 +30,7 @@ const ERROR_MESSAGES = Object.freeze({
   fxTransferExpired: 'fxTransfer expired',
   invalidApiErrorCode: 'API specification undefined errorCode',
   invalidEventType: type => `Invalid event type:(${type})`,
+  invalidAction: action => `Invalid action:(${action})`,
   invalidFxTransferState: ({ transferStateEnum, action, type }) => `Invalid fxTransferStateEnumeration:(${transferStateEnum}) for event action:(${action}) and type:(${type})`,
   fxActionIsNotAllowed: action => `action ${action} is not allowed into fxFulfil handler`,
   noFxDuplicateHash: 'No fxDuplicateHash found',

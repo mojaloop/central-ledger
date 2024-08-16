@@ -318,6 +318,8 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     sandbox.stub(FxFulfilService.prototype, 'validateFulfilment').resolves()
     sandbox.stub(FxFulfilService.prototype, 'validateTransferState').resolves()
     sandbox.stub(FxFulfilService.prototype, 'validateExpirationDate').resolves()
+    sandbox.stub(FxFulfilService.prototype, 'processFxAbort').resolves()
+
     Comparators.duplicateCheckComparator.resolves({
       hasDuplicateId: false,
       hasDuplicateHash: false
@@ -331,12 +333,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
     t.ok(result)
-    t.ok(producer.produceMessage.calledOnce)
-    const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
-    t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT)
-    checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fromErrorInformation(errorInfo.errorInformation))
-    t.equal(topicConfig.topicName, TOPICS.transferPosition)
-    t.equal(topicConfig.key, String(fxTransferDetails.counterPartyFspTargetParticipantCurrencyId))
+    t.ok(FxFulfilService.prototype.processFxAbort.calledOnce)
     t.end()
   })
 

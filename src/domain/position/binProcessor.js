@@ -39,6 +39,7 @@ const PositionFulfilDomain = require('./fulfil')
 const PositionFxFulfilDomain = require('./fx-fulfil')
 const PositionTimeoutReservedDomain = require('./timeout-reserved')
 const PositionFxTimeoutReservedDomain = require('./fx-timeout-reserved')
+const PositionAbortDomain = require('./abort')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -123,7 +124,11 @@ const processBins = async (bins, trx) => {
       Enum.Events.Event.Action.RESERVE,
       Enum.Events.Event.Action.FX_RESERVE,
       Enum.Events.Event.Action.TIMEOUT_RESERVED,
-      Enum.Events.Event.Action.FX_TIMEOUT_RESERVED
+      Enum.Events.Event.Action.FX_TIMEOUT_RESERVED,
+      Enum.Events.Event.Action.ABORT,
+      Enum.Events.Event.Action.FX_ABORT,
+      Enum.Events.Event.Action.ABORT_VALIDATION,
+      Enum.Events.Event.Action.FX_ABORT_VALIDATION
     ]
     if (!isSubset(allowedActions, actions)) {
       Logger.isErrorEnabled && Logger.error(`Only ${allowedActions.join()} are allowed in a batch`)
@@ -149,6 +154,7 @@ const processBins = async (bins, trx) => {
     let accumulatedFxTransferStateChanges = []
     let accumulatedPositionChanges = []
 
+    // ========== FX_FULFIL  ==========
     // If fulfil action found then call processPositionPrepareBin function
     // We don't need to change the position for FX transfers. All the position changes happen when actual transfer is done
     const fxFulfilActionResult = await PositionFxFulfilDomain.processPositionFxFulfilBin(
@@ -156,6 +162,7 @@ const processBins = async (bins, trx) => {
       accumulatedFxTransferStates
     )
 
+    // ========== FX_TIMEOUT  ==========
     // If fx-timeout-reserved action found then call processPositionTimeoutReserveBin function
     const fxTimeoutReservedActionResult = await PositionFxTimeoutReservedDomain.processPositionFxTimeoutReservedBin(
       accountBin[Enum.Events.Event.Action.FX_TIMEOUT_RESERVED],
@@ -180,6 +187,7 @@ const processBins = async (bins, trx) => {
     accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fxFulfilActionResult.accumulatedFxTransferStateChanges)
     notifyMessages = notifyMessages.concat(fxFulfilActionResult.notifyMessages)
 
+    // ========== FULFIL  ==========
     // If fulfil action found then call processPositionPrepareBin function
     const fulfilActionResult = await PositionFulfilDomain.processPositionFulfilBin(
       [accountBin.commit, accountBin.reserve],
@@ -203,6 +211,59 @@ const processBins = async (bins, trx) => {
     notifyMessages = notifyMessages.concat(fulfilActionResult.notifyMessages)
     followupMessages = followupMessages.concat(fulfilActionResult.followupMessages)
 
+    // ========== ABORT  ==========
+    // If abort action found then call processPositionAbortBin function
+    const abortReservedActionResult = await PositionAbortDomain.processPositionAbortBin(
+      [
+        ...(accountBin[Enum.Events.Event.Action.ABORT] || []),
+        ...(accountBin[Enum.Events.Event.Action.ABORT_VALIDATION] || [])
+      ],
+      accumulatedPositionValue,
+      accumulatedPositionReservedValue,
+      accumulatedTransferStates,
+      accumulatedFxTransferStates,
+      false
+    )
+
+    // Update accumulated values
+    accumulatedPositionValue = abortReservedActionResult.accumulatedPositionValue
+    accumulatedPositionReservedValue = abortReservedActionResult.accumulatedPositionReservedValue
+    accumulatedTransferStates = abortReservedActionResult.accumulatedTransferStates
+    accumulatedFxTransferStates = abortReservedActionResult.accumulatedFxTransferStates
+    // Append accumulated arrays
+    accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(abortReservedActionResult.accumulatedTransferStateChanges)
+    accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(abortReservedActionResult.accumulatedFxTransferStateChanges)
+    accumulatedPositionChanges = accumulatedPositionChanges.concat(abortReservedActionResult.accumulatedPositionChanges)
+    notifyMessages = notifyMessages.concat(abortReservedActionResult.notifyMessages)
+    followupMessages = followupMessages.concat(abortReservedActionResult.followupMessages)
+
+    // ========== FX_ABORT  ==========
+    // If abort action found then call processPositionAbortBin function
+    const fxAbortReservedActionResult = await PositionAbortDomain.processPositionAbortBin(
+      [
+        ...(accountBin[Enum.Events.Event.Action.FX_ABORT] || []),
+        ...(accountBin[Enum.Events.Event.Action.FX_ABORT_VALIDATION] || [])
+      ],
+      accumulatedPositionValue,
+      accumulatedPositionReservedValue,
+      accumulatedTransferStates,
+      accumulatedFxTransferStates,
+      true
+    )
+
+    // Update accumulated values
+    accumulatedPositionValue = fxAbortReservedActionResult.accumulatedPositionValue
+    accumulatedPositionReservedValue = fxAbortReservedActionResult.accumulatedPositionReservedValue
+    accumulatedTransferStates = fxAbortReservedActionResult.accumulatedTransferStates
+    accumulatedFxTransferStates = fxAbortReservedActionResult.accumulatedFxTransferStates
+    // Append accumulated arrays
+    accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(fxAbortReservedActionResult.accumulatedTransferStateChanges)
+    accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fxAbortReservedActionResult.accumulatedFxTransferStateChanges)
+    accumulatedPositionChanges = accumulatedPositionChanges.concat(fxAbortReservedActionResult.accumulatedPositionChanges)
+    notifyMessages = notifyMessages.concat(fxAbortReservedActionResult.notifyMessages)
+    followupMessages = followupMessages.concat(fxAbortReservedActionResult.followupMessages)
+
+    // ========== TIMEOUT_RESERVED  ==========
     // If timeout-reserved action found then call processPositionTimeoutReserveBin function
     const timeoutReservedActionResult = await PositionTimeoutReservedDomain.processPositionTimeoutReservedBin(
       accountBin[Enum.Events.Event.Action.TIMEOUT_RESERVED],
@@ -221,6 +282,7 @@ const processBins = async (bins, trx) => {
     accumulatedPositionChanges = accumulatedPositionChanges.concat(timeoutReservedActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(timeoutReservedActionResult.notifyMessages)
 
+    // ========== PREPARE  ==========
     // If prepare action found then call processPositionPrepareBin function
     const prepareActionResult = await PositionPrepareDomain.processPositionPrepareBin(
       accountBin.prepare,
@@ -241,6 +303,7 @@ const processBins = async (bins, trx) => {
     accumulatedPositionChanges = accumulatedPositionChanges.concat(prepareActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(prepareActionResult.notifyMessages)
 
+    // ========== FX_PREPARE  ==========
     // If fx-prepare action found then call processPositionFxPrepareBin function
     const fxPrepareActionResult = await PositionFxPrepareDomain.processFxPositionPrepareBin(
       accountBin[Enum.Events.Event.Action.FX_PREPARE],
@@ -254,11 +317,13 @@ const processBins = async (bins, trx) => {
     // Update accumulated values
     accumulatedPositionValue = fxPrepareActionResult.accumulatedPositionValue
     accumulatedPositionReservedValue = fxPrepareActionResult.accumulatedPositionReservedValue
-    accumulatedTransferStates = fxPrepareActionResult.accumulatedTransferStates
+    accumulatedFxTransferStates = fxPrepareActionResult.accumulatedFxTransferStates
     // Append accumulated arrays
     accumulatedFxTransferStateChanges = accumulatedFxTransferStateChanges.concat(fxPrepareActionResult.accumulatedFxTransferStateChanges)
     accumulatedPositionChanges = accumulatedPositionChanges.concat(fxPrepareActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(fxPrepareActionResult.notifyMessages)
+
+    // ========== CONSOLIDATION  ==========
 
     // Update accumulated position values by calling a facade function
     await BatchPositionModel.updateParticipantPosition(trx, positions[accountID].participantPositionId, accumulatedPositionValue, accumulatedPositionReservedValue)
@@ -282,6 +347,7 @@ const processBins = async (bins, trx) => {
         delete positionChange.commitRequestId
       }
       positionChange.participantPositionId = positions[accountID].participantPositionId
+      positionChange.participantCurrencyId = accountID
     }
     // Bulk insert accumulated positionChanges by calling a facade function
     await BatchPositionModel.bulkInsertParticipantPositionChanges(trx, accumulatedPositionChanges)
@@ -362,6 +428,14 @@ const _getTransferIdList = async (bins) => {
     } else if (action === Enum.Events.Event.Action.FX_RESERVE) {
       commitRequestIdList.push(item.message.value.content.uriParams.id)
     } else if (action === Enum.Events.Event.Action.FX_TIMEOUT_RESERVED) {
+      commitRequestIdList.push(item.message.value.content.uriParams.id)
+    } else if (action === Enum.Events.Event.Action.ABORT) {
+      transferIdList.push(item.message.value.content.uriParams.id)
+    } else if (action === Enum.Events.Event.Action.FX_ABORT) {
+      commitRequestIdList.push(item.message.value.content.uriParams.id)
+    } else if (action === Enum.Events.Event.Action.ABORT_VALIDATION) {
+      transferIdList.push(item.message.value.content.uriParams.id)
+    } else if (action === Enum.Events.Event.Action.FX_ABORT_VALIDATION) {
       commitRequestIdList.push(item.message.value.content.uriParams.id)
     }
   })

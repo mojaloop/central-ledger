@@ -570,15 +570,13 @@ Test('Batch model', async (positionBatchTest) => {
           whereIn: sandbox.stub().returns({
             where: sandbox.stub().returns({
               leftJoin: sandbox.stub().returns({
-                leftJoin: sandbox.stub().returns({
-                  select: sandbox.stub().returns([{
-                    1: {
-                      2: {
-                        value: 1
-                      }
+                select: sandbox.stub().returns([{
+                  1: {
+                    2: {
+                      value: 1
                     }
-                  }])
-                })
+                  }
+                }])
               })
             })
           })

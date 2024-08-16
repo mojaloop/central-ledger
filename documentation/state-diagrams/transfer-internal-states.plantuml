@@ -46,7 +46,7 @@ RECEIVED_FULFIL : only transfer
 [*] --> RECEIVED_PREPARE : Transfer Prepare Request [Prepare handler] \n <i>(validation & dupl.check passed)</i>
 [*] --> INVALID : Validation failed \n [Prepare handler]
 RECEIVED_PREPARE --> RESERVED : [Position handler]: Liquidity check passed, \n funds reserved
-RECEIVED_PREPARE --> RECEIVED_REJECT : Reject callback from Payee with status "ABORTED"
+RESERVED --> RECEIVED_REJECT : Reject callback from Payee with status "ABORTED"
 RECEIVED_PREPARE --> RECEIVED_ERROR : Transfer Error callback from Payee
 
 RECEIVED_FULFIL --> COMMITTED : Transfer committed [Position handler] \n <i>(commit funds, assign T. to settlement window)</i>

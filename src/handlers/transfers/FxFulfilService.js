@@ -27,6 +27,7 @@ const { Enum, Util } = require('@mojaloop/central-services-shared')
 const cyril = require('../../domain/fx/cyril')
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const fspiopErrorFactory = require('../../shared/fspiopErrorFactory')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const { Type, Action } = Enum.Events.Event
 const { SOURCE, DESTINATION } = Enum.Http.Headers.FSPIOP
@@ -285,7 +286,7 @@ class FxFulfilService {
     }
   }
 
-  async processFxAbortAction({ transfer, payload, action }) {
+  async processFxAbort({ transfer, payload, action }) {
     const fspiopError = fspiopErrorFactory.fromErrorInformation(payload.errorInformation)
     const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
     const eventDetail = {
@@ -295,15 +296,25 @@ class FxFulfilService {
     this.log.warn('FX_ABORT case', { eventDetail, apiFSPIOPError })
 
     await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, action, apiFSPIOPError)
-    await this.kafkaProceed({
-      consumerCommit,
-      fspiopError: apiFSPIOPError,
-      eventDetail,
-      messageKey: transfer.counterPartyFspTargetParticipantCurrencyId.toString()
-      // todo: think if we need to use cyrilOutput to get counterPartyFspTargetParticipantCurrencyId?
-    })
+    const cyrilResult = await this.cyril.processFxAbortMessage(transfer.commitRequestId)
 
-    throw fspiopError
+    this.params.message.value.content.context = {
+      ...this.params.message.value.content.context,
+      cyrilResult
+    }
+    if (cyrilResult.positionChanges.length > 0) {
+      const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
+      await this.kafkaProceed({
+        consumerCommit,
+        eventDetail,
+        messageKey: participantCurrencyId.toString(),
+        topicNameOverride: this.Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_ABORT
+      })
+    } else {
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
+      throw fspiopError
+    }
+    return true
   }
 
   async processFxFulfil({ transfer, payload, action }) {
