@@ -5,6 +5,7 @@ exports.up = (knex) => {
     if (!exists) {
       return knex.schema.createTable('fxQuoteResponseConversionTerms', (t) => {
         t.string('conversionId').primary().notNullable()
+        t.string('determiningTransferId', 36).defaultTo(null).nullable()
 
         // reference to the original fxQuote
         t.string('conversionRequestId', 36).notNullable()
