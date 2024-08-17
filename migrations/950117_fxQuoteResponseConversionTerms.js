@@ -26,6 +26,7 @@ exports.up = (knex) => {
         t.foreign('targetCurrency').references('currencyId').inTable('currency')
 
         // time keeping
+        t.dateTime('expirationDate').defaultTo(null).nullable().comment('Optional expiration for the requested conversion terms')
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable().comment('System dateTime stamp pertaining to the inserted record')
       })
     }

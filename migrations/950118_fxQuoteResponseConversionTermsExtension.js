@@ -2,10 +2,10 @@
 'use strict'
 
 exports.up = (knex) => {
-  return knex.schema.hasTable('fxQuoteResponseConversionTermExtension').then((exists) => {
+  return knex.schema.hasTable('fxQuoteResponseConversionTermsExtension').then((exists) => {
     if (!exists) {
-      return knex.schema.createTable('fxQuoteResponseConversionTermExtension', (t) => {
-        t.bigIncrements('fxQuoteResponseConversionTermExtension').primary().notNullable()
+      return knex.schema.createTable('fxQuoteResponseConversionTermsExtension', (t) => {
+        t.bigIncrements('fxQuoteResponseConversionTermsExtension').primary().notNullable()
         t.string('conversionId', 36).notNullable()
         t.foreign('conversionId').references('conversionId').inTable('fxQuoteResponseConversionTerms')
         t.string('key', 128).notNullable()
@@ -17,5 +17,5 @@ exports.up = (knex) => {
 }
 
 exports.down = (knex) => {
-  return knex.schema.dropTableIfExists('fxQuoteResponseConversionTermExtension')
+  return knex.schema.dropTableIfExists('fxQuoteResponseConversionTermsExtension')
 }
