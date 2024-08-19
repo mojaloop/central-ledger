@@ -8,7 +8,6 @@ exports.up = (knex) => {
         t.string('conversionRequestId', 36).primary().notNullable()
 
         // time keeping
-        t.dateTime('expirationDate').defaultTo(null).nullable().comment('Optional expiration for the requested transaction')
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable().comment('System dateTime stamp pertaining to the inserted record')
       })
     }
