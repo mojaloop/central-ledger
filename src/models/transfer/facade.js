@@ -425,7 +425,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       const participantCurrency = determiningTransferCheckResult && determiningTransferCheckResult.participantCurrencyValidationList.find(participantCurrencyItem => participantCurrencyItem.participantName === name)
       if (participantCurrency) {
         const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
-        participants[name].participantCurrencyId = participantCurrencyRecord.participantCurrencyId
+        participants[name].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId
       }
 
       if (proxyObligation?.isInitiatingFspProxy) {

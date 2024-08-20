@@ -207,6 +207,19 @@ const prepareFxTestData = async (dataObj) => {
       }
     }
 
+    const sourceTransferPayload = {
+      transferId,
+      payerFsp: payer.participant.name,
+      payeeFsp: fxp.participant.name,
+      amount: {
+        currency: dataObj.sourceAmount.currency,
+        amount: dataObj.sourceAmount.amount
+      },
+      ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
+      condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
+      expiration: dataObj.expiration
+    }
+
     const fulfilPayload = {
       fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
       completedTimestamp: dataObj.now,
@@ -289,6 +302,14 @@ const prepareFxTestData = async (dataObj) => {
       }
     }
 
+    const messageProtocolSourcePrepare = Util.clone(messageProtocolPrepare)
+    messageProtocolSourcePrepare.to = sourceTransferPayload.payeeFsp
+    messageProtocolSourcePrepare.content.payload = sourceTransferPayload
+    messageProtocolSourcePrepare.content.headers = {
+      ...prepareHeaders,
+      'fspiop-destination': fxp.participant.name
+    }
+
     const messageProtocolFulfil = Util.clone(messageProtocolPrepare)
     messageProtocolFulfil.id = randomUUID()
     messageProtocolFulfil.from = transferPayload.payeeFsp
@@ -360,6 +381,7 @@ const prepareFxTestData = async (dataObj) => {
       messageProtocolFulfil,
       messageProtocolReject,
       messageProtocolError,
+      messageProtocolSourcePrepare,
       topicConfTransferPrepare,
       topicConfTransferFulfil,
       topicConfFxTransferPrepare,
@@ -455,68 +477,67 @@ Test('Handlers test', async handlersTest => {
     })
   })
 
-  // TODO: This is throwing some error in the prepare handler. Need to investigate and fix it.
-  // await handlersTest.test('When only tranfer is sent and followed by transfer abort', async abortTest => {
-  //   const td = await prepareFxTestData(testFxData)
+  await handlersTest.test('When only tranfer is sent and followed by transfer abort', async abortTest => {
+    const td = await prepareFxTestData(testFxData)
 
-  //   await abortTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
-  //     const config = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     config.logger = Logger
+    await abortTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
+      const config = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      config.logger = Logger
 
-  //     const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
-  //     Logger.info(producerResponse)
+      const producerResponse = await Producer.produceMessage(td.messageProtocolSourcePrepare, td.topicConfTransferPrepare, config)
+      Logger.info(producerResponse)
 
-  //     try {
-  //       await wrapWithRetries(async () => {
-  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //         if (transfer?.transferState !== TransferState.RESERVED) {
-  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-  //           return null
-  //         }
-  //         return transfer
-  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
+      try {
+        await wrapWithRetries(async () => {
+          const transfer = await TransferService.getById(td.messageProtocolSourcePrepare.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
 
-  //     test.end()
-  //   })
+      test.end()
+    })
 
-  //   await abortTest.test('update transfer state to ABORTED by FULFIL-ABORT callback', async (test) => {
-  //     const config = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.FULFIL.toUpperCase())
-  //     config.logger = Logger
+    await abortTest.test('update transfer state to ABORTED by FULFIL-ABORT callback', async (test) => {
+      const config = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      config.logger = Logger
 
-  //     await Producer.produceMessage(td.messageProtocolError, td.topicConfTransferFulfil, config)
+      await Producer.produceMessage(td.messageProtocolError, td.topicConfTransferFulfil, config)
 
-  //     // Check for the transfer state to be ABORTED
-  //     try {
-  //       await wrapWithRetries(async () => {
-  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //         if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
-  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-  //           return null
-  //         }
-  //         return transfer
-  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
+      // Check for the transfer state to be ABORTED
+      try {
+        await wrapWithRetries(async () => {
+          const transfer = await TransferService.getById(td.messageProtocolSourcePrepare.content.payload.transferId) || {}
+          if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return transfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
 
-  //     test.end()
-  //   })
+      test.end()
+    })
 
-  //   abortTest.end()
-  // })
+    abortTest.end()
+  })
 
   await handlersTest.test('When fxTransfer followed by a transfer and transferFulfilAbort are sent', async abortTest => {
     const td = await prepareFxTestData(testFxData)
