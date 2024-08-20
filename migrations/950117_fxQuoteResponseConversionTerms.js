@@ -5,6 +5,7 @@ exports.up = (knex) => {
     if (!exists) {
       return knex.schema.createTable('fxQuoteResponseConversionTerms', (t) => {
         t.string('conversionId').primary().notNullable()
+        t.string('determiningTransferId', 36).defaultTo(null).nullable()
 
         // reference to the original fxQuote
         t.string('conversionRequestId', 36).notNullable()
@@ -26,6 +27,7 @@ exports.up = (knex) => {
         t.foreign('targetCurrency').references('currencyId').inTable('currency')
 
         // time keeping
+        t.dateTime('expirationDate').notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable().comment('System dateTime stamp pertaining to the inserted record')
       })
     }

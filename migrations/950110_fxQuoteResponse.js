@@ -14,7 +14,6 @@ exports.up = (knex) => {
         t.string('ilpCondition', 256).notNullable()
 
         // time keeping
-        t.dateTime('expirationDate').defaultTo(null).nullable().comment('Optional expiration for the requested transaction')
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable().comment('System dateTime stamp pertaining to the inserted record')
       })
     }

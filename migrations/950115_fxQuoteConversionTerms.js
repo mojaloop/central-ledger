@@ -5,6 +5,7 @@ exports.up = (knex) => {
     if (!exists) {
       return knex.schema.createTable('fxQuoteConversionTerms', (t) => {
         t.string('conversionId').primary().notNullable()
+        t.string('determiningTransferId', 36).defaultTo(null).nullable()
 
         // reference to the original fxQuote
         t.string('conversionRequestId', 36).notNullable()
@@ -17,11 +18,13 @@ exports.up = (knex) => {
         t.decimal('sourceAmount', 18, 4).notNullable()
         t.string('sourceCurrency', 3).notNullable()
         t.foreign('sourceCurrency').references('currencyId').inTable('currency')
-        t.decimal('targetAmount', 18, 4).notNullable()
+        // Should only be nullable in POST /fxQuote request
+        t.decimal('targetAmount', 18, 4).defaultTo(null).nullable()
         t.string('targetCurrency', 3).notNullable()
         t.foreign('targetCurrency').references('currencyId').inTable('currency')
 
         // time keeping
+        t.dateTime('expirationDate').notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable().comment('System dateTime stamp pertaining to the inserted record')
       })
     }
