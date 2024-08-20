@@ -307,7 +307,7 @@ Test('Cyril', cyrilTest => {
             createdDate: new Date()
           }]
         ))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve(
           {
             initiatingFspParticipantId: 2,
             targetAmount: fxPayload.targetAmount.amount,
@@ -327,7 +327,7 @@ Test('Cyril', cyrilTest => {
         ProxyCache.getProxyParticipantAccountDetails.returns(Promise.resolve(defaultGetProxyParticipantAccountDetailsResponse))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
         test.ok(ProxyCache.getProxyParticipantAccountDetails.calledWith(
           'dfsp2',
           fxPayload.targetAmount.currency
@@ -369,7 +369,7 @@ Test('Cyril', cyrilTest => {
             createdDate: new Date()
           }]
         ))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve(
           {
             initiatingFspParticipantId: 1,
             targetAmount: fxPayload.targetAmount.amount,
@@ -389,7 +389,7 @@ Test('Cyril', cyrilTest => {
         ProxyCache.getProxyParticipantAccountDetails.returns(Promise.resolve(defaultGetProxyParticipantAccountDetailsResponse))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [{
@@ -435,7 +435,7 @@ Test('Cyril', cyrilTest => {
             }
           ]
         ))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve(
           {
             initiatingFspParticipantId: 1,
             targetAmount: fxPayload.targetAmount.amount,
@@ -455,7 +455,7 @@ Test('Cyril', cyrilTest => {
         ProxyCache.getProxyParticipantAccountDetails.returns(Promise.resolve(defaultGetProxyParticipantAccountDetailsResponse))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [
@@ -500,7 +500,7 @@ Test('Cyril', cyrilTest => {
             createdDate: new Date()
           }]
         ))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve(
           {
             initiatingFspParticipantId: 2,
             targetAmount: fxPayload.targetAmount.amount,
@@ -520,7 +520,7 @@ Test('Cyril', cyrilTest => {
         ProxyCache.getProxyParticipantAccountDetails.returns(Promise.resolve({ inScheme: false, participantCurrencyId: null }))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
         test.ok(ProxyCache.getProxyParticipantAccountDetails.calledWith(
           'dfsp2',
           fxPayload.targetAmount.currency
@@ -550,7 +550,7 @@ Test('Cyril', cyrilTest => {
             createdDate: new Date()
           }]
         ))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve(
           {
             initiatingFspParticipantId: 2,
             targetAmount: fxPayload.targetAmount.amount,
@@ -572,7 +572,7 @@ Test('Cyril', cyrilTest => {
         ProxyCache.getProxyParticipantAccountDetails.onCall(2).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 345 })) // FXP Target Currency
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
         test.ok(ProxyCache.getProxyParticipantAccountDetails.calledWith(
           'dfsp2',
           fxPayload.targetAmount.currency
@@ -615,7 +615,7 @@ Test('Cyril', cyrilTest => {
             createdDate: new Date()
           }]
         ))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve(
           {
             initiatingFspParticipantId: 2,
             targetAmount: fxPayload.targetAmount.amount,
@@ -637,7 +637,7 @@ Test('Cyril', cyrilTest => {
         ProxyCache.getProxyParticipantAccountDetails.onCall(2).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 456 })) // FXP Target Currency
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
         test.ok(ProxyCache.getProxyParticipantAccountDetails.calledWith(
           'dfsp2',
           fxPayload.targetAmount.currency
@@ -674,7 +674,7 @@ Test('Cyril', cyrilTest => {
             createdDate: new Date()
           }]
         ))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve(
           {
             initiatingFspParticipantId: 1,
             targetAmount: fxPayload.targetAmount.amount,
@@ -694,7 +694,7 @@ Test('Cyril', cyrilTest => {
         ProxyCache.getProxyParticipantAccountDetails.returns(Promise.resolve({ inScheme: false, participantCurrencyId: null }))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [],
@@ -720,7 +720,7 @@ Test('Cyril', cyrilTest => {
             createdDate: new Date()
           }]
         ))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve(
           {
             initiatingFspParticipantId: 1,
             targetAmount: fxPayload.targetAmount.amount,
@@ -742,7 +742,7 @@ Test('Cyril', cyrilTest => {
         ProxyCache.getProxyParticipantAccountDetails.onCall(2).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 123 })) // Payer Source Currency
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [
@@ -781,7 +781,7 @@ Test('Cyril', cyrilTest => {
             createdDate: new Date()
           }]
         ))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve(
           {
             initiatingFspParticipantId: 1,
             targetAmount: fxPayload.targetAmount.amount,
@@ -803,7 +803,7 @@ Test('Cyril', cyrilTest => {
         ProxyCache.getProxyParticipantAccountDetails.onCall(2).returns(Promise.resolve({ inScheme: false, participantCurrencyId: 234 })) // Payer Source Currency
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [
@@ -844,7 +844,7 @@ Test('Cyril', cyrilTest => {
             }
           ]
         ))
-        fxTransfer.getAllDetailsByCommitRequestId.returns(Promise.resolve(
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve(
           {
             initiatingFspParticipantId: 1,
             targetAmount: fxPayload.targetAmount.amount,
@@ -864,7 +864,7 @@ Test('Cyril', cyrilTest => {
         ProxyCache.getProxyParticipantAccountDetails.returns(Promise.resolve({ inScheme: true, participantCurrencyId: null }))
         const result = await Cyril.processFulfilMessage(payload.transferId, payload, payload)
         test.ok(watchList.getItemsInWatchListByDeterminingTransferId.calledWith(payload.transferId))
-        test.ok(fxTransfer.getAllDetailsByCommitRequestId.calledWith(fxPayload.commitRequestId))
+        test.ok(fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.calledWith(fxPayload.commitRequestId))
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [],

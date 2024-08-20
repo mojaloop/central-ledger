@@ -324,20 +324,6 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
         {
@@ -396,20 +382,6 @@ Test('Prepare domain', positionIndexTest => {
         createdBy: 'unknown',
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
-      }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
       }
       const processedMessages = await processPositionPrepareBin(
         binItems,
@@ -479,20 +451,6 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
         {
@@ -561,20 +519,6 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
         {
@@ -638,20 +582,6 @@ Test('Prepare domain', positionIndexTest => {
         createdBy: 'unknown',
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
-      }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
       }
 
       // Modifying first transfer message to contain a context object with cyrilResult so that it is considered an FX transfer
@@ -725,20 +655,6 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: null, // Default settlement model is null currencyId
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
         {
@@ -801,20 +717,6 @@ Test('Prepare domain', positionIndexTest => {
         createdBy: 'unknown',
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
-      }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: null, // Default settlement model is null currencyId
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
       }
       const processedMessages = await processPositionPrepareBin(
         binItems,

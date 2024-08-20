@@ -39,14 +39,19 @@ const processFxPositionPrepareBin = async (
   const accumulatedFxTransferStatesCopy = Object.assign({}, accumulatedFxTransferStates)
 
   let currentPosition = new MLNumber(accumulatedPositionValue)
-  const reservedPosition = new MLNumber(accumulatedPositionReservedValue)
-  const effectivePosition = new MLNumber(currentPosition.add(reservedPosition).toFixed(Config.AMOUNT.SCALE))
-  const liquidityCover = new MLNumber(settlementParticipantPosition).multiply(-1)
-  const payerLimit = new MLNumber(participantLimit.value)
-  let availablePositionBasedOnLiquidityCover = new MLNumber(liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE))
-  Logger.isInfoEnabled && Logger.info(`processFxPositionPrepareBin::availablePositionBasedOnLiquidityCover: ${availablePositionBasedOnLiquidityCover}`)
-  let availablePositionBasedOnPayerLimit = new MLNumber(payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE))
-  Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::availablePositionBasedOnPayerLimit: ${availablePositionBasedOnPayerLimit}`)
+  let liquidityCover = 0
+  let availablePositionBasedOnLiquidityCover = 0
+  let availablePositionBasedOnPayerLimit = 0
+  if (changePositions) {
+    const reservedPosition = new MLNumber(accumulatedPositionReservedValue)
+    const effectivePosition = new MLNumber(currentPosition.add(reservedPosition).toFixed(Config.AMOUNT.SCALE))
+    const payerLimit = new MLNumber(participantLimit.value)
+    liquidityCover = new MLNumber(settlementParticipantPosition).multiply(-1)
+    availablePositionBasedOnLiquidityCover = new MLNumber(liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE))
+    Logger.isInfoEnabled && Logger.info(`processFxPositionPrepareBin::availablePositionBasedOnLiquidityCover: ${availablePositionBasedOnLiquidityCover}`)
+    availablePositionBasedOnPayerLimit = new MLNumber(payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE))
+    Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::availablePositionBasedOnPayerLimit: ${availablePositionBasedOnPayerLimit}`)
+  }
 
   if (binItems && binItems.length > 0) {
     for (const binItem of binItems) {
@@ -251,7 +256,6 @@ const processFxPositionPrepareBin = async (
       }
       fxTransferStateChanges.push(fxTransferStateChange)
       Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::fxTransferStateChange: ${JSON.stringify(fxTransferStateChange)}`)
-
 
       accumulatedFxTransferStatesCopy[fxTransfer.commitRequestId] = transferStateId
       Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::accumulatedTransferStatesCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)

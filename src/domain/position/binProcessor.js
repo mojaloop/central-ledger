@@ -79,7 +79,7 @@ const processBins = async (bins, trx) => {
   const allSettlementModels = await SettlementModelCached.getAll()
 
   // Construct objects participantIdMap, accountIdMap and currencyIdMap
-  const { settlementCurrencyIds, accountIdMap, currencyIdMap } = await _constructRequiredMaps(participantCurrencyIds, allSettlementModels, trx)
+  const { settlementCurrencyIds, accountIdMap } = await _constructRequiredMaps(participantCurrencyIds, allSettlementModels, trx)
 
   // Pre fetch all position account balances for the account-bin and acquire lock on position
   const positions = await BatchPositionModel.getPositionsByAccountIdsForUpdate(trx, [
@@ -135,7 +135,6 @@ const processBins = async (bins, trx) => {
     }
 
     let settlementParticipantPosition = 0
-    let settlementModel = null
     let participantLimit = null
 
     // Initialize accumulated values
@@ -151,7 +150,6 @@ const processBins = async (bins, trx) => {
 
     if (accountID !== '0') {
       settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
-      settlementModel = currencyIdMap[accountIdMap[accountID].currencyId].settlementModel
 
       // Story #3657: The following SQL query/lookup can be optimized for performance
       participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(
@@ -166,7 +164,6 @@ const processBins = async (bins, trx) => {
 
       changePositions = true
     }
-
 
     // ========== FX_FULFIL  ==========
     // If fulfil action found then call processPositionPrepareBin function
@@ -361,8 +358,10 @@ const processBins = async (bins, trx) => {
 
     // ========== CONSOLIDATION  ==========
 
-    // Update accumulated position values by calling a facade function
-    await BatchPositionModel.updateParticipantPosition(trx, positions[accountID].participantPositionId, accumulatedPositionValue, accumulatedPositionReservedValue)
+    if (changePositions) {
+      // Update accumulated position values by calling a facade function
+      await BatchPositionModel.updateParticipantPosition(trx, positions[accountID].participantPositionId, accumulatedPositionValue, accumulatedPositionReservedValue)
+    }
 
     // Bulk insert accumulated transferStateChanges by calling a facade function
     await BatchPositionModel.bulkInsertTransferStateChanges(trx, accumulatedTransferStateChanges)
@@ -373,20 +372,24 @@ const processBins = async (bins, trx) => {
     const fetchedTransferStateChanges = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, accumulatedTransferStateChanges.map(item => item.transferId))
     // Bulk get the fxTransferStateChangeIds for commitRequestId using select whereIn
     const fetchedFxTransferStateChanges = await BatchPositionModel.getLatestFxTransferStateChangesByCommitRequestIdList(trx, accumulatedFxTransferStateChanges.map(item => item.commitRequestId))
-    // Mutate accumulated positionChanges with transferStateChangeIds and fxTransferStateChangeIds
-    for (const positionChange of accumulatedPositionChanges) {
-      if (positionChange.transferId) {
-        positionChange.transferStateChangeId = fetchedTransferStateChanges[positionChange.transferId].transferStateChangeId
-        delete positionChange.transferId
-      } else if (positionChange.commitRequestId) {
-        positionChange.fxTransferStateChangeId = fetchedFxTransferStateChanges[positionChange.commitRequestId].fxTransferStateChangeId
-        delete positionChange.commitRequestId
+
+    if (changePositions) {
+      // Mutate accumulated positionChanges with transferStateChangeIds and fxTransferStateChangeIds
+      for (const positionChange of accumulatedPositionChanges) {
+        if (positionChange.transferId) {
+          positionChange.transferStateChangeId = fetchedTransferStateChanges[positionChange.transferId].transferStateChangeId
+          delete positionChange.transferId
+        } else if (positionChange.commitRequestId) {
+          positionChange.fxTransferStateChangeId = fetchedFxTransferStateChanges[positionChange.commitRequestId].fxTransferStateChangeId
+          delete positionChange.commitRequestId
+        }
+        positionChange.participantPositionId = positions[accountID].participantPositionId
+        positionChange.participantCurrencyId = accountID
       }
-      positionChange.participantPositionId = positions[accountID].participantPositionId
-      positionChange.participantCurrencyId = accountID
+
+      // Bulk insert accumulated positionChanges by calling a facade function
+      await BatchPositionModel.bulkInsertParticipantPositionChanges(trx, accumulatedPositionChanges)
     }
-    // Bulk insert accumulated positionChanges by calling a facade function
-    await BatchPositionModel.bulkInsertParticipantPositionChanges(trx, accumulatedPositionChanges)
 
     limitAlarms = limitAlarms.concat(prepareActionResult.limitAlarms)
   }

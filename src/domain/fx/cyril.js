@@ -306,7 +306,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
     let sendingFxpRecord = null
     let receivingFxpRecord = null
     for (const watchListRecord of watchListRecords) {
-      const fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(watchListRecord.commitRequestId)
+      const fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(watchListRecord.commitRequestId)
       // Original Plan: If the reservation is against the FXP, then this is a conversion at the creditor. Mark FXP as receiving FXP
       // The above condition is not required as we are setting the fxTransferType in the watchList beforehand
       if (watchListRecord.fxTransferTypeId === Enum.Fx.FxTransferType.PAYEE_CONVERSION) {
