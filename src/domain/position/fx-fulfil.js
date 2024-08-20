@@ -11,13 +11,15 @@ const Logger = require('@mojaloop/central-services-logger')
  * @description This is the domain function to process a bin of position-fx-fulfil messages of a single participant account.
  *
  * @param {array} binItems - an array of objects that contain a position fx reserve message and its span. {message, span}
- * @param {object} accumulatedFxTransferStates - object with fx transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
- * @param {object} transferInfoList - object with transfer id keys and transfer info values. Used to pass transfer info to domain function.
+ * @param {object} options
+ *   @param {object} accumulatedFxTransferStates - object with fx transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
  * @returns {object} - Returns an object containing accumulatedFxTransferStateChanges, accumulatedFxTransferStates, resultMessages, limitAlarms or throws an error if failed
  */
 const processPositionFxFulfilBin = async (
   binItems,
-  accumulatedFxTransferStates
+  {
+    accumulatedFxTransferStates
+  }
 ) => {
   const fxTransferStateChanges = []
   const resultMessages = []

@@ -189,11 +189,13 @@ Test('FX Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processFxPositionPrepareBin(
         binItems,
-        0, // Accumulated position value
-        0,
-        accumulatedFxTransferStates,
-        -1000, // Settlement participant position value
-        participantLimit
+        {
+          accumulatedPositionValue: 0, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: -1000, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -247,11 +249,13 @@ Test('FX Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processFxPositionPrepareBin(
         binItems,
-        0, // No accumulated position value
-        0,
-        accumulatedFxTransferStates,
-        0, // Settlement participant position value
-        participantLimit
+        {
+          accumulatedPositionValue: 0, // No accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: 0, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -314,11 +318,13 @@ Test('FX Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processFxPositionPrepareBin(
         binItems,
-        1000, // Position value has reached limit of 1000
-        0,
-        accumulatedFxTransferStates,
-        -2000, // Payer has liquidity
-        participantLimit
+        {
+          accumulatedPositionValue: 1000, // Position value has reached limit of 1000
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: -2000, // Payer has liquidity
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -381,11 +387,13 @@ Test('FX Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processFxPositionPrepareBin(
         binItems,
-        0, // Accumulated position value
-        0,
-        accumulatedFxTransferStates,
-        -2000, // Payer has liquidity
-        participantLimit
+        {
+          accumulatedPositionValue: 0, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: -2000, // Payer has liquidity
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -444,11 +452,13 @@ Test('FX Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processFxPositionPrepareBin(
         binItems,
-        0,
-        0,
-        accumulatedFxTransferStates,
-        -sourceAmount * 2,
-        participantLimit
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: -sourceAmount * 2,
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)

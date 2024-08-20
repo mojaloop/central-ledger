@@ -241,12 +241,14 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     // Call the function
     const result = await processPositionFulfilBin(
       [commitBinItems, []],
-      0,
-      0,
-      accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      transferInfoList,
-      []
+      {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        transferInfoList,
+        reservedActionTransfers: []
+      }
     )
 
     // Assert the expected results
@@ -293,12 +295,14 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     // Call the function
     const result = await processPositionFulfilBin(
       [[], reserveBinItems],
-      0,
-      0,
-      accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      transferInfoList,
-      reservedActionTransfers
+      {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        transferInfoList,
+        reservedActionTransfers
+      }
     )
 
     // Assert the expected results
@@ -349,12 +353,14 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     // Call the function
     const result = await processPositionFulfilBin(
       [commitBinItems, reserveBinItems],
-      0,
-      0,
-      accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      transferInfoList,
-      reservedActionTransfers
+      {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        transferInfoList,
+        reservedActionTransfers
+      }
     )
 
     // Assert the expected results
@@ -415,11 +421,14 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     // Call the function
     const result = await processPositionFulfilBin(
       [commitBinItems, []],
-      0,
-      0,
-      accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      transferInfoList
+      {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        transferInfoList,
+        reservedActionTransfers: []
+      }
     )
 
     // Assert the expected results
@@ -456,11 +465,14 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     // Call the function
     const result = await processPositionFulfilBin(
       [commitBinItems, []],
-      0,
-      0,
-      accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      transferInfoList
+      {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        transferInfoList,
+        reservedActionTransfers: []
+      }
     )
 
     // Assert the expected results
@@ -505,12 +517,14 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     // Call the function
     const result = await processPositionFulfilBin(
       [commitWithFxBinItems, []],
-      0,
-      0,
-      accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      transferInfoList,
-      []
+      {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        transferInfoList,
+        reservedActionTransfers: []
+      }
     )
 
     // Assert the expected results
@@ -556,12 +570,14 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     // Call the function
     const result = await processPositionFulfilBin(
       [commitWithPartiallyProcessedFxBinItems, []],
-      0,
-      0,
-      accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      transferInfoList,
-      []
+      {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        transferInfoList,
+        reservedActionTransfers: []
+      }
     )
 
     // Assert the expected results

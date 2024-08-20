@@ -206,13 +206,15 @@ Test('timeout reserved domain', positionIndexTest => {
       try {
         await processPositionTimeoutReservedBin(
           binItems,
-          0, // Accumulated position value
-          0,
           {
-            'd6a036a5-65a3-48af-a0c7-ee089c412ada': 'INVALID_STATE',
-            '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': 'INVALID_STATE'
-          },
-          {}
+            accumulatedPositionValue: 0, // Accumulated position value
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'd6a036a5-65a3-48af-a0c7-ee089c412ada': 'INVALID_STATE',
+              '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': 'INVALID_STATE'
+            },
+            transferInfoList: {}
+          }
         )
         test.fail('Error not thrown')
       } catch (e) {
@@ -224,18 +226,20 @@ Test('timeout reserved domain', positionIndexTest => {
     changeParticipantPositionTest.test('produce reserved messages/position changes for valid timeout messages', async (test) => {
       const processedMessages = await processPositionTimeoutReservedBin(
         binItems,
-        0, // Accumulated position value
-        0,
         {
-          'd6a036a5-65a3-48af-a0c7-ee089c412ada': Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT,
-          '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
-        },
-        {
-          'd6a036a5-65a3-48af-a0c7-ee089c412ada': {
-            amount: -10
+          accumulatedPositionValue: 0, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            'd6a036a5-65a3-48af-a0c7-ee089c412ada': Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT,
+            '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
           },
-          '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': {
-            amount: -5
+          transferInfoList: {
+            'd6a036a5-65a3-48af-a0c7-ee089c412ada': {
+              amount: -10
+            },
+            '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': {
+              amount: -5
+            }
           }
         }
       )

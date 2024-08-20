@@ -340,16 +340,17 @@ Test('Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        0, // Accumulated position value
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        -1000, // Settlement participant position value
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: 0, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: -1000, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -412,16 +413,17 @@ Test('Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        0, // No accumulated position value
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        0, // Settlement participant position value
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: 0, // No accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: 0, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -493,16 +495,17 @@ Test('Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        1000, // Position value has reached limit of 1000
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        -2000, // Payer has liquidity
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: 1000, // Position value has reached limit of 1000
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: -2000, // Payer has liquidity
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -574,16 +577,17 @@ Test('Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        -4, // Accumulated position value
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        0, // Settlement participant position value
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: -4, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: 0, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -659,16 +663,17 @@ Test('Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processPositionPrepareBin(
         binItemsCopy,
-        -20, // Accumulated position value
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        0, // Settlement participant position value
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: -20, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: 0, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -736,16 +741,17 @@ Test('Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        -4,
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        0,
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: -4,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: 0,
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -812,16 +818,17 @@ Test('Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        0,
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        -4,
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: -4,
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)

@@ -12,20 +12,25 @@ const Logger = require('@mojaloop/central-services-logger')
  * @description This is the domain function to process a bin of position-prepare messages of a single participant account.
  *
  * @param {array} binItems - an array of objects that contain a position prepare message and its span. {message, span}
- * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
- * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
- * @param {object} accumulatedFxTransferStates - object with fx commit request id keys and fx transfer state id values. Used to check if fx transfer is in correct state for processing. Clone and update states for output.
- * @param {number} settlementParticipantPosition - position value of the participants settlement account
- * @param {object} participantLimit - participant limit object for the currency
+ * @param {object} options
+  * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
+  * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
+  * @param {object} accumulatedFxTransferStates - object with fx commit request id keys and fx transfer state id values. Used to check if fx transfer is in correct state for processing. Clone and update states for output.
+  * @param {number} settlementParticipantPosition - position value of the participants settlement account
+  * @param {object} participantLimit - participant limit object for the currency
+  * @param {boolean} changePositions - whether to change positions or not
  * @returns {object} - Returns an object containing accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedFxTransferStateChanges, accumulatedTransferStates, resultMessages, limitAlarms or throws an error if failed
  */
 const processFxPositionPrepareBin = async (
   binItems,
-  accumulatedPositionValue,
-  accumulatedPositionReservedValue,
-  accumulatedFxTransferStates,
-  settlementParticipantPosition,
-  participantLimit
+  {
+    accumulatedPositionValue,
+    accumulatedPositionReservedValue,
+    accumulatedFxTransferStates,
+    settlementParticipantPosition,
+    participantLimit,
+    changePositions = true
+  }
 ) => {
   const fxTransferStateChanges = []
   const participantPositionChanges = []
@@ -99,7 +104,7 @@ const processFxPositionPrepareBin = async (
         binItem.result = { success: false }
 
         // Check if payer has insufficient liquidity, produce an error message and abort transfer
-      } else if (availablePositionBasedOnLiquidityCover.toNumber() < transferAmount) {
+      } else if (changePositions && availablePositionBasedOnLiquidityCover.toNumber() < transferAmount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
 
@@ -141,7 +146,7 @@ const processFxPositionPrepareBin = async (
         binItem.result = { success: false }
 
         // Check if payer has surpassed their limit, produce an error message and abort transfer
-      } else if (availablePositionBasedOnPayerLimit.toNumber() < transferAmount) {
+      } else if (changePositions && availablePositionBasedOnPayerLimit.toNumber() < transferAmount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
 
@@ -185,9 +190,20 @@ const processFxPositionPrepareBin = async (
         // Payer has sufficient liquidity and limit
       } else {
         transferStateId = Enum.Transfers.TransferInternalState.RESERVED
-        currentPosition = currentPosition.add(transferAmount)
-        availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transferAmount)
-        availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.add(transferAmount)
+
+        if (changePositions) {
+          currentPosition = currentPosition.add(transferAmount)
+          availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transferAmount)
+          availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.add(transferAmount)
+          const participantPositionChange = {
+            commitRequestId: fxTransfer.commitRequestId, // Need to delete this in bin processor while updating fxTransferStateChangeId
+            fxTransferStateChangeId: null, // Need to update this in bin processor while executing queries
+            value: currentPosition.toNumber(),
+            reservedValue: accumulatedPositionReservedValue
+          }
+          participantPositionChanges.push(participantPositionChange)
+          Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
+        }
 
         // forward same headers from the prepare message, except the content-length header
         const headers = { ...binItem.message.value.content.headers }
@@ -216,18 +232,17 @@ const processFxPositionPrepareBin = async (
           'application/json'
         )
 
-        const participantPositionChange = {
-          commitRequestId: fxTransfer.commitRequestId, // Need to delete this in bin processor while updating fxTransferStateChangeId
-          fxTransferStateChangeId: null, // Need to update this in bin processor while executing queries
-          value: currentPosition.toNumber(),
-          reservedValue: accumulatedPositionReservedValue
-        }
-        participantPositionChanges.push(participantPositionChange)
-        Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
         binItem.result = { success: true }
       }
 
       resultMessages.push({ binItem, message: resultMessage })
+
+      if (changePositions) {
+        Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
+        if (currentPosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
+          limitAlarms.push(participantLimit)
+        }
+      }
 
       const fxTransferStateChange = {
         commitRequestId: fxTransfer.commitRequestId,
@@ -237,10 +252,6 @@ const processFxPositionPrepareBin = async (
       fxTransferStateChanges.push(fxTransferStateChange)
       Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::fxTransferStateChange: ${JSON.stringify(fxTransferStateChange)}`)
 
-      Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
-      if (currentPosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
-        limitAlarms.push(participantLimit)
-      }
 
       accumulatedFxTransferStatesCopy[fxTransfer.commitRequestId] = transferStateId
       Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::accumulatedTransferStatesCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)
@@ -248,12 +259,12 @@ const processFxPositionPrepareBin = async (
   }
 
   return {
-    accumulatedPositionValue: currentPosition.toNumber(),
+    accumulatedPositionValue: changePositions ? currentPosition.toNumber() : accumulatedPositionValue,
     accumulatedFxTransferStates: accumulatedFxTransferStatesCopy, // finalized transfer state after prepare processing
     accumulatedPositionReservedValue, // not used but kept for consistency
     accumulatedFxTransferStateChanges: fxTransferStateChanges, // fx-transfer state changes to be persisted in order
     limitAlarms, // array of participant limits that have been breached
-    accumulatedPositionChanges: participantPositionChanges, // participant position changes to be persisted in order
+    accumulatedPositionChanges: changePositions ? participantPositionChanges : [], // participant position changes to be persisted in order
     notifyMessages: resultMessages // array of objects containing bin item and result message. {binItem, message}
   }
 }
