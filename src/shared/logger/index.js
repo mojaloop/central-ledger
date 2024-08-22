@@ -1,8 +1,8 @@
-const Logger = require('./Logger')
+const { loggerFactory } = require('@mojaloop/central-services-logger/src/contextLogger')
 
-const logger = new Logger()
+const logger = loggerFactory('CL') // global logger
 
 module.exports = {
   logger,
-  Logger
+  loggerFactory
 }
