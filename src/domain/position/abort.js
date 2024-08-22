@@ -91,11 +91,11 @@ const processPositionAbortBin = async (
         for (const positionChange of cyrilResult.positionChanges) {
           if (positionChange.isFxTransferStateChange) {
             // Construct notification message for fx transfer state change
-            const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, Config.HUB_NAME, positionChange.notifyTo, Enum.Events.Event.Action.FX_ABORT)
+            const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, Config.HUB_NAME, positionChange.notifyTo)
             resultMessages.push({ binItem, message: resultMessage })
           } else {
             // Construct notification message for transfer state change
-            const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, Config.HUB_NAME, positionChange.notifyTo, Enum.Events.Event.Action.ABORT)
+            const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, Config.HUB_NAME, positionChange.notifyTo)
             resultMessages.push({ binItem, message: resultMessage })
           }
         }
@@ -125,9 +125,13 @@ const processPositionAbortBin = async (
   }
 }
 
-const _constructAbortResultMessage = (binItem, id, from, notifyTo, action) => {
+const _constructAbortResultMessage = (binItem, id, from, notifyTo) => {
+  let apiErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTION
+  if (binItem.message?.value.metadata.event.action === Enum.Events.Event.Action.FX_ABORT_VALIDATION) {
+    apiErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR
+  }
   const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-    ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTION, // TODO: Need clarification on this
+    apiErrorCode,
     null,
     null,
     null,
@@ -144,7 +148,7 @@ const _constructAbortResultMessage = (binItem, id, from, notifyTo, action) => {
   const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
     id,
     Enum.Kafka.Topics.POSITION,
-    action,
+    binItem.message?.value.metadata.event.action, // This will be replaced anyway in Kafka.produceGeneralMessage function
     state
   )
   const resultMessage = Utility.StreamingProtocol.createMessage(

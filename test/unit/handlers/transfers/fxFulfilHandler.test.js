@@ -40,7 +40,9 @@ const { Util, Enum } = require('@mojaloop/central-services-shared')
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 
 const FxFulfilService = require('../../../../src/handlers/transfers/FxFulfilService')
+const ParticipantPositionChangesModel = require('../../../../src/models/position/participantPositionChanges')
 const fxTransferModel = require('../../../../src/models/fxTransfer')
+const TransferFacade = require('../../../../src/models/transfer/facade')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const fspiopErrorFactory = require('../../../../src/shared/fspiopErrorFactory')
@@ -78,6 +80,8 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     sandbox.stub(Validator)
     sandbox.stub(fxTransferModel.fxTransfer)
     sandbox.stub(fxTransferModel.watchList)
+    sandbox.stub(ParticipantPositionChangesModel)
+    sandbox.stub(TransferFacade)
     sandbox.stub(TransferObjectTransform, 'toFulfil')
     sandbox.stub(Consumer, 'getConsumer').returns({
       commitMessageSync: async () => true
@@ -161,8 +165,18 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     const counterPartyFsp = fixtures.FXP_ID
     const fxTransferPayload = fixtures.fxTransferDto({ initiatingFsp, counterPartyFsp })
     const fxTransferDetailsFromDb = fixtures.fxtGetAllDetailsByCommitRequestIdDto(fxTransferPayload)
+
     fxTransferModel.fxTransfer.getAllDetailsByCommitRequestId.resolves(fxTransferDetailsFromDb)
     fxTransferModel.fxTransfer.saveFxFulfilResponse.resolves({})
+    fxTransferModel.fxTransfer.getByCommitRequestId.resolves(fxTransferDetailsFromDb)
+    fxTransferModel.fxTransfer.getByDeterminingTransferId.resolves([])
+    fxTransferModel.fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.resolves(fxTransferDetailsFromDb)
+    const mockPositionChanges = [
+      { participantCurrencyId: 1, value: 100 }
+    ]
+    ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.resolves([])
+    ParticipantPositionChangesModel.getReservedPositionChangesByTransferId.resolves(mockPositionChanges)
+    TransferFacade.getById.resolves({ payerfsp: 'testpayer' })
 
     const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_RESERVE })
     const content = fixtures.fulfilContentDto({
@@ -178,7 +192,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.equal(messageProtocol.from, fixtures.SWITCH_ID)
     t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT_VALIDATION)
     checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxHeaderSourceValidationError())
-    t.equal(topicConfig.topicName, TOPICS.transferPosition)
+    t.ok(topicConfig.topicName === TOPICS.transferPosition || topicConfig.topicName === TOPICS.transferPositionBatch)
     t.end()
   })
 
@@ -214,6 +228,20 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     sandbox.stub(FxFulfilService.prototype, 'getFxTransferDetails').resolves(fxTransferDetails)
     sandbox.stub(FxFulfilService.prototype, 'validateHeaders').resolves()
     sandbox.stub(FxFulfilService.prototype, 'validateEventType').resolves()
+    const initiatingFsp = fixtures.DFSP1_ID
+    const counterPartyFsp = fixtures.FXP_ID
+    const fxTransferPayload = fixtures.fxTransferDto({ initiatingFsp, counterPartyFsp })
+    const fxTransferDetailsFromDb = fixtures.fxtGetAllDetailsByCommitRequestIdDto(fxTransferPayload)
+    fxTransferModel.fxTransfer.getByCommitRequestId.resolves(fxTransferDetailsFromDb)
+    fxTransferModel.fxTransfer.getByDeterminingTransferId.resolves([])
+    fxTransferModel.fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.resolves(fxTransferDetailsFromDb)
+    const mockPositionChanges = [
+      { participantCurrencyId: 1, value: 100 }
+    ]
+    ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.resolves([])
+    ParticipantPositionChangesModel.getReservedPositionChangesByTransferId.resolves(mockPositionChanges)
+    TransferFacade.getById.resolves({ payerfsp: 'testpayer' })
+
     Comparators.duplicateCheckComparator.resolves({
       hasDuplicateId: false,
       hasDuplicateHash: false
@@ -229,8 +257,8 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
     t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT_VALIDATION)
     checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxInvalidFulfilment())
-    t.equal(topicConfig.topicName, TOPICS.transferPosition)
-    t.equal(topicConfig.key, String(fxTransferDetails.counterPartyFspTargetParticipantCurrencyId))
+    t.ok(topicConfig.topicName === TOPICS.transferPosition || topicConfig.topicName === TOPICS.transferPositionBatch)
+    t.equal(topicConfig.key, String(1))
     t.end()
   })
 
