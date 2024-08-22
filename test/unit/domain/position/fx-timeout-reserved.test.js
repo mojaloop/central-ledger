@@ -274,6 +274,44 @@ Test('timeout reserved domain', positionIndexTest => {
       test.end()
     })
 
+    changeParticipantPositionTest.test('skip position changes if changePositions is false', async (test) => {
+      const processedMessages = await processPositionFxTimeoutReservedBin(
+        binItems,
+        {
+          accumulatedPositionValue: 0, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates: {
+            'd6a036a5-65a3-48af-a0c7-ee089c412ada': Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT,
+            '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
+          },
+          fetchedReservedPositionChangesByCommitRequestIds: {
+            'd6a036a5-65a3-48af-a0c7-ee089c412ada': {
+              51: {
+                value: 10
+              }
+            },
+            '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': {
+              51: {
+                value: 5
+              }
+            }
+          },
+          changePositions: false
+        }
+      )
+      test.equal(processedMessages.notifyMessages.length, 2)
+      test.equal(processedMessages.accumulatedPositionValue, 0)
+      test.equal(processedMessages.accumulatedPositionChanges.length, 0)
+      test.equal(processedMessages.accumulatedFxTransferStateChanges[0].commitRequestId, fxTimeoutMessage1.value.id)
+      test.equal(processedMessages.accumulatedFxTransferStateChanges[1].commitRequestId, fxTimeoutMessage2.value.id)
+      test.equal(processedMessages.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED)
+      test.equal(processedMessages.accumulatedFxTransferStateChanges[1].transferStateId, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED)
+      test.equal(processedMessages.accumulatedFxTransferStates[fxTimeoutMessage1.value.id], Enum.Transfers.TransferInternalState.EXPIRED_RESERVED)
+      test.equal(processedMessages.accumulatedFxTransferStates[fxTimeoutMessage2.value.id], Enum.Transfers.TransferInternalState.EXPIRED_RESERVED)
+
+      test.end()
+    })
+
     changeParticipantPositionTest.end()
   })
 

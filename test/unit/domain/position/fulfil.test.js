@@ -502,6 +502,46 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     test.end()
   })
 
+  processPositionFulfilBinTest.test('should skip position changes if changePosition is false', async (test) => {
+    const accumulatedTransferStates = {
+      [transferTestData1.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL,
+      [transferTestData2.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL
+    }
+    const accumulatedFxTransferStates = {}
+    const transferInfoList = {
+      [transferTestData1.message.value.id]: transferTestData1.transferInfo,
+      [transferTestData2.message.value.id]: transferTestData2.transferInfo
+    }
+    // Call the function
+    const result = await processPositionFulfilBin(
+      [commitBinItems, []],
+      {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        transferInfoList,
+        reservedActionTransfers: [],
+        changePositions: false
+      }
+    )
+
+    // Assert the expected results
+    test.equal(result.notifyMessages.length, 2)
+    test.equal(result.accumulatedPositionValue, 0)
+    test.equal(result.accumulatedTransferStateChanges.length, 2)
+    test.equal(result.accumulatedPositionChanges.length, 0)
+
+    test.equal(result.accumulatedTransferStateChanges[0].transferId, transferTestData1.message.value.id)
+    test.equal(result.accumulatedTransferStateChanges[1].transferId, transferTestData2.message.value.id)
+    test.equal(result.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.COMMITTED)
+    test.equal(result.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.COMMITTED)
+    test.equal(result.accumulatedTransferStates[transferTestData1.message.value.id], Enum.Transfers.TransferState.COMMITTED)
+    test.equal(result.accumulatedTransferStates[transferTestData2.message.value.id], Enum.Transfers.TransferState.COMMITTED)
+
+    test.end()
+  })
+
   // FX tests
 
   processPositionFulfilBinTest.test('should process a bin of position-commit messages involved in fx transfers', async (test) => {
