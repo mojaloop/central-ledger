@@ -36,7 +36,7 @@ const Validator = require('../../../../src/handlers/transfers/validator')
 const FxTransferModel = require('../../../../src/models/fxTransfer')
 const Config = require('../../../../src/lib/config')
 const { ERROR_MESSAGES } = require('../../../../src/shared/constants')
-const { Logger } = require('../../../../src/shared/logger')
+const { logger } = require('../../../../src/shared/logger')
 const ProxyCache = require('#src/lib/proxyCache')
 
 const fixtures = require('../../../fixtures')
@@ -47,7 +47,7 @@ const { Kafka, Comparators, Hash } = Util
 const { Action } = Enum.Events.Event
 const { TOPICS } = fixtures
 
-const log = new Logger()
+const log = logger
 // const functionality = Type.NOTIFICATION
 
 Test('FxFulfilService Tests -->', fxFulfilTest => {

@@ -365,6 +365,12 @@ const prepare = async (error, messages) => {
         ProxyCache.getFSPProxy(initiatingFsp),
         ProxyCache.getFSPProxy(counterPartyFsp)
       ])
+      logger.debug('Prepare proxy cache lookup results', {
+        initiatingFsp,
+        counterPartyFsp,
+        initiatingFspProxyOrParticipantId: proxyObligation.initiatingFspProxyOrParticipantId,
+        counterPartyFspProxyOrParticipantId: proxyObligation.counterPartyFspProxyOrParticipantId
+      })
 
       proxyObligation.isInitiatingFspProxy = !proxyObligation.initiatingFspProxyOrParticipantId.inScheme &&
         proxyObligation.initiatingFspProxyOrParticipantId.proxyId !== null

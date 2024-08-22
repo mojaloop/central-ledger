@@ -19,6 +19,7 @@ exclude: [
   '**/ddl/**',
   '**/bulk*/**',
   'src/shared/logger/**',
+  'src/shared/loggingPlugin.js',
   'src/shared/constants.js',
   'src/domain/position/index.js',
   'src/domain/position/binProcessor.js',
