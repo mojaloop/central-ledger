@@ -24,7 +24,6 @@
 
  * INFITX
  - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
- - Steven Oderayi <steven.oderayi@infitx.com>
 
  --------------
  ******/
