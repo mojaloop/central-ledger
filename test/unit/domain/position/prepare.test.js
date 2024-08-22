@@ -739,7 +739,7 @@ Test('Prepare domain', positionIndexTest => {
       test.end()
     })
 
-    changeParticipantPositionTest.test('skip position changes if changePosition if false', async (test) => {
+    changeParticipantPositionTest.test('skip position changes if changePosition is false', async (test) => {
       const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
