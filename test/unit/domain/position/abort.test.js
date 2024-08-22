@@ -412,16 +412,18 @@ Test('abort domain', positionIndexTest => {
       try {
         await processPositionAbortBin(
           binItems,
-          0,
-          0,
           {
-            'a0000001-0000-0000-0000-000000000000': 'INVALID_STATE',
-            'a0000002-0000-0000-0000-000000000000': 'INVALID_STATE'
-          },
-          {
-            'b0000001-0000-0000-0000-000000000000': 'INVALID_STATE'
-          },
-          false
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': 'INVALID_STATE',
+              'a0000002-0000-0000-0000-000000000000': 'INVALID_STATE'
+            },
+            accumulatedFxTransferStates: {
+              'b0000001-0000-0000-0000-000000000000': 'INVALID_STATE'
+            },
+            isFx: false
+          }
         )
         test.fail('Error not thrown')
       } catch (e) {
@@ -438,16 +440,18 @@ Test('abort domain', positionIndexTest => {
       try {
         await processPositionAbortBin(
           binItems,
-          0,
-          0,
           {
-            'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
-            'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          {
-            'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          false
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+              'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: false
+          }
         )
         test.fail('Error not thrown')
       } catch (e) {
@@ -461,16 +465,18 @@ Test('abort domain', positionIndexTest => {
       try {
         const processedResult = await processPositionAbortBin(
           binItems,
-          0,
-          0,
           {
-            'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
-            'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          {
-            'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          false
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+              'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: false
+          }
         )
         test.pass('Error not thrown')
         test.equal(processedResult.notifyMessages.length, 1)
@@ -496,16 +502,18 @@ Test('abort domain', positionIndexTest => {
       try {
         const processedResult = await processPositionAbortBin(
           binItems,
-          0,
-          0,
           {
-            'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
-            'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          {
-            'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          false
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+              'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: false
+          }
         )
         test.pass('Error not thrown')
         test.equal(processedResult.notifyMessages.length, 0)
@@ -522,6 +530,34 @@ Test('abort domain', positionIndexTest => {
       test.end()
     })
 
+    processPositionAbortBinTest.test('skip position changes if changePositions is false', async (test) => {
+      const binItems = getAbortBinItems()
+      try {
+        const processedResult = await processPositionAbortBin(
+          binItems,
+          {
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+              'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: false,
+            changePositions: false
+          }
+        )
+        test.equal(processedResult.accumulatedPositionChanges.length, 0)
+        test.equal(processedResult.accumulatedPositionValue, 0)
+        test.equal(processedResult.accumulatedTransferStateChanges.length, 2)
+        processedResult.accumulatedTransferStateChanges.forEach(transferStateChange => test.equal(transferStateChange.transferStateId, Enum.Transfers.TransferInternalState.ABORTED_ERROR))
+        processedResult.accumulatedTransferStates[abortMessage1.value.id] = Enum.Transfers.TransferInternalState.ABORTED_ERROR
+        processedResult.accumulatedTransferStates[abortMessage2.value.id] = Enum.Transfers.TransferInternalState.ABORTED_ERROR
+      } catch (e) {
+        test.fail('Error thrown')
+      }
+      test.end()
+    })
+
     processPositionAbortBinTest.end()
   })
 
@@ -531,16 +567,18 @@ Test('abort domain', positionIndexTest => {
       try {
         await processPositionAbortBin(
           binItems,
-          0,
-          0,
           {
-            'd0000001-0000-0000-0000-000000000000': 'INVALID_STATE'
-          },
-          {
-            'c0000001-0000-0000-0000-000000000000': 'INVALID_STATE',
-            'c0000002-0000-0000-0000-000000000000': 'INVALID_STATE'
-          },
-          true
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'd0000001-0000-0000-0000-000000000000': 'INVALID_STATE'
+            },
+            accumulatedFxTransferStates: {
+              'c0000001-0000-0000-0000-000000000000': 'INVALID_STATE',
+              'c0000002-0000-0000-0000-000000000000': 'INVALID_STATE'
+            },
+            isFx: true
+          }
         )
         test.fail('Error not thrown')
       } catch (e) {
@@ -557,16 +595,18 @@ Test('abort domain', positionIndexTest => {
       try {
         await processPositionAbortBin(
           binItems,
-          0,
-          0,
           {
-            'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          {
-            'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
-            'c0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          true
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+              'c0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: true
+          }
         )
         test.fail('Error not thrown')
       } catch (e) {
@@ -580,16 +620,18 @@ Test('abort domain', positionIndexTest => {
       try {
         const processedResult = await processPositionAbortBin(
           binItems,
-          0,
-          0,
           {
-            'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          {
-            'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
-            'c0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          true
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+              'c0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: true
+          }
         )
         test.pass('Error not thrown')
         test.equal(processedResult.notifyMessages.length, 1)
@@ -611,16 +653,18 @@ Test('abort domain', positionIndexTest => {
       try {
         const processedResult = await processPositionAbortBin(
           binItems,
-          0,
-          0,
           {
-            'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          {
-            'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
-            'c0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-          },
-          true
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+              'c0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: true
+          }
         )
         test.pass('Error not thrown')
         test.equal(processedResult.notifyMessages.length, 0)

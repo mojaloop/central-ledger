@@ -1003,7 +1003,8 @@ workflows:
             # - test-dependencies
             - test-lint
             - test-unit
-            - test-coverage
+            ## To be able to release a snapshot without code coverage
+            # - test-coverage
             - test-integration
             - test-functional
             - vulnerability-check

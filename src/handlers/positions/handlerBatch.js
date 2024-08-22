@@ -106,16 +106,6 @@ const positions = async (error, messages) => {
 
     const accountID = message.key.toString()
 
-    /**
-     * Interscheme accounting rule:
-     *  - If the creditor and debtor are represented by the same proxy, the message key will be 0.
-     *    In such cases, we skip position changes.
-     */
-    if (accountID === '0') {
-      histTimerEnd({ success: true })
-      return span.finish()
-    }
-
     // Assign message to account-bin by accountID and child action-bin by action
     // (References to the messages to be stored in bins, no duplication of messages)
     const action = message.value.metadata.event.action

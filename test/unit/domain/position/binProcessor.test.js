@@ -79,6 +79,7 @@ const fxTimeoutReservedTransfers = [
 
 Test('BinProcessor', async (binProcessorTest) => {
   let sandbox
+
   binProcessorTest.beforeEach(async test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(BatchPositionModel)
@@ -439,8 +440,8 @@ Test('BinProcessor', async (binProcessorTest) => {
     test.end()
   })
 
-  binProcessorTest.test('binProcessor should', prepareActionTest => {
-    prepareActionTest.test('processBins should process a bin of positions and return the expected results', async (test) => {
+  binProcessorTest.test('binProcessor should', processBinsTest => {
+    processBinsTest.test('processBins should process a bin of positions and return the expected results', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -484,7 +485,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle prepare messages', async (test) => {
+    processBinsTest.test('processBins should handle prepare messages', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -536,7 +537,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle commit messages', async (test) => {
+    processBinsTest.test('processBins should handle commit messages', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -585,7 +586,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle reserve messages', async (test) => {
+    processBinsTest.test('processBins should handle reserve messages', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -634,7 +635,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle timeout-reserved messages', async (test) => {
+    processBinsTest.test('processBins should handle timeout-reserved messages', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -683,7 +684,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle fx-timeout-reserved messages', async (test) => {
+    processBinsTest.test('processBins should handle fx-timeout-reserved messages', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -732,7 +733,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should throw error if any accountId cannot be matched to atleast one participantCurrencyId', async (test) => {
+    processBinsTest.test('processBins should throw error if any accountId cannot be matched to atleast one participantCurrencyId', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -761,7 +762,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should throw error if no settlement model is found', async (test) => {
+    processBinsTest.test('processBins should throw error if no settlement model is found', async (test) => {
       SettlementModelCached.getAll.returns([])
       const sampleParticipantLimitReturnValues = [
         {
@@ -787,7 +788,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should throw error if no default settlement model if currency model is missing', async (test) => {
+    processBinsTest.test('processBins should throw error if no default settlement model if currency model is missing', async (test) => {
       SettlementModelCached.getAll.returns([
         {
           settlementModelId: 3,
@@ -828,7 +829,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should use default settlement model if currency model is missing', async (test) => {
+    processBinsTest.test('processBins should use default settlement model if currency model is missing', async (test) => {
       SettlementModelCached.getAll.returns([
         {
           settlementModelId: 2,
@@ -885,7 +886,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle no binItems', async (test) => {
+    processBinsTest.test('processBins should handle no binItems', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -936,7 +937,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle non supported bins', async (test) => {
+    processBinsTest.test('processBins should handle non supported bins', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -964,8 +965,45 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       test.end()
     })
-    prepareActionTest.end()
+
+    processBinsTest.test('processBins should process bins with accountId 0 differently', async (test) => {
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      const binsWithZeroId = JSON.parse(JSON.stringify(sampleBins))
+      binsWithZeroId[0] = binsWithZeroId[15]
+      delete binsWithZeroId[15]
+      delete binsWithZeroId[7]
+
+      const result = await BinProcessor.processBins(binsWithZeroId, trx)
+
+      // Assert on result.notifyMessages
+      test.equal(result.notifyMessages.length, 6, 'processBins should return 6 messages')
+
+      // Assert on number of function calls for DB update on position value
+      test.equal(BatchPositionModel.updateParticipantPosition.callCount, 0, 'updateParticipantPosition should not be called')
+      test.ok(BatchPositionModel.bulkInsertTransferStateChanges.calledOnce, 'bulkInsertTrasferStateChanges should be called once')
+      test.ok(BatchPositionModel.bulkInsertFxTransferStateChanges.calledOnce, 'bulkInsertFxTrasferStateChanges should be called once')
+      test.equal(BatchPositionModel.bulkInsertParticipantPositionChanges.callCount, 0, 'bulkInsertParticipantPositionChanges should not be called')
+
+      test.end()
+    })
+
+    processBinsTest.end()
   })
+
   binProcessorTest.test('iterateThroughBins should', async (iterateThroughBinsTest) => {
     iterateThroughBinsTest.test('iterateThroughBins should call callback function for each message in bins', async (test) => {
       const spyCb = sandbox.spy()
@@ -995,5 +1033,6 @@ Test('BinProcessor', async (binProcessorTest) => {
     })
     iterateThroughBinsTest.end()
   })
+
   binProcessorTest.end()
 })

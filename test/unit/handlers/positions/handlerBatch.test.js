@@ -566,37 +566,6 @@ Test('Position handler', positionBatchHandlerTest => {
       }
     })
 
-    positionsTest.test('skip processing if message key is 0', async test => {
-      // Arrange
-      await Consumer.createHandler(topicName, config, command)
-      Kafka.transformGeneralTopicName.returns(topicName)
-      Kafka.getKafkaConfig.returns(config)
-      Kafka.proceed.returns(true)
-      BinProcessor.processBins.resolves({
-        notifyMessages: [],
-        followupMessages: []
-      })
-
-      const message = {
-        key: '0',
-        value: prepareMessageValue,
-        topic: topicName
-      }
-
-      // Act
-      try {
-        await allTransferHandlers.positions(null, [message])
-        test.ok(BatchPositionModel.startDbTransaction.notCalled, 'startDbTransaction should not be called')
-        test.ok(BinProcessor.processBins.notCalled, 'processBins should not be called')
-        test.ok(Kafka.proceed.notCalled, 'kafkaProceed should not be called')
-        test.end()
-      } catch (err) {
-        Logger.info(err)
-        test.fail('Error should not be thrown')
-        test.end()
-      }
-    })
-
     positionsTest.end()
   })
 

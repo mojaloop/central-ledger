@@ -189,11 +189,13 @@ Test('FX Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processFxPositionPrepareBin(
         binItems,
-        0, // Accumulated position value
-        0,
-        accumulatedFxTransferStates,
-        -1000, // Settlement participant position value
-        participantLimit
+        {
+          accumulatedPositionValue: 0, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: -1000, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -247,11 +249,13 @@ Test('FX Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processFxPositionPrepareBin(
         binItems,
-        0, // No accumulated position value
-        0,
-        accumulatedFxTransferStates,
-        0, // Settlement participant position value
-        participantLimit
+        {
+          accumulatedPositionValue: 0, // No accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: 0, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -314,11 +318,13 @@ Test('FX Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processFxPositionPrepareBin(
         binItems,
-        1000, // Position value has reached limit of 1000
-        0,
-        accumulatedFxTransferStates,
-        -2000, // Payer has liquidity
-        participantLimit
+        {
+          accumulatedPositionValue: 1000, // Position value has reached limit of 1000
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: -2000, // Payer has liquidity
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -381,11 +387,13 @@ Test('FX Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processFxPositionPrepareBin(
         binItems,
-        0, // Accumulated position value
-        0,
-        accumulatedFxTransferStates,
-        -2000, // Payer has liquidity
-        participantLimit
+        {
+          accumulatedPositionValue: 0, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: -2000, // Payer has liquidity
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -444,16 +452,93 @@ Test('FX Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processFxPositionPrepareBin(
         binItems,
-        0,
-        0,
-        accumulatedFxTransferStates,
-        -sourceAmount * 2,
-        participantLimit
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: -sourceAmount * 2,
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
       test.equal(processedMessages.limitAlarms.length, 2)
       test.equal(processedMessages.accumulatedPositionValue, sourceAmount * 2)
+      test.end()
+    })
+
+    changeParticipantPositionTest.test('skip position changes if changePositions is false', async (test) => {
+      const participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: 10000,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 0.5
+      }
+      const accumulatedFxTransferStates = {
+        [fxTransferTestData1.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+        [fxTransferTestData2.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+        [fxTransferTestData3.message.value.id]: 'INVALID_STATE'
+      }
+      const processedMessages = await processFxPositionPrepareBin(
+        binItems,
+        {
+          accumulatedPositionValue: -4,
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: -2000,
+          participantLimit,
+          changePositions: false
+        }
+      )
+      Logger.isInfoEnabled && Logger.info(processedMessages)
+      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.accumulatedPositionChanges.length, 0)
+      test.equal(processedMessages.accumulatedPositionValue, -4)
+      test.end()
+    })
+
+    changeParticipantPositionTest.test('use targetAmount as transferAmount if cyrilResult currency equals targetAmount currency', async (test) => {
+      const participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: 10000,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 0.5
+      }
+      const accumulatedFxTransferStates = {
+        [fxTransferTestData1.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+        [fxTransferTestData2.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+        [fxTransferTestData3.message.value.id]: 'INVALID_STATE'
+      }
+      const cyrilResult = {
+        participantName: 'perffsp1',
+        currencyId: 'XXX',
+        amount: 50
+      }
+      const binItemsWithModifiedCyrilResult = binItems.map(item => {
+        item.message.value.content.context.cyrilResult = cyrilResult
+        return item
+      })
+      const processedMessages = await processFxPositionPrepareBin(
+        binItemsWithModifiedCyrilResult,
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates,
+          settlementParticipantPosition: -2000,
+          participantLimit
+        }
+      )
+      Logger.isInfoEnabled && Logger.info(processedMessages)
+      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.accumulatedPositionChanges.length, 2)
+      test.equal(processedMessages.accumulatedPositionChanges[0].value, 50)
+      test.equal(processedMessages.accumulatedPositionChanges[1].value, 100)
       test.end()
     })
 

@@ -24,7 +24,6 @@
 
  * INFITX
  - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
- - Steven Oderayi <steven.oderayi@infitx.com>
 
  --------------
  ******/
@@ -70,7 +69,7 @@ const processBins = async (bins, trx) => {
   // Pre fetch latest fxTransferStates for all the commitRequestIds in the account-bin
   const latestFxTransferStates = await _fetchLatestFxTransferStates(trx, commitRequestIdList)
 
-  const accountIds = Object.keys(bins)
+  const accountIds = [...Object.keys(bins).filter(accountId => accountId !== '0')]
 
   // Get all participantIdMap for the accountIds
   const participantCurrencyIds = await _getParticipantCurrencyIds(trx, accountIds)
@@ -79,7 +78,7 @@ const processBins = async (bins, trx) => {
   const allSettlementModels = await SettlementModelCached.getAll()
 
   // Construct objects participantIdMap, accountIdMap and currencyIdMap
-  const { settlementCurrencyIds, accountIdMap, currencyIdMap } = await _constructRequiredMaps(participantCurrencyIds, allSettlementModels, trx)
+  const { settlementCurrencyIds, accountIdMap } = await _constructRequiredMaps(participantCurrencyIds, allSettlementModels, trx)
 
   // Pre fetch all position account balances for the account-bin and acquire lock on position
   const positions = await BatchPositionModel.getPositionsByAccountIdsForUpdate(trx, [
@@ -134,42 +133,58 @@ const processBins = async (bins, trx) => {
       Logger.isErrorEnabled && Logger.error(`Only ${allowedActions.join()} are allowed in a batch`)
     }
 
-    const settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
-    const settlementModel = currencyIdMap[accountIdMap[accountID].currencyId].settlementModel
+    let settlementParticipantPosition = 0
+    let participantLimit = null
 
-    // Story #3657: The following SQL query/lookup can be optimized for performance
-    const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(
-      accountIdMap[accountID].participantId,
-      accountIdMap[accountID].currencyId,
-      Enum.Accounts.LedgerAccountType.POSITION,
-      Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP
-    )
     // Initialize accumulated values
     // These values will be passed across various actions in the bin
-    let accumulatedPositionValue = positions[accountID].value
-    let accumulatedPositionReservedValue = positions[accountID].reservedValue
+    let accumulatedPositionValue = 0
+    let accumulatedPositionReservedValue = 0
     let accumulatedTransferStates = latestTransferStates
     let accumulatedFxTransferStates = latestFxTransferStates
     let accumulatedTransferStateChanges = []
     let accumulatedFxTransferStateChanges = []
     let accumulatedPositionChanges = []
+    let changePositions = false
+
+    if (accountID !== '0') {
+      settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
+
+      // Story #3657: The following SQL query/lookup can be optimized for performance
+      participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(
+        accountIdMap[accountID].participantId,
+        accountIdMap[accountID].currencyId,
+        Enum.Accounts.LedgerAccountType.POSITION,
+        Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP
+      )
+
+      accumulatedPositionValue = positions[accountID].value
+      accumulatedPositionReservedValue = positions[accountID].reservedValue
+
+      changePositions = true
+    }
 
     // ========== FX_FULFIL  ==========
     // If fulfil action found then call processPositionPrepareBin function
     // We don't need to change the position for FX transfers. All the position changes happen when actual transfer is done
     const fxFulfilActionResult = await PositionFxFulfilDomain.processPositionFxFulfilBin(
       accountBin[Enum.Events.Event.Action.FX_RESERVE],
-      accumulatedFxTransferStates
+      {
+        accumulatedFxTransferStates
+      }
     )
 
     // ========== FX_TIMEOUT  ==========
     // If fx-timeout-reserved action found then call processPositionTimeoutReserveBin function
     const fxTimeoutReservedActionResult = await PositionFxTimeoutReservedDomain.processPositionFxTimeoutReservedBin(
       accountBin[Enum.Events.Event.Action.FX_TIMEOUT_RESERVED],
-      accumulatedPositionValue,
-      accumulatedPositionReservedValue,
-      accumulatedFxTransferStates,
-      fetchedReservedPositionChangesByCommitRequestIds
+      {
+        accumulatedPositionValue,
+        accumulatedPositionReservedValue,
+        accumulatedFxTransferStates,
+        fetchedReservedPositionChangesByCommitRequestIds,
+        changePositions
+      }
     )
 
     // Update accumulated values
@@ -191,12 +206,15 @@ const processBins = async (bins, trx) => {
     // If fulfil action found then call processPositionPrepareBin function
     const fulfilActionResult = await PositionFulfilDomain.processPositionFulfilBin(
       [accountBin.commit, accountBin.reserve],
-      accumulatedPositionValue,
-      accumulatedPositionReservedValue,
-      accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      latestTransferInfoByTransferId,
-      reservedActionTransfers
+      {
+        accumulatedPositionValue,
+        accumulatedPositionReservedValue,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        transferInfoList: latestTransferInfoByTransferId,
+        reservedActionTransfers,
+        changePositions
+      }
     )
 
     // Update accumulated values
@@ -218,11 +236,14 @@ const processBins = async (bins, trx) => {
         ...(accountBin[Enum.Events.Event.Action.ABORT] || []),
         ...(accountBin[Enum.Events.Event.Action.ABORT_VALIDATION] || [])
       ],
-      accumulatedPositionValue,
-      accumulatedPositionReservedValue,
-      accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      false
+      {
+        accumulatedPositionValue,
+        accumulatedPositionReservedValue,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        isFx: false,
+        changePositions
+      }
     )
 
     // Update accumulated values
@@ -244,11 +265,14 @@ const processBins = async (bins, trx) => {
         ...(accountBin[Enum.Events.Event.Action.FX_ABORT] || []),
         ...(accountBin[Enum.Events.Event.Action.FX_ABORT_VALIDATION] || [])
       ],
-      accumulatedPositionValue,
-      accumulatedPositionReservedValue,
-      accumulatedTransferStates,
-      accumulatedFxTransferStates,
-      true
+      {
+        accumulatedPositionValue,
+        accumulatedPositionReservedValue,
+        accumulatedTransferStates,
+        accumulatedFxTransferStates,
+        isFx: true,
+        changePositions
+      }
     )
 
     // Update accumulated values
@@ -267,10 +291,13 @@ const processBins = async (bins, trx) => {
     // If timeout-reserved action found then call processPositionTimeoutReserveBin function
     const timeoutReservedActionResult = await PositionTimeoutReservedDomain.processPositionTimeoutReservedBin(
       accountBin[Enum.Events.Event.Action.TIMEOUT_RESERVED],
-      accumulatedPositionValue,
-      accumulatedPositionReservedValue,
-      accumulatedTransferStates,
-      latestTransferInfoByTransferId
+      {
+        accumulatedPositionValue,
+        accumulatedPositionReservedValue,
+        accumulatedTransferStates,
+        transferInfoList: latestTransferInfoByTransferId,
+        changePositions
+      }
     )
 
     // Update accumulated values
@@ -286,12 +313,14 @@ const processBins = async (bins, trx) => {
     // If prepare action found then call processPositionPrepareBin function
     const prepareActionResult = await PositionPrepareDomain.processPositionPrepareBin(
       accountBin.prepare,
-      accumulatedPositionValue,
-      accumulatedPositionReservedValue,
-      accumulatedTransferStates,
-      settlementParticipantPosition,
-      settlementModel,
-      participantLimit
+      {
+        accumulatedPositionValue,
+        accumulatedPositionReservedValue,
+        accumulatedTransferStates,
+        settlementParticipantPosition,
+        participantLimit,
+        changePositions
+      }
     )
 
     // Update accumulated values
@@ -307,11 +336,14 @@ const processBins = async (bins, trx) => {
     // If fx-prepare action found then call processPositionFxPrepareBin function
     const fxPrepareActionResult = await PositionFxPrepareDomain.processFxPositionPrepareBin(
       accountBin[Enum.Events.Event.Action.FX_PREPARE],
-      accumulatedPositionValue,
-      accumulatedPositionReservedValue,
-      accumulatedFxTransferStates,
-      settlementParticipantPosition,
-      participantLimit
+      {
+        accumulatedPositionValue,
+        accumulatedPositionReservedValue,
+        accumulatedFxTransferStates,
+        settlementParticipantPosition,
+        participantLimit,
+        changePositions
+      }
     )
 
     // Update accumulated values
@@ -325,8 +357,10 @@ const processBins = async (bins, trx) => {
 
     // ========== CONSOLIDATION  ==========
 
-    // Update accumulated position values by calling a facade function
-    await BatchPositionModel.updateParticipantPosition(trx, positions[accountID].participantPositionId, accumulatedPositionValue, accumulatedPositionReservedValue)
+    if (changePositions) {
+      // Update accumulated position values by calling a facade function
+      await BatchPositionModel.updateParticipantPosition(trx, positions[accountID].participantPositionId, accumulatedPositionValue, accumulatedPositionReservedValue)
+    }
 
     // Bulk insert accumulated transferStateChanges by calling a facade function
     await BatchPositionModel.bulkInsertTransferStateChanges(trx, accumulatedTransferStateChanges)
@@ -337,20 +371,24 @@ const processBins = async (bins, trx) => {
     const fetchedTransferStateChanges = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, accumulatedTransferStateChanges.map(item => item.transferId))
     // Bulk get the fxTransferStateChangeIds for commitRequestId using select whereIn
     const fetchedFxTransferStateChanges = await BatchPositionModel.getLatestFxTransferStateChangesByCommitRequestIdList(trx, accumulatedFxTransferStateChanges.map(item => item.commitRequestId))
-    // Mutate accumulated positionChanges with transferStateChangeIds and fxTransferStateChangeIds
-    for (const positionChange of accumulatedPositionChanges) {
-      if (positionChange.transferId) {
-        positionChange.transferStateChangeId = fetchedTransferStateChanges[positionChange.transferId].transferStateChangeId
-        delete positionChange.transferId
-      } else if (positionChange.commitRequestId) {
-        positionChange.fxTransferStateChangeId = fetchedFxTransferStateChanges[positionChange.commitRequestId].fxTransferStateChangeId
-        delete positionChange.commitRequestId
+
+    if (changePositions) {
+      // Mutate accumulated positionChanges with transferStateChangeIds and fxTransferStateChangeIds
+      for (const positionChange of accumulatedPositionChanges) {
+        if (positionChange.transferId) {
+          positionChange.transferStateChangeId = fetchedTransferStateChanges[positionChange.transferId].transferStateChangeId
+          delete positionChange.transferId
+        } else if (positionChange.commitRequestId) {
+          positionChange.fxTransferStateChangeId = fetchedFxTransferStateChanges[positionChange.commitRequestId].fxTransferStateChangeId
+          delete positionChange.commitRequestId
+        }
+        positionChange.participantPositionId = positions[accountID].participantPositionId
+        positionChange.participantCurrencyId = accountID
       }
-      positionChange.participantPositionId = positions[accountID].participantPositionId
-      positionChange.participantCurrencyId = accountID
+
+      // Bulk insert accumulated positionChanges by calling a facade function
+      await BatchPositionModel.bulkInsertParticipantPositionChanges(trx, accumulatedPositionChanges)
     }
-    // Bulk insert accumulated positionChanges by calling a facade function
-    await BatchPositionModel.bulkInsertParticipantPositionChanges(trx, accumulatedPositionChanges)
 
     limitAlarms = limitAlarms.concat(prepareActionResult.limitAlarms)
   }

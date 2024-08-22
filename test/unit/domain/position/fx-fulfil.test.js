@@ -161,7 +161,7 @@ Test('Fx Fulfil domain', processPositionFxFulfilBinTest => {
     // Call the function
     const processedMessages = await processPositionFxFulfilBin(
       reserveBinItems,
-      accumulatedFxTransferStates
+      { accumulatedFxTransferStates }
     )
 
     // Assert the expected results

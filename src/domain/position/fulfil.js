@@ -13,20 +13,25 @@ const TransferObjectTransform = require('../../domain/transfer/transform')
  * @description This is the domain function to process a bin of position-fulfil messages of a single participant account.
  *
  * @param {array} commitReserveFulfilBins - an array containing commit and reserve action bins
- * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
- * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
- * @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
- * @param {object} transferInfoList - object with transfer id keys and transfer info values. Used to pass transfer info to domain function.
+ * @param {object} options
+  * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
+  * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
+  * @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
+  * @param {object} transferInfoList - object with transfer id keys and transfer info values. Used to pass transfer info to domain function.
+  * @param {boolean} changePositions - whether to change positions or not
  * @returns {object} - Returns an object containing accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, accumulatedTransferStates, resultMessages, limitAlarms or throws an error if failed
  */
 const processPositionFulfilBin = async (
   commitReserveFulfilBins,
-  accumulatedPositionValue,
-  accumulatedPositionReservedValue,
-  accumulatedTransferStates,
-  accumulatedFxTransferStates,
-  transferInfoList,
-  reservedActionTransfers
+  {
+    accumulatedPositionValue,
+    accumulatedPositionReservedValue,
+    accumulatedTransferStates,
+    accumulatedFxTransferStates,
+    transferInfoList,
+    reservedActionTransfers,
+    changePositions = true
+  }
 ) => {
   const transferStateChanges = []
   const fxTransferStateChanges = []
@@ -112,13 +117,13 @@ const processPositionFulfilBin = async (
   }
 
   return {
-    accumulatedPositionValue: runningPosition.toNumber(),
+    accumulatedPositionValue: changePositions ? runningPosition.toNumber() : accumulatedPositionValue,
     accumulatedTransferStates: accumulatedTransferStatesCopy, // finalized transfer state after fulfil processing
     accumulatedFxTransferStates: accumulatedFxTransferStatesCopy, // finalized transfer state after fx fulfil processing
     accumulatedPositionReservedValue, // not used but kept for consistency
     accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
     accumulatedFxTransferStateChanges: fxTransferStateChanges, // fx-transfer state changes to be persisted in order
-    accumulatedPositionChanges: participantPositionChanges, // participant position changes to be persisted in order
+    accumulatedPositionChanges: changePositions ? participantPositionChanges : [], // participant position changes to be persisted in order
     notifyMessages: resultMessages, // array of objects containing bin item and result message. {binItem, message}
     followupMessages // array of objects containing bin item, message key and followup message. {binItem, messageKey, message}
   }

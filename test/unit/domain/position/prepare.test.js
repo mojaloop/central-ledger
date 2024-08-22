@@ -324,32 +324,19 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        0, // Accumulated position value
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        -1000, // Settlement participant position value
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: 0, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: -1000, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -396,32 +383,19 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        0, // No accumulated position value
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        0, // Settlement participant position value
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: 0, // No accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: 0, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -477,32 +451,19 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        1000, // Position value has reached limit of 1000
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        -2000, // Payer has liquidity
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: 1000, // Position value has reached limit of 1000
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: -2000, // Payer has liquidity
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -558,32 +519,19 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        -4, // Accumulated position value
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        0, // Settlement participant position value
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: -4, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: 0, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -635,20 +583,6 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: 'USD',
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
 
       // Modifying first transfer message to contain a context object with cyrilResult so that it is considered an FX transfer
       const binItemsCopy = JSON.parse(JSON.stringify(binItems))
@@ -659,16 +593,17 @@ Test('Prepare domain', positionIndexTest => {
       }
       const processedMessages = await processPositionPrepareBin(
         binItemsCopy,
-        -20, // Accumulated position value
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        0, // Settlement participant position value
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: -20, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: 0, // Settlement participant position value
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -720,32 +655,19 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: null, // Default settlement model is null currencyId
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        -4,
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        0,
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: -4,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: 0,
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
@@ -796,37 +718,56 @@ Test('Prepare domain', positionIndexTest => {
         participantLimitId: 1,
         thresholdAlarmPercentage: 0.5
       }
-      const settlementModel = {
-        settlementModelId: 1,
-        name: 'DEFERREDNET',
-        isActive: 1,
-        settlementGranularityId: 2,
-        settlementInterchangeId: 2,
-        settlementDelayId: 2, // 1 Immediate, 2 Deferred
-        currencyId: null, // Default settlement model is null currencyId
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 1, // 1 Position, 2 Settlement
-        autoPositionReset: 1,
-        adjustPosition: 0,
-        settlementAccountTypeId: 2
-      }
       const processedMessages = await processPositionPrepareBin(
         binItems,
-        0,
-        0,
         {
-          '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
-          '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
-        },
-        -4,
-        settlementModel,
-        participantLimit
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: -4,
+          participantLimit
+        }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
       test.equal(processedMessages.notifyMessages.length, 3)
       test.equal(processedMessages.limitAlarms.length, 2)
       test.equal(processedMessages.accumulatedPositionValue, 4)
+      test.end()
+    })
+
+    changeParticipantPositionTest.test('skip position changes if changePosition is false', async (test) => {
+      const participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: 10000,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 0.5
+      }
+      const processedMessages = await processPositionPrepareBin(
+        binItems,
+        {
+          accumulatedPositionValue: -4,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: 0,
+          participantLimit,
+          changePositions: false
+        }
+      )
+      Logger.isInfoEnabled && Logger.info(processedMessages)
+      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.accumulatedPositionChanges.length, 0)
+      test.equal(processedMessages.accumulatedPositionValue, -4)
       test.end()
     })
 
