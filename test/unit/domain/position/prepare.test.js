@@ -739,6 +739,38 @@ Test('Prepare domain', positionIndexTest => {
       test.end()
     })
 
+    changeParticipantPositionTest.test('skip position changes if changePosition if false', async (test) => {
+      const participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: 10000,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 0.5
+      }
+      const processedMessages = await processPositionPrepareBin(
+        binItems,
+        {
+          accumulatedPositionValue: -4,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            '1cf6981b-25d8-4bd7-b9d9-b1c0fc8cdeaf': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '6c2c09c3-19b6-48ba-becc-cbdffcaadd7e': Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            '5dff336f-62c0-4619-92c6-9ccd7c8f0369': 'INVALID_STATE'
+          },
+          settlementParticipantPosition: 0,
+          participantLimit,
+          changePositions: false
+        }
+      )
+      Logger.isInfoEnabled && Logger.info(processedMessages)
+      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.accumulatedPositionChanges.length, 0)
+      test.equal(processedMessages.accumulatedPositionValue, -4)
+      test.end()
+    })
+
     changeParticipantPositionTest.end()
   })
 
