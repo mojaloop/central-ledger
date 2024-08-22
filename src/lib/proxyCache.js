@@ -1,21 +1,14 @@
 'use strict'
-const { createProxyCache, STORAGE_TYPES } = require('@mojaloop/inter-scheme-proxy-cache-lib')
+const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 const { Enum } = require('@mojaloop/central-services-shared')
 const ParticipantService = require('../../src/domain/participant')
 const Config = require('./config.js')
 
 let proxyCache
 
-const init = async () => {
-  // enforce lazy connection for redis
-  const proxyConfig =
-    Config.PROXY_CACHE_CONFIG.type === STORAGE_TYPES.redis
-      ? { ...Config.PROXY_CACHE_CONFIG.proxyConfig, lazyConnect: true }
-      : Config.PROXY_CACHE_CONFIG.proxyConfig
-
-  proxyCache = Object.freeze(
-    createProxyCache(Config.PROXY_CACHE_CONFIG.type, proxyConfig)
-  )
+const init = () => {
+  const { type, proxyConfig } = Config.PROXY_CACHE_CONFIG
+  proxyCache = createProxyCache(type, proxyConfig)
 }
 
 const connect = async () => {
@@ -49,8 +42,8 @@ const getFSPProxy = async (dfspId) => {
 
 const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
   const [debtorProxyId, creditorProxyId] = await Promise.all([
-    await getCache().lookupProxyByDfspId(debtorDfspId),
-    await getCache().lookupProxyByDfspId(creditorDfspId)
+    getCache().lookupProxyByDfspId(debtorDfspId),
+    getCache().lookupProxyByDfspId(creditorDfspId)
   ])
   return debtorProxyId && creditorProxyId ? debtorProxyId === creditorProxyId : false
 }
