@@ -16,9 +16,8 @@ module.exports = {
     enabled: true,
     type: 'redis',
     proxyConfig: {
-      cluster: [
-        { host: 'redis-node-0', port: 6379 }
-      ]
+      host: 'redis',
+      port: 6379
     }
   },
   KAFKA: {
