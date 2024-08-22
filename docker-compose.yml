@@ -1,8 +1,19 @@
-version: "3.7"
-
 networks:
   cl-mojaloop-net:
     name: cl-mojaloop-net
+
+# @see https://uninterrupted.tech/blog/hassle-free-redis-cluster-deployment-using-docker/
+x-redis-node: &REDIS_NODE
+  image: docker.io/bitnami/redis-cluster:6.2.14
+  environment: &REDIS_ENVS
+    ALLOW_EMPTY_PASSWORD: yes
+    REDIS_CLUSTER_DYNAMIC_IPS: no
+    REDIS_CLUSTER_ANNOUNCE_IP: ${REDIS_CLUSTER_ANNOUNCE_IP}
+    REDIS_NODES: localhost:6379 localhost:6380 localhost:6381 localhost:6382 localhost:6383 localhost:6384
+  healthcheck:
+    test: [ "CMD", "redis-cli", "ping" ]
+    timeout: 2s
+  network_mode: host
 
 services:
   central-ledger:
@@ -31,10 +42,14 @@ services:
       - CLEDG_MONGODB__DISABLED=false
     networks:
       - cl-mojaloop-net
+    extra_hosts:
+      - "redis-node-0:host-gateway"
     depends_on:
       - mysql
       - kafka
       - objstore
+      - redis-node-0
+      # - redis
     healthcheck:
       test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", "&&", "curl", "http://localhost:3001/health"]
       timeout: 20s
@@ -95,20 +110,77 @@ services:
       start_period: 40s
       interval: 30s
   
-  redis:
-    image: redis:6.2.4-alpine
-    restart: "unless-stopped"
+  redis-node-0:
+    <<: *REDIS_NODE
+    container_name: cl_redis-node-0
     environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-      - REDIS_PORT=6379
-      - REDIS_REPLICATION_MODE=master
-      - REDIS_TLS_ENABLED=no
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      <<: *REDIS_ENVS
+      REDIS_CLUSTER_CREATOR: yes
+      REDIS_PORT_NUMBER: 6379
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+      - redis-node-5
+  redis-node-1:
+    <<: *REDIS_NODE
+    container_name: cl_redis-node-1
+    environment:
+      <<: *REDIS_ENVS
+      REDIS_PORT_NUMBER: 6380
     ports:
-      - "6379:6379"
-    networks:
-      - cl-mojaloop-net
+      - "16380:16380"
+  redis-node-2:
+    <<: *REDIS_NODE
+    container_name: cl_redis-node-2
+    environment:
+      <<: *REDIS_ENVS
+      REDIS_PORT_NUMBER: 6381
+    ports:
+      - "16381:16381"
+  redis-node-3:
+    <<: *REDIS_NODE
+    container_name: cl_redis-node-3
+    environment:
+      <<: *REDIS_ENVS
+      REDIS_PORT_NUMBER: 6382
+    ports:
+      - "16382:16382"
+  redis-node-4:
+    <<: *REDIS_NODE
+    container_name: cl_redis-node-4
+    environment:
+      <<: *REDIS_ENVS
+      REDIS_PORT_NUMBER: 6383
+    ports:
+      - "16383:16383"
+  redis-node-5:
+    <<: *REDIS_NODE
+    container_name: cl_redis-node-5
+    environment:
+      <<: *REDIS_ENVS
+      REDIS_PORT_NUMBER: 6384
+    ports:
+      - "16384:16384"
+
+##  To be used with proxyCache.type === 'redis'
+#  redis:
+#    image: redis:6.2.4-alpine
+#    restart: "unless-stopped"
+#    environment:
+#      <<: *REDIS_ENVS
+#      REDIS_CLUSTER_CREATOR: yes
+#    depends_on:
+#      - redis-node-1
+#      - redis-node-2
+#      - redis-node-3
+#      - redis-node-4
+#      - redis-node-5
+#    ports:
+#      - "6379:6379"
+#    networks:
+#      - cl-mojaloop-net
 
   mockserver:
     image: jamesdbloom/mockserver

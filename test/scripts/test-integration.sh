@@ -5,7 +5,7 @@ echo
 
 MYSQL_VERSION=${MYSQL_VERSION:-"latest"}
 KAFKA_VERSION=${MYSQL_VERSION:-"latest"}
-INT_TEST_SKIP_SHUTDOWN=${INT_TEST_SKIP_SHUTDOWN:-false}
+INT_TEST_SKIP_SHUTDOWN=${INT_TEST_SKIP_SHUTDOWN:-true}
 
 echo "==> Variables:"
 echo "====> MYSQL_VERSION=$MYSQL_VERSION"
@@ -18,10 +18,13 @@ TTK_FUNC_TEST_EXIT_CODE=1
 ## Make reports directory
 mkdir ./test/results
 
+## Set environment variables
+source ./docker/env.sh
+
 ## Start backend services
 echo "==> Starting Docker backend services"
-docker compose pull mysql kafka init-kafka redis
-docker compose up -d mysql kafka init-kafka redis
+docker compose pull mysql kafka init-kafka redis-node-0
+docker compose up -d mysql kafka init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
 docker compose ps
 npm run wait-4-docker
 
