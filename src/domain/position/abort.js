@@ -13,11 +13,11 @@ const Logger = require('@mojaloop/central-services-logger')
  *
  * @param {array} abortBins - an array containing abort / fx-abort action bins
  * @param {object} options
-  * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
-  * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
-  * @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
-  * @param {object} transferInfoList - object with transfer id keys and transfer info values. Used to pass transfer info to domain function.
-  * @param {boolean} changePositions - whether to change positions or not
+ *   @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
+ *   @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
+ *   @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
+ *   @param {object} transferInfoList - object with transfer id keys and transfer info values. Used to pass transfer info to domain function.
+ *   @param {boolean} changePositions - whether to change positions or not
  * @returns {object} - Returns an object containing accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, accumulatedTransferStates, resultMessages, limitAlarms or throws an error if failed
  */
 const processPositionAbortBin = async (

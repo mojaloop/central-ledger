@@ -1,9 +1,9 @@
 const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('@mojaloop/central-services-logger')
+const Config = require('../../lib/config')
 
 /**
  * @function processPositionPrepareBin
@@ -11,15 +11,15 @@ const Logger = require('@mojaloop/central-services-logger')
  * @async
  * @description This is the domain function to process a bin of position-prepare messages of a single participant account.
  *
- * @param {array} binItems - an array of objects that contain a position prepare message and its span. {message, span}
+ * @param {array} binItems - an array of objects that contain a position prepare message and its span. {message, decodedPayload, span}
  * @param {object} options
-  * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
-  * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
-  * @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
-  * @param {number} settlementParticipantPosition - position value of the participants settlement account
-  * @param {object} settlementModel - settlement model object for the currency
-  * @param {object} participantLimit - participant limit object for the currency
-  * @param {boolean} changePositions - whether to change positions or not
+ *   @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
+ *   @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
+ *   @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
+ *   @param {number} settlementParticipantPosition - position value of the participants settlement account
+ *   @param {object} settlementModel - settlement model object for the currency
+ *   @param {object} participantLimit - participant limit object for the currency
+ *   @param {boolean} changePositions - whether to change positions or not
  * @returns {object} - Returns an object containing accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedTransferStateChanges, accumulatedTransferStates, resultMessages, limitAlarms or throws an error if failed
  */
 const processPositionPrepareBin = async (

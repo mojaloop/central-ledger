@@ -530,6 +530,34 @@ Test('abort domain', positionIndexTest => {
       test.end()
     })
 
+    processPositionAbortBinTest.test('skip position changes if changePositions is false', async (test) => {
+      const binItems = getAbortBinItems()
+      try {
+        const processedResult = await processPositionAbortBin(
+          binItems,
+          {
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
+              'a0000002-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: false,
+            changePositions: false
+          }
+        )
+        test.equal(processedResult.accumulatedPositionChanges.length, 0)
+        test.equal(processedResult.accumulatedPositionValue, 0)
+        test.equal(processedResult.accumulatedTransferStateChanges.length, 2)
+        processedResult.accumulatedTransferStateChanges.forEach(transferStateChange => test.equal(transferStateChange.transferStateId, Enum.Transfers.TransferInternalState.ABORTED_ERROR))
+        processedResult.accumulatedTransferStates[abortMessage1.value.id] = Enum.Transfers.TransferInternalState.ABORTED_ERROR
+        processedResult.accumulatedTransferStates[abortMessage2.value.id] = Enum.Transfers.TransferInternalState.ABORTED_ERROR
+      } catch (e) {
+        test.fail('Error thrown')
+      }
+      test.end()
+    })
+
     processPositionAbortBinTest.end()
   })
 

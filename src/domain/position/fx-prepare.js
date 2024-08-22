@@ -11,14 +11,14 @@ const Logger = require('@mojaloop/central-services-logger')
  * @async
  * @description This is the domain function to process a bin of position-prepare messages of a single participant account.
  *
- * @param {array} binItems - an array of objects that contain a position prepare message and its span. {message, span}
+ * @param {array} binItems - an array of objects that contain a position prepare message and its span. {message, decodedPayload, span}
  * @param {object} options
-  * @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
-  * @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
-  * @param {object} accumulatedFxTransferStates - object with fx commit request id keys and fx transfer state id values. Used to check if fx transfer is in correct state for processing. Clone and update states for output.
-  * @param {number} settlementParticipantPosition - position value of the participants settlement account
-  * @param {object} participantLimit - participant limit object for the currency
-  * @param {boolean} changePositions - whether to change positions or not
+ *   @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
+ *   @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
+ *   @param {object} accumulatedFxTransferStates - object with fx commit request id keys and fx transfer state id values. Used to check if fx transfer is in correct state for processing. Clone and update states for output.
+ *   @param {number} settlementParticipantPosition - position value of the participants settlement account
+ *   @param {object} participantLimit - participant limit object for the currency
+ *   @param {boolean} changePositions - whether to change positions or not
  * @returns {object} - Returns an object containing accumulatedPositionValue, accumulatedPositionReservedValue, accumulatedFxTransferStateChanges, accumulatedTransferStates, resultMessages, limitAlarms or throws an error if failed
  */
 const processFxPositionPrepareBin = async (
@@ -42,6 +42,7 @@ const processFxPositionPrepareBin = async (
   let liquidityCover = 0
   let availablePositionBasedOnLiquidityCover = 0
   let availablePositionBasedOnPayerLimit = 0
+
   if (changePositions) {
     const reservedPosition = new MLNumber(accumulatedPositionReservedValue)
     const effectivePosition = new MLNumber(currentPosition.add(reservedPosition).toFixed(Config.AMOUNT.SCALE))
