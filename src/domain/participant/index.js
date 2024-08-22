@@ -59,11 +59,12 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { destroyParticipantEndpointByParticipantId } = require('../../models/participant/participant')
 
 const create = async (payload) => {
+  const log = logger.child({ payload })
   try {
-    logger.debug('creating participant with payload', payload)
+    log.info('creating participant with payload')
     return ParticipantModel.create({ name: payload.name, isProxy: !!payload.isProxy })
   } catch (err) {
-    logger.error('error creating participant', { err, payload })
+    log.error('error creating participant', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -74,7 +75,7 @@ const getAll = async () => {
     await Promise.all(all.map(async (participant) => {
       participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     }))
-    logger.debug('getAll participants', all)
+    logger.debug('getAll participants', { participants: all })
     return all
   } catch (err) {
     logger.error('error getting all participants', err)
@@ -101,21 +102,23 @@ const getByName = async (name) => {
 }
 
 const participantExists = (participant, checkIsActive = false) => {
-  logger.debug('checking if participant exists', { participant, checkIsActive })
+  const log = logger.child({ participant, checkIsActive })
+  log.debug('checking if participant exists')
   if (participant) {
     if (!checkIsActive || participant.isActive) {
       return participant
     }
-    logger.error('participant is inactive', { participant })
+    log.warn('participant is inactive')
     throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantInactiveText)
   }
-  logger.error('participant not found', { participant })
+  log.warn('participant not found')
   throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantNotFoundText)
 }
 
 const update = async (name, payload) => {
+  const log = logger.child({ name, payload })
   try {
-    logger.debug('updating participant', { name, payload })
+    log.info('updating participant')
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     await ParticipantModel.update(participant, payload.isActive)
@@ -123,46 +126,50 @@ const update = async (name, payload) => {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     return participant
   } catch (err) {
-    logger.error('error updating participant', { name, payload, err })
+    log.error('error updating participant', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
+  const log = logger.child({ participantId, currencyId, ledgerAccountTypeId, isActive })
   try {
-    logger.debug('creating participant currency', { participantId, currencyId, ledgerAccountTypeId, isActive })
+    log.info('creating participant currency')
     const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId, isActive)
     return participantCurrency
   } catch (err) {
-    logger.error('error creating participant currency', { participantId, currencyId, ledgerAccountTypeId, isActive, err })
+    log.error('error creating participant currency', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const createHubAccount = async (participantId, currencyId, ledgerAccountTypeId) => {
+  const log = logger.child({ participantId, currencyId, ledgerAccountTypeId })
   try {
-    logger.debug('creating hub account', { participantId, currencyId, ledgerAccountTypeId })
+    log.info('creating hub account')
     const participantCurrency = await ParticipantFacade.addHubAccountAndInitPosition(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
-    logger.error('error creating hub account', { participantId, currencyId, ledgerAccountTypeId, err })
+    log.error('error creating hub account', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getParticipantCurrencyById = async (participantCurrencyId) => {
+  const log = logger.child({ participantCurrencyId })
   try {
-    logger.debug('getting participant currency by id', { participantCurrencyId })
+    log.debug('getting participant currency by id')
     return await ParticipantCurrencyModel.getById(participantCurrencyId)
   } catch (err) {
-    logger.error('error getting participant currency by id', { participantCurrencyId, err })
+    log.error('error getting participant currency by id', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const destroyByName = async (name) => {
+  const log = logger.child({ name })
   try {
-    logger.debug('destroying participant by name', { name })
+    log.debug('destroying participant by name')
     const participant = await ParticipantModel.getByName(name)
     await ParticipantLimitModel.destroyByParticipantId(participant.participantId)
     await ParticipantPositionModel.destroyByParticipantId(participant.participantId)
@@ -170,7 +177,7 @@ const destroyByName = async (name) => {
     await destroyParticipantEndpointByParticipantId(participant.participantId)
     return await ParticipantModel.destroyByName(name)
   } catch (err) {
-    logger.error('error destroying participant by name', { name, err })
+    log.error('error destroying participant by name', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -194,14 +201,15 @@ const destroyByName = async (name) => {
  */
 
 const addEndpoint = async (name, payload) => {
+  const log = logger.child({ name, payload })
   try {
-    logger.debug('adding endpoint', { name, payload })
+    log.info('adding endpoint')
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    logger.debug('adding endpoint for participant', { participant, payload })
+    log.info('adding endpoint for participant', { participant })
     return ParticipantFacade.addEndpoint(participant.participantId, payload)
   } catch (err) {
-    logger.error('error adding endpoint', { name, payload, err })
+    log.error('error adding endpoint', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -222,14 +230,15 @@ const addEndpoint = async (name, payload) => {
  */
 
 const getEndpoint = async (name, type) => {
+  const log = logger.child({ name, type })
   try {
-    logger.debug('getting endpoint', { name, type })
+    log.debug('getting endpoint')
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    logger.debug('getting endpoint for participant', { participant, type })
+    log.debug('getting endpoint for participant', { participant })
     return ParticipantFacade.getEndpoint(participant.participantId, type)
   } catch (err) {
-    logger.error('error getting endpoint', { name, type, err })
+    log.error('error getting endpoint', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -249,14 +258,15 @@ const getEndpoint = async (name, type) => {
  */
 
 const getAllEndpoints = async (name) => {
+  const log = logger.child({ name })
   try {
-    logger.debug('getting all endpoints', { name })
+    log.debug('getting all endpoints for participant name')
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    logger.debug('getting all endpoints for participant', { participant })
+    log.debug('getting all endpoints for participant', { participant })
     return ParticipantFacade.getAllEndpoints(participant.participantId)
   } catch (err) {
-    logger.error('error getting all endpoints', { name, err })
+    log.error('error getting all endpoints', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -274,14 +284,15 @@ const getAllEndpoints = async (name) => {
  */
 
 const destroyParticipantEndpointByName = async (name) => {
+  const log = logger.child({ name })
   try {
-    logger.debug('destroying participant endpoint by name', { name })
+    log.debug('destroying participant endpoint by name')
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    logger.debug('destroying participant endpoint for participant', { participant })
+    log.debug('destroying participant endpoint for participant', { participant })
     return ParticipantModel.destroyParticipantEndpointByParticipantId(participant.participantId)
   } catch (err) {
-    logger.error('error destroying participant endpoint by name', { name, err })
+    log.error('error destroying participant endpoint by name', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -310,17 +321,18 @@ const destroyParticipantEndpointByName = async (name) => {
  */
 
 const addLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj) => {
+  const log = logger.child({ participantName, limitAndInitialPositionObj })
   try {
-    logger.debug('adding limit and initial position', { participantName, limitAndInitialPositionObj })
+    log.debug('adding limit and initial position', { participantName, limitAndInitialPositionObj })
     const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
-    logger.debug('adding limit and initial position for participant', { participant, limitAndInitialPositionObj })
+    log.debug('adding limit and initial position for participant', { participant })
     const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.SETTLEMENT)
     const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingSettlementPosition = await ParticipantPositionModel.getByParticipantCurrencyId(settlementAccount.participantCurrencyId)
     if (existingLimit || existingPosition || existingSettlementPosition) {
-      logger.error('participant limit or initial position already set', { participant, limitAndInitialPositionObj })
+      log.warn('participant limit or initial position already set')
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantInitialPositionExistsText)
     }
     const limitAndInitialPosition = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
@@ -331,7 +343,7 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Events.Event.Type.NOTIFICATION, Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Enum.Events.EventStatus.SUCCESS)
     return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition, true)
   } catch (err) {
-    logger.error('error adding limit and initial position', { participantName, limitAndInitialPositionObj, err })
+    log.error('error adding limit and initial position', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -349,11 +361,12 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
  */
 
 const getPositionByParticipantCurrencyId = async (participantCurrencyId) => {
+  const log = logger.child({ participantCurrencyId })
   try {
-    logger.debug('getting position by participant currency id', { participantCurrencyId })
+    log.debug('getting position by participant currency id')
     return ParticipantPositionModel.getByParticipantCurrencyId(participantCurrencyId)
   } catch (err) {
-    logger.error('error getting position by participant currency id', { participantCurrencyId, err })
+    log.error('error getting position by participant currency id', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -371,11 +384,12 @@ const getPositionByParticipantCurrencyId = async (participantCurrencyId) => {
  */
 
 const getPositionChangeByParticipantPositionId = async (participantPositionId) => {
+  const log = logger.child({ participantPositionId })
   try {
-    logger.debug('getting position change by participant position id', { participantPositionId })
+    log.debug('getting position change by participant position id')
     return ParticipantPositionChangeModel.getByParticipantPositionId(participantPositionId)
   } catch (err) {
-    logger.error('error getting position change by participant position id', { participantPositionId, err })
+    log.error('error getting position change by participant position id', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -393,14 +407,15 @@ const getPositionChangeByParticipantPositionId = async (participantPositionId) =
  */
 
 const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => {
+  const log = logger.child({ name, currencyId })
   try {
-    logger.debug('destroying participant position by name and currency', { name, currencyId })
+    log.debug('destroying participant position by participant name and currency')
     const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
-    logger.debug('destroying participant position for participant', { participant })
+    log.debug('destroying participant position for participant', { participant })
     participantExists(participant)
     return ParticipantPositionModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
-    logger.error('error destroying participant position by name and currency', { name, currencyId, err })
+    log.error('error destroying participant position by name and currency', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -419,14 +434,15 @@ const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => 
  */
 
 const destroyParticipantLimitByNameAndCurrency = async (name, currencyId) => {
+  const log = logger.child({ name, currencyId })
   try {
-    logger.debug('destroying participant limit by name and currency', { name, currencyId })
+    log.debug('destroying participant limit by participant name and currency')
     const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
-    logger.debug('destroying participant limit for participant', { participant })
+    log.debug('destroying participant limit for participant', { participant })
     participantExists(participant)
     return ParticipantLimitModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
-    logger.error('error destroying participant limit by name and currency', { name, currencyId, err })
+    log.error('error destroying participant limit by name and currency', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -449,23 +465,24 @@ const destroyParticipantLimitByNameAndCurrency = async (name, currencyId) => {
  */
 
 const getLimits = async (name, { currency = null, type = null }) => {
+  const log = logger.child({ name, currency, type })
   try {
     let participant
     if (currency != null) {
-      logger.debug('getting limits by name and currency', { name, currency, type })
+      log.debug('getting limits by name and currency')
       participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
-      logger.debug('getting limits for participant', { participant })
+      log.debug('getting limits for participant', { participant })
       participantExists(participant)
       return ParticipantFacade.getParticipantLimitsByCurrencyId(participant.participantCurrencyId, type)
     } else {
-      logger.debug('getting limits by name', { name, type })
+      log.debug('getting limits by name')
       participant = await ParticipantModel.getByName(name)
-      logger.debug('getting limits for participant', { participant })
+      log.debug('getting limits for participant', { participant })
       participantExists(participant)
       return ParticipantFacade.getParticipantLimitsByParticipantId(participant.participantId, type, Enum.Accounts.LedgerAccountType.POSITION)
     }
   } catch (err) {
-    logger.error('error getting limits', { name, currency, type, err })
+    log.error('error getting limits', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -485,11 +502,12 @@ const getLimits = async (name, { currency = null, type = null }) => {
  */
 
 const getLimitsForAllParticipants = async ({ currency = null, type = null }) => {
+  const log = logger.child({ currency, type })
   try {
-    logger.debug('getting limits for all participants', { currency, type })
+    log.debug('getting limits for all participants', { currency, type })
     return ParticipantFacade.getLimitsForAllParticipants(currency, type, Enum.Accounts.LedgerAccountType.POSITION)
   } catch (err) {
-    logger.error('error getting limits for all participants', { currency, type, err })
+    log.error('error getting limits for all participants', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -518,18 +536,19 @@ const getLimitsForAllParticipants = async ({ currency = null, type = null }) => 
  */
 
 const adjustLimits = async (name, payload) => {
+  const log = logger.child({ name, payload })
   try {
-    logger.debug('adjusting limits', { name, payload })
+    log.debug('adjusting limits')
     const { limit, currency } = payload
     const participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
-    logger.debug('adjusting limits for participant', { participant, limit })
+    log.debug('adjusting limits for participant', { participant })
     participantExists(participant)
     const result = await ParticipantFacade.adjustLimits(participant.participantCurrencyId, limit)
     payload.name = name
     await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Events.Event.Type.NOTIFICATION, Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Enum.Events.EventStatus.SUCCESS)
     return result
   } catch (err) {
-    logger.error('error adjusting limits', { name, payload, err })
+    log.error('error adjusting limits', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -602,11 +621,12 @@ const createLimitAdjustmentMessageProtocol = (payload, action = Enum.Transfers.A
  */
 
 const getPositions = async (name, query) => {
+  const log = logger.child({ name, query })
   try {
-    logger.debug('getting positions', { name, query })
+    log.debug('getting positions')
     if (query.currency) {
       const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency, Enum.Accounts.LedgerAccountType.POSITION)
-      logger.debug('getting positions for participant', { participant })
+      log.debug('getting positions for participant', { participant })
       participantExists(participant)
       const result = await PositionFacade.getByNameAndCurrency(name, Enum.Accounts.LedgerAccountType.POSITION, query.currency) // TODO this function only takes a max of 3 params, this has 4
       let position = {}
@@ -617,11 +637,11 @@ const getPositions = async (name, query) => {
           changedDate: result[0].changedDate
         }
       }
-      logger.debug('found positions for participant', { participant, position })
+      log.debug('found positions for participant', { participant, position })
       return position
     } else {
       const participant = await ParticipantModel.getByName(name)
-      logger.debug('getting positions for participant', { participant })
+      log.debug('getting positions for participant', { participant })
       participantExists(participant)
       const result = await await PositionFacade.getByNameAndCurrency(name, Enum.Accounts.LedgerAccountType.POSITION)
       const positions = []
@@ -634,20 +654,21 @@ const getPositions = async (name, query) => {
           })
         })
       }
-      logger.debug('found positions for participant', { participant, positions })
+      log.debug('found positions for participant', { participant, positions })
       return positions
     }
   } catch (err) {
-    logger.error('error getting positions', { name, query, err })
+    log.error('error getting positions', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getAccounts = async (name, query) => {
+  const log = logger.child({ name, query })
   try {
-    logger.debug('getting accounts', { name, query })
+    log.debug('getting accounts')
     const participant = await ParticipantModel.getByName(name)
-    logger.debug('getting accounts for participant', { participant })
+    log.debug('getting accounts for participant', { participant })
     participantExists(participant)
     const result = await PositionFacade.getAllByNameAndCurrency(name, query.currency)
     const positions = []
@@ -664,23 +685,24 @@ const getAccounts = async (name, query) => {
         })
       })
     }
-    logger.debug('found accounts for participant', { participant, positions })
+    log.debug('found accounts for participant', { participant, positions })
     return positions
   } catch (err) {
-    logger.error('error getting accounts', { name, query, err })
+    log.error('error getting accounts', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const updateAccount = async (payload, params, enums) => {
+  const log = logger.child({ payload, params, enums })
   try {
-    logger.debug('updating account', { payload, params })
+    log.debug('updating account')
     const { name, id } = params
     const participant = await ParticipantModel.getByName(name)
-    logger.debug('updating account for participant', { participant })
+    log.debug('updating account for participant', { participant })
     participantExists(participant)
     const account = await ParticipantCurrencyModel.getById(id)
-    logger.debug('updating account for participant', { participant, account })
+    log.debug('updating account for participant', { participant, account })
     if (!account) {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountNotFoundErrorText)
     } else if (account.participantId !== participant.participantId) {
@@ -690,27 +712,29 @@ const updateAccount = async (payload, params, enums) => {
     }
     return await ParticipantCurrencyModel.update(id, payload.isActive)
   } catch (err) {
-    logger.error('error updating account', { payload, params, err })
+    log.error('error updating account', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getLedgerAccountTypeName = async (name) => {
+  const log = logger.child({ name })
   try {
-    logger.debug('getting ledger account type by name', { name })
+    log.debug('getting ledger account type by name')
     return await LedgerAccountTypeModel.getLedgerAccountByName(name)
   } catch (err) {
-    logger.error('error getting ledger account type by name', { name, err })
+    log.error('error getting ledger account type by name', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getParticipantAccount = async (accountParams) => {
+  const log = logger.child({ accountParams })
   try {
-    logger.debug('getting participant account by params', { accountParams })
+    log.debug('getting participant account by params')
     return await ParticipantCurrencyModel.findOneByParams(accountParams)
   } catch (err) {
-    logger.error('error getting participant account by params', { accountParams, err })
+    log.error('error getting participant account by params', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -764,8 +788,9 @@ const setPayerPayeeFundsInOut = (fspName, payload, enums) => {
 }
 
 const recordFundsInOut = async (payload, params, enums) => {
+  const log = logger.child({ payload, params, enums })
   try {
-    logger.debug('recording funds in/out', { payload, params, enums })
+    log.debug('recording funds in/out')
     const { name, id, transferId } = params
     const participant = await ParticipantModel.getByName(name)
     const currency = (payload.amount && payload.amount.currency) || null
@@ -774,7 +799,7 @@ const recordFundsInOut = async (payload, params, enums) => {
     participantExists(participant, checkIsActive)
     const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency, isAccountActive)
     const accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
-    logger.debug('recording funds in/out for participant account', { participant, accountMatched })
+    log.debug('recording funds in/out for participant account', { participant, accountMatched })
     if (!accountMatched) {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantAccountCurrencyMismatchText)
     } else if (!accountMatched.accountIsActive) {
@@ -790,7 +815,7 @@ const recordFundsInOut = async (payload, params, enums) => {
     }
     return await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Action.TRANSFER, messageProtocol, Enum.Events.EventStatus.SUCCESS)
   } catch (err) {
-    logger.error('error recording funds in/out', { payload, params, enums, err })
+    log.error('error recording funds in/out', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -811,8 +836,9 @@ const validateHubAccounts = async (currency) => {
 }
 
 const createAssociatedParticipantAccounts = async (currency, ledgerAccountTypeId, trx) => {
+  const log = logger.child({ currency, ledgerAccountTypeId })
   try {
-    logger.debug('creating associated participant accounts', { currency, ledgerAccountTypeId })
+    log.info('creating associated participant accounts')
     const nonHubParticipantWithCurrencies = await ParticipantFacade.getAllNonHubParticipantsWithCurrencies(trx)
 
     const participantCurrencies = nonHubParticipantWithCurrencies.map(item => ({
@@ -840,7 +866,7 @@ const createAssociatedParticipantAccounts = async (currency, ledgerAccountTypeId
     }
     await ParticipantPositionModel.createParticipantPositionRecords(participantPositionRecords, trx)
   } catch (err) {
-    logger.error('error creating associated participant accounts', { currency, ledgerAccountTypeId, err })
+    log.error('error creating associated participant accounts', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

@@ -34,7 +34,7 @@ const getCache = () => {
 }
 
 const getFSPProxy = async (dfspId) => {
-  logger.debug(`Checking if ${dfspId} is in scheme or proxy`)
+  logger.debug('Checking if dfspId is in scheme or proxy', { dfspId })
   const participant = await ParticipantService.getByName(dfspId)
   return {
     inScheme: !!participant,
@@ -43,7 +43,7 @@ const getFSPProxy = async (dfspId) => {
 }
 
 const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
-  logger.debug(`Checking if ${debtorDfspId} and ${creditorDfspId} are using the same proxy`)
+  logger.debug('Checking if debtorDfspId and creditorDfspId are using the same proxy', { debtorDfspId, creditorDfspId })
   const [debtorProxyId, creditorProxyId] = await Promise.all([
     getCache().lookupProxyByDfspId(debtorDfspId),
     getCache().lookupProxyByDfspId(creditorDfspId)
@@ -52,7 +52,7 @@ const checkSameCreditorDebtorProxy = async (debtorDfspId, creditorDfspId) => {
 }
 
 const getProxyParticipantAccountDetails = async (fspName, currency) => {
-  logger.debug(`Getting account details for ${fspName} and ${currency}`)
+  logger.debug('Getting account details for fspName and currency', { fspName, currency })
   const proxyLookupResult = await getFSPProxy(fspName)
   if (proxyLookupResult.inScheme) {
     const participantCurrency = await ParticipantService.getAccountByNameAndCurrency(
@@ -60,7 +60,7 @@ const getProxyParticipantAccountDetails = async (fspName, currency) => {
       currency,
       Enum.Accounts.LedgerAccountType.POSITION
     )
-    logger.debug(`Account details for ${fspName} ${currency}: `, participantCurrency)
+    logger.debug("Account details for fspName's currency", { fspName, currency, participantCurrency })
     return {
       inScheme: true,
       participantCurrencyId: participantCurrency?.participantCurrencyId || null
@@ -72,13 +72,13 @@ const getProxyParticipantAccountDetails = async (fspName, currency) => {
         currency,
         Enum.Accounts.LedgerAccountType.POSITION
       )
-      logger.debug(`Account details for ${proxyLookupResult.proxyId} ${currency}: `, participantCurrency)
+      logger.debug('Account details for proxy\'s currency', { proxyId: proxyLookupResult.proxyId, currency, participantCurrency })
       return {
         inScheme: false,
         participantCurrencyId: participantCurrency?.participantCurrencyId || null
       }
     }
-    logger.debug(`No proxy found for ${fspName}`)
+    logger.debug('No proxy found for fspName', { fspName })
     return {
       inScheme: false,
       participantCurrencyId: null
