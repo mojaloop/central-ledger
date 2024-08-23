@@ -2,7 +2,7 @@
 ARG NODE_VERSION=lts-alpine
 
 # Build Image
-FROM node:${NODE_VERSION} as builder
+FROM node:${NODE_VERSION} AS builder
 
 USER root
 

@@ -16,6 +16,7 @@ module.exports = {
     enabled: true,
     type: 'redis',
     proxyConfig: {
+      cluster: undefined,
       host: 'redis',
       port: 6379
     }
