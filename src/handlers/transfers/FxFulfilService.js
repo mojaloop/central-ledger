@@ -52,7 +52,7 @@ class FxFulfilService {
   }
 
   async getFxTransferDetails(commitRequestId, functionality) {
-    const transfer = await this.FxTransferModel.fxTransfer.getAllDetailsByCommitRequestId(commitRequestId)
+    const transfer = await this.FxTransferModel.fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
 
     if (!transfer) {
       const fspiopError = fspiopErrorFactory.fxTransferNotFound()
