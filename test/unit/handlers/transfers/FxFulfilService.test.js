@@ -29,6 +29,7 @@ const { Db } = require('@mojaloop/database-lib')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 
+const Cyril = require('../../../../src/domain/fx/cyril')
 const FxFulfilService = require('../../../../src/handlers/transfers/FxFulfilService')
 const fspiopErrorFactory = require('../../../../src/shared/fspiopErrorFactory')
 const Validator = require('../../../../src/handlers/transfers/validator')
@@ -91,6 +92,12 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
     sandbox.stub(ProxyCache, 'getCache').returns({
       connect: sandbox.stub(),
       disconnect: sandbox.stub()
+    })
+    sandbox.stub(Cyril)
+    Cyril.processFxAbortMessage.returns({
+      positionChanges: [{
+        participantCurrencyId: 1
+      }]
     })
     span = mocks.createTracerStub(sandbox).SpanStub
     test.end()
@@ -168,6 +175,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
       const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
       const transfer = {
         ilpCondition: fixtures.CONDITION,
+        initiatingFspName: fixtures.DFSP1_ID,
         counterPartyFspTargetParticipantCurrencyId: 123
       }
       const payload = { fulfilment: 'wrongFulfilment' }
@@ -179,9 +187,9 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
         t.equal(err.message, ERROR_MESSAGES.fxInvalidFulfilment)
         t.ok(producer.produceMessage.calledOnce)
         const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
-        t.equal(topicConfig.topicName, TOPICS.transferPosition)
-        t.equal(topicConfig.key, String(transfer.counterPartyFspTargetParticipantCurrencyId))
-        t.equal(messageProtocol.from, fixtures.FXP_ID)
+        t.ok(topicConfig.topicName === TOPICS.transferPosition || topicConfig.topicName === TOPICS.transferPositionBatch)
+        t.equal(topicConfig.key, String(1))
+        t.equal(messageProtocol.from, fixtures.SWITCH_ID)
         t.equal(messageProtocol.to, fixtures.DFSP1_ID)
         t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT_VALIDATION)
         checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxInvalidFulfilment())

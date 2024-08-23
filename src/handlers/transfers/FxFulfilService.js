@@ -52,7 +52,7 @@ class FxFulfilService {
   }
 
   async getFxTransferDetails(commitRequestId, functionality) {
-    const transfer = await this.FxTransferModel.fxTransfer.getAllDetailsByCommitRequestId(commitRequestId)
+    const transfer = await this.FxTransferModel.fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
 
     if (!transfer) {
       const fspiopError = fspiopErrorFactory.fxTransferNotFound()
@@ -79,10 +79,10 @@ class FxFulfilService {
   async validateHeaders({ transfer, headers, payload }) {
     let fspiopError = null
 
-    if (headers[SOURCE]?.toLowerCase() !== transfer.counterPartyFspName.toLowerCase()) {
+    if (!transfer.counterPartyFspIsProxy && (headers[SOURCE]?.toLowerCase() !== transfer.counterPartyFspName.toLowerCase())) {
       fspiopError = fspiopErrorFactory.fxHeaderSourceValidationError()
     }
-    if (headers[DESTINATION]?.toLowerCase() !== transfer.initiatingFspName.toLowerCase()) {
+    if (!transfer.initiatingFspIsProxy && (headers[DESTINATION]?.toLowerCase() !== transfer.initiatingFspName.toLowerCase())) {
       fspiopError = fspiopErrorFactory.fxHeaderDestinationValidationError()
     }
 
@@ -97,16 +97,31 @@ class FxFulfilService {
       // Lets handle the abort validation and change the fxTransfer state to reflect this
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
-      // Publish message to FX Position Handler
+      await this._handleAbortValidation(transfer, apiFSPIOPError, eventDetail)
+      throw fspiopError
+    }
+  }
+
+  async _handleAbortValidation(transfer, apiFSPIOPError, eventDetail) {
+    const cyrilResult = await this.cyril.processFxAbortMessage(transfer.commitRequestId)
+
+    this.params.message.value.content.context = {
+      ...this.params.message.value.content.context,
+      cyrilResult
+    }
+    if (cyrilResult.positionChanges.length > 0) {
+      const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
       await this.kafkaProceed({
         consumerCommit,
         fspiopError: apiFSPIOPError,
         eventDetail,
         fromSwitch,
         toDestination: transfer.initiatingFspName,
-        // The message key doesn't matter here, as there are no position changes for FX Fulfil
-        messageKey: transfer.counterPartyFspSourceParticipantCurrencyId.toString()
+        messageKey: participantCurrencyId.toString(),
+        topicNameOverride: this.Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_ABORT
       })
+    } else {
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
       throw fspiopError
     }
   }
@@ -231,12 +246,7 @@ class FxFulfilService {
       this.log.warn('callbackErrorInvalidFulfilment', { eventDetail, apiFSPIOPError, transfer, payload })
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
-      await this.kafkaProceed({
-        consumerCommit,
-        fspiopError: apiFSPIOPError,
-        eventDetail,
-        messageKey: transfer.counterPartyFspTargetParticipantCurrencyId.toString()
-      })
+      await this._handleAbortValidation(transfer, apiFSPIOPError, eventDetail)
       throw fspiopError
     }
 

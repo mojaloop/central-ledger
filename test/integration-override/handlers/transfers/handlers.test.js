@@ -266,7 +266,12 @@ const prepareTestData = async (dataObj) => {
     const fxPrepareHeaders = {
       'fspiop-source': payer.participant.name,
       'fspiop-destination': fxp.participant.name,
-      'content-type': 'application/vnd.interoperability.fxtransfers+json;version=2.0'
+      'content-type': 'application/vnd.interoperability.fxTransfers+json;version=2.0'
+    }
+    const fxFulfilAbortRejectHeaders = {
+      'fspiop-source': fxp.participant.name,
+      'fspiop-destination': payer.participant.name,
+      'content-type': 'application/vnd.interoperability.fxTransfers+json;version=2.0'
     }
     const fulfilAbortRejectHeaders = {
       'fspiop-source': payee.participant.name,
@@ -307,6 +312,12 @@ const prepareTestData = async (dataObj) => {
       },
       condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
       expiration: dataObj.expiration
+    }
+
+    const fxFulfilPayload = {
+      fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
+      completedTimestamp: dataObj.now,
+      conversionState: 'RESERVED'
     }
 
     const rejectPayload = Object.assign({}, fulfilPayload, { transferState: TransferInternalState.ABORTED_REJECTED })
@@ -383,6 +394,17 @@ const prepareTestData = async (dataObj) => {
     messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
     messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
 
+    const messageProtocolFxFulfil = Util.clone(messageProtocolFxPrepare)
+    messageProtocolFxFulfil.id = randomUUID()
+    messageProtocolFxFulfil.from = fxTransferPayload.counterPartyFsp
+    messageProtocolFxFulfil.to = fxTransferPayload.initiatingFsp
+    messageProtocolFxFulfil.content.headers = fxFulfilAbortRejectHeaders
+    messageProtocolFxFulfil.content.uriParams = { id: fxTransferPayload.commitRequestId }
+    messageProtocolFxFulfil.content.payload = fxFulfilPayload
+    messageProtocolFxFulfil.metadata.event.id = randomUUID()
+    messageProtocolFxFulfil.metadata.event.type = TransferEventType.FULFIL
+    messageProtocolFxFulfil.metadata.event.action = TransferEventAction.FX_RESERVE
+
     const messageProtocolReject = Util.clone(messageProtocolFulfil)
     messageProtocolReject.id = randomUUID()
     messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
@@ -402,12 +424,14 @@ const prepareTestData = async (dataObj) => {
       transferPayload,
       fxTransferPayload,
       fulfilPayload,
+      fxFulfilPayload,
       rejectPayload,
       errorPayload,
       messageProtocolPrepare,
       messageProtocolPrepareForwarded,
       messageProtocolFxPrepare,
       messageProtocolFulfil,
+      messageProtocolFxFulfil,
       messageProtocolReject,
       messageProtocolError,
       topicConfTransferPrepare,
@@ -1230,6 +1254,136 @@ Test('Handlers test', async handlersTest => {
           keyFilter: td.proxyRB.participantCurrencyId.toString()
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(positionFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme R: PUT /fxTransfer call I.e. From: FXP → To: Proxy AR
+      No position changes should happen`, async (test) => {
+      const debtor = 'jurisdictionalFspPayerFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolFxPrepare.content.from = debtor
+      td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
+      td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Proxy AR participantCurrencyId
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Fulfil the fxTransfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      td.messageProtocolFxFulfil.content.to = debtor
+      td.messageProtocolFxFulfil.content.headers['fspiop-destination'] = debtor
+
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-reserve',
+          valueToFilter: td.payer.name
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFxFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferProxyPrepare.test(`
+      Scheme R: PUT /fxTransfer call I.e. From: FXP → To: Proxy AR
+      with wrong headers - ABORT VALIDATION`, async (test) => {
+      const debtor = 'jurisdictionalFspPayerFsp'
+
+      const td = await prepareTestData(testData)
+      await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      td.messageProtocolFxPrepare.content.from = debtor
+      td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
+      td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          // To be keyed with the Proxy AR participantCurrencyId
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Fulfil the fxTransfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      td.messageProtocolFxFulfil.content.to = debtor
+      td.messageProtocolFxFulfil.content.headers['fspiop-destination'] = debtor
+
+      // If initiatingFsp is proxy, fx fulfil handler doesn't validate fspiop-destination header.
+      // But it should validate fspiop-source header, because counterPartyFsp is not a proxy.
+      td.messageProtocolFxFulfil.content.headers['fspiop-source'] = 'wrongfsp'
+
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-abort-validation',
+          keyFilter: td.proxyAR.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFxFulfil[0], 'Position fulfil message with key found')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
