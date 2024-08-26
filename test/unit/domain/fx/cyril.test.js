@@ -11,6 +11,7 @@ const ParticipantFacade = require('../../../../src/models/participant/facade')
 const ParticipantPositionChangesModel = require('../../../../src/models/position/participantPositionChanges')
 const { fxTransfer, watchList } = require('../../../../src/models/fxTransfer')
 const ProxyCache = require('../../../../src/lib/proxyCache')
+const config = require('#src/lib/config')
 
 const defaultGetProxyParticipantAccountDetailsResponse = { inScheme: true, participantCurrencyId: 1 }
 
@@ -82,7 +83,12 @@ Test('Cyril', cyrilTest => {
     getParticipantAndCurrencyForTransferMessageTest.test('return details about regular transfer', async (test) => {
       try {
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve([]))
-        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload,
+          {
+            isCounterPartyFspProxy: false,
+            isInitiatingFspProxy: false
+          }
+        )
         const result = await Cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult)
 
         test.deepEqual(result, {
@@ -118,7 +124,12 @@ Test('Cyril', cyrilTest => {
             counterPartyFspName: 'fx_dfsp2'
           }
         ))
-        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload,
+          {
+            isCounterPartyFspProxy: false,
+            isInitiatingFspProxy: false
+          }
+        )
         const result = await Cyril.getParticipantAndCurrencyForTransferMessage(
           payload,
           determiningTransferCheckResult,
@@ -160,7 +171,12 @@ Test('Cyril', cyrilTest => {
             counterPartyFspName: 'fx_dfsp2'
           }
         ))
-        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload,
+          {
+            isCounterPartyFspProxy: true,
+            isInitiatingFspProxy: false
+          }
+        )
         const result = await Cyril.getParticipantAndCurrencyForTransferMessage(
           payload,
           determiningTransferCheckResult,
@@ -182,6 +198,134 @@ Test('Cyril', cyrilTest => {
         test.end()
       }
     })
+
+    getParticipantAndCurrencyForTransferMessageTest.test('skips adding payee participantCurrency for validation when payee has proxy representation', async (test) => {
+      try {
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve([
+          {
+            commitRequestId: fxPayload.commitRequestId,
+            determiningTransferId: fxPayload.determiningTransferId,
+            fxTransferTypeId: Enum.Fx.FxTransferType.PAYER_CONVERSION,
+            createdDate: new Date()
+          }
+        ]))
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.withArgs(
+          fxPayload.commitRequestId
+        ).returns(Promise.resolve(
+          {
+            targetAmount: fxPayload.targetAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: 'fx_dfsp2'
+          }
+        ))
+
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload,
+          {
+            isCounterPartyFspProxy: true,
+            isInitiatingFspProxy: false
+          }
+        )
+        test.deepEqual(determiningTransferCheckResult.participantCurrencyValidationList, [])
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    getParticipantAndCurrencyForTransferMessageTest.test('skips adding payer participantCurrency for validation when payer has proxy representation', async (test) => {
+      try {
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve([]))
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.withArgs(
+          fxPayload.commitRequestId
+        ).returns(Promise.resolve(
+          {
+            targetAmount: fxPayload.targetAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: 'fx_dfsp2'
+          }
+        ))
+
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload,
+          {
+            isCounterPartyFspProxy: false,
+            isInitiatingFspProxy: true
+          }
+        )
+        test.deepEqual(determiningTransferCheckResult.participantCurrencyValidationList, [])
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    getParticipantAndCurrencyForTransferMessageTest.test('skips adding payee participantCurrency for validation when payee has proxy representation, PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED=true', async (test) => {
+      try {
+        config.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED = true
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve([]))
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.withArgs(
+          fxPayload.commitRequestId
+        ).returns(Promise.resolve(
+          {
+            targetAmount: fxPayload.targetAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: 'fx_dfsp2'
+          }
+        ))
+
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload,
+          {
+            isCounterPartyFspProxy: true,
+            isInitiatingFspProxy: true
+          }
+        )
+        test.deepEqual(determiningTransferCheckResult.participantCurrencyValidationList, [])
+        test.pass('Error not thrown')
+        config.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED = false
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    getParticipantAndCurrencyForTransferMessageTest.test('adds payee participantCurrency for validation for payee, PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED=true', async (test) => {
+      try {
+        config.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED = true
+        watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve([]))
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.withArgs(
+          fxPayload.commitRequestId
+        ).returns(Promise.resolve(
+          {
+            targetAmount: fxPayload.targetAmount.amount,
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: 'fx_dfsp2'
+          }
+        ))
+
+        const determiningTransferCheckResult = await Cyril.checkIfDeterminingTransferExistsForTransferMessage(payload,
+          {
+            isCounterPartyFspProxy: false,
+            isInitiatingFspProxy: true
+          }
+        )
+        test.deepEqual(determiningTransferCheckResult.participantCurrencyValidationList, [{ participantName: 'dfsp2', currencyId: 'USD' }])
+        test.pass('Error not thrown')
+        config.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED = false
+        test.end()
+      } catch (e) {
+        console.log(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
     getParticipantAndCurrencyForTransferMessageTest.end()
   })
 

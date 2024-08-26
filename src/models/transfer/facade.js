@@ -436,7 +436,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(
           proxyId, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION
         )
-        participants[proxyId].participantCurrencyId = participantCurrencyRecord.participantCurrencyId
+        // In a regional scheme, the stand-in initiating FSP proxy may not have a participantCurrencyId
+        // of the target currency of the transfer, so set to null if not found
+        participants[proxyId].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId
       }
 
       if (proxyObligation?.isCounterPartyFspProxy) {

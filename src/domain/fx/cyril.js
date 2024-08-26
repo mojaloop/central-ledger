@@ -32,7 +32,7 @@ const { fxTransfer, watchList } = require('../../models/fxTransfer')
 const Config = require('../../lib/config')
 const ProxyCache = require('../../lib/proxyCache')
 
-const checkIfDeterminingTransferExistsForTransferMessage = async (payload) => {
+const checkIfDeterminingTransferExistsForTransferMessage = async (payload, proxyObligation) => {
   // Does this determining transfer ID appear on the watch list?
   const watchListRecords = await watchList.getItemsInWatchListByDeterminingTransferId(payload.transferId)
   const determiningTransferExistsInWatchList = (watchListRecords !== null && watchListRecords.length > 0)
@@ -40,23 +40,29 @@ const checkIfDeterminingTransferExistsForTransferMessage = async (payload) => {
   const participantCurrencyValidationList = []
   if (determiningTransferExistsInWatchList) {
     // If there's a currency conversion before the transfer is requested, it must be the debtor who did it.
-    participantCurrencyValidationList.push({
-      participantName: payload.payeeFsp,
-      currencyId: payload.amount.currency
-    })
-  } else {
-    // Normal transfer request or payee side currency conversion
-    participantCurrencyValidationList.push({
-      participantName: payload.payerFsp,
-      currencyId: payload.amount.currency
-    })
-    // If it is a normal transfer, we need to validate payeeFsp against the currency of the transfer.
-    // But its tricky to differentiate between normal transfer and payee side currency conversion.
-    if (Config.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED) {
+    if (!proxyObligation.isCounterPartyFspProxy) {
       participantCurrencyValidationList.push({
         participantName: payload.payeeFsp,
         currencyId: payload.amount.currency
       })
+    }
+  } else {
+    // Normal transfer request or payee side currency conversion
+    if (!proxyObligation.isInitiatingFspProxy) {
+      participantCurrencyValidationList.push({
+        participantName: payload.payerFsp,
+        currencyId: payload.amount.currency
+      })
+    }
+    // If it is a normal transfer, we need to validate payeeFsp against the currency of the transfer.
+    // But its tricky to differentiate between normal transfer and payee side currency conversion.
+    if (Config.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED) {
+      if (!proxyObligation.isCounterPartyFspProxy) {
+        participantCurrencyValidationList.push({
+          participantName: payload.payeeFsp,
+          currencyId: payload.amount.currency
+        })
+      }
     }
   }
   return {

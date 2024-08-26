@@ -52,7 +52,7 @@ const createRemittanceEntity = (isFx) => {
     async checkIfDeterminingTransferExists (payload, proxyObligation) {
       return isFx
         ? cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, proxyObligation)
-        : cyril.checkIfDeterminingTransferExistsForTransferMessage(payload)
+        : cyril.checkIfDeterminingTransferExistsForTransferMessage(payload, proxyObligation)
     },
 
     async getPositionParticipant (payload, determiningTransferCheckResult, proxyObligation) {

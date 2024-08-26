@@ -156,34 +156,13 @@ const prepareTestData = async (dataObj) => {
     // }
 
     const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
-    const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.currencies[0], dataObj.currencies[1])
-    const proxyAR = await ParticipantHelper.prepareData(dataObj.proxyAR.name, dataObj.amount.currency, undefined, undefined, true)
-    const proxyRB = await ParticipantHelper.prepareData(dataObj.proxyRB.name, dataObj.currencies[0], dataObj.currencies[1], undefined, true)
     const fxp = await ParticipantHelper.prepareData(dataObj.fxp.name, dataObj.currencies[0], dataObj.currencies[1])
+    const proxyAR = await ParticipantHelper.prepareData(dataObj.proxyAR.name, dataObj.amount.currency, undefined, undefined, true)
+    const proxyRB = await ParticipantHelper.prepareData(dataObj.proxyRB.name, dataObj.currencies[1], undefined, undefined, true)
 
     const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.amount.currency,
       limit: { value: dataObj.payer.limit }
-    })
-    const payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
-      currency: dataObj.currencies[0],
-      limit: { value: dataObj.payee.limit }
-    })
-    const payeeLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
-      currency: dataObj.currencies[1],
-      limit: { value: dataObj.payee.limit }
-    })
-    const proxyARLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(proxyAR.participant.name, {
-      currency: dataObj.amount.currency,
-      limit: { value: dataObj.proxyAR.limit }
-    })
-    const proxyRBLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(proxyRB.participant.name, {
-      currency: dataObj.currencies[0],
-      limit: { value: dataObj.proxyRB.limit }
-    })
-    const proxyRBLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(proxyRB.participant.name, {
-      currency: dataObj.currencies[1],
-      limit: { value: dataObj.proxyRB.limit }
     })
     const fxpPayerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(fxp.participant.name, {
       currency: dataObj.currencies[0],
@@ -193,21 +172,17 @@ const prepareTestData = async (dataObj) => {
       currency: dataObj.currencies[1],
       limit: { value: dataObj.fxp.limit }
     })
+    const proxyARLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(proxyAR.participant.name, {
+      currency: dataObj.amount.currency,
+      limit: { value: dataObj.proxyAR.limit }
+    })
+    const proxyRBLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(proxyRB.participant.name, {
+      currency: dataObj.currencies[1],
+      limit: { value: dataObj.proxyRB.limit }
+    })
 
     await ParticipantFundsInOutHelper.recordFundsIn(payer.participant.name, payer.participantCurrencyId2, {
       currency: dataObj.amount.currency,
-      amount: 10000
-    })
-    await ParticipantFundsInOutHelper.recordFundsIn(proxyAR.participant.name, proxyAR.participantCurrencyId2, {
-      currency: dataObj.amount.currency,
-      amount: 10000
-    })
-    await ParticipantFundsInOutHelper.recordFundsIn(proxyRB.participant.name, proxyRB.participantCurrencyId2, {
-      currency: dataObj.currencies[0],
-      amount: 10000
-    })
-    await ParticipantFundsInOutHelper.recordFundsIn(proxyRB.participant.name, proxyRB.participantCurrencyIdSecondary2, {
-      currency: dataObj.currencies[1],
       amount: 10000
     })
     await ParticipantFundsInOutHelper.recordFundsIn(fxp.participant.name, fxp.participantCurrencyId2, {
@@ -218,6 +193,36 @@ const prepareTestData = async (dataObj) => {
       currency: dataObj.currencies[1],
       amount: 10000
     })
+    await ParticipantFundsInOutHelper.recordFundsIn(proxyAR.participant.name, proxyAR.participantCurrencyId2, {
+      currency: dataObj.amount.currency,
+      amount: 10000
+    })
+    await ParticipantFundsInOutHelper.recordFundsIn(proxyRB.participant.name, proxyRB.participantCurrencyId2, {
+      currency: dataObj.currencies[1],
+      amount: 10000
+    })
+
+    let payee
+    let payeeLimitAndInitialPosition
+    let payeeLimitAndInitialPositionSecondaryCurrency
+    if (dataObj.crossSchemeSetup) {
+      payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.currencies[1], undefined)
+      payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
+        currency: dataObj.currencies[1],
+        limit: { value: dataObj.payee.limit }
+      })
+      payeeLimitAndInitialPositionSecondaryCurrency = null
+    } else {
+      payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency, dataObj.currencies[1])
+      payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
+        currency: dataObj.amount.currency,
+        limit: { value: dataObj.payee.limit }
+      })
+      payeeLimitAndInitialPositionSecondaryCurrency = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
+        currency: dataObj.currencies[1],
+        limit: { value: dataObj.payee.limit }
+      })
+    }
 
     for (const name of [payer.participant.name, payee.participant.name, proxyAR.participant.name, proxyRB.participant.name, fxp.participant.name]) {
       await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
@@ -445,7 +450,6 @@ const prepareTestData = async (dataObj) => {
       proxyARLimitAndInitialPosition,
       proxyRB,
       proxyRBLimitAndInitialPosition,
-      proxyRBLimitAndInitialPositionSecondaryCurrency,
       fxp,
       fxpPayerLimitAndInitialPosition,
       fxpPayerLimitAndInitialPositionSecondaryCurrency
@@ -895,7 +899,7 @@ Test('Handlers test', async handlersTest => {
       Payer DFSP position account must be updated (reserved)`, async (test) => {
       const creditor = 'regionalSchemeFXP'
 
-      const td = await prepareTestData(testData)
+      const td = await prepareTestData({ ...testData, crossSchemeSetup: true })
       await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
 
       const prepareConfig = Utility.getKafkaConfig(
@@ -932,7 +936,7 @@ Test('Handlers test', async handlersTest => {
       // Create dependent fxTransfer
       let creditor = 'regionalSchemeFXP'
 
-      const td = await prepareTestData(testData)
+      const td = await prepareTestData({ ...testData, crossSchemeSetup: true })
       await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
 
       const prepareConfig = Utility.getKafkaConfig(
@@ -992,7 +996,7 @@ Test('Handlers test', async handlersTest => {
       Proxy AR position account in source currency must be updated (reserved)`, async (test) => {
       const debtor = 'jurisdictionalFspPayerFsp'
 
-      const td = await prepareTestData(testData)
+      const td = await prepareTestData({ ...testData, crossSchemeSetup: true })
       await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
 
       const prepareConfig = Utility.getKafkaConfig(
@@ -1028,7 +1032,7 @@ Test('Handlers test', async handlersTest => {
       FXP position account in targeted currency must be updated (reserved)`, async (test) => {
       const debtor = 'jurisdictionalFspPayerFsp'
 
-      const td = await prepareTestData(testData)
+      const td = await prepareTestData({ ...testData, crossSchemeSetup: true })
       await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
 
       const prepareConfig = Utility.getKafkaConfig(
@@ -1089,7 +1093,15 @@ Test('Handlers test', async handlersTest => {
       Proxy RB position account must be updated (reserved)`, async (test) => {
       const debtor = 'jurisdictionalFspPayerFsp'
 
-      const td = await prepareTestData(testData)
+      // Proxy RB and Payee are only set up to deal in XXX currency
+      const td = await prepareTestData({
+        ...testData,
+        amount: {
+          currency: 'XXX',
+          amount: '100'
+        },
+        crossSchemeSetup: true
+      })
       await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyRB.participant.name)
 
       const prepareConfig = Utility.getKafkaConfig(
@@ -1111,9 +1123,9 @@ Test('Handlers test', async handlersTest => {
           topicFilter: 'topic-transfer-position-batch',
           action: 'prepare',
           // A position prepare message reserving the proxy of ProxyRB on it's XXX participant currency account
-          keyFilter: td.proxyRB.participantCurrencyIdSecondary.toString()
+          keyFilter: td.proxyRB.participantCurrencyId.toString()
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionPrepare[0], 'Position prepare message with key of fxp target currency account found')
+        test.ok(positionPrepare[0], 'Position prepare message with key of proxyRB target currency account found')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
@@ -1132,7 +1144,15 @@ Test('Handlers test', async handlersTest => {
       Payee DFSP position account must be updated`, async (test) => {
       const transferPrepareFrom = 'schemeAPayerFsp'
 
-      const td = await prepareTestData(testData)
+      // Proxy RB and Payee are only set up to deal in XXX currency
+      const td = await prepareTestData({
+        ...testData,
+        crossSchemeSetup: true,
+        amount: {
+          currency: 'XXX',
+          amount: '100'
+        }
+      })
       await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyRB.participant.name)
 
       // Prepare the transfer
@@ -1199,7 +1219,18 @@ Test('Handlers test', async handlersTest => {
       const transferPrepareFrom = 'schemeAPayerFsp'
       const transferPrepareTo = 'schemeBPayeeFsp'
 
-      const td = await prepareTestData(testData)
+      // In this particular test, without currency conversion proxyRB and proxyAR
+      // should have accounts in the same currency. proxyRB default currency is already XXX.
+      // So configure proxy AR to operate in XXX currency.
+      const td = await prepareTestData({
+        ...testData,
+        amount: {
+          currency: 'XXX',
+          amount: '100'
+        },
+        crossSchemeSetup: true
+      })
+
       await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyAR.participant.name)
       await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyRB.participant.name)
 
@@ -1268,7 +1299,7 @@ Test('Handlers test', async handlersTest => {
       No position changes should happen`, async (test) => {
       const debtor = 'jurisdictionalFspPayerFsp'
 
-      const td = await prepareTestData(testData)
+      const td = await prepareTestData({ ...testData, crossSchemeSetup: true })
       await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
 
       const prepareConfig = Utility.getKafkaConfig(
@@ -1331,7 +1362,7 @@ Test('Handlers test', async handlersTest => {
       with wrong headers - ABORT VALIDATION`, async (test) => {
       const debtor = 'jurisdictionalFspPayerFsp'
 
-      const td = await prepareTestData(testData)
+      const td = await prepareTestData({ ...testData, crossSchemeSetup: true })
       await ProxyCache.getCache().addDfspIdToProxyMapping(debtor, td.proxyAR.participant.name)
 
       const prepareConfig = Utility.getKafkaConfig(
@@ -1400,7 +1431,12 @@ Test('Handlers test', async handlersTest => {
       const transferPrepareFrom = 'schemeAPayerFsp'
       const transferPrepareTo = 'schemeBPayeeFsp'
 
-      const td = await prepareTestData(testData)
+      // In this particular test, with currency conversion, we're assuming that proxyAR and proxyRB
+      // operate in different currencies. ProxyRB's default currency is XXX, and ProxyAR's default currency is USD.
+      const td = await prepareTestData({
+        ...testData,
+        crossSchemeSetup: true
+      })
       await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareFrom, td.proxyAR.participant.name)
       await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyRB.participant.name)
 
@@ -1478,7 +1514,7 @@ Test('Handlers test', async handlersTest => {
         const positionFulfil2 = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-transfer-position-batch',
           action: 'commit',
-          keyFilter: td.proxyRB.participantCurrencyIdSecondary.toString()
+          keyFilter: td.proxyRB.participantCurrencyId.toString()
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(positionFulfil1[0], 'Position fulfil message with key found')
         test.ok(positionFulfil2[0], 'Position fulfil message with key found')
@@ -1498,7 +1534,7 @@ Test('Handlers test', async handlersTest => {
       const transferPrepareTo = 'schemeBPayeeFsp'
       const fxTransferPrepareTo = 'schemeRFxp'
 
-      const td = await prepareTestData(testData)
+      const td = await prepareTestData({ ...testData, crossSchemeSetup: true })
       await ProxyCache.getCache().addDfspIdToProxyMapping(fxTransferPrepareTo, td.proxyAR.participant.name)
       await ProxyCache.getCache().addDfspIdToProxyMapping(transferPrepareTo, td.proxyAR.participant.name)
 
