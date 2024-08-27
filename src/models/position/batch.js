@@ -248,7 +248,6 @@ const getReservedPositionChangesByCommitRequestIds = async (trx, commitRequestId
       .transacting(trx)
       .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)
       .where('fxTransferStateChange.transferStateId', Enum.Transfers.TransferInternalState.RESERVED)
-      .orWhere('fxTransferStateChange.transferStateId', Enum.Transfers.TransferInternalState.RESERVED_FORWARDED)
       .leftJoin('participantPositionChange AS ppc', 'ppc.fxTransferStateChangeId', 'fxTransferStateChange.fxTransferStateChangeId')
       .select(
         'ppc.*',
