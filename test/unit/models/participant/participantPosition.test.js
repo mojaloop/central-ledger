@@ -203,14 +203,14 @@ Test('Participant Position model', async (participantPositionTest) => {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       const trxStub = {
-        get commit () {
+        commit () {
 
         },
-        get rollback () {
-
+        rollback () {
+          return Promise.reject(new Error())
         }
       }
-      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
+      const trxSpyCommit = sandbox.spy(trxStub, 'commit')
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -238,7 +238,7 @@ Test('Participant Position model', async (participantPositionTest) => {
       test.deepEqual(batchInsertStub.lastCall.args[1], participantPositions, 'all records should be inserted')
       test.equal(transactingStub.callCount, 1, 'make the database calls as transaction')
       test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
-      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
+      test.equal(trxSpyCommit.calledOnce, true, 'commit the transaction if no transaction is passed')
 
       test.end()
     } catch (err) {

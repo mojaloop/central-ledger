@@ -262,9 +262,9 @@ const migrateData = async (knex) => {
       try {
         await knex.raw('insert into currency (currencyId, name, scale) values (\'XXX\', \'Assigned for transactions where no currency is involved\', 4)').transacting(trx)
       } catch (e) { await knex.raw('update currency set scale = \'4\' where currencyId = \'XXX\'').transacting(trx) }
-      await trx.commit
+      await trx.commit()
     } catch (err) {
-      await trx.rollback
+      await trx.rollback()
       throw err
     }
   })

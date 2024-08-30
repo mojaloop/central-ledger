@@ -58,9 +58,9 @@ exports.up = async (knex) => {
                         .where('settlementModelId', model.settlementModelId)
                     }
                   })
-                await trx.commit
+                await trx.commit()
               } catch (e) {
-                await trx.rollback
+                await trx.rollback()
               }
             })
             await knex.schema.alterTable('settlementModel', (t) => {

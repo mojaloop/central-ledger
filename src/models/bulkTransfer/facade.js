@@ -64,10 +64,10 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
           await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
         }
         await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
-        await trx.commit
+        await trx.commit()
         return state
       } catch (err) {
-        await trx.rollback
+        await trx.rollback().catch(() => {})
         throw err
       }
     })
@@ -109,10 +109,10 @@ const saveBulkTransferProcessing = async (payload, stateReason = null, isValid =
           await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
         }
         await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
-        await trx.commit
+        await trx.commit()
         return state
       } catch (err) {
-        await trx.rollback
+        await trx.rollback().catch(() => {})
         throw err
       }
     })
@@ -159,10 +159,10 @@ const saveBulkTransferErrorProcessing = async (payload, stateReason = null, isVa
           errorDescription: payload.errorInformation.errorDescription
         }
         await knex('bulkTransferError').transacting(trx).insert(bulkTransferErrorRecord)
-        await trx.commit
+        await trx.commit()
         return state
       } catch (err) {
-        await trx.rollback
+        await trx.rollback().catch(() => {})
         throw err
       }
     })
@@ -202,10 +202,10 @@ const saveBulkTransferAborting = async (payload, stateReason = null) => {
           await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
         }
         await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
-        await trx.commit
+        await trx.commit()
         return state
       } catch (err) {
-        await trx.rollback
+        await trx.rollback().catch(() => {})
         throw err
       }
     })

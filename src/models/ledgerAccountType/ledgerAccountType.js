@@ -42,12 +42,12 @@ exports.getLedgerAccountByName = async (name, trx = null) => {
           .where('name', name)
           .transacting(trx)
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
         return ledgerAccountType.length > 0 ? ledgerAccountType[0] : null
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
@@ -73,12 +73,12 @@ exports.getLedgerAccountsByName = async (names, trx = null) => {
           .whereIn('name', names)
           .transacting(trx)
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
         return ledgerAccountTypes
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
@@ -108,12 +108,12 @@ exports.bulkInsert = async (records, trx = null) => {
           .whereIn('name', recordsNames)
           .transacting(trx)
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
         return createdIds.map(record => record.ledgerAccountTypeId)
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }

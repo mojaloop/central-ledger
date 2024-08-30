@@ -96,9 +96,9 @@ const migrateData = async (knex) => {
         from transferError${tableNameSuffix} te
         join transferStateChange tsc on tsc.transferStateChangeId = te.transferStateChangeId`)
       }
-      await trx.commit
+      await trx.commit()
     } catch (err) {
-      await trx.rollback
+      await trx.rollback()
       throw err
     }
   })

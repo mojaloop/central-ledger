@@ -49,11 +49,11 @@ exports.create = async (name, isActive, settlementGranularityId, settlementInter
           })
           .transacting(trx)
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
@@ -78,12 +78,12 @@ exports.getByName = async (name, trx = null) => {
           .where('name', name)
           .transacting(trx)
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
         return result.length > 0 ? result[0] : null
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
@@ -123,12 +123,12 @@ exports.getSettlementModelsByName = async (names, trx = null) => {
           .whereIn('name', names)
           .transacting(trx)
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
         return settlementModelNames
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }

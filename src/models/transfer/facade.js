@@ -1112,11 +1112,11 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         }
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw err
       }
@@ -1258,11 +1258,11 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         }
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw err
       }
@@ -1303,11 +1303,11 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
         }
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw err
       }
@@ -1365,11 +1365,11 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
         }
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw err
       }
@@ -1426,11 +1426,11 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
         }
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw err
       }
@@ -1476,10 +1476,10 @@ const recordFundsIn = async (payload, transactionTimestamp, enums) => {
       await TransferFacade.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
       await TransferFacade.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
       await TransferFacade.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
-      await trx.commit
+      await trx.commit()
     } catch (err) {
       Logger.isErrorEnabled && Logger.error(err)
-      await trx.rollback
+      await trx.rollback().catch(() => {})
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   })

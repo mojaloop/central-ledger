@@ -349,10 +349,10 @@ const addEndpoint = async (participantId, endpoint) => {
         }
         const result = await knex('participantEndpoint').transacting(trx).insert(newEndpoint)
         newEndpoint.participantEndpointId = result[0]
-        await trx.commit
+        await trx.commit()
         return newEndpoint
       } catch (err) {
-        await trx.rollback
+        await trx.rollback().catch(() => {})
         throw err
       }
     })
@@ -542,10 +542,10 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
           }
         }
 
-        await trx.commit
+        await trx.commit()
         return true
       } catch (err) {
-        await trx.rollback
+        await trx.rollback().catch(() => {})
         throw err
       }
     })
@@ -604,14 +604,14 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         const result = await knex('participantLimit').transacting(trx).insert(newLimit)
         newLimit.participantLimitId = result[0]
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
         return {
           participantLimit: newLimit
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
@@ -728,13 +728,13 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
         }
         result = await knex('participantPosition').transacting(trx).insert(participantPosition)
         participantPosition.participantPositionId = result[0]
-        await trx.commit
+        await trx.commit()
         return {
           participantCurrency,
           participantPosition
         }
       } catch (err) {
-        await trx.rollback
+        await trx.rollback().catch(() => {})
         throw err
       }
     })
@@ -783,12 +783,12 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
           .transacting(trx)
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
         return res
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback().catch(() => {})
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }

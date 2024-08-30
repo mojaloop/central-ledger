@@ -1808,7 +1808,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
             transferStateId: Enum.Transfers.TransferInternalState.ABORTED_REJECTED,
             ledgerAccountTypeId: 2
           }
-          const trxStub = sandbox.stub()
+          const trxStub = {
+            commit () {
+
+            },
+            rollback () {
+              return Promise.reject(new Error())
+            }
+          }
 
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
@@ -1906,7 +1913,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
             transferStateId: 'RECEIVED_PREPARE',
             ledgerAccountTypeId: 2
           }
-          const trxStub = sandbox.stub()
+          const trxStub = {
+            commit () {
+
+            },
+            rollback () {
+              return Promise.reject(new Error())
+            }
+          }
 
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
@@ -2303,7 +2317,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
           }
           const transactionTimestamp = Time.getUTCString(now)
 
-          const trxStub = sandbox.stub()
+          const trxStub = {
+            commit () {
+
+            },
+            rollback () {
+              return Promise.reject(new Error())
+            }
+          }
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           sandbox.stub(Db, 'getKnex').returns(knexStub)
@@ -2327,7 +2348,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
           }
           const transactionTimestamp = Time.getUTCString(now)
 
-          const trxStub = sandbox.stub()
+          const trxStub = {
+            commit () {
+
+            },
+            rollback () {
+              return Promise.reject(new Error())
+            }
+          }
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           sandbox.stub(Db, 'getKnex').returns(knexStub)
@@ -2628,7 +2656,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           const trxStub = sandbox.stub()
           trxStub.commit = sandbox.stub()
-          trxStub.rollback = sandbox.stub()
+          trxStub.rollback = () => Promise.reject(new Error('DB Error'))
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           sandbox.stub(Db, 'getKnex').returns(knexStub)
