@@ -411,7 +411,8 @@ Test('Admin handler', adminHandlerTest => {
         sandbox.stub(Db, 'getKnex')
         const knexStub = sandbox.stub()
         const trxStub = sandbox.stub()
-        trxStub.rollback = sandbox.stub()
+        trxStub.rollback = () => Promise.reject(new Error('DB Error'))
+
         Consumer.isConsumerAutoCommitEnabled.withArgs(topicName).throws(new Error())
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
@@ -439,7 +440,7 @@ Test('Admin handler', adminHandlerTest => {
         sandbox.stub(Db, 'getKnex')
         const knexStub = sandbox.stub()
         const trxStub = sandbox.stub()
-        trxStub.rollback = sandbox.stub()
+        trxStub.rollback = () => Promise.reject(new Error('DB Error'))
         Consumer.isConsumerAutoCommitEnabled.withArgs(topicName).throws(new Error())
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
