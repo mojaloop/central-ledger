@@ -690,34 +690,28 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
-      try {
-        let result
-        const participantCurrency = {
-          participantId,
-          currencyId,
-          ledgerAccountTypeId,
-          createdBy: 'unknown',
-          isActive: 1,
-          createdDate: Time.getUTCString(new Date())
-        }
-        result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
-        await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
-        participantCurrency.participantCurrencyId = result[0]
-        const participantPosition = {
-          participantCurrencyId: participantCurrency.participantCurrencyId,
-          value: 0,
-          reservedValue: 0
-        }
-        result = await knex('participantPosition').transacting(trx).insert(participantPosition)
-        participantPosition.participantPositionId = result[0]
-        await trx.commit()
-        return {
-          participantCurrency,
-          participantPosition
-        }
-      } catch (err) {
-        await trx.rollback().catch(() => {})
-        throw err
+      let result
+      const participantCurrency = {
+        participantId,
+        currencyId,
+        ledgerAccountTypeId,
+        createdBy: 'unknown',
+        isActive: 1,
+        createdDate: Time.getUTCString(new Date())
+      }
+      result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
+      await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
+      participantCurrency.participantCurrencyId = result[0]
+      const participantPosition = {
+        participantCurrencyId: participantCurrency.participantCurrencyId,
+        value: 0,
+        reservedValue: 0
+      }
+      result = await knex('participantPosition').transacting(trx).insert(participantPosition)
+      participantPosition.participantPositionId = result[0]
+      return {
+        participantCurrency,
+        participantPosition
       }
     })
   } catch (err) {
