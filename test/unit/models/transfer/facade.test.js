@@ -1813,7 +1813,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
             },
             rollback () {
-              return Promise.reject(new Error())
+              return Promise.reject(new Error('DB error'))
             }
           }
 
@@ -1918,7 +1918,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
             },
             rollback () {
-              return Promise.reject(new Error())
+              return Promise.reject(new Error('DB error'))
             }
           }
 
@@ -2322,7 +2322,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
             },
             rollback () {
-              return Promise.reject(new Error())
+              return Promise.reject(new Error('DB error'))
             }
           }
           const knexStub = sandbox.stub()
@@ -2353,7 +2353,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
             },
             rollback () {
-              return Promise.reject(new Error())
+              return Promise.reject(new Error('DB error'))
             }
           }
           const knexStub = sandbox.stub()

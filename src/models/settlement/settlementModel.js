@@ -32,7 +32,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset, trx = null) => {
   try {
     const knex = Db.getKnex()
-    const trxFunction = async (trx, doCommit = true) => {
+    const trxFunction = async (trx) => {
       try {
         await knex('settlementModel')
           .insert({
@@ -48,18 +48,12 @@ exports.create = async (name, isActive, settlementGranularityId, settlementInter
             autoPositionReset
           })
           .transacting(trx)
-        if (doCommit) {
-          await trx.commit()
-        }
       } catch (err) {
-        if (doCommit) {
-          await trx.rollback().catch(() => {})
-        }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
     if (trx) {
-      return trxFunction(trx, false)
+      return trxFunction(trx)
     } else {
       return knex.transaction(trxFunction)
     }
@@ -77,19 +71,13 @@ exports.getByName = async (name, trx = null) => {
           .select()
           .where('name', name)
           .transacting(trx)
-        if (doCommit) {
-          await trx.commit()
-        }
         return result.length > 0 ? result[0] : null
       } catch (err) {
-        if (doCommit) {
-          await trx.rollback().catch(() => {})
-        }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
     if (trx) {
-      return trxFunction(trx, false)
+      return trxFunction(trx)
     } else {
       return knex.transaction(trxFunction)
     }
@@ -116,25 +104,19 @@ exports.update = async (settlementModel, isActive) => {
 exports.getSettlementModelsByName = async (names, trx = null) => {
   try {
     const knex = Db.getKnex()
-    const trxFunction = async (trx, doCommit = true) => {
+    const trxFunction = async (trx) => {
       try {
         const settlementModelNames = knex('settlementModel')
           .select('name')
           .whereIn('name', names)
           .transacting(trx)
-        if (doCommit) {
-          await trx.commit()
-        }
         return settlementModelNames
       } catch (err) {
-        if (doCommit) {
-          await trx.rollback().catch(() => {})
-        }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
     if (trx) {
-      return trxFunction(trx, false)
+      return trxFunction(trx)
     } else {
       return knex.transaction(trxFunction)
     }

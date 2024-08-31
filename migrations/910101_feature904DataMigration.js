@@ -44,62 +44,56 @@ const tableNameSuffix = Time.getYMDString(new Date())
  */
 const migrateData = async (knex) => {
   return knex.transaction(async trx => {
-    try {
-      let exists = false
-      exists = await knex.schema.hasTable(`transferExtension${tableNameSuffix}`)
-      if (exists) {
-        await knex.transacting(trx).raw(`
-        insert into transferExtension (transferExtensionId, transferId, \`key\`, \`value\`, isFulfilment, isError, createdDate)
-        select te.transferExtensionId, te.transferId, te.\`key\`, te.\`value\`,
-          case when te.transferFulfilmentId is null then 0 else 1 end,
-          case when te.transferErrorId is null then 0 else 1 end,
-          te.createdDate
-        from transferExtension${tableNameSuffix} as te`)
-      }
-      exists = await knex.schema.hasTable(`transferFulfilmentDuplicateCheck${tableNameSuffix}`) &&
-        await knex.schema.hasTable(`transferFulfilment${tableNameSuffix}`)
-      if (exists) {
-        await knex.transacting(trx).raw(`
-        insert into transferFulfilmentDuplicateCheck (transferId, \`hash\`, createdDate)
-        select transferId, \`hash\`, createdDate from transferFulfilmentDuplicateCheck${tableNameSuffix}
-        where transferFulfilmentId in(
-          select transferFulfilmentId
-          from (
-            select transferFulfilmentId, transferId, ilpFulfilment, completedDate, isValid, settlementWindowId, createdDate,
-              row_number() over(partition by transferId order by isValid desc, createdDate) rowNumber
-            from transferFulfilment${tableNameSuffix}) t
-          where t.rowNumber = 1)`)
-      }
-      exists = await knex.schema.hasTable(`transferFulfilment${tableNameSuffix}`)
-      if (exists) {
-        await knex.transacting(trx).raw(`
-        insert into transferFulfilment (transferId, ilpFulfilment, completedDate, isValid, settlementWindowId, createdDate)
-        select t.transferId, t.ilpFulfilment, t.completedDate, t.isValid, t.settlementWindowId, t.createdDate
+    let exists = false
+    exists = await knex.schema.hasTable(`transferExtension${tableNameSuffix}`)
+    if (exists) {
+      await knex.transacting(trx).raw(`
+      insert into transferExtension (transferExtensionId, transferId, \`key\`, \`value\`, isFulfilment, isError, createdDate)
+      select te.transferExtensionId, te.transferId, te.\`key\`, te.\`value\`,
+        case when te.transferFulfilmentId is null then 0 else 1 end,
+        case when te.transferErrorId is null then 0 else 1 end,
+        te.createdDate
+      from transferExtension${tableNameSuffix} as te`)
+    }
+    exists = await knex.schema.hasTable(`transferFulfilmentDuplicateCheck${tableNameSuffix}`) &&
+      await knex.schema.hasTable(`transferFulfilment${tableNameSuffix}`)
+    if (exists) {
+      await knex.transacting(trx).raw(`
+      insert into transferFulfilmentDuplicateCheck (transferId, \`hash\`, createdDate)
+      select transferId, \`hash\`, createdDate from transferFulfilmentDuplicateCheck${tableNameSuffix}
+      where transferFulfilmentId in(
+        select transferFulfilmentId
         from (
           select transferFulfilmentId, transferId, ilpFulfilment, completedDate, isValid, settlementWindowId, createdDate,
             row_number() over(partition by transferId order by isValid desc, createdDate) rowNumber
           from transferFulfilment${tableNameSuffix}) t
-        where t.rowNumber = 1`)
-      }
-      exists = await knex.schema.hasTable(`transferErrorDuplicateCheck${tableNameSuffix}`)
-      if (exists) {
-        await knex.transacting(trx).raw(`
-        insert into transferErrorDuplicateCheck (transferId, \`hash\`, createdDate)
-        select transferId, \`hash\`, createdDate
-        from transferErrorDuplicateCheck${tableNameSuffix}`)
-      }
-      exists = await knex.schema.hasTable(`transferError${tableNameSuffix}`)
-      if (exists) {
-        await knex.transacting(trx).raw(`
-        insert into transferError (transferId, transferStateChangeId, errorCode, errorDescription, createdDate)
-        select tsc.transferId, te.transferStateChangeId, te.errorCode, te.errorDescription, te.createdDate
-        from transferError${tableNameSuffix} te
-        join transferStateChange tsc on tsc.transferStateChangeId = te.transferStateChangeId`)
-      }
-      await trx.commit()
-    } catch (err) {
-      await trx.rollback()
-      throw err
+        where t.rowNumber = 1)`)
+    }
+    exists = await knex.schema.hasTable(`transferFulfilment${tableNameSuffix}`)
+    if (exists) {
+      await knex.transacting(trx).raw(`
+      insert into transferFulfilment (transferId, ilpFulfilment, completedDate, isValid, settlementWindowId, createdDate)
+      select t.transferId, t.ilpFulfilment, t.completedDate, t.isValid, t.settlementWindowId, t.createdDate
+      from (
+        select transferFulfilmentId, transferId, ilpFulfilment, completedDate, isValid, settlementWindowId, createdDate,
+          row_number() over(partition by transferId order by isValid desc, createdDate) rowNumber
+        from transferFulfilment${tableNameSuffix}) t
+      where t.rowNumber = 1`)
+    }
+    exists = await knex.schema.hasTable(`transferErrorDuplicateCheck${tableNameSuffix}`)
+    if (exists) {
+      await knex.transacting(trx).raw(`
+      insert into transferErrorDuplicateCheck (transferId, \`hash\`, createdDate)
+      select transferId, \`hash\`, createdDate
+      from transferErrorDuplicateCheck${tableNameSuffix}`)
+    }
+    exists = await knex.schema.hasTable(`transferError${tableNameSuffix}`)
+    if (exists) {
+      await knex.transacting(trx).raw(`
+      insert into transferError (transferId, transferStateChangeId, errorCode, errorDescription, createdDate)
+      select tsc.transferId, te.transferStateChangeId, te.errorCode, te.errorDescription, te.createdDate
+      from transferError${tableNameSuffix} te
+      join transferStateChange tsc on tsc.transferStateChangeId = te.transferStateChangeId`)
     }
   })
 }

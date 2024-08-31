@@ -51,25 +51,19 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
 
     const knex = await Db.getKnex()
     return await knex.transaction(async (trx) => {
-      try {
-        await knex('bulkTransfer').transacting(trx).insert(bulkTransferRecord)
-        if (payload.extensionList && payload.extensionList.extension) {
-          const bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
-            return {
-              bulkTransferId: payload.bulkTransferId,
-              key: ext.key,
-              value: ext.value
-            }
-          })
-          await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
-        }
-        await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
-        await trx.commit()
-        return state
-      } catch (err) {
-        await trx.rollback().catch(() => {})
-        throw err
+      await knex('bulkTransfer').transacting(trx).insert(bulkTransferRecord)
+      if (payload.extensionList && payload.extensionList.extension) {
+        const bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+          return {
+            bulkTransferId: payload.bulkTransferId,
+            key: ext.key,
+            value: ext.value
+          }
+        })
+        await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
       }
+      await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
+      return state
     })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
@@ -95,26 +89,20 @@ const saveBulkTransferProcessing = async (payload, stateReason = null, isValid =
 
     const knex = await Db.getKnex()
     return await knex.transaction(async (trx) => {
-      try {
-        await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
-        if (payload.extensionList && payload.extensionList.extension) {
-          const bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
-            return {
-              bulkTransferId: payload.bulkTransferId,
-              isFulfilment: true,
-              key: ext.key,
-              value: ext.value
-            }
-          })
-          await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
-        }
-        await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
-        await trx.commit()
-        return state
-      } catch (err) {
-        await trx.rollback().catch(() => {})
-        throw err
+      await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
+      if (payload.extensionList && payload.extensionList.extension) {
+        const bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+          return {
+            bulkTransferId: payload.bulkTransferId,
+            isFulfilment: true,
+            key: ext.key,
+            value: ext.value
+          }
+        })
+        await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
       }
+      await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
+      return state
     })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
@@ -138,33 +126,27 @@ const saveBulkTransferErrorProcessing = async (payload, stateReason = null, isVa
 
     const knex = await Db.getKnex()
     return await knex.transaction(async (trx) => {
-      try {
-        await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
-        if (payload.errorInformation.extensionList && payload.errorInformation.extensionList.extension) {
-          const bulkTransferExtensionsRecordList = payload.errorInformation.extensionList.extension.map(ext => {
-            return {
-              bulkTransferId: payload.bulkTransferId,
-              isFulfilment: true,
-              key: ext.key,
-              value: ext.value
-            }
-          })
-          await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
-        }
-        const returnedInsertIds = await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord).returning('bulkTransferStateChangeId')
-        const bulkTransferStateChangeId = returnedInsertIds[0]
-        const bulkTransferErrorRecord = {
-          bulkTransferStateChangeId,
-          errorCode: payload.errorInformation.errorCode,
-          errorDescription: payload.errorInformation.errorDescription
-        }
-        await knex('bulkTransferError').transacting(trx).insert(bulkTransferErrorRecord)
-        await trx.commit()
-        return state
-      } catch (err) {
-        await trx.rollback().catch(() => {})
-        throw err
+      await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
+      if (payload.errorInformation.extensionList && payload.errorInformation.extensionList.extension) {
+        const bulkTransferExtensionsRecordList = payload.errorInformation.extensionList.extension.map(ext => {
+          return {
+            bulkTransferId: payload.bulkTransferId,
+            isFulfilment: true,
+            key: ext.key,
+            value: ext.value
+          }
+        })
+        await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
       }
+      const returnedInsertIds = await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord).returning('bulkTransferStateChangeId')
+      const bulkTransferStateChangeId = returnedInsertIds[0]
+      const bulkTransferErrorRecord = {
+        bulkTransferStateChangeId,
+        errorCode: payload.errorInformation.errorCode,
+        errorDescription: payload.errorInformation.errorDescription
+      }
+      await knex('bulkTransferError').transacting(trx).insert(bulkTransferErrorRecord)
+      return state
     })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
@@ -188,26 +170,20 @@ const saveBulkTransferAborting = async (payload, stateReason = null) => {
 
     const knex = await Db.getKnex()
     return await knex.transaction(async (trx) => {
-      try {
-        await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
-        if (payload.extensionList && payload.extensionList.extension) {
-          const bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
-            return {
-              bulkTransferId: payload.bulkTransferId,
-              isFulfilment: true,
-              key: ext.key,
-              value: ext.value
-            }
-          })
-          await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
-        }
-        await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
-        await trx.commit()
-        return state
-      } catch (err) {
-        await trx.rollback().catch(() => {})
-        throw err
+      await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
+      if (payload.extensionList && payload.extensionList.extension) {
+        const bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+          return {
+            bulkTransferId: payload.bulkTransferId,
+            isFulfilment: true,
+            key: ext.key,
+            value: ext.value
+          }
+        })
+        await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
       }
+      await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
+      return state
     })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)

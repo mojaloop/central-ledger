@@ -35,25 +35,19 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 exports.getLedgerAccountByName = async (name, trx = null) => {
   try {
     const knex = Db.getKnex()
-    const trxFunction = async (trx, doCommit = true) => {
+    const trxFunction = async (trx) => {
       try {
         const ledgerAccountType = await knex('ledgerAccountType')
           .select()
           .where('name', name)
           .transacting(trx)
-        if (doCommit) {
-          await trx.commit()
-        }
         return ledgerAccountType.length > 0 ? ledgerAccountType[0] : null
       } catch (err) {
-        if (doCommit) {
-          await trx.rollback().catch(() => {})
-        }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
     if (trx) {
-      return trxFunction(trx, false)
+      return trxFunction(trx)
     } else {
       return knex.transaction(trxFunction)
     }
@@ -66,25 +60,19 @@ exports.getLedgerAccountByName = async (name, trx = null) => {
 exports.getLedgerAccountsByName = async (names, trx = null) => {
   try {
     const knex = Db.getKnex()
-    const trxFunction = async (trx, doCommit = true) => {
+    const trxFunction = async (trx) => {
       try {
         const ledgerAccountTypes = await knex('ledgerAccountType')
           .select('name')
           .whereIn('name', names)
           .transacting(trx)
-        if (doCommit) {
-          await trx.commit()
-        }
         return ledgerAccountTypes
       } catch (err) {
-        if (doCommit) {
-          await trx.rollback().catch(() => {})
-        }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
     if (trx) {
-      return trxFunction(trx, false)
+      return trxFunction(trx)
     } else {
       return knex.transaction(trxFunction)
     }
@@ -97,7 +85,7 @@ exports.getLedgerAccountsByName = async (names, trx = null) => {
 exports.bulkInsert = async (records, trx = null) => {
   try {
     const knex = Db.getKnex()
-    const trxFunction = async (trx, doCommit = true) => {
+    const trxFunction = async (trx) => {
       try {
         await knex('ledgerAccountType')
           .insert(records)
@@ -107,19 +95,13 @@ exports.bulkInsert = async (records, trx = null) => {
           .from('ledgerAccountType')
           .whereIn('name', recordsNames)
           .transacting(trx)
-        if (doCommit) {
-          await trx.commit()
-        }
         return createdIds.map(record => record.ledgerAccountTypeId)
       } catch (err) {
-        if (doCommit) {
-          await trx.rollback().catch(() => {})
-        }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
     if (trx) {
-      return trxFunction(trx, false)
+      return trxFunction(trx)
     } else {
       return knex.transaction(trxFunction)
     }
@@ -131,7 +113,7 @@ exports.bulkInsert = async (records, trx = null) => {
 exports.create = async (name, description, isActive, isSettleable, trx = null) => {
   try {
     const knex = Db.getKnex()
-    const trxFunction = async (trx, doCommit = true) => {
+    const trxFunction = async (trx) => {
       try {
         await knex('ledgerAccountType')
           .insert({
@@ -151,7 +133,7 @@ exports.create = async (name, description, isActive, isSettleable, trx = null) =
       }
     }
     if (trx) {
-      return trxFunction(trx, false)
+      return trxFunction(trx)
     } else {
       return knex.transaction(trxFunction)
     }
