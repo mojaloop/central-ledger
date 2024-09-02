@@ -108,7 +108,8 @@ const fulfil = async (error, messages) => {
       TransferEventAction.FX_COMMIT,
       TransferEventAction.FX_RESERVE,
       TransferEventAction.FX_REJECT,
-      TransferEventAction.FX_ABORT
+      TransferEventAction.FX_ABORT,
+      TransferEventAction.FX_FORWARDED
     ]
 
     if (fxActions.includes(action)) {
@@ -677,7 +678,8 @@ const processFxFulfilMessage = async (message, functionality, span) => {
     TransferEventAction.FX_RESERVE,
     TransferEventAction.FX_COMMIT,
     // TransferEventAction.FX_REJECT,
-    TransferEventAction.FX_ABORT
+    TransferEventAction.FX_ABORT,
+    TransferEventAction.FX_FORWARDED
   ]
   if (!validActions.includes(action)) {
     const errorMessage = ERROR_MESSAGES.fxActionIsNotAllowed(action)
