@@ -16,11 +16,11 @@ const prepareInputDto = (error, messages) => {
   if (!message) throw new Error('No input kafka message')
 
   const payload = decodePayload(message.value.content.payload)
-  const isForwarded = message.value.metadata.event.action === Action.FORWARDED
-  const isFx = !payload.transferId && !isForwarded
+  const isForwarded = message.value.metadata.event.action === Action.FORWARDED || message.value.metadata.event.action === Action.FX_FORWARDED
+  const isFx = !payload.transferId
 
   const { action } = message.value.metadata.event
-  const isPrepare = [Action.PREPARE, Action.FX_PREPARE, Action.FORWARDED].includes(action)
+  const isPrepare = [Action.PREPARE, Action.FX_PREPARE, Action.FORWARDED, Action.FX_FORWARDED].includes(action)
 
   const actionLetter = isPrepare
     ? Enum.Events.ActionLetter.prepare

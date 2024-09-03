@@ -38,6 +38,7 @@ const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
+const FxTransferService = require('../../../../src/domain/fx')
 const Cyril = require('../../../../src/domain/fx/cyril')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const MainUtil = require('@mojaloop/central-services-shared').Util
@@ -198,7 +199,8 @@ const messageForwardedProtocol = {
   content: {
     uriParams: { id: transfer.transferId },
     payload: {
-      proxyId: ''
+      proxyId: '',
+      transferId: transfer.transferId
     }
   },
   metadata: {
@@ -206,6 +208,33 @@ const messageForwardedProtocol = {
       id: randomUUID(),
       type: 'prepare',
       action: 'forwarded',
+      createdAt: new Date(),
+      state: {
+        status: 'success',
+        code: 0
+      }
+    }
+  },
+  pp: ''
+}
+
+const messageFxForwardedProtocol = {
+  id: randomUUID(),
+  from: '',
+  to: '',
+  type: 'application/json',
+  content: {
+    uriParams: { id: fxTransfer.commitRequestId },
+    payload: {
+      proxyId: '',
+      commitRequestId: fxTransfer.commitRequestId
+    }
+  },
+  metadata: {
+    event: {
+      id: randomUUID(),
+      type: 'prepare',
+      action: 'fx-forwarded',
       createdAt: new Date(),
       state: {
         status: 'success',
@@ -245,6 +274,13 @@ const forwardedMessages = [
   {
     topic: topicName,
     value: messageForwardedProtocol
+  }
+]
+
+const fxForwardedMessages = [
+  {
+    topic: topicName,
+    value: messageFxForwardedProtocol
   }
 ]
 
@@ -381,6 +417,7 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(Comparators)
     sandbox.stub(Validator)
     sandbox.stub(TransferService)
+    sandbox.stub(FxTransferService)
     sandbox.stub(fxTransferModel.fxTransfer)
     sandbox.stub(fxTransferModel.watchList)
     sandbox.stub(fxDuplicateCheck)
@@ -983,7 +1020,7 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    prepareTest.test('produce error for unexpected state', async (test) => {
+    prepareTest.test('produce error for unexpected state when receiving fowarded event message', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
@@ -998,7 +1035,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    prepareTest.test('produce error on transfer not found', async (test) => {
+    prepareTest.test('produce error on transfer not found when receiving forwarded event message', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
@@ -1008,6 +1045,30 @@ Test('Transfer handler', transferHandlerTest => {
         hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, forwardedMessages[0])
+      test.equal(result, true)
+      test.equal(Kafka.proceed.getCall(0).args[2].fspiopError.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND.code)
+      test.end()
+    })
+
+    prepareTest.test('produce error for unexpected state when receiving fx-fowarded event message', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      FxTransferService.getByIdLight.returns(Promise.resolve({ fxTransferState: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT }))
+
+      const result = await allTransferHandlers.prepare(null, fxForwardedMessages[0])
+      test.equal(Kafka.proceed.getCall(0).args[2].fspiopError.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+      test.equal(result, true)
+      test.end()
+    })
+
+    prepareTest.test('produce error on transfer not found when receiving fx-forwarded event message', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      FxTransferService.getByIdLight.returns(Promise.resolve(null))
+
+      const result = await allTransferHandlers.prepare(null, fxForwardedMessages[0])
       test.equal(result, true)
       test.equal(Kafka.proceed.getCall(0).args[2].fspiopError.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND.code)
       test.end()
@@ -1391,6 +1452,17 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       const result = await allTransferHandlers.prepare(null, forwardedMessages[0])
       test.ok(TransferService.forwardedPrepare.called)
+      test.equal(result, true)
+      test.end()
+    })
+
+    prepareProxyTest.test('update reserved fxTransfer on fx-forwarded prepare message', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      FxTransferService.getByIdLight.returns(Promise.resolve({ fxTransferState: Enum.Transfers.TransferInternalState.RESERVED }))
+      const result = await allTransferHandlers.prepare(null, fxForwardedMessages[0])
+      test.ok(FxTransferService.forwardedFxPrepare.called)
       test.equal(result, true)
       test.end()
     })
