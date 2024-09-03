@@ -36,8 +36,12 @@ const getCache = () => {
 const getFSPProxy = async (dfspId) => {
   logger.debug('Checking if dfspId is in scheme or proxy', { dfspId })
   const participant = await ParticipantService.getByName(dfspId)
+  const inScheme = !!participant && participant.isActive
+
+  console.log('participant', participant)
+
   return {
-    inScheme: !!participant,
+    inScheme,
     proxyId: !participant ? await getCache().lookupProxyByDfspId(dfspId) : null
   }
 }

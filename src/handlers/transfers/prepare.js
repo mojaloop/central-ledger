@@ -37,7 +37,7 @@ const createRemittanceEntity = require('./createRemittanceEntity')
 const Validator = require('./validator')
 const dto = require('./dto')
 const TransferService = require('#src/domain/transfer/index')
-const ProxyCache = require('#src/lib/proxyCache')
+const ProxyCache = require('../../lib/proxyCache')
 
 const { Kafka, Comparators } = Util
 const { TransferState } = Enum.Transfers
@@ -360,8 +360,9 @@ const prepare = async (error, messages) => {
       payloadClone: { ...payload }
     }
     if (proxyEnabled) {
-      const [initiatingFsp, counterPartyFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
-      ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
+      const [initiatingFsp, counterPartyFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp];
+
+      [proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
         ProxyCache.getFSPProxy(initiatingFsp),
         ProxyCache.getFSPProxy(counterPartyFsp)
       ])
@@ -374,6 +375,7 @@ const prepare = async (error, messages) => {
 
       proxyObligation.isInitiatingFspProxy = !proxyObligation.initiatingFspProxyOrParticipantId.inScheme &&
         proxyObligation.initiatingFspProxyOrParticipantId.proxyId !== null
+
       proxyObligation.isCounterPartyFspProxy = !proxyObligation.counterPartyFspProxyOrParticipantId.inScheme &&
         proxyObligation.counterPartyFspProxyOrParticipantId.proxyId !== null
 
