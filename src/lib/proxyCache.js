@@ -33,12 +33,23 @@ const getCache = () => {
   return proxyCache
 }
 
-const getFSPProxy = async (dfspId) => {
+/**
+ * Get the proxy details for the given dfspId
+ *
+ * @param {*} dfspId
+ * @param {*} options { checkParticipantAccountIsActive: boolean, accountType: Enum.Accounts.LedgerAccountType, currency: string }
+ * @returns {Promise<{ inScheme: boolean, proxyId: string }>}
+ */
+const getFSPProxy = async (dfspId, options = null) => {
   logger.debug('Checking if dfspId is in scheme or proxy', { dfspId })
   const participant = await ParticipantService.getByName(dfspId)
-  const inScheme = !!participant && participant.isActive
+  let inScheme = !!participant
 
-  console.log('participant', participant)
+  if (inScheme && options?.checkParticipantAccountIsActive) {
+    logger.debug('Checking if participant account is active', { dfspId, options, participant })
+    const accountIsActive = participant.currencyList.some(account => account.currency === options.currency && account.LedgerAccountTypeId === options.accountType && account.isActive === 1)
+    inScheme = accountIsActive
+  }
 
   return {
     inScheme,
