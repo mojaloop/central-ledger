@@ -37,7 +37,7 @@ const getCache = () => {
  * Get the proxy details for the given dfspId
  *
  * @param {*} dfspId
- * @param {*} options { checkParticipantAccountIsActive: boolean, accountType: Enum.Accounts.LedgerAccountType, currency: string }
+ * @param {*} options - { validateCurrencyAccountsAreActive: boolean, accounts: [ { currency: string, accountType: Enum.Accounts.LedgerAccountType } ] }
  * @returns {Promise<{ inScheme: boolean, proxyId: string }>}
  */
 const getFSPProxy = async (dfspId, options = null) => {
