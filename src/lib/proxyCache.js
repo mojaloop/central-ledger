@@ -45,10 +45,14 @@ const getFSPProxy = async (dfspId, options = null) => {
   const participant = await ParticipantService.getByName(dfspId)
   let inScheme = !!participant
 
-  if (inScheme && options?.checkParticipantAccountIsActive) {
-    logger.debug('Checking if participant account is active', { dfspId, options, participant })
-    const accountIsActive = participant.currencyList.some(account => account.currencyId === options.currency && account.ledgerAccountTypeId === options.accountType && account.isActive === 1)
-    inScheme = accountIsActive
+  if (inScheme && options?.validateCurrencyAccountsAreActive) {
+    logger.debug('Checking if participant currency accounts are active', { dfspId, options, participant })
+    let accountsAreActive = false
+    for (const account of options.accounts) {
+      accountsAreActive = participant.currencyList.some(currAccount => currAccount.currencyId === account.currency && currAccount.ledgerAccountTypeId === account.accountType && currAccount.isActive === 1)
+      if (!accountsAreActive) break
+    }
+    inScheme = accountsAreActive
   }
 
   return {
