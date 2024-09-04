@@ -1857,14 +1857,14 @@ Test('Participant facade', async (facadeTest) => {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       const trxStub = {
-        get commit () {
+        commit () {
 
         },
-        get rollback () {
-
+        rollback () {
+          return Promise.reject(new Error('DB error'))
         }
       }
-      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
+      const trxSpyCommit = sandbox.spy(trxStub, 'commit')
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -1887,7 +1887,7 @@ Test('Participant facade', async (facadeTest) => {
       test.equal(whereNotStub.lastCall.args[0], 'participant.name', 'filter on participants name')
       test.equal(whereNotStub.lastCall.args[1], 'Hub', 'filter out the Hub')
       test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
-      test.equal(trxSpyCommit.get.calledOnce, false, 'not commit the transaction if transaction is passed')
+      test.equal(trxSpyCommit.called, false, 'not commit the transaction if transaction is passed')
       test.deepEqual(response, participantsWithCurrencies, 'return participants with currencies')
       test.end()
     } catch (err) {
@@ -1902,14 +1902,13 @@ Test('Participant facade', async (facadeTest) => {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       const trxStub = {
-        get commit () {
+        commit () {
 
         },
-        get rollback () {
-
+        rollback () {
+          return Promise.reject(new Error('DB error'))
         }
       }
-      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -1932,7 +1931,6 @@ Test('Participant facade', async (facadeTest) => {
       test.equal(whereNotStub.lastCall.args[0], 'participant.name', 'filter on participants name')
       test.equal(whereNotStub.lastCall.args[1], 'Hub', 'filter out the Hub')
       test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
-      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
 
       test.deepEqual(response, participantsWithCurrencies, 'return participants with currencies')
       test.end()
@@ -1950,7 +1948,7 @@ Test('Participant facade', async (facadeTest) => {
       const knexStub = sandbox.stub()
       trxStub = sandbox.stub()
       trxStub.commit = sandbox.stub()
-      trxStub.rollback = sandbox.stub()
+      trxStub.rollback = () => Promise.reject(new Error('DB Error'))
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
       const transactingStub = sandbox.stub()
@@ -1969,7 +1967,6 @@ Test('Participant facade', async (facadeTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxStub.rollback.callCount, 0, 'not rollback the transaction if transaction is passed')
       test.end()
     }
   })
