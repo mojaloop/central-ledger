@@ -2708,7 +2708,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'tp.transferId': transferId,
         'participant.isActive': 1
       }).calledOnce, 'query builder called once')
-      test.ok(transferParticipantStub.withArgs('transferParticipant AS tp', 'tp.participantId', 'pc.participantId').calledOnce, 'transferParticipant inner joined')
+      test.ok(transferParticipantStub.withArgs('transferParticipant AS tp', 'tp.participantId', 'participant.participantId').calledOnce, 'transferParticipant inner joined')
       test.ok(selectStub.withArgs(
         'tp.*'
       ).calledOnce, 'select all columns from transferParticipant')

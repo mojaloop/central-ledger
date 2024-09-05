@@ -1400,7 +1400,7 @@ const getTransferParticipant = async (participantName, transferId) => {
           'tp.transferId': transferId,
           'participant.isActive': 1
         })
-        .innerJoin('transferParticipant AS tp', 'tp.participantId', 'pc.participantId')
+        .innerJoin('transferParticipant AS tp', 'tp.participantId', 'participant.participantId')
         .select(
           'tp.*'
         )
