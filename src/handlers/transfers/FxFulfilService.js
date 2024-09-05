@@ -31,7 +31,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const { Type, Action } = Enum.Events.Event
 const { SOURCE, DESTINATION } = Enum.Http.Headers.FSPIOP
-const { TransferState } = Enum.Transfers
+const { TransferState, TransferInternalState } = Enum.Transfers
 
 const consumerCommit = true
 const fromSwitch = true
@@ -255,7 +255,8 @@ class FxFulfilService {
   }
 
   async validateTransferState(transfer, functionality) {
-    if (transfer.transferState !== TransferState.RESERVED) {
+    if (transfer.transferState !== TransferInternalState.RESERVED &&
+        transfer.transferState !== TransferInternalState.RESERVED_FORWARDED) {
       const fspiopError = fspiopErrorFactory.fxTransferNonReservedState()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {

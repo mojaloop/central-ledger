@@ -52,6 +52,7 @@ const ParticipantCurrencyCached = require('#src/models/participant/participantCu
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
 const TransferService = require('#src/domain/transfer/index')
+const FxTransferService = require('#src/domain/fx/index')
 
 const Handlers = {
   index: require('#src/handlers/register'),
@@ -360,7 +361,8 @@ const prepareTestData = async (dataObj) => {
       type: 'application/json',
       content: {
         payload: {
-          proxyId: 'test'
+          proxyId: 'test',
+          transferId: transferPayload.transferId
         }
       },
       metadata: {
@@ -368,6 +370,31 @@ const prepareTestData = async (dataObj) => {
           id: transferPayload.transferId,
           type: TransferEventType.PREPARE,
           action: TransferEventAction.FORWARDED,
+          createdAt: dataObj.now,
+          state: {
+            status: 'success',
+            code: 0
+          }
+        }
+      }
+    }
+
+    const messageProtocolPrepareFxForwarded = {
+      id: fxTransferPayload.commitRequestId,
+      from: 'payerFsp',
+      to: 'proxyFsp',
+      type: 'application/json',
+      content: {
+        payload: {
+          proxyId: 'test',
+          commitRequestId: fxTransferPayload.commitRequestId
+        }
+      },
+      metadata: {
+        event: {
+          id: transferPayload.transferId,
+          type: TransferEventType.PREPARE,
+          action: TransferEventAction.FX_FORWARDED,
           createdAt: dataObj.now,
           state: {
             status: 'success',
@@ -418,9 +445,15 @@ const prepareTestData = async (dataObj) => {
 
     const messageProtocolError = Util.clone(messageProtocolFulfil)
     messageProtocolError.id = randomUUID()
-    messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
+    messageProtocolError.content.uriParams = { id: transferPayload.transferId }
     messageProtocolError.content.payload = errorPayload
     messageProtocolError.metadata.event.action = TransferEventAction.ABORT
+
+    const messageProtocolFxError = Util.clone(messageProtocolFxFulfil)
+    messageProtocolFxError.id = randomUUID()
+    messageProtocolFxError.content.uriParams = { id: fxTransferPayload.commitRequestId }
+    messageProtocolFxError.content.payload = errorPayload
+    messageProtocolFxError.metadata.event.action = TransferEventAction.FX_ABORT
 
     const topicConfTransferPrepare = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.PREPARE)
     const topicConfTransferFulfil = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL)
@@ -434,7 +467,9 @@ const prepareTestData = async (dataObj) => {
       errorPayload,
       messageProtocolPrepare,
       messageProtocolPrepareForwarded,
+      messageProtocolPrepareFxForwarded,
       messageProtocolFxPrepare,
+      messageProtocolFxError,
       messageProtocolFulfil,
       messageProtocolFxFulfil,
       messageProtocolReject,
@@ -591,7 +626,10 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferForwarded.test('not timeout transfer in RESERVED_FORWARDED internal transfer state', async (test) => {
-      const td = await prepareTestData(testData)
+      const expiringTestData = Util.clone(testData)
+      expiringTestData.expiration = new Date((new Date()).getTime() + 5000)
+
+      const td = await prepareTestData(expiringTestData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -841,6 +879,299 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
     transferForwarded.end()
+  })
+
+  await handlersTest.test('transferFxForwarded should', async transferFxForwarded => {
+    await transferFxForwarded.test('should update fxTransfer internal state on prepare event fx-forwarded action', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED_FORWARDED, 'FxTransfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferFxForwarded.test('not timeout fxTransfer in RESERVED_FORWARDED internal transfer state', async (test) => {
+      const expiringTestData = Util.clone(testData)
+      expiringTestData.expiration = new Date((new Date()).getTime() + 5000)
+
+      const td = await prepareTestData(expiringTestData)
+
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED_FORWARDED, 'FxTransfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED_FORWARDED, 'FxTransfer still in RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferFxForwarded.test('should be able to transition from RESERVED_FORWARDED to COMMITED on fx-fulfil', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED_FORWARDED, 'FxTransfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      // Fulfil the fxTransfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      await Producer.produceMessage(td.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-reserve',
+          valueToFilter: td.payer.name
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFxFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      try {
+        const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.COMMITTED, 'FxTransfer state updated to COMMITTED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferFxForwarded.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_ERROR and ABORTED_ERROR on fx-fulfil error', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED_FORWARDED, 'FxTransfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      // Fulfil the fxTransfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      console.log('messageProtocolFxError', td.messageProtocolFxError)
+      await Producer.produceMessage(td.messageProtocolFxError, td.topicConfTransferFulfil, fulfilConfig)
+      await new Promise(resolve => setTimeout(resolve, 5000))
+      try {
+        const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.ABORTED_ERROR, 'FxTransfer state updated to ABORTED_ERROR')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferFxForwarded.test('should create notification message if fxTransfer is not found', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+
+      await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const notificationMessages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-forwarded'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(notificationMessages[0], 'notification message found')
+        test.equal(notificationMessages[0].value.to, 'proxyFsp')
+        test.equal(notificationMessages[0].value.from, 'payerFsp')
+        test.equal(
+          notificationMessages[0].value.content.payload.errorInformation.errorDescription,
+          'Generic ID not found - Forwarded fxTransfer could not be found.'
+        )
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferFxForwarded.test('should create notification message if transfer is found in incorrect state', async (test) => {
+      const expiredTestData = Util.clone(testData)
+      expiredTestData.expiration = new Date((new Date()).getTime() + 3000)
+
+      const td = await prepareTestData(expiredTestData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+      await new Promise(resolve => setTimeout(resolve, 3000))
+
+      try {
+        await wrapWithRetries(async () => {
+          const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+          if (fxTransfer?.fxTransferState !== TransferInternalState.EXPIRED_RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return fxTransfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      // Send the prepare forwarded message after the prepare message has timed out
+      await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const notificationMessages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-forwarded'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(notificationMessages[0], 'notification message found')
+        test.equal(notificationMessages[0].value.to, 'proxyFsp')
+        test.equal(notificationMessages[0].value.from, 'payerFsp')
+        test.equal(
+          notificationMessages[0].value.content.payload.errorInformation.errorDescription,
+          'Internal server error - Invalid State: EXPIRED_RESERVED - expected: RESERVED'
+        )
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+    transferFxForwarded.end()
   })
 
   await handlersTest.test('transferFulfil should', async transferFulfil => {

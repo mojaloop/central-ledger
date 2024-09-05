@@ -12,6 +12,7 @@ const TransferEventAction = Enum.Events.Event.Action
 Test('Fx', fxIndexTest => {
   let sandbox
   let payload
+  let fxPayload
   fxIndexTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Logger, 'isDebugEnabled').value(true)
@@ -40,7 +41,22 @@ Test('Fx', fxIndexTest => {
         ]
       }
     }
-
+    fxPayload = {
+      commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
+      determiningTransferId: 'c05c3f31-33b5-4e33-8bfd-7c3a2685fb6c',
+      condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+      expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)), // tomorrow
+      initiatingFsp: 'dfsp1',
+      counterPartyFsp: 'fx_dfsp',
+      sourceAmount: {
+        currency: 'USD',
+        amount: '433.88'
+      },
+      targetAmount: {
+        currency: 'EUR',
+        amount: '200.00'
+      }
+    }
     t.end()
   })
 
@@ -80,5 +96,37 @@ Test('Fx', fxIndexTest => {
 
     handleFulfilResponseTest.end()
   })
+
+  fxIndexTest.test('forwardedPrepare should', forwardedPrepareTest => {
+    forwardedPrepareTest.test('commit transfer', async (test) => {
+      try {
+        fxTransfer.updateFxPrepareReservedForwarded.returns(Promise.resolve())
+        await Fx.forwardedFxPrepare(fxPayload.commitRequestId)
+        test.ok(fxTransfer.updateFxPrepareReservedForwarded.calledWith(fxPayload.commitRequestId))
+        test.pass()
+        test.end()
+      } catch (err) {
+        Logger.error(`handlePayeeResponse failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    forwardedPrepareTest.test('throw error', async (test) => {
+      try {
+        fxTransfer.updateFxPrepareReservedForwarded.throws(new Error())
+        await Fx.forwardedFxPrepare(fxPayload.commitRequestId)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (err) {
+        Logger.error(`handlePayeeResponse failed with error - ${err}`)
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    forwardedPrepareTest.end()
+  })
+
   fxIndexTest.end()
 })

@@ -372,6 +372,7 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
   switch (action) {
     case TransferEventAction.FX_COMMIT:
     case TransferEventAction.FX_RESERVE:
+    case TransferEventAction.FX_FORWARDED:
       state = TransferInternalState.RECEIVED_FULFIL_DEPENDENT
       // extensionList = payload && payload.extensionList
       isFulfilment = true
@@ -505,6 +506,21 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
   }
 }
 
+const updateFxPrepareReservedForwarded = async function (commitRequestId) {
+  try {
+    const knex = await Db.getKnex()
+    return await knex('fxTransferStateChange')
+      .insert({
+        commitRequestId,
+        transferStateId: TransferInternalState.RESERVED_FORWARDED,
+        reason: null,
+        createdDate: Time.getUTCString(new Date())
+      })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 module.exports = {
   getByCommitRequestId,
   getByDeterminingTransferId,
@@ -513,5 +529,6 @@ module.exports = {
   savePreparedRequest,
   saveFxFulfilResponse,
   saveFxTransfer,
-  getAllDetailsByCommitRequestIdForProxiedFxTransfer
+  getAllDetailsByCommitRequestIdForProxiedFxTransfer,
+  updateFxPrepareReservedForwarded
 }

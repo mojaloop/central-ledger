@@ -54,6 +54,22 @@ const handleFulfilResponse = async (transferId, payload, action, fspiopError) =>
   }
 }
 
+const forwardedFxPrepare = async (commitRequestId) => {
+  const histTimerTransferServicePrepareEnd = Metrics.getHistogram(
+    'fx_domain_transfer',
+    'prepare - Metrics for fx transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+  try {
+    const result = await FxTransferModel.fxTransfer.updateFxPrepareReservedForwarded(commitRequestId)
+    histTimerTransferServicePrepareEnd({ success: true, funcName: 'forwardedFxPrepare' })
+    return result
+  } catch (err) {
+    histTimerTransferServicePrepareEnd({ success: false, funcName: 'forwardedFxPrepare' })
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 // TODO: Need to implement this for fxTransferError
 // /**
 //  * @function LogFxTransferError
@@ -82,6 +98,8 @@ const handleFulfilResponse = async (transferId, payload, action, fspiopError) =>
 
 const TransferService = {
   handleFulfilResponse,
+  forwardedFxPrepare,
+  getByIdLight: FxTransferModel.fxTransfer.getByIdLight,
   // logFxTransferError,
   Cyril
 }
