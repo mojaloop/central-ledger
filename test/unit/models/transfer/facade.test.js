@@ -2661,7 +2661,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const participantName = 'fsp1'
       const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
       const builderStub = sandbox.stub()
-      const participantCurrencyStub = sandbox.stub()
       const transferParticipantStub = sandbox.stub()
       const selectStub = sandbox.stub()
 
@@ -2669,10 +2668,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
       Db.participant.query.callsArgWith(0, builderStub)
 
       builderStub.where.returns({
-        innerJoin: participantCurrencyStub.returns({
-          innerJoin: transferParticipantStub.returns({
-            select: selectStub.returns([1])
-          })
+        innerJoin: transferParticipantStub.returns({
+          select: selectStub.returns([1])
         })
       })
 
@@ -2681,11 +2678,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
       test.ok(builderStub.where.withArgs({
         'participant.name': participantName,
         'tp.transferId': transferId,
-        'participant.isActive': 1,
-        'pc.isActive': 1
+        'participant.isActive': 1
       }).calledOnce, 'query builder called once')
-      test.ok(participantCurrencyStub.withArgs('participantCurrency AS pc', 'pc.participantId', 'participant.participantId').calledOnce, 'participantCurrency inner joined')
-      test.ok(transferParticipantStub.withArgs('transferParticipant AS tp', 'tp.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'transferParticipant inner joined')
+      test.ok(transferParticipantStub.withArgs('transferParticipant AS tp', 'tp.participantId', 'pc.participantId').calledOnce, 'transferParticipant inner joined')
       test.ok(selectStub.withArgs(
         'tp.*'
       ).calledOnce, 'select all columns from transferParticipant')
