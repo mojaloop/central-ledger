@@ -37,7 +37,7 @@ const getCache = () => {
  * Get the proxy details for the given dfspId
  *
  * @param {*} dfspId
- * @param {*} options - { validateCurrencyAccountsAreActive: boolean, accounts: [ { currency: string, accountType: Enum.Accounts.LedgerAccountType } ] }
+ * @param {*} options - { validateCurrencyAccounts: boolean, accounts: [ { currency: string, accountType: Enum.Accounts.LedgerAccountType } ] }
  * @returns {Promise<{ inScheme: boolean, proxyId: string }>}
  */
 const getFSPProxy = async (dfspId, options = null) => {
@@ -45,7 +45,7 @@ const getFSPProxy = async (dfspId, options = null) => {
   const participant = await ParticipantService.getByName(dfspId)
   let inScheme = !!participant
 
-  if (inScheme && options?.validateCurrencyAccountsAreActive) {
+  if (inScheme && options?.validateCurrencyAccounts) {
     logger.debug('Checking if participant currency accounts are active', { dfspId, options, participant })
     let accountsAreActive = false
     for (const account of options.accounts) {
