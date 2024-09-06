@@ -49,7 +49,13 @@ const getFSPProxy = async (dfspId, options = null) => {
     logger.debug('Checking if participant currency accounts are active', { dfspId, options, participant })
     let accountsAreActive = false
     for (const account of options.accounts) {
-      accountsAreActive = participant.currencyList.some(currAccount => currAccount.currencyId === account.currency && currAccount.ledgerAccountTypeId === account.accountType && currAccount.isActive === 1)
+      accountsAreActive = participant.currencyList.some((currAccount) => {
+        return (
+          currAccount.currencyId === account.currency &&
+          currAccount.ledgerAccountTypeId === account.accountType &&
+          currAccount.isActive === 1
+        )
+      })
       if (!accountsAreActive) break
     }
     inScheme = accountsAreActive
