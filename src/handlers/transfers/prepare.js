@@ -51,6 +51,99 @@ const consumerCommit = true
 const fromSwitch = true
 const proxyEnabled = Config.PROXY_CACHE_CONFIG.enabled
 
+// todo: think better name
+const forwardPrepare = async ({ isFx, params, ID }) => {
+  if (isFx) {
+    const fxTransfer = await FxTransferService.getByIdLight(ID)
+    if (!fxTransfer) {
+      const eventDetail = {
+        functionality: Type.NOTIFICATION,
+        action: Action.FX_FORWARDED
+      }
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+        'Forwarded fxTransfer could not be found.'
+      ).toApiErrorObject(Config.ERROR_HANDLING)
+      // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+      //            notify the payerFsp and proxy of the error.
+      //            As long as the `to` and `from` message values are the fsp and fxp,
+      //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+        consumerCommit,
+        fspiopError,
+        eventDetail
+      })
+      return true
+    }
+
+    if (fxTransfer.fxTransferState === Enum.Transfers.TransferInternalState.RESERVED) {
+      await FxTransferService.forwardedFxPrepare(ID)
+    } else {
+      const eventDetail = {
+        functionality: Type.NOTIFICATION,
+        action: Action.FX_FORWARDED
+      }
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
+        `Invalid State: ${fxTransfer.fxTransferState} - expected: ${Enum.Transfers.TransferInternalState.RESERVED}`
+      ).toApiErrorObject(Config.ERROR_HANDLING)
+      // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+      //            notify the payerFsp and proxy of the error.
+      //            As long as the `to` and `from` message values are the fsp and fxp,
+      //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+        consumerCommit,
+        fspiopError,
+        eventDetail
+      })
+    }
+  } else {
+    const transfer = await TransferService.getById(ID)
+    if (!transfer) {
+      const eventDetail = {
+        functionality: Type.NOTIFICATION,
+        action: Action.FORWARDED
+      }
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+        'Forwarded transfer could not be found.'
+      ).toApiErrorObject(Config.ERROR_HANDLING)
+      // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+      //            notify the payerFsp and proxy of the error.
+      //            As long as the `to` and `from` message values are the payer and payee,
+      //            and the action is `forwarded`, the ml-api-adapter will notify both.
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+        consumerCommit,
+        fspiopError,
+        eventDetail
+      })
+      return true
+    }
+
+    if (transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED) {
+      await TransferService.forwardedPrepare(ID)
+    } else {
+      const eventDetail = {
+        functionality: Enum.Events.Event.Type.NOTIFICATION,
+        action: Enum.Events.Event.Action.FORWARDED
+      }
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
+        `Invalid State: ${transfer.transferState} - expected: ${Enum.Transfers.TransferInternalState.RESERVED}`
+      ).toApiErrorObject(Config.ERROR_HANDLING)
+      // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+      //            notify the payerFsp and proxy of the error.
+      //            As long as the `to` and `from` message values are the payer and payee,
+      //            and the action is `forwarded`, the ml-api-adapter will notify both.
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+        consumerCommit,
+        fspiopError,
+        eventDetail
+      })
+    }
+  }
+
+  return true
+}
+
 const calculateProxyObligation = async ({ payload, isFx, params, functionality, action }) => {
   const proxyObligation = {
     isFx,
@@ -362,110 +455,9 @@ const prepare = async (error, messages) => {
     }
 
     if (proxyEnabled && isForwarded) {
-      if (isFx) {
-        const fxTransfer = await FxTransferService.getByIdLight(ID)
-        if (!fxTransfer) {
-          const eventDetail = {
-            functionality: Enum.Events.Event.Type.NOTIFICATION,
-            action: Enum.Events.Event.Action.FX_FORWARDED
-          }
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-            'Forwarded fxTransfer could not be found.'
-          ).toApiErrorObject(Config.ERROR_HANDLING)
-          // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
-          //            notify the payerFsp and proxy of the error.
-          //            As long as the `to` and `from` message values are the fsp and fxp,
-          //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
-          await Kafka.proceed(
-            Config.KAFKA_CONFIG,
-            params,
-            {
-              consumerCommit,
-              fspiopError,
-              eventDetail
-            }
-          )
-          return true
-        } else {
-          if (fxTransfer.fxTransferState === Enum.Transfers.TransferInternalState.RESERVED) {
-            await FxTransferService.forwardedFxPrepare(ID)
-          } else {
-            const eventDetail = {
-              functionality: Enum.Events.Event.Type.NOTIFICATION,
-              action: Enum.Events.Event.Action.FX_FORWARDED
-            }
-            const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
-              `Invalid State: ${fxTransfer.fxTransferState} - expected: ${Enum.Transfers.TransferInternalState.RESERVED}`
-            ).toApiErrorObject(Config.ERROR_HANDLING)
-            // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
-            //            notify the payerFsp and proxy of the error.
-            //            As long as the `to` and `from` message values are the fsp and fxp,
-            //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
-            await Kafka.proceed(
-              Config.KAFKA_CONFIG,
-              params,
-              {
-                consumerCommit,
-                fspiopError,
-                eventDetail
-              }
-            )
-          }
-        }
-      } else {
-        const transfer = await TransferService.getById(ID)
-        if (!transfer) {
-          const eventDetail = {
-            functionality: Enum.Events.Event.Type.NOTIFICATION,
-            action: Enum.Events.Event.Action.FORWARDED
-          }
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-            'Forwarded transfer could not be found.'
-          ).toApiErrorObject(Config.ERROR_HANDLING)
-          // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
-          //            notify the payerFsp and proxy of the error.
-          //            As long as the `to` and `from` message values are the payer and payee,
-          //            and the action is `forwarded`, the ml-api-adapter will notify both.
-          await Kafka.proceed(
-            Config.KAFKA_CONFIG,
-            params,
-            {
-              consumerCommit,
-              fspiopError,
-              eventDetail
-            }
-          )
-          return true
-        }
-
-        if (transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED) {
-          await TransferService.forwardedPrepare(ID)
-        } else {
-          const eventDetail = {
-            functionality: Enum.Events.Event.Type.NOTIFICATION,
-            action: Enum.Events.Event.Action.FORWARDED
-          }
-          const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
-            `Invalid State: ${transfer.transferState} - expected: ${Enum.Transfers.TransferInternalState.RESERVED}`
-          ).toApiErrorObject(Config.ERROR_HANDLING)
-          // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
-          //            notify the payerFsp and proxy of the error.
-          //            As long as the `to` and `from` message values are the payer and payee,
-          //            and the action is `forwarded`, the ml-api-adapter will notify both.
-          await Kafka.proceed(
-            Config.KAFKA_CONFIG,
-            params,
-            {
-              consumerCommit,
-              fspiopError,
-              eventDetail
-            }
-          )
-        }
-      }
-      return true
+      const isOk = await forwardPrepare({ isFx, params, ID })
+      logger.info('forwardPrepare message is processed', { isOk, isFx, ID })
+      return isOk
     }
 
     const proxyObligation = await calculateProxyObligation({
@@ -482,10 +474,7 @@ const prepare = async (error, messages) => {
     }
 
     const determiningTransferCheckResult = await createRemittanceEntity(isFx)
-      .checkIfDeterminingTransferExists(
-        proxyObligation.payloadClone,
-        proxyObligation
-      )
+      .checkIfDeterminingTransferExists(proxyObligation.payloadClone, proxyObligation)
 
     const { validationPassed, reasons } = await Validator.validatePrepare(
       payload,
@@ -506,6 +495,7 @@ const prepare = async (error, messages) => {
       determiningTransferCheckResult,
       proxyObligation
     })
+
     if (!validationPassed) {
       logger.warn(Util.breadcrumb(location, { path: 'validationFailed' }))
       const fspiopError = createFSPIOPError(FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
@@ -551,6 +541,7 @@ const prepare = async (error, messages) => {
 
 module.exports = {
   prepare,
+  forwardPrepare,
   calculateProxyObligation,
   checkDuplication,
   processDuplication,
