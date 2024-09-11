@@ -41,7 +41,7 @@ const ProxyCache = require('#src/lib/proxyCache')
 const FxTransferService = require('#src/domain/fx/index')
 
 const { Kafka, Comparators } = Util
-const { TransferState } = Enum.Transfers
+const { TransferState, TransferInternalState } = Enum.Transfers
 const { Action, Type } = Enum.Events.Event
 const { FSPIOPErrorCodes } = ErrorHandler.Enums
 const { createFSPIOPError, reformatFSPIOPError } = ErrorHandler.Factory
@@ -51,93 +51,74 @@ const consumerCommit = true
 const fromSwitch = true
 const proxyEnabled = Config.PROXY_CACHE_CONFIG.enabled
 
-// todo: think better name
+const proceedForwardErrorMessage = async ({ fspiopError, isFx, params }) => {
+  const eventDetail = {
+    functionality: Type.NOTIFICATION,
+    action: isFx ? Action.FX_FORWARDED : Action.FORWARDED
+  }
+  await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+    fspiopError,
+    eventDetail,
+    consumerCommit
+  })
+  logger.warn('proceedForwardErrorMessage is done', { fspiopError, eventDetail })
+}
+
+// think better name
 const forwardPrepare = async ({ isFx, params, ID }) => {
   if (isFx) {
     const fxTransfer = await FxTransferService.getByIdLight(ID)
     if (!fxTransfer) {
-      const eventDetail = {
-        functionality: Type.NOTIFICATION,
-        action: Action.FX_FORWARDED
-      }
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+        FSPIOPErrorCodes.ID_NOT_FOUND,
         'Forwarded fxTransfer could not be found.'
       ).toApiErrorObject(Config.ERROR_HANDLING)
       // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
       //            notify the payerFsp and proxy of the error.
       //            As long as the `to` and `from` message values are the fsp and fxp,
       //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
-        consumerCommit,
-        fspiopError,
-        eventDetail
-      })
+      await proceedForwardErrorMessage({ fspiopError, isFx, params })
       return true
     }
 
-    if (fxTransfer.fxTransferState === Enum.Transfers.TransferInternalState.RESERVED) {
+    if (fxTransfer.fxTransferState === TransferInternalState.RESERVED) {
       await FxTransferService.forwardedFxPrepare(ID)
     } else {
-      const eventDetail = {
-        functionality: Type.NOTIFICATION,
-        action: Action.FX_FORWARDED
-      }
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
-        `Invalid State: ${fxTransfer.fxTransferState} - expected: ${Enum.Transfers.TransferInternalState.RESERVED}`
+        `Invalid State: ${fxTransfer.fxTransferState} - expected: ${TransferInternalState.RESERVED}`
       ).toApiErrorObject(Config.ERROR_HANDLING)
       // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
       //            notify the payerFsp and proxy of the error.
       //            As long as the `to` and `from` message values are the fsp and fxp,
       //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
-        consumerCommit,
-        fspiopError,
-        eventDetail
-      })
+      await proceedForwardErrorMessage({ fspiopError, isFx, params })
     }
   } else {
     const transfer = await TransferService.getById(ID)
     if (!transfer) {
-      const eventDetail = {
-        functionality: Type.NOTIFICATION,
-        action: Action.FORWARDED
-      }
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+        FSPIOPErrorCodes.ID_NOT_FOUND,
         'Forwarded transfer could not be found.'
       ).toApiErrorObject(Config.ERROR_HANDLING)
       // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
       //            notify the payerFsp and proxy of the error.
       //            As long as the `to` and `from` message values are the payer and payee,
       //            and the action is `forwarded`, the ml-api-adapter will notify both.
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
-        consumerCommit,
-        fspiopError,
-        eventDetail
-      })
+      await proceedForwardErrorMessage({ fspiopError, isFx, params })
       return true
     }
 
-    if (transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED) {
+    if (transfer.transferState === TransferInternalState.RESERVED) {
       await TransferService.forwardedPrepare(ID)
     } else {
-      const eventDetail = {
-        functionality: Enum.Events.Event.Type.NOTIFICATION,
-        action: Enum.Events.Event.Action.FORWARDED
-      }
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
-        `Invalid State: ${transfer.transferState} - expected: ${Enum.Transfers.TransferInternalState.RESERVED}`
+        `Invalid State: ${transfer.transferState} - expected: ${TransferInternalState.RESERVED}`
       ).toApiErrorObject(Config.ERROR_HANDLING)
       // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
       //            notify the payerFsp and proxy of the error.
       //            As long as the `to` and `from` message values are the payer and payee,
       //            and the action is `forwarded`, the ml-api-adapter will notify both.
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
-        consumerCommit,
-        fspiopError,
-        eventDetail
-      })
+      await proceedForwardErrorMessage({ fspiopError, isFx, params })
     }
   }
 
@@ -527,7 +508,7 @@ const prepare = async (error, messages) => {
   } catch (err) {
     histTimerEnd({ success: false, fspId })
     const fspiopError = reformatFSPIOPError(err)
-    logger.error(`${Util.breadcrumb(location)}::${err.message}--P0`, err)
+    logger.error(`${Util.breadcrumb(location)}::${err.message}`, err)
     const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
     await span.finish(fspiopError.message, state)
