@@ -1,6 +1,7 @@
 const fxTransferModel = require('../../models/fxTransfer')
 const TransferService = require('../../domain/transfer')
 const cyril = require('../../domain/fx/cyril')
+const { logger } = require('../../shared/logger')
 
 // abstraction on transfer and fxTransfer
 const createRemittanceEntity = (isFx) => {
@@ -50,15 +51,21 @@ const createRemittanceEntity = (isFx) => {
     },
 
     async checkIfDeterminingTransferExists (payload, proxyObligation) {
-      return isFx
-        ? cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, proxyObligation)
-        : cyril.checkIfDeterminingTransferExistsForTransferMessage(payload, proxyObligation)
+      const result = isFx
+        ? await cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, proxyObligation)
+        : await cyril.checkIfDeterminingTransferExistsForTransferMessage(payload, proxyObligation)
+
+      logger.debug('cyril determiningTransferCheckResult:', { result })
+      return result
     },
 
     async getPositionParticipant (payload, determiningTransferCheckResult, proxyObligation) {
-      return isFx
-        ? cyril.getParticipantAndCurrencyForFxTransferMessage(payload, determiningTransferCheckResult)
-        : cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult, proxyObligation)
+      const result = isFx
+        ? await cyril.getParticipantAndCurrencyForFxTransferMessage(payload, determiningTransferCheckResult)
+        : await cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult, proxyObligation)
+
+      logger.debug('cyril getPositionParticipant result:', { result })
+      return result
     },
 
     async logTransferError (id, errorCode, errorDescription) {
