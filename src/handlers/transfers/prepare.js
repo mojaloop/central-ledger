@@ -171,8 +171,6 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
   // Only check transfers that have a related fxTransfer
   if (determiningTransferCheckResult?.watchListRecords?.length > 0) {
     const counterPartyParticipantFXPProxy = cyrilResult.participantName
-    console.log(counterPartyParticipantFXPProxy)
-    console.log(proxyObligation?.counterPartyFspProxyOrParticipantId?.proxyId)
     isSameProxy = counterPartyParticipantFXPProxy && proxyObligation?.counterPartyFspProxyOrParticipantId?.proxyId
       ? counterPartyParticipantFXPProxy === proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
       : false

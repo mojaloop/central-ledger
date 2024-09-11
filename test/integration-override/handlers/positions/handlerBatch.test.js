@@ -68,10 +68,10 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
-const debug = process?.env?.TEST_INT_DEBUG || false
-// const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
-const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
-const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
+const debug = process?.env?.test_INT_DEBUG || false
+// const rebalanceDelay = process?.env?.test_INT_REBALANCE_DELAY || 10000
+const retryDelay = process?.env?.test_INT_RETRY_DELAY || 2
+const retryCount = process?.env?.test_INT_RETRY_COUNT || 40
 const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
@@ -1699,7 +1699,9 @@ Test('Handlers test', async handlersTest => {
       const topicNameOverride = 'topic-transfer-position-batch'
       const message = {
         value: {
-          content: {},
+          content: {
+            id: randomUUID()
+          },
           from: 'payerFsp',
           to: 'testFxp',
           id: randomUUID(),
@@ -1728,7 +1730,7 @@ Test('Handlers test', async handlersTest => {
         eventDetail: { functionality: 'position', action: 'prepare' },
         fromSwitch: false,
         toDestination: 'payerFsp',
-        messageKey: '0',
+        messageKey: 0,
         topicNameOverride
       }
       await Utility.proceed(Config.KAFKA_CONFIG, params, opts)
@@ -1738,7 +1740,7 @@ Test('Handlers test', async handlersTest => {
       try {
         const notificationPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
-          action: 'perpare'
+          action: 'prepare'
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
         notificationPrepareFiltered = notificationPrepare.filter((notification) => notification.to !== 'Hub')

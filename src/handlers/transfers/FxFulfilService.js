@@ -110,6 +110,7 @@ class FxFulfilService {
       cyrilResult
     }
     if (cyrilResult.positionChanges.length > 0) {
+      this.log.warn(JSON.stringify(cyrilResult.positionChanges))
       const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
       await this.kafkaProceed({
         consumerCommit,

@@ -148,6 +148,10 @@ const processBins = async (bins, trx) => {
     let changePositions = false
 
     if (accountID !== '0') {
+      Logger.warn(`Processing account: ${accountID}`)
+      Logger.warn(`AccountIdMap: ${JSON.stringify(accountIdMap)}`)
+      Logger.warn(JSON.stringify(accountIdMap[accountID]))
+      Logger.warn(`Positions: ${JSON.stringify(positions)}`)
       settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
 
       // Story #3657: The following SQL query/lookup can be optimized for performance

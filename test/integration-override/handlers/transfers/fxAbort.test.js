@@ -398,7 +398,7 @@ const prepareFxTestData = async (dataObj) => {
   }
 }
 
-Test('Handlers test', async handlersTest => {
+Test('FxAbort Handlers test', async handlersTest => {
   const startTime = new Date()
   await Db.connect(Config.DATABASE)
   await ParticipantCached.initialize()
