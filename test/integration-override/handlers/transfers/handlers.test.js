@@ -53,6 +53,7 @@ const ParticipantLimitCached = require('#src/models/participant/participantLimit
 const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
 const TransferService = require('#src/domain/transfer/index')
 const FxTransferService = require('#src/domain/fx/index')
+const ParticipantService = require('#src/domain/participant/index')
 
 const Handlers = {
   index: require('#src/handlers/register'),
@@ -65,10 +66,10 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
-const debug = process?.env?.TEST_INT_DEBUG || false
-const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
-const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
-const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
+const debug = process?.env?.test_INT_DEBUG || false
+const rebalanceDelay = process?.env?.test_INT_REBALANCE_DELAY || 10000
+const retryDelay = process?.env?.test_INT_RETRY_DELAY || 2
+const retryCount = process?.env?.test_INT_RETRY_COUNT || 40
 const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
@@ -1470,6 +1471,12 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
 
       td.messageProtocolFxPrepare.content.to = creditor
       td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = creditor
@@ -1484,6 +1491,51 @@ Test('Handlers test', async handlersTest => {
           keyFilter: td.payer.participantCurrencyId.toString()
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(positionPrepare[0], 'Position prepare message with debtor key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Payer DFSP position account must be updated (reserved)
+      let payerPositionAfterFxPrepare
+      const tests = async () => {
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+        const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+        const payerExpectedPosition = Number(payerInitialPosition) + Number(td.fxTransferPayload.sourceAmount.amount)
+        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        payerPositionAfterFxPrepare = payerExpectedPosition
+      }
+      try {
+        await wrapWithRetries(async () => {
+          const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+          Logger.warn(`fxTransfer: ${JSON.stringify(fxTransfer)}`)
+          if (fxTransfer?.fxTransferState !== TransferInternalState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return fxTransfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        await tests()
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      td.messageProtocolFxFulfil.content.to = td.payer.participant.name
+      td.messageProtocolFxFulfil.content.from = 'regionalSchemeFXP'
+      td.messageProtocolFxFulfil.content.headers['fspiop-destination'] = td.payer.participant.name
+      td.messageProtocolFxFulfil.content.headers['fspiop-source'] = 'regionalSchemeFXP'
+      await Producer.produceMessage(td.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-reserve',
+          valueToFilter: td.payer.name
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Fulfil notification found')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
@@ -1511,15 +1563,13 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
-      testConsumer.clearEvents()
-      try {
-        await wrapWithRetries(() => testConsumer.getEventsForFilter({
-          topicFilter: 'topic-notification-event'
-        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.notOk('No notification messages should be produced')
-      } catch (err) {
-        test.ok('No notification messages produced')
-      }
+
+      // Hard to test that the position messageKey=0 equates to doing nothing
+      // so we'll just check that the positions are unchanged for the participants
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+      test.equal(payerCurrentPosition.value, payerPositionAfterFxPrepare, 'Payer position unchanged')
+      const proxyARCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.proxyAR.participantCurrencyId) || {}
+      test.equal(proxyARCurrentPosition.value, td.proxyARLimitAndInitialPosition.participantPosition.value, 'FXP position unchanged')
 
       testConsumer.clearEvents()
       test.end()
