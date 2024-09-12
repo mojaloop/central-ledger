@@ -42,6 +42,7 @@ const Decimal = require('decimal.js')
 const Config = require('../../lib/config')
 const Participant = require('../../domain/participant')
 const Transfer = require('../../domain/transfer')
+const FxTransferModel = require('../../models/fxTransfer')
 const CryptoConditions = require('../../cryptoConditions')
 const Crypto = require('crypto')
 const base64url = require('base64url')
@@ -265,11 +266,28 @@ const validateParticipantTransferId = async function (participantName, transferI
   return validationPassed
 }
 
+const validateParticipantsForCommitRequestId = async function (participantIds, commitRequestId) {
+  const fxTransferParticipants = await FxTransferModel.fxTransfer.getFxTransferParticipants(participantName, transferId)
+  let validationPassed = false
+  if (Array.isArray(fxTransferParticipants) && fxTransferParticipants.length > 0) {
+    // Check if fxTransferParticipants contains any of the participantIds
+    const participantIdsSet = new Set(participantIds)
+    for (const fxTransferParticipant of fxTransferParticipants) {
+      if (participantIdsSet.has(fxTransferParticipant.participantId)) {
+        validationPassed = true
+        break
+      }
+    }
+  }
+  return validationPassed
+}
+
 module.exports = {
   validatePrepare,
   validateById,
   validateFulfilCondition,
   validateParticipantByName,
   reasons,
-  validateParticipantTransferId
+  validateParticipantTransferId,
+  validateParticipantsForCommitRequestId
 }

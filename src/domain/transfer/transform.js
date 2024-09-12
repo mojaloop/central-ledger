@@ -113,8 +113,12 @@ const transformExtensionList = (extensionList) => {
 const transformTransferToFulfil = (transfer, isFx) => {
   try {
     const result = {
-      completedTimestamp: transfer.completedTimestamp,
-      transferState: transfer.transferStateEnumeration
+      completedTimestamp: transfer.completedTimestamp
+    }
+    if (isFx) {
+      result.conversionState = transfer.fxTransferStateEnumeration
+    } else {
+      result.transferState = transfer.transferStateEnumeration
     }
     if (transfer.fulfilment !== '0') result.fulfilment = transfer.fulfilment
 
