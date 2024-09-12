@@ -1511,6 +1511,15 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
+      testConsumer.clearEvents()
+      try {
+        await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event'
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.notOk('No notification messages should be produced')
+      } catch (err) {
+        test.ok('No notification messages produced')
+      }
 
       testConsumer.clearEvents()
       test.end()
