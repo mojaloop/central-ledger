@@ -92,12 +92,11 @@ const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', a
     if (transferStateId === Enum.Transfers.TransferState.RESERVED) {
       const fxTransferStateChangeId = await knex(TABLE_NAMES.fxTransferStateChange).where({ commitRequestId }).select('fxTransferStateChangeId')
       await knex(TABLE_NAMES.participantPositionChange).insert({
-        participantCurrencyId: fxTransfer,
         participantPositionId: 1,
         fxTransferStateChangeId: fxTransferStateChangeId[0].fxTransferStateChangeId,
         participantCurrencyId: 1,
         value: 0,
-        reservedValue: 0,
+        reservedValue: 0
       })
     }
   }
