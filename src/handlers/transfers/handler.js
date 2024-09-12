@@ -774,7 +774,7 @@ const getTransfer = async (error, messages) => {
 
     const actionLetter = Enum.Events.ActionLetter.get
     const params = { message, kafkaTopic, span, consumer: Consumer, producer: Producer }
-    const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.GET }
+    const eventDetail = { functionality: TransferEventType.NOTIFICATION, action }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
     if (!await Validator.validateParticipantByName(message.value.from)) {
@@ -784,14 +784,14 @@ const getTransfer = async (error, messages) => {
       return true
     }
     if (isFx) {
-      const fxTransfer = await FxTransferModel.fxTransfer.getByIdLight(commitRequestId)
+      const fxTransfer = await FxTransferModel.fxTransfer.getByIdLight(transferIdOrCommitRequestId)
       if (!fxTransfer) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided commitRequest ID was not found on the server.')
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         throw fspiopError
       }
-      if (!await Validator.validateParticipantsForCommitRequestId([message.value.from, message.value.to], commitRequestId)) {
+      if (!await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })

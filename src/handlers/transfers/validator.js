@@ -266,18 +266,11 @@ const validateParticipantTransferId = async function (participantName, transferI
   return validationPassed
 }
 
-const validateParticipantsForCommitRequestId = async function (participantIds, commitRequestId) {
-  const fxTransferParticipants = await FxTransferModel.fxTransfer.getFxTransferParticipants(participantName, transferId)
+const validateParticipantForCommitRequestId = async function (participantName, commitRequestId) {
+  const fxTransferParticipants = await FxTransferModel.fxTransfer.getFxTransferParticipant(participantName, commitRequestId)
   let validationPassed = false
   if (Array.isArray(fxTransferParticipants) && fxTransferParticipants.length > 0) {
-    // Check if fxTransferParticipants contains any of the participantIds
-    const participantIdsSet = new Set(participantIds)
-    for (const fxTransferParticipant of fxTransferParticipants) {
-      if (participantIdsSet.has(fxTransferParticipant.participantId)) {
-        validationPassed = true
-        break
-      }
-    }
+    validationPassed = true
   }
   return validationPassed
 }
@@ -289,5 +282,5 @@ module.exports = {
   validateParticipantByName,
   reasons,
   validateParticipantTransferId,
-  validateParticipantsForCommitRequestId
+  validateParticipantForCommitRequestId
 }

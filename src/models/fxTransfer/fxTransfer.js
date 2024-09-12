@@ -521,17 +521,18 @@ const updateFxPrepareReservedForwarded = async function (commitRequestId) {
   }
 }
 
-const getFxTransferParticipants = async (commitRequestId) => {
+const getFxTransferParticipant = async (participantName, commitRequestId) => {
   try {
     return Db.from('participant').query(async (builder) => {
       return builder
         .where({
-          'ftp.commitRequestId': commitRequestId
+          'ftp.commitRequestId': commitRequestId,
+          'participant.name': participantName,
+          'participant.isActive': 1
         })
         .innerJoin('fxTransferParticipant AS ftp', 'ftp.participantId', 'participant.participantId')
         .select(
-          'participant.participantId',
-          'participant.isActive AS isActive',
+          'ftp.*'
         )
     })
   } catch (err) {
@@ -544,7 +545,7 @@ module.exports = {
   getByDeterminingTransferId,
   getByIdLight,
   getAllDetailsByCommitRequestId,
-  getFxTransferParticipants,
+  getFxTransferParticipant,
   savePreparedRequest,
   saveFxFulfilResponse,
   saveFxTransfer,
