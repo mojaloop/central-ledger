@@ -695,7 +695,7 @@ Test('Handlers test', async handlersTest => {
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(positionPrepare[0], 'Position prepare duplicate message with key found')
         // Check if the error message is correct
-        test.equal(positionPrepare[0].value.content.payload.transferState, TransferStateEnum.COMMITTED)
+        test.equal(positionPrepare[0].value.content.payload.conversionState, TransferStateEnum.COMMITTED)
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
@@ -770,7 +770,7 @@ Test('Handlers test', async handlersTest => {
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(positionPrepare[0], 'Position prepare duplicate message with key found')
         // Check if the error message is correct
-        test.equal(positionPrepare[0].value.content.payload.transferState, TransferStateEnum.ABORTED)
+        test.equal(positionPrepare[0].value.content.payload.conversionState, TransferStateEnum.ABORTED)
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
