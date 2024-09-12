@@ -40,7 +40,7 @@ Test('participantPositionChanges model', async (participantPositionChangesTest) 
     knexStub.returns({
       where: sandbox.stub().returns({
         where: sandbox.stub().returns({
-          leftJoin: sandbox.stub().returns({
+          innerJoin: sandbox.stub().returns({
             select: sandbox.stub().resolves({})
           })
         })

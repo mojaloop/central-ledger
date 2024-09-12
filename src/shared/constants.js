@@ -8,7 +8,8 @@ const TABLE_NAMES = Object.freeze({
   fxTransferParticipant: 'fxTransferParticipant',
   fxTransferStateChange: 'fxTransferStateChange',
   fxWatchList: 'fxWatchList',
-  transferDuplicateCheck: 'transferDuplicateCheck'
+  transferDuplicateCheck: 'transferDuplicateCheck',
+  participantPositionChange: 'participantPositionChange'
 })
 
 const FX_METRIC_PREFIX = 'fx_'
