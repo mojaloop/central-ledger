@@ -1738,7 +1738,7 @@ Test('Handlers test', async handlersTest => {
       try {
         const notificationPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
-          action: 'perpare'
+          action: 'prepare'
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
         notificationPrepareFiltered = notificationPrepare.filter((notification) => notification.to !== 'Hub')
