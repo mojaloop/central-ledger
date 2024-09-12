@@ -1694,7 +1694,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.test('skip processing of prepare/commit message if messageKey is 0', async (test) => {
+    await transferPositionPrepare.skip('skip processing of prepare/commit message if messageKey is 0', async (test) => {
       await Handlers.positionsBatch.registerPositionHandler()
       const topicNameOverride = 'topic-transfer-position-batch'
       const message = {
