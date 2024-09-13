@@ -221,7 +221,12 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
       action: Action.FX_RESERVE
     }))
     t.ok(messages[0], `Message is sent to ${TOPICS.transferPositionBatch}`)
+    const knex = Db.getKnex()
+    const extension = await knex(TABLE_NAMES.fxTransferExtension).where({ commitRequestId }).select('key', 'value')
     const { from, to, content } = messages[0].value
+    t.equal(extension.length, fxFulfilMessage.content.payload.extensionList.extension.length, 'Saved extension')
+    t.equal(extension[0].key, fxFulfilMessage.content.payload.extensionList.extension[0].key, 'Saved extension key')
+    t.equal(extension[0].value, fxFulfilMessage.content.payload.extensionList.extension[0].value, 'Saved extension value')
     t.equal(from, FXP)
     t.equal(to, DFSP_1)
     t.equal(content.payload.fulfilment, fxFulfilMessage.content.payload.fulfilment, 'fulfilment is correct')

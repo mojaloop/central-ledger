@@ -465,7 +465,6 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
           result.fxTransferFulfilmentRecord = fxTransferFulfilmentRecord
           logger.debug('saveFxFulfilResponse::fxTransferFulfilment')
         }
-        // TODO: Need to create a new table for fxExtensions and enable the following
         if (fxTransferExtensionRecordsList.length > 0) {
           await knex('fxTransferExtension').transacting(trx).insert(fxTransferExtensionRecordsList)
           result.fxTransferExtensionRecordsList = fxTransferExtensionRecordsList
