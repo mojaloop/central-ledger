@@ -37,6 +37,7 @@ const getByIdLight = async (id) => {
         .where({ 'fxTransfer.commitRequestId': id })
         .leftJoin('fxTransferStateChange AS tsc', 'tsc.commitRequestId', 'fxTransfer.commitRequestId')
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
+        .leftJoin('fxTransferFulfilment AS tf', 'tf.commitRequestId', 'fxTransfer.commitRequestId')
         .select(
           'fxTransfer.*',
           'tsc.fxTransferStateChangeId',
@@ -45,7 +46,8 @@ const getByIdLight = async (id) => {
           'ts.description as fxTransferStateDescription',
           'tsc.reason AS reason',
           'tsc.createdDate AS completedTimestamp',
-          'fxTransfer.ilpCondition AS condition'
+          'fxTransfer.ilpCondition AS condition',
+          'tf.ilpFulfilment AS fulfilment'
         )
         .orderBy('tsc.fxTransferStateChangeId', 'desc')
         .first()
@@ -521,11 +523,31 @@ const updateFxPrepareReservedForwarded = async function (commitRequestId) {
   }
 }
 
+const getFxTransferParticipant = async (participantName, commitRequestId) => {
+  try {
+    return Db.from('participant').query(async (builder) => {
+      return builder
+        .where({
+          'ftp.commitRequestId': commitRequestId,
+          'participant.name': participantName,
+          'participant.isActive': 1
+        })
+        .innerJoin('fxTransferParticipant AS ftp', 'ftp.participantId', 'participant.participantId')
+        .select(
+          'ftp.*'
+        )
+    })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 module.exports = {
   getByCommitRequestId,
   getByDeterminingTransferId,
   getByIdLight,
   getAllDetailsByCommitRequestId,
+  getFxTransferParticipant,
   savePreparedRequest,
   saveFxFulfilResponse,
   saveFxTransfer,
