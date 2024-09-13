@@ -12,5 +12,4 @@ reject: [
   "sinon",
   # glob >= 11 requires node >= 20
   "glob",
-  "@mojaloop/central-services-shared", ## todo: temporary!!!!
 ]

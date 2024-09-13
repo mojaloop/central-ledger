@@ -86,19 +86,17 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
   await proxyCacheTest.test('getFSPProxy', async (getFSPProxyTest) => {
     await getFSPProxyTest.test('resolve proxy id if participant not in scheme and proxyId is in cache', async (test) => {
       ParticipantService.getByName.returns(Promise.resolve(null))
-      const dfspId = 'existingDfspId1'
-      const result = await ProxyCache.getFSPProxy(dfspId)
+      const result = await ProxyCache.getFSPProxy('existingDfspId1')
 
-      test.deepEqual(result, { inScheme: false, proxyId: 'proxyId', name: dfspId })
+      test.deepEqual(result, { inScheme: false, proxyId: 'proxyId' })
       test.end()
     })
 
     await getFSPProxyTest.test('resolve proxy id if participant not in scheme and proxyId is not cache', async (test) => {
       ParticipantService.getByName.returns(Promise.resolve(null))
-      const dsfpId = 'nonExistingDfspId1'
-      const result = await ProxyCache.getFSPProxy(dsfpId)
+      const result = await ProxyCache.getFSPProxy('nonExistingDfspId1')
 
-      test.deepEqual(result, { inScheme: false, proxyId: null, name: dsfpId })
+      test.deepEqual(result, { inScheme: false, proxyId: null })
       test.end()
     })
 
@@ -106,7 +104,7 @@ Test('Proxy Cache test', async (proxyCacheTest) => {
       ParticipantService.getByName.returns(Promise.resolve({ participantId: 1 }))
       const result = await ProxyCache.getFSPProxy('existingDfspId1')
 
-      test.deepEqual(result, { inScheme: true, proxyId: null, name: 'existingDfspId1' })
+      test.deepEqual(result, { inScheme: true, proxyId: null })
       test.end()
     })
 

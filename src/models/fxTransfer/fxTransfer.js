@@ -6,10 +6,9 @@ const TransferEventAction = Enum.Events.Event.Action
 
 const Db = require('../../lib/db')
 const participant = require('../participant/facade')
-const ParticipantCachedModel = require('../participant/participantCached')
-const externalParticipantModel = require('../participant/externalParticipant')
 const { TABLE_NAMES } = require('../../shared/constants')
 const { logger } = require('../../shared/logger')
+const ParticipantCachedModel = require('../participant/participantCached')
 
 const { TransferInternalState } = Enum.Transfers
 
@@ -200,16 +199,6 @@ const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestI
 const getParticipant = async (name, currency) =>
   participant.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
 
-/**
- * Saves prepare fxTransfer details to DB.
- *
- * @param {Object} payload - Message payload.
- * @param {string | null} stateReason - Validation failure reasons.
- * @param {Boolean} hasPassedValidation - Is fxTransfer prepare validation passed.
- * @param {DeterminingTransferCheckResult} determiningTransferCheckResult - Determining transfer check result.
- * @param {ProxyObligation} proxyObligation - The proxy obligation
- * @returns {Promise<void>}
- */
 const savePreparedRequest = async (
   payload,
   stateReason,
@@ -225,10 +214,10 @@ const savePreparedRequest = async (
 
   // Substitute out of scheme participants with their proxy representatives
   const initiatingFsp = proxyObligation.isInitiatingFspProxy
-    ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+    ? proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
     : payload.initiatingFsp
   const counterPartyFsp = proxyObligation.isCounterPartyFspProxy
-    ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+    ? proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
     : payload.counterPartyFsp
 
   // If creditor(counterPartyFsp) is a proxy in a jurisdictional scenario,
@@ -268,10 +257,6 @@ const savePreparedRequest = async (
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
     }
-    if (proxyObligation.isInitiatingFspProxy) {
-      initiatingParticipantRecord.externalParticipantId = await externalParticipantModel
-        .getIdByNameOrCreate(proxyObligation.initiatingFspProxyOrParticipantId)
-    }
 
     const counterPartyParticipantRecord1 = {
       commitRequestId: payload.commitRequestId,
@@ -281,10 +266,6 @@ const savePreparedRequest = async (
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
       fxParticipantCurrencyTypeId: Enum.Fx.FxParticipantCurrencyType.SOURCE,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
-    }
-    if (proxyObligation.isCounterPartyFspProxy) {
-      counterPartyParticipantRecord1.externalParticipantId = await externalParticipantModel
-        .getIdByNameOrCreate(proxyObligation.counterPartyFspProxyOrParticipantId)
     }
 
     let counterPartyParticipantRecord2 = null
