@@ -33,12 +33,26 @@ const getCache = () => {
   return proxyCache
 }
 
+/**
+ * @typedef {Object} ProxyOrParticipant - An object containing the inScheme status, proxyId and FSP name
+ * @property {boolean} inScheme - Is FSP in the scheme.
+ * @property {string|null} proxyId - Proxy, associated with the FSP, if FSP is not in the scheme.
+ * @property {string} name - FSP name.
+ */
+
+/**
+ * Checks if dfspId is in scheme or proxy.
+ *
+ * @param {string} dfspId - The DFSP ID to check.
+ * @returns {ProxyOrParticipant} proxyOrParticipant details
+ */
 const getFSPProxy = async (dfspId) => {
   logger.debug('Checking if dfspId is in scheme or proxy', { dfspId })
   const participant = await ParticipantService.getByName(dfspId)
   return {
     inScheme: !!participant,
-    proxyId: !participant ? await getCache().lookupProxyByDfspId(dfspId) : null
+    proxyId: !participant ? await getCache().lookupProxyByDfspId(dfspId) : null,
+    name: dfspId
   }
 }
 
