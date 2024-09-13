@@ -41,7 +41,7 @@ const ProxyCache = require('#src/lib/proxyCache')
 const FxTransferService = require('#src/domain/fx/index')
 
 const { Kafka, Comparators } = Util
-const { TransferState } = Enum.Transfers
+const { TransferState, TransferInternalState } = Enum.Transfers
 const { Action, Type } = Enum.Events.Event
 const { FSPIOPErrorCodes } = ErrorHandler.Enums
 const { createFSPIOPError, reformatFSPIOPError } = ErrorHandler.Factory
@@ -50,6 +50,149 @@ const { fspId } = Config.INSTRUMENTATION_METRICS_LABELS
 const consumerCommit = true
 const fromSwitch = true
 const proxyEnabled = Config.PROXY_CACHE_CONFIG.enabled
+
+const proceedForwardErrorMessage = async ({ fspiopError, isFx, params }) => {
+  const eventDetail = {
+    functionality: Type.NOTIFICATION,
+    action: isFx ? Action.FX_FORWARDED : Action.FORWARDED
+  }
+  await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+    fspiopError,
+    eventDetail,
+    consumerCommit
+  })
+  logger.warn('proceedForwardErrorMessage is done', { fspiopError, eventDetail })
+}
+
+// think better name
+const forwardPrepare = async ({ isFx, params, ID }) => {
+  if (isFx) {
+    const fxTransfer = await FxTransferService.getByIdLight(ID)
+    if (!fxTransfer) {
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        FSPIOPErrorCodes.ID_NOT_FOUND,
+        'Forwarded fxTransfer could not be found.'
+      ).toApiErrorObject(Config.ERROR_HANDLING)
+      // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+      //            notify the payerFsp and proxy of the error.
+      //            As long as the `to` and `from` message values are the fsp and fxp,
+      //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
+      await proceedForwardErrorMessage({ fspiopError, isFx, params })
+      return true
+    }
+
+    if (fxTransfer.fxTransferState === TransferInternalState.RESERVED) {
+      await FxTransferService.forwardedFxPrepare(ID)
+    } else {
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
+        `Invalid State: ${fxTransfer.fxTransferState} - expected: ${TransferInternalState.RESERVED}`
+      ).toApiErrorObject(Config.ERROR_HANDLING)
+      // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+      //            notify the payerFsp and proxy of the error.
+      //            As long as the `to` and `from` message values are the fsp and fxp,
+      //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
+      await proceedForwardErrorMessage({ fspiopError, isFx, params })
+    }
+  } else {
+    const transfer = await TransferService.getById(ID)
+    if (!transfer) {
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        FSPIOPErrorCodes.ID_NOT_FOUND,
+        'Forwarded transfer could not be found.'
+      ).toApiErrorObject(Config.ERROR_HANDLING)
+      // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+      //            notify the payerFsp and proxy of the error.
+      //            As long as the `to` and `from` message values are the payer and payee,
+      //            and the action is `forwarded`, the ml-api-adapter will notify both.
+      await proceedForwardErrorMessage({ fspiopError, isFx, params })
+      return true
+    }
+
+    if (transfer.transferState === TransferInternalState.RESERVED) {
+      await TransferService.forwardedPrepare(ID)
+    } else {
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
+        `Invalid State: ${transfer.transferState} - expected: ${TransferInternalState.RESERVED}`
+      ).toApiErrorObject(Config.ERROR_HANDLING)
+      // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
+      //            notify the payerFsp and proxy of the error.
+      //            As long as the `to` and `from` message values are the payer and payee,
+      //            and the action is `forwarded`, the ml-api-adapter will notify both.
+      await proceedForwardErrorMessage({ fspiopError, isFx, params })
+    }
+  }
+
+  return true
+}
+
+const calculateProxyObligation = async ({ payload, isFx, params, functionality, action }) => {
+  const proxyObligation = {
+    isFx,
+    payloadClone: { ...payload },
+    isInitiatingFspProxy: false,
+    isCounterPartyFspProxy: false,
+    initiatingFspProxyOrParticipantId: null,
+    counterPartyFspProxyOrParticipantId: null
+  }
+
+  if (proxyEnabled) {
+    const [initiatingFsp, counterPartyFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
+    ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
+      ProxyCache.getFSPProxy(initiatingFsp),
+      ProxyCache.getFSPProxy(counterPartyFsp)
+    ])
+    logger.debug('Prepare proxy cache lookup results', {
+      initiatingFsp,
+      counterPartyFsp,
+      initiatingFspProxyOrParticipantId: proxyObligation.initiatingFspProxyOrParticipantId,
+      counterPartyFspProxyOrParticipantId: proxyObligation.counterPartyFspProxyOrParticipantId
+    })
+
+    proxyObligation.isInitiatingFspProxy = !proxyObligation.initiatingFspProxyOrParticipantId.inScheme &&
+      proxyObligation.initiatingFspProxyOrParticipantId.proxyId !== null
+    proxyObligation.isCounterPartyFspProxy = !proxyObligation.counterPartyFspProxyOrParticipantId.inScheme &&
+      proxyObligation.counterPartyFspProxyOrParticipantId.proxyId !== null
+
+    if (isFx) {
+      proxyObligation.payloadClone.initiatingFsp = !proxyObligation.initiatingFspProxyOrParticipantId?.inScheme &&
+      proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
+        ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+        : payload.initiatingFsp
+      proxyObligation.payloadClone.counterPartyFsp = !proxyObligation.counterPartyFspProxyOrParticipantId?.inScheme &&
+      proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
+        ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+        : payload.counterPartyFsp
+    } else {
+      proxyObligation.payloadClone.payerFsp = !proxyObligation.initiatingFspProxyOrParticipantId?.inScheme &&
+      proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
+        ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+        : payload.payerFsp
+      proxyObligation.payloadClone.payeeFsp = !proxyObligation.counterPartyFspProxyOrParticipantId?.inScheme &&
+      proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
+        ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+        : payload.payeeFsp
+    }
+
+    // If either debtor participant or creditor participant aren't in the scheme and have no proxy representative, then throw an error.
+    if ((proxyObligation.initiatingFspProxyOrParticipantId.inScheme === false && proxyObligation.initiatingFspProxyOrParticipantId.proxyId === null) ||
+      (proxyObligation.counterPartyFspProxyOrParticipantId.inScheme === false && proxyObligation.counterPartyFspProxyOrParticipantId.proxyId === null)) {
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+        `Payer proxy or payee proxy not found: initiatingFsp: ${initiatingFsp} counterPartyFsp: ${counterPartyFsp}`
+      ).toApiErrorObject(Config.ERROR_HANDLING)
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+        consumerCommit,
+        fspiopError,
+        eventDetail: { functionality, action },
+        fromSwitch,
+        hubName: Config.HUB_NAME
+      })
+      throw fspiopError
+    }
+  }
+
+  return proxyObligation
+}
 
 const checkDuplication = async ({ payload, isFx, ID, location }) => {
   const funcName = 'prepare_duplicateCheckComparator'
@@ -157,10 +300,9 @@ const savePreparedRequest = async ({
 }
 
 const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult, proxyObligation }) => {
-  console.log(determiningTransferCheckResult)
   const cyrilResult = await createRemittanceEntity(isFx)
     .getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation)
-  console.log(cyrilResult)
+
   let messageKey
   // On a proxied transfer prepare if there is a corresponding fx transfer `getPositionParticipant`
   // should return the fxp's proxy as the participantName since the fxp proxy would be saved as the counterPartyFsp
@@ -171,8 +313,6 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
   // Only check transfers that have a related fxTransfer
   if (determiningTransferCheckResult?.watchListRecords?.length > 0) {
     const counterPartyParticipantFXPProxy = cyrilResult.participantName
-    console.log(counterPartyParticipantFXPProxy)
-    console.log(proxyObligation?.counterPartyFspProxyOrParticipantId?.proxyId)
     isSameProxy = counterPartyParticipantFXPProxy && proxyObligation?.counterPartyFspProxyOrParticipantId?.proxyId
       ? counterPartyParticipantFXPProxy === proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
       : false
@@ -180,14 +320,14 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
   if (isSameProxy) {
     messageKey = '0'
   } else {
-    const participantName = cyrilResult.participantName
     const account = await Participant.getAccountByNameAndCurrency(
-      participantName,
+      cyrilResult.participantName,
       cyrilResult.currencyId,
       Enum.Accounts.LedgerAccountType.POSITION
     )
     messageKey = account.participantCurrencyId.toString()
   }
+  logger.info('prepare positionParticipant details:', { messageKey, isSameProxy, cyrilResult })
 
   return {
     messageKey,
@@ -197,7 +337,6 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
 
 const sendPositionPrepareMessage = async ({
   isFx,
-  payload,
   action,
   params,
   determiningTransferCheckResult,
@@ -297,177 +436,14 @@ const prepare = async (error, messages) => {
     }
 
     if (proxyEnabled && isForwarded) {
-      if (isFx) {
-        const fxTransfer = await FxTransferService.getByIdLight(ID)
-        if (!fxTransfer) {
-          const eventDetail = {
-            functionality: Enum.Events.Event.Type.NOTIFICATION,
-            action: Enum.Events.Event.Action.FX_FORWARDED
-          }
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-            'Forwarded fxTransfer could not be found.'
-          ).toApiErrorObject(Config.ERROR_HANDLING)
-          // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
-          //            notify the payerFsp and proxy of the error.
-          //            As long as the `to` and `from` message values are the fsp and fxp,
-          //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
-          await Kafka.proceed(
-            Config.KAFKA_CONFIG,
-            params,
-            {
-              consumerCommit,
-              fspiopError,
-              eventDetail
-            }
-          )
-          return true
-        } else {
-          if (fxTransfer.fxTransferState === Enum.Transfers.TransferInternalState.RESERVED) {
-            await FxTransferService.forwardedFxPrepare(ID)
-          } else {
-            const eventDetail = {
-              functionality: Enum.Events.Event.Type.NOTIFICATION,
-              action: Enum.Events.Event.Action.FX_FORWARDED
-            }
-            const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
-              `Invalid State: ${fxTransfer.fxTransferState} - expected: ${Enum.Transfers.TransferInternalState.RESERVED}`
-            ).toApiErrorObject(Config.ERROR_HANDLING)
-            // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
-            //            notify the payerFsp and proxy of the error.
-            //            As long as the `to` and `from` message values are the fsp and fxp,
-            //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
-            await Kafka.proceed(
-              Config.KAFKA_CONFIG,
-              params,
-              {
-                consumerCommit,
-                fspiopError,
-                eventDetail
-              }
-            )
-          }
-        }
-      } else {
-        const transfer = await TransferService.getById(ID)
-        if (!transfer) {
-          const eventDetail = {
-            functionality: Enum.Events.Event.Type.NOTIFICATION,
-            action: Enum.Events.Event.Action.FORWARDED
-          }
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-            'Forwarded transfer could not be found.'
-          ).toApiErrorObject(Config.ERROR_HANDLING)
-          // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
-          //            notify the payerFsp and proxy of the error.
-          //            As long as the `to` and `from` message values are the payer and payee,
-          //            and the action is `forwarded`, the ml-api-adapter will notify both.
-          await Kafka.proceed(
-            Config.KAFKA_CONFIG,
-            params,
-            {
-              consumerCommit,
-              fspiopError,
-              eventDetail
-            }
-          )
-          return true
-        }
-
-        if (transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED) {
-          await TransferService.forwardedPrepare(ID)
-        } else {
-          const eventDetail = {
-            functionality: Enum.Events.Event.Type.NOTIFICATION,
-            action: Enum.Events.Event.Action.FORWARDED
-          }
-          const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
-            `Invalid State: ${transfer.transferState} - expected: ${Enum.Transfers.TransferInternalState.RESERVED}`
-          ).toApiErrorObject(Config.ERROR_HANDLING)
-          // IMPORTANT: This singular message is taken by the ml-api-adapter and used to
-          //            notify the payerFsp and proxy of the error.
-          //            As long as the `to` and `from` message values are the payer and payee,
-          //            and the action is `forwarded`, the ml-api-adapter will notify both.
-          await Kafka.proceed(
-            Config.KAFKA_CONFIG,
-            params,
-            {
-              consumerCommit,
-              fspiopError,
-              eventDetail
-            }
-          )
-        }
-      }
-      return true
+      const isOk = await forwardPrepare({ isFx, params, ID })
+      logger.info('forwardPrepare message is processed', { isOk, isFx, ID })
+      return isOk
     }
 
-    let initiatingFspProxyOrParticipantId
-    let counterPartyFspProxyOrParticipantId
-    const proxyObligation = {
-      isInitiatingFspProxy: false,
-      isCounterPartyFspProxy: false,
-      initiatingFspProxyOrParticipantId: null,
-      counterPartyFspProxyOrParticipantId: null,
-      isFx,
-      payloadClone: { ...payload }
-    }
-    if (proxyEnabled) {
-      const [initiatingFsp, counterPartyFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
-      ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
-        ProxyCache.getFSPProxy(initiatingFsp),
-        ProxyCache.getFSPProxy(counterPartyFsp)
-      ])
-      logger.debug('Prepare proxy cache lookup results', {
-        initiatingFsp,
-        counterPartyFsp,
-        initiatingFspProxyOrParticipantId: proxyObligation.initiatingFspProxyOrParticipantId,
-        counterPartyFspProxyOrParticipantId: proxyObligation.counterPartyFspProxyOrParticipantId
-      })
-
-      proxyObligation.isInitiatingFspProxy = !proxyObligation.initiatingFspProxyOrParticipantId.inScheme &&
-        proxyObligation.initiatingFspProxyOrParticipantId.proxyId !== null
-      proxyObligation.isCounterPartyFspProxy = !proxyObligation.counterPartyFspProxyOrParticipantId.inScheme &&
-        proxyObligation.counterPartyFspProxyOrParticipantId.proxyId !== null
-
-      if (isFx) {
-        proxyObligation.payloadClone.initiatingFsp = !proxyObligation.initiatingFspProxyOrParticipantId?.inScheme &&
-          proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
-          ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
-          : payload.initiatingFsp
-        proxyObligation.payloadClone.counterPartyFsp = !proxyObligation.counterPartyFspProxyOrParticipantId?.inScheme &&
-          proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
-          ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
-          : payload.counterPartyFsp
-      } else {
-        proxyObligation.payloadClone.payerFsp = !proxyObligation.initiatingFspProxyOrParticipantId?.inScheme &&
-          proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
-          ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
-          : payload.payerFsp
-        proxyObligation.payloadClone.payeeFsp = !proxyObligation.counterPartyFspProxyOrParticipantId?.inScheme &&
-          proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
-          ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
-          : payload.payeeFsp
-      }
-
-      // If either debtor participant or creditor participant aren't in the scheme and have no proxy representative, then throw an error.
-      if ((proxyObligation.initiatingFspProxyOrParticipantId.inScheme === false && proxyObligation.initiatingFspProxyOrParticipantId.proxyId === null) ||
-          (proxyObligation.counterPartyFspProxyOrParticipantId.inScheme === false && proxyObligation.counterPartyFspProxyOrParticipantId.proxyId === null)) {
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-          `Payer proxy or payee proxy not found: initiatingFsp: ${initiatingFspProxyOrParticipantId} counterPartyFsp: ${counterPartyFspProxyOrParticipantId}`
-        ).toApiErrorObject(Config.ERROR_HANDLING)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, {
-          consumerCommit,
-          fspiopError,
-          eventDetail: { functionality, action },
-          fromSwitch,
-          hubName: Config.HUB_NAME
-        })
-        throw fspiopError
-      }
-    }
+    const proxyObligation = await calculateProxyObligation({
+      payload, isFx, params, functionality, action
+    })
 
     const duplication = await checkDuplication({ payload, isFx, ID, location })
     if (duplication.hasDuplicateId) {
@@ -478,10 +454,8 @@ const prepare = async (error, messages) => {
       return success
     }
 
-    const determiningTransferCheckResult = await createRemittanceEntity(isFx).checkIfDeterminingTransferExists(
-      proxyObligation.payloadClone,
-      proxyObligation
-    )
+    const determiningTransferCheckResult = await createRemittanceEntity(isFx)
+      .checkIfDeterminingTransferExists(proxyObligation.payloadClone, proxyObligation)
 
     const { validationPassed, reasons } = await Validator.validatePrepare(
       payload,
@@ -502,8 +476,9 @@ const prepare = async (error, messages) => {
       determiningTransferCheckResult,
       proxyObligation
     })
+
     if (!validationPassed) {
-      logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
+      logger.warn(Util.breadcrumb(location, { path: 'validationFailed' }))
       const fspiopError = createFSPIOPError(FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
       await createRemittanceEntity(isFx)
         .logTransferError(ID, FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
@@ -525,7 +500,7 @@ const prepare = async (error, messages) => {
 
     logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
     const success = await sendPositionPrepareMessage({
-      isFx, payload, action, params, determiningTransferCheckResult, proxyObligation
+      isFx, action, params, determiningTransferCheckResult, proxyObligation
     })
 
     histTimerEnd({ success, fspId })
@@ -533,8 +508,7 @@ const prepare = async (error, messages) => {
   } catch (err) {
     histTimerEnd({ success: false, fspId })
     const fspiopError = reformatFSPIOPError(err)
-    logger.error(`${Util.breadcrumb(location)}::${err.message}--P0`)
-    logger.error(err.stack)
+    logger.error(`${Util.breadcrumb(location)}::${err.message}`, err)
     const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
     await span.finish(fspiopError.message, state)
@@ -548,6 +522,8 @@ const prepare = async (error, messages) => {
 
 module.exports = {
   prepare,
+  forwardPrepare,
+  calculateProxyObligation,
   checkDuplication,
   processDuplication,
   savePreparedRequest,

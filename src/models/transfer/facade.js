@@ -33,19 +33,21 @@
  * @module src/models/transfer/facade/
  */
 
-const Db = require('../../lib/db')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
+const MLNumber = require('@mojaloop/ml-number')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const TransferEventAction = Enum.Events.Event.Action
-const TransferInternalState = Enum.Transfers.TransferInternalState
-const TransferExtensionModel = require('./transferExtension')
+const Time = require('@mojaloop/central-services-shared').Util.Time
+
+const { logger } = require('../../shared/logger')
+const Db = require('../../lib/db')
+const Config = require('../../lib/config')
 const ParticipantFacade = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
-const Time = require('@mojaloop/central-services-shared').Util.Time
-const MLNumber = require('@mojaloop/ml-number')
-const Config = require('../../lib/config')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-logger')
-const Metrics = require('@mojaloop/central-services-metrics')
+const TransferExtensionModel = require('./transferExtension')
+
+const TransferEventAction = Enum.Events.Event.Action
+const TransferInternalState = Enum.Transfers.TransferInternalState
 
 // Alphabetically ordered list of error texts used below
 const UnsupportedActionText = 'Unsupported action'
@@ -356,12 +358,12 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
               .orderBy('changedDate', 'desc')
           })
           transferFulfilmentRecord.settlementWindowId = res[0].settlementWindowId
-          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::settlementWindowId')
+          logger.debug('savePayeeTransferResponse::settlementWindowId')
         }
         if (isFulfilment) {
           await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
           result.transferFulfilmentRecord = transferFulfilmentRecord
-          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferFulfilment')
+          logger.debug('savePayeeTransferResponse::transferFulfilment')
         }
         if (transferExtensionRecordsList.length > 0) {
           // ###! CAN BE DONE THROUGH A BATCH
@@ -370,11 +372,11 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           }
           // ###!
           result.transferExtensionRecordsList = transferExtensionRecordsList
-          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
+          logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
         }
         await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
         result.transferStateChangeRecord = transferStateChangeRecord
-        Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferStateChange')
+        logger.debug('savePayeeTransferResponse::transferStateChange')
         if (fspiopError) {
           const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
             .where({ transferId })
@@ -383,14 +385,14 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           transferErrorRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
           await knex('transferError').transacting(trx).insert(transferErrorRecord)
           result.transferErrorRecord = transferErrorRecord
-          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferError')
+          logger.debug('savePayeeTransferResponse::transferError')
         }
         histTPayeeResponseValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         result.savePayeeTransferResponseExecuted = true
-        Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::success')
+        logger.debug('savePayeeTransferResponse::success')
       } catch (err) {
+        logger.error('savePayeeTransferResponse::failure', err)
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-        Logger.isErrorEnabled && Logger.error('savePayeeTransferResponse::failure')
         throw err
       }
     })
@@ -462,7 +464,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? Enum.Transfers.TransferInternalState.RECEIVED_PREPARE : Enum.Transfers.TransferInternalState.INVALID)
+    const state = hasPassedValidation
+      ? Enum.Transfers.TransferInternalState.RECEIVED_PREPARE
+      : Enum.Transfers.TransferInternalState.INVALID
 
     const transferStateChangeRecord = {
       transferId: payload.transferId,
@@ -492,7 +496,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       }
     }
 
-    console.log(participants)
+    logger.debug('saveTransferPrepared participants:', { participants })
     let payeeTransferParticipantRecord
     if (proxyObligation?.isCounterPartyFspProxy) {
       payeeTransferParticipantRecord = {
@@ -557,14 +561,14 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       try {
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
-        Logger.isWarnEnabled && Logger.warn(`Payer transferParticipant insert error: ${err.message}`)
+        logger.warn('Payer transferParticipant insert error', err)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferParticipant').insert(payeeTransferParticipantRecord)
       } catch (err) {
+        logger.warn('Payee transferParticipant insert error:', err)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
-        Logger.isWarnEnabled && Logger.warn(`Payee transferParticipant insert error: ${err.message}`)
       }
       payerTransferParticipantRecord.name = payload.payerFsp
       payeeTransferParticipantRecord.name = payload.payeeFsp
@@ -580,21 +584,21 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         try {
           await knex.batchInsert('transferExtension', transferExtensionsRecordList)
         } catch (err) {
-          Logger.isWarnEnabled && Logger.warn(`batchInsert transferExtension error: ${err.message}`)
+          logger.warn('batchInsert transferExtension error:', err)
           histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
         }
       }
       try {
         await knex('ilpPacket').insert(ilpPacketRecord)
       } catch (err) {
-        Logger.isWarnEnabled && Logger.warn(`ilpPacket insert error: ${err.message}`)
+        logger.warn('ilpPacket insert error:', err)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferStateChange').insert(transferStateChangeRecord)
         histTimerSaveTranferNoValidationEnd({ success: true, queryName: 'facade_saveTransferPrepared_no_validation' })
       } catch (err) {
-        Logger.isWarnEnabled && Logger.warn(`transferStateChange insert error: ${err.message}`)
+        logger.warn('transferStateChange insert error:', err)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
     }
@@ -1421,7 +1425,7 @@ const recordFundsIn = async (payload, transactionTimestamp, enums) => {
       await TransferFacade.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
       await TransferFacade.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
     } catch (err) {
-      Logger.isErrorEnabled && Logger.error(err)
+      logger.error('error in recordFundsIn:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   })

@@ -33,6 +33,12 @@ const getCache = () => {
   return proxyCache
 }
 
+/**
+ * Check if dfspId is in scheme or proxy'.
+ *
+ * @param {string} dfspId - The DFSP ID to check.
+ * @returns {Promise<{inScheme: boolean, proxyId: string|null}>} - An object containing the inScheme status and proxyId.
+ */
 const getFSPProxy = async (dfspId) => {
   logger.debug('Checking if dfspId is in scheme or proxy', { dfspId })
   const participant = await ParticipantService.getByName(dfspId)
