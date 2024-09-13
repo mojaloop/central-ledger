@@ -23,13 +23,15 @@
  --------------
  **********/
 
+const EP_ID_FIELD = 'externalParticipantId'
+
 exports.up = async (knex) => {
   return knex.schema.hasTable('transferParticipant').then(function(exists) {
     if (exists) {
       return knex.schema.alterTable('transferParticipant', (t) => {
-        t.bigint('externalParticipantId').unsigned().nullable()
-        t.index('externalParticipantId')
-        // think, if it's better to add foreign key constraint here
+        t.bigint(EP_ID_FIELD).unsigned().nullable()
+        t.foreign(EP_ID_FIELD).references(EP_ID_FIELD).inTable('externalParticipant')
+        t.index(EP_ID_FIELD)
       })
     }
   })
@@ -39,8 +41,9 @@ exports.down = async (knex) => {
   return knex.schema.hasTable('transferParticipant').then(function(exists) {
     if (exists) {
       return knex.schema.alterTable('transferParticipant', (t) => {
-        t.dropIndex('externalParticipantId')
-        t.dropColumn('externalParticipantId')
+        t.dropIndex(EP_ID_FIELD)
+        t.dropForeign(EP_ID_FIELD)
+        t.dropColumn(EP_ID_FIELD)
       })
     }
   })
