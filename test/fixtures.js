@@ -299,6 +299,18 @@ const watchListItemDto = ({
   createdDate
 })
 
+const mockExternalParticipantDto = ({
+  name = `extFsp-${Date.now()}`,
+  proxyId = `proxy-${Date.now()}`,
+  id = Date.now(),
+  createdDate = new Date()
+} = {}) => ({
+  name,
+  proxyId,
+  ...(id && { externalParticipantId: id }),
+  ...(createdDate && { createdDate })
+})
+
 module.exports = {
   ILP_PACKET,
   CONDITION,
@@ -324,5 +336,6 @@ module.exports = {
   fxTransferDto,
   fxFulfilResponseDto,
   fxtGetAllDetailsByCommitRequestIdDto,
-  watchListItemDto
+  watchListItemDto,
+  mockExternalParticipantDto
 }

@@ -125,6 +125,21 @@ const forwardPrepare = async ({ isFx, params, ID }) => {
   return true
 }
 
+/** @import { ProxyOrParticipant } from '#src/lib/proxyCache.js' */
+/**
+ * @typedef {Object} ProxyObligation
+ * @property {boolean} isFx - Is FX transfer.
+ * @property {Object} payloadClone - A clone of the original payload.
+ * @property {ProxyOrParticipant} initiatingFspProxyOrParticipantId - initiating FSP: proxy or participant.
+ * @property {ProxyOrParticipant} counterPartyFspProxyOrParticipantId - counterparty FSP: proxy or participant.
+ * @property {boolean} isInitiatingFspProxy - initiatingFsp.(!inScheme && proxyId !== null).
+ * @property {boolean} isCounterPartyFspProxy - counterPartyFsp.(!inScheme && proxyId !== null).
+ */
+
+/**
+ * Calculates proxyObligation.
+ * @returns {ProxyObligation} proxyObligation
+ */
 const calculateProxyObligation = async ({ payload, isFx, params, functionality, action }) => {
   const proxyObligation = {
     isFx,
@@ -223,7 +238,7 @@ const processDuplication = async ({
 
   let error
   if (!duplication.hasDuplicateHash) {
-    logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}5`))
+    logger.warn(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}5`))
     error = createFSPIOPError(FSPIOPErrorCodes.MODIFIED_REQUEST)
   } else if (action === Action.BULK_PREPARE) {
     logger.info(Util.breadcrumb(location, `validationError1--${actionLetter}2`))
@@ -286,7 +301,7 @@ const savePreparedRequest = async ({
         proxyObligation
       )
   } catch (err) {
-    logger.error(`${logMessage} error - ${err.message}`)
+    logger.error(`${logMessage} error:`, err)
     const fspiopError = reformatFSPIOPError(err, FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
     await Kafka.proceed(Config.KAFKA_CONFIG, params, {
       consumerCommit,
