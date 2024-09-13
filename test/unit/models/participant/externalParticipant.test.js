@@ -63,7 +63,7 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
     t.ok(result)
   }))
 
-  epmTest.test('should get externalParticipant by name', tryCatchEndTest(async (t) => {
+  epmTest.test('should get externalParticipant by name from DB', tryCatchEndTest(async (t) => {
     const data = mockExternalParticipantDto()
     Db[EP_TABLE].findOne.withArgs({ name: data.name }).resolves(data)
     const result = await model.getOneByName(data.name)
@@ -115,6 +115,20 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
     Db[EP_TABLE].findOne.withArgs({ externalParticipantId: id }).resolves(data)
     const result = await model.getOneById(id)
     t.deepEqual(result, data)
+  }))
+
+  epmTest.test('should delete externalParticipant record by name', tryCatchEndTest(async (t) => {
+    const name = 'extFsp'
+    Db[EP_TABLE].destroy.withArgs({ name }).resolves(true)
+    const result = await model.destroyByName(name)
+    t.ok(result)
+  }))
+
+  epmTest.test('should delete externalParticipant record by id', tryCatchEndTest(async (t) => {
+    const id = 123
+    Db[EP_TABLE].destroy.withArgs({ externalParticipantId: id }).resolves(true)
+    const result = await model.destroyById(id)
+    t.ok(result)
   }))
 
   epmTest.end()
