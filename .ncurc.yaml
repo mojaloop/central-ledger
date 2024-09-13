@@ -11,6 +11,5 @@ reject: [
   # Issue is tracked here: https://github.com/mojaloop/project/issues/3616
   "sinon",
   # glob >= 11 requires node >= 20
-  "glob",
-  "@mojaloop/central-services-shared", ## todo: temporary!!!!
+  "glob"
 ]
