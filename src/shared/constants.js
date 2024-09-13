@@ -1,6 +1,7 @@
 const { Enum } = require('@mojaloop/central-services-shared')
 
 const TABLE_NAMES = Object.freeze({
+  externalParticipant: 'externalParticipant',
   fxTransfer: 'fxTransfer',
   fxTransferDuplicateCheck: 'fxTransferDuplicateCheck',
   fxTransferErrorDuplicateCheck: 'fxTransferErrorDuplicateCheck',

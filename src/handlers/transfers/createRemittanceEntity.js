@@ -3,6 +3,8 @@ const TransferService = require('../../domain/transfer')
 const cyril = require('../../domain/fx/cyril')
 const { logger } = require('../../shared/logger')
 
+/** @import { ProxyObligation } from './prepare.js' */
+
 // abstraction on transfer and fxTransfer
 const createRemittanceEntity = (isFx) => {
   return {
@@ -19,6 +21,16 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.saveTransferDuplicateCheck(id, hash)
     },
 
+    /**
+     * Saves prepare transfer/fxTransfer details to DB.
+     *
+     * @param {Object} payload - Message payload.
+     * @param {string | null} reason - Validation failure reasons.
+     * @param {Boolean} isValid - isValid.
+     * @param {DeterminingTransferCheckResult} determiningTransferCheckResult - The determining transfer check result.
+     * @param {ProxyObligation} proxyObligation - The proxy obligation
+     * @returns {Promise<void>}
+     */
     async savePreparedRequest (
       payload,
       reason,
@@ -26,7 +38,6 @@ const createRemittanceEntity = (isFx) => {
       determiningTransferCheckResult,
       proxyObligation
     ) {
-      // todo: add histoTimer and try/catch here
       return isFx
         ? fxTransferModel.fxTransfer.savePreparedRequest(
           payload,
@@ -50,6 +61,22 @@ const createRemittanceEntity = (isFx) => {
         : TransferService.getByIdLight(id)
     },
 
+    /**
+     * A determiningTransferCheckResult.
+     * @typedef {Object} DeterminingTransferCheckResult
+     * @property {boolean} determiningTransferExists - Indicates if the determining transfer exists.
+     * @property {Array<{participantName, currencyId}>} participantCurrencyValidationList - List of validations for participant currencies.
+     * @property {Object} [transferRecord] - Determining transfer for the FX transfer (optional).
+     * @property {Array} [watchListRecords] - Records from fxWatchList-table for the transfer (optional).
+     */
+    /**
+     * Checks if a determining transfer exists based on the payload and proxy obligation.
+     * The function determines which method to use based on whether it is an FX transfer.
+     *
+     * @param {Object} payload - The payload data required for the transfer check.
+     * @param {ProxyObligation} proxyObligation - The proxy obligation details.
+     * @returns {DeterminingTransferCheckResult} determiningTransferCheckResult
+     */
     async checkIfDeterminingTransferExists (payload, proxyObligation) {
       const result = isFx
         ? await cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, proxyObligation)

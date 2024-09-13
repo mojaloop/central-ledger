@@ -44,6 +44,7 @@ const Db = require('../../lib/db')
 const Config = require('../../lib/config')
 const ParticipantFacade = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
+const externalParticipantModel = require('../participant/externalParticipant')
 const TransferExtensionModel = require('./transferExtension')
 
 const TransferEventAction = Enum.Events.Event.Action
@@ -404,6 +405,16 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   }
 }
 
+/**
+ * Saves prepare transfer details to DB.
+ *
+ * @param {Object} payload - Message payload.
+ * @param {string | null} stateReason - Validation failure reasons.
+ * @param {Boolean} hasPassedValidation - Is transfer prepare validation passed.
+ * @param {DeterminingTransferCheckResult} determiningTransferCheckResult - Determining transfer check result.
+ * @param {ProxyObligation} proxyObligation - The proxy obligation
+ * @returns {Promise<void>}
+ */
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true, determiningTransferCheckResult, proxyObligation) => {
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
@@ -417,8 +428,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
 
     // Iterate over the participants and get the details
-    const names = Object.keys(participants)
-    for (const name of names) {
+    for (const name of Object.keys(participants)) {
       const participant = await ParticipantCachedModel.getByName(name)
       if (participant) {
         participants[name].id = participant.participantId
@@ -429,26 +439,26 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
         participants[name].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId
       }
+    }
 
-      if (proxyObligation?.isInitiatingFspProxy) {
-        const proxyId = proxyObligation.initiatingFspProxyOrParticipantId.proxyId
-        const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
-        participants[proxyId] = {}
-        participants[proxyId].id = proxyParticipant.participantId
-        const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(
-          proxyId, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION
-        )
-        // In a regional scheme, the stand-in initiating FSP proxy may not have a participantCurrencyId
-        // of the target currency of the transfer, so set to null if not found
-        participants[proxyId].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId
-      }
+    if (proxyObligation?.isInitiatingFspProxy) {
+      const proxyId = proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+      const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
+      participants[proxyId] = {}
+      participants[proxyId].id = proxyParticipant.participantId
+      const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(
+        proxyId, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION
+      )
+      // In a regional scheme, the stand-in initiating FSP proxy may not have a participantCurrencyId
+      // of the target currency of the transfer, so set to null if not found
+      participants[proxyId].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId
+    }
 
-      if (proxyObligation?.isCounterPartyFspProxy) {
-        const proxyId = proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
-        const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
-        participants[proxyId] = {}
-        participants[proxyId].id = proxyParticipant.participantId
-      }
+    if (proxyObligation?.isCounterPartyFspProxy) {
+      const proxyId = proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+      const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
+      participants[proxyId] = {}
+      participants[proxyId].id = proxyParticipant.participantId
     }
 
     const transferRecord = {
@@ -464,26 +474,25 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       value: payload.ilpPacket
     }
 
-    const state = hasPassedValidation
-      ? Enum.Transfers.TransferInternalState.RECEIVED_PREPARE
-      : Enum.Transfers.TransferInternalState.INVALID
-
     const transferStateChangeRecord = {
       transferId: payload.transferId,
-      transferStateId: state,
+      transferStateId: hasPassedValidation ? TransferInternalState.RECEIVED_PREPARE : TransferInternalState.INVALID,
       reason: stateReason,
       createdDate: Time.getUTCString(new Date())
     }
 
     let payerTransferParticipantRecord
     if (proxyObligation?.isInitiatingFspProxy) {
+      const externalParticipantId = await externalParticipantModel.getIdByNameOrCreate(proxyObligation.initiatingFspProxyOrParticipantId)
+      // todo: think, what if externalParticipantId is null?
       payerTransferParticipantRecord = {
         transferId: payload.transferId,
         participantId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].id,
         participantCurrencyId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].participantCurrencyId,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
-        amount: -payload.amount.amount
+        amount: -payload.amount.amount,
+        externalParticipantId
       }
     } else {
       payerTransferParticipantRecord = {
@@ -499,13 +508,16 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     logger.debug('saveTransferPrepared participants:', { participants })
     let payeeTransferParticipantRecord
     if (proxyObligation?.isCounterPartyFspProxy) {
+      const externalParticipantId = await externalParticipantModel.getIdByNameOrCreate(proxyObligation.counterPartyFspProxyOrParticipantId)
+      // todo: think, what if externalParticipantId is null?
       payeeTransferParticipantRecord = {
         transferId: payload.transferId,
         participantId: participants[proxyObligation.counterPartyFspProxyOrParticipantId.proxyId].id,
         participantCurrencyId: null,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
-        amount: -payload.amount.amount
+        amount: -payload.amount.amount,
+        externalParticipantId
       }
     } else {
       payeeTransferParticipantRecord = {
