@@ -245,18 +245,39 @@ const processDuplication = async ({
   const transfer = await createRemittanceEntity(isFx)
     .getByIdLight(ID)
 
-  const isFinalized = [TransferState.COMMITTED, TransferState.ABORTED].includes(transfer?.transferStateEnumeration)
+  const finalizedState = [TransferState.COMMITTED, TransferState.ABORTED]
+  const isFinalized =
+    finalizedState.includes(transfer?.transferStateEnumeration) ||
+    finalizedState.includes(transfer?.fxTransferStateEnumeration)
   const isPrepare = [Action.PREPARE, Action.FX_PREPARE, Action.FORWARDED, Action.FX_FORWARDED].includes(action)
 
-  if (isFinalized && isPrepare) {
-    logger.info(Util.breadcrumb(location, `finalized callback--${actionLetter}1`))
-    params.message.value.content.payload = TransferObjectTransform.toFulfil(transfer, isFx)
-    params.message.value.content.uriParams = { id: ID }
-    const eventDetail = { functionality, action: Action.PREPARE_DUPLICATE }
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch, hubName: Config.HUB_NAME })
+  let eventDetail = { functionality, action: Action.PREPARE_DUPLICATE }
+  if (isFinalized) {
+    if (isPrepare) {
+      logger.info(Util.breadcrumb(location, `finalized callback--${actionLetter}1`))
+      params.message.value.content.payload = TransferObjectTransform.toFulfil(transfer, isFx)
+      params.message.value.content.uriParams = { id: ID }
+      const action = isFx ? Action.FX_PREPARE_DUPLICATE : Action.PREPARE_DUPLICATE
+      eventDetail = { functionality, action }
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch, hubName: Config.HUB_NAME })
+    } else if (action === Action.BULK_PREPARE) {
+      logger.info(Util.breadcrumb(location, `validationError1--${actionLetter}2`))
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
+    }
   } else {
-    logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
+    logger.info(Util.breadcrumb(location, 'inProgress'))
+    if (action === Action.BULK_PREPARE) {
+      logger.info(Util.breadcrumb(location, `validationError2--${actionLetter}4`))
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
+    } else { // action === TransferEventAction.PREPARE
+      logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+      return true
+    }
   }
 
   return true

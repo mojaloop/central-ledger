@@ -191,7 +191,8 @@ If you want to run integration tests in a repetitive manner, you can startup the
     Start containers required for Integration Tests
 
     ```bash
-    docker-compose -f docker-compose.yml up -d mysql kafka init-kafka kafka-debug-console redis
+    source ./docker/env.sh
+    docker compose up -d mysql kafka init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
     ```
 
     Run wait script which will report once all required containers are up and running
@@ -226,7 +227,8 @@ If you want to run integration tests in a repetitive manner, you can startup the
     Start containers required for Integration Tests, including a `central-ledger` container which will be used as a proxy shell.
 
     ```bash
-    docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger
+    source ./docker/env.sh
+    docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
     ```
 
     Run the Integration Tests from the `central-ledger` container
@@ -241,8 +243,9 @@ If you want to run override position topic tests you can repeat the above and us
 
 #### For running integration tests for batch processing interactively
 - Run dependecies
-```
-docker-compose up -d mysql kafka init-kafka kafka-debug-console redis
+```bash
+source ./docker/env.sh
+docker compose up -d mysql kafka init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
 npm run wait-4-docker
 ```
 - Run central-ledger services

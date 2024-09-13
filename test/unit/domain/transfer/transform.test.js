@@ -340,7 +340,8 @@ Test('Transform Service', transformTest => {
     toFulfilTest.test('throw error', async (test) => {
       try {
         const invalidTransfer = {}
-        TransformService.toFulfil(invalidTransfer)
+        const x = TransformService.toFulfil(invalidTransfer)
+        console.log(x)
         test.fail('should throw')
         test.end()
       } catch (e) {
