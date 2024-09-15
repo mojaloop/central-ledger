@@ -4,6 +4,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Participant = require('../../../../src/domain/participant')
 const Transfer = require('../../../../src/domain/transfer')
+const FxTransferModel = require('../../../../src/models/fxTransfer')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const CryptoConditions = require('../../../../src/cryptoConditions')
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -82,6 +83,7 @@ Test('transfer validator', validatorTest => {
     sandbox.stub(Participant)
     sandbox.stub(CryptoConditions, 'validateCondition')
     sandbox.stub(Transfer, 'getTransferParticipant')
+    sandbox.stub(FxTransferModel.fxTransfer, 'getFxTransferParticipant')
     test.end()
   })
 
@@ -339,6 +341,30 @@ Test('transfer validator', validatorTest => {
     })
 
     validateParticipantTransferIdTest.end()
+  })
+
+  validatorTest.test('validateParticipantForCommitRequestId should', validateParticipantForCommitRequestIdTest => {
+    validateParticipantForCommitRequestIdTest.test('validate the CommitRequestId belongs to the requesting fsp', async (test) => {
+      const participantName = 'fsp1'
+      const commitRequestId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
+      FxTransferModel.fxTransfer.getFxTransferParticipant.withArgs(participantName, commitRequestId).returns(Promise.resolve([1]))
+
+      const result = await Validator.validateParticipantForCommitRequestId(participantName, commitRequestId)
+      test.equal(result, true, 'results match')
+      test.end()
+    })
+
+    validateParticipantForCommitRequestIdTest.test('validate the CommitRequestId belongs to the requesting fsp return false for no match', async (test) => {
+      const participantName = 'fsp1'
+      const commitRequestId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
+      FxTransferModel.fxTransfer.getFxTransferParticipant.withArgs(participantName, commitRequestId).returns(Promise.resolve([]))
+
+      const result = await Validator.validateParticipantForCommitRequestId(participantName, commitRequestId)
+      test.equal(result, false, 'results match')
+      test.end()
+    })
+
+    validateParticipantForCommitRequestIdTest.end()
   })
 
   validatorTest.end()

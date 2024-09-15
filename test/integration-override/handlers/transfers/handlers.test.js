@@ -630,7 +630,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.test('send fxTransfer information callback when fxTransfer is COMMITTED on duplicate request', async (test) => {
+    await transferPrepare.test('send fxTransfer information callback when fxTransfer is RESERVED on duplicate request', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -678,13 +678,13 @@ Test('Handlers test', async handlersTest => {
 
       try {
         const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
-        test.equal(fxTransfer?.fxTransferState, TransferInternalState.COMMITTED, 'FxTransfer state updated to COMMITTED')
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.RECEIVED_FULFIL_DEPENDENT, 'FxTransfer state updated to RECEIVED_FULFIL_DEPENDENT')
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
       }
 
-      // Resend fx-prepare after state is COMMITTED
+      // Resend fx-prepare after state is RESERVED
       await new Promise(resolve => setTimeout(resolve, 2000))
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
 
@@ -1162,7 +1162,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferFxForwarded.test('should be able to transition from RESERVED_FORWARDED to COMMITED on fx-fulfil', async (test) => {
+    await transferFxForwarded.test('should be able to transition from RESERVED_FORWARDED to RECEIVED_FULFIL_DEPENDENT on fx-fulfil', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -1218,7 +1218,7 @@ Test('Handlers test', async handlersTest => {
 
       try {
         const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
-        test.equal(fxTransfer?.fxTransferState, TransferInternalState.COMMITTED, 'FxTransfer state updated to COMMITTED')
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.RECEIVED_FULFIL_DEPENDENT, 'FxTransfer state updated to RECEIVED_FULFIL_DEPENDENT')
       } catch (err) {
         Logger.error(err)
         test.fail(err.message)
