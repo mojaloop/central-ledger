@@ -630,7 +630,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.test('send fxTransfer information callback when fxTransfer is RESERVED on duplicate request', async (test) => {
+    await transferPrepare.test('send fxTransfer information callback when fxTransfer is (RECEIVED_FULFIL_DEPENDENT) RESERVED on duplicate request', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -684,7 +684,110 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
-      // Resend fx-prepare after state is RESERVED
+      // Resend fx-prepare after state is RECEIVED_FULFIL_DEPENDENT
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      // Should send fxTransfer state in callback
+      // Internal state RECEIVED_FULFIL_DEPENDENT maps to TransferStateEnum.RESERVED enumeration.
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: TransferEventAction.FX_PREPARE_DUPLICATE
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare duplicate message with key found')
+        // Check if the error message is correct
+        test.equal(positionPrepare[0].value.content.payload.conversionState, TransferStateEnum.RESERVED)
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      test.end()
+    })
+
+    await transferPrepare.test('send fxTransfer information callback when fxTransfer is COMMITTED on duplicate request', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      // Set up the fxTransfer
+      await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: TransferEventAction.FX_PREPARE,
+          // To be keyed with the Payer DFSP participantCurrencyId
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      await Producer.produceMessage(td.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
+      try {
+        const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: TransferEventAction.FX_RESERVE,
+          valueToFilter: td.payer.name
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFxFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+
+      try {
+        const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.RECEIVED_FULFIL_DEPENDENT, 'FxTransfer state updated to RECEIVED_FULFIL_DEPENDENT')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      // Complete dependent transfer
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, fulfilConfig)
+      try {
+        const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: TransferEventAction.PREPARE
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFxFulfil[0], 'Prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+
+      await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
+      try {
+        const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: TransferEventAction.COMMIT
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFxFulfil[0], 'Fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+      testConsumer.clearEvents()
+
+      // Resend fx-prepare after fxtransfer state is COMMITTED
       await new Promise(resolve => setTimeout(resolve, 2000))
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
 
