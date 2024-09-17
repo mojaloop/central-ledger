@@ -260,7 +260,7 @@ const processDuplication = async ({
   const transfer = await createRemittanceEntity(isFx)
     .getByIdLight(ID)
 
-  const finalizedState = [TransferState.COMMITTED, TransferState.ABORTED]
+  const finalizedState = [TransferState.COMMITTED, TransferState.ABORTED, TransferState.RESERVED]
   const isFinalized =
     finalizedState.includes(transfer?.transferStateEnumeration) ||
     finalizedState.includes(transfer?.fxTransferStateEnumeration)
