@@ -104,7 +104,7 @@ const processPositionFxFulfilBin = async (
           'application/json'
         )
 
-        transferStateId = Enum.Transfers.TransferState.COMMITTED
+        // No need to change the transfer state here for success case.
 
         binItem.result = { success: true }
       }

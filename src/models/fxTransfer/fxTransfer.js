@@ -9,6 +9,7 @@ const participant = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
 const { TABLE_NAMES } = require('../../shared/constants')
 const { logger } = require('../../shared/logger')
+const TransferExtensionModel = require('./fxTransferExtension')
 
 const { TransferInternalState } = Enum.Transfers
 
@@ -37,6 +38,7 @@ const getByIdLight = async (id) => {
         .where({ 'fxTransfer.commitRequestId': id })
         .leftJoin('fxTransferStateChange AS tsc', 'tsc.commitRequestId', 'fxTransfer.commitRequestId')
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
+        .leftJoin('fxTransferFulfilment AS tf', 'tf.commitRequestId', 'fxTransfer.commitRequestId')
         .select(
           'fxTransfer.*',
           'tsc.fxTransferStateChangeId',
@@ -45,7 +47,8 @@ const getByIdLight = async (id) => {
           'ts.description as fxTransferStateDescription',
           'tsc.reason AS reason',
           'tsc.createdDate AS completedTimestamp',
-          'fxTransfer.ilpCondition AS condition'
+          'fxTransfer.ilpCondition AS condition',
+          'tf.ilpFulfilment AS fulfilment'
         )
         .orderBy('tsc.fxTransferStateChangeId', 'desc')
         .first()
@@ -111,14 +114,14 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
         .orderBy('tsc.fxTransferStateChangeId', 'desc')
         .first()
       if (transferResult) {
-        // transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
-        // if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
-        //   if (!transferResult.extensionList) transferResult.extensionList = []
-        //   transferResult.extensionList.push({
-        //     key: 'cause',
-        //     value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128)
-        //   })
-        // }
+        transferResult.extensionList = await TransferExtensionModel.getByCommitRequestId(commitRequestId)
+        if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+          if (!transferResult.extensionList) transferResult.extensionList = []
+          transferResult.extensionList.push({
+            key: 'cause',
+            value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128)
+          })
+        }
         transferResult.isTransferReadModel = true
       }
       return transferResult
@@ -179,14 +182,14 @@ const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestI
         .orderBy('tsc.fxTransferStateChangeId', 'desc')
         .first()
       if (transferResult) {
-        // transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
-        // if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
-        //   if (!transferResult.extensionList) transferResult.extensionList = []
-        //   transferResult.extensionList.push({
-        //     key: 'cause',
-        //     value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128)
-        //   })
-        // }
+        transferResult.extensionList = await TransferExtensionModel.getByCommitRequestId(commitRequestId)
+        if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+          if (!transferResult.extensionList) transferResult.extensionList = []
+          transferResult.extensionList.push({
+            key: 'cause',
+            value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128)
+          })
+        }
         transferResult.isTransferReadModel = true
       }
       return transferResult
@@ -383,29 +386,29 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
 
   let state
   let isFulfilment = false
-  // const isError = false
+  let isError = false
   // const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
   const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
-  // let extensionList
+  let extensionList
   switch (action) {
     case TransferEventAction.FX_COMMIT:
     case TransferEventAction.FX_RESERVE:
     case TransferEventAction.FX_FORWARDED:
       state = TransferInternalState.RECEIVED_FULFIL_DEPENDENT
-      // extensionList = payload && payload.extensionList
+      extensionList = payload && payload.extensionList
       isFulfilment = true
       break
     case TransferEventAction.FX_REJECT:
       state = TransferInternalState.RECEIVED_REJECT
-      // extensionList = payload && payload.extensionList
+      extensionList = payload && payload.extensionList
       isFulfilment = true
       break
 
     case TransferEventAction.FX_ABORT_VALIDATION:
     case TransferEventAction.FX_ABORT:
       state = TransferInternalState.RECEIVED_ERROR
-      // extensionList = payload && payload.errorInformation && payload.errorInformation.extensionList
-      // isError = true
+      extensionList = payload && payload.errorInformation && payload.errorInformation.extensionList
+      isError = true
       break
     default:
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(UnsupportedActionText)
@@ -424,18 +427,18 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
     settlementWindowId: null,
     createdDate: transactionTimestamp
   }
-  // let fxTransferExtensionRecordsList = []
-  // if (extensionList && extensionList.extension) {
-  //   fxTransferExtensionRecordsList = extensionList.extension.map(ext => {
-  //     return {
-  //       commitRequestId,
-  //       key: ext.key,
-  //       value: ext.value,
-  //       isFulfilment,
-  //       isError
-  //     }
-  //   })
-  // }
+  let fxTransferExtensionRecordsList = []
+  if (extensionList && extensionList.extension) {
+    fxTransferExtensionRecordsList = extensionList.extension.map(ext => {
+      return {
+        commitRequestId,
+        key: ext.key,
+        value: ext.value,
+        isFulfilment,
+        isError
+      }
+    })
+  }
   const fxTransferStateChangeRecord = {
     commitRequestId,
     transferStateId: state,
@@ -483,16 +486,11 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
           result.fxTransferFulfilmentRecord = fxTransferFulfilmentRecord
           logger.debug('saveFxFulfilResponse::fxTransferFulfilment')
         }
-        // TODO: Need to create a new table for fxExtensions and enable the following
-        // if (fxTransferExtensionRecordsList.length > 0) {
-        //   // ###! CAN BE DONE THROUGH A BATCH
-        //   for (const fxTransferExtension of fxTransferExtensionRecordsList) {
-        //     await knex('fxTransferExtension').transacting(trx).insert(fxTransferExtension)
-        //   }
-        //   // ###!
-        //   result.fxTransferExtensionRecordsList = fxTransferExtensionRecordsList
-        //   logger.debug('saveFxFulfilResponse::transferExtensionRecordsList')
-        // }
+        if (fxTransferExtensionRecordsList.length > 0) {
+          await knex('fxTransferExtension').transacting(trx).insert(fxTransferExtensionRecordsList)
+          result.fxTransferExtensionRecordsList = fxTransferExtensionRecordsList
+          logger.debug('saveFxFulfilResponse::transferExtensionRecordsList')
+        }
         await knex('fxTransferStateChange').transacting(trx).insert(fxTransferStateChangeRecord)
         result.fxTransferStateChangeRecord = fxTransferStateChangeRecord
         logger.debug('saveFxFulfilResponse::fxTransferStateChange')
@@ -539,12 +537,32 @@ const updateFxPrepareReservedForwarded = async function (commitRequestId) {
   }
 }
 
+const getFxTransferParticipant = async (participantName, commitRequestId) => {
+  try {
+    return Db.from('participant').query(async (builder) => {
+      return builder
+        .where({
+          'ftp.commitRequestId': commitRequestId,
+          'participant.name': participantName,
+          'participant.isActive': 1
+        })
+        .innerJoin('fxTransferParticipant AS ftp', 'ftp.participantId', 'participant.participantId')
+        .select(
+          'ftp.*'
+        )
+    })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 module.exports = {
   getByCommitRequestId,
   getByDeterminingTransferId,
   getByIdLight,
   getAllDetailsByCommitRequestId,
   getAllDetailsByCommitRequestIdForProxiedFxTransfer,
+  getFxTransferParticipant,
   savePreparedRequest,
   saveFxFulfilResponse,
   saveFxTransfer,

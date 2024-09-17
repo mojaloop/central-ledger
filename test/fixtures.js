@@ -47,11 +47,9 @@ const extensionListDto = ({
   key = 'key1',
   value = 'value1'
 } = {}) => ({
-  extensionList: {
-    extension: [
-      { key, value }
-    ]
-  }
+  extension: [
+    { key, value }
+  ]
 })
 
 const fulfilPayloadDto = ({
