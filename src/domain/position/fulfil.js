@@ -72,11 +72,13 @@ const processPositionFulfilBin = async (
               participantPositionChanges.push(participantPositionChange)
               fxTransferStateChanges.push(fxTransferStateChange)
               accumulatedFxTransferStatesCopy[positionChangeToBeProcessed.commitRequestId] = transferStateId
-              const patchMessage = _constructPatchNotificationResultMessage(
+              const patchMessages = _constructPatchNotificationResultMessage(
                 binItem,
                 cyrilResult
               )
-              resultMessages.push({ binItem, message: patchMessage })
+              for (const patchMessage of patchMessages) {
+                resultMessages.push({ binItem, message: patchMessage })
+              }
             } else {
               const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
                 _handleParticipantPositionChange(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.transferId, accumulatedPositionReservedValue)
@@ -206,47 +208,51 @@ const _constructTransferFulfilResultMessage = (binItem, transferId, payerFsp, pa
 }
 
 const _constructPatchNotificationResultMessage = (binItem, cyrilResult) => {
-  console.log('cyrilResult', cyrilResult)
-  const commitRequestId = cyrilResult.patchNotifications[0].commitRequestId
-  const fxpName = cyrilResult.patchNotifications[0].fxpName
-  const fulfilment = cyrilResult.patchNotifications[0].fulfilment
-  const completedTimestamp = cyrilResult.patchNotifications[0].completedTimestamp
-  const headers = {
-    ...binItem.message.value.content.headers,
-    'fspiop-source': Config.HUB_NAME,
-    'fspiop-destination': fxpName
+  const messages = []
+  const patchNotifications = cyrilResult.patchNotifications
+  for (const patchNotification of patchNotifications) {
+    const commitRequestId = patchNotification.commitRequestId
+    const fxpName = patchNotification.fxpName
+    const fulfilment = patchNotification.fulfilment
+    const completedTimestamp = patchNotification.completedTimestamp
+    const headers = {
+      ...binItem.message.value.content.headers,
+      'fspiop-source': Config.HUB_NAME,
+      'fspiop-destination': fxpName
+    }
+
+    const fulfil = {
+      conversionState: Enum.Transfers.TransferState.COMMITTED,
+      fulfilment,
+      completedTimestamp
+    }
+
+    const state = Utility.StreamingProtocol.createEventState(
+      Enum.Events.EventStatus.SUCCESS.status,
+      null,
+      null
+    )
+    const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
+      commitRequestId,
+      Enum.Kafka.Topics.TRANSFER,
+      Enum.Events.Event.Action.FX_NOTIFY,
+      state
+    )
+
+    const resultMessage = Utility.StreamingProtocol.createMessage(
+      commitRequestId,
+      fxpName,
+      Config.HUB_NAME,
+      metadata,
+      headers,
+      fulfil,
+      { id: commitRequestId },
+      'application/json'
+    )
+
+    messages.push(resultMessage)
   }
-
-  const fulfil = {
-    conversionState: Enum.Transfers.TransferState.COMMITTED,
-    fulfilment,
-    completedTimestamp
-  }
-
-  const state = Utility.StreamingProtocol.createEventState(
-    Enum.Events.EventStatus.SUCCESS.status,
-    null,
-    null
-  )
-  const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-    commitRequestId,
-    Enum.Kafka.Topics.TRANSFER,
-    Enum.Events.Event.Action.FX_NOTIFY,
-    state
-  )
-
-  const resultMessage = Utility.StreamingProtocol.createMessage(
-    commitRequestId,
-    fxpName,
-    Config.HUB_NAME,
-    metadata,
-    headers,
-    fulfil,
-    { id: commitRequestId },
-    'application/json'
-  )
-
-  return resultMessage
+  return messages
 }
 
 const _handleParticipantPositionChange = (runningPosition, transferAmount, transferId, accumulatedPositionReservedValue) => {
