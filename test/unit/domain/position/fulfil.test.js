@@ -137,7 +137,7 @@ const constructTransferCallbackTestData = (payerFsp, payeeFsp, transferState, ev
   }
 }
 
-const _constructContextForFx = (transferTestData, partialProcessed = false, patchNotifications = {}) => {
+const _constructContextForFx = (transferTestData, partialProcessed = false, patchNotifications = []) => {
   return {
     cyrilResult: {
       isFx: true,
