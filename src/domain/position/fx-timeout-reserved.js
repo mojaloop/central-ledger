@@ -141,6 +141,7 @@ const _handleParticipantPositionChange = (runningPosition, transferAmount, commi
     commitRequestId, // Need to delete this in bin processor while updating transferStateChangeId
     transferStateChangeId: null, // Need to update this in bin processor while executing queries
     value: updatedRunningPosition.toNumber(),
+    change: transferAmount.toNumber(),
     reservedValue: accumulatedPositionReservedValue
   }
 

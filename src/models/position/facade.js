@@ -229,12 +229,13 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         const processedTransfersKeysList = Object.keys(processedTransfers)
         const batchParticipantPositionChange = []
         for (const keyIndex in processedTransfersKeysList) {
-          const { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
+          const { transferAmount, runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
           const participantPositionChange = {
             participantPositionId: initialParticipantPosition.participantPositionId,
             participantCurrencyId: participantCurrency.participantCurrencyId,
             transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
             value: runningPosition,
+            change: transferAmount.toNumber(),
             // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
             reservedValue: runningReservedValue
           }
@@ -294,6 +295,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
           participantCurrencyId,
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
           value: latestPosition,
+          change: isReversal ? -amount.toNumber() : amount.toNumber(),
           reservedValue: participantPosition.reservedValue,
           createdDate: transactionTimestamp
         }
