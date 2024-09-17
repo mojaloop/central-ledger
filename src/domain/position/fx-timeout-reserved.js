@@ -53,7 +53,7 @@ const processPositionFxTimeoutReservedBin = async (
       } else {
         Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates: ${JSON.stringify(accumulatedFxTransferStates)}`)
 
-        const transferAmount = fetchedReservedPositionChangesByCommitRequestIds[commitRequestId][participantAccountId].value
+        const transferAmount = fetchedReservedPositionChangesByCommitRequestIds[commitRequestId][participantAccountId].change
 
         // Construct payee notification message
         const resultMessage = _constructFxTimeoutReservedResultMessage(
