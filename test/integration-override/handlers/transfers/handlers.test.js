@@ -559,7 +559,7 @@ Test('Handlers test', async handlersTest => {
     })
   })
 
-  await handlersTest.skip('transferPrepare should', async transferPrepare => {
+  await handlersTest.test('transferPrepare should', async transferPrepare => {
     await transferPrepare.test('should create position prepare message to override topic name in config', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
@@ -589,7 +589,7 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('fxTransferPrepare should', async transferPrepare => {
-    await transferPrepare.skip('ignore non COMMITTED/ABORTED fxTransfer on duplicate request', async (test) => {
+    await transferPrepare.test('ignore non COMMITTED/ABORTED fxTransfer on duplicate request', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -630,7 +630,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.skip('send fxTransfer information callback when fxTransfer is (RECEIVED_FULFIL_DEPENDENT) RESERVED on duplicate request', async (test) => {
+    await transferPrepare.test('send fxTransfer information callback when fxTransfer is (RECEIVED_FULFIL_DEPENDENT) RESERVED on duplicate request', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -824,7 +824,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPrepare.skip('send fxTransfer information callback when fxTransfer is ABORTED on duplicate request', async (test) => {
+    await transferPrepare.test('send fxTransfer information callback when fxTransfer is ABORTED on duplicate request', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -901,7 +901,7 @@ Test('Handlers test', async handlersTest => {
     transferPrepare.end()
   })
 
-  await handlersTest.skip('transferForwarded should', async transferForwarded => {
+  await handlersTest.test('transferForwarded should', async transferForwarded => {
     await transferForwarded.test('should update transfer internal state on prepare event forwarded action', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
@@ -1195,7 +1195,7 @@ Test('Handlers test', async handlersTest => {
     transferForwarded.end()
   })
 
-  await handlersTest.skip('transferFxForwarded should', async transferFxForwarded => {
+  await handlersTest.test('transferFxForwarded should', async transferFxForwarded => {
     await transferFxForwarded.test('should update fxTransfer internal state on prepare event fx-forwarded action', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
@@ -1488,7 +1488,7 @@ Test('Handlers test', async handlersTest => {
     transferFxForwarded.end()
   })
 
-  await handlersTest.skip('transferFulfil should', async transferFulfil => {
+  await handlersTest.test('transferFulfil should', async transferFulfil => {
     await transferFulfil.test('should create position fulfil message to override topic name in config', async (test) => {
       const td = await prepareTestData(testData)
       const prepareConfig = Utility.getKafkaConfig(
@@ -1538,7 +1538,7 @@ Test('Handlers test', async handlersTest => {
     transferFulfil.end()
   })
 
-  await handlersTest.skip('transferProxyPrepare should', async transferProxyPrepare => {
+  await handlersTest.test('transferProxyPrepare should', async transferProxyPrepare => {
     await transferProxyPrepare.test(`
       Scheme A: POST /fxTransfer call I.e. Debtor: Payer DFSP → Creditor: Proxy AR
       Payer DFSP position account must be updated (reserved)`, async (test) => {
@@ -1841,7 +1841,7 @@ Test('Handlers test', async handlersTest => {
     transferProxyPrepare.end()
   })
 
-  await handlersTest.skip('transferProxyFulfil should', async transferProxyPrepare => {
+  await handlersTest.test('transferProxyFulfil should', async transferProxyPrepare => {
     await transferProxyPrepare.test(`
       Scheme B: PUT /transfers call I.e. From: Payee DFSP → To: Proxy RB
       Payee DFSP position account must be updated`, async (test) => {
