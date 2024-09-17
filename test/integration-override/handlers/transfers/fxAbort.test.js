@@ -477,7 +477,7 @@ Test('Handlers test', async handlersTest => {
     })
   })
 
-  await handlersTest.test('When only tranfer is sent and followed by transfer abort', async abortTest => {
+  await handlersTest.test('When only transfer is sent and followed by transfer abort', async abortTest => {
     const td = await prepareFxTestData(testFxData)
 
     await abortTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {

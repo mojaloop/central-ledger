@@ -83,32 +83,6 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
     t.ok(Db[EP_TABLE].findOne.notCalled, 'db.findOne is called')
   }))
 
-  epmTest.test('should get externalParticipant ID from db (no data in cache)', tryCatchEndTest(async (t) => {
-    const name = `extFsp-${Date.now()}`
-    const data = mockExternalParticipantDto({ name })
-    Db[EP_TABLE].findOne.withArgs({ name }).resolves(data)
-
-    const id = await model.getIdByNameOrCreate({ name })
-    t.equal(id, data.externalParticipantId)
-  }))
-
-  epmTest.test('should create externalParticipant, and get its id from db (if no data in db)', tryCatchEndTest(async (t) => {
-    const data = mockExternalParticipantDto()
-    const { name, proxyId } = data
-    const fspList = []
-    Db[EP_TABLE].findOne = async json => (json.name === name && fspList[0])
-    Db[EP_TABLE].insert = async json => { if (json.name === name && json.proxyId === proxyId) fspList.push(data) }
-
-    const id = await model.getIdByNameOrCreate({ name, proxyId })
-    t.equal(id, data.externalParticipantId)
-  }))
-
-  epmTest.test('should return null in case of error inside getIdByNameOrCreate method', tryCatchEndTest(async (t) => {
-    Db[EP_TABLE].findOne.rejects(new Error('DB error'))
-    const id = await model.getIdByNameOrCreate(mockExternalParticipantDto())
-    t.equal(id, null)
-  }))
-
   epmTest.test('should get externalParticipant by id', tryCatchEndTest(async (t) => {
     const id = 'id123'
     const data = { name: 'extFsp', proxyId: '123' }

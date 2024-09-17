@@ -9,7 +9,6 @@ const { TABLE_NAMES } = require('../../shared/constants')
 const Db = require('../../lib/db')
 const participant = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
-const externalParticipantModel = require('../participant/externalParticipant')
 const TransferExtensionModel = require('./fxTransferExtension')
 
 const { TransferInternalState } = Enum.Transfers
@@ -196,6 +195,7 @@ const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestI
       return transferResult
     })
   } catch (err) {
+    logger.warn('error in getAllDetailsByCommitRequestIdForProxiedFxTransfer', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -272,8 +272,8 @@ const savePreparedRequest = async (
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
     }
     if (proxyObligation.isInitiatingFspProxy) {
-      initiatingParticipantRecord.externalParticipantId = await externalParticipantModel
-        .getIdByNameOrCreate(proxyObligation.initiatingFspProxyOrParticipantId)
+      initiatingParticipantRecord.externalParticipantId = await participant
+        .getExternalParticipantIdByNameOrCreate(proxyObligation.initiatingFspProxyOrParticipantId)
     }
 
     const counterPartyParticipantRecord1 = {
@@ -286,8 +286,8 @@ const savePreparedRequest = async (
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
     }
     if (proxyObligation.isCounterPartyFspProxy) {
-      counterPartyParticipantRecord1.externalParticipantId = await externalParticipantModel
-        .getIdByNameOrCreate(proxyObligation.counterPartyFspProxyOrParticipantId)
+      counterPartyParticipantRecord1.externalParticipantId = await participant
+        .getExternalParticipantIdByNameOrCreate(proxyObligation.counterPartyFspProxyOrParticipantId)
     }
 
     let counterPartyParticipantRecord2 = null
@@ -377,7 +377,6 @@ const savePreparedRequest = async (
   }
 }
 
-// todo: clarify this code
 const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopError) => {
   const histTimerSaveFulfilResponseEnd = Metrics.getHistogram(
     'fx_model_transfer',
@@ -562,10 +561,10 @@ module.exports = {
   getByDeterminingTransferId,
   getByIdLight,
   getAllDetailsByCommitRequestId,
+  getAllDetailsByCommitRequestIdForProxiedFxTransfer,
   getFxTransferParticipant,
   savePreparedRequest,
   saveFxFulfilResponse,
   saveFxTransfer,
-  getAllDetailsByCommitRequestIdForProxiedFxTransfer,
   updateFxPrepareReservedForwarded
 }

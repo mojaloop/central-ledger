@@ -28,17 +28,20 @@
  * @module src/models/participant/facade/
  */
 
-const Db = require('../../lib/db')
 const Time = require('@mojaloop/central-services-shared').Util.Time
+const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
+
+const Db = require('../../lib/db')
 const Cache = require('../../lib/cache')
 const ParticipantModelCached = require('../../models/participant/participantCached')
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../models/participant/participantLimitCached')
+const externalParticipant = require('../../models/participant/externalParticipant')
 const Config = require('../../lib/config')
 const SettlementModelModel = require('../settlement/settlementModel')
-const { Enum } = require('@mojaloop/central-services-shared')
+const { logger } = require('../../shared/logger')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -773,6 +776,32 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
   }
 }
 
+const getExternalParticipantIdByNameOrCreate = async ({ name, proxyId }) => {
+  try {
+    let external = await externalParticipant.getOneByNameCached(name)
+    if (!external) {
+      const proxy = await ParticipantModelCached.getByName(proxyId)
+      if (!proxy) {
+        throw new Error(`Proxy participant not found: ${proxyId}`)
+      }
+      await externalParticipant.create({
+        name,
+        proxyId: proxy.participantId
+      })
+      // todo: - check if create returns id (to avoid getOneByNameCached call)
+      //       - if isCreated === false, re-load all external participants cache
+      external = await externalParticipant.getOneByNameCached(name)
+    }
+    const id = external?.externalParticipantId
+    logger.verbose('getExternalParticipantIdByNameOrCreate result:', { id, name })
+    return id
+  } catch (err) {
+    logger.child({ name, proxyId }).warn('error in getExternalParticipantIdByNameOrCreate:', err)
+    return null
+    // todo: think, if we need to rethrow an error here?
+  }
+}
+
 module.exports = {
   addHubAccountAndInitPosition,
   getByNameAndCurrency,
@@ -789,5 +818,6 @@ module.exports = {
   getParticipantLimitsByParticipantId,
   getAllAccountsByNameAndCurrency,
   getLimitsForAllParticipants,
-  getAllNonHubParticipantsWithCurrencies
+  getAllNonHubParticipantsWithCurrencies,
+  getExternalParticipantIdByNameOrCreate
 }

@@ -51,9 +51,23 @@ const create = async ({ name, proxyId }) => {
     return result
   } catch (err) {
     log.error('error in create', err)
+    // If the cache is not up-to-date, then will get an error when inserting a record and that record already exists
+    // reload the cache at that point.
+    // todo: to implement above requirement, we need to detect duplication restriction error, and don't rethrow error
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+
+// const getAll = async (options = {}) => {
+//   try {
+//     const result = await Db.from(TABLE).find({}, options)
+//     log.debug('getAll result:', { result })
+//     return result
+//   } catch (err) {
+//     log.error('error in getAll:', err)
+//     throw ErrorHandler.Factory.reformatFSPIOPError(err)
+//   }
+// }
 
 const getOneBy = async (criteria, options) => {
   try {
@@ -80,24 +94,6 @@ const getOneByNameCached = async (name, options = {}) => {
   return data
 }
 
-const getIdByNameOrCreate = async ({ name, proxyId }) => {
-  try {
-    let dfsp = await getOneByNameCached(name)
-    if (!dfsp) {
-      await create({ name, proxyId })
-      // todo: check if create returns id (to avoid getOneByNameCached call)
-      dfsp = await getOneByNameCached(name)
-    }
-    const id = dfsp?.[ID_FIELD]
-    log.verbose('getIdByNameOrCreate result:', { id, name })
-    return id
-  } catch (err) {
-    log.child({ name, proxyId }).warn('error in getIdByNameOrCreate:', err)
-    return null
-    // todo: think, if we need to rethrow an error here?
-  }
-}
-
 const destroyBy = async (criteria) => {
   try {
     const result = await Db.from(TABLE).destroy(criteria)
@@ -114,7 +110,6 @@ const destroyByName = async (name) => destroyBy({ name })
 // todo: think, if we need update method
 module.exports = {
   create,
-  getIdByNameOrCreate,
   getOneByNameCached,
   getOneByName,
   getOneById,
