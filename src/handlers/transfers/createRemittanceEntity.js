@@ -62,8 +62,8 @@ const createRemittanceEntity = (isFx) => {
     },
 
     /**
-     * A determiningTransferCheckResult.
      * @typedef {Object} DeterminingTransferCheckResult
+     *
      * @property {boolean} determiningTransferExists - Indicates if the determining transfer exists.
      * @property {Array<{participantName, currencyId}>} participantCurrencyValidationList - List of validations for participant currencies.
      * @property {Object} [transferRecord] - Determining transfer for the FX transfer (optional).

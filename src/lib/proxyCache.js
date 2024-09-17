@@ -35,6 +35,7 @@ const getCache = () => {
 
 /**
  * @typedef {Object} ProxyOrParticipant - An object containing the inScheme status, proxyId and FSP name
+ *
  * @property {boolean} inScheme - Is FSP in the scheme.
  * @property {string|null} proxyId - Proxy, associated with the FSP, if FSP is not in the scheme.
  * @property {string} name - FSP name.

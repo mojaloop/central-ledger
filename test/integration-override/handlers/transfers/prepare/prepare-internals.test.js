@@ -164,71 +164,7 @@ Test('Prepare Handler internals Tests -->', (prepareHandlerTest) => {
     t.equals(participant1.participantId, extPayer.proxyId)
   }))
 
-  // prepareHandlerTest.test('get timed out transfers', tryCatchEndTest(async (t) => {
-  //   const transactionTimestamp = (new Date()).toISOString()
-  //   const knex = Db.getKnex()
-  //   // const ttList = transferFacade._getTimedOutTransfers(knex, transactionTimestamp)
-  //
-  //   const query = knex.from(knex.raw('fxTransferTimeout (commitRequestId, expirationDate)'))
-  //     .insert(function () {
-  //       this.from('fxTransfer AS ft')
-  //         .innerJoin(
-  //           knex('transferTimeout AS tt')
-  //             .select('tt.transferId', 'tt.expirationDate')
-  //             .innerJoin(
-  //               knex('transferStateChange as tsc1')
-  //                 .select('tsc1.transferId')
-  //                 .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-  //                 .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
-  //                 .groupBy('tsc1.transferId')
-  //                 .as('ts'),
-  //               'ts.transferId', 'tt.transferId'
-  //             )
-  //             .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-  //             .where('tt.expirationDate', '<', transactionTimestamp)
-  //             .whereIn('tsc.transferStateId', [
-  //               `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
-  //               `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
-  //             ])
-  //             .as('tt1'),
-  //           'ft.determiningTransferId', 'tt1.transferId'
-  //         )
-  //         .select('ft.commitRequestId', 'tt1.expirationDate')
-  //     })
-  //     .onConflict('commitRequestId')
-  //     .merge({
-  //       expirationDate: knex.raw('VALUES(expirationDate)')
-  //     })
-  //
-  //   console.log(query.toString())
-  //
-  //   const q2 = knex('transferStateChange').select('transferId').toString()
-  //
-  //   const q3 = knex.from('transferStateChange').toString()
-  //
-  //   console.log({ q2 })
-  //   console.log({ q3 })
-  //
-  //   const q4 = knex('transferTimeout AS tt')
-  //     .innerJoin('transferParticipant AS tp2', function () {
-  //       this.on('tp2.transferId', 'tt.transferId')
-  //         .andOn('tp2.transferParticipantRoleTypeId', 'Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP')
-  //         .andOn('tp2.ledgerEntryTypeId', 'Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE')
-  //     }).toString()
-  //   console.log({ q4 })
-  // }))
-
   prepareHandlerTest.test('teardown', tryCatchEndTest(async (t) => {
-    // const [deletedPayer, deletedPayee] = await Promise.all([
-    //   externalParticipant.destroyByName(initiatingFsp),
-    //   externalParticipant.destroyByName(counterPartyFsp)
-    // ])
-    // const [is1Deleted, is2Deleted] = await Promise.all([
-    //   participantHelper.deletePreparedData(proxyId1),
-    //   participantHelper.deletePreparedData(proxyId2)
-    // ])
-    // console.log({ is1Deleted, is2Deleted })
-
     await Promise.all([
       Db.disconnect(),
       proxyCache.disconnect(),

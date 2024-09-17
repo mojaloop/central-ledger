@@ -896,7 +896,10 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
 /**
  *  Returns the list of transfers/fxTransfers that have timed out
  *
- * @returns {Promise<{transferTimeoutList: TimedOutTransfer, fxTransferTimeoutList: TimedOutFxTransfer}>}
+ * @returns {Promise<{
+ *    transferTimeoutList: TimedOutTransfer,
+ *    fxTransferTimeoutList: TimedOutFxTransfer
+ * }>}
  */
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
   try {

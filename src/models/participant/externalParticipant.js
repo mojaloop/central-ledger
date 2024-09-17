@@ -94,25 +94,6 @@ const getOneByNameCached = async (name, options = {}) => {
   return data
 }
 
-// const getIdByNameOrCreate = async ({ name, proxyId }) => {
-//   try {
-//     let dfsp = await getOneByNameCached(name)
-//     if (!dfsp) {
-//       const isCreated = await create({ name, proxyId })
-//       // todo: - check if create returns id (to avoid getOneByNameCached call)
-//       //       - if isCreated === false, re-load all external participants cache
-//       dfsp = await getOneByNameCached(name)
-//     }
-//     const id = dfsp?.[ID_FIELD]
-//     log.verbose('getIdByNameOrCreate result:', { id, name })
-//     return id
-//   } catch (err) {
-//     log.child({ name, proxyId }).warn('error in getIdByNameOrCreate:', err)
-//     return null
-//     // todo: think, if we need to rethrow an error here?
-//   }
-// }
-
 const destroyBy = async (criteria) => {
   try {
     const result = await Db.from(TABLE).destroy(criteria)
@@ -129,7 +110,6 @@ const destroyByName = async (name) => destroyBy({ name })
 // todo: think, if we need update method
 module.exports = {
   create,
-  // getIdByNameOrCreate,
   getOneByNameCached,
   getOneByName,
   getOneById,
