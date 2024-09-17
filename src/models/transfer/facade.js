@@ -799,10 +799,17 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
     .leftJoin('bulkTransferAssociation AS bta', 'bta.transferId', 'tt.transferId')
 
     .where('tt.expirationDate', '<', transactionTimestamp)
-    .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantCurrencyId',
-      'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
-      'bta.bulkTransferId', 'tpc.participantCurrencyId AS effectedParticipantCurrencyId',
-      'ep1.name AS externalPayerName', 'ep2.name AS externalPayeeName'
+    .select(
+      'tt.*',
+      'tsc.transferStateId',
+      'tp1.participantCurrencyId AS payerParticipantCurrencyId',
+      'p1.name AS payerFsp',
+      'p2.name AS payeeFsp',
+      'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
+      'bta.bulkTransferId',
+      'tpc.participantCurrencyId AS effectedParticipantCurrencyId',
+      'ep1.name AS externalPayerName',
+      'ep2.name AS externalPayeeName'
     )
 }
 
@@ -821,12 +828,14 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
         .andOn('ftp1.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP)
         .andOn('ftp1.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
     })
+    .leftJoin('externalParticipant AS ep1', 'ep1.externalParticipantId', 'ftp1.externalParticipantId')
     .innerJoin('fxTransferParticipant AS ftp2', function () {
       this.on('ftp2.commitRequestId', 'ftt.commitRequestId')
         .andOn('ftp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP)
         .andOn('ftp2.fxParticipantCurrencyTypeId', Enum.Fx.FxParticipantCurrencyType.TARGET)
         .andOn('ftp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
     })
+    .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'ftp2.externalParticipantId')
     .innerJoin('participant AS p1', 'p1.participantId', 'ftp1.participantId')
     .innerJoin('participant AS p2', 'p2.participantId', 'ftp2.participantId')
     .innerJoin(knex('fxTransferStateChange AS ftsc2')
@@ -836,11 +845,19 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
       .as('ftpc'), 'ftpc.commitRequestId', 'ftt.commitRequestId'
     )
     .where('ftt.expirationDate', '<', transactionTimestamp)
-    .select('ftt.*', 'ftsc.transferStateId', 'ftp1.participantCurrencyId AS initiatingParticipantCurrencyId',
-      'p1.name AS initiatingFsp', 'p2.name AS counterPartyFsp', 'ftp2.participantCurrencyId AS counterPartyParticipantCurrencyId', 'ftpc.participantCurrencyId AS effectedParticipantCurrencyId')
+    .select(
+      'ftt.*',
+      'ftsc.transferStateId',
+      'ftp1.participantCurrencyId AS initiatingParticipantCurrencyId',
+      'p1.name AS initiatingFsp',
+      'p2.name AS counterPartyFsp',
+      'ftp2.participantCurrencyId AS counterPartyParticipantCurrencyId',
+      'ftpc.participantCurrencyId AS effectedParticipantCurrencyId',
+      'ep1.name AS externalInitiatingFspName',
+      'ep2.name AS externalCounterPartyFspName'
+    )
 }
 
-/** @import { ProxyOrParticipant } from '#src/lib/proxyCache.js' */
 /**
  * @typedef {Object} TimedOutTransfer
  *
@@ -860,9 +877,26 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
  */
 
 /**
+ * @typedef {Object} TimedOutFxTransfer
+ *
+ * @property {Integer} fxTransferTimeoutId
+ * @property {String} commitRequestId
+ * @property {Date} expirationDate
+ * @property {Date} createdDate
+ * @property {String} transferStateId
+ * @property {String} initiatingFsp
+ * @property {String} counterPartyFsp
+ * @property {Integer} initiatingParticipantCurrencyId
+ * @property {Integer} counterPartyParticipantCurrencyId
+ * @property {Integer} effectedParticipantCurrencyId
+ * @property {String} externalInitiatingFspName
+ * @property {String} externalCounterPartyFspName
+ */
+
+/**
  *  Returns the list of transfers/fxTransfers that have timed out
  *
- * @returns {Promise<{transferTimeoutList: TimedOutTransfer, fxTransferTimeoutList: *}>}
+ * @returns {Promise<{transferTimeoutList: TimedOutTransfer, fxTransferTimeoutList: TimedOutFxTransfer}>}
  */
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
   try {
