@@ -184,8 +184,8 @@ const tryCatchEndTest = (testFn) => async (t) => {
   try {
     await testFn(t)
   } catch (err) {
-    logger.error(`error in test: "${t.name}"`, err)
-    t.fail(t.name)
+    logger.error(`error in test "${t.name}":`, err)
+    t.fail(`${t.name} failed due to error: ${err?.message}`)
   }
   t.end()
 }

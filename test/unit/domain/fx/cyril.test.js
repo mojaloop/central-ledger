@@ -1097,7 +1097,21 @@ Test('Cyril', cyrilTest => {
 
         const result = await Cyril.processFxAbortMessage(payload.transferId)
 
-        test.deepEqual(result, { positionChanges: [{ isFxTransferStateChange: true, commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4', notifyTo: 'fx_dfsp1', participantCurrencyId: 1, amount: -433.88 }, { isFxTransferStateChange: false, transferId: 'c05c3f31-33b5-4e33-8bfd-7c3a2685fb6c', notifyTo: 'dfsp1', participantCurrencyId: 1, amount: -433.88 }] })
+        test.deepEqual(result, {
+          positionChanges: [{
+            isFxTransferStateChange: true,
+            commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
+            notifyTo: 'fx_dfsp1',
+            participantCurrencyId: 1,
+            amount: -433.88
+          }, {
+            isFxTransferStateChange: false,
+            transferId: 'c05c3f31-33b5-4e33-8bfd-7c3a2685fb6c',
+            notifyTo: 'dfsp1',
+            participantCurrencyId: 1,
+            amount: -433.88
+          }]
+        })
         test.pass('Error not thrown')
         test.end()
       } catch (e) {

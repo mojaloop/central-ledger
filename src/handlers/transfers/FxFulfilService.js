@@ -52,9 +52,9 @@ class FxFulfilService {
   }
 
   async getFxTransferDetails(commitRequestId, functionality) {
-    const transfer = await this.FxTransferModel.fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
+    const fxTransfer = await this.FxTransferModel.fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
 
-    if (!transfer) {
+    if (!fxTransfer) {
       const fspiopError = fspiopErrorFactory.fxTransferNotFound()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
@@ -72,8 +72,8 @@ class FxFulfilService {
       throw fspiopError
     }
 
-    this.log.debug('fxTransfer is found', { transfer })
-    return transfer
+    this.log.debug('fxTransfer is found', { fxTransfer })
+    return fxTransfer
   }
 
   async validateHeaders({ transfer, headers, payload }) {
@@ -302,12 +302,13 @@ class FxFulfilService {
     const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
     const eventDetail = {
       functionality: Type.POSITION,
-      action
+      action // FX_ABORT
     }
     this.log.warn('FX_ABORT case', { eventDetail, apiFSPIOPError })
 
     await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, action, apiFSPIOPError)
     const cyrilResult = await this.cyril.processFxAbortMessage(transfer.commitRequestId)
+    // todo: add externalParticipantId to the message here?
 
     this.params.message.value.content.context = {
       ...this.params.message.value.content.context,
