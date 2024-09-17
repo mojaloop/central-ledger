@@ -4,11 +4,11 @@ const { Enum, Util } = require('@mojaloop/central-services-shared')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const TransferEventAction = Enum.Events.Event.Action
 
+const { logger } = require('../../shared/logger')
+const { TABLE_NAMES } = require('../../shared/constants')
 const Db = require('../../lib/db')
 const participant = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
-const { TABLE_NAMES } = require('../../shared/constants')
-const { logger } = require('../../shared/logger')
 const TransferExtensionModel = require('./fxTransferExtension')
 
 const { TransferInternalState } = Enum.Transfers
