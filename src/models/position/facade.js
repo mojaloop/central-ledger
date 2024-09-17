@@ -295,7 +295,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
           participantCurrencyId,
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
           value: latestPosition,
-          change: isReversal ? -amount.toNumber() : amount.toNumber(),
+          change: isReversal ? -amount : amount,
           reservedValue: participantPosition.reservedValue,
           createdDate: transactionTimestamp
         }

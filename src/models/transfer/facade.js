@@ -1079,7 +1079,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             participantCurrencyId: info.drAccountId,
             transferStateChangeId,
             value: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
-            change: info.drAmount.toNumber(),
+            change: info.drAmount,
             reservedValue: info.drReservedValue,
             createdDate: param1.createdDate
           })
@@ -1104,7 +1104,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             participantCurrencyId: info.crAccountId,
             transferStateChangeId,
             value: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
-            change: info.crAmount.toNumber(),
+            change: info.crAmount,
             reservedValue: info.crReservedValue,
             createdDate: param1.createdDate
           })
