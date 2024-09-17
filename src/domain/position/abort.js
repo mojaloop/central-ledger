@@ -83,7 +83,6 @@ const processPositionAbortBin = async (
         accumulatedTransferStatesCopy[positionChangeToBeProcessed.transferId] = transferStateId
       }
       binItem.result = { success: true }
-      const from = binItem.message.value.from
       cyrilResult.positionChanges[positionChangeIndex].isDone = true
       const nextIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
       if (nextIndex === -1) {
@@ -92,11 +91,11 @@ const processPositionAbortBin = async (
         for (const positionChange of cyrilResult.positionChanges) {
           if (positionChange.isFxTransferStateChange) {
             // Construct notification message for fx transfer state change
-            const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, from, positionChange.notifyTo)
+            const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, Config.HUB_NAME, positionChange.notifyTo)
             resultMessages.push({ binItem, message: resultMessage })
           } else {
             // Construct notification message for transfer state change
-            const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, from, positionChange.notifyTo)
+            const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, Config.HUB_NAME, positionChange.notifyTo)
             resultMessages.push({ binItem, message: resultMessage })
           }
         }
@@ -128,9 +127,7 @@ const processPositionAbortBin = async (
 
 const _constructAbortResultMessage = (binItem, id, from, notifyTo) => {
   let apiErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTION
-  let fromCalculated = from
-  if (binItem.message?.value.metadata.event.action === Enum.Events.Event.Action.FX_ABORT_VALIDATION || binItem.message?.value.metadata.event.action === Enum.Events.Event.Action.ABORT_VALIDATION) {
-    fromCalculated = Config.HUB_NAME
+  if (binItem.message?.value.metadata.event.action === Enum.Events.Event.Action.FX_ABORT_VALIDATION) {
     apiErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR
   }
   const fspiopError = ErrorHandler.Factory.createFSPIOPError(
@@ -156,8 +153,8 @@ const _constructAbortResultMessage = (binItem, id, from, notifyTo) => {
   )
   const resultMessage = Utility.StreamingProtocol.createMessage(
     id,
+    from,
     notifyTo,
-    fromCalculated,
     metadata,
     binItem.message.value.content.headers, // Headers don't really matter here. ml-api-adapter will ignore them and create their own.
     fspiopError,
