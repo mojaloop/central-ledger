@@ -64,11 +64,13 @@ const getById = async (id) => {
         })
         // PAYER
         .innerJoin('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId')
+        .leftJoin('externalParticipant AS ep1', 'ep1.externalParticipantId', 'tp1.externalParticipantId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
         .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
         .leftJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
         // PAYEE
         .innerJoin('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId')
+        .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'tp2.externalParticipantId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId')
         .innerJoin('participant AS ca', 'ca.participantId', 'tp2.participantId')
         .leftJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
@@ -101,10 +103,13 @@ const getById = async (id) => {
           'transfer.ilpCondition AS condition',
           'tf.ilpFulfilment AS fulfilment',
           'te.errorCode',
-          'te.errorDescription'
+          'te.errorDescription',
+          'ep1.name AS externalPayerName',
+          'ep2.name AS externalPayeeName'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
+
       if (transferResult) {
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
         if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
@@ -119,6 +124,7 @@ const getById = async (id) => {
       return transferResult
     })
   } catch (err) {
+    logger.warn('error in transfer.getById', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -171,6 +177,7 @@ const getByIdLight = async (id) => {
       return transferResult
     })
   } catch (err) {
+    logger.warn('error in transfer.getByIdLight', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -225,6 +232,7 @@ const getAll = async () => {
       return transferResultList
     })
   } catch (err) {
+    logger.warn('error in transfer.getAll', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -251,6 +259,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         .first()
     })
   } catch (err) {
+    logger.warn('error in getTransferInfoToChangePosition', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -399,6 +408,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
     histTimerSavePayeeTranferResponsedEnd({ success: true, queryName: 'facade_savePayeeTransferResponse' })
     return result
   } catch (err) {
+    logger.warn('error in savePayeeTransferResponse', err)
     histTimerSavePayeeTranferResponsedEnd({ success: false, queryName: 'facade_savePayeeTransferResponse' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -615,6 +625,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
     histTimerSaveTransferPreparedEnd({ success: true, queryName: 'transfer_model_facade_saveTransferPrepared' })
   } catch (err) {
+    logger.warn('error in saveTransferPrepared', err)
     histTimerSaveTransferPreparedEnd({ success: false, queryName: 'transfer_model_facade_saveTransferPrepared' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

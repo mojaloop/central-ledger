@@ -133,7 +133,7 @@
     "jsdoc": "4.0.3",
     "jsonpath": "1.1.1",
     "nodemon": "3.1.5",
-    "npm-check-updates": "17.1.1",
+    "npm-check-updates": "17.1.2",
     "nyc": "17.0.0",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",

@@ -213,6 +213,23 @@ const processFxFulfilMessage = async (commitRequestId) => {
   return true
 }
 
+/**
+ * @typedef {Object} PositionChangeItem
+ *
+ * @property {boolean} isFxTransferStateChange - Indicates whether the position change is related to an FX transfer.
+ * @property {string} [commitRequestId] - commitRequestId for the position change (only for FX transfers).
+ * @property {string} [transferId] - transferId for the position change (only for normal transfers).
+ * @property {string} notifyTo - The FSP to notify about the position change.
+ * @property {number} participantCurrencyId - The ID of the participant's currency involved in the position change.
+ * @property {number} amount - The amount of the position change, represented as a negative value.
+ */
+/**
+ * Retrieves position changes based on a list of commitRequestIds and transferIds.
+ *
+ * @param {Array<string>} commitRequestIdList - List of commit request IDs to retrieve FX-related position changes.
+ * @param {Array<string>} transferIdList - List of transfer IDs to retrieve regular transfer-related position changes.
+ * @returns {Promise<PositionChangeItem[]>} - A promise that resolves to an array of position change objects.
+ */
 const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
   const positionChanges = []
   for (const commitRequestId of commitRequestIdList) {
@@ -222,7 +239,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
       positionChanges.push({
         isFxTransferStateChange: true,
         commitRequestId,
-        notifyTo: fxRecord.initiatingFspName,
+        notifyTo: fxRecord.externalInitiatingFspName || fxRecord.initiatingFspName,
         participantCurrencyId: fxPositionChange.participantCurrencyId,
         amount: -fxPositionChange.value
       })
@@ -236,15 +253,19 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
       positionChanges.push({
         isFxTransferStateChange: false,
         transferId,
-        notifyTo: transferRecord.payerFsp,
+        notifyTo: transferRecord.externalPayerName || transferRecord.payerFsp,
         participantCurrencyId: transferPositionChange.participantCurrencyId,
         amount: -transferPositionChange.value
       })
     })
   }
+
   return positionChanges
 }
 
+/**
+ * @returns {Promise<{positionChanges: PositionChangeItem[]}>}
+ */
 const processFxAbortMessage = async (commitRequestId) => {
   const histTimer = Metrics.getHistogram(
     'fx_domain_cyril_processFxAbortMessage',
@@ -255,7 +276,7 @@ const processFxAbortMessage = async (commitRequestId) => {
   // Get the fxTransfer record
   const fxTransferRecord = await fxTransfer.getByCommitRequestId(commitRequestId)
   // const fxTransferRecord = await fxTransfer.getAllDetailsByCommitRequestId(commitRequestId)
-  // Incase of reference currency, there might be multiple fxTransfers associated with a transfer.
+  // In case of reference currency, there might be multiple fxTransfers associated with a transfer.
   const relatedFxTransferRecords = await fxTransfer.getByDeterminingTransferId(fxTransferRecord.determiningTransferId)
 
   // Get position changes

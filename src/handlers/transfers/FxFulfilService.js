@@ -308,7 +308,6 @@ class FxFulfilService {
 
     await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, action, apiFSPIOPError)
     const cyrilResult = await this.cyril.processFxAbortMessage(transfer.commitRequestId)
-    // todo: add externalParticipantId to the message here?
 
     this.params.message.value.content.context = {
       ...this.params.message.value.content.context,
