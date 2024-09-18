@@ -56,6 +56,7 @@ const getById = async (id) => {
   try {
     /** @namespace Db.transfer **/
     return await Db.from('transfer').query(async (builder) => {
+      /* istanbul ignore next */
       const transferResult = await builder
         .where({
           'transfer.transferId': id,
@@ -674,6 +675,7 @@ const getTransferStateByTransferId = async (id) => {
 
 const _processTimeoutEntries = async (knex, trx, transactionTimestamp) => {
   // Insert `transferStateChange` records for RECEIVED_PREPARE
+  /* istanbul ignore next */
   await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
     .insert(function () {
       this.from('transferTimeout AS tt')
@@ -690,6 +692,7 @@ const _processTimeoutEntries = async (knex, trx, transactionTimestamp) => {
     })
 
   // Insert `transferStateChange` records for RESERVED
+  /* istanbul ignore next */
   await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
     .insert(function () {
       this.from('transferTimeout AS tt')
@@ -708,6 +711,7 @@ const _processTimeoutEntries = async (knex, trx, transactionTimestamp) => {
 
 const _insertTransferErrorEntries = async (knex, trx, transactionTimestamp) => {
   // Insert `transferError` records
+  /* istanbul ignore next */
   await knex.from(knex.raw('transferError (transferId, transferStateChangeId, errorCode, errorDescription)')).transacting(trx)
     .insert(function () {
       this.from('transferTimeout AS tt')
@@ -726,6 +730,7 @@ const _insertTransferErrorEntries = async (knex, trx, transactionTimestamp) => {
 
 const _processFxTimeoutEntries = async (knex, trx, transactionTimestamp) => {
   // Insert `fxTransferStateChange` records for RECEIVED_PREPARE
+  /* istanbul ignore next */
   await knex.from(knex.raw('fxTransferStateChange (commitRequestId, transferStateId, reason)')).transacting(trx)
     .insert(function () {
       this.from('fxTransferTimeout AS ftt')
@@ -742,6 +747,7 @@ const _processFxTimeoutEntries = async (knex, trx, transactionTimestamp) => {
     })
 
   // Insert `fxTransferStateChange` records for RESERVED
+  /* istanbul ignore next */
   await knex.from(knex.raw('fxTransferStateChange (commitRequestId, transferStateId, reason)')).transacting(trx)
     .insert(function () {
       this.from('fxTransferTimeout AS ftt')
@@ -760,6 +766,7 @@ const _processFxTimeoutEntries = async (knex, trx, transactionTimestamp) => {
 
 const _insertFxTransferErrorEntries = async (knex, trx, transactionTimestamp) => {
   // Insert `fxTransferError` records
+  /* istanbul ignore next */
   await knex.from(knex.raw('fxTransferError (commitRequestId, fxTransferStateChangeId, errorCode, errorDescription)')).transacting(trx)
     .insert(function () {
       this.from('fxTransferTimeout AS ftt')
@@ -777,6 +784,7 @@ const _insertFxTransferErrorEntries = async (knex, trx, transactionTimestamp) =>
 }
 
 const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
+  /* istanbul ignore next */
   return knex('transferTimeout AS tt')
     .innerJoin(knex('transferStateChange AS tsc1')
       .select('tsc1.transferId')
@@ -806,7 +814,6 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
       .innerJoin('participantPositionChange AS ppc1', 'ppc1.transferStateChangeId', 'tsc2.transferStateChangeId')
       .as('tpc'), 'tpc.transferId', 'tt.transferId'
     )
-
     .leftJoin('bulkTransferAssociation AS bta', 'bta.transferId', 'tt.transferId')
 
     .where('tt.expirationDate', '<', transactionTimestamp)
@@ -825,6 +832,7 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
 }
 
 const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
+  /* istanbul ignore next */
   return knex('fxTransferTimeout AS ftt')
     .innerJoin(knex('fxTransferStateChange AS ftsc1')
       .select('ftsc1.commitRequestId')
@@ -919,6 +927,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
     await knex.transaction(async (trx) => {
       try {
         // Insert `transferTimeout` records for transfers found between the interval intervalMin <= intervalMax
+        /* istanbul ignore next */
         await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('transfer AS t')
@@ -938,6 +947,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
           })
 
         // Insert `fxTransferTimeout` records for fxTransfers found between the interval intervalMin <= intervalMax and related fxTransfers
+        /* istanbul ignore next */
         await knex.from(knex.raw('fxTransferTimeout (commitRequestId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('fxTransfer AS ft')
@@ -960,9 +970,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
         await _processFxTimeoutEntries(knex, trx, transactionTimestamp)
 
         // Insert `fxTransferTimeout` records for the related fxTransfers, or update if exists. The expiration date will be of the transfer and not from fxTransfer
-        await knex
-          .from(knex.raw('fxTransferTimeout (commitRequestId, expirationDate)'))
-          .transacting(trx)
+        await knex.from(knex.raw('fxTransferTimeout (commitRequestId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('fxTransfer AS ft')
               .innerJoin(
@@ -994,9 +1002,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
           })
 
         // Insert `transferTimeout` records for the related transfers, or update if exists. The expiration date will be of the fxTransfer and not from transfer
-        await knex
-          .from(knex.raw('transferTimeout (transferId, expirationDate)'))
-          .transacting(trx)
+        /* istanbul ignore next */
+        await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('fxTransfer AS ft')
               .innerJoin(

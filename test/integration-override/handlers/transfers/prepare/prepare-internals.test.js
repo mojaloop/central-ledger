@@ -31,12 +31,11 @@ const config = require('#src/lib/config')
 const Db = require('#src/lib/db')
 const proxyCache = require('#src/lib/proxyCache')
 const Cache = require('#src/lib/cache')
-const transferFacade = require('#src/models/transfer/facade')
-const externalParticipant = require('#src/models/participant/externalParticipant')
+const externalParticipantCached = require('#src/models/participant/externalParticipantCached')
 const ParticipantCached = require('#src/models/participant/participantCached')
 const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
-// const { logger } = require('#src/shared/logger/index')
+const transferFacade = require('#src/models/transfer/facade')
 
 const participantHelper = require('#test/integration/helpers/participant')
 const fixtures = require('#test/fixtures')
@@ -56,10 +55,13 @@ Test('Prepare Handler internals Tests -->', (prepareHandlerTest) => {
   prepareHandlerTest.test('setup', tryCatchEndTest(async (t) => {
     await Db.connect(config.DATABASE)
     await proxyCache.connect()
-    await ParticipantCached.initialize()
-    await ParticipantCurrencyCached.initialize()
-    await ParticipantLimitCached.initialize()
-    await Cache.initCache()
+    await Promise.all([
+      externalParticipantCached.initialize(),
+      ParticipantCached.initialize(),
+      ParticipantCurrencyCached.initialize(),
+      ParticipantLimitCached.initialize(),
+      Cache.initCache()
+    ])
 
     const [proxy1, proxy2] = await Promise.all([
       participantHelper.prepareData(proxyId1, curr1, null, false, true),
@@ -106,8 +108,8 @@ Test('Prepare Handler internals Tests -->', (prepareHandlerTest) => {
 
   prepareHandlerTest.test('should save preparedRequest for inter-scheme transfer, and create external participants', tryCatchEndTest(async (t) => {
     let [extPayer, extPayee] = await Promise.all([
-      externalParticipant.getOneByNameCached(initiatingFsp),
-      externalParticipant.getOneByNameCached(counterPartyFsp)
+      externalParticipantCached.getByName(initiatingFsp),
+      externalParticipantCached.getByName(counterPartyFsp)
     ])
     t.equals(extPayer, null)
     t.equals(extPayee, null)
@@ -153,8 +155,8 @@ Test('Prepare Handler internals Tests -->', (prepareHandlerTest) => {
     t.equals(dbTransfer.transferId, transferId, 'dbTransfer.transferId')
 
     ;[extPayer, extPayee] = await Promise.all([
-      externalParticipant.getOneByNameCached(initiatingFsp),
-      externalParticipant.getOneByNameCached(counterPartyFsp)
+      externalParticipantCached.getByName(initiatingFsp),
+      externalParticipantCached.getByName(counterPartyFsp)
     ])
     t.ok(extPayer)
     t.ok(extPayee)
