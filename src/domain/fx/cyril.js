@@ -348,7 +348,12 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
             amount: -fxTransferRecord.sourceAmount
           })
         }
-        // TODO: Send PATCH notification to FXP
+        result.patchNotifications.push({
+          commitRequestId: watchListRecord.commitRequestId,
+          fxpName: fxTransferRecord.counterPartyFspName,
+          fulfilment: fxTransferRecord.fulfilment,
+          completedTimestamp: fxTransferRecord.completedTimestamp
+        })
       }
     }
 

@@ -137,7 +137,7 @@ const constructTransferCallbackTestData = (payerFsp, payeeFsp, transferState, ev
   }
 }
 
-const _constructContextForFx = (transferTestData, partialProcessed = false) => {
+const _constructContextForFx = (transferTestData, partialProcessed = false, patchNotifications = []) => {
   return {
     cyrilResult: {
       isFx: true,
@@ -155,7 +155,8 @@ const _constructContextForFx = (transferTestData, partialProcessed = false) => {
           participantCurrencyId: '101',
           amount: transferTestData.transferInfo.amount
         }
-      ]
+      ],
+      patchNotifications
     }
   }
 }
@@ -166,9 +167,19 @@ const transferTestData3 = constructTransferCallbackTestData('perffsp1', 'perffsp
 const transferTestData4 = constructTransferCallbackTestData('perffsp2', 'perffsp1', 'RESERVED', 'reserve', '2.00', 'USD')
 // Fulfil messages those are linked to FX transfers
 const transferTestData5 = constructTransferCallbackTestData('perffsp1', 'perffsp2', 'COMMITTED', 'commit', '2.00', 'USD')
-transferTestData5.message.value.content.context = _constructContextForFx(transferTestData5)
+transferTestData5.message.value.content.context = _constructContextForFx(transferTestData5, undefined, [{
+  commitRequestId: randomUUID(),
+  fxpName: 'FXP1',
+  fulfilment: 'fulfilment',
+  completedTimestamp: new Date().toISOString()
+}])
 const transferTestData6 = constructTransferCallbackTestData('perffsp2', 'perffsp1', 'COMMITTED', 'commit', '2.00', 'USD')
-transferTestData6.message.value.content.context = _constructContextForFx(transferTestData6)
+transferTestData6.message.value.content.context = _constructContextForFx(transferTestData6, undefined, [{
+  commitRequestId: randomUUID(),
+  fxpName: 'FXP1',
+  fulfilment: 'fulfilment',
+  completedTimestamp: new Date().toISOString()
+}])
 const transferTestData7 = constructTransferCallbackTestData('perffsp1', 'perffsp2', 'COMMITTED', 'commit', '2.00', 'USD')
 transferTestData7.message.value.content.context = _constructContextForFx(transferTestData7, true)
 const transferTestData8 = constructTransferCallbackTestData('perffsp2', 'perffsp1', 'COMMITTED', 'commit', '2.00', 'USD')
@@ -568,7 +579,7 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
     )
 
     // Assert the expected results
-    test.equal(result.notifyMessages.length, 0)
+    test.equal(result.notifyMessages.length, 2)
     test.equal(result.followupMessages.length, 2)
     test.equal(result.accumulatedPositionValue, 20)
     test.equal(result.accumulatedPositionReservedValue, 0)

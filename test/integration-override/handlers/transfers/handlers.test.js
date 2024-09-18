@@ -745,7 +745,7 @@ Test('Handlers test', async handlersTest => {
           action: TransferEventAction.FX_RESERVE,
           valueToFilter: td.payer.name
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionFxFulfil[0], 'Position fulfil message with key found')
+        test.ok(positionFxFulfil[0], 'Position fulfil notification message found')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
@@ -767,7 +767,7 @@ Test('Handlers test', async handlersTest => {
           topicFilter: 'topic-notification-event',
           action: TransferEventAction.PREPARE
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionFxFulfil[0], 'Prepare message with key found')
+        test.ok(positionFxFulfil[0], 'Prepare notification message found')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
@@ -780,14 +780,30 @@ Test('Handlers test', async handlersTest => {
           topicFilter: 'topic-notification-event',
           action: TransferEventAction.COMMIT
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionFxFulfil[0], 'Fulfil message with key found')
+        test.ok(positionFxFulfil[0], 'Fulfil notification message found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Assert FXP notification message is produced
+      try {
+        const notifyFxp = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: TransferEventAction.FX_NOTIFY
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(notifyFxp[0], 'FXP notify notification message found')
+        test.equal(notifyFxp[0].value.content.payload.conversionState, TransferStateEnum.COMMITTED)
+        test.equal(notifyFxp[0].value.content.uriParams.id, td.messageProtocolFxPrepare.content.payload.commitRequestId)
+        test.ok(notifyFxp[0].value.content.payload.completedTimestamp)
+        test.equal(notifyFxp[0].value.to, td.fxp.participant.name)
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
       testConsumer.clearEvents()
 
-      // Resend fx-prepare after fxtransfer state is COMMITTED
+      // Resend fx-prepare after fxTransfer state is COMMITTED
       await new Promise(resolve => setTimeout(resolve, 2000))
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
 
@@ -797,7 +813,7 @@ Test('Handlers test', async handlersTest => {
           topicFilter: 'topic-notification-event',
           action: TransferEventAction.FX_PREPARE_DUPLICATE
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionPrepare[0], 'Position prepare duplicate message with key found')
+        test.ok(positionPrepare[0], 'Position prepare duplicate notification found')
         // Check if the error message is correct
         test.equal(positionPrepare[0].value.content.payload.conversionState, TransferStateEnum.COMMITTED)
       } catch (err) {
