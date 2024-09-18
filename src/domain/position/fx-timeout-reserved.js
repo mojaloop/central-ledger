@@ -53,7 +53,7 @@ const processPositionFxTimeoutReservedBin = async (
       } else {
         Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates: ${JSON.stringify(accumulatedFxTransferStates)}`)
 
-        const transferAmount = fetchedReservedPositionChangesByCommitRequestIds[commitRequestId][participantAccountId].value
+        const transferAmount = fetchedReservedPositionChangesByCommitRequestIds[commitRequestId][participantAccountId].change
 
         // Construct payee notification message
         const resultMessage = _constructFxTimeoutReservedResultMessage(
@@ -141,6 +141,7 @@ const _handleParticipantPositionChange = (runningPosition, transferAmount, commi
     commitRequestId, // Need to delete this in bin processor while updating transferStateChangeId
     transferStateChangeId: null, // Need to update this in bin processor while executing queries
     value: updatedRunningPosition.toNumber(),
+    change: transferAmount,
     reservedValue: accumulatedPositionReservedValue
   }
 

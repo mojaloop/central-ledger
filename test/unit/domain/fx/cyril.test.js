@@ -1105,7 +1105,7 @@ Test('Cyril', cyrilTest => {
         ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.returns(Promise.resolve([
           {
             participantCurrencyId: 1,
-            value: payload.amount.amount
+            change: payload.amount.amount
           }
         ]))
         TransferFacade.getById.returns(Promise.resolve({
@@ -1114,7 +1114,7 @@ Test('Cyril', cyrilTest => {
         ParticipantPositionChangesModel.getReservedPositionChangesByTransferId.returns(Promise.resolve([
           {
             participantCurrencyId: 1,
-            value: payload.amount.amount
+            change: payload.amount.amount
           }
         ]))
 
@@ -1148,7 +1148,7 @@ Test('Cyril', cyrilTest => {
         ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.returns(Promise.resolve([
           {
             participantCurrencyId: 1,
-            value: payload.amount.amount
+            change: payload.amount.amount
           }
         ]))
         TransferFacade.getById.returns(Promise.resolve({
@@ -1157,7 +1157,7 @@ Test('Cyril', cyrilTest => {
         ParticipantPositionChangesModel.getReservedPositionChangesByTransferId.returns(Promise.resolve([
           {
             participantCurrencyId: 1,
-            value: payload.amount.amount
+            change: payload.amount.amount
           }
         ]))
 

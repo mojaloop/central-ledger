@@ -266,6 +266,7 @@ const _handleParticipantPositionChange = (runningPosition, transferAmount, trans
     transferId, // Need to delete this in bin processor while updating transferStateChangeId
     transferStateChangeId: null, // Need to update this in bin processor while executing queries
     value: updatedRunningPosition.toNumber(),
+    change: transferAmount,
     reservedValue: accumulatedPositionReservedValue
   }
 
@@ -286,6 +287,7 @@ const _handleParticipantPositionChangeFx = (runningPosition, transferAmount, com
     commitRequestId, // Need to delete this in bin processor while updating fxTransferStateChangeId
     fxTransferStateChangeId: null, // Need to update this in bin processor while executing queries
     value: updatedRunningPosition.toNumber(),
+    change: transferAmount,
     reservedValue: accumulatedPositionReservedValue
   }
 

@@ -61,7 +61,7 @@ const processFxPositionPrepareBin = async (
       let resultMessage
       const fxTransfer = binItem.decodedPayload
       const cyrilResult = binItem.message.value.content.context.cyrilResult
-      const transferAmount = fxTransfer.targetAmount.currency === cyrilResult.currencyId ? new MLNumber(fxTransfer.targetAmount.amount) : new MLNumber(fxTransfer.sourceAmount.amount)
+      const transferAmount = fxTransfer.targetAmount.currency === cyrilResult.currencyId ? fxTransfer.targetAmount.amount : fxTransfer.sourceAmount.amount
 
       Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(fxTransfer)}`)
 
@@ -205,6 +205,7 @@ const processFxPositionPrepareBin = async (
             commitRequestId: fxTransfer.commitRequestId, // Need to delete this in bin processor while updating fxTransferStateChangeId
             fxTransferStateChangeId: null, // Need to update this in bin processor while executing queries
             value: currentPosition.toNumber(),
+            change: transferAmount,
             reservedValue: accumulatedPositionReservedValue
           }
           participantPositionChanges.push(participantPositionChange)

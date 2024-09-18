@@ -730,6 +730,22 @@ const _processFxTimeoutEntries = async (knex, trx, transactionTimestamp) => {
         .andWhere('ftsc.transferStateId', `${Enum.Transfers.TransferState.RESERVED}`)
         .select('ftt.commitRequestId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
     })
+
+  // Insert `fxTransferStateChange` records for RECEIVED_FULFIL_DEPENDENT
+  await knex.from(knex.raw('fxTransferStateChange (commitRequestId, transferStateId, reason)')).transacting(trx)
+    .insert(function () {
+      this.from('fxTransferTimeout AS ftt')
+        .innerJoin(knex('fxTransferStateChange AS ftsc1')
+          .select('ftsc1.commitRequestId')
+          .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
+          .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
+          .groupBy('ftsc1.commitRequestId').as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
+        )
+        .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+        .where('ftt.expirationDate', '<', transactionTimestamp)
+        .andWhere('ftsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`)
+        .select('ftt.commitRequestId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
+    })
 }
 
 const _insertFxTransferErrorEntries = async (knex, trx, transactionTimestamp) => {
@@ -858,8 +874,12 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
               .leftJoin('fxTransferTimeout AS ftt', 'ftt.commitRequestId', 'ft.commitRequestId')
               .leftJoin('fxTransfer AS ft1', 'ft1.determiningTransferId', 'ft.determiningTransferId')
               .whereNull('ftt.commitRequestId')
-              .whereIn('ftsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, `${Enum.Transfers.TransferState.RESERVED}`]) // TODO: this needs to be updated to proper states for fx
-              .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timedout fxTransfer for all related fxTransfers
+              .whereIn('ftsc.transferStateId', [
+                `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
+                `${Enum.Transfers.TransferState.RESERVED}`,
+                `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`
+              ]) // TODO: this needs to be updated to proper states for fx
+              .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timed out fxTransfer for all related fxTransfers
           })
 
         await _processTimeoutEntries(knex, trx, transactionTimestamp)
@@ -1079,6 +1099,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             participantCurrencyId: info.drAccountId,
             transferStateChangeId,
             value: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
+            change: info.drAmount,
             reservedValue: info.drReservedValue,
             createdDate: param1.createdDate
           })
@@ -1103,6 +1124,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             participantCurrencyId: info.crAccountId,
             transferStateChangeId,
             value: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
+            change: info.crAmount,
             reservedValue: info.crReservedValue,
             createdDate: param1.createdDate
           })

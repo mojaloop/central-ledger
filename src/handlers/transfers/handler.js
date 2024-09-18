@@ -408,14 +408,40 @@ const processFulfilMessage = async (message, functionality, span) => {
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
     const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
-    await TransferService.handlePayeeResponse(transferId, payload, action, apiFSPIOPError)
+    await TransferService.handlePayeeResponse(transferId, payload, TransferEventAction.ABORT_VALIDATION, apiFSPIOPError)
     const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT_VALIDATION }
     /**
      * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
      */
     // Key position validation abort with payer account id
-    const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
+
+    const cyrilResult = await FxService.Cyril.processAbortMessage(transferId)
+
+    params.message.value.content.context = {
+      ...params.message.value.content.context,
+      cyrilResult
+    }
+    if (cyrilResult.positionChanges.length > 0) {
+      const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
+      await Kafka.proceed(
+        Config.KAFKA_CONFIG,
+        params,
+        {
+          consumerCommit,
+          fspiopError: apiFSPIOPError,
+          eventDetail,
+          messageKey: participantCurrencyId.toString(),
+          topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.ABORT,
+          hubName: Config.HUB_NAME
+        }
+      )
+    } else {
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
+      throw fspiopError
+    }
+
+    // const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
+    // await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
 
     // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
     if (action === TransferEventAction.RESERVE) {
