@@ -41,6 +41,9 @@ const cache = {
   },
   set (key, value) {
     CACHE[key] = value
+  },
+  del (key) {
+    CACHE[key] = undefined
   }
 }
 
