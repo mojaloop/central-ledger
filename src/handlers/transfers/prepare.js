@@ -36,9 +36,9 @@ const Participant = require('../../domain/participant')
 const createRemittanceEntity = require('./createRemittanceEntity')
 const Validator = require('./validator')
 const dto = require('./dto')
-const TransferService = require('#src/domain/transfer/index')
-const ProxyCache = require('#src/lib/proxyCache')
-const FxTransferService = require('#src/domain/fx/index')
+const TransferService = require('../../domain/transfer/index')
+const ProxyCache = require('../../lib/proxyCache')
+const FxTransferService = require('../../domain/fx/index')
 
 const { Kafka, Comparators } = Util
 const { TransferState } = Enum.Transfers
@@ -436,10 +436,14 @@ const prepare = async (error, messages) => {
     }
     if (proxyEnabled) {
       const [initiatingFsp, counterPartyFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
+
+      const payeeFspLookupOptions = isFx ? null : { validateCurrencyAccounts: true, accounts: [{ currency: payload.amount.currency, accountType: Enum.Accounts.LedgerAccountType.POSITION }] }
+
       ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
         ProxyCache.getFSPProxy(initiatingFsp),
-        ProxyCache.getFSPProxy(counterPartyFsp)
+        ProxyCache.getFSPProxy(counterPartyFsp, payeeFspLookupOptions)
       ])
+
       logger.debug('Prepare proxy cache lookup results', {
         initiatingFsp,
         counterPartyFsp,
@@ -449,6 +453,7 @@ const prepare = async (error, messages) => {
 
       proxyObligation.isInitiatingFspProxy = !proxyObligation.initiatingFspProxyOrParticipantId.inScheme &&
         proxyObligation.initiatingFspProxyOrParticipantId.proxyId !== null
+
       proxyObligation.isCounterPartyFspProxy = !proxyObligation.counterPartyFspProxyOrParticipantId.inScheme &&
         proxyObligation.counterPartyFspProxyOrParticipantId.proxyId !== null
 

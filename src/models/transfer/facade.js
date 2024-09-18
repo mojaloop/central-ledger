@@ -1398,11 +1398,9 @@ const getTransferParticipant = async (participantName, transferId) => {
         .where({
           'participant.name': participantName,
           'tp.transferId': transferId,
-          'participant.isActive': 1,
-          'pc.isActive': 1
+          'participant.isActive': 1
         })
-        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-        .innerJoin('transferParticipant AS tp', 'tp.participantCurrencyId', 'pc.participantCurrencyId')
+        .innerJoin('transferParticipant AS tp', 'tp.participantId', 'participant.participantId')
         .select(
           'tp.*'
         )
