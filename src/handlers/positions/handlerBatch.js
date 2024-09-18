@@ -48,7 +48,6 @@ const { randomUUID } = require('crypto')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const BatchPositionModel = require('../../models/position/batch')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
-
 const consumerCommit = true
 
 /**
@@ -152,7 +151,15 @@ const positions = async (error, messages) => {
       // Loop through results and produce notification messages and audit messages
       await Promise.all(result.notifyMessages.map(item => {
         // Produce notification message and audit message
-        const action = item.binItem.message?.value.metadata.event.action
+        // NOTE: Not sure why we're checking the binItem for the action vs the message
+        //       that is being created.
+        //       Handled FX_NOTIFY differently so as not to break existing functionality.
+        let action
+        if (item?.message.metadata.event.action !== Enum.Events.Event.Action.FX_NOTIFY) {
+          action = item.binItem.message?.value.metadata.event.action
+        } else {
+          action = item.message.metadata.event.action
+        }
         const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
         return Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
       }).concat(
