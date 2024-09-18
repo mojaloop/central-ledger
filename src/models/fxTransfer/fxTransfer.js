@@ -152,7 +152,7 @@ const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestI
         .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
         // COUNTER_PARTY_FSP SOURCE currency
         .innerJoin('fxTransferParticipant AS tp21', 'tp21.commitRequestId', 'fxTransfer.commitRequestId')
-        .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'tp2.externalParticipantId')
+        .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'tp21.externalParticipantId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp21.transferParticipantRoleTypeId')
         .innerJoin('fxParticipantCurrencyType AS fpct1', 'fpct1.fxParticipantCurrencyTypeId', 'tp21.fxParticipantCurrencyTypeId')
         .innerJoin('participant AS ca', 'ca.participantId', 'tp21.participantId')
