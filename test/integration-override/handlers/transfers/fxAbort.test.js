@@ -362,7 +362,7 @@ const prepareFxTestData = async (dataObj) => {
       TransferEventType.PREPARE
     )
 
-    const topicConfTransferFxFulfil = Utility.createGeneralTopicConf(
+    const topicConfFxTransferFulfil = Utility.createGeneralTopicConf(
       Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
       TransferEventType.TRANSFER,
       TransferEventType.FULFIL
@@ -391,7 +391,7 @@ const prepareFxTestData = async (dataObj) => {
       topicConfTransferPrepare,
       topicConfTransferFulfil,
       topicConfFxTransferPrepare,
-      topicConfTransferFxFulfil,
+      topicConfFxTransferFulfil,
       payer,
       payerLimitAndInitialPosition,
       fxp,
@@ -609,7 +609,7 @@ Test('Handlers test', async handlersTest => {
 
       await Producer.produceMessage(
         td.messageProtocolPayerInitiatedConversionFxFulfil,
-        td.topicConfTransferFxFulfil,
+        td.topicConfFxTransferFulfil,
         fulfilConfig
       )
 

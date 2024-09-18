@@ -874,8 +874,12 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
               .leftJoin('fxTransferTimeout AS ftt', 'ftt.commitRequestId', 'ft.commitRequestId')
               .leftJoin('fxTransfer AS ft1', 'ft1.determiningTransferId', 'ft.determiningTransferId')
               .whereNull('ftt.commitRequestId')
-              .whereIn('ftsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, `${Enum.Transfers.TransferState.RESERVED}`]) // TODO: this needs to be updated to proper states for fx
-              .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timedout fxTransfer for all related fxTransfers
+              .whereIn('ftsc.transferStateId', [
+                `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
+                `${Enum.Transfers.TransferState.RESERVED}`,
+                `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`
+              ]) // TODO: this needs to be updated to proper states for fx
+              .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timed out fxTransfer for all related fxTransfers
           })
 
         await _processTimeoutEntries(knex, trx, transactionTimestamp)
