@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "17.8.0-snapshot.22",
+  "version": "17.8.0-snapshot.27",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -63,7 +63,7 @@
     "migrate:current": "npx knex migrate:currentVersion $npm_package_config_knex",
     "seed:run": "npx knex seed:run $npm_package_config_knex",
     "docker:build": "docker build --build-arg NODE_VERSION=\"$(cat .nvmrc)-alpine\" -t mojaloop/central-ledger:local .",
-    "docker:up": ". ./docker/env.sh && docker-compose -f docker-compose.yml up",
+    "docker:up": ". ./docker/env.sh && docker-compose -f docker-compose.yml up -d",
     "docker:up:backend": "docker-compose up -d ml-api-adapter mysql mockserver kafka kowl temp_curl",
     "docker:up:int": "docker compose up -d kafka init-kafka objstore mysql",
     "docker:script:populateTestData": "sh ./test/util/scripts/populateTestData.sh",
