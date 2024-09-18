@@ -414,7 +414,6 @@ const processFulfilMessage = async (message, functionality, span) => {
      * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
      */
     // Key position validation abort with payer account id
-    
 
     const cyrilResult = await FxService.Cyril.processAbortMessage(transferId)
 
