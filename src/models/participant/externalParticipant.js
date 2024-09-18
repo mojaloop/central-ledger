@@ -58,6 +58,7 @@ const create = async ({ name, proxyId }) => {
   }
 }
 
+// todo: use getAll to fill in cache on startup
 // const getAll = async (options = {}) => {
 //   try {
 //     const result = await Db.from(TABLE).find({}, options)
