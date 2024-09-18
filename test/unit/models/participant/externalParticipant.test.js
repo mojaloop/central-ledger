@@ -86,28 +86,28 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
   epmTest.test('should get externalParticipant by name from DB', tryCatchEndTest(async (t) => {
     const data = mockExternalParticipantDto()
     Db[EP_TABLE].findOne.withArgs({ name: data.name }).resolves(data)
-    const result = await model.getOneByName(data.name)
+    const result = await model.getByName(data.name)
     t.deepEqual(result, data)
   }))
 
-  epmTest.test('should get externalParticipant by name from cache', tryCatchEndTest(async (t) => {
-    const name = `extFsp-${Date.now()}`
-    const data = mockExternalParticipantDto({ name })
-    Db[EP_TABLE].findOne.withArgs({ name }).resolves(data)
-    const result = await model.getOneByNameCached(name)
-    t.deepEqual(result, data)
-
-    Db[EP_TABLE].findOne = sandbox.stub()
-    const cached = await model.getOneByNameCached(name)
-    t.deepEqual(cached, data, 'cached externalParticipant')
-    t.ok(Db[EP_TABLE].findOne.notCalled, 'db.findOne is called')
-  }))
+  // epmTest.test('should get externalParticipant by name from cache', tryCatchEndTest(async (t) => {
+  //   const name = `extFsp-${Date.now()}`
+  //   const data = mockExternalParticipantDto({ name })
+  //   Db[EP_TABLE].findOne.withArgs({ name }).resolves(data)
+  //   const result = await model.getOneByNameCached(name)
+  //   t.deepEqual(result, data)
+  //
+  //   Db[EP_TABLE].findOne = sandbox.stub()
+  //   const cached = await model.getOneByNameCached(name)
+  //   t.deepEqual(cached, data, 'cached externalParticipant')
+  //   t.ok(Db[EP_TABLE].findOne.notCalled, 'db.findOne is called')
+  // }))
 
   epmTest.test('should get externalParticipant by id', tryCatchEndTest(async (t) => {
     const id = 'id123'
     const data = { name: 'extFsp', proxyId: '123' }
     Db[EP_TABLE].findOne.withArgs({ externalParticipantId: id }).resolves(data)
-    const result = await model.getOneById(id)
+    const result = await model.getById(id)
     t.deepEqual(result, data)
   }))
 
@@ -125,12 +125,12 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
     t.ok(result)
   }))
 
-  // epmTest.test('should delete externalParticipant record by id', tryCatchEndTest(async (t) => {
-  //   const id = 123
-  //   Db[EP_TABLE].destroy.withArgs({ externalParticipantId: id }).resolves(true)
-  //   const result = await model.destroyById(id)
-  //   t.ok(result)
-  // }))
+  epmTest.test('should delete externalParticipant record by id', tryCatchEndTest(async (t) => {
+    const id = 123
+    Db[EP_TABLE].destroy.withArgs({ externalParticipantId: id }).resolves(true)
+    const result = await model.destroyById(id)
+    t.ok(result)
+  }))
 
   epmTest.end()
 })

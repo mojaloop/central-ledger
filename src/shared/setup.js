@@ -52,6 +52,7 @@ const EnumCached = require('../lib/enumCached')
 const ParticipantCached = require('../models/participant/participantCached')
 const ParticipantCurrencyCached = require('../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
+const externalParticipantCached = require('../models/participant/externalParticipantCached')
 const BatchPositionModelCached = require('../models/position/batchCached')
 const MongoUriBuilder = require('mongo-uri-builder')
 
@@ -236,6 +237,7 @@ const initializeCache = async () => {
   await ParticipantCached.initialize()
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
+  await externalParticipantCached.initialize()
   await BatchPositionModelCached.initialize()
   await Cache.initCache()
 }

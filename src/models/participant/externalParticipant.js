@@ -33,20 +33,6 @@ const ID_FIELD = 'externalParticipantId'
 
 const log = logger.child(`DB#${TABLE}`)
 
-// todo: use caching lib
-const CACHE = {}
-const cache = {
-  get (key) {
-    return CACHE[key]
-  },
-  set (key, value) {
-    CACHE[key] = value
-  },
-  del (key) {
-    CACHE[key] = undefined
-  }
-}
-
 const create = async ({ name, proxyId }) => {
   try {
     const result = await Db.from(TABLE).insert({ name, proxyId })
@@ -67,7 +53,7 @@ const getAll = async (options = {}) => {
     const result = await Db.from(TABLE).find({}, options)
     log.debug('getAll result:', { result })
     return result
-  } catch (err) {
+  } catch (err) /* istanbul ignore next */ {
     log.error('error in getAll:', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -78,50 +64,33 @@ const getOneBy = async (criteria, options) => {
     const result = await Db.from(TABLE).findOne(criteria, options)
     log.debug('getOneBy result:', { criteria, result })
     return result
-  } catch (err) {
+  } catch (err) /* istanbul ignore next */ {
     log.error('error in getOneBy:', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-const getOneById = async (id, options) => getOneBy({ [ID_FIELD]: id }, options)
-const getOneByName = async (name, options) => getOneBy({ name }, options)
-
-const getOneByNameCached = async (name, options = {}) => {
-  let data = cache.get(name)
-  if (data) {
-    log.debug('getOneByIdCached cache hit:', { name, data })
-  } else {
-    data = await getOneByName(name, options)
-    cache.set(name, data)
-    log.debug('getOneByIdCached cache updated:', { name, data })
-  }
-  return data
-}
+const getById = async (id, options = {}) => getOneBy({ [ID_FIELD]: id }, options)
+const getByName = async (name, options = {}) => getOneBy({ name }, options)
 
 const destroyBy = async (criteria) => {
   try {
     const result = await Db.from(TABLE).destroy(criteria)
     log.debug('destroyBy result:', { criteria, result })
     return result
-  } catch (err) {
+  } catch (err) /* istanbul ignore next */ {
     log.error('error in destroyBy', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-// const destroyById = async (id) => destroyBy({ [ID_FIELD]: id })
-const destroyByName = async (name) => {
-  const deleted = await destroyBy({ name })
-  cache.del(name)
-  return deleted
-}
+const destroyById = async (id) => destroyBy({ [ID_FIELD]: id })
+const destroyByName = async (name) => destroyBy({ name })
 
 // todo: think, if we need update method
 module.exports = {
   create,
   getAll,
-  getOneByNameCached,
-  getOneByName,
-  getOneById,
-  // destroyById,
+  getById,
+  getByName,
+  destroyById,
   destroyByName
 }

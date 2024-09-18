@@ -38,7 +38,7 @@ const Cache = require('../../lib/cache')
 const ParticipantModelCached = require('../../models/participant/participantCached')
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../models/participant/participantLimitCached')
-const externalParticipantModel = require('../../models/participant/externalParticipant')
+const externalParticipantModelCached = require('../../models/participant/externalParticipantCached')
 const Config = require('../../lib/config')
 const SettlementModelModel = require('../settlement/settlementModel')
 const { logger } = require('../../shared/logger')
@@ -778,22 +778,21 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
 
 const getExternalParticipantIdByNameOrCreate = async ({ name, proxyId }) => {
   try {
-    let external = await externalParticipantModel.getOneByNameCached(name)
-    if (!external) {
+    let externalFsp = await externalParticipantModelCached.getByName(name)
+    if (!externalFsp) {
       const proxy = await ParticipantModelCached.getByName(proxyId)
       if (!proxy) {
         throw new Error(`Proxy participant not found: ${proxyId}`)
       }
-      const externalParticipantId = await externalParticipantModel.create({
+      const externalParticipantId = await externalParticipantModelCached.create({
         name,
         proxyId: proxy.participantId
       })
-      external = externalParticipantId
+      externalFsp = externalParticipantId
         ? { externalParticipantId }
-        : await externalParticipantModel.getOneByNameCached(name)
-      // todo: think, if it's better to re-load ALL externalParticipants cache in case createdId === null
+        : await externalParticipantModelCached.getByName(name)
     }
-    const id = external?.externalParticipantId
+    const id = externalFsp?.externalParticipantId
     logger.verbose('getExternalParticipantIdByNameOrCreate result:', { id, name })
     return id
   } catch (err) {
