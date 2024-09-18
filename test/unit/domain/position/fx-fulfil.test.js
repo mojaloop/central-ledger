@@ -170,13 +170,13 @@ Test('Fx Fulfil domain', processPositionFxFulfilBinTest => {
     test.equal(processedMessages.notifyMessages[0].message.content.headers['fspiop-destination'], fxTransferCallbackTestData1.message.value.content.headers['fspiop-destination'])
     test.equal(processedMessages.notifyMessages[0].message.content.headers['fspiop-source'], fxTransferCallbackTestData1.message.value.content.headers['fspiop-source'])
     test.equal(processedMessages.notifyMessages[0].message.content.headers['content-type'], fxTransferCallbackTestData1.message.value.content.headers['content-type'])
-    test.equal(processedMessages.accumulatedFxTransferStates[fxTransferCallbackTestData1.message.value.id], Enum.Transfers.TransferInternalState.COMMITTED)
+    test.equal(processedMessages.accumulatedFxTransferStates[fxTransferCallbackTestData1.message.value.id], Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT)
 
     test.equal(processedMessages.notifyMessages[1].message.content.headers.accept, fxTransferCallbackTestData2.message.value.content.headers.accept)
     test.equal(processedMessages.notifyMessages[1].message.content.headers['fspiop-destination'], fxTransferCallbackTestData2.message.value.content.headers['fspiop-destination'])
     test.equal(processedMessages.notifyMessages[1].message.content.headers['fspiop-source'], fxTransferCallbackTestData2.message.value.content.headers['fspiop-source'])
     test.equal(processedMessages.notifyMessages[1].message.content.headers['content-type'], fxTransferCallbackTestData2.message.value.content.headers['content-type'])
-    test.equal(processedMessages.accumulatedFxTransferStates[fxTransferCallbackTestData2.message.value.id], Enum.Transfers.TransferInternalState.COMMITTED)
+    test.equal(processedMessages.accumulatedFxTransferStates[fxTransferCallbackTestData2.message.value.id], Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT)
 
     test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, fxTransferCallbackTestData3.message.value.id)
     test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, fxTransferCallbackTestData3.message.value.content.headers.accept)
@@ -186,12 +186,9 @@ Test('Fx Fulfil domain', processPositionFxFulfilBinTest => {
     test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
     test.equal(processedMessages.accumulatedFxTransferStates[fxTransferCallbackTestData3.message.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
-    test.equal(processedMessages.accumulatedFxTransferStateChanges.length, 3)
-    test.equal(processedMessages.accumulatedFxTransferStateChanges[0].commitRequestId, fxTransferCallbackTestData1.message.value.id)
-    test.equal(processedMessages.accumulatedFxTransferStateChanges[1].commitRequestId, fxTransferCallbackTestData2.message.value.id)
-    test.equal(processedMessages.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.COMMITTED)
-    test.equal(processedMessages.accumulatedFxTransferStateChanges[1].transferStateId, Enum.Transfers.TransferInternalState.COMMITTED)
-    test.equal(processedMessages.accumulatedFxTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+    test.equal(processedMessages.accumulatedFxTransferStateChanges.length, 1)
+    test.equal(processedMessages.accumulatedFxTransferStateChanges[0].commitRequestId, fxTransferCallbackTestData3.message.value.id)
+    test.equal(processedMessages.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
     test.end()
   })

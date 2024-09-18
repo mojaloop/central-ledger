@@ -38,7 +38,7 @@ const ParticipantLimitCached = require('#src/models/participant/participantLimit
 const fxTransferModel = require('#src/models/fxTransfer/index')
 const prepare = require('#src/handlers/transfers/prepare')
 const cyril = require('#src/domain/fx/cyril')
-const Logger = require('#src/shared/logger/Logger')
+const { logger } = require('#src/shared/logger/index')
 const { TABLE_NAMES } = require('#src/shared/constants')
 
 const { checkErrorPayload, wrapWithRetries } = require('#test/util/helpers')
@@ -54,7 +54,6 @@ const { TOPICS } = fixtures
 const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', addToWatchList = true) => {
   const { commitRequestId } = fxTransfer
   const isFx = true
-  const log = new Logger({ commitRequestId })
   const proxyObligation = {
     isInitiatingFspProxy: false,
     isCounterPartyFspProxy: false,
@@ -89,7 +88,17 @@ const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', a
       })
       .where({ commitRequestId })
     // https://github.com/mojaloop/central-ledger/blob/ad4dd53d6914628813aa30a1dcd3af2a55f12b0d/src/domain/position/fx-prepare.js#L187
-    log.info('fxTransfer state is updated', { transferStateId })
+    logger.info('fxTransfer state is updated', { transferStateId })
+    if (transferStateId === Enum.Transfers.TransferState.RESERVED) {
+      const fxTransferStateChangeId = await knex(TABLE_NAMES.fxTransferStateChange).where({ commitRequestId }).select('fxTransferStateChangeId')
+      await knex(TABLE_NAMES.participantPositionChange).insert({
+        participantPositionId: 1,
+        fxTransferStateChangeId: fxTransferStateChangeId[0].fxTransferStateChangeId,
+        participantCurrencyId: 1,
+        value: 0,
+        reservedValue: 0
+      })
+    }
   }
 
   if (addToWatchList) {
@@ -98,7 +107,7 @@ const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', a
       proxyObligation
     )
     await cyril.getParticipantAndCurrencyForFxTransferMessage(fxTransfer, determiningTransferCheckResult)
-    log.info('fxTransfer is added to watchList', { fxTransfer })
+    logger.info('fxTransfer is added to watchList', { fxTransfer })
   }
 }
 
@@ -212,7 +221,12 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
       action: Action.FX_RESERVE
     }))
     t.ok(messages[0], `Message is sent to ${TOPICS.transferPositionBatch}`)
+    const knex = Db.getKnex()
+    const extension = await knex(TABLE_NAMES.fxTransferExtension).where({ commitRequestId }).select('key', 'value')
     const { from, to, content } = messages[0].value
+    t.equal(extension.length, fxFulfilMessage.content.payload.extensionList.extension.length, 'Saved extension')
+    t.equal(extension[0].key, fxFulfilMessage.content.payload.extensionList.extension[0].key, 'Saved extension key')
+    t.equal(extension[0].value, fxFulfilMessage.content.payload.extensionList.extension[0].value, 'Saved extension value')
     t.equal(from, FXP)
     t.equal(to, DFSP_1)
     t.equal(content.payload.fulfilment, fxFulfilMessage.content.payload.fulfilment, 'fulfilment is correct')
@@ -237,10 +251,10 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.ok(isTriggered, 'test is triggered')
 
     const messages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-      topicFilter: TOPICS.transferPosition,
+      topicFilter: TOPICS.notificationEvent,
       action: Action.FX_FULFIL_DUPLICATE
     }))
-    t.ok(messages[0], `Message is sent to ${TOPICS.transferPosition}`)
+    t.ok(messages[0], `Message is sent to ${TOPICS.notificationEvent}`)
     const { from, to, content, metadata } = messages[0].value
     t.equal(from, fixtures.SWITCH_ID)
     t.equal(to, FXP)
@@ -267,12 +281,12 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.ok(isTriggered, 'test is triggered')
 
     const messages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-      topicFilter: TOPICS.transferPosition,
+      topicFilter: TOPICS.transferPositionBatch,
       action: Action.FX_ABORT_VALIDATION
     }))
     t.ok(messages[0], `Message is sent to ${TOPICS.transferPosition}`)
     const { from, to, content } = messages[0].value
-    t.equal(from, FXP)
+    t.equal(from, fixtures.SWITCH_ID)
     t.equal(to, DFSP_1)
     checkErrorPayload(t)(content.payload, fspiopErrorFactory.fxInvalidFulfilment())
     t.end()

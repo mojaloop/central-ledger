@@ -449,7 +449,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.equal(messageProtocol.from, fixtures.SWITCH_ID)
     t.equal(messageProtocol.metadata.event.action, Action.FX_FULFIL_DUPLICATE)
     checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.noFxDuplicateHash())
-    t.equal(topicConfig.topicName, TOPICS.transferPosition)
+    t.equal(topicConfig.topicName, TOPICS.notificationEvent)
     t.end()
   })
 
@@ -473,7 +473,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.equal(messageProtocol.from, fixtures.SWITCH_ID)
     t.equal(messageProtocol.content.payload, undefined)
     t.equal(messageProtocol.metadata.event.action, Action.FX_FULFIL_DUPLICATE)
-    t.equal(topicConfig.topicName, TOPICS.transferPosition) // or TOPICS.notificationEvent ?
+    t.equal(topicConfig.topicName, TOPICS.notificationEvent)
     t.end()
   })
 

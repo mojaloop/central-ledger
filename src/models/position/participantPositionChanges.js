@@ -34,7 +34,7 @@ const getReservedPositionChangesByCommitRequestId = async (commitRequestId) => {
     const participantPositionChanges = await knex('fxTransferStateChange')
       .where('fxTransferStateChange.commitRequestId', commitRequestId)
       .where('fxTransferStateChange.transferStateId', Enum.Transfers.TransferInternalState.RESERVED)
-      .leftJoin('participantPositionChange AS ppc', 'ppc.fxTransferStateChangeId', 'fxTransferStateChange.fxTransferStateChangeId')
+      .innerJoin('participantPositionChange AS ppc', 'ppc.fxTransferStateChangeId', 'fxTransferStateChange.fxTransferStateChangeId')
       .select(
         'ppc.*'
       )
@@ -51,7 +51,7 @@ const getReservedPositionChangesByTransferId = async (transferId) => {
     const participantPositionChanges = await knex('transferStateChange')
       .where('transferStateChange.transferId', transferId)
       .where('transferStateChange.transferStateId', Enum.Transfers.TransferInternalState.RESERVED)
-      .leftJoin('participantPositionChange AS ppc', 'ppc.transferStateChangeId', 'transferStateChange.transferStateChangeId')
+      .innerJoin('participantPositionChange AS ppc', 'ppc.transferStateChangeId', 'transferStateChange.transferStateChangeId')
       .select(
         'ppc.*'
       )
