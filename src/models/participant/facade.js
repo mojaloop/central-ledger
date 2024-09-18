@@ -38,7 +38,7 @@ const Cache = require('../../lib/cache')
 const ParticipantModelCached = require('../../models/participant/participantCached')
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../models/participant/participantLimitCached')
-const externalParticipant = require('../../models/participant/externalParticipant')
+const externalParticipantModel = require('../../models/participant/externalParticipant')
 const Config = require('../../lib/config')
 const SettlementModelModel = require('../settlement/settlementModel')
 const { logger } = require('../../shared/logger')
@@ -778,19 +778,20 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
 
 const getExternalParticipantIdByNameOrCreate = async ({ name, proxyId }) => {
   try {
-    let external = await externalParticipant.getOneByNameCached(name)
+    let external = await externalParticipantModel.getOneByNameCached(name)
     if (!external) {
       const proxy = await ParticipantModelCached.getByName(proxyId)
       if (!proxy) {
         throw new Error(`Proxy participant not found: ${proxyId}`)
       }
-      await externalParticipant.create({
+      const externalParticipantId = await externalParticipantModel.create({
         name,
         proxyId: proxy.participantId
       })
-      // todo: - check if create returns id (to avoid getOneByNameCached call)
-      //       - if isCreated === false, re-load all external participants cache
-      external = await externalParticipant.getOneByNameCached(name)
+      external = externalParticipantId
+        ? { externalParticipantId }
+        : await externalParticipantModel.getOneByNameCached(name)
+      // todo: think, if it's better to re-load ALL externalParticipants cache in case createdId === null
     }
     const id = external?.externalParticipantId
     logger.verbose('getExternalParticipantIdByNameOrCreate result:', { id, name })

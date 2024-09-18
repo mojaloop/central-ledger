@@ -26,7 +26,7 @@
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Db = require('../../lib/db')
 const { logger } = require('../../shared/logger')
-const { TABLE_NAMES } = require('../../shared/constants')
+const { TABLE_NAMES, DB_ERROR_CODES } = require('../../shared/constants')
 
 const TABLE = TABLE_NAMES.externalParticipant
 const ID_FIELD = 'externalParticipantId'
@@ -50,25 +50,25 @@ const create = async ({ name, proxyId }) => {
     log.debug('create result:', { result })
     return result
   } catch (err) {
+    if (err.code === DB_ERROR_CODES.duplicateEntry) {
+      log.warn('duplicate entry for externalParticipant. Skip inserting', { name, proxyId })
+      return null
+    }
     log.error('error in create', err)
-    // If the cache is not up-to-date, then will get an error when inserting a record and that record already exists
-    // reload the cache at that point.
-    // todo: to implement above requirement, we need to detect duplication restriction error, and don't rethrow error
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-// todo: use getAll to fill in cache on startup
-// const getAll = async (options = {}) => {
-//   try {
-//     const result = await Db.from(TABLE).find({}, options)
-//     log.debug('getAll result:', { result })
-//     return result
-//   } catch (err) {
-//     log.error('error in getAll:', err)
-//     throw ErrorHandler.Factory.reformatFSPIOPError(err)
-//   }
-// }
+const getAll = async (options = {}) => {
+  try {
+    const result = await Db.from(TABLE).find({}, options)
+    log.debug('getAll result:', { result })
+    return result
+  } catch (err) {
+    log.error('error in getAll:', err)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
 
 const getOneBy = async (criteria, options) => {
   try {
@@ -105,15 +105,20 @@ const destroyBy = async (criteria) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-const destroyById = async (id) => destroyBy({ [ID_FIELD]: id })
-const destroyByName = async (name) => destroyBy({ name })
+// const destroyById = async (id) => destroyBy({ [ID_FIELD]: id })
+const destroyByName = async (name) => {
+  const deleted = await destroyBy({ name })
+  cache.del(name)
+  return deleted
+}
 
 // todo: think, if we need update method
 module.exports = {
   create,
+  getAll,
   getOneByNameCached,
   getOneByName,
   getOneById,
-  destroyById,
+  // destroyById,
   destroyByName
 }

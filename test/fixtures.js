@@ -299,7 +299,7 @@ const watchListItemDto = ({
 
 const mockExternalParticipantDto = ({
   name = `extFsp-${Date.now()}`,
-  proxyId = `proxy-${Date.now()}`,
+  proxyId = new Date().getMilliseconds(),
   id = Date.now(),
   createdDate = new Date()
 } = {}) => ({

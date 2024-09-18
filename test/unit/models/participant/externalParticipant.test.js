@@ -26,14 +26,19 @@ process.env.LOG_LEVEL = 'debug'
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
+
 const model = require('#src/models/participant/externalParticipant')
 const Db = require('#src/lib/db')
-const { TABLE_NAMES } = require('#src/shared/constants')
+const { TABLE_NAMES, DB_ERROR_CODES } = require('#src/shared/constants')
 
 const { tryCatchEndTest } = require('#test/util/helpers')
 const { mockExternalParticipantDto } = require('#test/fixtures')
 
 const EP_TABLE = TABLE_NAMES.externalParticipant
+
+const isFSPIOPError = (err, message) => err.name === 'FSPIOPError' &&
+  err.message === message &&
+  err.cause.includes(message)
 
 Test('externalParticipant Model Tests -->', (epmTest) => {
   let sandbox
@@ -46,6 +51,7 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
     Db[EP_TABLE] = {
       insert: sandbox.stub(),
       findOne: sandbox.stub(),
+      find: sandbox.stub(),
       destroy: sandbox.stub()
     }
     t.end()
@@ -61,6 +67,20 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
     Db[EP_TABLE].insert.withArgs(data).resolves(true)
     const result = await model.create(data)
     t.ok(result)
+  }))
+
+  epmTest.test('should return null in case duplicateEntry error', tryCatchEndTest(async (t) => {
+    Db[EP_TABLE].insert.rejects({ code: DB_ERROR_CODES.duplicateEntry })
+    const result = await model.create({})
+    t.equals(result, null)
+  }))
+
+  epmTest.test('should reformat DB error into SPIOPError on create', tryCatchEndTest(async (t) => {
+    const dbError = new Error('DB error')
+    Db[EP_TABLE].insert.rejects(dbError)
+    const err = await model.create({})
+      .catch(e => e)
+    t.true(isFSPIOPError(err, dbError.message))
   }))
 
   epmTest.test('should get externalParticipant by name from DB', tryCatchEndTest(async (t) => {
@@ -91,6 +111,13 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
     t.deepEqual(result, data)
   }))
 
+  epmTest.test('should get all externalParticipants by id', tryCatchEndTest(async (t) => {
+    const ep = mockExternalParticipantDto()
+    Db[EP_TABLE].find.withArgs({}).resolves([ep])
+    const result = await model.getAll()
+    t.deepEqual(result, [ep])
+  }))
+
   epmTest.test('should delete externalParticipant record by name', tryCatchEndTest(async (t) => {
     const name = 'extFsp'
     Db[EP_TABLE].destroy.withArgs({ name }).resolves(true)
@@ -98,12 +125,12 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
     t.ok(result)
   }))
 
-  epmTest.test('should delete externalParticipant record by id', tryCatchEndTest(async (t) => {
-    const id = 123
-    Db[EP_TABLE].destroy.withArgs({ externalParticipantId: id }).resolves(true)
-    const result = await model.destroyById(id)
-    t.ok(result)
-  }))
+  // epmTest.test('should delete externalParticipant record by id', tryCatchEndTest(async (t) => {
+  //   const id = 123
+  //   Db[EP_TABLE].destroy.withArgs({ externalParticipantId: id }).resolves(true)
+  //   const result = await model.destroyById(id)
+  //   t.ok(result)
+  // }))
 
   epmTest.end()
 })
