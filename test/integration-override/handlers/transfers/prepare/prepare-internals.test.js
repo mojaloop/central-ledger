@@ -55,13 +55,11 @@ Test('Prepare Handler internals Tests -->', (prepareHandlerTest) => {
   prepareHandlerTest.test('setup', tryCatchEndTest(async (t) => {
     await Db.connect(config.DATABASE)
     await proxyCache.connect()
-    await Promise.all([
-      externalParticipantCached.initialize(),
-      ParticipantCached.initialize(),
-      ParticipantCurrencyCached.initialize(),
-      ParticipantLimitCached.initialize(),
-      Cache.initCache()
-    ])
+    await ParticipantCached.initialize()
+    await ParticipantCurrencyCached.initialize()
+    await ParticipantLimitCached.initialize()
+    externalParticipantCached.initialize()
+    await Cache.initCache()
 
     const [proxy1, proxy2] = await Promise.all([
       participantHelper.prepareData(proxyId1, curr1, null, false, true),
