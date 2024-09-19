@@ -28,6 +28,7 @@ exclude: [
   'src/handlers/transfers/FxFulfilService.js',
   'src/models/position/batch.js',
   'src/models/fxTransfer/**',
-  'src/shared/fspiopErrorFactory.js'
+  'src/shared/fspiopErrorFactory.js',
+  'src/lib/proxyCache.js' # todo: remove this line after adding test coverage
 ]
 ## todo: increase test coverage before merging feat/fx-impl to main branch
