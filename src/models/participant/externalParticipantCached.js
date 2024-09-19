@@ -77,7 +77,7 @@ const getExternalParticipantsCached = async () => {
 /*
   Public API
 */
-const initialize = async () => {
+const initialize = () => {
   /* Register as cache client */
   const cacheClientMeta = {
     id: 'externalParticipants',
@@ -131,6 +131,10 @@ const withInvalidate = (theFunctionName) => {
   }
 }
 
+const create = withInvalidate('create')
+const destroyById = withInvalidate('destroyById')
+const destroyByName = withInvalidate('destroyByName')
+
 module.exports = {
   initialize,
   invalidateCache,
@@ -138,7 +142,8 @@ module.exports = {
   getAll,
   getById,
   getByName,
-  create: withInvalidate('create'),
-  destroyById: withInvalidate('destroyById'),
-  destroyByName: withInvalidate('destroyByName')
+
+  create,
+  destroyById,
+  destroyByName
 }

@@ -111,8 +111,8 @@ Test('Prepare Handler internals Tests -->', (prepareHandlerTest) => {
       externalParticipantCached.getByName(initiatingFsp),
       externalParticipantCached.getByName(counterPartyFsp)
     ])
-    t.equals(extPayer, null)
-    t.equals(extPayee, null)
+    t.equals(extPayer, undefined)
+    t.equals(extPayee, undefined)
 
     const isFx = false
     const payload = fixtures.transferDto({

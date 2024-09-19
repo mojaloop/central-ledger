@@ -237,8 +237,9 @@ const initializeCache = async () => {
   await ParticipantCached.initialize()
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
-  await externalParticipantCached.initialize()
   await BatchPositionModelCached.initialize()
+  // all cached models initialize-methods are SYNC!!
+  externalParticipantCached.initialize()
   await Cache.initCache()
 }
 

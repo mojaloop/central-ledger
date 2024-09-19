@@ -23,6 +23,7 @@
  --------------
  **********/
 process.env.CLEDG_CACHE__CACHE_ENABLED = 'true'
+process.env.CLEDG_CACHE__EXPIRES_IN_MS = `${120 * 1000}`
 process.env.LOG_LEVEL = 'debug'
 
 const Test = require('tapes')(require('tape'))
@@ -58,16 +59,15 @@ Test('externalParticipantCached Model Tests -->', (epCachedTest) => {
       destroy: sandbox.stub()
     }
 
-    await Promise.all([
-      cache.initCache(),
-      model.initialize()
-    ])
-
+    model.initialize()
+    await cache.initCache()
     t.end()
   })
 
-  epCachedTest.afterEach(t => {
+  epCachedTest.afterEach(async t => {
     sandbox.restore()
+    await cache.destroyCache()
+    cache.dropClients()
     t.end()
   })
 
@@ -78,6 +78,7 @@ Test('externalParticipantCached Model Tests -->', (epCachedTest) => {
   }))
 
   epCachedTest.test('should get externalParticipant by name from cache', tryCatchEndTest(async (t) => {
+    // db[EP_TABLE].find = sandbox.stub()
     const data = await model.getByName(name)
     t.deepEqual(data, mockEpList[0])
   }))
@@ -112,9 +113,26 @@ Test('externalParticipantCached Model Tests -->', (epCachedTest) => {
     t.equal(data, undefined)
   }))
 
-  epCachedTest.test('teardown', tryCatchEndTest(async (t) => {
-    await cache.destroyCache()
-    t.pass('connections are closed')
+  epCachedTest.test('should invalidate cache during destroyById', tryCatchEndTest(async (t) => {
+    let data = await model.getByName(name)
+    t.deepEqual(data, mockEpList[0])
+
+    await model.destroyById('id')
+
+    db[EP_TABLE].find = sandbox.stub().resolves([])
+    data = await model.getByName(name)
+    t.equal(data, undefined)
+  }))
+
+  epCachedTest.test('should invalidate cache during destroyByName', tryCatchEndTest(async (t) => {
+    let data = await model.getByName(name)
+    t.deepEqual(data, mockEpList[0])
+
+    await model.destroyByName('name')
+
+    db[EP_TABLE].find = sandbox.stub().resolves([])
+    data = await model.getByName(name)
+    t.equal(data, undefined)
   }))
 
   epCachedTest.end()
