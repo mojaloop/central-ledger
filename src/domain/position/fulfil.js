@@ -65,17 +65,26 @@ const processPositionFulfilBin = async (
             // Find out the first item to be processed
             const positionChangeIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
             const positionChangeToBeProcessed = cyrilResult.positionChanges[positionChangeIndex]
+            let transferStateIdCopy
             if (positionChangeToBeProcessed.isFxTransferStateChange) {
               const { participantPositionChange, fxTransferStateChange, transferStateId, updatedRunningPosition } =
                 _handleParticipantPositionChangeFx(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.commitRequestId, accumulatedPositionReservedValue)
+              transferStateIdCopy = transferStateId
               runningPosition = updatedRunningPosition
               participantPositionChanges.push(participantPositionChange)
               fxTransferStateChanges.push(fxTransferStateChange)
               accumulatedFxTransferStatesCopy[positionChangeToBeProcessed.commitRequestId] = transferStateId
-              // TODO: Send required FX PATCH notifications
+              const patchMessages = _constructPatchNotificationResultMessage(
+                binItem,
+                cyrilResult
+              )
+              for (const patchMessage of patchMessages) {
+                resultMessages.push({ binItem, message: patchMessage })
+              }
             } else {
               const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
                 _handleParticipantPositionChange(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.transferId, accumulatedPositionReservedValue)
+              transferStateIdCopy = transferStateId
               runningPosition = updatedRunningPosition
               participantPositionChanges.push(participantPositionChange)
               transferStateChanges.push(transferStateChange)
@@ -86,22 +95,19 @@ const processPositionFulfilBin = async (
             const nextIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
             if (nextIndex === -1) {
               // All position changes are done
-              const resultMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers)
+              const resultMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers, transferStateIdCopy)
               resultMessages.push({ binItem, message: resultMessage })
             } else {
               // There are still position changes to be processed
               // Send position-commit kafka message again for the next item
               const participantCurrencyId = cyrilResult.positionChanges[nextIndex].participantCurrencyId
-              const followupMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers)
+              const followupMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers, transferStateIdCopy)
               // Pass down the context to the followup message with mutated cyrilResult
               followupMessage.content.context = binItem.message.value.content.context
               followupMessages.push({ binItem, messageKey: participantCurrencyId.toString(), message: followupMessage })
             }
           } else {
             const transferAmount = transferInfoList[transferId].amount
-
-            const resultMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers)
-
             const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
               _handleParticipantPositionChange(runningPosition, transferAmount, transferId, accumulatedPositionReservedValue)
             runningPosition = updatedRunningPosition
@@ -109,6 +115,7 @@ const processPositionFulfilBin = async (
             participantPositionChanges.push(participantPositionChange)
             transferStateChanges.push(transferStateChange)
             accumulatedTransferStatesCopy[transferId] = transferStateId
+            const resultMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers, transferStateId)
             resultMessages.push({ binItem, message: resultMessage })
           }
         }
@@ -165,7 +172,7 @@ const _handleIncorrectTransferState = (binItem, payeeFsp, transferId, accumulate
   )
 }
 
-const _constructTransferFulfilResultMessage = (binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers) => {
+const _constructTransferFulfilResultMessage = (binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers, transferStateId) => {
   // forward same headers from the prepare message, except the content-length header
   const headers = { ...binItem.message.value.content.headers }
   delete headers['content-length']
@@ -197,8 +204,57 @@ const _constructTransferFulfilResultMessage = (binItem, transferId, payerFsp, pa
     resultMessage.content.payload = TransferObjectTransform.toFulfil(
       reservedActionTransfers[transferId]
     )
+    resultMessage.content.payload.transferState = transferStateId
   }
   return resultMessage
+}
+
+const _constructPatchNotificationResultMessage = (binItem, cyrilResult) => {
+  const messages = []
+  const patchNotifications = cyrilResult.patchNotifications
+  for (const patchNotification of patchNotifications) {
+    const commitRequestId = patchNotification.commitRequestId
+    const fxpName = patchNotification.fxpName
+    const fulfilment = patchNotification.fulfilment
+    const completedTimestamp = patchNotification.completedTimestamp
+    const headers = {
+      ...binItem.message.value.content.headers,
+      'fspiop-source': Config.HUB_NAME,
+      'fspiop-destination': fxpName
+    }
+
+    const fulfil = {
+      conversionState: Enum.Transfers.TransferState.COMMITTED,
+      fulfilment,
+      completedTimestamp
+    }
+
+    const state = Utility.StreamingProtocol.createEventState(
+      Enum.Events.EventStatus.SUCCESS.status,
+      null,
+      null
+    )
+    const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
+      commitRequestId,
+      Enum.Kafka.Topics.TRANSFER,
+      Enum.Events.Event.Action.FX_NOTIFY,
+      state
+    )
+
+    const resultMessage = Utility.StreamingProtocol.createMessage(
+      commitRequestId,
+      fxpName,
+      Config.HUB_NAME,
+      metadata,
+      headers,
+      fulfil,
+      { id: commitRequestId },
+      'application/json'
+    )
+
+    messages.push(resultMessage)
+  }
+  return messages
 }
 
 const _handleParticipantPositionChange = (runningPosition, transferAmount, transferId, accumulatedPositionReservedValue) => {
@@ -210,6 +266,7 @@ const _handleParticipantPositionChange = (runningPosition, transferAmount, trans
     transferId, // Need to delete this in bin processor while updating transferStateChangeId
     transferStateChangeId: null, // Need to update this in bin processor while executing queries
     value: updatedRunningPosition.toNumber(),
+    change: transferAmount,
     reservedValue: accumulatedPositionReservedValue
   }
 
@@ -230,6 +287,7 @@ const _handleParticipantPositionChangeFx = (runningPosition, transferAmount, com
     commitRequestId, // Need to delete this in bin processor while updating fxTransferStateChangeId
     fxTransferStateChangeId: null, // Need to update this in bin processor while executing queries
     value: updatedRunningPosition.toNumber(),
+    change: transferAmount,
     reservedValue: accumulatedPositionReservedValue
   }
 

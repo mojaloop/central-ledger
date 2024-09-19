@@ -629,6 +629,12 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       Validator.validateFulfilCondition.returns(false)
       Kafka.proceed.returns(true)
+      Cyril.processAbortMessage.returns({
+        isFx: false,
+        positionChanges: [{
+          participantCurrencyId: 1
+        }]
+      })
 
       // Act
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)

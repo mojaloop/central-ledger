@@ -224,7 +224,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
         commitRequestId,
         notifyTo: fxRecord.initiatingFspName,
         participantCurrencyId: fxPositionChange.participantCurrencyId,
-        amount: -fxPositionChange.value
+        amount: -fxPositionChange.change
       })
     })
   }
@@ -238,7 +238,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
         transferId,
         notifyTo: transferRecord.payerFsp,
         participantCurrencyId: transferPositionChange.participantCurrencyId,
-        amount: -transferPositionChange.value
+        amount: -transferPositionChange.change
       })
     })
   }
@@ -348,7 +348,12 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
             amount: -fxTransferRecord.sourceAmount
           })
         }
-        // TODO: Send PATCH notification to FXP
+        result.patchNotifications.push({
+          commitRequestId: watchListRecord.commitRequestId,
+          fxpName: fxTransferRecord.counterPartyFspName,
+          fulfilment: fxTransferRecord.fulfilment,
+          completedTimestamp: fxTransferRecord.completedTimestamp
+        })
       }
     }
 

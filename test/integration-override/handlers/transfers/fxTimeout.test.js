@@ -33,6 +33,7 @@ const Cache = require('#src/lib/cache')
 const ProxyCache = require('#src/lib/proxyCache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
+const Util = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantHelper = require('#test/integration/helpers/participant')
 const ParticipantLimitHelper = require('#test/integration/helpers/participantLimit')
@@ -161,7 +162,7 @@ const prepareFxTestData = async (dataObj) => {
     const fxTransferPayload = {
       commitRequestId: randomUUID(),
       determiningTransferId: transferId,
-      condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+      condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
       expiration: dataObj.expiration,
       initiatingFsp: payer.participant.name,
       counterPartyFsp: fxp.participant.name,
@@ -280,14 +281,45 @@ const prepareFxTestData = async (dataObj) => {
       TransferEventType.PREPARE
     )
 
+    const topicConfFxTransferFulfil = Utility.createGeneralTopicConf(
+      Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+      TransferEventType.TRANSFER,
+      TransferEventType.FULFIL
+    )
+
+    const fxFulfilHeaders = {
+      'fspiop-source': fxp.participant.name,
+      'fspiop-destination': payer.participant.name,
+      'content-type': 'application/vnd.interoperability.fxTransfers+json;version=2.0'
+    }
+
+    const fulfilPayload = {
+      fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
+      completedTimestamp: dataObj.now,
+      transferState: 'COMMITTED'
+    }
+
+    const messageProtocolPayerInitiatedConversionFxFulfil = Util.clone(messageProtocolPayerInitiatedConversionFxPrepare)
+    messageProtocolPayerInitiatedConversionFxFulfil.id = randomUUID()
+    messageProtocolPayerInitiatedConversionFxFulfil.from = fxTransferPayload.counterPartyFsp
+    messageProtocolPayerInitiatedConversionFxFulfil.to = fxTransferPayload.initiatingFsp
+    messageProtocolPayerInitiatedConversionFxFulfil.content.headers = fxFulfilHeaders
+    messageProtocolPayerInitiatedConversionFxFulfil.content.uriParams = { id: fxTransferPayload.commitRequestId }
+    messageProtocolPayerInitiatedConversionFxFulfil.content.payload = fulfilPayload
+    messageProtocolPayerInitiatedConversionFxFulfil.metadata.event.id = randomUUID()
+    messageProtocolPayerInitiatedConversionFxFulfil.metadata.event.type = TransferEventType.FULFIL
+    messageProtocolPayerInitiatedConversionFxFulfil.metadata.event.action = TransferEventAction.FX_RESERVE
+
     return {
       fxTransferPayload,
       transfer1Payload,
       errorPayload,
       messageProtocolPayerInitiatedConversionFxPrepare,
+      messageProtocolPayerInitiatedConversionFxFulfil,
       messageProtocolPrepare1,
       topicConfTransferPrepare,
       topicConfFxTransferPrepare,
+      topicConfFxTransferFulfil,
       payer,
       payerLimitAndInitialPosition,
       fxp,
@@ -609,6 +641,55 @@ Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
       test.end()
     })
 
+    await timeoutTest.test('update fxTransfer state to RECEIVED_FULFIL_DEPENDENT by FULFIL request', async (test) => {
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventAction.FULFIL.toUpperCase()
+      )
+      fulfilConfig.logger = Logger
+
+      await Producer.produceMessage(
+        td.messageProtocolPayerInitiatedConversionFxFulfil,
+        td.topicConfFxTransferFulfil,
+        fulfilConfig
+      )
+
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: TOPIC_POSITION_BATCH,
+          action: Enum.Events.Event.Action.FX_RESERVE
+          // NOTE: The key is the fxp participantCurrencyId of the source currency (USD)
+          //       Is that correct...?
+          // keyFilter: td.fxp.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fx-fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      try {
+        await wrapWithRetries(async () => {
+          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(
+            td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+
+          if (fxTransfer?.transferState !== TransferInternalState.RECEIVED_FULFIL_DEPENDENT) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return fxTransfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
     await timeoutTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -648,7 +729,6 @@ Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
         try {
           // Fetch FxTransfer record
           const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
-
           // Check Transfer for correct state
           if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
             // We have a Transfer with the correct state, lets check if we can get the TransferError record

@@ -43,6 +43,8 @@ const Config = require('../../lib/config')
 const Participant = require('../../domain/participant')
 const Transfer = require('../../domain/transfer')
 const FxTransferModel = require('../../models/fxTransfer')
+// const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
+const FxTransferStateChangeModel = require('../../models/fxTransfer/stateChange')
 const CryptoConditions = require('../../cryptoConditions')
 const Crypto = require('crypto')
 const base64url = require('base64url')
@@ -207,6 +209,30 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
 
   const initiatingFsp = isFx ? payload.initiatingFsp : payload.payerFsp
   const counterPartyFsp = isFx ? payload.counterPartyFsp : payload.payeeFsp
+
+  // Check if determining transfers are failed
+  if (determiningTransferCheckResult.watchListRecords && determiningTransferCheckResult.watchListRecords.length > 0) {
+    // Iterate through determiningTransferCheckResult.watchListRecords
+    for (const watchListRecord of determiningTransferCheckResult.watchListRecords) {
+      if (isFx) {
+        // TODO: Check the transfer state of determiningTransferId
+        // const latestTransferStateChange = await TransferStateChangeModel.getByTransferId(watchListRecord.determiningTransferId)
+        // if (latestTransferStateChange.transferStateId !== Enum.Transfers.TransferInternalState.RESERVED) {
+        //   reasons.push('Related Transfer is not in reserved state')
+        //   validationPassed = false
+        //   return { validationPassed, reasons }
+        // }
+      } else {
+        // Check the transfer state of commitRequestId
+        const latestFxTransferStateChange = await FxTransferStateChangeModel.getByCommitRequestId(watchListRecord.commitRequestId)
+        if (latestFxTransferStateChange.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT) {
+          reasons.push('Related FX Transfer is not fulfilled')
+          validationPassed = false
+          return { validationPassed, reasons }
+        }
+      }
+    }
+  }
 
   // Skip usual validation if preparing a proxy transfer or fxTransfer
   if (!(proxyObligation?.isInitiatingFspProxy || proxyObligation?.isCounterPartyFspProxy)) {
