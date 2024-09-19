@@ -297,6 +297,43 @@ const watchListItemDto = ({
   createdDate
 })
 
+const mockExternalParticipantDto = ({
+  name = `extFsp-${Date.now()}`,
+  proxyId = new Date().getMilliseconds(),
+  id = Date.now(),
+  createdDate = new Date()
+} = {}) => ({
+  name,
+  proxyId,
+  ...(id && { externalParticipantId: id }),
+  ...(createdDate && { createdDate })
+})
+
+/**
+ * @returns {ProxyObligation} proxyObligation
+ */
+const mockProxyObligationDto = ({
+  isFx = false,
+  payloadClone = transferDto(), // or fxTransferDto()
+  proxy1 = null,
+  proxy2 = null
+} = {}) => ({
+  isFx,
+  payloadClone,
+  isInitiatingFspProxy: !!proxy1,
+  isCounterPartyFspProxy: !!proxy2,
+  initiatingFspProxyOrParticipantId: {
+    inScheme: !proxy1,
+    proxyId: proxy1,
+    name: payloadClone.payerFsp || payloadClone.initiatingFsp
+  },
+  counterPartyFspProxyOrParticipantId: {
+    inScheme: !proxy2,
+    proxyId: proxy2,
+    name: payloadClone.payeeFsp || payloadClone.counterPartyFsp
+  }
+})
+
 module.exports = {
   ILP_PACKET,
   CONDITION,
@@ -322,5 +359,7 @@ module.exports = {
   fxTransferDto,
   fxFulfilResponseDto,
   fxtGetAllDetailsByCommitRequestIdDto,
-  watchListItemDto
+  watchListItemDto,
+  mockExternalParticipantDto,
+  mockProxyObligationDto
 }

@@ -27,6 +27,7 @@
 const { FSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
+const { logger } = require('#src/shared/logger/index')
 
 /* Helper Functions */
 
@@ -178,6 +179,17 @@ const checkErrorPayload = test => (actualPayload, expectedFspiopError) => {
   test.equal(actualPayload.errorInformation?.errorDescription, errorDescription, 'errorDescription matches')
 }
 
+// to use as a wrapper on Tape tests
+const tryCatchEndTest = (testFn) => async (t) => {
+  try {
+    await testFn(t)
+  } catch (err) {
+    logger.error(`error in test "${t.name}":`, err)
+    t.fail(`${t.name} failed due to error: ${err?.message}`)
+  }
+  t.end()
+}
+
 module.exports = {
   checkErrorPayload,
   currentEventLoopEnd,
@@ -186,5 +198,6 @@ module.exports = {
   unwrapResponse,
   waitFor,
   wrapWithRetries,
-  getMessagePayloadOrThrow
+  getMessagePayloadOrThrow,
+  tryCatchEndTest
 }

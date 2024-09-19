@@ -4,28 +4,29 @@ const { Enum, Util } = require('@mojaloop/central-services-shared')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const TransferEventAction = Enum.Events.Event.Action
 
+const { logger } = require('../../shared/logger')
+const { TABLE_NAMES } = require('../../shared/constants')
 const Db = require('../../lib/db')
 const participant = require('../participant/facade')
-const { TABLE_NAMES } = require('../../shared/constants')
-const { logger } = require('../../shared/logger')
 const ParticipantCachedModel = require('../participant/participantCached')
 const TransferExtensionModel = require('./fxTransferExtension')
+
 const { TransferInternalState } = Enum.Transfers
 
 const UnsupportedActionText = 'Unsupported action'
 
 const getByCommitRequestId = async (commitRequestId) => {
-  logger.debug(`get fx transfer (commitRequestId=${commitRequestId})`)
+  logger.debug('get fxTransfer by commitRequestId:', { commitRequestId })
   return Db.from(TABLE_NAMES.fxTransfer).findOne({ commitRequestId })
 }
 
 const getByDeterminingTransferId = async (determiningTransferId) => {
-  logger.debug(`get fx transfers (determiningTransferId=${determiningTransferId})`)
+  logger.debug('get fxTransfers by determiningTransferId:', { determiningTransferId })
   return Db.from(TABLE_NAMES.fxTransfer).find({ determiningTransferId })
 }
 
 const saveFxTransfer = async (record) => {
-  logger.debug('save fx transfer' + record.toString())
+  logger.debug('save fxTransfer record:', { record })
   return Db.from(TABLE_NAMES.fxTransfer).insert(record)
 }
 
@@ -126,6 +127,7 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
       return transferResult
     })
   } catch (err) {
+    logger.warn('error in getAllDetailsByCommitRequestId', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -145,10 +147,12 @@ const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestI
         })
         // INITIATING_FSP
         .innerJoin('fxTransferParticipant AS tp1', 'tp1.commitRequestId', 'fxTransfer.commitRequestId')
+        .leftJoin('externalParticipant AS ep1', 'ep1.externalParticipantId', 'tp1.externalParticipantId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
         .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
         // COUNTER_PARTY_FSP SOURCE currency
         .innerJoin('fxTransferParticipant AS tp21', 'tp21.commitRequestId', 'fxTransfer.commitRequestId')
+        .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'tp21.externalParticipantId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp21.transferParticipantRoleTypeId')
         .innerJoin('fxParticipantCurrencyType AS fpct1', 'fpct1.fxParticipantCurrencyTypeId', 'tp21.fxParticipantCurrencyTypeId')
         .innerJoin('participant AS ca', 'ca.participantId', 'tp21.participantId')
@@ -176,10 +180,13 @@ const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestI
           'tsc.createdDate AS completedTimestamp',
           'ts.enumeration as transferStateEnumeration',
           'ts.description as transferStateDescription',
-          'tf.ilpFulfilment AS fulfilment'
+          'tf.ilpFulfilment AS fulfilment',
+          'ep1.name AS externalInitiatingFspName',
+          'ep2.name AS externalCounterPartyFspName'
         )
         .orderBy('tsc.fxTransferStateChangeId', 'desc')
         .first()
+
       if (transferResult) {
         transferResult.extensionList = await TransferExtensionModel.getByCommitRequestId(commitRequestId)
         if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
@@ -194,6 +201,7 @@ const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestI
       return transferResult
     })
   } catch (err) {
+    logger.warn('error in getAllDetailsByCommitRequestIdForProxiedFxTransfer', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -201,6 +209,16 @@ const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestI
 const getParticipant = async (name, currency) =>
   participant.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
 
+/**
+ * Saves prepare fxTransfer details to DB.
+ *
+ * @param {Object} payload - Message payload.
+ * @param {string | null} stateReason - Validation failure reasons.
+ * @param {Boolean} hasPassedValidation - Is fxTransfer prepare validation passed.
+ * @param {DeterminingTransferCheckResult} determiningTransferCheckResult - Determining transfer check result.
+ * @param {ProxyObligation} proxyObligation - The proxy obligation
+ * @returns {Promise<void>}
+ */
 const savePreparedRequest = async (
   payload,
   stateReason,
@@ -216,10 +234,10 @@ const savePreparedRequest = async (
 
   // Substitute out of scheme participants with their proxy representatives
   const initiatingFsp = proxyObligation.isInitiatingFspProxy
-    ? proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
+    ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
     : payload.initiatingFsp
   const counterPartyFsp = proxyObligation.isCounterPartyFspProxy
-    ? proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
+    ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
     : payload.counterPartyFsp
 
   // If creditor(counterPartyFsp) is a proxy in a jurisdictional scenario,
@@ -259,6 +277,10 @@ const savePreparedRequest = async (
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
     }
+    if (proxyObligation.isInitiatingFspProxy) {
+      initiatingParticipantRecord.externalParticipantId = await participant
+        .getExternalParticipantIdByNameOrCreate(proxyObligation.initiatingFspProxyOrParticipantId)
+    }
 
     const counterPartyParticipantRecord1 = {
       commitRequestId: payload.commitRequestId,
@@ -268,6 +290,10 @@ const savePreparedRequest = async (
       transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP,
       fxParticipantCurrencyTypeId: Enum.Fx.FxParticipantCurrencyType.SOURCE,
       ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
+    }
+    if (proxyObligation.isCounterPartyFspProxy) {
+      counterPartyParticipantRecord1.externalParticipantId = await participant
+        .getExternalParticipantIdByNameOrCreate(proxyObligation.counterPartyFspProxyOrParticipantId)
     }
 
     let counterPartyParticipantRecord2 = null
@@ -352,12 +378,12 @@ const savePreparedRequest = async (
     }
     histTimerSaveFxTransferEnd({ success: true, queryName: 'transfer_model_facade_saveTransferPrepared' })
   } catch (err) {
+    logger.warn('error in savePreparedRequest', err)
     histTimerSaveFxTransferEnd({ success: false, queryName: 'transfer_model_facade_saveTransferPrepared' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-// todo: clarify this code
 const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopError) => {
   const histTimerSaveFulfilResponseEnd = Metrics.getHistogram(
     'fx_model_transfer',
@@ -498,6 +524,7 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
     histTimerSaveFulfilResponseEnd({ success: true, queryName: 'facade_saveFulfilResponse' })
     return result
   } catch (err) {
+    logger.warn('error in saveFxFulfilResponse', err)
     histTimerSaveFulfilResponseEnd({ success: false, queryName: 'facade_saveFulfilResponse' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -542,10 +569,10 @@ module.exports = {
   getByDeterminingTransferId,
   getByIdLight,
   getAllDetailsByCommitRequestId,
+  getAllDetailsByCommitRequestIdForProxiedFxTransfer,
   getFxTransferParticipant,
   savePreparedRequest,
   saveFxFulfilResponse,
   saveFxTransfer,
-  getAllDetailsByCommitRequestIdForProxiedFxTransfer,
   updateFxPrepareReservedForwarded
 }

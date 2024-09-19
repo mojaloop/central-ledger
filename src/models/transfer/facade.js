@@ -33,19 +33,21 @@
  * @module src/models/transfer/facade/
  */
 
-const Db = require('../../lib/db')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
+const MLNumber = require('@mojaloop/ml-number')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const TransferEventAction = Enum.Events.Event.Action
-const TransferInternalState = Enum.Transfers.TransferInternalState
-const TransferExtensionModel = require('./transferExtension')
+const Time = require('@mojaloop/central-services-shared').Util.Time
+
+const { logger } = require('../../shared/logger')
+const Db = require('../../lib/db')
+const Config = require('../../lib/config')
 const ParticipantFacade = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
-const Time = require('@mojaloop/central-services-shared').Util.Time
-const MLNumber = require('@mojaloop/ml-number')
-const Config = require('../../lib/config')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-logger')
-const Metrics = require('@mojaloop/central-services-metrics')
+const TransferExtensionModel = require('./transferExtension')
+
+const TransferEventAction = Enum.Events.Event.Action
+const TransferInternalState = Enum.Transfers.TransferInternalState
 
 // Alphabetically ordered list of error texts used below
 const UnsupportedActionText = 'Unsupported action'
@@ -54,6 +56,7 @@ const getById = async (id) => {
   try {
     /** @namespace Db.transfer **/
     return await Db.from('transfer').query(async (builder) => {
+      /* istanbul ignore next */
       const transferResult = await builder
         .where({
           'transfer.transferId': id,
@@ -62,11 +65,13 @@ const getById = async (id) => {
         })
         // PAYER
         .innerJoin('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId')
+        .leftJoin('externalParticipant AS ep1', 'ep1.externalParticipantId', 'tp1.externalParticipantId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
         .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
         .leftJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
         // PAYEE
         .innerJoin('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId')
+        .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'tp2.externalParticipantId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId')
         .innerJoin('participant AS ca', 'ca.participantId', 'tp2.participantId')
         .leftJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
@@ -99,10 +104,13 @@ const getById = async (id) => {
           'transfer.ilpCondition AS condition',
           'tf.ilpFulfilment AS fulfilment',
           'te.errorCode',
-          'te.errorDescription'
+          'te.errorDescription',
+          'ep1.name AS externalPayerName',
+          'ep2.name AS externalPayeeName'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
+
       if (transferResult) {
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
         if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
@@ -117,6 +125,7 @@ const getById = async (id) => {
       return transferResult
     })
   } catch (err) {
+    logger.warn('error in transfer.getById', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -169,6 +178,7 @@ const getByIdLight = async (id) => {
       return transferResult
     })
   } catch (err) {
+    logger.warn('error in transfer.getByIdLight', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -223,6 +233,7 @@ const getAll = async () => {
       return transferResultList
     })
   } catch (err) {
+    logger.warn('error in transfer.getAll', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -249,6 +260,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         .first()
     })
   } catch (err) {
+    logger.warn('error in getTransferInfoToChangePosition', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -356,12 +368,12 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
               .orderBy('changedDate', 'desc')
           })
           transferFulfilmentRecord.settlementWindowId = res[0].settlementWindowId
-          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::settlementWindowId')
+          logger.debug('savePayeeTransferResponse::settlementWindowId')
         }
         if (isFulfilment) {
           await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
           result.transferFulfilmentRecord = transferFulfilmentRecord
-          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferFulfilment')
+          logger.debug('savePayeeTransferResponse::transferFulfilment')
         }
         if (transferExtensionRecordsList.length > 0) {
           // ###! CAN BE DONE THROUGH A BATCH
@@ -370,11 +382,11 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           }
           // ###!
           result.transferExtensionRecordsList = transferExtensionRecordsList
-          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
+          logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
         }
         await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
         result.transferStateChangeRecord = transferStateChangeRecord
-        Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferStateChange')
+        logger.debug('savePayeeTransferResponse::transferStateChange')
         if (fspiopError) {
           const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
             .where({ transferId })
@@ -383,25 +395,36 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           transferErrorRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
           await knex('transferError').transacting(trx).insert(transferErrorRecord)
           result.transferErrorRecord = transferErrorRecord
-          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferError')
+          logger.debug('savePayeeTransferResponse::transferError')
         }
         histTPayeeResponseValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         result.savePayeeTransferResponseExecuted = true
-        Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::success')
+        logger.debug('savePayeeTransferResponse::success')
       } catch (err) {
+        logger.error('savePayeeTransferResponse::failure', err)
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-        Logger.isErrorEnabled && Logger.error('savePayeeTransferResponse::failure')
         throw err
       }
     })
     histTimerSavePayeeTranferResponsedEnd({ success: true, queryName: 'facade_savePayeeTransferResponse' })
     return result
   } catch (err) {
+    logger.warn('error in savePayeeTransferResponse', err)
     histTimerSavePayeeTranferResponsedEnd({ success: false, queryName: 'facade_savePayeeTransferResponse' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
+/**
+ * Saves prepare transfer details to DB.
+ *
+ * @param {Object} payload - Message payload.
+ * @param {string | null} stateReason - Validation failure reasons.
+ * @param {Boolean} hasPassedValidation - Is transfer prepare validation passed.
+ * @param {DeterminingTransferCheckResult} determiningTransferCheckResult - Determining transfer check result.
+ * @param {ProxyObligation} proxyObligation - The proxy obligation
+ * @returns {Promise<void>}
+ */
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true, determiningTransferCheckResult, proxyObligation) => {
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
@@ -415,8 +438,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
 
     // Iterate over the participants and get the details
-    const names = Object.keys(participants)
-    for (const name of names) {
+    for (const name of Object.keys(participants)) {
       const participant = await ParticipantCachedModel.getByName(name)
       if (participant) {
         participants[name].id = participant.participantId
@@ -427,26 +449,26 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
         participants[name].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId
       }
+    }
 
-      if (proxyObligation?.isInitiatingFspProxy) {
-        const proxyId = proxyObligation.initiatingFspProxyOrParticipantId.proxyId
-        const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
-        participants[proxyId] = {}
-        participants[proxyId].id = proxyParticipant.participantId
-        const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(
-          proxyId, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION
-        )
-        // In a regional scheme, the stand-in initiating FSP proxy may not have a participantCurrencyId
-        // of the target currency of the transfer, so set to null if not found
-        participants[proxyId].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId
-      }
+    if (proxyObligation?.isInitiatingFspProxy) {
+      const proxyId = proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+      const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
+      participants[proxyId] = {}
+      participants[proxyId].id = proxyParticipant.participantId
+      const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(
+        proxyId, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION
+      )
+      // In a regional scheme, the stand-in initiating FSP proxy may not have a participantCurrencyId
+      // of the target currency of the transfer, so set to null if not found
+      participants[proxyId].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId
+    }
 
-      if (proxyObligation?.isCounterPartyFspProxy) {
-        const proxyId = proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
-        const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
-        participants[proxyId] = {}
-        participants[proxyId].id = proxyParticipant.participantId
-      }
+    if (proxyObligation?.isCounterPartyFspProxy) {
+      const proxyId = proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+      const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
+      participants[proxyId] = {}
+      participants[proxyId].id = proxyParticipant.participantId
     }
 
     const transferRecord = {
@@ -462,24 +484,25 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? Enum.Transfers.TransferInternalState.RECEIVED_PREPARE : Enum.Transfers.TransferInternalState.INVALID)
-
     const transferStateChangeRecord = {
       transferId: payload.transferId,
-      transferStateId: state,
+      transferStateId: hasPassedValidation ? TransferInternalState.RECEIVED_PREPARE : TransferInternalState.INVALID,
       reason: stateReason,
       createdDate: Time.getUTCString(new Date())
     }
 
     let payerTransferParticipantRecord
     if (proxyObligation?.isInitiatingFspProxy) {
+      const externalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(proxyObligation.initiatingFspProxyOrParticipantId)
+      // todo: think, what if externalParticipantId is null?
       payerTransferParticipantRecord = {
         transferId: payload.transferId,
         participantId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].id,
         participantCurrencyId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].participantCurrencyId,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
-        amount: -payload.amount.amount
+        amount: -payload.amount.amount,
+        externalParticipantId
       }
     } else {
       payerTransferParticipantRecord = {
@@ -492,16 +515,19 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       }
     }
 
-    console.log(participants)
+    logger.debug('saveTransferPrepared participants:', { participants })
     let payeeTransferParticipantRecord
     if (proxyObligation?.isCounterPartyFspProxy) {
+      const externalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(proxyObligation.counterPartyFspProxyOrParticipantId)
+      // todo: think, what if externalParticipantId is null?
       payeeTransferParticipantRecord = {
         transferId: payload.transferId,
         participantId: participants[proxyObligation.counterPartyFspProxyOrParticipantId.proxyId].id,
         participantCurrencyId: null,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
-        amount: -payload.amount.amount
+        amount: -payload.amount.amount,
+        externalParticipantId
       }
     } else {
       payeeTransferParticipantRecord = {
@@ -557,14 +583,14 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       try {
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
-        Logger.isWarnEnabled && Logger.warn(`Payer transferParticipant insert error: ${err.message}`)
+        logger.warn('Payer transferParticipant insert error', err)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferParticipant').insert(payeeTransferParticipantRecord)
       } catch (err) {
+        logger.warn('Payee transferParticipant insert error:', err)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
-        Logger.isWarnEnabled && Logger.warn(`Payee transferParticipant insert error: ${err.message}`)
       }
       payerTransferParticipantRecord.name = payload.payerFsp
       payeeTransferParticipantRecord.name = payload.payeeFsp
@@ -580,26 +606,27 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         try {
           await knex.batchInsert('transferExtension', transferExtensionsRecordList)
         } catch (err) {
-          Logger.isWarnEnabled && Logger.warn(`batchInsert transferExtension error: ${err.message}`)
+          logger.warn('batchInsert transferExtension error:', err)
           histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
         }
       }
       try {
         await knex('ilpPacket').insert(ilpPacketRecord)
       } catch (err) {
-        Logger.isWarnEnabled && Logger.warn(`ilpPacket insert error: ${err.message}`)
+        logger.warn('ilpPacket insert error:', err)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferStateChange').insert(transferStateChangeRecord)
         histTimerSaveTranferNoValidationEnd({ success: true, queryName: 'facade_saveTransferPrepared_no_validation' })
       } catch (err) {
-        Logger.isWarnEnabled && Logger.warn(`transferStateChange insert error: ${err.message}`)
+        logger.warn('transferStateChange insert error:', err)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
     }
     histTimerSaveTransferPreparedEnd({ success: true, queryName: 'transfer_model_facade_saveTransferPrepared' })
   } catch (err) {
+    logger.warn('error in saveTransferPrepared', err)
     histTimerSaveTransferPreparedEnd({ success: false, queryName: 'transfer_model_facade_saveTransferPrepared' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -700,6 +727,7 @@ const _insertTransferErrorEntries = async (knex, trx, transactionTimestamp) => {
 
 const _processFxTimeoutEntries = async (knex, trx, transactionTimestamp) => {
   // Insert `fxTransferStateChange` records for RECEIVED_PREPARE
+  /* istanbul ignore next */
   await knex.from(knex.raw('fxTransferStateChange (commitRequestId, transferStateId, reason)')).transacting(trx)
     .insert(function () {
       this.from('fxTransferTimeout AS ftt')
@@ -767,12 +795,14 @@ const _insertFxTransferErrorEntries = async (knex, trx, transactionTimestamp) =>
 }
 
 const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
+  /* istanbul ignore next */
   return knex('transferTimeout AS tt')
     .innerJoin(knex('transferStateChange AS tsc1')
       .select('tsc1.transferId')
       .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
       .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
-      .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+      .groupBy('tsc1.transferId')
+      .as('ts'), 'ts.transferId', 'tt.transferId'
     )
     .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
     .innerJoin('transferParticipant AS tp1', function () {
@@ -780,11 +810,13 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
         .andOn('tp1.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP)
         .andOn('tp1.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
     })
+    .leftJoin('externalParticipant AS ep1', 'ep1.externalParticipantId', 'tp1.externalParticipantId')
     .innerJoin('transferParticipant AS tp2', function () {
       this.on('tp2.transferId', 'tt.transferId')
         .andOn('tp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP)
         .andOn('tp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
     })
+    .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'tp2.externalParticipantId')
     .innerJoin('participant AS p1', 'p1.participantId', 'tp1.participantId')
     .innerJoin('participant AS p2', 'p2.participantId', 'tp2.participantId')
     .innerJoin(knex('transferStateChange AS tsc2')
@@ -793,22 +825,32 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
       .innerJoin('participantPositionChange AS ppc1', 'ppc1.transferStateChangeId', 'tsc2.transferStateChangeId')
       .as('tpc'), 'tpc.transferId', 'tt.transferId'
     )
-
     .leftJoin('bulkTransferAssociation AS bta', 'bta.transferId', 'tt.transferId')
 
     .where('tt.expirationDate', '<', transactionTimestamp)
-    .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantCurrencyId',
-      'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
-      'bta.bulkTransferId', 'tpc.participantCurrencyId AS effectedParticipantCurrencyId')
+    .select(
+      'tt.*',
+      'tsc.transferStateId',
+      'tp1.participantCurrencyId AS payerParticipantCurrencyId',
+      'p1.name AS payerFsp',
+      'p2.name AS payeeFsp',
+      'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
+      'bta.bulkTransferId',
+      'tpc.participantCurrencyId AS effectedParticipantCurrencyId',
+      'ep1.name AS externalPayerName',
+      'ep2.name AS externalPayeeName'
+    )
 }
 
 const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
+  /* istanbul ignore next */
   return knex('fxTransferTimeout AS ftt')
     .innerJoin(knex('fxTransferStateChange AS ftsc1')
       .select('ftsc1.commitRequestId')
       .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
       .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
-      .groupBy('ftsc1.commitRequestId').as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
+      .groupBy('ftsc1.commitRequestId')
+      .as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
     )
     .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
     .innerJoin('fxTransferParticipant AS ftp1', function () {
@@ -816,12 +858,14 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
         .andOn('ftp1.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP)
         .andOn('ftp1.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
     })
+    .leftJoin('externalParticipant AS ep1', 'ep1.externalParticipantId', 'ftp1.externalParticipantId')
     .innerJoin('fxTransferParticipant AS ftp2', function () {
       this.on('ftp2.commitRequestId', 'ftt.commitRequestId')
         .andOn('ftp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP)
         .andOn('ftp2.fxParticipantCurrencyTypeId', Enum.Fx.FxParticipantCurrencyType.TARGET)
         .andOn('ftp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
     })
+    .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'ftp2.externalParticipantId')
     .innerJoin('participant AS p1', 'p1.participantId', 'ftp1.participantId')
     .innerJoin('participant AS p2', 'p2.participantId', 'ftp2.participantId')
     .innerJoin(knex('fxTransferStateChange AS ftsc2')
@@ -831,10 +875,62 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
       .as('ftpc'), 'ftpc.commitRequestId', 'ftt.commitRequestId'
     )
     .where('ftt.expirationDate', '<', transactionTimestamp)
-    .select('ftt.*', 'ftsc.transferStateId', 'ftp1.participantCurrencyId AS initiatingParticipantCurrencyId',
-      'p1.name AS initiatingFsp', 'p2.name AS counterPartyFsp', 'ftp2.participantCurrencyId AS counterPartyParticipantCurrencyId', 'ftpc.participantCurrencyId AS effectedParticipantCurrencyId')
+    .select(
+      'ftt.*',
+      'ftsc.transferStateId',
+      'ftp1.participantCurrencyId AS initiatingParticipantCurrencyId',
+      'p1.name AS initiatingFsp',
+      'p2.name AS counterPartyFsp',
+      'ftp2.participantCurrencyId AS counterPartyParticipantCurrencyId',
+      'ftpc.participantCurrencyId AS effectedParticipantCurrencyId',
+      'ep1.name AS externalInitiatingFspName',
+      'ep2.name AS externalCounterPartyFspName'
+    )
 }
 
+/**
+ * @typedef {Object} TimedOutTransfer
+ *
+ * @property {Integer} transferTimeoutId
+ * @property {String} transferId
+ * @property {Date} expirationDate
+ * @property {Date} createdDate
+ * @property {String} transferStateId
+ * @property {String} payerFsp
+ * @property {String} payeeFsp
+ * @property {Integer} payerParticipantCurrencyId
+ * @property {Integer} payeeParticipantCurrencyId
+ * @property {Integer} bulkTransferId
+ * @property {Integer} effectedParticipantCurrencyId
+ * @property {String} externalPayerName
+ * @property {String} externalPayeeName
+ */
+
+/**
+ * @typedef {Object} TimedOutFxTransfer
+ *
+ * @property {Integer} fxTransferTimeoutId
+ * @property {String} commitRequestId
+ * @property {Date} expirationDate
+ * @property {Date} createdDate
+ * @property {String} transferStateId
+ * @property {String} initiatingFsp
+ * @property {String} counterPartyFsp
+ * @property {Integer} initiatingParticipantCurrencyId
+ * @property {Integer} counterPartyParticipantCurrencyId
+ * @property {Integer} effectedParticipantCurrencyId
+ * @property {String} externalInitiatingFspName
+ * @property {String} externalCounterPartyFspName
+ */
+
+/**
+ *  Returns the list of transfers/fxTransfers that have timed out
+ *
+ * @returns {Promise<{
+ *    transferTimeoutList: TimedOutTransfer,
+ *    fxTransferTimeoutList: TimedOutFxTransfer
+ * }>}
+ */
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
   try {
     const transactionTimestamp = Time.getUTCString(new Date())
@@ -850,7 +946,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                 .max('transferStateChangeId AS maxTransferStateChangeId')
                 .where('transferStateChangeId', '>', intervalMin)
                 .andWhere('transferStateChangeId', '<=', intervalMax)
-                .groupBy('transferId').as('ts'), 'ts.transferId', 't.transferId'
+                .groupBy('transferId')
+                .as('ts'), 'ts.transferId', 't.transferId'
               )
               .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
               .leftJoin('transferTimeout AS tt', 'tt.transferId', 't.transferId')
@@ -886,9 +983,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
         await _processFxTimeoutEntries(knex, trx, transactionTimestamp)
 
         // Insert `fxTransferTimeout` records for the related fxTransfers, or update if exists. The expiration date will be of the transfer and not from fxTransfer
-        await knex
-          .from(knex.raw('fxTransferTimeout (commitRequestId, expirationDate)'))
-          .transacting(trx)
+        await knex.from(knex.raw('fxTransferTimeout (commitRequestId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('fxTransfer AS ft')
               .innerJoin(
@@ -920,9 +1015,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
           })
 
         // Insert `transferTimeout` records for the related transfers, or update if exists. The expiration date will be of the fxTransfer and not from transfer
-        await knex
-          .from(knex.raw('transferTimeout (transferId, expirationDate)'))
-          .transacting(trx)
+        await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('fxTransfer AS ft')
               .innerJoin(
@@ -1441,7 +1534,7 @@ const recordFundsIn = async (payload, transactionTimestamp, enums) => {
       await TransferFacade.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
       await TransferFacade.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
     } catch (err) {
-      Logger.isErrorEnabled && Logger.error(err)
+      logger.error('error in recordFundsIn:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   })

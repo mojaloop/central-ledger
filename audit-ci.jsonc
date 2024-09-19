@@ -4,15 +4,19 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
-  "GHSA-w5p7-h5w8-2hfq", // tap-spec>tap-out>trim; This has been analyzed and this is acceptable as it is used to run tests.
-  "GHSA-2mvq-xp48-4c77", // https://github.com/advisories/GHSA-2mvq-xp48-4c77
-  "GHSA-5854-jvxx-2cg9", // https://github.com/advisories/GHSA-5854-jvxx-2cg9
-  "GHSA-7hx8-2rxv-66xv", // https://github.com/advisories/GHSA-7hx8-2rxv-66xv
-  "GHSA-c429-5p7v-vgjp", // https://github.com/advisories/GHSA-c429-5p7v-vgjp
-  "GHSA-g64q-3vg8-8f93", // https://github.com/advisories/GHSA-g64q-3vg8-8f93
-  "GHSA-mg85-8mv5-ffjr", // https://github.com/advisories/GHSA-mg85-8mv5-ffjr
-  "GHSA-8hc4-vh64-cxmj", // https://github.com/advisories/GHSA-8hc4-vh64-cxmj
-  "GHSA-952p-6rrq-rcjv", // https://github.com/advisories/GHSA-952p-6rrq-rcjv
-  "GHSA-9wv6-86v2-598j"  // https://github.com/advisories/GHSA-9wv6-86v2-598j
+    "GHSA-w5p7-h5w8-2hfq", // tap-spec>tap-out>trim; This has been analyzed and this is acceptable as it is used to run tests.
+    "GHSA-2mvq-xp48-4c77", // https://github.com/advisories/GHSA-2mvq-xp48-4c77
+    "GHSA-5854-jvxx-2cg9", // https://github.com/advisories/GHSA-5854-jvxx-2cg9
+    "GHSA-7hx8-2rxv-66xv", // https://github.com/advisories/GHSA-7hx8-2rxv-66xv
+    "GHSA-c429-5p7v-vgjp", // https://github.com/advisories/GHSA-c429-5p7v-vgjp
+    "GHSA-g64q-3vg8-8f93", // https://github.com/advisories/GHSA-g64q-3vg8-8f93
+    "GHSA-mg85-8mv5-ffjr", // https://github.com/advisories/GHSA-mg85-8mv5-ffjr
+    "GHSA-8hc4-vh64-cxmj", // https://github.com/advisories/GHSA-8hc4-vh64-cxmj
+    "GHSA-952p-6rrq-rcjv", // https://github.com/advisories/GHSA-952p-6rrq-rcjv
+    "GHSA-9wv6-86v2-598j", // https://github.com/advisories/GHSA-9wv6-86v2-598j
+    "GHSA-qwcr-r2fm-qrc7", // https://github.com/advisories/GHSA-qwcr-r2fm-qrc7
+    "GHSA-cm22-4g7w-348p", // https://github.com/advisories/GHSA-cm22-4g7w-348p
+    "GHSA-m6fv-jmcg-4jfg", // https://github.com/advisories/GHSA-m6fv-jmcg-4jfg
+    "GHSA-qw6h-vgh9-j6wx" // https://github.com/advisories/GHSA-qw6h-vgh9-j6wx
   ]
 }

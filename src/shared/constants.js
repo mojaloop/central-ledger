@@ -1,6 +1,7 @@
 const { Enum } = require('@mojaloop/central-services-shared')
 
 const TABLE_NAMES = Object.freeze({
+  externalParticipant: 'externalParticipant',
   fxTransfer: 'fxTransfer',
   fxTransferDuplicateCheck: 'fxTransferDuplicateCheck',
   fxTransferErrorDuplicateCheck: 'fxTransferErrorDuplicateCheck',
@@ -39,7 +40,12 @@ const ERROR_MESSAGES = Object.freeze({
   transferNotFound: 'transfer not found'
 })
 
+const DB_ERROR_CODES = Object.freeze({
+  duplicateEntry: 'ER_DUP_ENTRY'
+})
+
 module.exports = {
+  DB_ERROR_CODES,
   ERROR_MESSAGES,
   TABLE_NAMES,
   PROM_METRICS

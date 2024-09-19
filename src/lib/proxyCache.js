@@ -34,11 +34,19 @@ const getCache = () => {
 }
 
 /**
- * Get the proxy details for the given dfspId
+ * @typedef {Object} ProxyOrParticipant - An object containing the inScheme status, proxyId and FSP name
  *
- * @param {*} dfspId
- * @param {*} options - { validateCurrencyAccounts: boolean, accounts: [ { currency: string, accountType: Enum.Accounts.LedgerAccountType } ] }
- * @returns {Promise<{ inScheme: boolean, proxyId: string }>}
+ * @property {boolean} inScheme - Is FSP in the scheme.
+ * @property {string|null} proxyId - Proxy, associated with the FSP, if FSP is not in the scheme.
+ * @property {string} name - FSP name.
+ */
+
+/**
+ * Checks if dfspId is in scheme or proxy.
+ *
+ * @param {string} dfspId - The DFSP ID to check.
+ * @param {Object} [options] - { validateCurrencyAccounts: boolean, accounts: [ { currency: string, accountType: Enum.Accounts.LedgerAccountType } ] }
+ * @returns {ProxyOrParticipant} proxyOrParticipant details
  */
 const getFSPProxy = async (dfspId, options = null) => {
   logger.debug('Checking if dfspId is in scheme or proxy', { dfspId })
@@ -63,7 +71,8 @@ const getFSPProxy = async (dfspId, options = null) => {
 
   return {
     inScheme,
-    proxyId: !participant ? await getCache().lookupProxyByDfspId(dfspId) : null
+    proxyId: !participant ? await getCache().lookupProxyByDfspId(dfspId) : null,
+    name: dfspId
   }
 }
 

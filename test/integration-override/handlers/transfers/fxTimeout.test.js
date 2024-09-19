@@ -333,7 +333,7 @@ const prepareFxTestData = async (dataObj) => {
   }
 }
 
-Test('Handlers test', async handlersTest => {
+Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
   const startTime = new Date()
   await Db.connect(Config.DATABASE)
   await ParticipantCached.initialize()
@@ -397,7 +397,7 @@ Test('Handlers test', async handlersTest => {
     }
   ])
 
-  await handlersTest.test('Setup kafka consumer should', async registerAllHandlers => {
+  await fxTimeoutTest.test('Setup kafka consumer should', async registerAllHandlers => {
     await registerAllHandlers.test('start consumer', async (test) => {
       // Set up the testConsumer here
       await testConsumer.startListening()
@@ -411,7 +411,7 @@ Test('Handlers test', async handlersTest => {
     })
   })
 
-  await handlersTest.test('fxTransferPrepare should', async fxTransferPrepare => {
+  await fxTimeoutTest.test('fxTransferPrepare should', async fxTransferPrepare => {
     await fxTransferPrepare.test('should handle payer initiated conversion fxTransfer', async (test) => {
       const td = await prepareFxTestData(testFxData)
       const prepareConfig = Utility.getKafkaConfig(
@@ -445,7 +445,7 @@ Test('Handlers test', async handlersTest => {
     fxTransferPrepare.end()
   })
 
-  await handlersTest.test('When only fxTransfer is sent, fxTimeout should', async timeoutTest => {
+  await fxTimeoutTest.test('When only fxTransfer is sent, fxTimeout should', async timeoutTest => {
     const expiration = new Date((new Date()).getTime() + (10 * 1000)) // 10 seconds
     const newTestFxData = {
       ...testFxData,
@@ -592,7 +592,7 @@ Test('Handlers test', async handlersTest => {
     timeoutTest.end()
   })
 
-  await handlersTest.test('When fxTransfer followed by a transfer are sent, fxTimeout should', async timeoutTest => {
+  await fxTimeoutTest.test('When fxTransfer followed by a transfer are sent, fxTimeout should', async timeoutTest => {
     const td = await prepareFxTestData(testFxData)
     // Modify expiration of only fxTransfer
     const expiration = new Date((new Date()).getTime() + (10 * 1000)) // 10 seconds
@@ -844,7 +844,7 @@ Test('Handlers test', async handlersTest => {
     timeoutTest.end()
   })
 
-  await handlersTest.test('teardown', async (assert) => {
+  await fxTimeoutTest.test('teardown', async (assert) => {
     try {
       await Handlers.timeouts.stop()
       await Cache.destroyCache()
@@ -866,7 +866,7 @@ Test('Handlers test', async handlersTest => {
       assert.fail()
       assert.end()
     } finally {
-      handlersTest.end()
+      fxTimeoutTest.end()
     }
   })
 })

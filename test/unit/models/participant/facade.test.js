@@ -42,7 +42,11 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantModel = require('../../../../src/models/participant/participantCached')
 const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrencyCached')
 const ParticipantLimitModel = require('../../../../src/models/participant/participantLimitCached')
+const externalParticipantCachedModel = require('../../../../src/models/participant/externalParticipantCached')
 const SettlementModel = require('../../../../src/models/settlement/settlementModel')
+
+const fixtures = require('#test/fixtures')
+const { tryCatchEndTest } = require('#test/util/helpers')
 
 Test('Participant facade', async (facadeTest) => {
   let sandbox
@@ -55,6 +59,8 @@ Test('Participant facade', async (facadeTest) => {
     sandbox.stub(ParticipantCurrencyModel, 'invalidateParticipantCurrencyCache')
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantLimitModel, 'invalidateParticipantLimitCache')
+    sandbox.stub(externalParticipantCachedModel, 'getByName')
+    sandbox.stub(externalParticipantCachedModel, 'create')
     sandbox.stub(SettlementModel, 'getAll')
     sandbox.stub(Cache, 'isCacheEnabled')
     Db.participant = {
@@ -1982,6 +1988,40 @@ Test('Participant facade', async (facadeTest) => {
       test.pass('throw an error')
       test.end()
     }
+  })
+
+  facadeTest.test('getExternalParticipantIdByNameOrCreate method Tests -->', (getEpMethodTest) => {
+    getEpMethodTest.test('should return null in case of any error inside the method', tryCatchEndTest(async (t) => {
+      externalParticipantCachedModel.getByName = sandbox.stub().throws(new Error('Error occurred'))
+      const data = fixtures.mockExternalParticipantDto()
+      const result = await Model.getExternalParticipantIdByNameOrCreate(data)
+      t.equal(result, null)
+    }))
+
+    getEpMethodTest.test('should return null if proxyParticipant not found', tryCatchEndTest(async (t) => {
+      ParticipantModel.getByName = sandbox.stub().resolves(null)
+      const result = await Model.getExternalParticipantIdByNameOrCreate({})
+      t.equal(result, null)
+    }))
+
+    getEpMethodTest.test('should return cached externalParticipant id', tryCatchEndTest(async (t) => {
+      const cachedEp = fixtures.mockExternalParticipantDto()
+      externalParticipantCachedModel.getByName = sandbox.stub().resolves(cachedEp)
+      const id = await Model.getExternalParticipantIdByNameOrCreate(cachedEp.name)
+      t.equal(id, cachedEp.externalParticipantId)
+    }))
+
+    getEpMethodTest.test('should create and return new externalParticipant id', tryCatchEndTest(async (t) => {
+      const newEp = fixtures.mockExternalParticipantDto()
+      externalParticipantCachedModel.getByName = sandbox.stub().resolves(null)
+      externalParticipantCachedModel.create = sandbox.stub().resolves(newEp.externalParticipantId)
+      ParticipantModel.getByName = sandbox.stub().resolves({}) // to get proxy participantId
+
+      const id = await Model.getExternalParticipantIdByNameOrCreate(newEp)
+      t.equal(id, newEp.externalParticipantId)
+    }))
+
+    getEpMethodTest.end()
   })
 
   await facadeTest.end()
