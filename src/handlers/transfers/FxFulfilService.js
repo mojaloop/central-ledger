@@ -102,8 +102,8 @@ class FxFulfilService {
     }
   }
 
-  async _handleAbortValidation(transfer, apiFSPIOPError, eventDetail) {
-    const cyrilResult = await this.cyril.processFxAbortMessage(transfer.commitRequestId)
+  async _handleAbortValidation(fxTransfer, apiFSPIOPError, eventDetail) {
+    const cyrilResult = await this.cyril.processFxAbortMessage(fxTransfer.commitRequestId)
 
     this.params.message.value.content.context = {
       ...this.params.message.value.content.context,
@@ -116,7 +116,7 @@ class FxFulfilService {
         fspiopError: apiFSPIOPError,
         eventDetail,
         fromSwitch,
-        toDestination: transfer.initiatingFspName,
+        toDestination: fxTransfer.externalInitiatingFspName || fxTransfer.initiatingFspName,
         messageKey: participantCurrencyId.toString(),
         topicNameOverride: this.Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_ABORT
       })
@@ -233,8 +233,8 @@ class FxFulfilService {
     this.log.debug('validateEventType is passed', { type, functionality })
   }
 
-  async validateFulfilment(transfer, payload) {
-    const isValid = this.validateFulfilCondition(payload.fulfilment, transfer.ilpCondition)
+  async validateFulfilment(fxTransfer, payload) {
+    const isValid = this.validateFulfilCondition(payload.fulfilment, fxTransfer.ilpCondition)
 
     if (!isValid) {
       const fspiopError = fspiopErrorFactory.fxInvalidFulfilment()
@@ -243,10 +243,10 @@ class FxFulfilService {
         functionality: Type.POSITION,
         action: Action.FX_ABORT_VALIDATION
       }
-      this.log.warn('callbackErrorInvalidFulfilment', { eventDetail, apiFSPIOPError, transfer, payload })
-      await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
+      this.log.warn('callbackErrorInvalidFulfilment', { eventDetail, apiFSPIOPError, fxTransfer, payload })
+      await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(fxTransfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
-      await this._handleAbortValidation(transfer, apiFSPIOPError, eventDetail)
+      await this._handleAbortValidation(fxTransfer, apiFSPIOPError, eventDetail)
       throw fspiopError
     }
 
@@ -308,7 +308,6 @@ class FxFulfilService {
 
     await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, action, apiFSPIOPError)
     const cyrilResult = await this.cyril.processFxAbortMessage(transfer.commitRequestId)
-    // todo: add externalParticipantId to the message here?
 
     this.params.message.value.content.context = {
       ...this.params.message.value.content.context,

@@ -26,23 +26,12 @@
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Db = require('../../lib/db')
 const { logger } = require('../../shared/logger')
-const { TABLE_NAMES } = require('../../shared/constants')
+const { TABLE_NAMES, DB_ERROR_CODES } = require('../../shared/constants')
 
 const TABLE = TABLE_NAMES.externalParticipant
 const ID_FIELD = 'externalParticipantId'
 
 const log = logger.child(`DB#${TABLE}`)
-
-// todo: use caching lib
-const CACHE = {}
-const cache = {
-  get (key) {
-    return CACHE[key]
-  },
-  set (key, value) {
-    CACHE[key] = value
-  }
-}
 
 const create = async ({ name, proxyId }) => {
   try {
@@ -50,56 +39,45 @@ const create = async ({ name, proxyId }) => {
     log.debug('create result:', { result })
     return result
   } catch (err) {
+    if (err.code === DB_ERROR_CODES.duplicateEntry) {
+      log.warn('duplicate entry for externalParticipant. Skip inserting', { name, proxyId })
+      return null
+    }
     log.error('error in create', err)
-    // If the cache is not up-to-date, then will get an error when inserting a record and that record already exists
-    // reload the cache at that point.
-    // todo: to implement above requirement, we need to detect duplication restriction error, and don't rethrow error
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-// const getAll = async (options = {}) => {
-//   try {
-//     const result = await Db.from(TABLE).find({}, options)
-//     log.debug('getAll result:', { result })
-//     return result
-//   } catch (err) {
-//     log.error('error in getAll:', err)
-//     throw ErrorHandler.Factory.reformatFSPIOPError(err)
-//   }
-// }
+const getAll = async (options = {}) => {
+  try {
+    const result = await Db.from(TABLE).find({}, options)
+    log.debug('getAll result:', { result })
+    return result
+  } catch (err) /* istanbul ignore next */ {
+    log.error('error in getAll:', err)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
 
 const getOneBy = async (criteria, options) => {
   try {
     const result = await Db.from(TABLE).findOne(criteria, options)
     log.debug('getOneBy result:', { criteria, result })
     return result
-  } catch (err) {
+  } catch (err) /* istanbul ignore next */ {
     log.error('error in getOneBy:', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-const getOneById = async (id, options) => getOneBy({ [ID_FIELD]: id }, options)
-const getOneByName = async (name, options) => getOneBy({ name }, options)
-
-const getOneByNameCached = async (name, options = {}) => {
-  let data = cache.get(name)
-  if (data) {
-    log.debug('getOneByIdCached cache hit:', { name, data })
-  } else {
-    data = await getOneByName(name, options)
-    cache.set(name, data)
-    log.debug('getOneByIdCached cache updated:', { name, data })
-  }
-  return data
-}
+const getById = async (id, options = {}) => getOneBy({ [ID_FIELD]: id }, options)
+const getByName = async (name, options = {}) => getOneBy({ name }, options)
 
 const destroyBy = async (criteria) => {
   try {
     const result = await Db.from(TABLE).destroy(criteria)
     log.debug('destroyBy result:', { criteria, result })
     return result
-  } catch (err) {
+  } catch (err) /* istanbul ignore next */ {
     log.error('error in destroyBy', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -110,9 +88,9 @@ const destroyByName = async (name) => destroyBy({ name })
 // todo: think, if we need update method
 module.exports = {
   create,
-  getOneByNameCached,
-  getOneByName,
-  getOneById,
+  getAll,
+  getById,
+  getByName,
   destroyById,
   destroyByName
 }
