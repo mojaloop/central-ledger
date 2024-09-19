@@ -90,19 +90,6 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
     t.deepEqual(result, data)
   }))
 
-  // epmTest.test('should get externalParticipant by name from cache', tryCatchEndTest(async (t) => {
-  //   const name = `extFsp-${Date.now()}`
-  //   const data = mockExternalParticipantDto({ name })
-  //   Db[EP_TABLE].findOne.withArgs({ name }).resolves(data)
-  //   const result = await model.getOneByNameCached(name)
-  //   t.deepEqual(result, data)
-  //
-  //   Db[EP_TABLE].findOne = sandbox.stub()
-  //   const cached = await model.getOneByNameCached(name)
-  //   t.deepEqual(cached, data, 'cached externalParticipant')
-  //   t.ok(Db[EP_TABLE].findOne.notCalled, 'db.findOne is called')
-  // }))
-
   epmTest.test('should get externalParticipant by id', tryCatchEndTest(async (t) => {
     const id = 'id123'
     const data = { name: 'extFsp', proxyId: '123' }

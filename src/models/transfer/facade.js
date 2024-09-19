@@ -675,7 +675,6 @@ const getTransferStateByTransferId = async (id) => {
 
 const _processTimeoutEntries = async (knex, trx, transactionTimestamp) => {
   // Insert `transferStateChange` records for RECEIVED_PREPARE
-  /* istanbul ignore next */
   await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
     .insert(function () {
       this.from('transferTimeout AS tt')
@@ -692,7 +691,6 @@ const _processTimeoutEntries = async (knex, trx, transactionTimestamp) => {
     })
 
   // Insert `transferStateChange` records for RESERVED
-  /* istanbul ignore next */
   await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
     .insert(function () {
       this.from('transferTimeout AS tt')
@@ -711,7 +709,6 @@ const _processTimeoutEntries = async (knex, trx, transactionTimestamp) => {
 
 const _insertTransferErrorEntries = async (knex, trx, transactionTimestamp) => {
   // Insert `transferError` records
-  /* istanbul ignore next */
   await knex.from(knex.raw('transferError (transferId, transferStateChangeId, errorCode, errorDescription)')).transacting(trx)
     .insert(function () {
       this.from('transferTimeout AS tt')
@@ -747,7 +744,6 @@ const _processFxTimeoutEntries = async (knex, trx, transactionTimestamp) => {
     })
 
   // Insert `fxTransferStateChange` records for RESERVED
-  /* istanbul ignore next */
   await knex.from(knex.raw('fxTransferStateChange (commitRequestId, transferStateId, reason)')).transacting(trx)
     .insert(function () {
       this.from('fxTransferTimeout AS ftt')
@@ -782,7 +778,6 @@ const _processFxTimeoutEntries = async (knex, trx, transactionTimestamp) => {
 
 const _insertFxTransferErrorEntries = async (knex, trx, transactionTimestamp) => {
   // Insert `fxTransferError` records
-  /* istanbul ignore next */
   await knex.from(knex.raw('fxTransferError (commitRequestId, fxTransferStateChangeId, errorCode, errorDescription)')).transacting(trx)
     .insert(function () {
       this.from('fxTransferTimeout AS ftt')
@@ -943,7 +938,6 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
     await knex.transaction(async (trx) => {
       try {
         // Insert `transferTimeout` records for transfers found between the interval intervalMin <= intervalMax
-        /* istanbul ignore next */
         await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('transfer AS t')
@@ -963,7 +957,6 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
           })
 
         // Insert `fxTransferTimeout` records for fxTransfers found between the interval intervalMin <= intervalMax and related fxTransfers
-        /* istanbul ignore next */
         await knex.from(knex.raw('fxTransferTimeout (commitRequestId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('fxTransfer AS ft')
@@ -1022,7 +1015,6 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
           })
 
         // Insert `transferTimeout` records for the related transfers, or update if exists. The expiration date will be of the fxTransfer and not from transfer
-        /* istanbul ignore next */
         await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('fxTransfer AS ft')
