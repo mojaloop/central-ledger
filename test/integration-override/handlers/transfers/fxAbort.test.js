@@ -162,7 +162,7 @@ const prepareFxTestData = async (dataObj) => {
     const fxTransferPayload = {
       commitRequestId: randomUUID(),
       determiningTransferId: transferId,
-      condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+      condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
       expiration: dataObj.expiration,
       initiatingFsp: payer.participant.name,
       counterPartyFsp: fxp.participant.name,
@@ -323,8 +323,8 @@ const prepareFxTestData = async (dataObj) => {
 
     const messageProtocolPayerInitiatedConversionFxFulfil = Util.clone(messageProtocolPayerInitiatedConversionFxPrepare)
     messageProtocolPayerInitiatedConversionFxFulfil.id = randomUUID()
-    messageProtocolPayerInitiatedConversionFxFulfil.from = transferPayload.counterPartyFsp
-    messageProtocolPayerInitiatedConversionFxFulfil.to = transferPayload.initiatingFsp
+    messageProtocolPayerInitiatedConversionFxFulfil.from = fxTransferPayload.counterPartyFsp
+    messageProtocolPayerInitiatedConversionFxFulfil.to = fxTransferPayload.initiatingFsp
     messageProtocolPayerInitiatedConversionFxFulfil.content.headers = fxFulfilHeaders
     messageProtocolPayerInitiatedConversionFxFulfil.content.uriParams = { id: fxTransferPayload.commitRequestId }
     messageProtocolPayerInitiatedConversionFxFulfil.content.payload = fulfilPayload
@@ -362,6 +362,12 @@ const prepareFxTestData = async (dataObj) => {
       TransferEventType.PREPARE
     )
 
+    const topicConfFxTransferFulfil = Utility.createGeneralTopicConf(
+      Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+      TransferEventType.TRANSFER,
+      TransferEventType.FULFIL
+    )
+
     const topicConfTransferFulfil = Utility.createGeneralTopicConf(
       Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
       TransferEventType.TRANSFER,
@@ -385,6 +391,7 @@ const prepareFxTestData = async (dataObj) => {
       topicConfTransferPrepare,
       topicConfTransferFulfil,
       topicConfFxTransferPrepare,
+      topicConfFxTransferFulfil,
       payer,
       payerLimitAndInitialPosition,
       fxp,
@@ -587,6 +594,56 @@ Test('Handlers test', async handlersTest => {
       const payerPositionAfterReserve = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
       test.equal(payerPositionAfterReserve.value, testFxData.sourceAmount.amount)
 
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await abortTest.test('update fxTransfer state to RECEIVED_FULFIL_DEPENDENT by FULFIL request', async (test) => {
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventAction.FULFIL.toUpperCase()
+      )
+      fulfilConfig.logger = Logger
+
+      await Producer.produceMessage(
+        td.messageProtocolPayerInitiatedConversionFxFulfil,
+        td.topicConfFxTransferFulfil,
+        fulfilConfig
+      )
+
+      try {
+        const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: TOPIC_POSITION_BATCH,
+          action: Enum.Events.Event.Action.FX_RESERVE
+          // NOTE: The key is the fxp participantCurrencyId of the source currency (USD)
+          //       Is that correct...?
+          // keyFilter: td.fxp.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFulfil[0], 'Position fx-fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      try {
+        await wrapWithRetries(async () => {
+          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(
+            td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+
+          if (fxTransfer?.transferState !== TransferInternalState.RECEIVED_FULFIL_DEPENDENT) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            return null
+          }
+          return fxTransfer
+        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      testConsumer.clearEvents()
       test.end()
     })
 
@@ -619,6 +676,7 @@ Test('Handlers test', async handlersTest => {
       const fxpTargetPositionAfterReserve = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyIdSecondary)
       test.equal(fxpTargetPositionAfterReserve.value, testFxData.targetAmount.amount)
 
+      testConsumer.clearEvents()
       test.end()
     })
 
@@ -650,7 +708,8 @@ Test('Handlers test', async handlersTest => {
       // Check for the fxTransfer state to be ABORTED
       try {
         await wrapWithRetries(async () => {
-          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(
+            td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
           if (fxTransfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             return null
@@ -678,6 +737,7 @@ Test('Handlers test', async handlersTest => {
       const fxpSourcePositionAfterAbort = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyId)
       test.equal(fxpSourcePositionAfterAbort.value, 0)
 
+      testConsumer.clearEvents()
       test.end()
     })
 
@@ -727,6 +787,7 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
+      testConsumer.clearEvents()
       test.end()
     })
 
@@ -743,7 +804,8 @@ Test('Handlers test', async handlersTest => {
       // Check for the fxTransfer state to be ABORTED
       try {
         await wrapWithRetries(async () => {
-          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(
+            td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
           if (fxTransfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             return null
@@ -754,7 +816,7 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
-
+      testConsumer.clearEvents()
       test.end()
     })
 

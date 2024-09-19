@@ -36,9 +36,9 @@ const Participant = require('../../domain/participant')
 const createRemittanceEntity = require('./createRemittanceEntity')
 const Validator = require('./validator')
 const dto = require('./dto')
-const TransferService = require('#src/domain/transfer/index')
-const ProxyCache = require('#src/lib/proxyCache')
-const FxTransferService = require('#src/domain/fx/index')
+const TransferService = require('../../domain/transfer/index')
+const ProxyCache = require('../../lib/proxyCache')
+const FxTransferService = require('../../domain/fx/index')
 
 const { Kafka, Comparators } = Util
 const { TransferState, TransferInternalState } = Enum.Transfers
@@ -152,9 +152,13 @@ const calculateProxyObligation = async ({ payload, isFx, params, functionality, 
 
   if (proxyEnabled) {
     const [initiatingFsp, counterPartyFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
+
+    // TODO: We need to double check the following validation logic incase of payee side currency conversion
+    const payeeFspLookupOptions = isFx ? null : { validateCurrencyAccounts: true, accounts: [{ currency: payload.amount.currency, accountType: Enum.Accounts.LedgerAccountType.POSITION }] }
+
     ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
       ProxyCache.getFSPProxy(initiatingFsp),
-      ProxyCache.getFSPProxy(counterPartyFsp)
+      ProxyCache.getFSPProxy(counterPartyFsp, payeeFspLookupOptions)
     ])
     logger.debug('Prepare proxy cache lookup results', {
       initiatingFsp,

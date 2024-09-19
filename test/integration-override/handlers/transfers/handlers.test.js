@@ -745,7 +745,7 @@ Test('Handlers test', async handlersTest => {
           action: TransferEventAction.FX_RESERVE,
           valueToFilter: td.payer.name
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionFxFulfil[0], 'Position fulfil message with key found')
+        test.ok(positionFxFulfil[0], 'Position fulfil notification message found')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
@@ -767,7 +767,7 @@ Test('Handlers test', async handlersTest => {
           topicFilter: 'topic-notification-event',
           action: TransferEventAction.PREPARE
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionFxFulfil[0], 'Prepare message with key found')
+        test.ok(positionFxFulfil[0], 'Prepare notification message found')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
@@ -780,14 +780,30 @@ Test('Handlers test', async handlersTest => {
           topicFilter: 'topic-notification-event',
           action: TransferEventAction.COMMIT
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionFxFulfil[0], 'Fulfil message with key found')
+        test.ok(positionFxFulfil[0], 'Fulfil notification message found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      // Assert FXP notification message is produced
+      try {
+        const notifyFxp = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: TransferEventAction.FX_NOTIFY
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(notifyFxp[0], 'FXP notify notification message found')
+        test.equal(notifyFxp[0].value.content.payload.conversionState, TransferStateEnum.COMMITTED)
+        test.equal(notifyFxp[0].value.content.uriParams.id, td.messageProtocolFxPrepare.content.payload.commitRequestId)
+        test.ok(notifyFxp[0].value.content.payload.completedTimestamp)
+        test.equal(notifyFxp[0].value.to, td.fxp.participant.name)
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
       testConsumer.clearEvents()
 
-      // Resend fx-prepare after fxtransfer state is COMMITTED
+      // Resend fx-prepare after fxTransfer state is COMMITTED
       await new Promise(resolve => setTimeout(resolve, 2000))
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
 
@@ -797,7 +813,7 @@ Test('Handlers test', async handlersTest => {
           topicFilter: 'topic-notification-event',
           action: TransferEventAction.FX_PREPARE_DUPLICATE
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        test.ok(positionPrepare[0], 'Position prepare duplicate message with key found')
+        test.ok(positionPrepare[0], 'Position prepare duplicate notification found')
         // Check if the error message is correct
         test.equal(positionPrepare[0].value.content.payload.conversionState, TransferStateEnum.COMMITTED)
       } catch (err) {
@@ -1538,7 +1554,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
 
-      td.messageProtocolFxPrepare.content.to = creditor
+      td.messageProtocolFxPrepare.to = creditor
       td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = creditor
       td.messageProtocolFxPrepare.content.payload.counterPartyFsp = creditor
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
@@ -1581,7 +1597,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.FULFIL.toUpperCase())
       fulfilConfig.logger = Logger
 
-      td.messageProtocolFxPrepare.content.to = creditor
+      td.messageProtocolFxPrepare.to = creditor
       td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = creditor
       td.messageProtocolFxPrepare.content.payload.counterPartyFsp = creditor
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
@@ -1626,8 +1642,8 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
-      td.messageProtocolFxFulfil.content.to = td.payer.participant.name
-      td.messageProtocolFxFulfil.content.from = 'regionalSchemeFXP'
+      td.messageProtocolFxFulfil.to = td.payer.participant.name
+      td.messageProtocolFxFulfil.from = 'regionalSchemeFXP'
       td.messageProtocolFxFulfil.content.headers['fspiop-destination'] = td.payer.participant.name
       td.messageProtocolFxFulfil.content.headers['fspiop-source'] = 'regionalSchemeFXP'
       await Producer.produceMessage(td.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
@@ -1648,7 +1664,7 @@ Test('Handlers test', async handlersTest => {
       creditor = 'regionalSchemePayeeFsp'
       await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyAR.participant.name)
 
-      td.messageProtocolPrepare.content.to = creditor
+      td.messageProtocolPrepare.to = creditor
       td.messageProtocolPrepare.content.headers['fspiop-destination'] = creditor
       td.messageProtocolPrepare.content.payload.payeeFsp = creditor
 
@@ -1693,7 +1709,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
 
-      td.messageProtocolFxPrepare.content.from = debtor
+      td.messageProtocolFxPrepare.from = debtor
       td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
       td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
@@ -1729,7 +1745,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
 
-      td.messageProtocolFxPrepare.content.from = debtor
+      td.messageProtocolFxPrepare.from = debtor
       td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
       td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
@@ -1747,11 +1763,37 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
 
+      // Fulfil the fxTransfer
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      td.messageProtocolFxFulfil.to = debtor
+      td.messageProtocolFxFulfil.content.headers['fspiop-destination'] = debtor
+
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-reserve',
+          valueToFilter: td.payer.name
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFxFulfil[0], 'Position fulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       // Create subsequent transfer
       const creditor = 'regionalSchemePayeeFsp'
       await ProxyCache.getCache().addDfspIdToProxyMapping(creditor, td.proxyRB.participant.name)
 
-      td.messageProtocolPrepare.content.to = creditor
+      td.messageProtocolPrepare.to = creditor
       td.messageProtocolPrepare.content.headers['fspiop-destination'] = creditor
       td.messageProtocolPrepare.content.payload.payeeFsp = creditor
 
@@ -1798,7 +1840,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
 
-      td.messageProtocolPrepare.content.from = debtor
+      td.messageProtocolPrepare.from = debtor
       td.messageProtocolPrepare.content.headers['fspiop-source'] = debtor
       td.messageProtocolPrepare.content.payload.payerFsp = debtor
       td.messageProtocolPrepare.content.payload.amount.currency = 'XXX'
@@ -1850,7 +1892,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
 
-      td.messageProtocolPrepare.content.from = transferPrepareFrom
+      td.messageProtocolPrepare.from = transferPrepareFrom
       td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
       td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
 
@@ -1877,7 +1919,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.FULFIL.toUpperCase())
       fulfilConfig.logger = Logger
 
-      td.messageProtocolFulfil.content.to = transferPrepareFrom
+      td.messageProtocolFulfil.to = transferPrepareFrom
       td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
 
       testConsumer.clearEvents()
@@ -1928,8 +1970,8 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
 
-      td.messageProtocolPrepare.content.from = transferPrepareFrom
-      td.messageProtocolPrepare.content.to = transferPrepareTo
+      td.messageProtocolPrepare.from = transferPrepareFrom
+      td.messageProtocolPrepare.to = transferPrepareTo
       td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
       td.messageProtocolPrepare.content.headers['fspiop-destination'] = transferPrepareTo
       td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
@@ -1957,8 +1999,8 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.FULFIL.toUpperCase())
       fulfilConfig.logger = Logger
 
-      td.messageProtocolFulfil.content.from = transferPrepareTo
-      td.messageProtocolFulfil.content.to = transferPrepareFrom
+      td.messageProtocolFulfil.from = transferPrepareTo
+      td.messageProtocolFulfil.to = transferPrepareFrom
       td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
       td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
 
@@ -1996,7 +2038,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
 
-      td.messageProtocolFxPrepare.content.from = debtor
+      td.messageProtocolFxPrepare.from = debtor
       td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
       td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
@@ -2022,7 +2064,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.FULFIL.toUpperCase())
       fulfilConfig.logger = Logger
 
-      td.messageProtocolFxFulfil.content.to = debtor
+      td.messageProtocolFxFulfil.to = debtor
       td.messageProtocolFxFulfil.content.headers['fspiop-destination'] = debtor
 
       testConsumer.clearEvents()
@@ -2059,7 +2101,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
 
-      td.messageProtocolFxPrepare.content.from = debtor
+      td.messageProtocolFxPrepare.from = debtor
       td.messageProtocolFxPrepare.content.headers['fspiop-source'] = debtor
       td.messageProtocolFxPrepare.content.payload.initiatingFsp = debtor
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
@@ -2085,7 +2127,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.FULFIL.toUpperCase())
       fulfilConfig.logger = Logger
 
-      td.messageProtocolFxFulfil.content.to = debtor
+      td.messageProtocolFxFulfil.to = debtor
       td.messageProtocolFxFulfil.content.headers['fspiop-destination'] = debtor
 
       // If initiatingFsp is proxy, fx fulfil handler doesn't validate fspiop-destination header.
@@ -2133,9 +2175,15 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
 
       // FX Transfer from proxyAR to FXP
-      td.messageProtocolFxPrepare.content.from = transferPrepareFrom
+      td.messageProtocolFxPrepare.from = transferPrepareFrom
       td.messageProtocolFxPrepare.content.headers['fspiop-source'] = transferPrepareFrom
       td.messageProtocolFxPrepare.content.payload.initiatingFsp = transferPrepareFrom
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
@@ -2153,9 +2201,31 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
 
+      // Fulfil the fxTransfer
+      td.messageProtocolFxFulfil.to = transferPrepareFrom
+      td.messageProtocolFxFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
+      td.messageProtocolFxFulfil.from = td.fxp.participant.name
+      td.messageProtocolFxFulfil.content.headers['fspiop-source'] = td.fxp.participant.name
+
+      testConsumer.clearEvents()
+      Logger.warn(`td.messageProtocolFxFulfil: ${JSON.stringify(td.messageProtocolFxFulfil)}`)
+      await Producer.produceMessage(td.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-reserve',
+          valueToFilter: transferPrepareFrom
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFxFulfil[0], 'Position fxFulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       // Create subsequent transfer
-      td.messageProtocolPrepare.content.from = transferPrepareFrom
-      td.messageProtocolPrepare.content.to = transferPrepareTo
+      td.messageProtocolPrepare.from = transferPrepareFrom
+      td.messageProtocolPrepare.to = transferPrepareTo
       td.messageProtocolPrepare.content.headers['fspiop-source'] = transferPrepareFrom
       td.messageProtocolPrepare.content.headers['fspiop-destination'] = transferPrepareTo
       td.messageProtocolPrepare.content.payload.payerFsp = transferPrepareFrom
@@ -2177,15 +2247,8 @@ Test('Handlers test', async handlersTest => {
       }
 
       // Fulfil the transfer
-      const fulfilConfig = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.FULFIL.toUpperCase())
-      fulfilConfig.logger = Logger
-
-      td.messageProtocolFulfil.content.from = transferPrepareTo
-      td.messageProtocolFulfil.content.to = transferPrepareFrom
+      td.messageProtocolFulfil.from = transferPrepareTo
+      td.messageProtocolFulfil.to = transferPrepareFrom
       td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
       td.messageProtocolFulfil.content.headers['fspiop-destination'] = transferPrepareFrom
 
@@ -2231,9 +2294,15 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
 
       // FX Transfer from payer to proxyAR
-      td.messageProtocolFxPrepare.content.to = fxTransferPrepareTo
+      td.messageProtocolFxPrepare.to = fxTransferPrepareTo
       td.messageProtocolFxPrepare.content.headers['fspiop-destination'] = fxTransferPrepareTo
       td.messageProtocolFxPrepare.content.payload.counterPartyFsp = fxTransferPrepareTo
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
@@ -2251,8 +2320,27 @@ Test('Handlers test', async handlersTest => {
         console.error(err)
       }
 
+      // Fulfil the fxTransfer
+      td.messageProtocolFulfil.from = fxTransferPrepareTo
+      td.messageProtocolFulfil.content.headers['fspiop-source'] = fxTransferPrepareTo
+
+      testConsumer.clearEvents()
+      await Producer.produceMessage(td.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-reserve',
+          valueToFilter: td.payer.name
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionFxFulfil[0], 'Position fxFulfil message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       // Create subsequent transfer
-      td.messageProtocolPrepare.content.to = transferPrepareTo
+      td.messageProtocolPrepare.to = transferPrepareTo
       td.messageProtocolPrepare.content.headers['fspiop-destination'] = transferPrepareTo
       td.messageProtocolPrepare.content.payload.payeeFsp = transferPrepareTo
 
@@ -2286,14 +2374,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       // Fulfil the transfer
-      const fulfilConfig = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.FULFIL.toUpperCase())
-      fulfilConfig.logger = Logger
-
-      td.messageProtocolFulfil.content.from = transferPrepareTo
+      td.messageProtocolFulfil.from = transferPrepareTo
       td.messageProtocolFulfil.content.headers['fspiop-source'] = transferPrepareTo
       testConsumer.clearEvents()
       await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)

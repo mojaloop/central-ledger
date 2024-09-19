@@ -443,6 +443,7 @@ Test('Cyril', cyrilTest => {
 
     processFulfilMessageTest.test('process watchlist with only payer conversion found', async (test) => {
       try {
+        const completedTimestamp = new Date().toISOString()
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [{
             commitRequestId: fxPayload.commitRequestId,
@@ -459,7 +460,10 @@ Test('Cyril', cyrilTest => {
             counterPartyFspSourceParticipantCurrencyId: 1,
             counterPartyFspTargetParticipantCurrencyId: 2,
             sourceAmount: fxPayload.sourceAmount.amount,
-            targetCurrency: fxPayload.targetAmount.currency
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
           }
         ))
         ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
@@ -492,7 +496,12 @@ Test('Cyril', cyrilTest => {
             amount: -200
           }
           ],
-          patchNotifications: []
+          patchNotifications: [{
+            commitRequestId: fxPayload.commitRequestId,
+            fxpName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
+          }]
         })
         test.pass('Error not thrown')
         test.end()
@@ -505,6 +514,7 @@ Test('Cyril', cyrilTest => {
 
     processFulfilMessageTest.test('process watchlist with only payee conversion found', async (test) => {
       try {
+        const completedTimestamp = new Date().toISOString()
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [{
             commitRequestId: fxPayload.commitRequestId,
@@ -521,7 +531,9 @@ Test('Cyril', cyrilTest => {
             counterPartyFspSourceParticipantCurrencyId: 1,
             counterPartyFspTargetParticipantCurrencyId: 2,
             sourceAmount: fxPayload.sourceAmount.amount,
-            targetCurrency: fxPayload.targetAmount.currency
+            targetCurrency: fxPayload.targetAmount.currency,
+            fulfilment: 'fulfilment',
+            completedTimestamp
           }
         ))
         ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
@@ -563,6 +575,7 @@ Test('Cyril', cyrilTest => {
 
     processFulfilMessageTest.test('process watchlist with both payer and payee conversion found', async (test) => {
       try {
+        const completedTimestamp = new Date().toISOString()
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [
             {
@@ -587,7 +600,10 @@ Test('Cyril', cyrilTest => {
             counterPartyFspSourceParticipantCurrencyId: 1,
             counterPartyFspTargetParticipantCurrencyId: 2,
             sourceAmount: fxPayload.sourceAmount.amount,
-            targetCurrency: fxPayload.targetAmount.currency
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
           }
         ))
         ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
@@ -622,7 +638,12 @@ Test('Cyril', cyrilTest => {
               amount: -433.88
             }
           ],
-          patchNotifications: []
+          patchNotifications: [{
+            commitRequestId: fxPayload.commitRequestId,
+            fxpName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
+          }]
         }
         )
         test.pass('Error not thrown')
@@ -636,6 +657,7 @@ Test('Cyril', cyrilTest => {
 
     processFulfilMessageTest.test('process watchlist with only payer conversion found, but payee is a proxy and have no account in the currency', async (test) => {
       try {
+        const completedTimestamp = new Date().toISOString()
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [{
             commitRequestId: fxPayload.commitRequestId,
@@ -652,7 +674,10 @@ Test('Cyril', cyrilTest => {
             counterPartyFspSourceParticipantCurrencyId: 1,
             counterPartyFspTargetParticipantCurrencyId: 2,
             sourceAmount: fxPayload.sourceAmount.amount,
-            targetCurrency: fxPayload.targetAmount.currency
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
           }
         ))
         ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
@@ -673,7 +698,12 @@ Test('Cyril', cyrilTest => {
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [],
-          patchNotifications: []
+          patchNotifications: [{
+            commitRequestId: fxPayload.commitRequestId,
+            fxpName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
+          }]
         })
         test.pass('Error not thrown')
         test.end()
@@ -686,6 +716,7 @@ Test('Cyril', cyrilTest => {
 
     processFulfilMessageTest.test('process watchlist with only payer conversion found, but payee is a proxy and have account in the currency somehow', async (test) => {
       try {
+        const completedTimestamp = new Date().toISOString()
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [{
             commitRequestId: fxPayload.commitRequestId,
@@ -702,7 +733,10 @@ Test('Cyril', cyrilTest => {
             counterPartyFspSourceParticipantCurrencyId: 1,
             counterPartyFspTargetParticipantCurrencyId: 2,
             sourceAmount: fxPayload.sourceAmount.amount,
-            targetCurrency: fxPayload.targetAmount.currency
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
           }
         ))
         ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
@@ -738,7 +772,12 @@ Test('Cyril', cyrilTest => {
               amount: -200
             }
           ],
-          patchNotifications: []
+          patchNotifications: [{
+            commitRequestId: fxPayload.commitRequestId,
+            fxpName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
+          }]
         })
         test.pass('Error not thrown')
         test.end()
@@ -751,6 +790,7 @@ Test('Cyril', cyrilTest => {
 
     processFulfilMessageTest.test('process watchlist with only payer conversion found, but payee is a proxy and have account in the currency somehow and it is same as fxp target account', async (test) => {
       try {
+        const completedTimestamp = new Date().toISOString()
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [{
             commitRequestId: fxPayload.commitRequestId,
@@ -767,7 +807,10 @@ Test('Cyril', cyrilTest => {
             counterPartyFspSourceParticipantCurrencyId: 1,
             counterPartyFspTargetParticipantCurrencyId: 2,
             sourceAmount: fxPayload.sourceAmount.amount,
-            targetCurrency: fxPayload.targetAmount.currency
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
           }
         ))
         ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
@@ -797,7 +840,12 @@ Test('Cyril', cyrilTest => {
               amount: -433.88
             }
           ],
-          patchNotifications: []
+          patchNotifications: [{
+            commitRequestId: fxPayload.commitRequestId,
+            fxpName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
+          }]
         })
         test.pass('Error not thrown')
         test.end()
@@ -810,6 +858,7 @@ Test('Cyril', cyrilTest => {
 
     processFulfilMessageTest.test('process watchlist with only payee conversion found but fxp is proxy and have no account', async (test) => {
       try {
+        const completedTimestamp = new Date().toISOString()
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [{
             commitRequestId: fxPayload.commitRequestId,
@@ -826,7 +875,9 @@ Test('Cyril', cyrilTest => {
             counterPartyFspSourceParticipantCurrencyId: 1,
             counterPartyFspTargetParticipantCurrencyId: 2,
             sourceAmount: fxPayload.sourceAmount.amount,
-            targetCurrency: fxPayload.targetAmount.currency
+            targetCurrency: fxPayload.targetAmount.currency,
+            fulfilment: 'fulfilment',
+            completedTimestamp
           }
         ))
         ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
@@ -856,6 +907,7 @@ Test('Cyril', cyrilTest => {
 
     processFulfilMessageTest.test('process watchlist with only payee conversion found but fxp is proxy and have account in source currency somehow', async (test) => {
       try {
+        const completedTimestamp = new Date().toISOString()
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [{
             commitRequestId: fxPayload.commitRequestId,
@@ -872,7 +924,9 @@ Test('Cyril', cyrilTest => {
             counterPartyFspSourceParticipantCurrencyId: 1,
             counterPartyFspTargetParticipantCurrencyId: 2,
             sourceAmount: fxPayload.sourceAmount.amount,
-            targetCurrency: fxPayload.targetAmount.currency
+            targetCurrency: fxPayload.targetAmount.currency,
+            fulfilment: 'fulfilment',
+            completedTimestamp
           }
         ))
         ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
@@ -917,6 +971,7 @@ Test('Cyril', cyrilTest => {
 
     processFulfilMessageTest.test('process watchlist with only payee conversion found but fxp is proxy and have account in source currency somehow and it is same as payer account', async (test) => {
       try {
+        const completedTimestamp = new Date().toISOString()
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [{
             commitRequestId: fxPayload.commitRequestId,
@@ -933,7 +988,9 @@ Test('Cyril', cyrilTest => {
             counterPartyFspSourceParticipantCurrencyId: 1,
             counterPartyFspTargetParticipantCurrencyId: 2,
             sourceAmount: fxPayload.sourceAmount.amount,
-            targetCurrency: fxPayload.targetAmount.currency
+            targetCurrency: fxPayload.targetAmount.currency,
+            fulfilment: 'fulfilment',
+            completedTimestamp
           }
         ))
         ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
@@ -972,6 +1029,7 @@ Test('Cyril', cyrilTest => {
 
     processFulfilMessageTest.test('process watchlist with both payer and payee conversion found, but derived currencyId is null', async (test) => {
       try {
+        const completedTimestamp = new Date().toISOString()
         watchList.getItemsInWatchListByDeterminingTransferId.returns(Promise.resolve(
           [
             {
@@ -996,7 +1054,10 @@ Test('Cyril', cyrilTest => {
             counterPartyFspSourceParticipantCurrencyId: 1,
             counterPartyFspTargetParticipantCurrencyId: 2,
             sourceAmount: fxPayload.sourceAmount.amount,
-            targetCurrency: fxPayload.targetAmount.currency
+            targetCurrency: fxPayload.targetAmount.currency,
+            counterPartyFspName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
           }
         ))
         ParticipantFacade.getByNameAndCurrency.returns(Promise.resolve({
@@ -1012,7 +1073,12 @@ Test('Cyril', cyrilTest => {
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [],
-          patchNotifications: []
+          patchNotifications: [{
+            commitRequestId: fxPayload.commitRequestId,
+            fxpName: fxPayload.counterPartyFsp,
+            fulfilment: 'fulfilment',
+            completedTimestamp
+          }]
         }
         )
         test.pass('Error not thrown')
@@ -1039,7 +1105,7 @@ Test('Cyril', cyrilTest => {
         ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.returns(Promise.resolve([
           {
             participantCurrencyId: 1,
-            value: payload.amount.amount
+            change: payload.amount.amount
           }
         ]))
         TransferFacade.getById.returns(Promise.resolve({
@@ -1048,7 +1114,7 @@ Test('Cyril', cyrilTest => {
         ParticipantPositionChangesModel.getReservedPositionChangesByTransferId.returns(Promise.resolve([
           {
             participantCurrencyId: 1,
-            value: payload.amount.amount
+            change: payload.amount.amount
           }
         ]))
 
@@ -1082,7 +1148,7 @@ Test('Cyril', cyrilTest => {
         ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.returns(Promise.resolve([
           {
             participantCurrencyId: 1,
-            value: payload.amount.amount
+            change: payload.amount.amount
           }
         ]))
         TransferFacade.getById.returns(Promise.resolve({
@@ -1091,7 +1157,7 @@ Test('Cyril', cyrilTest => {
         ParticipantPositionChangesModel.getReservedPositionChangesByTransferId.returns(Promise.resolve([
           {
             participantCurrencyId: 1,
-            value: payload.amount.amount
+            change: payload.amount.amount
           }
         ]))
 
