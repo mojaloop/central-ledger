@@ -58,7 +58,7 @@ const getExternalParticipantsCached = async () => {
   ).startTimer()
 
   let cachedParticipants = cacheClient.get(epAllCacheKey)
-  let hit = false
+  const hit = !!cachedParticipants
 
   if (!cachedParticipants) {
     const allParticipants = await externalParticipantModel.getAll()
@@ -67,7 +67,6 @@ const getExternalParticipantsCached = async () => {
   } else {
     // unwrap participants list from catbox structure
     cachedParticipants = cachedParticipants.item
-    hit = true
   }
   histTimer({ success: true, queryName, hit })
 
