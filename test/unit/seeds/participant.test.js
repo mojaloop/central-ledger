@@ -47,7 +47,7 @@ Test('Participant ', async (participantTest) => {
     knexStub.returns({
       insert: sandbox.stub().returns({
         onConflict: sandbox.stub().returns({
-          ignore: sandbox.stub().returns(true)
+          merge: sandbox.stub().returns(true)
         })
       })
     })

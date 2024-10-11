@@ -43,7 +43,8 @@ exports.create = async (participant) => {
   try {
     const result = await Db.from('participant').insert({
       name: participant.name,
-      createdBy: 'unknown'
+      createdBy: 'unknown',
+      isProxy: !!participant.isProxy
     })
     return result
   } catch (err) {

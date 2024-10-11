@@ -36,6 +36,7 @@
 const Hapi = require('@hapi/hapi')
 const Migrator = require('../lib/migrator')
 const Db = require('../lib/db')
+const ProxyCache = require('../lib/proxyCache')
 const ObjStoreDb = require('@mojaloop/object-store-lib').Db
 const Plugins = require('./plugins')
 const Config = require('../lib/config')
@@ -51,6 +52,7 @@ const EnumCached = require('../lib/enumCached')
 const ParticipantCached = require('../models/participant/participantCached')
 const ParticipantCurrencyCached = require('../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
+const externalParticipantCached = require('../models/participant/externalParticipantCached')
 const BatchPositionModelCached = require('../models/position/batchCached')
 const MongoUriBuilder = require('mongo-uri-builder')
 
@@ -236,6 +238,8 @@ const initializeCache = async () => {
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
   await BatchPositionModelCached.initialize()
+  // all cached models initialize-methods are SYNC!!
+  externalParticipantCached.initialize()
   await Cache.initCache()
 }
 
@@ -265,6 +269,9 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     await connectDatabase()
     await connectMongoose()
     await initializeCache()
+    if (Config.PROXY_CACHE_CONFIG?.enabled) {
+      await ProxyCache.connect()
+    }
 
     let server
     switch (service) {
@@ -303,6 +310,9 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`)
 
     await Db.disconnect()
+    if (Config.PROXY_CACHE_CONFIG?.enabled) {
+      await ProxyCache.disconnect()
+    }
     process.exit(1)
   }
 }

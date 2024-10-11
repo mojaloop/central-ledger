@@ -209,5 +209,35 @@ Test('Transfer Service', transferIndexTest => {
     logTransferErrorTest.end()
   })
 
+  transferIndexTest.test('forwardedPrepare should', handlePayeeResponseTest => {
+    handlePayeeResponseTest.test('commit transfer', async (test) => {
+      try {
+        TransferFacade.updatePrepareReservedForwarded.returns(Promise.resolve())
+        await TransferService.forwardedPrepare(payload.transferId)
+        test.pass()
+        test.end()
+      } catch (err) {
+        Logger.error(`handlePayeeResponse failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    handlePayeeResponseTest.test('throw error', async (test) => {
+      try {
+        TransferFacade.updatePrepareReservedForwarded.throws(new Error())
+        await TransferService.forwardedPrepare(payload.transferId)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (err) {
+        Logger.error(`handlePayeeResponse failed with error - ${err}`)
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    handlePayeeResponseTest.end()
+  })
+
   transferIndexTest.end()
 })

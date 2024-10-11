@@ -107,23 +107,17 @@ const destroyByParticipantId = async (participantId) => {
 const createParticipantPositionRecords = async (participantPositions, trx) => {
   try {
     const knex = Db.getKnex()
-    const trxFunction = async (trx, doCommit = true) => {
+    const trxFunction = async (trx) => {
       try {
         await knex
           .batchInsert('participantPosition', participantPositions)
           .transacting(trx)
-        if (doCommit) {
-          await trx.commit
-        }
       } catch (err) {
-        if (doCommit) {
-          await trx.rollback
-        }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
     if (trx) {
-      return trxFunction(trx, false)
+      return trxFunction(trx)
     } else {
       return knex.transaction(trxFunction)
     }

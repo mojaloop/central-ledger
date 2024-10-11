@@ -32,6 +32,7 @@ const Handler = require('../../../../src/api/settlementModels/handler')
 const SettlementService = require('../../../../src/domain/settlement')
 const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
+const ProxyCache = require('#src/lib/proxyCache')
 
 const createRequest = ({ payload, params, query }) => {
   const sandbox = Sinon.createSandbox()
@@ -97,6 +98,11 @@ Test('SettlementModel', settlementModelHandlerTest => {
     sandbox.stub(Logger)
     sandbox.stub(SettlementService)
     sandbox.stub(EnumCached)
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub(),
+      healthCheck: sandbox.stub().resolves()
+    })
     EnumCached.getEnums.returns(Promise.resolve({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 }))
     test.end()
   })

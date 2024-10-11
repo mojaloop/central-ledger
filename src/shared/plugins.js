@@ -7,6 +7,7 @@ const Blipp = require('blipp')
 const ErrorHandling = require('@mojaloop/central-services-error-handling')
 const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.APIDocumentation
 const Config = require('../lib/config')
+const LoggingPlugin = require('./loggingPlugin')
 
 const registerPlugins = async (server) => {
   if (Config.API_DOC_ENDPOINTS_ENABLED) {
@@ -37,6 +38,11 @@ const registerPlugins = async (server) => {
 
   await server.register({
     plugin: require('hapi-auth-bearer-token')
+  })
+
+  await server.register({
+    plugin: LoggingPlugin,
+    options: {}
   })
 
   await server.register([Inert, Vision, Blipp, ErrorHandling])

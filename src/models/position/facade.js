@@ -229,11 +229,13 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         const processedTransfersKeysList = Object.keys(processedTransfers)
         const batchParticipantPositionChange = []
         for (const keyIndex in processedTransfersKeysList) {
-          const { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
+          const { transferAmount, runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
           const participantPositionChange = {
             participantPositionId: initialParticipantPosition.participantPositionId,
+            participantCurrencyId: participantCurrency.participantCurrencyId,
             transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
             value: runningPosition,
+            change: transferAmount.toNumber(),
             // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
             reservedValue: runningReservedValue
           }
@@ -241,11 +243,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         }
         batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
         histTimerPersistTransferStateChangeEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_PersistTransferState' })
-        await trx.commit()
         histTimerChangeParticipantPositionTransEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
       } catch (err) {
         Logger.isErrorEnabled && Logger.error(err)
-        await trx.rollback()
         histTimerChangeParticipantPositionTransEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
@@ -292,16 +292,16 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
         const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({ transferId: transferStateChange.transferId }).forUpdate().first().orderBy('transferStateChangeId', 'desc')
         const participantPositionChange = {
           participantPositionId: participantPosition.participantPositionId,
+          participantCurrencyId,
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
           value: latestPosition,
+          change: isReversal ? -amount : amount,
           reservedValue: participantPosition.reservedValue,
           createdDate: transactionTimestamp
         }
         await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
-        await trx.commit()
         histTimerChangeParticipantPositionTransactionEnd({ success: true, queryName: 'facade_changeParticipantPositionTransaction' })
       } catch (err) {
-        await trx.rollback()
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {

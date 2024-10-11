@@ -18,10 +18,13 @@ TTK_FUNC_TEST_EXIT_CODE=1
 ## Make reports directory
 mkdir ./test/results
 
+## Set environment variables
+source ./docker/env.sh
+
 ## Start backend services
 echo "==> Starting Docker backend services"
-docker compose pull mysql kafka init-kafka
-docker compose up -d mysql kafka init-kafka
+docker compose pull mysql kafka init-kafka redis-node-0
+docker compose up -d mysql kafka init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
 docker compose ps
 npm run wait-4-docker
 
@@ -49,8 +52,8 @@ echo "==> integration tests exited with code: $INTEGRATION_TEST_EXIT_CODE"
 
 ## Kill service
 echo "Stopping Service with Process ID=$PID"
-kill $(cat /tmp/int-test-service.pid)
-kill $(lsof -t -i:3001)
+kill -9 $(cat /tmp/int-test-service.pid)
+kill -9 $(lsof -t -i:3001)
 
 ## Give some time before restarting service for override tests
 sleep $WAIT_FOR_REBALANCE
@@ -60,6 +63,11 @@ echo "Starting Service in the background"
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE='topic-transfer-position-batch'
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT='topic-transfer-position-batch'
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE='topic-transfer-position-batch'
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED='topic-transfer-position-batch'
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_TIMEOUT_RESERVED='topic-transfer-position-batch'
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__ABORT='topic-transfer-position-batch'
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_ABORT='topic-transfer-position-batch'
+
 npm start > ./test/results/cl-service-override.log &
 ## Store PID for cleanup
 echo $! > /tmp/int-test-service.pid
@@ -69,6 +77,10 @@ echo $! > /tmp/int-test-handler.pid
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE
+unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED
+unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_TIMEOUT_RESERVED
+unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__ABORT
+unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_ABORT
 
 PID1=$(cat /tmp/int-test-service.pid)
 echo "Service started with Process ID=$PID1"
@@ -91,10 +103,10 @@ echo "==> override integration tests exited with code: $OVERRIDE_INTEGRATION_TES
 
 ## Kill service
 echo "Stopping Service with Process ID=$PID1"
-kill $(cat /tmp/int-test-service.pid)
-kill $(lsof -t -i:3001)
+kill -9 $(cat /tmp/int-test-service.pid)
+kill -9 $(lsof -t -i:3001)
 echo "Stopping Service with Process ID=$PID2"
-kill $(cat /tmp/int-test-handler.pid)
+kill -9 $(cat /tmp/int-test-handler.pid)
 
 ## Shutdown the backend services
 if [ $INT_TEST_SKIP_SHUTDOWN == true ]; then

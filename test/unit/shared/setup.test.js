@@ -15,10 +15,12 @@ Test('setup', setupTest => {
   let oldMongoDbHost
   let oldMongoDbPort
   let oldMongoDbDatabase
+  let oldProxyCacheEnabled
   let mongoDbUri
   const hostName = 'http://test.com'
   let Setup
   let DbStub
+  let ProxyCacheStub
   let CacheStub
   let ObjStoreStub
   // let ObjStoreStubThrows
@@ -36,7 +38,7 @@ Test('setup', setupTest => {
     sandbox = Sinon.createSandbox()
     processExitStub = sandbox.stub(process, 'exit')
     PluginsStub = {
-      registerPlugins: sandbox.stub().returns(Promise.resolve())
+      registerPlugins: sandbox.stub().resolves()
     }
 
     serverStub = {
@@ -59,22 +61,32 @@ Test('setup', setupTest => {
     }
 
     requestLoggerStub = {
-      logRequest: sandbox.stub().returns(Promise.resolve()),
-      logResponse: sandbox.stub().returns(Promise.resolve())
+      logRequest: sandbox.stub().resolves(),
+      logResponse: sandbox.stub().resolves()
     }
 
     DbStub = {
+      connect: sandbox.stub().resolves(),
+      disconnect: sandbox.stub().resolves()
+    }
+
+    ProxyCacheStub = {
       connect: sandbox.stub().returns(Promise.resolve()),
-      disconnect: sandbox.stub().returns(Promise.resolve())
+      getCache: sandbox.stub().returns(
+        {
+          connect: sandbox.stub().returns(Promise.resolve(true)),
+          disconnect: sandbox.stub().returns(Promise.resolve(true))
+        }
+      )
     }
 
     CacheStub = {
-      initCache: sandbox.stub().returns(Promise.resolve())
+      initCache: sandbox.stub().resolves()
     }
 
     ObjStoreStub = {
       Db: {
-        connect: sandbox.stub().returns(Promise.resolve()),
+        connect: sandbox.stub().resolves(),
         Mongoose: {
           set: sandbox.stub()
         }
@@ -89,34 +101,35 @@ Test('setup', setupTest => {
     uuidStub = sandbox.stub()
 
     MigratorStub = {
-      migrate: sandbox.stub().returns(Promise.resolve())
+      migrate: sandbox.stub().resolves()
     }
 
     RegisterHandlersStub = {
-      registerAllHandlers: sandbox.stub().returns(Promise.resolve()),
+      registerAllHandlers: sandbox.stub().resolves(),
       transfers: {
-        registerPrepareHandler: sandbox.stub().returns(Promise.resolve()),
-        registerGetHandler: sandbox.stub().returns(Promise.resolve()),
-        registerFulfilHandler: sandbox.stub().returns(Promise.resolve())
-        // registerRejectHandler: sandbox.stub().returns(Promise.resolve())
+        registerPrepareHandler: sandbox.stub().resolves(),
+        registerGetHandler: sandbox.stub().resolves(),
+        registerFulfilHandler: sandbox.stub().resolves()
+        // registerRejectHandler: sandbox.stub().resolves()
       },
       positions: {
-        registerPositionHandler: sandbox.stub().returns(Promise.resolve())
+        registerPositionHandler: sandbox.stub().resolves()
       },
       positionsBatch: {
-        registerPositionHandler: sandbox.stub().returns(Promise.resolve())
+        registerPositionHandler: sandbox.stub().resolves()
       },
       timeouts: {
-        registerAllHandlers: sandbox.stub().returns(Promise.resolve()),
-        registerTimeoutHandler: sandbox.stub().returns(Promise.resolve())
+        registerAllHandlers: sandbox.stub().resolves(),
+        registerTimeoutHandler: sandbox.stub().resolves()
       },
       admin: {
-        registerAdminHandlers: sandbox.stub().returns(Promise.resolve())
+        registerAdminHandlers: sandbox.stub().resolves()
       },
       bulk: {
-        registerBulkPrepareHandler: sandbox.stub().returns(Promise.resolve()),
-        registerBulkFulfilHandler: sandbox.stub().returns(Promise.resolve()),
-        registerBulkProcessingHandler: sandbox.stub().returns(Promise.resolve())
+        registerBulkPrepareHandler: sandbox.stub().resolves(),
+        registerBulkFulfilHandler: sandbox.stub().resolves(),
+        registerBulkProcessingHandler: sandbox.stub().resolves(),
+        registerBulkGetHandler: sandbox.stub().resolves()
       }
     }
     const ConfigStub = Config
@@ -130,6 +143,7 @@ Test('setup', setupTest => {
       },
       '../handlers/register': RegisterHandlersStub,
       '../lib/db': DbStub,
+      '../lib/proxyCache': ProxyCacheStub,
       '../lib/cache': CacheStub,
       '@mojaloop/object-store-lib': ObjStoreStub,
       '../lib/migrator': MigratorStub,
@@ -147,12 +161,14 @@ Test('setup', setupTest => {
     oldMongoDbHost = Config.MONGODB_HOST
     oldMongoDbPort = Config.MONGODB_PORT
     oldMongoDbDatabase = Config.MONGODB_DATABASE
+    oldProxyCacheEnabled = Config.PROXY_CACHE_CONFIG.enabled
     Config.HOSTNAME = hostName
     Config.MONGODB_HOST = 'testhost'
     Config.MONGODB_PORT = '1111'
     Config.MONGODB_USER = 'user'
     Config.MONGODB_PASSWORD = 'pass'
     Config.MONGODB_DATABASE = 'mlos'
+    Config.PROXY_CACHE_CONFIG.enabled = true
     mongoDbUri = MongoUriBuilder({
       username: Config.MONGODB_USER,
       password: Config.MONGODB_PASSWORD,
@@ -173,6 +189,7 @@ Test('setup', setupTest => {
     Config.MONGODB_USER = oldMongoDbUsername
     Config.MONGODB_PASSWORD = oldMongoDbPassword
     Config.MONGODB_DATABASE = oldMongoDbDatabase
+    Config.PROXY_CACHE_CONFIG.enabled = oldProxyCacheEnabled
 
     test.end()
   })
@@ -193,6 +210,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -245,6 +263,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -361,6 +380,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -394,6 +414,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -428,6 +449,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -464,6 +486,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
@@ -547,6 +570,11 @@ Test('setup', setupTest => {
         enabled: true
       }
 
+      const bulkGetHandler = {
+        type: 'bulkget',
+        enabled: true
+      }
+
       const unknownHandler = {
         type: 'undefined',
         enabled: true
@@ -563,6 +591,7 @@ Test('setup', setupTest => {
         bulkBrepareHandler,
         bulkFulfilHandler,
         bulkProcessingHandler,
+        bulkGetHandler,
         unknownHandler
         // rejectHandler
       ]
@@ -578,6 +607,7 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.bulk.registerBulkPrepareHandler.called)
         test.ok(RegisterHandlersStub.bulk.registerBulkFulfilHandler.called)
         test.ok(RegisterHandlersStub.bulk.registerBulkProcessingHandler.called)
+        test.ok(RegisterHandlersStub.bulk.registerBulkGetHandler.called)
         test.ok(processExitStub.called)
         test.end()
       }).catch(err => {
@@ -706,6 +736,7 @@ Test('setup', setupTest => {
         },
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/proxyCache': ProxyCacheStub,
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,

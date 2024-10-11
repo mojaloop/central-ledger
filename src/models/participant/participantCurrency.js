@@ -43,7 +43,7 @@ exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive
 
 exports.getAll = async () => {
   try {
-    return Db.from('participantCurrency').find({}, { order: 'participantCurrencyId asc' })
+    return await Db.from('participantCurrency').find({}, { order: 'participantCurrencyId asc' })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

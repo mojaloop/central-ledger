@@ -27,8 +27,8 @@
  ******/
 'use strict'
 
-const Logger = require('@mojaloop/central-services-logger')
 const { uniqueId } = require('lodash')
+const Logger = require('@mojaloop/central-services-logger')
 const Consumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 
 /**
@@ -55,12 +55,13 @@ class TestConsumer {
         config: handlerConfig.config
       }
       // Override the client and group ids:
-      handler.config.rdkafkaConf['client.id'] = 'testConsumer'
+      const id = uniqueId()
+      handler.config.rdkafkaConf['client.id'] = 'testConsumer' + id
       // Fix issue of consumers with different partition.assignment.strategy being assigned to the same group
-      handler.config.rdkafkaConf['group.id'] = 'testConsumerGroup' + uniqueId()
+      handler.config.rdkafkaConf['group.id'] = 'testConsumerGroup' + id
       delete handler.config.rdkafkaConf['partition.assignment.strategy']
 
-      Logger.warn(`TestConsumer.startListening(): registering consumer with topicName: ${handler.topicName}`)
+      Logger.warn(`TestConsumer.startListening(): registering consumer with uniqueId ${id} - topicName: ${handler.topicName}`)
       const topics = [handler.topicName]
       const consumer = new Consumer(topics, handler.config)
       await consumer.connect()
