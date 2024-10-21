@@ -10,6 +10,7 @@ const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 const SettlementModel = require('../../../../src/domain/settlement')
 const ProxyCache = require('#src/lib/proxyCache')
+const Config = require('#src/lib/config')
 
 const createRequest = ({ payload, params, query }) => {
   const sandbox = Sinon.createSandbox()
@@ -87,11 +88,11 @@ Test('Participant', participantHandlerTest => {
   const participantResults = [
     {
       name: 'fsp1',
-      id: 'http://central-ledger/participants/fsp1',
+      id: 'https://central-ledger/participants/fsp1',
       created: '2018-07-17T16:04:24.185Z',
       isActive: 1,
       links: {
-        self: 'http://central-ledger/participants/fsp1'
+        self: 'https://central-ledger/participants/fsp1'
       },
       accounts: [
         { id: 1, currency: 'USD', ledgerAccountType: 'POSITION', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') },
@@ -101,11 +102,11 @@ Test('Participant', participantHandlerTest => {
     },
     {
       name: 'fsp2',
-      id: 'http://central-ledger/participants/fsp2',
+      id: 'https://central-ledger/participants/fsp2',
       created: '2018-07-17T16:04:24.185Z',
       isActive: 1,
       links: {
-        self: 'http://central-ledger/participants/fsp2'
+        self: 'https://central-ledger/participants/fsp2'
       },
       accounts: [
         { id: 3, currency: 'EUR', ledgerAccountType: 'POSITION', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') },
@@ -115,11 +116,11 @@ Test('Participant', participantHandlerTest => {
     },
     {
       name: 'Hub',
-      id: 'http://central-ledger/participants/Hub',
+      id: 'https://central-ledger/participants/Hub',
       created: '2018-07-17T16:04:24.185Z',
       isActive: 1,
       links: {
-        self: 'http://central-ledger/participants/Hub'
+        self: 'https://central-ledger/participants/Hub'
       },
       accounts: [
         { id: 5, currency: 'USD', ledgerAccountType: 'HUB_FEE', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') }
@@ -128,11 +129,11 @@ Test('Participant', participantHandlerTest => {
     },
     {
       name: 'xnProxy',
-      id: 'http://central-ledger/participants/xnProxy',
+      id: 'https://central-ledger/participants/xnProxy',
       created: '2018-07-17T16:04:24.185Z',
       isActive: 1,
       links: {
-        self: 'http://central-ledger/participants/xnProxy'
+        self: 'https://central-ledger/participants/xnProxy'
       },
       accounts: [
         { id: 6, currency: 'EUR', ledgerAccountType: 'POSITION', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') },
@@ -164,6 +165,7 @@ Test('Participant', participantHandlerTest => {
     sandbox.stub(Participant)
     sandbox.stub(EnumCached)
     sandbox.stub(SettlementModel, 'getAll')
+    sandbox.stub(Config, 'HOSTNAME').value('https://central-ledger')
     sandbox.stub(ProxyCache, 'getCache').returns({
       connect: sandbox.stub(),
       disconnect: sandbox.stub(),
