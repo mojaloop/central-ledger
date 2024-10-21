@@ -29,7 +29,7 @@ const Joi = require('joi')
 const currencyList = require('../../../seeds/currency.js').currencyList
 
 const tags = ['api', 'participants']
-const nameValidator = Joi.string().alphanum().min(2).max(30).required().description('Name of the participant')
+const nameValidator = Joi.string().min(2).max(30).required().description('Name of the participant')
 const currencyValidator = Joi.string().valid(...currencyList).description('Currency code')
 
 module.exports = [
@@ -49,7 +49,7 @@ module.exports = [
       tags,
       validate: {
         params: Joi.object({
-          name: Joi.string().required().description('Participant name')
+          name: nameValidator
         })
       }
     }
@@ -68,7 +68,8 @@ module.exports = [
         payload: Joi.object({
           name: nameValidator,
           // password: passwordValidator,
-          currency: currencyValidator // ,
+          currency: currencyValidator,
+          isProxy: Joi.boolean().falsy(0, '0', '').truthy(1, '1').allow(true, false, 0, 1, '0', '1', null)
           // emailAddress: Joi.string().email().required()
         })
       }
@@ -89,7 +90,7 @@ module.exports = [
           isActive: Joi.boolean().required().description('Participant isActive boolean')
         }),
         params: Joi.object({
-          name: Joi.string().required().description('Participant name')
+          name: nameValidator
         })
       }
     }
@@ -239,7 +240,7 @@ module.exports = [
           type: Joi.string().required().description('Account type') // Needs a validator here
         }),
         params: Joi.object({
-          name: Joi.string().required().description('Participant name') // nameValidator
+          name: nameValidator // nameValidator
         })
       }
     }
@@ -306,7 +307,7 @@ module.exports = [
       description: 'Record Funds In or Out of participant account',
       validate: {
         payload: Joi.object({
-          transferId: Joi.string().guid().required(),
+          transferId: Joi.string().pattern(/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]}$|^[0-9A-HJKMNP-TV-Z]{26}$6})$/).required(),
           externalReference: Joi.string().required(),
           action: Joi.string().required().valid('recordFundsIn', 'recordFundsOutPrepareReserve').label('action is missing or not supported'),
           reason: Joi.string().required(),
@@ -344,7 +345,7 @@ module.exports = [
         params: Joi.object({
           name: nameValidator,
           id: Joi.number().integer().positive(),
-          transferId: Joi.string().guid().required()
+          transferId: Joi.string().pattern(/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]}$|^[0-9A-HJKMNP-TV-Z]{26}$6})$/).required()
         })
       }
     }

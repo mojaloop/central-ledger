@@ -1,4 +1,8 @@
 {
+  "HUB_PARTICIPANT": {
+    "ID": 1,
+    "NAME": "Hub"
+  },
   "PORT": 3000,
   "HOSTNAME": "http://ml-api-adapter",
   "ENDPOINT_SOURCE_URL": "http://host.docker.internal:3001",
@@ -13,7 +17,6 @@
     },
     "JWS": {
       "JWS_SIGN": false,
-      "FSPIOP_SOURCE_TO_SIGN": "switch",
       "JWS_SIGNING_KEY_PATH": "secrets/jwsSigningKey.key"
     }
   },

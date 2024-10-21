@@ -20,6 +20,7 @@
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
@@ -45,6 +46,14 @@ const transferParticipantRoleTypes = [
   {
     name: 'DFSP_POSITION',
     description: 'Indicates the position account'
+  },
+  {
+    name: 'INITIATING_FSP',
+    description: 'Identifier for the FSP who is requesting a currency conversion'
+  },
+  {
+    name: 'COUNTER_PARTY_FSP',
+    description: 'Identifier for the FXP who is performing the currency conversion'
   }
 ]
 

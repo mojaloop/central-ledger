@@ -41,27 +41,22 @@ exports.up = async (knex) => {
               t.integer('settlementAccountTypeId').unsigned().defaultTo(null)
             })
             await knex.transaction(async (trx) => {
-              try {
-                await knex.select('s.settlementModelId', 's.name', 'lat.name AS latName')
-                  .from('settlementModel AS s')
-                  .transacting(trx)
-                  .innerJoin('ledgerAccountType as lat', 's.ledgerAccountTypeId', 'lat.ledgerAccountTypeId')
-                  .then(async (models) => {
-                    for (const model of models) {
-                      let settlementAccountName
-                      if (model.latName === 'POSITION') {
-                        settlementAccountName = 'SETTLEMENT'
-                      } else {
-                        settlementAccountName = model.latName + '_SETTLEMENT'
-                      }
-                      await knex('settlementModel').transacting(trx).update({ settlementAccountTypeId: knex('ledgerAccountType').select('ledgerAccountTypeId').where('name', settlementAccountName) })
-                        .where('settlementModelId', model.settlementModelId)
+              await knex.select('s.settlementModelId', 's.name', 'lat.name AS latName')
+                .from('settlementModel AS s')
+                .transacting(trx)
+                .innerJoin('ledgerAccountType as lat', 's.ledgerAccountTypeId', 'lat.ledgerAccountTypeId')
+                .then(async (models) => {
+                  for (const model of models) {
+                    let settlementAccountName
+                    if (model.latName === 'POSITION') {
+                      settlementAccountName = 'SETTLEMENT'
+                    } else {
+                      settlementAccountName = model.latName + '_SETTLEMENT'
                     }
-                  })
-                await trx.commit
-              } catch (e) {
-                await trx.rollback
-              }
+                    await knex('settlementModel').transacting(trx).update({ settlementAccountTypeId: knex('ledgerAccountType').select('ledgerAccountTypeId').where('name', settlementAccountName) })
+                      .where('settlementModelId', model.settlementModelId)
+                  }
+                })
             })
             await knex.schema.alterTable('settlementModel', (t) => {
               t.integer('settlementAccountTypeId').alter().notNullable()

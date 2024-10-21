@@ -9,6 +9,8 @@ const Participant = require('../../../../src/domain/participant')
 const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 const SettlementModel = require('../../../../src/domain/settlement')
+const ProxyCache = require('#src/lib/proxyCache')
+const Config = require('#src/lib/config')
 
 const createRequest = ({ payload, params, query }) => {
   const sandbox = Sinon.createSandbox()
@@ -43,7 +45,8 @@ Test('Participant', participantHandlerTest => {
       currencyList: [
         { participantCurrencyId: 1, currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' },
         { participantCurrencyId: 2, currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
-      ]
+      ],
+      isProxy: 0
     },
     {
       participantId: 2,
@@ -54,7 +57,8 @@ Test('Participant', participantHandlerTest => {
       currencyList: [
         { participantCurrencyId: 3, currencyId: 'EUR', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' },
         { participantCurrencyId: 4, currencyId: 'EUR', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
-      ]
+      ],
+      isProxy: 0
     },
     {
       participantId: 3,
@@ -64,48 +68,78 @@ Test('Participant', participantHandlerTest => {
       createdDate: '2018-07-17T16:04:24.185Z',
       currencyList: [
         { participantCurrencyId: 5, currencyId: 'USD', ledgerAccountTypeId: 5, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
-      ]
+      ],
+      isProxy: 0
+    },
+    {
+      participantId: 4,
+      name: 'xnProxy',
+      currency: 'EUR',
+      isActive: 1,
+      createdDate: '2018-07-17T16:04:24.185Z',
+      currencyList: [
+        { participantCurrencyId: 6, currencyId: 'EUR', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' },
+        { participantCurrencyId: 7, currencyId: 'EUR', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
+      ],
+      isProxy: 1
     }
   ]
 
   const participantResults = [
     {
       name: 'fsp1',
-      id: 'http://central-ledger/participants/fsp1',
+      id: 'https://central-ledger/participants/fsp1',
       created: '2018-07-17T16:04:24.185Z',
       isActive: 1,
       links: {
-        self: 'http://central-ledger/participants/fsp1'
+        self: 'https://central-ledger/participants/fsp1'
       },
       accounts: [
         { id: 1, currency: 'USD', ledgerAccountType: 'POSITION', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') },
         { id: 2, currency: 'USD', ledgerAccountType: 'SETTLEMENT', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') }
-      ]
+      ],
+      isProxy: 0
     },
     {
       name: 'fsp2',
-      id: 'http://central-ledger/participants/fsp2',
+      id: 'https://central-ledger/participants/fsp2',
       created: '2018-07-17T16:04:24.185Z',
       isActive: 1,
       links: {
-        self: 'http://central-ledger/participants/fsp2'
+        self: 'https://central-ledger/participants/fsp2'
       },
       accounts: [
         { id: 3, currency: 'EUR', ledgerAccountType: 'POSITION', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') },
         { id: 4, currency: 'EUR', ledgerAccountType: 'SETTLEMENT', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') }
-      ]
+      ],
+      isProxy: 0
     },
     {
       name: 'Hub',
-      id: 'http://central-ledger/participants/Hub',
+      id: 'https://central-ledger/participants/Hub',
       created: '2018-07-17T16:04:24.185Z',
       isActive: 1,
       links: {
-        self: 'http://central-ledger/participants/Hub'
+        self: 'https://central-ledger/participants/Hub'
       },
       accounts: [
         { id: 5, currency: 'USD', ledgerAccountType: 'HUB_FEE', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') }
-      ]
+      ],
+      isProxy: 0
+    },
+    {
+      name: 'xnProxy',
+      id: 'https://central-ledger/participants/xnProxy',
+      created: '2018-07-17T16:04:24.185Z',
+      isActive: 1,
+      links: {
+        self: 'https://central-ledger/participants/xnProxy'
+      },
+      accounts: [
+        { id: 6, currency: 'EUR', ledgerAccountType: 'POSITION', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') },
+        { id: 7, currency: 'EUR', ledgerAccountType: 'SETTLEMENT', isActive: 1, createdBy: 'unknown', createdDate: new Date('2018-07-17T16:04:24.185Z') }
+      ],
+      isProxy: 1
     }
   ]
   const settlementModelFixtures = [
@@ -131,6 +165,12 @@ Test('Participant', participantHandlerTest => {
     sandbox.stub(Participant)
     sandbox.stub(EnumCached)
     sandbox.stub(SettlementModel, 'getAll')
+    sandbox.stub(Config, 'HOSTNAME').value('https://central-ledger')
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub(),
+      healthCheck: sandbox.stub().resolves()
+    })
     EnumCached.getEnums.returns(Promise.resolve({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 }))
     Logger.isDebugEnabled = true
     test.end()
@@ -146,6 +186,13 @@ Test('Participant', participantHandlerTest => {
       Participant.getAll.returns(Promise.resolve(participantFixtures))
       const result = await Handler.getAll(createRequest({}))
       test.deepEqual(result, participantResults, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getAll should return all proxies when isProxy query is true', async function (test) {
+      Participant.getAll.returns(Promise.resolve(participantFixtures))
+      const result = await Handler.getAll(createRequest({ query: { isProxy: true } }))
+      test.deepEqual(result, participantResults.filter(record => record.isProxy), 'The results match')
       test.end()
     })
 
@@ -236,7 +283,8 @@ Test('Participant', participantHandlerTest => {
         name: 'fsp1',
         currency: 'USD',
         isActive: 1,
-        createdDate: '2018-07-17T16:04:24.185Z'
+        createdDate: '2018-07-17T16:04:24.185Z',
+        isProxy: 0
       }
 
       const participantCurrencyId1 = 1
@@ -327,7 +375,8 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         isActive: 1,
         createdDate: '2018-07-17T16:04:24.185Z',
-        currencyList: []
+        currencyList: [],
+        isProxy: 0
       }
 
       const participantCurrencyId1 = 1
@@ -1231,7 +1280,8 @@ Test('Participant', participantHandlerTest => {
         isActive: 1,
         createdDate: '2018-07-17T16:04:24.185Z',
         createdBy: 'unknown',
-        currencyList: []
+        currencyList: [],
+        isProxy: 0
       }
       const ledgerAccountType = {
         ledgerAccountTypeId: 5,

@@ -217,7 +217,14 @@ Test('Position facade', async (positionFacadeTest) => {
         type: 'application/json',
         content: {
           header: '',
-          payload: transfer
+          payload: transfer,
+          context: {
+            cyrilResult: {
+              participantName: 'dfsp1',
+              currencyId: 'USD',
+              amount: '100'
+            }
+          }
         },
         metadata: {
           event: {
@@ -312,11 +319,11 @@ Test('Position facade', async (positionFacadeTest) => {
             transacting: sandbox.stub().returns({
               forUpdate: sandbox.stub().returns({
                 whereIn: sandbox.stub().returns({
-                  select: sandbox.stub().returns(Promise.resolve())
+                  select: sandbox.stub().resolves()
                 })
               }),
               where: sandbox.stub().returns({
-                update: sandbox.stub().returns(Promise.resolve()),
+                update: sandbox.stub().resolves(),
                 orderBy: sandbox.stub().returns({
                   first: sandbox.stub().resolves(Object.assign({}, transferStateChange))
                 })
@@ -398,11 +405,11 @@ Test('Position facade', async (positionFacadeTest) => {
             transacting: sandbox.stub().returns({
               forUpdate: sandbox.stub().returns({
                 whereIn: sandbox.stub().returns({
-                  select: sandbox.stub().returns(Promise.resolve())
+                  select: sandbox.stub().resolves()
                 })
               }),
               where: sandbox.stub().returns({
-                update: sandbox.stub().returns(Promise.resolve()),
+                update: sandbox.stub().resolves(),
                 orderBy: sandbox.stub().returns({
                   first: sandbox.stub().resolves(Object.assign({}, transferStateChange))
                 })
@@ -481,11 +488,11 @@ Test('Position facade', async (positionFacadeTest) => {
             transacting: sandbox.stub().returns({
               forUpdate: sandbox.stub().returns({
                 whereIn: sandbox.stub().returns({
-                  select: sandbox.stub().returns(Promise.resolve())
+                  select: sandbox.stub().resolves()
                 })
               }),
               where: sandbox.stub().returns({
-                update: sandbox.stub().returns(Promise.resolve()),
+                update: sandbox.stub().resolves(),
                 orderBy: sandbox.stub().returns({
                   first: sandbox.stub().resolves(incorrectTransferStateChange)
                 })
@@ -591,11 +598,11 @@ Test('Position facade', async (positionFacadeTest) => {
             transacting: sandbox.stub().returns({
               forUpdate: sandbox.stub().returns({
                 whereIn: sandbox.stub().returns({
-                  select: sandbox.stub().returns(Promise.resolve())
+                  select: sandbox.stub().resolves()
                 })
               }),
               where: sandbox.stub().returns({
-                update: sandbox.stub().returns(Promise.resolve()),
+                update: sandbox.stub().resolves(),
                 orderBy: sandbox.stub().returns({
                   first: sandbox.stub().resolves(MainUtil.clone(transferStateChange))
                 })
@@ -680,11 +687,11 @@ Test('Position facade', async (positionFacadeTest) => {
             transacting: sandbox.stub().returns({
               forUpdate: sandbox.stub().returns({
                 whereIn: sandbox.stub().returns({
-                  select: sandbox.stub().returns(Promise.resolve())
+                  select: sandbox.stub().resolves()
                 })
               }),
               where: sandbox.stub().returns({
-                update: sandbox.stub().returns(Promise.resolve()),
+                update: sandbox.stub().resolves(),
                 orderBy: sandbox.stub().returns({
                   first: sandbox.stub().resolves(MainUtil.clone(transferStateChange))
                 })

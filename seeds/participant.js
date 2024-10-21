@@ -28,6 +28,7 @@ const Config = require('../src/lib/config')
 
 const participant = [
   {
+    participantId: Config.HUB_ID,
     name: Config.HUB_NAME,
     description: 'Hub Operator',
     createdBy: 'seeds'
@@ -36,7 +37,7 @@ const participant = [
 
 exports.seed = async function (knex) {
   try {
-    return await knex('participant').insert(participant).onConflict('name').ignore()
+    return await knex('participant').insert(participant).onConflict('id').merge()
   } catch (err) {
     console.log(`Uploading seeds for participant has failed with the following error: ${err}`)
     return -1000

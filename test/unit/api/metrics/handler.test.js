@@ -28,6 +28,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Handler = require('../../../../src/api/metrics/handler')
 const Metrics = require('@mojaloop/central-services-metrics')
+const ProxyCache = require('#src/lib/proxyCache')
 
 function createRequest (routes) {
   const value = routes || []
@@ -45,6 +46,11 @@ Test('metrics handler', (handlerTest) => {
   handlerTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Metrics)
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub(),
+      healthCheck: sandbox.stub().resolves()
+    })
     t.end()
   })
 

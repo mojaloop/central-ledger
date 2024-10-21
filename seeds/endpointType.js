@@ -25,6 +25,8 @@
 
 'use strict'
 
+const { FspEndpointTypes } = require('@mojaloop/central-services-shared').Enum.EndPoints
+
 const endpointTypes = [
   {
     name: 'ALARM_NOTIFICATION_URL',
@@ -45,6 +47,22 @@ const endpointTypes = [
   {
     name: 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR',
     description: 'Participant callback URL to which transfer error notifications can be sent'
+  },
+  {
+    name: FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES,
+    description: 'Participant callback URL to which FX quote requests can be sent'
+  },
+  {
+    name: FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST,
+    description: 'Participant callback URL to which FX transfer post can be sent'
+  },
+  {
+    name: FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT,
+    description: 'Participant callback URL to which FX transfer put can be sent'
+  },
+  {
+    name: FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR,
+    description: 'Participant callback URL to which FX transfer error notifications can be sent'
   },
   {
     name: 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL',

@@ -7,6 +7,8 @@ const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
 const PositionService = require('../../../../src/domain/position')
 const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
+const ParticipantFacade = require('../../../../src/models/participant/facade')
+const ParticipantCachedModel = require('../../../../src/models/participant/participantCached')
 const MainUtil = require('@mojaloop/central-services-shared').Util
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const KafkaConsumer = Consumer.Consumer
@@ -20,6 +22,7 @@ const Clone = require('lodash').clone
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const Proxyquire = require('proxyquire')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -141,6 +144,10 @@ Test('Position handler', transferHandlerTest => {
 
   transferHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub()
+    })
     SpanStub = {
       audit: sandbox.stub().callsFake(),
       error: sandbox.stub().callsFake(),
@@ -178,6 +185,8 @@ Test('Position handler', transferHandlerTest => {
     sandbox.stub(PositionService)
     sandbox.stub(TransferStateChange)
     sandbox.stub(SettlementModelCached)
+    sandbox.stub(ParticipantFacade)
+    sandbox.stub(ParticipantCachedModel)
     Kafka.transformAccountToTopicName.returns(topicName)
     Kafka.produceGeneralMessage.resolves()
     test.end()
@@ -733,6 +742,8 @@ Test('Position handler', transferHandlerTest => {
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
+        ParticipantFacade.getByNameAndCurrency.resolves({ participantCurrencyId: 1 })
+        ParticipantCachedModel.getByName.resolves({ participantId: 1 })
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'INVALID_STATE' })
         const m = Object.assign({}, MainUtil.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED

@@ -74,7 +74,7 @@ const initCache = async function () {
 }
 
 const destroyCache = async function () {
-  catboxMemoryClient.stop()
+  catboxMemoryClient?.stop()
   catboxMemoryClient = null
 }
 

@@ -42,19 +42,24 @@ const testParticipant = {
   createdDate: new Date()
 }
 
-exports.prepareData = async (name, currencyId = 'USD', secondaryCurrencyId = 'XXX', isUnique = true) => {
+exports.prepareData = async (name, currencyId = 'USD', secondaryCurrencyId = null, isUnique = true, isProxy = false) => {
   try {
     const participantId = await Model.create(Object.assign(
       {},
       testParticipant,
       {
-        name: (name || testParticipant.name) + (isUnique ? time.msToday().toString() : '')
+        name: (name || testParticipant.name) + (isUnique ? time.msToday().toString() : ''),
+        isProxy
       }
     ))
     const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.POSITION, false)
     const participantCurrencyId2 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.SETTLEMENT, false)
-    const participantCurrencyIdSecondary = await ParticipantCurrencyModel.create(participantId, secondaryCurrencyId, Enum.Accounts.LedgerAccountType.POSITION, false)
-    const participantCurrencyIdSecondary2 = await ParticipantCurrencyModel.create(participantId, secondaryCurrencyId, Enum.Accounts.LedgerAccountType.SETTLEMENT, false)
+    let participantCurrencyIdSecondary
+    let participantCurrencyIdSecondary2
+    if (secondaryCurrencyId) {
+      participantCurrencyIdSecondary = await ParticipantCurrencyModel.create(participantId, secondaryCurrencyId, Enum.Accounts.LedgerAccountType.POSITION, false)
+      participantCurrencyIdSecondary2 = await ParticipantCurrencyModel.create(participantId, secondaryCurrencyId, Enum.Accounts.LedgerAccountType.SETTLEMENT, false)
+    }
     const participant = await Model.getById(participantId)
     return {
       participant,

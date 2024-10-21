@@ -42,6 +42,9 @@ const Decimal = require('decimal.js')
 const Config = require('../../lib/config')
 const Participant = require('../../domain/participant')
 const Transfer = require('../../domain/transfer')
+const FxTransferModel = require('../../models/fxTransfer')
+// const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
+const FxTransferStateChangeModel = require('../../models/fxTransfer/stateChange')
 const CryptoConditions = require('../../cryptoConditions')
 const Crypto = require('crypto')
 const base64url = require('base64url')
@@ -87,9 +90,9 @@ const validatePositionAccountByNameAndCurrency = async function (participantName
   return validationPassed
 }
 
-const validateDifferentDfsp = (payload) => {
+const validateDifferentDfsp = (payerFsp, payeeFsp) => {
   if (!Config.ENABLE_ON_US_TRANSFERS) {
-    const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
+    const isPayerAndPayeeDifferent = (payerFsp.toLowerCase() !== payeeFsp.toLowerCase())
     if (!isPayerAndPayeeDifferent) {
       reasons.push('Payer FSP and Payee FSP should be different, unless on-us tranfers are allowed by the Scheme')
       return false
@@ -98,8 +101,8 @@ const validateDifferentDfsp = (payload) => {
   return true
 }
 
-const validateFspiopSourceMatchesPayer = (payload, headers) => {
-  const matched = (headers && headers['fspiop-source'] && headers['fspiop-source'] === payload.payerFsp)
+const validateFspiopSourceMatchesPayer = (payer, headers) => {
+  const matched = (headers && headers['fspiop-source'] && headers['fspiop-source'] === payer)
   if (!matched) {
     reasons.push('FSPIOP-Source header should match Payer')
     return false
@@ -185,7 +188,11 @@ const validateConditionAndExpiration = async (payload) => {
   return true
 }
 
-const validatePrepare = async (payload, headers) => {
+const isAmountValid = (payload, isFx) => isFx
+  ? validateAmount(payload.sourceAmount) && validateAmount(payload.targetAmount)
+  : validateAmount(payload.amount)
+
+const validatePrepare = async (payload, headers, isFx = false, determiningTransferCheckResult, proxyObligation) => {
   const histTimerValidatePrepareEnd = Metrics.getHistogram(
     'handlers_transfer_validator',
     'validatePrepare - Metrics for transfer handler',
@@ -199,15 +206,59 @@ const validatePrepare = async (payload, headers) => {
     validationPassed = false
     return { validationPassed, reasons }
   }
-  validationPassed = (validateFspiopSourceMatchesPayer(payload, headers) &&
-    await validateParticipantByName(payload.payerFsp) &&
-    await validatePositionAccountByNameAndCurrency(payload.payerFsp, payload.amount.currency) &&
-    await validateParticipantByName(payload.payeeFsp) &&
-    await validatePositionAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency) &&
-    validateAmount(payload.amount) &&
-    await validateConditionAndExpiration(payload) &&
-    validateDifferentDfsp(payload))
+
+  const initiatingFsp = isFx ? payload.initiatingFsp : payload.payerFsp
+  const counterPartyFsp = isFx ? payload.counterPartyFsp : payload.payeeFsp
+
+  // Check if determining transfers are failed
+  if (determiningTransferCheckResult.watchListRecords && determiningTransferCheckResult.watchListRecords.length > 0) {
+    // Iterate through determiningTransferCheckResult.watchListRecords
+    for (const watchListRecord of determiningTransferCheckResult.watchListRecords) {
+      if (isFx) {
+        // TODO: Check the transfer state of determiningTransferId
+        // const latestTransferStateChange = await TransferStateChangeModel.getByTransferId(watchListRecord.determiningTransferId)
+        // if (latestTransferStateChange.transferStateId !== Enum.Transfers.TransferInternalState.RESERVED) {
+        //   reasons.push('Related Transfer is not in reserved state')
+        //   validationPassed = false
+        //   return { validationPassed, reasons }
+        // }
+      } else {
+        // Check the transfer state of commitRequestId
+        const latestFxTransferStateChange = await FxTransferStateChangeModel.getByCommitRequestId(watchListRecord.commitRequestId)
+        if (latestFxTransferStateChange.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT) {
+          reasons.push('Related FX Transfer is not fulfilled')
+          validationPassed = false
+          return { validationPassed, reasons }
+        }
+      }
+    }
+  }
+
+  // Skip usual validation if preparing a proxy transfer or fxTransfer
+  if (!(proxyObligation?.isInitiatingFspProxy || proxyObligation?.isCounterPartyFspProxy)) {
+    validationPassed = (
+      validateFspiopSourceMatchesPayer(initiatingFsp, headers) &&
+      isAmountValid(payload, isFx) &&
+      await validateParticipantByName(initiatingFsp) &&
+      await validateParticipantByName(counterPartyFsp) &&
+      await validateConditionAndExpiration(payload) &&
+      validateDifferentDfsp(initiatingFsp, counterPartyFsp)
+    )
+  } else {
+    validationPassed = true
+  }
+
+  // validate participant accounts from determiningTransferCheckResult
+  if (validationPassed && determiningTransferCheckResult) {
+    for (const participantCurrency of determiningTransferCheckResult.participantCurrencyValidationList) {
+      if (!await validatePositionAccountByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId)) {
+        validationPassed = false
+        break // Exit the loop if validation fails
+      }
+    }
+  }
   histTimerValidatePrepareEnd({ success: true, funcName: 'validatePrepare' })
+
   return {
     validationPassed,
     reasons
@@ -241,11 +292,21 @@ const validateParticipantTransferId = async function (participantName, transferI
   return validationPassed
 }
 
+const validateParticipantForCommitRequestId = async function (participantName, commitRequestId) {
+  const fxTransferParticipants = await FxTransferModel.fxTransfer.getFxTransferParticipant(participantName, commitRequestId)
+  let validationPassed = false
+  if (Array.isArray(fxTransferParticipants) && fxTransferParticipants.length > 0) {
+    validationPassed = true
+  }
+  return validationPassed
+}
+
 module.exports = {
   validatePrepare,
   validateById,
   validateFulfilCondition,
   validateParticipantByName,
   reasons,
-  validateParticipantTransferId
+  validateParticipantTransferId,
+  validateParticipantForCommitRequestId
 }
