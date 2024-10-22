@@ -104,7 +104,8 @@ const processFxPositionPrepareBin = async (
           headers,
           fspiopError,
           { id: fxTransfer.commitRequestId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: false }
@@ -146,7 +147,8 @@ const processFxPositionPrepareBin = async (
           headers,
           fspiopError,
           { id: fxTransfer.commitRequestId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: false }
@@ -188,7 +190,8 @@ const processFxPositionPrepareBin = async (
           headers,
           fspiopError,
           { id: fxTransfer.commitRequestId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: false }
@@ -236,7 +239,8 @@ const processFxPositionPrepareBin = async (
           headers,
           fxTransfer,
           {},
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: true }

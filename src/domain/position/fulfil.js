@@ -168,7 +168,8 @@ const _handleIncorrectTransferState = (binItem, payeeFsp, transferId, accumulate
     headers,
     fspiopError,
     { id: transferId },
-    'application/json'
+    'application/json',
+    binItem.message.value.content.context
   )
 }
 
@@ -197,7 +198,8 @@ const _constructTransferFulfilResultMessage = (binItem, transferId, payerFsp, pa
     headers,
     transfer,
     { id: transferId },
-    'application/json'
+    'application/json',
+    binItem.message.value.content.context
   )
 
   if (binItem.message.value.metadata.event.action === Enum.Events.Event.Action.RESERVE) {
@@ -249,7 +251,8 @@ const _constructPatchNotificationResultMessage = (binItem, cyrilResult) => {
       headers,
       fulfil,
       { id: commitRequestId },
-      'application/json'
+      'application/json',
+      binItem.message.value.content.context
     )
 
     messages.push(resultMessage)
