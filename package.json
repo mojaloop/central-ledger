@@ -88,7 +88,7 @@
     "@hapi/inert": "7.1.0",
     "@hapi/joi": "17.1.1",
     "@hapi/vision": "7.0.3",
-    "@mojaloop/central-services-error-handling": "13.0.1",
+    "@mojaloop/central-services-error-handling": "13.0.2",
     "@mojaloop/central-services-health": "15.0.0",
     "@mojaloop/central-services-logger": "11.5.1",
     "@mojaloop/central-services-metrics": "12.0.8",
