@@ -105,7 +105,8 @@ const processPositionPrepareBin = async (
           headers,
           fspiopError,
           { id: transfer.transferId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: false }
@@ -147,7 +148,8 @@ const processPositionPrepareBin = async (
           headers,
           fspiopError,
           { id: transfer.transferId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: false }
@@ -189,7 +191,8 @@ const processPositionPrepareBin = async (
           headers,
           fspiopError,
           { id: transfer.transferId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: false }
@@ -238,7 +241,8 @@ const processPositionPrepareBin = async (
           headers,
           transfer,
           {},
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: true }

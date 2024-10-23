@@ -74,7 +74,8 @@ const processPositionFxFulfilBin = async (
           headers,
           fspiopError,
           { id: commitRequestId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
       } else {
         // forward same headers from the prepare message, except the content-length header
@@ -101,7 +102,8 @@ const processPositionFxFulfilBin = async (
           headers,
           fxTransfer,
           { id: commitRequestId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         // No need to change the transfer state here for success case.

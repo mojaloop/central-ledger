@@ -162,7 +162,8 @@ const _constructAbortResultMessage = (binItem, id, from, notifyTo) => {
     binItem.message.value.content.headers, // Headers don't really matter here. ml-api-adapter will ignore them and create their own.
     fspiopError,
     { id },
-    'application/json'
+    'application/json',
+    binItem.message.value.content.context
   )
 
   return resultMessage
