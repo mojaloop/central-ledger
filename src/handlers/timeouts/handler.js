@@ -81,7 +81,7 @@ const timeout = async () => {
       try {
         const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
         const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(result[i].transferId, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, state)
-        const headers = Utility.Http.SwitchDefaultHeaders(result[i].payerFsp, Enum.Http.HeaderResources.TRANSFERS, Enum.Http.Headers.FSPIOP.SWITCH.value, resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion)
+        const headers = Utility.Http.SwitchDefaultHeaders(result[i].payerFsp, Enum.Http.HeaderResources.TRANSFERS, Config.HUB_NAME, resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion)
         const message = Utility.StreamingProtocol.createMessage(result[i].transferId, result[i].payeeFsp, result[i].payerFsp, metadata, headers, fspiopError, { id: result[i].transferId }, `application/vnd.interoperability.${Enum.Http.HeaderResources.TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion}`)
         span.setTags(Utility.EventFramework.getTransferSpanTags({ payload: message.content.payload, headers }, Enum.Events.Event.Type.TRANSFER, Enum.Events.Event.Action.TIMEOUT_RECEIVED))
         await span.audit({
@@ -93,7 +93,7 @@ const timeout = async () => {
         if (result[i].bulkTransferId === null) { // regular transfer
           if (result[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
             message.to = message.from
-            message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
+            message.from = Config.HUB_NAME
             // event & type set above when `const metadata` is initialized to NOTIFICATION / TIMEOUT_RECEIVED
             await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state, null, span)
           } else if (result[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
@@ -105,7 +105,7 @@ const timeout = async () => {
         } else { // individual transfer from a bulk
           if (result[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
             message.to = message.from
-            message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
+            message.from = Config.HUB_NAME
             message.metadata.event.type = Enum.Events.Event.Type.BULK_PROCESSING
             message.metadata.event.action = Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED
             await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.BULK_PROCESSING, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, message, state, null, span)
