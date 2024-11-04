@@ -26,6 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const { Enum } = require('@mojaloop/central-services-shared')
+const Config = require('../../../../src/lib/config')
 const Sinon = require('sinon')
 const { processPositionFulfilBin } = require('../../../../src/domain/position/fulfil')
 
@@ -673,14 +674,14 @@ Test('Fulfil domain', processPositionFulfilBinTest => {
 
     test.equal(result.notifyMessages[0].message.content.headers.accept, transferMessage1.value.content.headers.accept)
     test.equal(result.notifyMessages[0].message.content.headers['fspiop-destination'], transferMessage1.value.content.headers['fspiop-source'])
-    test.equal(result.notifyMessages[0].message.content.headers['fspiop-source'], Enum.Http.Headers.FSPIOP.SWITCH.value)
+    test.equal(result.notifyMessages[0].message.content.headers['fspiop-source'], Config.HUB_NAME)
     test.equal(result.notifyMessages[0].message.content.headers['content-type'], transferMessage1.value.content.headers['content-type'])
     test.equal(result.accumulatedTransferStates[transferMessage1.value.id], Enum.Transfers.TransferInternalState.INVALID)
 
     console.log(transferMessage2.value.content.headers['fspiop-source'])
     test.equal(result.notifyMessages[1].message.content.headers.accept, transferMessage2.value.content.headers.accept)
     test.equal(result.notifyMessages[1].message.content.headers['fspiop-destination'], transferMessage2.value.content.headers['fspiop-source'])
-    test.equal(result.notifyMessages[1].message.content.headers['fspiop-source'], Enum.Http.Headers.FSPIOP.SWITCH.value)
+    test.equal(result.notifyMessages[1].message.content.headers['fspiop-source'], Config.HUB_NAME)
     test.equal(result.notifyMessages[1].message.content.headers['content-type'], transferMessage2.value.content.headers['content-type'])
     test.equal(result.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferInternalState.INVALID)
 
