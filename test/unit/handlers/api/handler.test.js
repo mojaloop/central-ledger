@@ -31,6 +31,8 @@ const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 const ProxyCache = require('#src/lib/proxyCache')
 
+require('../../../../../src/lib/config').MONGODB_DISABLED = false
+
 function createRequest (routes) {
   const value = routes || []
   return {
