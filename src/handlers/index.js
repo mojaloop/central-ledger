@@ -38,7 +38,8 @@ const Config = require('../lib/config')
 const Setup = require('../shared/setup')
 const PJson = require('../../package.json')
 const Plugin = require('./api/plugin')
-const MetricPlugin = require('../api/metrics/plugin')
+const MetricPlugin = require('@mojaloop/central-services-metrics').plugin
+
 const { Command } = require('commander')
 
 const Program = new Command()

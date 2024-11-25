@@ -5,7 +5,7 @@ const Sinon = require('sinon')
 const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 const Plugin = require('../../../src/handlers/api/plugin')
-const MetricsPlugin = require('../../../src/api/metrics/plugin')
+const MetricsPlugin = require('@mojaloop/central-services-metrics').plugin
 const Logger = require('@mojaloop/central-services-logger')
 const ProxyCache = require('#src/lib/proxyCache')
 
