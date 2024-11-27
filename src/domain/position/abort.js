@@ -92,11 +92,11 @@ const processPositionAbortBin = async (
         for (const positionChange of cyrilResult.positionChanges) {
           if (positionChange.isFxTransferStateChange) {
             // Construct notification message for fx transfer state change
-            const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, from, positionChange.notifyTo)
+            const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, from, positionChange.notifyTo, positionChange.isOriginalId, true)
             resultMessages.push({ binItem, message: resultMessage })
           } else {
             // Construct notification message for transfer state change
-            const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, from, positionChange.notifyTo)
+            const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, from, positionChange.notifyTo, positionChange.isOriginalId, false)
             resultMessages.push({ binItem, message: resultMessage })
           }
         }
@@ -126,12 +126,15 @@ const processPositionAbortBin = async (
   }
 }
 
-const _constructAbortResultMessage = (binItem, id, from, notifyTo) => {
+const _constructAbortResultMessage = (binItem, id, from, notifyTo, isOriginalId, isFx) => {
   let apiErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTION
   let fromCalculated = from
   if (binItem.message?.value.metadata.event.action === Enum.Events.Event.Action.FX_ABORT_VALIDATION || binItem.message?.value.metadata.event.action === Enum.Events.Event.Action.ABORT_VALIDATION) {
     fromCalculated = Config.HUB_NAME
     apiErrorCode = ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR
+  }
+  if (!isOriginalId) {
+    fromCalculated = Config.HUB_NAME
   }
   const fspiopError = ErrorHandler.Factory.createFSPIOPError(
     apiErrorCode,
@@ -151,7 +154,7 @@ const _constructAbortResultMessage = (binItem, id, from, notifyTo) => {
   const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
     id,
     Enum.Kafka.Topics.POSITION,
-    binItem.message?.value.metadata.event.action, // This will be replaced anyway in Kafka.produceGeneralMessage function
+    (isFx && !isOriginalId) ? Enum.Events.Event.Action.FX_ABORT : binItem.message?.value.metadata.event.action, // This will be replaced anyway in Kafka.produceGeneralMessage function
     state
   )
   const resultMessage = Utility.StreamingProtocol.createMessage(
