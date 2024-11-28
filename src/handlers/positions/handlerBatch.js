@@ -153,9 +153,9 @@ const positions = async (error, messages) => {
         // Produce notification message and audit message
         // NOTE: Not sure why we're checking the binItem for the action vs the message
         //       that is being created.
-        //       Handled FX_NOTIFY differently so as not to break existing functionality.
+        //       Handled FX_NOTIFY and FX_ABORT differently so as not to break existing functionality.
         let action
-        if (item?.message.metadata.event.action !== Enum.Events.Event.Action.FX_NOTIFY) {
+        if (![Enum.Events.Event.Action.FX_NOTIFY, Enum.Events.Event.Action.FX_ABORT].includes(item?.message.metadata.event.action)) {
           action = item.binItem.message?.value.metadata.event.action
         } else {
           action = item.message.metadata.event.action
