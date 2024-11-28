@@ -151,7 +151,12 @@ const positions = async (error, messages) => {
       // Loop through results and produce notification messages and audit messages
       await Promise.all(result.notifyMessages.map(item => {
         // Produce notification message and audit message
-        const action = item.message.metadata.event.action
+        let action
+        if (![Enum.Events.Event.Action.FX_NOTIFY, Enum.Events.Event.Action.FX_ABORT].includes(item?.message.metadata.event.action)) {
+          action = item.binItem.message?.value.metadata.event.action
+        } else {
+          action = item.message.metadata.event.action
+        }
         const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
         return Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
       }).concat(
