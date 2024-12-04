@@ -157,7 +157,6 @@ const _constructAbortResultMessage = (binItem, id, from, notifyTo, isOriginalId,
     (isFx && !isOriginalId) ? Enum.Events.Event.Action.FX_ABORT : binItem.message?.value.metadata.event.action, // This will be replaced anyway in Kafka.produceGeneralMessage function
     state
   )
-  metadata.event.isOriginalId = isOriginalId
   const resultMessage = Utility.StreamingProtocol.createMessage(
     id,
     notifyTo,
@@ -169,6 +168,7 @@ const _constructAbortResultMessage = (binItem, id, from, notifyTo, isOriginalId,
     'application/json',
     binItem.message.value.content.context
   )
+  resultMessage.content.context.isOriginalId = isOriginalId
 
   return resultMessage
 }
