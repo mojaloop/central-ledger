@@ -248,7 +248,7 @@ const processPositionPrepareBin = async (
         binItem.result = { success: true }
       }
 
-      resultMessages.push({ binItem, message: resultMessage })
+      resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
 
       if (changePositions) {
         Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)

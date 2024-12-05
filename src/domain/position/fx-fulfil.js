@@ -111,7 +111,7 @@ const processPositionFxFulfilBin = async (
         binItem.result = { success: true }
       }
 
-      resultMessages.push({ binItem, message: resultMessage })
+      resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
 
       if (transferStateId) {
         const fxTransferStateChange = {
