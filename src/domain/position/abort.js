@@ -93,11 +93,11 @@ const processPositionAbortBin = async (
           if (positionChange.isFxTransferStateChange) {
             // Construct notification message for fx transfer state change
             const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, from, positionChange.notifyTo, positionChange.isOriginalId, true)
-            resultMessages.push({ binItem, message: resultMessage })
+            resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
           } else {
             // Construct notification message for transfer state change
             const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, from, positionChange.notifyTo, positionChange.isOriginalId, false)
-            resultMessages.push({ binItem, message: resultMessage })
+            resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
           }
         }
       } else {
