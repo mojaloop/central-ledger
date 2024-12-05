@@ -73,7 +73,7 @@ const processPositionTimeoutReservedBin = async (
         participantPositionChanges.push(participantPositionChange)
         transferStateChanges.push(transferStateChange)
         accumulatedTransferStatesCopy[transferId] = transferStateId
-        resultMessages.push({ binItem, message: resultMessage })
+        resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
       }
     }
   }

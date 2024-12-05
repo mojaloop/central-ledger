@@ -73,7 +73,7 @@ const processPositionFxTimeoutReservedBin = async (
         participantPositionChanges.push(participantPositionChange)
         fxTransferStateChanges.push(fxTransferStateChange)
         accumulatedFxTransferStatesCopy[commitRequestId] = transferStateId
-        resultMessages.push({ binItem, message: resultMessage })
+        resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
       }
     }
   }
