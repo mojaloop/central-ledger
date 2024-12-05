@@ -168,6 +168,10 @@ const _constructAbortResultMessage = (binItem, id, from, notifyTo, isOriginalId,
     'application/json',
     binItem.message.value.content.context
   )
+  if (!resultMessage.content.context) {
+    resultMessage.content.context = {}
+  }
+  resultMessage.content.context.isOriginalId = isOriginalId
 
   return resultMessage
 }
