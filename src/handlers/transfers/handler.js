@@ -176,9 +176,9 @@ const processFulfilMessage = async (message, functionality, span) => {
   Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'getById' }))
 
   const transfer = await TransferService.getById(transferId)
-  const transferStateEnum = transfer && transfer.transferStateEnumeration
+  const transferStateEnum = transfer?.transferStateEnumeration
 
-  // List of valid actions that Source & Destination headers should be checked
+  // List of valid actions for which source & destination headers are checked
   const validActionsForRouteValidations = [
     TransferEventAction.COMMIT,
     TransferEventAction.RESERVE,
@@ -197,20 +197,21 @@ const processFulfilMessage = async (message, functionality, span) => {
      */
     await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
     throw fspiopError
+  }
 
-    // Lets validate FSPIOP Source & Destination Headers
-    // In interscheme scenario, we store proxy fsp id in transferParticipant table and hence we can't compare that data with fspiop headers in fulfil
-  } else if (
-    validActionsForRouteValidations.includes(action) // Lets only check headers for specific actions that need checking (i.e. bulk should not since its already done elsewhere)
-  ) {
-    // Check if the payerFsp and payeeFsp are proxies and if they are, skip validating headers
+  // Lets validate FSPIOP Source & Destination Headers
+  // We only check headers for specific actions that need checking (i.e. bulk should not be checked since it's already done elsewhere)
+  // In interscheme scenario, we store proxy fsp id in transferParticipant table and hence we can't compare that data with fspiop headers in fulfil
+
+  if (validActionsForRouteValidations.includes(action)) {
+    // Ensure payerFsp and payeeFsp are not proxies and if they are, skip validating headers
+    /**
+     * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
+     */
     if (
       (headers[Enum.Http.Headers.FSPIOP.SOURCE] && !transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) ||
       (headers[Enum.Http.Headers.FSPIOP.DESTINATION] && !transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()))
     ) {
-      /**
-       * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
-       */
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorSourceNotMatchingTransferFSPs--${actionLetter}2`))
 
       // Lets set a default non-matching error to fallback-on
@@ -228,12 +229,6 @@ const processFulfilMessage = async (message, functionality, span) => {
 
       const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
 
-      // Set the event details to map to an ABORT_VALIDATION event targeted to the Position Handler
-      const eventDetail = {
-        functionality: TransferEventType.POSITION,
-        action: TransferEventAction.ABORT_VALIDATION
-      }
-
       // Lets handle the abort validation and change the transfer state to reflect this
       const transferAbortResult = await TransferService.handlePayeeResponse(transferId, payload, TransferEventAction.ABORT_VALIDATION, apiFSPIOPError)
 
@@ -244,13 +239,20 @@ const processFulfilMessage = async (message, functionality, span) => {
        * at BulkPrepareHander. To be verified as part of future story.
        */
 
-      // Publish message to Position Handler
+      // Set the event details to map to an ABORT_VALIDATION event targeted to the Position Handler
+      const eventDetail = {
+        functionality: TransferEventType.POSITION,
+        action: TransferEventAction.ABORT_VALIDATION
+      }
+
       // Key position abort with payer account id
       const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
+
+      // Publish message to Position Handler
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, toDestination: transfer.payerFsp, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
 
       /**
-       * Send patch notification callback to original payee fsp if they asked for a a patch response.
+       * Send patch notification callback to original payee fsp if they asked for a patch response.
        */
       if (action === TransferEventAction.RESERVE) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
@@ -259,13 +261,14 @@ const processFulfilMessage = async (message, functionality, span) => {
         const reserveAbortedEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
 
         // Extract error information
-        const errorCode = apiFSPIOPError && apiFSPIOPError.errorInformation && apiFSPIOPError.errorInformation.errorCode
-        const errorDescription = apiFSPIOPError && apiFSPIOPError.errorInformation && apiFSPIOPError.errorInformation.errorDescription
+        const errorCode = apiFSPIOPError?.errorInformation?.errorCode
+        const errorDescription = apiFSPIOPError?.errorInformation?.errorDescription
 
-        // TODO: This should be handled by a PATCH /transfers/{id}/error callback in the future FSPIOP v1.2 specification, and instead we should just send the FSPIOP-Error instead! Ref: https://github.com/mojaloop/mojaloop-specification/issues/106.
+        // TODO: This should be handled by a PATCH /transfers/{id}/error callback in the future FSPIOP v1.2 specification, and instead we should just send the FSPIOP-Error instead!
+        // Ref: https://github.com/mojaloop/mojaloop-specification/issues/106.
         const reservedAbortedPayload = {
-          transferId: transferAbortResult && transferAbortResult.id,
-          completedTimestamp: transferAbortResult && transferAbortResult.completedTimestamp && (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
+          transferId: transferAbortResult?.id,
+          completedTimestamp: transferAbortResult?.completedTimestamp && (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
           transferState: TransferState.ABORTED,
           extensionList: { // lets add the extension list to handle the limitation of the FSPIOP v1.1 specification by adding the error cause...
             extension: [
@@ -283,8 +286,12 @@ const processFulfilMessage = async (message, functionality, span) => {
       throw apiFSPIOPError
     }
   }
+
   // If execution continues after this point we are sure transfer exists and source matches payee fsp
 
+  /**
+   * Duplicate Check
+   */
   Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
   const histTimerDuplicateCheckEnd = Metrics.getHistogram(
     'handler_transfers',
@@ -357,10 +364,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   if (hasDuplicateId && !hasDuplicateHash) {
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${actionLetter}7`))
-    let action = TransferEventAction.FULFIL_DUPLICATE
-    if (isTransferError) {
-      action = TransferEventAction.ABORT_DUPLICATE
-    }
+    const action = isTransferError ? TransferEventAction.ABORT_DUPLICATE : TransferEventAction.FULFIL_DUPLICATE
 
     /**
      * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil,
@@ -506,6 +510,7 @@ const processFulfilMessage = async (message, functionality, span) => {
     throw fspiopError
   }
 
+  // Check if the transfer has expired
   if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
@@ -552,10 +557,8 @@ const processFulfilMessage = async (message, functionality, span) => {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
       await TransferService.handlePayeeResponse(transferId, payload, action)
       const eventDetail = { functionality: TransferEventType.POSITION, action }
-      // Key position fulfil message with payee account id
       const cyrilResult = await FxService.Cyril.processFulfilMessage(transferId, payload, transfer)
       if (cyrilResult.isFx) {
-        // const payeeAccount = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         params.message.value.content.context = {
           ...params.message.value.content.context,
           cyrilResult
@@ -570,6 +573,7 @@ const processFulfilMessage = async (message, functionality, span) => {
           throw fspiopError
         }
       } else {
+        // Key position fulfil message with payee account id
         const payeeAccount = await Participant.getAccountByNameAndCurrency(transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, messageKey: payeeAccount.participantCurrencyId.toString(), topicNameOverride, hubName: Config.HUB_NAME })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -726,7 +730,7 @@ const processFxFulfilMessage = async (message, functionality, span) => {
     ['success', 'funcName']
   ).startTimer()
 
-  const dupCheckResult = await fxFulfilService.getDuplicateCheckResult({ commitRequestId, payload })
+  const dupCheckResult = await fxFulfilService.getDuplicateCheckResult({ commitRequestId, payload, action })
   histTimerDuplicateCheckEnd({ success: true, funcName: 'fxFulfil_duplicateCheckComparator' })
 
   const isDuplicate = await fxFulfilService.checkDuplication({ dupCheckResult, transfer, functionality, action, type })
