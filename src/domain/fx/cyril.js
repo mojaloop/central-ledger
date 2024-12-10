@@ -251,12 +251,12 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
     const transferRecord = await TransferFacade.getById(transferId)
     const transferPositionChanges = await ParticipantPositionChangesModel.getReservedPositionChangesByTransferId(transferId)
 
-    // Context: processing interscheme transfer abort with accompanying fx transfer where the payee and fxp are represented by the same proxy
+    // Context: processing interscheme transfer abort with accompanying fx transfer where the payee DFSP is proxied
     //
     // If the transferPositionChanges is empty and there is a commitRequestId and the tranferId is the same as the originalId,
     // then it is a case where the transfer has no position change for the transfer in the buffer scheme but has position change for the fx transfer.
-    // In that case we need to add a position change for the transfer so that we notify the payer and update the transfer state.
-    // To do that, we add a zero value position change for the transfer. This zero value position change is only used for notification and transfer state change.
+    // In that case we need to add a zero-value position change for the transfer so that we can notify the payer and update the transfer state.
+    // This zero-value position change is only used for notification and transfer state change.
     // It is not used for actual position change as it is excluded based on zero value here src/domain/position/abort.js:L81.
     if (isAbort && transferRecord && transferRecord.payeeIsProxy && transferPositionChanges.length === 0 && !!commitRequestIdList.length && originalId === transferId) {
       positionChanges.push({
