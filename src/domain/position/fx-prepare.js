@@ -65,6 +65,7 @@ const processFxPositionPrepareBin = async (
 
       Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(fxTransfer)}`)
 
+      /* eslint-disable brace-style */
       // Check if fxTransfer is in correct state for processing, produce an internal error message
       if (accumulatedFxTransferStates[fxTransfer.commitRequestId] !== Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
         Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::transferState: ${accumulatedFxTransferStates[fxTransfer.commitRequestId]} !== ${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
@@ -109,9 +110,9 @@ const processFxPositionPrepareBin = async (
         )
 
         binItem.result = { success: false }
-
-        // Check if payer has insufficient liquidity, produce an error message and abort transfer
-      } else if (changePositions && availablePositionBasedOnLiquidityCover.toNumber() < transferAmount) {
+      }
+      // Check if payer has insufficient liquidity, produce an error message and abort transfer
+      else if (changePositions && availablePositionBasedOnLiquidityCover.toNumber() < transferAmount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
 
@@ -152,9 +153,9 @@ const processFxPositionPrepareBin = async (
         )
 
         binItem.result = { success: false }
-
-        // Check if payer has surpassed their limit, produce an error message and abort transfer
-      } else if (changePositions && availablePositionBasedOnPayerLimit.toNumber() < transferAmount) {
+      }
+      // Check if payer has surpassed their limit, produce an error message and abort transfer
+      else if (changePositions && availablePositionBasedOnPayerLimit.toNumber() < transferAmount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
 
@@ -195,9 +196,9 @@ const processFxPositionPrepareBin = async (
         )
 
         binItem.result = { success: false }
-
-        // Payer has sufficient liquidity and limit
-      } else {
+      }
+      // Payer has sufficient liquidity and limit
+      else {
         transferStateId = Enum.Transfers.TransferInternalState.RESERVED
 
         if (changePositions) {

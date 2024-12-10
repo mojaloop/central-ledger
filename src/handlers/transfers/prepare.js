@@ -344,7 +344,7 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
     .getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation)
 
   let messageKey
-  // On a proxied transfer prepare if there is a corresponding fx transfer `getPositionParticipant`
+  // On a proxied transfer prepare, if there is a corresponding fx transfer, `getPositionParticipant`
   // should return the fxp's proxy as the participantName since the fxp proxy would be saved as the counterPartyFsp
   // in the prior fx transfer prepare.
   // Following interscheme rules, if the debtor(fxTransfer FXP) and the creditor(transfer payee) are

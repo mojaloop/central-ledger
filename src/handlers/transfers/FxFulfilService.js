@@ -256,7 +256,9 @@ class FxFulfilService {
 
   async validateTransferState(transfer, functionality) {
     if (transfer.transferState !== TransferInternalState.RESERVED &&
-        transfer.transferState !== TransferInternalState.RESERVED_FORWARDED) {
+        transfer.transferState !== TransferInternalState.RESERVED_FORWARDED &&
+        transfer.transferState !== TransferInternalState.RECEIVED_FULFIL_DEPENDENT
+    ) {
       const fspiopError = fspiopErrorFactory.fxTransferNonReservedState()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {

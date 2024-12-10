@@ -78,7 +78,7 @@ const processPositionAbortBin = async (
         const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
           _handleParticipantPositionChange(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.transferId, accumulatedPositionReservedValue)
         runningPosition = updatedRunningPosition
-        participantPositionChanges.push(participantPositionChange)
+        participantPositionChange.change !== 0 && participantPositionChanges.push(participantPositionChange)
         transferStateChanges.push(transferStateChange)
         accumulatedTransferStatesCopy[positionChangeToBeProcessed.transferId] = transferStateId
       }
