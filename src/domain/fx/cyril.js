@@ -256,7 +256,8 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
     // If the transferPositionChanges is empty and there is a commitRequestId and the tranferId is the same as the originalId,
     // then it is a case where the transfer has no position change for the transfer in the buffer scheme but has position change for the fx transfer.
     // In that case we need to add a position change for the transfer so that we notify the payer and update the transfer state.
-    // To do that, we add a zero value position change for the transfer.
+    // To do that, we add a zero value position change for the transfer. This zero value position change is only used for notification and transfer state change.
+    // It is not used for actual position change as it is excluded based on zero value here src/domain/position/abort.js:L81.
     if (isAbort && transferRecord && transferRecord.payeeIsProxy && transferPositionChanges.length === 0 && !!commitRequestIdList.length && originalId === transferId) {
       positionChanges.push({
         isFxTransferStateChange: false,
