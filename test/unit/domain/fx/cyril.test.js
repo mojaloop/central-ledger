@@ -1139,7 +1139,8 @@ Test('Cyril', cyrilTest => {
               participantCurrencyId: 1,
               amount: -433.88
             }
-          ]
+          ],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()
@@ -1198,7 +1199,8 @@ Test('Cyril', cyrilTest => {
             notifyTo: 'dfsp1',
             participantCurrencyId: 1,
             amount: -433.88
-          }]
+          }],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()

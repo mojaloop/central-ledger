@@ -228,10 +228,12 @@ const processFxFulfilMessage = async (commitRequestId) => {
  *
  * @param {Array<string>} commitRequestIdList - List of commit request IDs to retrieve FX-related position changes.
  * @param {Array<string>} transferIdList - List of transfer IDs to retrieve regular transfer-related position changes.
- * @returns {Promise<PositionChangeItem[]>} - A promise that resolves to an array of position change objects.
+ * @returns {Promise<{ PositionChangeItem[], TransferStateChangeItem[] }>} - A promise that resolves to an object containing
+ *  array of position change objects and transfer state change objects (transfer state changes with no position changes).
  */
 const _getPositionChanges = async (commitRequestIdList, transferIdList, originalId, isAbort = false) => {
   const positionChanges = []
+  const transferStateChanges = []
   for (const commitRequestId of commitRequestIdList) {
     const fxRecord = await fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
     const fxPositionChanges = await ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId(commitRequestId)
@@ -255,17 +257,14 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
     //
     // If the transferPositionChanges is empty and there is a commitRequestId and the tranferId is the same as the originalId,
     // then it is a case where the transfer has no position change for the transfer in the buffer scheme but has position change for the fx transfer.
-    // In that case we need to add a zero-value position change for the transfer so that we can notify the payer and update the transfer state.
-    // This zero-value position change is only used for notification and transfer state change.
-    // It is not used for actual position change as it is excluded based on zero value here src/domain/position/abort.js:L81.
+    // In that case we need to add a transfer state change so that we can notify the payer and update the transfer state.
     if (isAbort && transferRecord && transferRecord.payeeIsProxy && transferPositionChanges.length === 0 && !!commitRequestIdList.length && originalId === transferId) {
-      positionChanges.push({
-        isFxTransferStateChange: false,
+      transferStateChanges.push({
         transferId,
-        isOriginalId: originalId === transferId,
-        notifyTo: transferRecord.payerFsp,
-        participantCurrencyId: transferRecord.payerParticipantCurrencyId,
-        amount: 0
+        transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR,
+        reason: null,
+        isOriginalId: originalId === transferId, // added to help in constructing the notification
+        notifyTo: transferRecord.externalPayerName || transferRecord.payerFsp // added to help in constructing the notification
       })
     } else {
       transferPositionChanges.forEach((transferPositionChange) => {
@@ -281,7 +280,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
     }
   }
 
-  return positionChanges
+  return { positionChanges, transferStateChanges }
 }
 
 /**
@@ -301,11 +300,12 @@ const processFxAbortMessage = async (commitRequestId) => {
   const relatedFxTransferRecords = await fxTransfer.getByDeterminingTransferId(fxTransferRecord.determiningTransferId)
 
   // Get position changes
-  const positionChanges = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [fxTransferRecord.determiningTransferId], commitRequestId, false)
+  const { positionChanges, transferStateChanges } = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [fxTransferRecord.determiningTransferId], commitRequestId, false)
 
   histTimer({ success: true })
   return {
-    positionChanges
+    positionChanges,
+    transferStateChanges
   }
 }
 
@@ -320,11 +320,12 @@ const processAbortMessage = async (transferId) => {
   const relatedFxTransferRecords = await fxTransfer.getByDeterminingTransferId(transferId)
 
   // Get position changes
-  const positionChanges = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [transferId], transferId, true)
+  const { positionChanges, transferStateChanges } = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [transferId], transferId, true)
 
   histTimer({ success: true })
   return {
-    positionChanges
+    positionChanges,
+    transferStateChanges
   }
 }
 

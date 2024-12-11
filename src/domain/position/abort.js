@@ -78,7 +78,7 @@ const processPositionAbortBin = async (
         const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
           _handleParticipantPositionChange(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.transferId, accumulatedPositionReservedValue)
         runningPosition = updatedRunningPosition
-        participantPositionChange.change !== 0 && participantPositionChanges.push(participantPositionChange)
+        participantPositionChanges.push(participantPositionChange)
         transferStateChanges.push(transferStateChange)
         accumulatedTransferStatesCopy[positionChangeToBeProcessed.transferId] = transferStateId
       }
@@ -97,6 +97,13 @@ const processPositionAbortBin = async (
           } else {
             // Construct notification message for transfer state change
             const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, from, positionChange.notifyTo, positionChange.isOriginalId, false)
+            resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
+          }
+        }
+        // Add notifications in the transferStateChanges if available
+        if (Array.isArray(cyrilResult.transferStateChanges)) {
+          for (const transferStateChange of cyrilResult.transferStateChanges) {
+            const resultMessage = _constructAbortResultMessage(binItem, transferStateChange.transferId, from, transferStateChange.notifyTo, transferStateChange.isOriginalId, false)
             resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
           }
         }
