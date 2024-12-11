@@ -15,9 +15,9 @@ Names of the original copyright holders (individuals or organizations)
 should be listed with a '*' in the first column. People who have
 contributed from an organization can be listed under the organization
 that actually holds the copyright for their contributions (see the
-  Gates Foundation organization for an example). Those individuals should have
-  their names indented and be marked with a '-'. Email address can be added
-  optionally within square brackets <email>.
+Gates Foundation organization for an example). Those individuals should have
+their names indented and be marked with a '-'. Email address can be added
+optionally within square brackets <email>.
 
   * Gates Foundation
   - Name Surname <name.surname@gatesfoundation.com>
@@ -177,7 +177,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
     const span = EventSdk.Tracer.createSpan('cl_fx_transfer_timeout')
     try {
       const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
-      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(fTT.commitRequestId, Enum.Kafka.Topics.NOTIFICATION, Action.TIMEOUT_RECEIVED, state)
+      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(fTT.commitRequestId, Enum.Kafka.Topics.NOTIFICATION, Action.FX_TIMEOUT_RECEIVED, state)
       const destination = fTT.externalInitiatingFspName || fTT.initiatingFsp
       const source = fTT.externalCounterPartyFspName || fTT.counterPartyFsp
       const headers = Utility.Http.SwitchDefaultHeaders(destination, Enum.Http.HeaderResources.FX_TRANSFERS, Config.HUB_NAME, resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion)
@@ -193,12 +193,12 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
 
       if (fTT.transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
         message.from = Config.HUB_NAME
-        // event & type set above when `const metadata` is initialized to NOTIFICATION / TIMEOUT_RECEIVED
+        // event & type set above when `const metadata` is initialized to NOTIFICATION / FX_TIMEOUT_RECEIVED
         await Kafka.produceGeneralMessage(
           Config.KAFKA_CONFIG,
           Producer,
           Enum.Kafka.Topics.NOTIFICATION,
-          Action.FX_TIMEOUT_RESERVED,
+          Action.FX_TIMEOUT_RECEIVED,
           message,
           state,
           null,
@@ -220,6 +220,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
           Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_TIMEOUT_RESERVED
         )
       }
+      // @todo Do we need to handle other states like FULFIL_DEPENDENT?
     } catch (err) {
       logger.error('error in _processFxTimedOutTransfers:', err)
       const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
