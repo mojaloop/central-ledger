@@ -73,7 +73,7 @@ const fspiopErrorFactory = {
     return Factory.createFSPIOPError(
       Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED,
       ERROR_MESSAGES.fxTransferExpired,
-      cause = null, replyTo = ''
+      cause, replyTo
     )
   },
 
