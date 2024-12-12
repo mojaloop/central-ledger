@@ -5,9 +5,9 @@ const Inert = require('@hapi/inert')
 const Vision = require('@hapi/vision')
 const Blipp = require('blipp')
 const ErrorHandling = require('@mojaloop/central-services-error-handling')
-const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.APIDocumentation
+const { APIDocumentation, loggingPlugin } = require('@mojaloop/central-services-shared').Util.Hapi
 const Config = require('../lib/config')
-const LoggingPlugin = require('./loggingPlugin')
+const { logger } = require('./logger')
 
 const registerPlugins = async (server) => {
   if (Config.API_DOC_ENDPOINTS_ENABLED) {
@@ -41,8 +41,8 @@ const registerPlugins = async (server) => {
   })
 
   await server.register({
-    plugin: LoggingPlugin,
-    options: {}
+    plugin: loggingPlugin,
+    options: { log: logger }
   })
 
   await server.register([Inert, Vision, Blipp, ErrorHandling])
