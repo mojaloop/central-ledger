@@ -105,6 +105,10 @@ const processPositionAbortBin = async (
           for (const transferStateChange of cyrilResult.transferStateChanges) {
             const resultMessage = _constructAbortResultMessage(binItem, transferStateChange.transferId, from, transferStateChange.notifyTo, transferStateChange.isOriginalId, false)
             resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
+            delete transferStateChange.isOriginalId
+            delete transferStateChange.notifyTo
+            transferStateChanges.push({ ...transferStateChange })
+            accumulatedTransferStatesCopy[transferStateChange.transferId] = transferStateChange.transferStateId
           }
         }
       } else {
