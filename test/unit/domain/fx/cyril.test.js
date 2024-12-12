@@ -1150,6 +1150,44 @@ Test('Cyril', cyrilTest => {
       }
     })
 
+    processAbortMessageTest.test('return transferStateChanges if no position changes but has commitRequestId', async (test) => {
+      try {
+        fxTransfer.getByDeterminingTransferId.returns(Promise.resolve([
+          { commitRequestId: fxPayload.commitRequestId }
+        ]))
+        // Mocks for _getPositionChnages
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve({
+          initiatingFspName: fxPayload.initiatingFsp
+        }))
+        ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.returns(Promise.resolve([]))
+        TransferFacade.getById.returns(Promise.resolve({
+          payerFsp: payload.payerFsp,
+          payeeIsProxy: true
+        }))
+        ParticipantPositionChangesModel.getReservedPositionChangesByTransferId.returns(Promise.resolve([]))
+
+        const result = await Cyril.processAbortMessage(payload.transferId)
+
+        test.deepEqual(result, {
+          positionChanges: [],
+          transferStateChanges: [
+            {
+              isOriginalId: true,
+              notifyTo: 'dfsp1',
+              reason: null,
+              transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+              transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR
+            }
+          ]
+        })
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
     processAbortMessageTest.end()
   })
 
