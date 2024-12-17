@@ -46,8 +46,6 @@ const handleFulfilResponse = async (transferId, payload, action, fspiopError) =>
 
   try {
     await FxTransferModel.fxTransfer.saveFxFulfilResponse(transferId, payload, action, fspiopError)
-    // TODO: Need to return a result if we need
-    // const result = TransferObjectTransform.toTransfer(fxTransfer)
     const result = {}
     histTimerTransferServiceHandlePayeeResponseEnd({ success: true, funcName: 'handleFulfilResponse' })
     return result
@@ -73,37 +71,10 @@ const forwardedFxPrepare = async (commitRequestId) => {
   }
 }
 
-// TODO: Need to implement this for fxTransferError
-// /**
-//  * @function LogFxTransferError
-//  *
-//  * @async
-//  * @description This will insert a record into the fxTransferError table for the latest fxTransfer stage change id.
-//  *
-//  * FxTransferModel.stateChange.getByCommitRequestId called to get the latest fx transfer state change id
-//  * FxTransferModel.error.insert called to insert the record into the fxTransferError table
-//  *
-//  * @param {string} commitRequestId - the transfer id
-//  * @param {integer} errorCode - the error code
-//  * @param {string} errorDescription - the description error
-//  *
-//  * @returns {integer} - Returns the id of the transferError record if successful, or throws an error if failed
-//  */
-
-// const logFxTransferError = async (commitRequestId, errorCode, errorDescription) => {
-//   try {
-//     const transferStateChange = await FxTransferModel.stateChange.getByCommitRequestId(commitRequestId)
-//     return FxTransferModel.error.insert(commitRequestId, transferStateChange.fxTransferStateChangeId, errorCode, errorDescription)
-//   } catch (err) {
-//     throw ErrorHandler.Factory.reformatFSPIOPError(err)
-//   }
-// }
-
 const TransferService = {
   handleFulfilResponse,
   forwardedFxPrepare,
   getByIdLight: FxTransferModel.fxTransfer.getByIdLight,
-  // logFxTransferError,
   Cyril
 }
 

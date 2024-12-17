@@ -801,7 +801,6 @@ const getExternalParticipantIdByNameOrCreate = async ({ name, proxyId }) => {
   } catch (err) {
     logger.child({ name, proxyId }).warn('error in getExternalParticipantIdByNameOrCreate:', err)
     return null
-    // todo: think, if we need to rethrow an error here?
   }
 }
 

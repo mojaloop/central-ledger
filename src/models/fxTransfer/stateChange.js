@@ -54,8 +54,7 @@ const getByCommitRequestId = async (id) => {
 const logTransferError = async (id, errorCode, errorDescription) => {
   try {
     const stateChange = await getByCommitRequestId(id)
-    // todo: check if stateChange is not null
-    return TransferError.insert(id, stateChange.fxTransferStateChangeId, errorCode, errorDescription)
+    return TransferError.insert(id, stateChange?.fxTransferStateChangeId, errorCode, errorDescription)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

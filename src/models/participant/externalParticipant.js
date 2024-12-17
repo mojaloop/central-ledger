@@ -88,7 +88,6 @@ const destroyBy = async (criteria) => {
 const destroyById = async (id) => destroyBy({ [ID_FIELD]: id })
 const destroyByName = async (name) => destroyBy({ name })
 
-// todo: think, if we need update method
 module.exports = {
   create,
   getAll,

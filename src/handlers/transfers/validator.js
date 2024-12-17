@@ -215,6 +215,7 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
     // Iterate through determiningTransferCheckResult.watchListRecords
     for (const watchListRecord of determiningTransferCheckResult.watchListRecords) {
       if (isFx) {
+        // TODO throw not implemented. this is payee initiated transfer validation.
         // TODO: Check the transfer state of determiningTransferId
         // const latestTransferStateChange = await TransferStateChangeModel.getByTransferId(watchListRecord.determiningTransferId)
         // if (latestTransferStateChange.transferStateId !== Enum.Transfers.TransferInternalState.RESERVED) {

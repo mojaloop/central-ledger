@@ -284,7 +284,6 @@ const savePreparedRequest = async (
       getParticipant(counterPartyFsp, payload.sourceAmount.currency),
       !proxyObligation.isCounterPartyFspProxy ? getParticipant(counterPartyFsp, payload.targetAmount.currency) : null
     ])
-    // todo: clarify, what we should do if no initiatingParticipant or counterParticipant found?
 
     const fxTransferRecord = {
       commitRequestId: payload.commitRequestId,
@@ -487,13 +486,6 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
     reason: errorDescription,
     createdDate: transactionTimestamp
   }
-  // const fxTransferErrorRecord = {
-  //   commitRequestId,
-  //   fxTransferStateChangeId: null,
-  //   errorCode,
-  //   errorDescription,
-  //   createdDate: transactionTimestamp
-  // }
 
   try {
     /** @namespace Db.getKnex **/
@@ -536,17 +528,6 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
         await knex('fxTransferStateChange').transacting(trx).insert(fxTransferStateChangeRecord)
         result.fxTransferStateChangeRecord = fxTransferStateChangeRecord
         logger.debug('saveFxFulfilResponse::fxTransferStateChange')
-        // TODO: Need to handle the following incase of error
-        // if (fspiopError) {
-        //   const insertedTransferStateChange = await knex('fxTransferStateChange').transacting(trx)
-        //     .where({ commitRequestId })
-        //     .forUpdate().first().orderBy('fxTransferStateChangeId', 'desc')
-        //   fxTransferStateChangeRecord.fxTransferStateChangeId = insertedTransferStateChange.fxTransferStateChangeId
-        //   fxTransferErrorRecord.fxTransferStateChangeId = insertedTransferStateChange.fxTransferStateChangeId
-        //   await knex('transferError').transacting(trx).insert(fxTransferErrorRecord)
-        //   result.fxTransferErrorRecord = fxTransferErrorRecord
-        //   logger.debug('saveFxFulfilResponse::transferError')
-        // }
         histTFxFulfilResponseValidationPassedEnd({ success: true, queryName: 'facade_saveFxFulfilResponse_transaction' })
         result.savePayeeTransferResponseExecuted = true
         logger.debug('saveFxFulfilResponse::success')

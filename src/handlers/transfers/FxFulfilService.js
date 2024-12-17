@@ -49,7 +49,7 @@ class FxFulfilService {
     this.Validator = deps.Validator
     this.FxTransferModel = deps.FxTransferModel
     this.Kafka = deps.Kafka
-    this.params = deps.params // todo: rename to kafkaParams
+    this.params = deps.params
     this.cyril = deps.cyril || cyril
     this.transform = deps.transform || TransferObjectTransform
   }

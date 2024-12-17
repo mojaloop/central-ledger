@@ -34,7 +34,7 @@ const { ERROR_MESSAGES } = require('./constants')
 const fspiopErrorFactory = {
   fxTransferNotFound: (cause = null, replyTo = '') => {
     return Factory.createFSPIOPError(
-      Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, // todo: should we create a new error FX_TRANSFER_ID_NOT_FOUND?
+      Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND,
       ERROR_MESSAGES.fxTransferNotFound,
       cause, replyTo
     )

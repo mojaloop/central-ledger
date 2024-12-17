@@ -210,8 +210,6 @@ const processFxFulfilMessage = async (commitRequestId) => {
     throw new Error(`Commit request ID ${commitRequestId} not found in watch list`)
   }
 
-  // TODO: May need to update the watchList record to indicate that the fxTransfer has been fulfilled
-
   histTimer({ success: true })
   return true
 }
@@ -328,8 +326,6 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
   if (watchListRecords && watchListRecords.length > 0) {
     result.isFx = true
 
-    // TODO: Sense check: Are all entries on the watchlist marked as RESERVED?
-
     // Loop around watch list
     let sendingFxpExists = false
     let receivingFxpExists = false
@@ -354,7 +350,6 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
             amount: -fxTransferRecord.targetAmount
           })
         }
-        // TODO: Send PATCH notification to FXP
       }
 
       // Original Plan: If the reservation is against the DFSP, then this is a conversion at the debtor. Mark FXP as sending FXP
@@ -447,8 +442,6 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
         }
       }
     }
-
-    // TODO: Remove entries from watchlist
   } else {
     // Normal transfer request, just return isFx = false
   }

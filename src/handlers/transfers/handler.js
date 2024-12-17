@@ -50,7 +50,6 @@ const { ERROR_MESSAGES } = require('../../shared/constants')
 const Config = require('../../lib/config')
 const TransferService = require('../../domain/transfer')
 const FxService = require('../../domain/fx')
-// TODO: Can define domain functions instead of accessing model directly from handler
 const FxTransferModel = require('../../models/fxTransfer')
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Participant = require('../../domain/participant')
@@ -446,8 +445,6 @@ const processFulfilMessage = async (message, functionality, span) => {
     // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
     if (action === TransferEventAction.RESERVE) {
       // Get the updated transfer now that completedTimestamp will be different
-      // TODO: should we just modify TransferService.handlePayeeResponse to
-      // return the completed timestamp? Or is it safer to go back to the DB here?
       const transferAbortResult = await TransferService.getById(transferId)
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
       const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
@@ -490,14 +487,12 @@ const processFulfilMessage = async (message, functionality, span) => {
     // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
     if (action === TransferEventAction.RESERVE) {
       // Get the updated transfer now that completedTimestamp will be different
-      // TODO: should we just modify TransferService.handlePayeeResponse to
-      // return the completed timestamp? Or is it safer to go back to the DB here?
-      const transferAborted = await TransferService.getById(transferId) // TODO: remove this once it can be tested
+      const transferAborted = await TransferService.getById(transferId)
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
       const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
       const reservedAbortedPayload = {
         transferId: transferAborted.id,
-        completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)), // TODO: remove this once it can be tested
+        completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
         transferState: TransferState.ABORTED
       }
       message.value.content.payload = reservedAbortedPayload
@@ -518,8 +513,6 @@ const processFulfilMessage = async (message, functionality, span) => {
     // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
     if (action === TransferEventAction.RESERVE) {
       // Get the updated transfer now that completedTimestamp will be different
-      // TODO: should we just modify TransferService.handlePayeeResponse to
-      // return the completed timestamp? Or is it safer to go back to the DB here?
       const transferAborted = await TransferService.getById(transferId)
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
       const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
@@ -576,7 +569,6 @@ const processFulfilMessage = async (message, functionality, span) => {
       }
       return true
     }
-    // TODO: why do we let this logic get this far? Why not remove it from validActions array above?
     case TransferEventAction.REJECT: {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
       const errorMessage = 'action REJECT is not allowed into fulfil handler'
@@ -592,10 +584,6 @@ const processFulfilMessage = async (message, functionality, span) => {
       try { // handle only valid errorCodes provided by the payee
         fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(eInfo)
       } catch (err) {
-        /**
-         * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
-         * so that such requests are rejected right away, instead of aborting the transfer here.
-         */
         Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
@@ -610,8 +598,6 @@ const processFulfilMessage = async (message, functionality, span) => {
       // Key position abort with payer account id
       const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
-      // TODO(2556): I don't think we should emit an extra notification here
-      // this is the case where the Payee sent an ABORT, so we don't need to tell them to abort
       throw fspiopError
     }
     case TransferEventAction.ABORT: {
@@ -716,7 +702,6 @@ const processFxFulfilMessage = async (message, functionality, span) => {
   }
 
   const transfer = await fxFulfilService.getFxTransferDetails(commitRequestId, functionality)
-  // todo: rename to fxTransfer
   await fxFulfilService.validateHeaders({ transfer, headers, payload })
 
   // If execution continues after this point we are sure fxTransfer exists and source matches payee fsp

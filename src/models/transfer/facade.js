@@ -497,7 +497,6 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     let payerTransferParticipantRecord
     if (proxyObligation?.isInitiatingFspProxy) {
       const externalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(proxyObligation.initiatingFspProxyOrParticipantId)
-      // todo: think, what if externalParticipantId is null?
       payerTransferParticipantRecord = {
         transferId: payload.transferId,
         participantId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].id,
