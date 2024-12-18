@@ -215,14 +215,7 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
     // Iterate through determiningTransferCheckResult.watchListRecords
     for (const watchListRecord of determiningTransferCheckResult.watchListRecords) {
       if (isFx) {
-        // TODO throw not implemented. this is payee initiated transfer validation.
-        // TODO: Check the transfer state of determiningTransferId
-        // const latestTransferStateChange = await TransferStateChangeModel.getByTransferId(watchListRecord.determiningTransferId)
-        // if (latestTransferStateChange.transferStateId !== Enum.Transfers.TransferInternalState.RESERVED) {
-        //   reasons.push('Related Transfer is not in reserved state')
-        //   validationPassed = false
-        //   return { validationPassed, reasons }
-        // }
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED)
       } else {
         // Check the transfer state of commitRequestId
         const latestFxTransferStateChange = await FxTransferStateChangeModel.getByCommitRequestId(watchListRecord.commitRequestId)

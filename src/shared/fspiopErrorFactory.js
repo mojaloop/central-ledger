@@ -115,10 +115,6 @@ const fspiopErrorFactory = {
     try { // handle only valid errorCodes provided by the payee
       fspiopError = Factory.createFSPIOPErrorFromErrorInformation(errInfo)
     } catch (err) {
-      /**
-       * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
-       * so that such requests are rejected right away, instead of aborting the transfer here.
-       */
       logger.error(`apiErrorCode error: ${err?.message}`)
       fspiopError = Factory.createFSPIOPError(
         Enums.FSPIOPErrorCodes.VALIDATION_ERROR,

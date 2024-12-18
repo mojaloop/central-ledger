@@ -521,7 +521,6 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     let payeeTransferParticipantRecord
     if (proxyObligation?.isCounterPartyFspProxy) {
       const externalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(proxyObligation.counterPartyFspProxyOrParticipantId)
-      // todo: think, what if externalParticipantId is null?
       payeeTransferParticipantRecord = {
         transferId: payload.transferId,
         participantId: participants[proxyObligation.counterPartyFspProxyOrParticipantId.proxyId].id,
@@ -1037,7 +1036,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                   .whereIn('ftsc.transferStateId', [
                   `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
                   `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
-                  ]) // TODO: need to check this for fx
+                  ])
                   .as('ftt1'),
                 'ft.commitRequestId', 'ftt1.commitRequestId'
               )

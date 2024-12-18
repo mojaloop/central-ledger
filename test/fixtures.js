@@ -270,12 +270,10 @@ const fxtGetAllDetailsByCommitRequestIdDto = ({
   transferState: Enum.Transfers.TransferState.RESERVED,
   transferStateEnumeration: 'RECEIVED', // or RECEIVED_FULFIL?
   fulfilment: FULFILMENT,
-  // todo: add other fields from getAllDetailsByCommitRequestId real response
   expirationDate: new Date(),
   createdDate: new Date()
 })
 
-// todo: add proper format
 const fxFulfilResponseDto = ({
   savePayeeTransferResponseExecuted = true,
   fxTransferFulfilmentRecord = {},

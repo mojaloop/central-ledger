@@ -607,10 +607,6 @@ const processFulfilMessage = async (message, functionality, span) => {
       try { // handle only valid errorCodes provided by the payee
         fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(eInfo)
       } catch (err) {
-        /**
-         * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
-         * so that such requests are rejected right away, instead of aborting the transfer here.
-         */
         Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
