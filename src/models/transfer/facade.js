@@ -976,7 +976,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                 `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
                 `${Enum.Transfers.TransferState.RESERVED}`,
                 `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`
-              ]) // TODO: this needs to be updated to proper states for fx
+              ])
               .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timed out fxTransfer for all related fxTransfers
           })
 
