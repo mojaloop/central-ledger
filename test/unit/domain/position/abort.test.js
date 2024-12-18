@@ -68,7 +68,8 @@ const abortMessage1 = {
               participantCurrencyId: 2,
               amount: -10
             }
-          ]
+          ],
+          transferStateChanges: []
         }
       }
     },
@@ -147,7 +148,8 @@ const abortMessage2 = {
               participantCurrencyId: 1,
               amount: -10
             }
-          ]
+          ],
+          transferStateChanges: []
         }
       }
     },

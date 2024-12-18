@@ -256,7 +256,9 @@ class FxFulfilService {
 
   async validateTransferState(transfer, functionality) {
     if (transfer.transferState !== TransferInternalState.RESERVED &&
-        transfer.transferState !== TransferInternalState.RESERVED_FORWARDED) {
+        transfer.transferState !== TransferInternalState.RESERVED_FORWARDED &&
+        transfer.transferState !== TransferInternalState.RECEIVED_FULFIL_DEPENDENT // for the case where we need to abort an fx transfer whose actual transfer is rejected/aborted by payee
+    ) {
       const fspiopError = fspiopErrorFactory.fxTransferNonReservedState()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {

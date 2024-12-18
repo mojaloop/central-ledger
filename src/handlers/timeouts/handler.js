@@ -75,6 +75,11 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
       const source = TT.externalPayeeName || TT.payeeFsp
       const headers = Utility.Http.SwitchDefaultHeaders(destination, Enum.Http.HeaderResources.TRANSFERS, Config.HUB_NAME, resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion)
       const message = Utility.StreamingProtocol.createMessage(TT.transferId, destination, source, metadata, headers, fspiopError, { id: TT.transferId }, `application/vnd.interoperability.${Enum.Http.HeaderResources.TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion}`)
+      // Pass payer and payee names to the context for notification functionality
+      message.content.context = {
+        payer: TT.externalPayerName || TT.payerFsp,
+        payee: TT.externalPayeeName || TT.payeeFsp
+      }
 
       span.setTags(Utility.EventFramework.getTransferSpanTags({ payload: message.content.payload, headers }, Type.TRANSFER, Action.TIMEOUT_RECEIVED))
       await span.audit({
@@ -99,6 +104,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
             span
           )
         } else if (TT.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+          message.from = Config.HUB_NAME
           message.metadata.event.type = Type.POSITION
           message.metadata.event.action = Action.TIMEOUT_RESERVED
           // Key position timeouts with payer account id
@@ -182,6 +188,11 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
       const source = fTT.externalCounterPartyFspName || fTT.counterPartyFsp
       const headers = Utility.Http.SwitchDefaultHeaders(destination, Enum.Http.HeaderResources.FX_TRANSFERS, Config.HUB_NAME, resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion)
       const message = Utility.StreamingProtocol.createMessage(fTT.commitRequestId, destination, source, metadata, headers, fspiopError, { id: fTT.commitRequestId }, `application/vnd.interoperability.${Enum.Http.HeaderResources.FX_TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion}`)
+      // Pass payer and payee names to the context for notification functionality
+      message.content.context = {
+        payer: fTT.externalInitiatingFspName || fTT.initiatingFsp,
+        payee: fTT.externalCounterPartyFspName || fTT.counterPartyFsp
+      }
 
       span.setTags(Utility.EventFramework.getTransferSpanTags({ payload: message.content.payload, headers }, Type.FX_TRANSFER, Action.TIMEOUT_RECEIVED))
       await span.audit({
@@ -205,6 +216,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
           span
         )
       } else if (fTT.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+        message.from = Config.HUB_NAME
         message.metadata.event.type = Type.POSITION
         message.metadata.event.action = Action.FX_TIMEOUT_RESERVED
         // Key position timeouts with payer account id
