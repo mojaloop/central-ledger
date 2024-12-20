@@ -110,17 +110,30 @@ const transformExtensionList = (extensionList) => {
   })
 }
 
-const transformTransferToFulfil = (transfer) => {
+const transformTransferToFulfil = (transfer, isFx) => {
   try {
+    if (!transfer || Object.keys(transfer).length === 0) {
+      throw new Error('transformTransferToFulfil: transfer is required')
+    }
+
     const result = {
-      completedTimestamp: transfer.completedTimestamp,
-      transferState: transfer.transferStateEnumeration
+      completedTimestamp: transfer.completedTimestamp
     }
+    if (isFx) {
+      result.conversionState = transfer.fxTransferStateEnumeration
+    } else {
+      result.transferState = transfer.transferStateEnumeration
+    }
+
     if (transfer.fulfilment !== '0') result.fulfilment = transfer.fulfilment
-    const extension = transformExtensionList(transfer.extensionList)
-    if (extension.length > 0) {
-      result.extensionList = { extension }
+
+    if (transfer.extensionList) {
+      const extension = transformExtensionList(transfer.extensionList)
+      if (extension.length > 0 && !isFx) {
+        result.extensionList = { extension }
+      }
     }
+
     return Util.omitNil(result)
   } catch (err) {
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Unable to transform to fulfil response: ${err}`)

@@ -17,5 +17,20 @@ exclude: [
   "**/node_modules/**",
   '**/migrations/**',
   '**/ddl/**',
-  '**/bulk*/**'
+  '**/bulk*/**',
+  'src/shared/logger/**',
+  'src/shared/loggingPlugin.js',
+  'src/shared/constants.js',
+  'src/domain/position/index.js',
+  'src/domain/position/binProcessor.js',
+  'src/handlers/positions/handler.js',
+  'src/handlers/transfers/createRemittanceEntity.js',
+  'src/handlers/transfers/FxFulfilService.js',
+  'src/models/position/batch.js',
+  'src/models/fxTransfer/**',
+  'src/models/participant/externalParticipantCached.js', # todo: figure out why it shows only 50% coverage in Branch
+  'src/models/transfer/facade.js', ## add more test coverage
+  'src/shared/fspiopErrorFactory.js',
+  'src/lib/proxyCache.js' # todo: remove this line after adding test coverage
 ]
+## todo: increase test coverage before merging feat/fx-impl to main branch

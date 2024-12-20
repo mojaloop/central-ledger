@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -229,11 +232,13 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         const processedTransfersKeysList = Object.keys(processedTransfers)
         const batchParticipantPositionChange = []
         for (const keyIndex in processedTransfersKeysList) {
-          const { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
+          const { transferAmount, runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
           const participantPositionChange = {
             participantPositionId: initialParticipantPosition.participantPositionId,
+            participantCurrencyId: participantCurrency.participantCurrencyId,
             transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
             value: runningPosition,
+            change: transferAmount.toNumber(),
             // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
             reservedValue: runningReservedValue
           }
@@ -241,11 +246,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         }
         batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
         histTimerPersistTransferStateChangeEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_PersistTransferState' })
-        await trx.commit()
         histTimerChangeParticipantPositionTransEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
       } catch (err) {
         Logger.isErrorEnabled && Logger.error(err)
-        await trx.rollback()
         histTimerChangeParticipantPositionTransEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
@@ -292,16 +295,16 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
         const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({ transferId: transferStateChange.transferId }).forUpdate().first().orderBy('transferStateChangeId', 'desc')
         const participantPositionChange = {
           participantPositionId: participantPosition.participantPositionId,
+          participantCurrencyId,
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
           value: latestPosition,
+          change: isReversal ? -amount : amount,
           reservedValue: participantPosition.reservedValue,
           createdDate: transactionTimestamp
         }
         await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
-        await trx.commit()
         histTimerChangeParticipantPositionTransactionEnd({ success: true, queryName: 'facade_changeParticipantPositionTransaction' })
       } catch (err) {
-        await trx.rollback()
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {

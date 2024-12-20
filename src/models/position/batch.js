@@ -1,8 +1,8 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
 
@@ -15,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
@@ -57,6 +57,28 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
       }
     }
     return latestTransferStateChanges
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
+const getLatestFxTransferStateChangesByCommitRequestIdList = async (trx, commitRequestIdList) => {
+  const knex = await Db.getKnex()
+  try {
+    const latestFxTransferStateChanges = {}
+    const results = await knex('fxTransferStateChange')
+      .transacting(trx)
+      .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)
+      .orderBy('fxTransferStateChangeId', 'desc')
+      .select('*')
+
+    for (const result of results) {
+      if (!latestFxTransferStateChanges[result.commitRequestId]) {
+        latestFxTransferStateChanges[result.commitRequestId] = result
+      }
+    }
+    return latestFxTransferStateChanges
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -138,6 +160,11 @@ const bulkInsertTransferStateChanges = async (trx, transferStateChangeList) => {
   return await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
 }
 
+const bulkInsertFxTransferStateChanges = async (trx, fxTransferStateChangeList) => {
+  const knex = await Db.getKnex()
+  return await knex.batchInsert('fxTransferStateChange', fxTransferStateChangeList).transacting(trx)
+}
+
 const bulkInsertParticipantPositionChanges = async (trx, participantPositionChangeList) => {
   const knex = await Db.getKnex()
   return await knex.batchInsert('participantPositionChange', participantPositionChangeList).transacting(trx)
@@ -184,14 +211,76 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
   return {}
 }
 
+const getFxTransferInfoList = async (trx, commitRequestId, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
+  try {
+    const knex = await Db.getKnex()
+    const transferInfos = await knex('fxTransferParticipant')
+      .transacting(trx)
+      .where({
+        'fxTransferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
+        'fxTransferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
+      })
+      .whereIn('fxTransferParticipant.commitRequestId', commitRequestId)
+      .select(
+        'fxTransferParticipant.*'
+      )
+    const info = {}
+    // This should key the transfer info with the latest transferStateChangeId
+    for (const transferInfo of transferInfos) {
+      if (!(transferInfo.commitRequestId in info)) {
+        info[transferInfo.commitRequestId] = transferInfo
+      }
+    }
+    return info
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
+// This model assumes that there is only one RESERVED participantPositionChange per commitRequestId and participantPositionId.
+// If an fxTransfer use case changes in the future where more than one reservation happens to a participant's account
+// for the same commitRequestId, this model will need to be updated.
+const getReservedPositionChangesByCommitRequestIds = async (trx, commitRequestIdList) => {
+  try {
+    const knex = await Db.getKnex()
+    const participantPositionChanges = await knex('fxTransferStateChange')
+      .transacting(trx)
+      .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)
+      .where('fxTransferStateChange.transferStateId', Enum.Transfers.TransferInternalState.RESERVED)
+      .leftJoin('participantPositionChange AS ppc', 'ppc.fxTransferStateChangeId', 'fxTransferStateChange.fxTransferStateChangeId')
+      .select(
+        'ppc.*',
+        'fxTransferStateChange.commitRequestId AS commitRequestId'
+      )
+    const info = {}
+    for (const participantPositionChange of participantPositionChanges) {
+      if (!(participantPositionChange.commitRequestId in info)) {
+        info[participantPositionChange.commitRequestId] = {}
+      }
+      if (participantPositionChange.participantCurrencyId) {
+        info[participantPositionChange.commitRequestId][participantPositionChange.participantCurrencyId] = participantPositionChange
+      }
+    }
+    return info
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
 module.exports = {
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
+  getLatestFxTransferStateChangesByCommitRequestIdList,
   getPositionsByAccountIdsForUpdate,
   updateParticipantPosition,
   bulkInsertTransferStateChanges,
+  bulkInsertFxTransferStateChanges,
   bulkInsertParticipantPositionChanges,
   getAllParticipantCurrency,
   getTransferInfoList,
-  getTransferByIdsForReserve
+  getTransferByIdsForReserve,
+  getFxTransferInfoList,
+  getReservedPositionChangesByCommitRequestIds
 }

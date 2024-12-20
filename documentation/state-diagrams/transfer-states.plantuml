@@ -1,0 +1,13 @@
+@startuml
+hide empty description
+
+[*] --> RECEIVED : Transfer Prepare Request
+RECEIVED --> RESERVED : Net debit cap limit check passed
+RECEIVED --> ABORTED : Failed validation OR timeout
+RESERVED --> ABORTED : Abort response from Payee
+RESERVED --> COMMITTED : Fulfil Response from Payee
+
+COMMITTED --> [*]
+ABORTED --> [*]
+
+@enduml

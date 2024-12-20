@@ -1,8 +1,8 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
 
@@ -15,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
@@ -37,21 +37,23 @@ const { statusEnum, serviceName } = require('@mojaloop/central-services-shared')
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Logger = require('@mojaloop/central-services-logger')
+const ProxyCache = require('#src/lib/proxyCache')
 
 const {
   getSubServiceHealthBroker,
-  getSubServiceHealthDatastore
+  getSubServiceHealthDatastore,
+  getSubServiceHealthProxyCache
 } = require('../../../../src/lib/healthCheck/subServiceHealth.js')
 
 Test('SubServiceHealth test', subServiceHealthTest => {
   let sandbox
-
+  let proxyCacheStub
   subServiceHealthTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Consumer, 'getListOfTopics')
     sandbox.stub(Consumer, 'isConnected')
     sandbox.stub(Logger, 'isDebugEnabled').value(true)
-
+    proxyCacheStub = sandbox.stub(ProxyCache, 'getCache')
     t.end()
   })
 
@@ -149,6 +151,39 @@ Test('SubServiceHealth test', subServiceHealthTest => {
     })
 
     datastoreTest.end()
+  })
+
+  subServiceHealthTest.test('getSubServiceHealthProxyCache', proxyCacheTest => {
+    proxyCacheTest.test('Reports up when not health', async test => {
+      // Arrange
+      proxyCacheStub.returns({
+        healthCheck: sandbox.stub().returns(Promise.resolve(true))
+      })
+      const expected = { name: 'proxyCache', status: statusEnum.OK }
+
+      // Act
+      const result = await getSubServiceHealthProxyCache()
+
+      // Assert
+      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result')
+      test.end()
+    })
+
+    proxyCacheTest.test('Reports down when not health', async test => {
+      // Arrange
+      proxyCacheStub.returns({
+        healthCheck: sandbox.stub().returns(Promise.resolve(false))
+      })
+      const expected = { name: 'proxyCache', status: statusEnum.DOWN }
+
+      // Act
+      const result = await getSubServiceHealthProxyCache()
+
+      // Assert
+      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result')
+      test.end()
+    })
+    proxyCacheTest.end()
   })
 
   subServiceHealthTest.end()

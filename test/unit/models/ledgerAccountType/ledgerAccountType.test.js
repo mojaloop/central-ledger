@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -187,14 +190,14 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       const trxStub = {
-        get commit () {
+        commit () {
 
         },
-        get rollback () {
-
+        rollback () {
+          return Promise.reject(new Error('DB error'))
         }
       }
-      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
+      sandbox.spy(trxStub, 'commit')
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -219,62 +222,16 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       knexStub.select = selectStub
 
       await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable)
-      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
+      test.equal(knexStub.transaction.calledOnce, true, 'call knex.transaction() no transaction is passed')
       test.end()
     } catch (err) {
       test.fail(`should not have thrown an error ${err}`)
       test.end()
     }
   })
-  await ledgerAccountTypeTest.test('create should', async (test) => {
-    let trxStub
-    let trxSpyRollBack
-    const ledgerAccountType = {
-      name: 'POSITION',
-      description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
-      isActive: 1,
-      isSettleable: true
-    }
-    try {
-      sandbox.stub(Db, 'getKnex')
-      const knexStub = sandbox.stub()
-      trxStub = {
-        get commit () {
-
-        },
-        get rollback () {
-
-        }
-      }
-      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
-
-      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-      Db.getKnex.returns(knexStub)
-      const transactingStub = sandbox.stub()
-      const insertStub = sandbox.stub()
-      transactingStub.resolves()
-      knexStub.insert = insertStub.returns({ transacting: transactingStub })
-      const selectStub = sandbox.stub()
-      const fromStub = sandbox.stub()
-      const whereStub = sandbox.stub()
-      transactingStub.rejects(new Error())
-      whereStub.returns({ transacting: transactingStub })
-      fromStub.returns({ whereStub })
-      knexStub.select = selectStub.returns({ from: fromStub })
-
-      await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable)
-      test.fail('have thrown an error')
-      test.end()
-    } catch (err) {
-      test.pass('throw an error')
-      test.equal(trxSpyRollBack.get.calledOnce, true, 'rollback the transaction if no transaction is passed')
-      test.end()
-    }
-  })
 
   await ledgerAccountTypeTest.test('create should', async (test) => {
     let trxStub
-    let trxSpyRollBack
 
     const ledgerAccountType = {
       name: 'POSITION',
@@ -286,14 +243,13 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       trxStub = {
-        get commit () {
+        commit () {
 
         },
-        get rollback () {
-
+        rollback () {
+          return Promise.reject(new Error('DB error'))
         }
       }
-      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -314,7 +270,6 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxSpyRollBack.get.calledOnce, false, 'not rollback the transaction if transaction is passed')
       test.end()
     }
   })

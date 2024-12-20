@@ -66,6 +66,25 @@
         "tags": [
           "participants"
         ],
+        "parameters": [
+          {
+            "type": ["string", "boolean", "integer", "null"],
+            "enum": [
+              false,
+              "0",
+              "false",
+              "",
+              true,
+              "1",
+              "true",
+              null
+            ],
+            "description": "Filter by if participant is a proxy",
+            "name": "isProxy",
+            "in": "query",
+            "required": false
+          }
+        ],
         "responses": {
           "default": {
             "schema": {
@@ -375,9 +394,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -404,9 +420,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -442,9 +455,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -663,9 +673,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -701,9 +708,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -917,9 +921,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -979,9 +980,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -1017,9 +1015,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -1062,9 +1057,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -1109,9 +1101,6 @@
             "description": "Name of the participant",
             "minLength": 2,
             "maxLength": 30,
-            "x-format": {
-              "alphanum": true
-            },
             "name": "name",
             "in": "path",
             "required": true
@@ -1326,6 +1315,10 @@
           "description": "Currency code",
           "$ref" : "#/definitions/Currency"
 
+        },
+        "isProxy": {
+          "type": "boolean",
+          "description": "Is the participant a proxy"
         }
       },
       "required": [

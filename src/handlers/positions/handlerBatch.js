@@ -1,8 +1,8 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
 
@@ -15,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
@@ -48,7 +48,6 @@ const { randomUUID } = require('crypto')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const BatchPositionModel = require('../../models/position/batch')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
-
 const consumerCommit = true
 
 /**
@@ -89,7 +88,7 @@ const positions = async (error, messages) => {
   // Iterate through consumedMessages
   const bins = {}
   const lastPerPartition = {}
-  for (const message of consumedMessages) {
+  await Promise.all(consumedMessages.map(message => {
     const histTimerMsgEnd = Metrics.getHistogram(
       'transfer_position',
       'Process a prepare transfer message',
@@ -104,9 +103,10 @@ const positions = async (error, messages) => {
       binId
     })
 
+    const accountID = message.key.toString()
+
     // Assign message to account-bin by accountID and child action-bin by action
     // (References to the messages to be stored in bins, no duplication of messages)
-    const accountID = message.key.toString()
     const action = message.value.metadata.event.action
     const accountBin = bins[accountID] || (bins[accountID] = {})
     const actionBin = accountBin[action] || (accountBin[action] = [])
@@ -126,39 +126,67 @@ const positions = async (error, messages) => {
       lastPerPartition[message.partition] = message
     }
 
-    await span.audit(message, EventSdk.AuditEventAction.start)
-  }
+    return span.audit(message, EventSdk.AuditEventAction.start)
+  }))
 
-  // Start DB Transaction
-  const trx = await BatchPositionModel.startDbTransaction()
+  // Start DB Transaction if there are any bins to process
+  const trx = !!Object.keys(bins).length && await BatchPositionModel.startDbTransaction()
 
   try {
-    // Call Bin Processor with the list of account-bins and trx
-    const result = await BinProcessor.processBins(bins, trx)
+    if (trx) {
+      // Call Bin Processor with the list of account-bins and trx
+      const result = await BinProcessor.processBins(bins, trx)
 
-    // If Bin Processor processed bins successfully, commit Kafka offset
-    // Commit the offset of last message in the array
-    for (const message of Object.values(lastPerPartition)) {
-      const params = { message, kafkaTopic: message.topic, consumer: Consumer }
-      // We are using Kafka.proceed() to just commit the offset of the last message in the array
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
-    }
+      // If Bin Processor processed bins successfully, commit Kafka offset
+      // Commit the offset of last message in the array
+      for (const message of Object.values(lastPerPartition)) {
+        const params = { message, kafkaTopic: message.topic, consumer: Consumer }
+        // We are using Kafka.proceed() to just commit the offset of the last message in the array
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
+      }
 
-    // Commit DB transaction
-    await trx.commit()
+      // Commit DB transaction
+      await trx.commit()
 
-    // Loop through results and produce notification messages and audit messages
-    for (const item of result.notifyMessages) {
-      // Produce notification message and audit message
-      const action = item.binItem.message?.value.metadata.event.action
-      const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
-      await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
+      // Loop through results and produce notification messages and audit messages
+      await Promise.all(result.notifyMessages.map(item => {
+        // Produce notification message and audit message
+        // NOTE: Not sure why we're checking the binItem for the action vs the message
+        //       that is being created.
+        //       Handled FX_NOTIFY differently so as not to break existing functionality.
+        let action
+        if (item?.message.metadata.event.action !== Enum.Events.Event.Action.FX_NOTIFY) {
+          action = item.binItem.message?.value.metadata.event.action
+        } else {
+          action = item.message.metadata.event.action
+        }
+        const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
+        return Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
+      }).concat(
+        // Loop through followup messages and produce position messages for further processing of the transfer
+        result.followupMessages.map(item => {
+          // Produce position message and audit message
+          const action = item.binItem.message?.value.metadata.event.action
+          const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
+          return Kafka.produceGeneralMessage(
+            Config.KAFKA_CONFIG,
+            Producer,
+            Enum.Events.Event.Type.POSITION,
+            action,
+            item.message,
+            eventStatus,
+            item.messageKey,
+            item.binItem.span,
+            Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+          )
+        })
+      ))
     }
     histTimerEnd({ success: true })
   } catch (err) {
     // If Bin Processor returns failure
     // -  Rollback DB transaction
-    await trx.rollback()
+    await trx?.rollback()
 
     // - Audit Error for each message
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)

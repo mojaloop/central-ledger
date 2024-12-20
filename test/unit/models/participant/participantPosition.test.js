@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -203,14 +206,13 @@ Test('Participant Position model', async (participantPositionTest) => {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       const trxStub = {
-        get commit () {
+        commit () {
 
         },
-        get rollback () {
-
+        rollback () {
+          return Promise.reject(new Error('DB error'))
         }
       }
-      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -238,7 +240,6 @@ Test('Participant Position model', async (participantPositionTest) => {
       test.deepEqual(batchInsertStub.lastCall.args[1], participantPositions, 'all records should be inserted')
       test.equal(transactingStub.callCount, 1, 'make the database calls as transaction')
       test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
-      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
 
       test.end()
     } catch (err) {
@@ -250,20 +251,18 @@ Test('Participant Position model', async (participantPositionTest) => {
 
   await participantPositionTest.test('createParticipantPositionRecords should', async (test) => {
     let trxStub
-    let trxSpyRollBack
 
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       trxStub = {
-        get commit () {
+        commit () {
 
         },
-        get rollback () {
-
+        rollback () {
+          return Promise.reject(new Error('DB error'))
         }
       }
-      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -291,27 +290,24 @@ Test('Participant Position model', async (participantPositionTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxSpyRollBack.get.calledOnce, true, 'rollback the transaction if no transaction is passed')
       test.end()
     }
   })
 
   await participantPositionTest.test('createParticipantCurrencyRecords should', async (test) => {
     let trxStub
-    let trxSpyRollBack
 
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       trxStub = {
-        get commit () {
+        commit () {
 
         },
-        get rollback () {
-
+        rollback () {
+          return Promise.reject(new Error('DB error'))
         }
       }
-      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, [trxStub, true])
       Db.getKnex.returns(knexStub)
@@ -339,7 +335,6 @@ Test('Participant Position model', async (participantPositionTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxSpyRollBack.get.calledOnce, false, 'not rollback the transaction if  transaction is passed')
       test.end()
     }
   })

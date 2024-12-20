@@ -1,8 +1,8 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
 
@@ -15,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
@@ -60,7 +60,7 @@ const prepareTransfers = [
   ...prepareTransfersBin2
 ]
 
-const fulfillTransfers = [
+const fulfilTransfers = [
   '4830fa00-0c2a-4de1-9640-5ad4e68f5f62',
   '33d42717-1dc9-4224-8c9b-45aab4fe6457',
   'f33add51-38b1-4715-9876-83d8a08c485d',
@@ -69,8 +69,17 @@ const fulfillTransfers = [
   'fe332218-07d6-4f00-8399-76671594697a'
 ]
 
+const timeoutReservedTransfers = [
+  '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5'
+]
+
+const fxTimeoutReservedTransfers = [
+  'ed6848e0-e2a8-45b0-9f98-59a2ffba8c10'
+]
+
 Test('BinProcessor', async (binProcessorTest) => {
   let sandbox
+
   binProcessorTest.beforeEach(async test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(BatchPositionModel)
@@ -79,10 +88,18 @@ Test('BinProcessor', async (binProcessorTest) => {
     sandbox.stub(participantFacade)
 
     const prepareTransfersStates = Object.fromEntries(prepareTransfers.map((transferId) => [transferId, { transferStateChangeId: 1, transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE }]))
-    const fulfillTransfersStates = Object.fromEntries(fulfillTransfers.map((transferId) => [transferId, { transferStateChangeId: 1, transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL }]))
+    const fulfilTransfersStates = Object.fromEntries(fulfilTransfers.map((transferId) => [transferId, { transferStateChangeId: 1, transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL }]))
+    const timeoutReservedTransfersStates = Object.fromEntries(timeoutReservedTransfers.map((transferId) => [transferId, { transferStateChangeId: 1, transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT }]))
+    const fxTimeoutReservedTransfersStates = Object.fromEntries(fxTimeoutReservedTransfers.map((commitRequestId) => [commitRequestId, { transferStateChangeId: 1, transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT }]))
+
     BatchPositionModel.getLatestTransferStateChangesByTransferIdList.returns({
       ...prepareTransfersStates,
-      ...fulfillTransfersStates
+      ...fulfilTransfersStates,
+      ...timeoutReservedTransfersStates
+    })
+
+    BatchPositionModel.getLatestFxTransferStateChangesByCommitRequestIdList.returns({
+      ...fxTimeoutReservedTransfersStates
     })
 
     BatchPositionModelCached.getParticipantCurrencyByIds.returns([
@@ -363,6 +380,18 @@ Test('BinProcessor', async (binProcessorTest) => {
       },
       'fe332218-07d6-4f00-8399-76671594697a': {
         amount: -2
+      },
+      '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': {
+        amount: -50
+      }
+    })
+
+    BatchPositionModel.getReservedPositionChangesByCommitRequestIds.returns({
+      'ed6848e0-e2a8-45b0-9f98-59a2ffba8c10': {
+        15: {
+          value: 100,
+          change: 100
+        }
       }
     })
 
@@ -412,8 +441,8 @@ Test('BinProcessor', async (binProcessorTest) => {
     test.end()
   })
 
-  binProcessorTest.test('binProcessor should', prepareActionTest => {
-    prepareActionTest.test('processBins should process a bin of positions and return the expected results', async (test) => {
+  binProcessorTest.test('binProcessor should', processBinsTest => {
+    processBinsTest.test('processBins should process a bin of positions and return the expected results', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -434,7 +463,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       const result = await BinProcessor.processBins(sampleBins, trx)
 
       // Assert on result.notifyMessages
-      test.equal(result.notifyMessages.length, 13, 'processBins should return the expected number of notify messages')
+      test.equal(result.notifyMessages.length, 15, 'processBins should return the expected number of notify messages')
 
       // Assert on result.limitAlarms
       // test.equal(result.limitAlarms.length, 1, 'processBin should return the expected number of limit alarms')
@@ -447,8 +476,8 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       // Assert on DB update for position values of all accounts in each function call
       test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
-        [{}, 7, 0, 0],
-        [{}, 15, 2, 0]
+        [{}, 7, -50, 0],
+        [{}, 15, -98, 0]
       ], 'updateParticipantPosition should be called with the expected arguments')
 
       // TODO: Assert on DB bulk insert of transferStateChanges in each function call
@@ -457,7 +486,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle prepare messages', async (test) => {
+    processBinsTest.test('processBins should handle prepare messages', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -479,6 +508,10 @@ Test('BinProcessor', async (binProcessorTest) => {
       sampleBinsDeepCopy[15].commit = []
       sampleBinsDeepCopy[7].reserve = []
       sampleBinsDeepCopy[15].reserve = []
+      sampleBinsDeepCopy[7]['timeout-reserved'] = []
+      sampleBinsDeepCopy[15]['timeout-reserved'] = []
+      sampleBinsDeepCopy[7]['fx-timeout-reserved'] = []
+      sampleBinsDeepCopy[15]['fx-timeout-reserved'] = []
       const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
 
       // Assert on result.notifyMessages
@@ -505,7 +538,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle commit messages', async (test) => {
+    processBinsTest.test('processBins should handle commit messages', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -526,6 +559,10 @@ Test('BinProcessor', async (binProcessorTest) => {
       sampleBinsDeepCopy[15].prepare = []
       sampleBinsDeepCopy[7].reserve = []
       sampleBinsDeepCopy[15].reserve = []
+      sampleBinsDeepCopy[7]['timeout-reserved'] = []
+      sampleBinsDeepCopy[15]['timeout-reserved'] = []
+      sampleBinsDeepCopy[7]['fx-timeout-reserved'] = []
+      sampleBinsDeepCopy[15]['fx-timeout-reserved'] = []
       const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
 
       // Assert on result.notifyMessages
@@ -550,7 +587,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle reserve messages', async (test) => {
+    processBinsTest.test('processBins should handle reserve messages', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -571,6 +608,10 @@ Test('BinProcessor', async (binProcessorTest) => {
       sampleBinsDeepCopy[15].prepare = []
       sampleBinsDeepCopy[7].commit = []
       sampleBinsDeepCopy[15].commit = []
+      sampleBinsDeepCopy[7]['timeout-reserved'] = []
+      sampleBinsDeepCopy[15]['timeout-reserved'] = []
+      sampleBinsDeepCopy[7]['fx-timeout-reserved'] = []
+      sampleBinsDeepCopy[15]['fx-timeout-reserved'] = []
       const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
 
       // Assert on result.notifyMessages
@@ -595,7 +636,105 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should throw error if any accountId cannot be matched to atleast one participantCurrencyId', async (test) => {
+    processBinsTest.test('processBins should handle timeout-reserved messages', async (test) => {
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins))
+      sampleBinsDeepCopy[7].prepare = []
+      sampleBinsDeepCopy[15].prepare = []
+      sampleBinsDeepCopy[7].commit = []
+      sampleBinsDeepCopy[15].commit = []
+      sampleBinsDeepCopy[7].reserve = []
+      sampleBinsDeepCopy[15].reserve = []
+      sampleBinsDeepCopy[7]['fx-timeout-reserved'] = []
+      sampleBinsDeepCopy[15]['fx-timeout-reserved'] = []
+      const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
+
+      // Assert on result.notifyMessages
+      test.equal(result.notifyMessages.length, 1, 'processBins should return 1 messages')
+
+      // TODO: What if there are no position changes in a batch?
+      // Assert on number of function calls for DB update on position value
+      // test.ok(BatchPositionModel.updateParticipantPosition.notCalled, 'updateParticipantPosition should not be called')
+
+      // TODO: Assert on number of function calls for DB bulk insert of transferStateChanges
+      // TODO: Assert on number of function calls for DB bulk insert of positionChanges
+
+      // Assert on DB update for position values of all accounts in each function call
+      test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
+        [{}, 7, -50, 0],
+        [{}, 15, 0, 0]
+      ], 'updateParticipantPosition should be called with the expected arguments')
+
+      // TODO: Assert on DB bulk insert of transferStateChanges in each function call
+      // TODO: Assert on DB bulk insert of positionChanges in each function call
+
+      test.end()
+    })
+
+    processBinsTest.test('processBins should handle fx-timeout-reserved messages', async (test) => {
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      const sampleBinsDeepCopy = JSON.parse(JSON.stringify(sampleBins))
+      sampleBinsDeepCopy[7].prepare = []
+      sampleBinsDeepCopy[15].prepare = []
+      sampleBinsDeepCopy[7].commit = []
+      sampleBinsDeepCopy[15].commit = []
+      sampleBinsDeepCopy[7].reserve = []
+      sampleBinsDeepCopy[15].reserve = []
+      sampleBinsDeepCopy[7]['timeout-reserved'] = []
+      sampleBinsDeepCopy[15]['timeout-reserved'] = []
+      const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
+
+      // Assert on result.notifyMessages
+      test.equal(result.notifyMessages.length, 1, 'processBins should return 1 messages')
+
+      // TODO: What if there are no position changes in a batch?
+      // Assert on number of function calls for DB update on position value
+      // test.ok(BatchPositionModel.updateParticipantPosition.notCalled, 'updateParticipantPosition should not be called')
+
+      // TODO: Assert on number of function calls for DB bulk insert of transferStateChanges
+      // TODO: Assert on number of function calls for DB bulk insert of positionChanges
+
+      // Assert on DB update for position values of all accounts in each function call
+      test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
+        [{}, 7, 0, 0],
+        [{}, 15, -100, 0]
+      ], 'updateParticipantPosition should be called with the expected arguments')
+
+      // TODO: Assert on DB bulk insert of transferStateChanges in each function call
+      // TODO: Assert on DB bulk insert of positionChanges in each function call
+
+      test.end()
+    })
+
+    processBinsTest.test('processBins should throw error if any accountId cannot be matched to atleast one participantCurrencyId', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -624,7 +763,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should throw error if no settlement model is found', async (test) => {
+    processBinsTest.test('processBins should throw error if no settlement model is found', async (test) => {
       SettlementModelCached.getAll.returns([])
       const sampleParticipantLimitReturnValues = [
         {
@@ -650,7 +789,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should throw error if no default settlement model if currency model is missing', async (test) => {
+    processBinsTest.test('processBins should throw error if no default settlement model if currency model is missing', async (test) => {
       SettlementModelCached.getAll.returns([
         {
           settlementModelId: 3,
@@ -691,7 +830,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should use default settlement model if currency model is missing', async (test) => {
+    processBinsTest.test('processBins should use default settlement model if currency model is missing', async (test) => {
       SettlementModelCached.getAll.returns([
         {
           settlementModelId: 2,
@@ -727,7 +866,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       const result = await BinProcessor.processBins(sampleBins, trx)
 
       // Assert on result.notifyMessages
-      test.equal(result.notifyMessages.length, 13, 'processBins should return 13 messages')
+      test.equal(result.notifyMessages.length, 15, 'processBins should return 15 messages')
 
       // TODO: What if there are no position changes in a batch?
       // Assert on number of function calls for DB update on position value
@@ -738,8 +877,8 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       // Assert on DB update for position values of all accounts in each function call
       test.deepEqual(BatchPositionModel.updateParticipantPosition.getCalls().map(call => call.args), [
-        [{}, 7, 0, 0],
-        [{}, 15, 2, 0]
+        [{}, 7, -50, 0],
+        [{}, 15, -98, 0]
       ], 'updateParticipantPosition should be called with the expected arguments')
 
       // TODO: Assert on DB bulk insert of transferStateChanges in each function call
@@ -748,7 +887,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle no binItems', async (test) => {
+    processBinsTest.test('processBins should handle no binItems', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -771,6 +910,10 @@ Test('BinProcessor', async (binProcessorTest) => {
       delete sampleBinsDeepCopy[15].commit
       delete sampleBinsDeepCopy[7].reserve
       delete sampleBinsDeepCopy[15].reserve
+      delete sampleBinsDeepCopy[7]['timeout-reserved']
+      delete sampleBinsDeepCopy[15]['timeout-reserved']
+      sampleBinsDeepCopy[7]['fx-timeout-reserved'] = []
+      sampleBinsDeepCopy[15]['fx-timeout-reserved'] = []
       const result = await BinProcessor.processBins(sampleBinsDeepCopy, trx)
 
       // Assert on result.notifyMessages
@@ -795,7 +938,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       test.end()
     })
 
-    prepareActionTest.test('processBins should handle non supported bins', async (test) => {
+    processBinsTest.test('processBins should handle non supported bins', async (test) => {
       const sampleParticipantLimitReturnValues = [
         {
           participantId: 2,
@@ -823,14 +966,51 @@ Test('BinProcessor', async (binProcessorTest) => {
 
       test.end()
     })
-    prepareActionTest.end()
+
+    processBinsTest.test('processBins should process bins with accountId 0 differently', async (test) => {
+      const sampleParticipantLimitReturnValues = [
+        {
+          participantId: 2,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        },
+        {
+          participantId: 3,
+          currencyId: 'USD',
+          participantLimitTypeId: 1,
+          value: 1000000
+        }
+      ]
+      participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
+      const binsWithZeroId = JSON.parse(JSON.stringify(sampleBins))
+      binsWithZeroId[0] = binsWithZeroId[15]
+      delete binsWithZeroId[15]
+      delete binsWithZeroId[7]
+
+      const result = await BinProcessor.processBins(binsWithZeroId, trx)
+
+      // Assert on result.notifyMessages
+      test.equal(result.notifyMessages.length, 6, 'processBins should return 6 messages')
+
+      // Assert on number of function calls for DB update on position value
+      test.equal(BatchPositionModel.updateParticipantPosition.callCount, 0, 'updateParticipantPosition should not be called')
+      test.ok(BatchPositionModel.bulkInsertTransferStateChanges.calledOnce, 'bulkInsertTrasferStateChanges should be called once')
+      test.ok(BatchPositionModel.bulkInsertFxTransferStateChanges.calledOnce, 'bulkInsertFxTrasferStateChanges should be called once')
+      test.equal(BatchPositionModel.bulkInsertParticipantPositionChanges.callCount, 0, 'bulkInsertParticipantPositionChanges should not be called')
+
+      test.end()
+    })
+
+    processBinsTest.end()
   })
+
   binProcessorTest.test('iterateThroughBins should', async (iterateThroughBinsTest) => {
     iterateThroughBinsTest.test('iterateThroughBins should call callback function for each message in bins', async (test) => {
       const spyCb = sandbox.spy()
       await BinProcessor.iterateThroughBins(sampleBins, spyCb)
 
-      test.equal(spyCb.callCount, 13, 'callback should be called 13 times')
+      test.equal(spyCb.callCount, 15, 'callback should be called 15 times')
       test.end()
     })
     iterateThroughBinsTest.test('iterateThroughBins should call error callback function if callback function throws error', async (test) => {
@@ -840,7 +1020,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       spyCb.onThirdCall().throws()
       await BinProcessor.iterateThroughBins(sampleBins, spyCb, errorCb)
 
-      test.equal(spyCb.callCount, 13, 'callback should be called 13 times')
+      test.equal(spyCb.callCount, 15, 'callback should be called 15 times')
       test.equal(errorCb.callCount, 2, 'error callback should be called 2 times')
       test.end()
     })
@@ -849,10 +1029,11 @@ Test('BinProcessor', async (binProcessorTest) => {
       spyCb.onFirstCall().throws()
       await BinProcessor.iterateThroughBins(sampleBins, spyCb)
 
-      test.equal(spyCb.callCount, 13, 'callback should be called 13 times')
+      test.equal(spyCb.callCount, 15, 'callback should be called 15 times')
       test.end()
     })
     iterateThroughBinsTest.end()
   })
+
   binProcessorTest.end()
 })

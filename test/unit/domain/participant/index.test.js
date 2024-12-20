@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -52,14 +55,16 @@ Test('Participant service', async (participantTest) => {
       name: 'fsp1',
       currency: 'USD',
       isActive: 1,
-      createdDate: new Date()
+      createdDate: new Date(),
+      isProxy: 0
     },
     {
       participantId: 1,
       name: 'fsp2',
       currency: 'EUR',
       isActive: 1,
-      createdDate: new Date()
+      createdDate: new Date(),
+      isProxy: 0
     }
 
   ]
@@ -70,7 +75,8 @@ Test('Participant service', async (participantTest) => {
       currency: 'USD',
       isActive: 1,
       createdDate: new Date(),
-      currencyList: ['USD']
+      currencyList: ['USD'],
+      isProxy: 0
     },
     {
       participantId: 1,
@@ -78,7 +84,8 @@ Test('Participant service', async (participantTest) => {
       currency: 'EUR',
       isActive: 1,
       createdDate: new Date(),
-      currencyList: ['EUR']
+      currencyList: ['EUR'],
+      isProxy: 0
     }
   ]
   const participantCurrencyResult = [
@@ -195,7 +202,7 @@ Test('Participant service', async (participantTest) => {
     participantFixtures.forEach((participant, index) => {
       participantMap.set(index + 1, participantResult[index])
       Db.participant.insert.withArgs({ participant }).returns(index)
-      ParticipantModelCached.create.withArgs({ name: participant.name }).returns((index + 1))
+      ParticipantModelCached.create.withArgs({ name: participant.name, isProxy: !!participant.isProxy }).returns((index + 1))
       ParticipantModelCached.getByName.withArgs(participant.name).returns(participantResult[index])
       ParticipantModelCached.getById.withArgs(index).returns(participantResult[index])
       ParticipantModelCached.update.withArgs(participant, 1).returns((index + 1))
@@ -250,7 +257,7 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('create false participant', async (assert) => {
-    const falseParticipant = { name: 'fsp3' }
+    const falseParticipant = { name: 'fsp3', isProxy: false }
     ParticipantModelCached.create.withArgs(falseParticipant).throws(new Error())
     try {
       await Service.create(falseParticipant)

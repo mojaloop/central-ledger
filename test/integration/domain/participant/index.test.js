@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -32,6 +35,7 @@ const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Cache = require('../../../../src/lib/cache')
+const ProxyCache = require('../../../../src/lib/proxyCache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const ParticipantService = require('../../../../src/domain/participant')
@@ -49,6 +53,7 @@ Test('Participant service', async (participantTest) => {
   let sandbox
   const participantFixtures = []
   const endpointsFixtures = []
+  const participantProxyFixtures = []
   const participantMap = new Map()
 
   const testData = {
@@ -59,13 +64,15 @@ Test('Participant service', async (participantTest) => {
     fsp3Name: 'payerfsp',
     fsp4Name: 'payeefsp',
     simulatorBase: 'http://localhost:8444',
-    notificationEmail: 'test@example.com'
+    notificationEmail: 'test@example.com',
+    proxyParticipant: 'xnProxy'
   }
 
   await participantTest.test('setup', async (test) => {
     try {
       sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE)
+      await ProxyCache.connect()
       await ParticipantCached.initialize()
       await ParticipantCurrencyCached.initialize()
       await ParticipantLimitCached.initialize()
@@ -172,6 +179,7 @@ Test('Participant service', async (participantTest) => {
       for (const participantId of participantMap.keys()) {
         const participant = await ParticipantService.getById(participantId)
         assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId)))
+        assert.equal(participant.isProxy, 0, 'isProxy flag set to false')
       }
       assert.end()
     } catch (err) {
@@ -220,6 +228,10 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS', testData.endpointBase)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${testData.endpointBase}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${testData.endpointBase}/fxTransfers`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}/error`)
       participant = participantFixtures[2]
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.simulatorBase}/${participant.name}/transfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.simulatorBase}/${participant.name}/transfers/{{transferId}}`)
@@ -233,6 +245,10 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS', testData.endpointBase)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${testData.endpointBase}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${testData.endpointBase}/fxTransfers`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}/error`)
       participant = participantFixtures[3]
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.simulatorBase}/${participant.name}/transfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.simulatorBase}/${participant.name}/transfers/{{transferId}}`)
@@ -246,6 +262,10 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS', testData.endpointBase)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES, `${testData.endpointBase}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_POST, `${testData.endpointBase}/fxTransfers`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_PUT, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_TRANSFER_ERROR, `${testData.endpointBase}/fxTransfers/{{commitRequestId}}/error`)
       assert.end()
     } catch (err) {
       console.log(err)
@@ -411,6 +431,30 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
+  await participantTest.test('create participant with proxy', async (assert) => {
+    try {
+      const getByNameResult = await ParticipantService.getByName(testData.proxyParticipant)
+      const result = await ParticipantHelper.prepareData(testData.proxyParticipant, testData.currency, undefined, !!getByNameResult, true)
+      participantProxyFixtures.push(result.participant)
+
+      for (const participant of participantProxyFixtures) {
+        const read = await ParticipantService.getById(participant.participantId)
+        participantMap.set(participant.participantId, read)
+        if (debug) assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
+        assert.equal(read.name, participant.name, 'names are equal')
+        assert.deepEqual(read.currencyList, participant.currencyList, 'currency match')
+        assert.equal(read.isActive, participant.isActive, 'isActive flag matches')
+        assert.equal(read.createdDate.toString(), participant.createdDate.toString(), 'created date matches')
+        assert.equal(read.isProxy, 1, 'isProxy flag set to true')
+      }
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
   await participantTest.test('teardown', async (assert) => {
     try {
       for (const participant of participantFixtures) {
@@ -426,6 +470,8 @@ Test('Participant service', async (participantTest) => {
       }
       await Cache.destroyCache()
       await Db.disconnect()
+      await ProxyCache.disconnect()
+
       assert.pass('database connection closed')
       // @ggrg: Having the following 3 lines commented prevents the current test from exiting properly when run individually,
       // BUT it is required in order to have successful run of all integration test scripts as a sequence, where

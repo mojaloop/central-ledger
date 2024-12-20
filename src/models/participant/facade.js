@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -28,17 +31,20 @@
  * @module src/models/participant/facade/
  */
 
-const Db = require('../../lib/db')
 const Time = require('@mojaloop/central-services-shared').Util.Time
+const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
+
+const Db = require('../../lib/db')
 const Cache = require('../../lib/cache')
 const ParticipantModelCached = require('../../models/participant/participantCached')
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../models/participant/participantLimitCached')
+const externalParticipantModelCached = require('../../models/participant/externalParticipantCached')
 const Config = require('../../lib/config')
 const SettlementModelModel = require('../settlement/settlementModel')
-const { Enum } = require('@mojaloop/central-services-shared')
+const { logger } = require('../../shared/logger')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -102,6 +108,72 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
     return participant
   } catch (err) {
     histTimerParticipantGetByNameAndCurrencyEnd({ success: false, queryName: 'facade_getByNameAndCurrency' })
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const getByIDAndCurrency = async (participantId, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
+  const histTimerParticipantGetByIDAndCurrencyEnd = Metrics.getHistogram(
+    'model_participant',
+    'facade_getByIDAndCurrency - Metrics for participant model',
+    ['success', 'queryName']
+  ).startTimer()
+
+  try {
+    let participant
+    if (Cache.isCacheEnabled()) {
+      /* Cached version - fetch data from Models (which we trust are cached) */
+      /* find paricipant by ID */
+      participant = await ParticipantModelCached.getById(participantId)
+      if (participant) {
+        /* use the paricipant id and incoming params to prepare the filter */
+        const searchFilter = {
+          participantId,
+          currencyId,
+          ledgerAccountTypeId
+        }
+        if (isCurrencyActive !== undefined) {
+          searchFilter.isActive = isCurrencyActive
+        }
+
+        /* find the participantCurrency by prepared filter */
+        const participantCurrency = await ParticipantCurrencyModelCached.findOneByParams(searchFilter)
+
+        if (participantCurrency) {
+          /* mix requested data from participantCurrency */
+          participant.participantCurrencyId = participantCurrency.participantCurrencyId
+          participant.currencyId = participantCurrency.currencyId
+          participant.currencyIsActive = participantCurrency.isActive
+        }
+      }
+    } else {
+      /* Non-cached version - direct call to DB */
+      participant = await Db.from('participant').query(async (builder) => {
+        let b = builder
+          .where({ 'participant.participantId': participantId })
+          .andWhere({ 'pc.currencyId': currencyId })
+          .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
+          .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+          .select(
+            'participant.*',
+            'pc.participantCurrencyId',
+            'pc.currencyId',
+            'pc.isActive AS currencyIsActive'
+          )
+          .first()
+
+        if (isCurrencyActive !== undefined) {
+          b = b.andWhere({ 'pc.isActive': isCurrencyActive })
+        }
+        return b
+      })
+    }
+
+    histTimerParticipantGetByIDAndCurrencyEnd({ success: true, queryName: 'facade_getByIDAndCurrency' })
+
+    return participant
+  } catch (err) {
+    histTimerParticipantGetByIDAndCurrencyEnd({ success: false, queryName: 'facade_getByIDAndCurrency' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -259,34 +331,30 @@ const addEndpoint = async (participantId, endpoint) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
-      try {
-        const endpointType = await knex('endpointType').where({ name: endpoint.type, isActive: 1 }).select('endpointTypeId').first()
-        // let endpointType = await trx.first('endpointTypeId').from('endpointType').where({ 'name': endpoint.type, 'isActive': 1 })
+      const endpointType = await knex('endpointType').where({
+        name: endpoint.type,
+        isActive: 1
+      }).select('endpointTypeId').first()
 
-        const existingEndpoint = await knex('participantEndpoint').transacting(trx).forUpdate().select('*')
-          .where({
-            participantId,
-            endpointTypeId: endpointType.endpointTypeId,
-            isActive: 1
-          })
-        if (Array.isArray(existingEndpoint) && existingEndpoint.length > 0) {
-          await knex('participantEndpoint').transacting(trx).update({ isActive: 0 }).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
-        }
-        const newEndpoint = {
+      const existingEndpoint = await knex('participantEndpoint').transacting(trx).forUpdate().select('*')
+        .where({
           participantId,
           endpointTypeId: endpointType.endpointTypeId,
-          value: endpoint.value,
-          isActive: 1,
-          createdBy: 'unknown'
-        }
-        const result = await knex('participantEndpoint').transacting(trx).insert(newEndpoint)
-        newEndpoint.participantEndpointId = result[0]
-        await trx.commit
-        return newEndpoint
-      } catch (err) {
-        await trx.rollback
-        throw err
+          isActive: 1
+        })
+      if (Array.isArray(existingEndpoint) && existingEndpoint.length > 0) {
+        await knex('participantEndpoint').transacting(trx).update({ isActive: 0 }).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
       }
+      const newEndpoint = {
+        participantId,
+        endpointTypeId: endpointType.endpointTypeId,
+        value: endpoint.value,
+        isActive: 1,
+        createdBy: 'unknown'
+      }
+      const result = await knex('participantEndpoint').transacting(trx).insert(newEndpoint)
+      newEndpoint.participantEndpointId = result[0]
+      return newEndpoint
     })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -413,73 +481,67 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
-      try {
-        const limitType = await knex('participantLimitType').where({ name: limitPositionObj.limit.type, isActive: 1 }).select('participantLimitTypeId').first()
-        const participantLimit = {
-          participantCurrencyId,
-          participantLimitTypeId: limitType.participantLimitTypeId,
-          value: limitPositionObj.limit.value,
-          isActive: 1,
-          createdBy: 'unknown'
-        }
-        const result = await knex('participantLimit').transacting(trx).insert(participantLimit)
-        participantLimit.participantLimitId = result[0]
+      const limitType = await knex('participantLimitType').where({ name: limitPositionObj.limit.type, isActive: 1 }).select('participantLimitTypeId').first()
+      const participantLimit = {
+        participantCurrencyId,
+        participantLimitTypeId: limitType.participantLimitTypeId,
+        value: limitPositionObj.limit.value,
+        isActive: 1,
+        createdBy: 'unknown'
+      }
+      const result = await knex('participantLimit').transacting(trx).insert(participantLimit)
+      participantLimit.participantLimitId = result[0]
 
-        const allSettlementModels = await SettlementModelModel.getAll()
-        const settlementModels = allSettlementModels.filter(model => model.currencyId === limitPositionObj.currency)
-        if (Array.isArray(settlementModels) && settlementModels.length > 0) {
-          for (const settlementModel of settlementModels) {
-            const positionAccount = await getByNameAndCurrency(limitPositionObj.name, limitPositionObj.currency, settlementModel.ledgerAccountTypeId)
-            const settlementAccount = await getByNameAndCurrency(limitPositionObj.name, limitPositionObj.currency, settlementModel.settlementAccountTypeId)
+      const allSettlementModels = await SettlementModelModel.getAll()
+      const settlementModels = allSettlementModels.filter(model => model.currencyId === limitPositionObj.currency)
+      if (Array.isArray(settlementModels) && settlementModels.length > 0) {
+        for (const settlementModel of settlementModels) {
+          const positionAccount = await getByNameAndCurrency(limitPositionObj.name, limitPositionObj.currency, settlementModel.ledgerAccountTypeId)
+          const settlementAccount = await getByNameAndCurrency(limitPositionObj.name, limitPositionObj.currency, settlementModel.settlementAccountTypeId)
 
-            const participantPosition = {
-              participantCurrencyId: positionAccount.participantCurrencyId,
-              value: (settlementModel.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION ? limitPositionObj.initialPosition : 0),
-              reservedValue: 0
-            }
-            await knex('participantPosition').transacting(trx).insert(participantPosition)
-
-            const settlementPosition = {
-              participantCurrencyId: settlementAccount.participantCurrencyId,
-              value: 0,
-              reservedValue: 0
-            }
-            await knex('participantPosition').transacting(trx).insert(settlementPosition)
-            if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
-              await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', positionAccount.participantCurrencyId)
-              await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccount.participantCurrencyId)
-              await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
-              await ParticipantLimitCached.invalidateParticipantLimitCache()
-            }
-          }
-        } else {
           const participantPosition = {
-            participantCurrencyId,
-            value: limitPositionObj.initialPosition,
+            participantCurrencyId: positionAccount.participantCurrencyId,
+            value: (settlementModel.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION ? limitPositionObj.initialPosition : 0),
             reservedValue: 0
           }
-          const participantPositionResult = await knex('participantPosition').transacting(trx).insert(participantPosition)
-          participantPosition.participantPositionId = participantPositionResult[0]
+          await knex('participantPosition').transacting(trx).insert(participantPosition)
+
           const settlementPosition = {
-            participantCurrencyId: settlementAccountId,
+            participantCurrencyId: settlementAccount.participantCurrencyId,
             value: 0,
             reservedValue: 0
           }
           await knex('participantPosition').transacting(trx).insert(settlementPosition)
           if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
-            await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', participantCurrencyId)
-            await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
+            await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', positionAccount.participantCurrencyId)
+            await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccount.participantCurrencyId)
             await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
             await ParticipantLimitCached.invalidateParticipantLimitCache()
           }
         }
-
-        await trx.commit
-        return true
-      } catch (err) {
-        await trx.rollback
-        throw err
+      } else {
+        const participantPosition = {
+          participantCurrencyId,
+          value: limitPositionObj.initialPosition,
+          reservedValue: 0
+        }
+        const participantPositionResult = await knex('participantPosition').transacting(trx).insert(participantPosition)
+        participantPosition.participantPositionId = participantPositionResult[0]
+        const settlementPosition = {
+          participantCurrencyId: settlementAccountId,
+          value: 0,
+          reservedValue: 0
+        }
+        await knex('participantPosition').transacting(trx).insert(settlementPosition)
+        if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
+          await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', participantCurrencyId)
+          await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
+          await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
+          await ParticipantLimitCached.invalidateParticipantLimitCache()
+        }
       }
+
+      return true
     })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -510,7 +572,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
 
 const adjustLimits = async (participantCurrencyId, limit, trx) => {
   try {
-    const trxFunction = async (trx, doCommit = true) => {
+    const trxFunction = async (trx) => {
       try {
         const limitType = await knex('participantLimitType').where({ name: limit.type, isActive: 1 }).select('participantLimitTypeId').first()
         // const limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limit.type, 'isActive': 1 })
@@ -535,23 +597,17 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         }
         const result = await knex('participantLimit').transacting(trx).insert(newLimit)
         newLimit.participantLimitId = result[0]
-        if (doCommit) {
-          await trx.commit
-        }
         return {
           participantLimit: newLimit
         }
       } catch (err) {
-        if (doCommit) {
-          await trx.rollback
-        }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
 
     const knex = Db.getKnex()
     if (trx) {
-      return trxFunction(trx, false)
+      return trxFunction(trx)
     } else {
       return knex.transaction(trxFunction)
     }
@@ -640,34 +696,28 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
-      try {
-        let result
-        const participantCurrency = {
-          participantId,
-          currencyId,
-          ledgerAccountTypeId,
-          createdBy: 'unknown',
-          isActive: 1,
-          createdDate: Time.getUTCString(new Date())
-        }
-        result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
-        await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
-        participantCurrency.participantCurrencyId = result[0]
-        const participantPosition = {
-          participantCurrencyId: participantCurrency.participantCurrencyId,
-          value: 0,
-          reservedValue: 0
-        }
-        result = await knex('participantPosition').transacting(trx).insert(participantPosition)
-        participantPosition.participantPositionId = result[0]
-        await trx.commit
-        return {
-          participantCurrency,
-          participantPosition
-        }
-      } catch (err) {
-        await trx.rollback
-        throw err
+      let result
+      const participantCurrency = {
+        participantId,
+        currencyId,
+        ledgerAccountTypeId,
+        createdBy: 'unknown',
+        isActive: 1,
+        createdDate: Time.getUTCString(new Date())
+      }
+      result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
+      await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
+      participantCurrency.participantCurrencyId = result[0]
+      const participantPosition = {
+        participantCurrencyId: participantCurrency.participantCurrencyId,
+        value: 0,
+        reservedValue: 0
+      }
+      result = await knex('participantPosition').transacting(trx).insert(participantPosition)
+      participantPosition.participantPositionId = result[0]
+      return {
+        participantCurrency,
+        participantPosition
       }
     })
   } catch (err) {
@@ -706,7 +756,7 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
   try {
     const HUB_ACCOUNT_NAME = Config.HUB_NAME
     const knex = Db.getKnex()
-    const trxFunction = async (trx, doCommit = true) => {
+    const trxFunction = async (trx) => {
       try {
         const res = await knex.distinct('participant.participantId', 'pc.participantId', 'pc.currencyId')
           .from('participant')
@@ -714,19 +764,13 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
           .whereNot('participant.name', HUB_ACCOUNT_NAME)
           .transacting(trx)
 
-        if (doCommit) {
-          await trx.commit
-        }
         return res
       } catch (err) {
-        if (doCommit) {
-          await trx.rollback
-        }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
     if (trx) {
-      return trxFunction(trx, false)
+      return trxFunction(trx)
     } else {
       return knex.transaction(trxFunction)
     }
@@ -735,9 +779,35 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
   }
 }
 
+const getExternalParticipantIdByNameOrCreate = async ({ name, proxyId }) => {
+  try {
+    let externalFsp = await externalParticipantModelCached.getByName(name)
+    if (!externalFsp) {
+      const proxy = await ParticipantModelCached.getByName(proxyId)
+      if (!proxy) {
+        throw new Error(`Proxy participant not found: ${proxyId}`)
+      }
+      const externalParticipantId = await externalParticipantModelCached.create({
+        name,
+        proxyId: proxy.participantId
+      })
+      externalFsp = externalParticipantId
+        ? { externalParticipantId }
+        : await externalParticipantModelCached.getByName(name)
+    }
+    const id = externalFsp?.externalParticipantId
+    logger.verbose('getExternalParticipantIdByNameOrCreate result:', { id, name })
+    return id
+  } catch (err) {
+    logger.child({ name, proxyId }).warn('error in getExternalParticipantIdByNameOrCreate:', err)
+    return null
+  }
+}
+
 module.exports = {
   addHubAccountAndInitPosition,
   getByNameAndCurrency,
+  getByIDAndCurrency,
   getParticipantLimitByParticipantIdAndCurrencyId,
   getEndpoint,
   getAllEndpoints,
@@ -750,5 +820,6 @@ module.exports = {
   getParticipantLimitsByParticipantId,
   getAllAccountsByNameAndCurrency,
   getLimitsForAllParticipants,
-  getAllNonHubParticipantsWithCurrencies
+  getAllNonHubParticipantsWithCurrencies,
+  getExternalParticipantIdByNameOrCreate
 }

@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -29,6 +32,8 @@
  * @module src/domain/transfer/
  */
 
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
 const TransferFacade = require('../../models/transfer/facade')
 const TransferModel = require('../../models/transfer/transfer')
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
@@ -36,23 +41,37 @@ const TransferErrorModel = require('../../models/transfer/transferError')
 const TransferDuplicateCheckModel = require('../../models/transfer/transferDuplicateCheck')
 const TransferFulfilmentDuplicateCheckModel = require('../../models/transfer/transferFulfilmentDuplicateCheck')
 const TransferErrorDuplicateCheckModel = require('../../models/transfer/transferErrorDuplicateCheck')
-const TransferObjectTransform = require('./transform')
 const TransferError = require('../../models/transfer/transferError')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Metrics = require('@mojaloop/central-services-metrics')
+const TransferObjectTransform = require('./transform')
 
-const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
+const prepare = async (payload, stateReason = null, hasPassedValidation = true, determiningTransferCheckResult, proxyObligation) => {
   const histTimerTransferServicePrepareEnd = Metrics.getHistogram(
     'domain_transfer',
     'prepare - Metrics for transfer domain',
     ['success', 'funcName']
   ).startTimer()
   try {
-    const result = await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
+    const result = await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation, determiningTransferCheckResult, proxyObligation)
     histTimerTransferServicePrepareEnd({ success: true, funcName: 'prepare' })
     return result
   } catch (err) {
     histTimerTransferServicePrepareEnd({ success: false, funcName: 'prepare' })
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const forwardedPrepare = async (transferId) => {
+  const histTimerTransferServicePrepareEnd = Metrics.getHistogram(
+    'domain_transfer',
+    'prepare - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+  try {
+    const result = await TransferFacade.updatePrepareReservedForwarded(transferId)
+    histTimerTransferServicePrepareEnd({ success: true, funcName: 'forwardedPrepare' })
+    return result
+  } catch (err) {
+    histTimerTransferServicePrepareEnd({ success: false, funcName: 'forwardedPrepare' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -104,6 +123,7 @@ const TransferService = {
   prepare,
   handlePayeeResponse,
   logTransferError,
+  forwardedPrepare,
   getTransferErrorByTransferId: TransferErrorModel.getByTransferId,
   getTransferById: TransferModel.getById,
   getById: TransferFacade.getById,

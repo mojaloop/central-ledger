@@ -24,8 +24,8 @@ Contributors
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * ModusBox
- - Vijay Kumar Guthi <vijaya.guthi@modusbox.com>
+ * Infitx
+ - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 

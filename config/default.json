@@ -78,20 +78,36 @@
   },
   "INTERNAL_TRANSFER_VALIDITY_SECONDS": "432000",
   "ENABLE_ON_US_TRANSFERS": false,
+  "PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED": false,
   "CACHE": {
     "CACHE_ENABLED": false,
     "MAX_BYTE_SIZE": 10000000,
     "EXPIRES_IN_MS": 1000
+  },
+  "PROXY_CACHE": {
+    "enabled": true,
+    "type": "redis-cluster",
+    "proxyConfig": {
+      "cluster": [
+        { "host": "localhost", "port": 6379 }
+      ]
+    }
   },
   "API_DOC_ENDPOINTS_ENABLED": true,
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
         "PREPARE": null,
+        "FX_PREPARE": "topic-transfer-position-batch",
         "BULK_PREPARE": null,
         "COMMIT": null,
         "BULK_COMMIT": null,
-        "RESERVE": null
+        "RESERVE": null,
+        "FX_RESERVE": "topic-transfer-position-batch",
+        "TIMEOUT_RESERVED": null,
+        "FX_TIMEOUT_RESERVED": "topic-transfer-position-batch",
+        "ABORT": null,
+        "FX_ABORT": "topic-transfer-position-batch"
       }
     },
     "TOPIC_TEMPLATES": {

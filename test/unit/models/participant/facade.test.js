@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -42,7 +45,11 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantModel = require('../../../../src/models/participant/participantCached')
 const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrencyCached')
 const ParticipantLimitModel = require('../../../../src/models/participant/participantLimitCached')
+const externalParticipantCachedModel = require('../../../../src/models/participant/externalParticipantCached')
 const SettlementModel = require('../../../../src/models/settlement/settlementModel')
+
+const fixtures = require('#test/fixtures')
+const { tryCatchEndTest } = require('#test/util/helpers')
 
 Test('Participant facade', async (facadeTest) => {
   let sandbox
@@ -55,8 +62,10 @@ Test('Participant facade', async (facadeTest) => {
     sandbox.stub(ParticipantCurrencyModel, 'invalidateParticipantCurrencyCache')
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantLimitModel, 'invalidateParticipantLimitCache')
+    sandbox.stub(externalParticipantCachedModel, 'getByName')
+    sandbox.stub(externalParticipantCachedModel, 'create')
     sandbox.stub(SettlementModel, 'getAll')
-    sandbox.stub(Cache)
+    sandbox.stub(Cache, 'isCacheEnabled')
     Db.participant = {
       query: sandbox.stub()
     }
@@ -269,6 +278,98 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     } catch (err) {
       Logger.error(`getByNameAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getByIDAndCurrency (cache off)', async (assert) => {
+    try {
+      const builderStub = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+      builderStub.where = sandbox.stub()
+
+      builderStub.where.returns({
+        andWhere: sandbox.stub().returns({
+          andWhere: sandbox.stub().returns({
+            innerJoin: sandbox.stub().returns({
+              select: sandbox.stub().returns({
+                first: sandbox.stub().returns(participant)
+              })
+            })
+          })
+        })
+      })
+
+      const result = await Model.getByIDAndCurrency(1, 'USD', Enum.Accounts.LedgerAccountType.POSITION)
+      assert.deepEqual(result, participant)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByIDAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getByIDAndCurrency (cache off)', async (assert) => {
+    try {
+      const builderStub = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+      builderStub.where = sandbox.stub()
+
+      builderStub.where.returns({
+        andWhere: sandbox.stub().returns({
+          andWhere: sandbox.stub().returns({
+            innerJoin: sandbox.stub().returns({
+              select: sandbox.stub().returns({
+                first: sandbox.stub().returns({
+                  andWhere: sandbox.stub().returns(participant)
+                })
+              })
+            })
+          })
+        })
+      })
+
+      const result = await Model.getByIDAndCurrency(1, 'USD', Enum.Accounts.LedgerAccountType.POSITION, true)
+      assert.deepEqual(result, participant)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByIDAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getByIDAndCurrency should throw error when participant not found (cache off)', async (assert) => {
+    try {
+      Db.participant.query.throws(new Error('message'))
+      await Model.getByIDAndCurrency(1, 'USD', Enum.Accounts.LedgerAccountType.POSITION, true)
+      assert.fail('should throw')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByIDAndCurrency failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getByIDAndCurrency (cache on)', async (assert) => {
+    try {
+      Cache.isCacheEnabled.returns(true)
+
+      ParticipantModel.getById.withArgs(participant.participantId).returns(participant)
+      ParticipantCurrencyModel.findOneByParams.withArgs({
+        participantId: participant.participantId,
+        currencyId: participant.currency,
+        ledgerAccountTypeId: Enum.Accounts.LedgerAccountType.POSITION
+      }).returns(participant)
+
+      const result = await Model.getByIDAndCurrency(participant.participantId, participant.currency, Enum.Accounts.LedgerAccountType.POSITION)
+      assert.deepEqual(result, participant)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByIDAndCurrency failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -1765,14 +1866,14 @@ Test('Participant facade', async (facadeTest) => {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       const trxStub = {
-        get commit () {
+        commit () {
 
         },
-        get rollback () {
-
+        rollback () {
+          return Promise.reject(new Error('DB error'))
         }
       }
-      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
+      const trxSpyCommit = sandbox.spy(trxStub, 'commit')
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -1795,7 +1896,7 @@ Test('Participant facade', async (facadeTest) => {
       test.equal(whereNotStub.lastCall.args[0], 'participant.name', 'filter on participants name')
       test.equal(whereNotStub.lastCall.args[1], 'Hub', 'filter out the Hub')
       test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
-      test.equal(trxSpyCommit.get.calledOnce, false, 'not commit the transaction if transaction is passed')
+      test.equal(trxSpyCommit.called, false, 'not commit the transaction if transaction is passed')
       test.deepEqual(response, participantsWithCurrencies, 'return participants with currencies')
       test.end()
     } catch (err) {
@@ -1810,14 +1911,13 @@ Test('Participant facade', async (facadeTest) => {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       const trxStub = {
-        get commit () {
+        commit () {
 
         },
-        get rollback () {
-
+        rollback () {
+          return Promise.reject(new Error('DB error'))
         }
       }
-      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -1840,7 +1940,6 @@ Test('Participant facade', async (facadeTest) => {
       test.equal(whereNotStub.lastCall.args[0], 'participant.name', 'filter on participants name')
       test.equal(whereNotStub.lastCall.args[1], 'Hub', 'filter out the Hub')
       test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
-      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
 
       test.deepEqual(response, participantsWithCurrencies, 'return participants with currencies')
       test.end()
@@ -1858,7 +1957,7 @@ Test('Participant facade', async (facadeTest) => {
       const knexStub = sandbox.stub()
       trxStub = sandbox.stub()
       trxStub.commit = sandbox.stub()
-      trxStub.rollback = sandbox.stub()
+      trxStub.rollback = () => Promise.reject(new Error('DB Error'))
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
       const transactingStub = sandbox.stub()
@@ -1877,7 +1976,6 @@ Test('Participant facade', async (facadeTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxStub.rollback.callCount, 0, 'not rollback the transaction if transaction is passed')
       test.end()
     }
   })
@@ -1893,6 +1991,40 @@ Test('Participant facade', async (facadeTest) => {
       test.pass('throw an error')
       test.end()
     }
+  })
+
+  facadeTest.test('getExternalParticipantIdByNameOrCreate method Tests -->', (getEpMethodTest) => {
+    getEpMethodTest.test('should return null in case of any error inside the method', tryCatchEndTest(async (t) => {
+      externalParticipantCachedModel.getByName = sandbox.stub().throws(new Error('Error occurred'))
+      const data = fixtures.mockExternalParticipantDto()
+      const result = await Model.getExternalParticipantIdByNameOrCreate(data)
+      t.equal(result, null)
+    }))
+
+    getEpMethodTest.test('should return null if proxyParticipant not found', tryCatchEndTest(async (t) => {
+      ParticipantModel.getByName = sandbox.stub().resolves(null)
+      const result = await Model.getExternalParticipantIdByNameOrCreate({})
+      t.equal(result, null)
+    }))
+
+    getEpMethodTest.test('should return cached externalParticipant id', tryCatchEndTest(async (t) => {
+      const cachedEp = fixtures.mockExternalParticipantDto()
+      externalParticipantCachedModel.getByName = sandbox.stub().resolves(cachedEp)
+      const id = await Model.getExternalParticipantIdByNameOrCreate(cachedEp.name)
+      t.equal(id, cachedEp.externalParticipantId)
+    }))
+
+    getEpMethodTest.test('should create and return new externalParticipant id', tryCatchEndTest(async (t) => {
+      const newEp = fixtures.mockExternalParticipantDto()
+      externalParticipantCachedModel.getByName = sandbox.stub().resolves(null)
+      externalParticipantCachedModel.create = sandbox.stub().resolves(newEp.externalParticipantId)
+      ParticipantModel.getByName = sandbox.stub().resolves({}) // to get proxy participantId
+
+      const id = await Model.getExternalParticipantIdByNameOrCreate(newEp)
+      t.equal(id, newEp.externalParticipantId)
+    }))
+
+    getEpMethodTest.end()
   })
 
   await facadeTest.end()

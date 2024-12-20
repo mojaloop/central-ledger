@@ -1,8 +1,8 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
 
@@ -15,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
@@ -27,8 +27,8 @@
  ******/
 'use strict'
 
-const Logger = require('@mojaloop/central-services-logger')
 const { uniqueId } = require('lodash')
+const Logger = require('@mojaloop/central-services-logger')
 const Consumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 
 /**
@@ -55,12 +55,13 @@ class TestConsumer {
         config: handlerConfig.config
       }
       // Override the client and group ids:
-      handler.config.rdkafkaConf['client.id'] = 'testConsumer'
+      const id = uniqueId()
+      handler.config.rdkafkaConf['client.id'] = 'testConsumer' + id
       // Fix issue of consumers with different partition.assignment.strategy being assigned to the same group
-      handler.config.rdkafkaConf['group.id'] = 'testConsumerGroup' + uniqueId()
+      handler.config.rdkafkaConf['group.id'] = 'testConsumerGroup' + id
       delete handler.config.rdkafkaConf['partition.assignment.strategy']
 
-      Logger.warn(`TestConsumer.startListening(): registering consumer with topicName: ${handler.topicName}`)
+      Logger.warn(`TestConsumer.startListening(): registering consumer with uniqueId ${id} - topicName: ${handler.topicName}`)
       const topics = [handler.topicName]
       const consumer = new Consumer(topics, handler.config)
       await consumer.connect()

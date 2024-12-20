@@ -56,7 +56,7 @@ Or via docker build directly:
 
 ```bash
 docker build \
-  --build-arg NODE_VERSION="$(cat .nvmrc)-alpine" \
+  --build-arg NODE_VERSION="$(cat .nvmrc)-alpine3.19" \
   -t mojaloop/ml-api-adapter:local \
   .
 ```
@@ -113,12 +113,14 @@ NOTE: Only POSITION.PREPARE and POSITION.COMMIT is supported at this time, with 
 
 Batch processing can be enabled in the transfer execution flow. Follow the steps below to enable batch processing for a more efficient transfer execution:
 
+Note: The position messages with action 'FX_PREPARE', 'FX_COMMIT' and 'FX_TIMEOUT_RESERVED' are only supported in batch processing.
+
 - **Step 1:** **Create a New Kafka Topic**
 
   Create a new Kafka topic named `topic-transfer-position-batch` to handle batch processing events.
 - **Step 2:** **Configure Action Type Mapping**
 
-  Point the prepare handler to the newly created topic for the action type `prepare` using the `KAFKA.EVENT_TYPE_ACTION_TOPIC_MAP` configuration as shown below:
+  Point the prepare handler to the newly created topic for the action types those are supported in batch processing using the `KAFKA.EVENT_TYPE_ACTION_TOPIC_MAP` configuration as shown below:
   ```
     "KAFKA": {
       "EVENT_TYPE_ACTION_TOPIC_MAP" : {
@@ -126,8 +128,12 @@ Batch processing can be enabled in the transfer execution flow. Follow the steps
           "PREPARE": "topic-transfer-position-batch",
           "BULK_PREPARE": "topic-transfer-position",
           "COMMIT": "topic-transfer-position-batch",
+          "FX_COMMIT": "topic-transfer-position-batch",
           "BULK_COMMIT": "topic-transfer-position",
           "RESERVE": "topic-transfer-position",
+          "FX_PREPARE": "topic-transfer-position-batch",
+          "TIMEOUT_RESERVED": "topic-transfer-position-batch",
+          "FX_TIMEOUT_RESERVED": "topic-transfer-position-batch"
         }
       }
     }
@@ -185,7 +191,8 @@ If you want to run integration tests in a repetitive manner, you can startup the
     Start containers required for Integration Tests
 
     ```bash
-    docker-compose -f docker-compose.yml up -d mysql kafka init-kafka kafka-debug-console
+    source ./docker/env.sh
+    docker compose up -d mysql kafka init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
     ```
 
     Run wait script which will report once all required containers are up and running
@@ -220,7 +227,8 @@ If you want to run integration tests in a repetitive manner, you can startup the
     Start containers required for Integration Tests, including a `central-ledger` container which will be used as a proxy shell.
 
     ```bash
-    docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger
+    source ./docker/env.sh
+    docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
     ```
 
     Run the Integration Tests from the `central-ledger` container
@@ -235,24 +243,42 @@ If you want to run override position topic tests you can repeat the above and us
 
 #### For running integration tests for batch processing interactively
 - Run dependecies
-```
-docker-compose up -d mysql kafka init-kafka kafka-debug-console
+```bash
+source ./docker/env.sh
+docker compose up -d mysql kafka init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
 npm run wait-4-docker
 ```
 - Run central-ledger services
 ```
 nvm use
 npm run migrate
-env "CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch" npm start
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_TIMEOUT_RESERVED=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__ABORT=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_ABORT=topic-transfer-position-batch
+npm start
 ```
 - Additionally, run position batch handler in a new terminal
 ```
+nvm use
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_PREPARE=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_TIMEOUT_RESERVED=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__ABORT=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_ABORT=topic-transfer-position-batch
 export CLEDG_HANDLERS__API__DISABLED=true
 node src/handlers/index.js handler --positionbatch
 ```
-- Run tests using `npx tape 'test/integration-override/**/handlerBatch.test.js'`
+- Run tests using the following commands in a new terminal
+```
+nvm use
+npm run test:int-override
+```
 
 
 If you want to just run all of the integration suite non-interactively then use npm run `test:integration`.
@@ -263,7 +289,11 @@ It will handle docker start up, migration, service starting and testing. Be sure
 If you want to run functional tests locally utilizing the [ml-core-test-harness](https://github.com/mojaloop/ml-core-test-harness), you can run the following commands:
 
 ```bash
-docker build -t mojaloop/central-ledger:local .
+export NODE_VERSION="$(cat .nvmrc)-alpine"
+docker build \
+  --build-arg NODE_VERSION=$NODE_VERSION \
+  -t mojaloop/central-ledger:local \
+  .
 ```
 
 ```bash

@@ -12,7 +12,25 @@ module.exports = {
     PASSWORD: '',
     DATABASE: 'mlos'
   },
+  PROXY_CACHE: {
+    enabled: true,
+    type: 'redis',
+    proxyConfig: {
+      cluster: undefined,
+      host: 'redis',
+      port: 6379
+    }
+  },
   KAFKA: {
+    EVENT_TYPE_ACTION_TOPIC_MAP: {
+      POSITION: {
+        PREPARE: 'topic-transfer-position-batch',
+        BULK_PREPARE: null,
+        COMMIT: 'topic-transfer-position-batch',
+        BULK_COMMIT: null,
+        RESERVE: 'topic-transfer-position-batch'
+      }
+    },
     CONSUMER: {
       BULK: {
         PREPARE: {
@@ -67,6 +85,13 @@ module.exports = {
           }
         },
         POSITION: {
+          config: {
+            rdkafkaConf: {
+              'metadata.broker.list': 'kafka:29092'
+            }
+          }
+        },
+        POSITION_BATCH: {
           config: {
             rdkafkaConf: {
               'metadata.broker.list': 'kafka:29092'

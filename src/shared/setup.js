@@ -2,8 +2,8 @@
  * @file This registers all handlers for the central-ledger API
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
 
@@ -16,7 +16,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
@@ -36,6 +36,7 @@
 const Hapi = require('@hapi/hapi')
 const Migrator = require('../lib/migrator')
 const Db = require('../lib/db')
+const ProxyCache = require('../lib/proxyCache')
 const ObjStoreDb = require('@mojaloop/object-store-lib').Db
 const Plugins = require('./plugins')
 const Config = require('../lib/config')
@@ -51,6 +52,7 @@ const EnumCached = require('../lib/enumCached')
 const ParticipantCached = require('../models/participant/participantCached')
 const ParticipantCurrencyCached = require('../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
+const externalParticipantCached = require('../models/participant/externalParticipantCached')
 const BatchPositionModelCached = require('../models/position/batchCached')
 const MongoUriBuilder = require('mongo-uri-builder')
 
@@ -236,6 +238,8 @@ const initializeCache = async () => {
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
   await BatchPositionModelCached.initialize()
+  // all cached models initialize-methods are SYNC!!
+  externalParticipantCached.initialize()
   await Cache.initCache()
 }
 
@@ -265,6 +269,9 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     await connectDatabase()
     await connectMongoose()
     await initializeCache()
+    if (Config.PROXY_CACHE_CONFIG?.enabled) {
+      await ProxyCache.connect()
+    }
 
     let server
     switch (service) {
@@ -303,6 +310,9 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`)
 
     await Db.disconnect()
+    if (Config.PROXY_CACHE_CONFIG?.enabled) {
+      await ProxyCache.disconnect()
+    }
     process.exit(1)
   }
 }

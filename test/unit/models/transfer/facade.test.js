@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -39,6 +42,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
 // const Proxyquire = require('proxyquire')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
+const ParticipantModelCached = require('../../../../src/models/participant/participantCached')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const { randomUUID } = require('crypto')
 const cloneDeep = require('lodash').cloneDeep
@@ -94,6 +98,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   transferFacadeTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
+    const findStub = sandbox.stub().returns([{
+      createdDate: now,
+      participantId: 1,
+      name: 'test'
+    }])
     Db.transfer = {
       insert: sandbox.stub(),
       find: sandbox.stub(),
@@ -115,10 +124,22 @@ Test('Transfer facade', async (transferFacadeTest) => {
       query: sandbox.stub()
     }
     Db.from = (table) => {
-      return Db[table]
+      return {
+        ...Db[table],
+        find: findStub
+      }
     }
     clock = Sinon.useFakeTimers(now.getTime())
     sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
+    sandbox.stub(ParticipantModelCached, 'getByName')
+    ParticipantModelCached.getByName.returns(Promise.resolve({
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      currencyList: ['USD']
+    }))
     t.end()
   })
 
@@ -126,236 +147,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
     sandbox.restore()
     clock.restore()
     t.end()
-  })
-
-  await transferFacadeTest.test('getById should return transfer by id', async (test) => {
-    try {
-      const transferId1 = 't1'
-      const transferId2 = 't2'
-      const extensions = cloneDeep(transferExtensions)
-      const transfers = [
-        { transferId: transferId1, extensionList: extensions },
-        { transferId: transferId2, errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED, extensionList: [{ key: 'key1', value: 'value1' }, { key: 'key2', value: 'value2' }, { key: 'cause', value: '5105: undefined' }], isTransferReadModel: true }
-      ]
-
-      const builderStub = sandbox.stub()
-      const whereRawPc1 = sandbox.stub()
-      const whereRawPc2 = sandbox.stub()
-      const payerTransferStub = sandbox.stub()
-      const payerRoleTypeStub = sandbox.stub()
-      const payerCurrencyStub = sandbox.stub()
-      const payerParticipantStub = sandbox.stub()
-      const payeeTransferStub = sandbox.stub()
-      const payeeRoleTypeStub = sandbox.stub()
-      const payeeCurrencyStub = sandbox.stub()
-      const payeeParticipantStub = sandbox.stub()
-      const ilpPacketStub = sandbox.stub()
-      const stateChangeStub = sandbox.stub()
-      const stateStub = sandbox.stub()
-      const transferFulfilmentStub = sandbox.stub()
-      const transferErrorStub = sandbox.stub()
-
-      const selectStub = sandbox.stub()
-      const orderByStub = sandbox.stub()
-      const firstStub = sandbox.stub()
-
-      builderStub.where = sandbox.stub()
-
-      Db.transfer.query.callsArgWith(0, builderStub)
-      Db.transfer.query.returns(transfers[0])
-
-      builderStub.where.returns({
-        whereRaw: whereRawPc1.returns({
-          whereRaw: whereRawPc2.returns({
-            innerJoin: payerTransferStub.returns({
-              innerJoin: payerRoleTypeStub.returns({
-                innerJoin: payerCurrencyStub.returns({
-                  innerJoin: payerParticipantStub.returns({
-                    innerJoin: payeeTransferStub.returns({
-                      innerJoin: payeeRoleTypeStub.returns({
-                        innerJoin: payeeCurrencyStub.returns({
-                          innerJoin: payeeParticipantStub.returns({
-                            innerJoin: ilpPacketStub.returns({
-                              leftJoin: stateChangeStub.returns({
-                                leftJoin: stateStub.returns({
-                                  leftJoin: transferFulfilmentStub.returns({
-                                    leftJoin: transferErrorStub.returns({
-                                      select: selectStub.returns({
-                                        orderBy: orderByStub.returns({
-                                          first: firstStub.returns(transfers[0])
-                                        })
-                                      })
-                                    })
-                                  })
-                                })
-                              })
-                            })
-                          })
-                        })
-                      })
-                    })
-                  })
-                })
-              })
-            })
-          })
-        })
-      })
-
-      sandbox.stub(transferExtensionModel, 'getByTransferId')
-      transferExtensionModel.getByTransferId.returns(extensions)
-
-      const found = await TransferFacade.getById(transferId1)
-      test.equal(found, transfers[0])
-      test.ok(builderStub.where.withArgs({
-        'transfer.transferId': transferId1,
-        'tprt1.name': 'PAYER_DFSP',
-        'tprt2.name': 'PAYEE_DFSP'
-      }).calledOnce)
-      test.ok(whereRawPc1.withArgs('pc1.currencyId = transfer.currencyId').calledOnce)
-      test.ok(whereRawPc2.withArgs('pc2.currencyId = transfer.currencyId').calledOnce)
-      test.ok(payerTransferStub.withArgs('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId').calledOnce)
-      test.ok(payerRoleTypeStub.withArgs('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId').calledOnce)
-      test.ok(payerCurrencyStub.withArgs('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId').calledOnce)
-      test.ok(payerParticipantStub.withArgs('participant AS da', 'da.participantId', 'pc1.participantId').calledOnce)
-      test.ok(payeeTransferStub.withArgs('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId').calledOnce)
-      test.ok(payeeRoleTypeStub.withArgs('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId').calledOnce)
-      test.ok(payeeCurrencyStub.withArgs('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId').calledOnce)
-      test.ok(payeeParticipantStub.withArgs('participant AS ca', 'ca.participantId', 'pc2.participantId').calledOnce)
-      test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
-      test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
-      test.ok(stateStub.withArgs('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId').calledOnce)
-      test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
-      test.ok(transferErrorStub.withArgs('transferError as te', 'te.transferId', 'transfer.transferId').calledOnce)
-      test.ok(selectStub.withArgs(
-        'transfer.*',
-        'transfer.currencyId AS currency',
-        'pc1.participantCurrencyId AS payerParticipantCurrencyId',
-        'tp1.amount AS payerAmount',
-        'da.participantId AS payerParticipantId',
-        'da.name AS payerFsp',
-        'pc2.participantCurrencyId AS payeeParticipantCurrencyId',
-        'tp2.amount AS payeeAmount',
-        'ca.participantId AS payeeParticipantId',
-        'ca.name AS payeeFsp',
-        'tsc.transferStateChangeId',
-        'tsc.transferStateId AS transferState',
-        'tsc.reason AS reason',
-        'tsc.createdDate AS completedTimestamp',
-        'ts.enumeration as transferStateEnumeration',
-        'ts.description as transferStateDescription',
-        'ilpp.value AS ilpPacket',
-        'transfer.ilpCondition AS condition',
-        'tf.ilpFulfilment AS fulfilment'
-      ).calledOnce)
-      test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
-      test.ok(firstStub.withArgs().calledOnce)
-
-      Db.transfer.query.returns(transfers[1])
-      builderStub.where.returns({
-        whereRaw: whereRawPc1.returns({
-          whereRaw: whereRawPc2.returns({
-            innerJoin: payerTransferStub.returns({
-              innerJoin: payerRoleTypeStub.returns({
-                innerJoin: payerCurrencyStub.returns({
-                  innerJoin: payerParticipantStub.returns({
-                    innerJoin: payeeTransferStub.returns({
-                      innerJoin: payeeRoleTypeStub.returns({
-                        innerJoin: payeeCurrencyStub.returns({
-                          innerJoin: payeeParticipantStub.returns({
-                            innerJoin: ilpPacketStub.returns({
-                              leftJoin: stateChangeStub.returns({
-                                leftJoin: stateStub.returns({
-                                  leftJoin: transferFulfilmentStub.returns({
-                                    leftJoin: transferErrorStub.returns({
-                                      select: selectStub.returns({
-                                        orderBy: orderByStub.returns({
-                                          first: firstStub.returns(transfers[1])
-                                        })
-                                      })
-                                    })
-                                  })
-                                })
-                              })
-                            })
-                          })
-                        })
-                      })
-                    })
-                  })
-                })
-              })
-            })
-          })
-        })
-      })
-      const found2 = await TransferFacade.getById(transferId2)
-      // TODO: extend testing for the current code branch
-      test.deepEqual(found2, transfers[1])
-
-      transferExtensionModel.getByTransferId.returns(null)
-      const found3 = await TransferFacade.getById(transferId2)
-      // TODO: extend testing for the current code branch
-      test.equal(found3, transfers[1])
-      test.end()
-    } catch (err) {
-      Logger.error(`getById failed with error - ${err}`)
-      test.fail()
-      test.end()
-    }
-  })
-
-  await transferFacadeTest.test('getById should find zero records', async (test) => {
-    try {
-      const transferId1 = 't1'
-      const builderStub = sandbox.stub()
-      Db.transfer.query.callsArgWith(0, builderStub)
-      builderStub.where = sandbox.stub()
-      builderStub.where.returns({
-        whereRaw: sandbox.stub().returns({
-          whereRaw: sandbox.stub().returns({
-            innerJoin: sandbox.stub().returns({
-              innerJoin: sandbox.stub().returns({
-                innerJoin: sandbox.stub().returns({
-                  innerJoin: sandbox.stub().returns({
-                    innerJoin: sandbox.stub().returns({
-                      innerJoin: sandbox.stub().returns({
-                        innerJoin: sandbox.stub().returns({
-                          innerJoin: sandbox.stub().returns({
-                            innerJoin: sandbox.stub().returns({
-                              leftJoin: sandbox.stub().returns({
-                                leftJoin: sandbox.stub().returns({
-                                  leftJoin: sandbox.stub().returns({
-                                    leftJoin: sandbox.stub().returns({
-                                      select: sandbox.stub().returns({
-                                        orderBy: sandbox.stub().returns({
-                                          first: sandbox.stub().returns(null)
-                                        })
-                                      })
-                                    })
-                                  })
-                                })
-                              })
-                            })
-                          })
-                        })
-                      })
-                    })
-                  })
-                })
-              })
-            })
-          })
-        })
-      })
-      const found = await TransferFacade.getById(transferId1)
-      test.equal(found, null, 'no transfers were found')
-      test.end()
-    } catch (err) {
-      Logger.error(`getById failed with error - ${err}`)
-      test.fail('Error thrown')
-      test.end()
-    }
   })
 
   await transferFacadeTest.test('getById should throw an error', async (test) => {
@@ -732,6 +523,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
       const builderStub = sandbox.stub()
       const transferStateChange = sandbox.stub()
+      const transferStub = sandbox.stub()
       const selectStub = sandbox.stub()
       const orderByStub = sandbox.stub()
       const firstStub = sandbox.stub()
@@ -742,9 +534,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
       builderStub.where.returns({
         innerJoin: transferStateChange.returns({
-          select: selectStub.returns({
-            orderBy: orderByStub.returns({
-              first: firstStub.returns(transfer)
+          innerJoin: transferStub.returns({
+            select: selectStub.returns({
+              orderBy: orderByStub.returns({
+                first: firstStub.returns(transfer)
+              })
             })
           })
         })
@@ -760,6 +554,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       test.ok(transferStateChange.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId').calledOnce)
       test.ok(selectStub.withArgs(
         'transferParticipant.*',
+        't.currencyId',
         'tsc.transferStateId',
         'tsc.reason'
       ).calledOnce)
@@ -1435,6 +1230,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const segmentId = 1
           const intervalMin = 1
           const intervalMax = 10
+          const fxSegmentId = 1
+          const fxIntervalMin = 1
+          const fxIntervalMax = 10
 
           const knexStub = sandbox.stub()
           sandbox.stub(Db, 'getKnex').returns(knexStub)
@@ -1442,126 +1240,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           knexStub.from = sandbox.stub().throws(new Error('Custom error'))
 
-          await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+          await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
           Logger.error(`timeoutExpireReserved failed with error - ${err}`)
           test.pass('Error thrown')
-          test.end()
-        }
-      })
-
-      await timeoutExpireReservedTest.test('perform timeout successfully', async test => {
-        try {
-          let segmentId
-          const intervalMin = 1
-          const intervalMax = 10
-          const expectedResult = 1
-
-          const knexStub = sandbox.stub()
-          sandbox.stub(Db, 'getKnex').returns(knexStub)
-          const trxStub = sandbox.stub()
-          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-          const context = sandbox.stub()
-          context.from = sandbox.stub().returns({
-            innerJoin: sandbox.stub().returns({
-              innerJoin: sandbox.stub().returns({
-                leftJoin: sandbox.stub().returns({
-                  whereNull: sandbox.stub().returns({
-                    whereIn: sandbox.stub().returns({
-                      select: sandbox.stub()
-                    })
-                  })
-                }),
-                where: sandbox.stub().returns({
-                  andWhere: sandbox.stub().returns({
-                    select: sandbox.stub()
-                  })
-                })
-              })
-            })
-          })
-          context.on = sandbox.stub().returns({
-            andOn: sandbox.stub().returns({
-              andOn: sandbox.stub()
-            })
-          })
-          knexStub.returns({
-            select: sandbox.stub().returns({
-              max: sandbox.stub().returns({
-                where: sandbox.stub().returns({
-                  andWhere: sandbox.stub().returns({
-                    groupBy: sandbox.stub().returns({
-                      as: sandbox.stub()
-                    })
-                  })
-                }),
-                innerJoin: sandbox.stub().returns({
-                  groupBy: sandbox.stub().returns({
-                    as: sandbox.stub()
-                  })
-                })
-              })
-            }),
-            transacting: sandbox.stub().returns({
-              insert: sandbox.stub(),
-              where: sandbox.stub().returns({
-                update: sandbox.stub()
-              })
-            }),
-            innerJoin: sandbox.stub().returns({
-              innerJoin: sandbox.stub().returns({
-                innerJoin: sandbox.stub().callsArgOn(1, context).returns({
-                  innerJoin: sandbox.stub().callsArgOn(1, context).returns({
-                    innerJoin: sandbox.stub().returns({
-                      innerJoin: sandbox.stub().returns({
-                        innerJoin: sandbox.stub().returns({
-                          innerJoin: sandbox.stub().returns({
-                            leftJoin: sandbox.stub().returns({
-                              where: sandbox.stub().returns({
-                                select: sandbox.stub().returns(
-                                  Promise.resolve(expectedResult)
-                                )
-                              })
-                            })
-                          })
-                        })
-                      })
-                    })
-                  })
-                })
-              })
-            })
-          })
-          knexStub.raw = sandbox.stub()
-          knexStub.from = sandbox.stub().returns({
-            transacting: sandbox.stub().returns({
-              insert: sandbox.stub().callsArgOn(0, context)
-            })
-          })
-
-          let result
-          try {
-            segmentId = 0
-            result = await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
-            test.equal(result, expectedResult, 'Expected result returned')
-          } catch (err) {
-            Logger.error(`timeoutExpireReserved failed with error - ${err}`)
-            test.fail()
-          }
-          try {
-            segmentId = 1
-            await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
-            test.equal(result, expectedResult, 'Expected result returned.')
-          } catch (err) {
-            Logger.error(`timeoutExpireReserved failed with error - ${err}`)
-            test.fail()
-          }
-          test.end()
-        } catch (err) {
-          Logger.error(`timeoutExpireReserved failed with error - ${err}`)
-          test.fail()
           test.end()
         }
       })
@@ -1723,7 +1407,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
             transferStateId: Enum.Transfers.TransferInternalState.ABORTED_REJECTED,
             ledgerAccountTypeId: 2
           }
-          const trxStub = sandbox.stub()
+          const trxStub = {
+            commit () {
+
+            },
+            rollback () {
+              return Promise.reject(new Error('DB error'))
+            }
+          }
 
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
@@ -1821,7 +1512,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
             transferStateId: 'RECEIVED_PREPARE',
             ledgerAccountTypeId: 2
           }
-          const trxStub = sandbox.stub()
+          const trxStub = {
+            commit () {
+
+            },
+            rollback () {
+              return Promise.reject(new Error('DB error'))
+            }
+          }
 
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
@@ -1950,6 +1648,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
           knexStub.withArgs('participantCurrency').returns({
             select: sandbox.stub().returns({
               where: sandbox.stub().returns({
+                first: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns(
+                    Promise.resolve({
+                      participantId: 1
+                    })
+                  )
+                }),
                 andWhere: sandbox.stub().returns({
                   first: sandbox.stub().returns({
                     transacting: sandbox.stub().returns(
@@ -1967,7 +1672,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const result = await TransferFacade.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trxStub)
           test.equal(result, 0, 'Result for successful operation returned')
           test.equal(knexStub.withArgs('transfer').callCount, 1)
-          test.equal(knexStub.withArgs('participantCurrency').callCount, 1)
+          test.equal(knexStub.withArgs('participantCurrency').callCount, 2)
           test.equal(knexStub.withArgs('transferParticipant').callCount, 2)
           test.equal(knexStub.withArgs('transferStateChange').callCount, 1)
           test.equal(knexStub.withArgs('transferExtension').callCount, 3)
@@ -2020,6 +1725,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
           knexStub.returns({
             select: sandbox.stub().returns({
               where: sandbox.stub().returns({
+                first: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    participantId: 1
+                  })
+                }),
                 andWhere: sandbox.stub().returns({
                   first: sandbox.stub().returns({
                     transacting: sandbox.stub().returns({
@@ -2067,6 +1777,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
           knexStub.withArgs('participantCurrency').returns({
             select: sandbox.stub().returns({
               where: sandbox.stub().returns({
+                first: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns(
+                    Promise.resolve({
+                      participantId: 1
+                    })
+                  )
+                }),
                 andWhere: sandbox.stub().returns({
                   first: sandbox.stub().returns({
                     transacting: sandbox.stub().returns(
@@ -2199,7 +1916,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
           }
           const transactionTimestamp = Time.getUTCString(now)
 
-          const trxStub = sandbox.stub()
+          const trxStub = {
+            commit () {
+
+            },
+            rollback () {
+              return Promise.reject(new Error('DB error'))
+            }
+          }
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           sandbox.stub(Db, 'getKnex').returns(knexStub)
@@ -2223,7 +1947,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
           }
           const transactionTimestamp = Time.getUTCString(now)
 
-          const trxStub = sandbox.stub()
+          const trxStub = {
+            commit () {
+
+            },
+            rollback () {
+              return Promise.reject(new Error('DB error'))
+            }
+          }
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           sandbox.stub(Db, 'getKnex').returns(knexStub)
@@ -2524,7 +2255,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           const trxStub = sandbox.stub()
           trxStub.commit = sandbox.stub()
-          trxStub.rollback = sandbox.stub()
+          trxStub.rollback = () => Promise.reject(new Error('DB Error'))
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           sandbox.stub(Db, 'getKnex').returns(knexStub)
@@ -2557,7 +2288,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const participantName = 'fsp1'
       const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
       const builderStub = sandbox.stub()
-      const participantCurrencyStub = sandbox.stub()
       const transferParticipantStub = sandbox.stub()
       const selectStub = sandbox.stub()
 
@@ -2565,10 +2295,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
       Db.participant.query.callsArgWith(0, builderStub)
 
       builderStub.where.returns({
-        innerJoin: participantCurrencyStub.returns({
-          innerJoin: transferParticipantStub.returns({
-            select: selectStub.returns([1])
-          })
+        innerJoin: transferParticipantStub.returns({
+          select: selectStub.returns([1])
         })
       })
 
@@ -2577,11 +2305,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
       test.ok(builderStub.where.withArgs({
         'participant.name': participantName,
         'tp.transferId': transferId,
-        'participant.isActive': 1,
-        'pc.isActive': 1
+        'participant.isActive': 1
       }).calledOnce, 'query builder called once')
-      test.ok(participantCurrencyStub.withArgs('participantCurrency AS pc', 'pc.participantId', 'participant.participantId').calledOnce, 'participantCurrency inner joined')
-      test.ok(transferParticipantStub.withArgs('transferParticipant AS tp', 'tp.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'transferParticipant inner joined')
+      test.ok(transferParticipantStub.withArgs('transferParticipant AS tp', 'tp.participantId', 'participant.participantId').calledOnce, 'transferParticipant inner joined')
       test.ok(selectStub.withArgs(
         'tp.*'
       ).calledOnce, 'select all columns from transferParticipant')

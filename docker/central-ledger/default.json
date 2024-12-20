@@ -82,6 +82,15 @@
     "MAX_BYTE_SIZE": 10000000,
     "EXPIRES_IN_MS": 1000
   },
+  "PROXY_CACHE": {
+    "enabled": true,
+    "type": "redis-cluster",
+    "proxyConfig": {
+      "cluster": [
+        { "host": "redis-node-0", "port": 6379 }
+      ]
+    }
+  },
   "KAFKA": {
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {

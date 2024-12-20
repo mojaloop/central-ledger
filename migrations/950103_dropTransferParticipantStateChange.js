@@ -19,7 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * ModusBox
- - Deon Botha <deon.botha@@modusbox.com>
+ - Deon Botha <deon.botha@modusbox.com>
  --------------
  ******/
 
