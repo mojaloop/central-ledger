@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [18.0.0](https://github.com/mojaloop/central-ledger/compare/v17.7.8...v18.0.0) (2024-12-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* fx and interscheme implementation (#1058)
+
+### Features
+
+* fx and interscheme implementation ([#1058](https://github.com/mojaloop/central-ledger/issues/1058)) ([aece4c7](https://github.com/mojaloop/central-ledger/commit/aece4c7df3ec2ef277f21af8c8ed32548a1a4308)), closes [#988](https://github.com/mojaloop/central-ledger/issues/988) [#989](https://github.com/mojaloop/central-ledger/issues/989) [#986](https://github.com/mojaloop/central-ledger/issues/986) [mojaloop/#3689](https://github.com/mojaloop/project/issues/3689)
+
 ### [17.7.8](https://github.com/mojaloop/central-ledger/compare/v17.7.7...v17.7.8) (2024-06-14)
 
 
