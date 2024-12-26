@@ -24,4 +24,5 @@
  ******/
 'use strict'
 
-module.exports = require('@mojaloop/database-lib').Db
+const Database = require('@mojaloop/database-lib/src/database')
+module.exports = new Database()
