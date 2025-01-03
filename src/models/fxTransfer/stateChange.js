@@ -1,8 +1,7 @@
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const TransferError = require('../../models/transfer/transferError')
 const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
-const { logger } = require('../../shared/logger')
+const util = require('../../lib/util')
 
 const table = TABLE_NAMES.fxTransferStateChange
 
@@ -22,7 +21,7 @@ const logTransferError = async (id, errorCode, errorDescription) => {
     // todo: check if stateChange is not null
     return TransferError.insert(id, stateChange.fxTransferStateChangeId, errorCode, errorDescription)
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -35,8 +34,7 @@ const getLatest = async () => {
         .first()
     })
   } catch (err) {
-    logger.error('getLatest::fxTransferStateChange', err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 

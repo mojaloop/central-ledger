@@ -24,10 +24,10 @@
 
 'use strict'
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
 const Metrics = require('@mojaloop/central-services-metrics')
+const util = require('../../lib/util')
 
 let cacheClient
 let participantLimitAllCacheKey
@@ -113,7 +113,7 @@ const withInvalidate = (theFunctionName) => {
       await exports.invalidateParticipantLimitCache()
       return result
     } catch (err) {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      util.rethrowCachedDatabaseError(err)
     }
   }
 }

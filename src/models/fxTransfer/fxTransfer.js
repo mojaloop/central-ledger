@@ -10,6 +10,7 @@ const Db = require('../../lib/db')
 const participant = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
 const TransferExtensionModel = require('./fxTransferExtension')
+const util = require('../../lib/util')
 
 const { TransferInternalState } = Enum.Transfers
 
@@ -54,7 +55,7 @@ const getByIdLight = async (id) => {
         .first()
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -128,7 +129,7 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
     })
   } catch (err) {
     logger.warn('error in getAllDetailsByCommitRequestId', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -202,7 +203,7 @@ const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestI
     })
   } catch (err) {
     logger.warn('error in getAllDetailsByCommitRequestIdForProxiedFxTransfer', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -334,7 +335,7 @@ const savePreparedRequest = async (
           histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveFxTransferPrepared_transaction' })
         } catch (err) {
           histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveFxTransferPrepared_transaction' })
-          throw err
+          util.rethrowDatabaseError(err)
         }
       })
     } else {
@@ -380,7 +381,7 @@ const savePreparedRequest = async (
   } catch (err) {
     logger.warn('error in savePreparedRequest', err)
     histTimerSaveFxTransferEnd({ success: false, queryName: 'transfer_model_facade_saveTransferPrepared' })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -518,7 +519,7 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
       } catch (err) {
         histTFxFulfilResponseValidationPassedEnd({ success: false, queryName: 'facade_saveFxFulfilResponse_transaction' })
         logger.error('saveFxFulfilResponse::failure')
-        throw err
+        util.rethrowDatabaseError(err)
       }
     })
     histTimerSaveFulfilResponseEnd({ success: true, queryName: 'facade_saveFulfilResponse' })
@@ -526,7 +527,7 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
   } catch (err) {
     logger.warn('error in saveFxFulfilResponse', err)
     histTimerSaveFulfilResponseEnd({ success: false, queryName: 'facade_saveFulfilResponse' })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -541,7 +542,7 @@ const updateFxPrepareReservedForwarded = async function (commitRequestId) {
         createdDate: Time.getUTCString(new Date())
       })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -560,7 +561,7 @@ const getFxTransferParticipant = async (participantName, commitRequestId) => {
         )
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 

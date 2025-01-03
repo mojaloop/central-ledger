@@ -26,13 +26,13 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const util = require('../../lib/util')
 
 const getById = async (transferId) => {
   try {
     return await Db.from('transfer').findOne({ transferId })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -41,8 +41,7 @@ const saveTransfer = async (record) => {
   try {
     return Db.from('transfer').insert(record)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -50,7 +49,7 @@ const destroyById = async (id) => {
   try {
     await Db.from('transfer').destroy({ transferId: id })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -58,8 +57,7 @@ const truncateTransfer = async () => {
   try {
     return await Db.from('transfer').truncate()
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 

@@ -28,6 +28,7 @@ const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TS = Enum.Transfers.TransferInternalState
+const util = require('../../lib/util')
 
 const cleanup = async () => {
   Logger.isDebugEnabled && Logger.debug('cleanup fxTransferTimeout')
@@ -58,8 +59,7 @@ const cleanup = async () => {
     })
     return ttIdList
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 

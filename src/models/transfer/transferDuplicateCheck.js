@@ -30,8 +30,9 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
+const util = require('../../lib/util')
+
 /**
  * @function GetTransferDuplicateCheck
  *
@@ -85,7 +86,7 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
     return result
   } catch (err) {
     histTimerSaveTransferDuplicateCheckEnd({ success: false, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 

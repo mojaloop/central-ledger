@@ -24,7 +24,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
+const util = require('../../lib/util')
 
 const getByBulkTransferId = async (id) => {
   try {
@@ -35,8 +35,7 @@ const getByBulkTransferId = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 

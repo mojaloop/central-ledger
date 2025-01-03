@@ -30,7 +30,7 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const util = require('../../lib/util')
 
 /**
  * @function GetBulkTransferDuplicateCheck
@@ -69,7 +69,7 @@ const saveBulkTransferDuplicateCheck = async (bulkTransferId, hash) => {
   try {
     return Db.from('bulkTransferDuplicateCheck').insert({ bulkTransferId, hash })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 

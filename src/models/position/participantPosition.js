@@ -25,14 +25,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
+const util = require('../../lib/util')
 
 const insert = async (participantPosition) => {
   try {
     return await Db.from('participantPosition').insert(participantPosition)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -40,8 +39,7 @@ const update = async (participantPosition) => {
   try {
     return await Db.from('participantPosition').update({ participantCurrencyId: participantPosition.participantCurrencyId }, { value: participantPosition.value, reservedValue: participantPosition.reservedValue, changedDate: new Date() })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -49,8 +47,7 @@ const getPositionByCurrencyId = async (participantCurrencyId) => {
   try {
     return await Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 

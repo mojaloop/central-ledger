@@ -31,7 +31,7 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const util = require('../../lib/util')
 
 /**
  * @function Insert
@@ -51,7 +51,7 @@ const insert = async (transferId, transferStateChangeId, errorCode, errorDescrip
   try {
     return Db.from('transferError').insert({ transferId, transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -80,7 +80,7 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
   try {
     return Db.from('transferError').find({ transferStateChangeId })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -117,8 +117,7 @@ const getByTransferId = async (id) => {
     transferError.errorCode = transferError.errorCode.toString()
     return transferError
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 

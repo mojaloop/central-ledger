@@ -26,20 +26,33 @@
 const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
 const { logger } = require('../../shared/logger')
+const util = require('../../lib/util')
 
 const getItemInWatchListByCommitRequestId = async (commitRequestId) => {
   logger.debug(`get item in watch list (commitRequestId=${commitRequestId})`)
-  return Db.from(TABLE_NAMES.fxWatchList).findOne({ commitRequestId })
+  try {
+    return Db.from(TABLE_NAMES.fxWatchList).findOne({ commitRequestId })
+  } catch (err) {
+    util.rethrowDatabaseError(err)
+  }
 }
 
 const getItemsInWatchListByDeterminingTransferId = async (determiningTransferId) => {
   logger.debug(`get item in watch list (determiningTransferId=${determiningTransferId})`)
-  return Db.from(TABLE_NAMES.fxWatchList).find({ determiningTransferId })
+  try {
+    return Db.from(TABLE_NAMES.fxWatchList).find({ determiningTransferId })
+  } catch (err) {
+    util.rethrowDatabaseError(err)
+  }
 }
 
 const addToWatchList = async (record) => {
   logger.debug('add to fx watch list', record)
-  return Db.from(TABLE_NAMES.fxWatchList).insert(record)
+  try {
+    return Db.from(TABLE_NAMES.fxWatchList).insert(record)
+  } catch (err) {
+    util.rethrowDatabaseError(err)
+  }
 }
 
 module.exports = {

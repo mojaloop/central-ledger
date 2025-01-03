@@ -34,8 +34,7 @@
 
 const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrencyCached')
-const Logger = require('@mojaloop/central-services-logger')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const util = require('../../lib/util')
 
 /**
  * @function GetByParticipantCurrencyId
@@ -53,8 +52,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -74,8 +72,7 @@ const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.from('participantPosition').destroy({ participantCurrencyId })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -99,8 +96,7 @@ const destroyByParticipantId = async (participantId) => {
       .whereIn('participantCurrencyId', participantCurrencyIdList)
       .del()
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -113,7 +109,7 @@ const createParticipantPositionRecords = async (participantPositions, trx) => {
           .batchInsert('participantPosition', participantPositions)
           .transacting(trx)
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        util.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -122,7 +118,7 @@ const createParticipantPositionRecords = async (participantPositions, trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowDatabaseError(err)
   }
 }
 module.exports = {

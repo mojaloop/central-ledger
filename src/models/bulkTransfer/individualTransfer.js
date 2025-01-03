@@ -24,7 +24,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
+const util = require('../../lib/util')
 
 const getAllById = async (id) => {
   try {
@@ -54,8 +54,7 @@ const getAllById = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 

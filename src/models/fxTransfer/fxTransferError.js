@@ -29,7 +29,7 @@
  */
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
+const util = require('../../lib/util')
 
 const getByCommitRequestId = async (id) => {
   try {
@@ -43,8 +43,7 @@ const getByCommitRequestId = async (id) => {
     fxTransferError.errorCode = fxTransferError.errorCode.toString()
     return fxTransferError
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 

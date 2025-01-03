@@ -25,8 +25,8 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const util = require('../../lib/util')
 
 const getReservedPositionChangesByCommitRequestId = async (commitRequestId) => {
   try {
@@ -40,8 +40,7 @@ const getReservedPositionChangesByCommitRequestId = async (commitRequestId) => {
       )
     return participantPositionChanges
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 
@@ -57,8 +56,7 @@ const getReservedPositionChangesByTransferId = async (transferId) => {
       )
     return participantPositionChanges
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    util.rethrowDatabaseError(err)
   }
 }
 

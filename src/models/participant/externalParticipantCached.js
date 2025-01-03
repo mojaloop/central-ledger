@@ -23,10 +23,10 @@
  --------------
  **********/
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
 const cache = require('../../lib/cache')
 const externalParticipantModel = require('./externalParticipant')
+const util = require('../../lib/util')
 
 let cacheClient
 let epAllCacheKey
@@ -96,7 +96,7 @@ const getById = async (id) => {
     const cachedParticipants = await getExternalParticipantsCached()
     return cachedParticipants.indexById[id]
   } catch (err) /* istanbul ignore next */ {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -105,7 +105,7 @@ const getByName = async (name) => {
     const cachedParticipants = await getExternalParticipantsCached()
     return cachedParticipants.indexByName[name]
   } catch (err) /* istanbul ignore next */ {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -114,7 +114,7 @@ const getAll = async () => {
     const cachedParticipants = await getExternalParticipantsCached()
     return cachedParticipants.allExternalParticipants
   } catch (err) /* istanbul ignore next */ {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -125,7 +125,7 @@ const withInvalidate = (theFunctionName) => {
       await invalidateCache()
       return result
     } catch (err) /* istanbul ignore next */ {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      util.rethrowCachedDatabaseError(err)
     }
   }
 }
