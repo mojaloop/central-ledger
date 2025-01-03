@@ -33,8 +33,10 @@ const SettlementService = require('../../../../src/domain/settlement')
 const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 const ProxyCache = require('#src/lib/proxyCache')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const createRequest = ({ payload, params, query }) => {
+  Metrics._setupDefaultServiceMetrics()
   const sandbox = Sinon.createSandbox()
   const requestPayload = payload || {}
   const requestParams = params || {}

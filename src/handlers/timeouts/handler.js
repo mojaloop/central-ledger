@@ -44,6 +44,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
 const { logger } = require('../../shared/logger')
+const util = require('../../lib/util')
 
 const { Kafka, resourceVersions } = Utility
 const { Action, Type } = Enum.Events.Event
@@ -157,7 +158,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
       await span.finish(fspiopError.message, state)
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError)
     } finally {
       if (!span.isFinished) {
         await span.finish()
@@ -239,7 +240,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
       await span.finish(fspiopError.message, state)
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError)
     } finally {
       if (!span.isFinished) {
         await span.finish()
@@ -294,7 +295,7 @@ const timeout = async () => {
     }
   } catch (err) {
     logger.error('error in timeout:', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   } finally {
     running = false
   }
@@ -350,7 +351,7 @@ const registerTimeoutHandler = async () => {
     return true
   } catch (err) {
     logger.error('error in registerTimeoutHandler:', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -370,7 +371,7 @@ const registerAllHandlers = async () => {
     return true
   } catch (err) {
     logger.error('error in registerAllHandlers:', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 

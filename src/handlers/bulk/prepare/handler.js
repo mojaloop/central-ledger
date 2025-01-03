@@ -45,6 +45,7 @@ const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTran
 const encodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.encodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const util = require('../../../lib/util')
 
 const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var object used as pointer
 
@@ -166,7 +167,7 @@ const bulkPrepare = async (error, messages) => {
       params.message.value.content.uriParams = { id: bulkTransferId }
 
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError)
     }
 
     const { isValid, reasons, payerParticipantId, payeeParticipantId } = await Validator.validateBulkTransfer(payload, headers)
@@ -184,7 +185,7 @@ const bulkPrepare = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransfers'))
@@ -222,7 +223,7 @@ const bulkPrepare = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
     } else { // handle validation failure
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
@@ -258,7 +259,7 @@ const bulkPrepare = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
       // produce validation error callback notification to payer
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
@@ -267,13 +268,12 @@ const bulkPrepare = async (error, messages) => {
       params.message.value.content.uriParams = { id: bulkTransferId }
 
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      throw validationFspiopError
+      util.rethrowFspiopError(validationFspiopError)
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
-    Logger.isErrorEnabled && Logger.error(err)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw err
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -301,8 +301,7 @@ const registerBulkPrepareHandler = async () => {
     await Consumer.createHandler(bulkPrepareHandler.topicName, bulkPrepareHandler.config, bulkPrepareHandler.command)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -325,8 +324,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 

@@ -56,6 +56,7 @@ const TransferObjectTransform = require('../../domain/transfer/transform')
 const Participant = require('../../domain/participant')
 const Validator = require('./validator')
 const FxFulfilService = require('./FxFulfilService')
+const util = require('../../lib/util')
 
 // particular handlers
 const { prepare } = require('./prepare')
@@ -71,7 +72,7 @@ const fromSwitch = true
 
 const fulfil = async (error, messages) => {
   if (error) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(error)
+    util.rethrowFspiopError(error)
   }
   let message
   if (Array.isArray(messages)) {
@@ -196,7 +197,7 @@ const processFulfilMessage = async (message, functionality, span) => {
      * non-existing transferId
      */
     await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-    throw fspiopError
+    util.rethrowFspiopError(fspiopError)
   }
 
   // Lets validate FSPIOP Source & Destination Headers
@@ -283,7 +284,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail: reserveAbortedEventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
       }
 
-      throw apiFSPIOPError
+      util.rethrowFspiopError(apiFSPIOPError)
     }
   }
 
@@ -372,7 +373,7 @@ const processFulfilMessage = async (message, functionality, span) => {
      */
     const eventDetail = { functionality, action }
     await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-    throw fspiopError
+    util.rethrowFspiopError(fspiopError)
   }
 
   // Transfer is not a duplicate, or message hasn't been changed.
@@ -385,7 +386,7 @@ const processFulfilMessage = async (message, functionality, span) => {
      * TODO: BulkProcessingHandler (not in scope of #967)
      */
     await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-    throw fspiopError
+    util.rethrowFspiopError(fspiopError)
   }
 
   const validActions = [
@@ -404,7 +405,7 @@ const processFulfilMessage = async (message, functionality, span) => {
      * TODO: BulkProcessingHandler (not in scope of #967)
      */
     await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-    throw fspiopError
+    util.rethrowFspiopError(fspiopError)
   }
 
   Util.breadcrumb(location, { path: 'validationCheck' })
@@ -441,7 +442,7 @@ const processFulfilMessage = async (message, functionality, span) => {
       )
     } else {
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError)
     }
 
     // const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
@@ -477,7 +478,7 @@ const processFulfilMessage = async (message, functionality, span) => {
       message.value.content.payload = reservedAbortedPayload
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
     }
-    throw fspiopError
+    util.rethrowFspiopError(fspiopError)
   }
 
   if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
@@ -507,7 +508,7 @@ const processFulfilMessage = async (message, functionality, span) => {
       message.value.content.payload = reservedAbortedPayload
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
     }
-    throw fspiopError
+    util.rethrowFspiopError(fspiopError)
   }
 
   // Check if the transfer has expired
@@ -536,7 +537,7 @@ const processFulfilMessage = async (message, functionality, span) => {
       message.value.content.payload = reservedAbortedPayload
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, hubName: Config.HUB_NAME })
     }
-    throw fspiopError
+    util.rethrowFspiopError(fspiopError)
   }
 
   // Validations Succeeded - process the fulfil
@@ -570,7 +571,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         } else {
           histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
-          throw fspiopError
+          util.rethrowFspiopError(fspiopError)
         }
       } else {
         // Key position fulfil message with payee account id
@@ -607,7 +608,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         // Key position abort with payer account id
         const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
       await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
       const eventDetail = { functionality: TransferEventType.POSITION, action }
@@ -616,7 +617,8 @@ const processFulfilMessage = async (message, functionality, span) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
       // TODO(2556): I don't think we should emit an extra notification here
       // this is the case where the Payee sent an ABORT, so we don't need to tell them to abort
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError)
+      break
     }
     case TransferEventAction.ABORT: {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
@@ -636,7 +638,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         // Key position abort with payer account id
         const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
       await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
       const eventDetail = { functionality: TransferEventType.POSITION, action }
@@ -662,7 +664,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         )
       } else {
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
     }
   }
@@ -782,7 +784,7 @@ const getTransfer = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
   if (error) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(error)
+    util.rethrowFspiopError(error)
   }
   let message = {}
   if (Array.isArray(messages)) {
@@ -819,13 +821,13 @@ const getTransfer = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided commitRequest ID was not found on the server.')
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
       if (!await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
       Util.breadcrumb(location, { path: 'validationPassed' })
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
@@ -836,13 +838,13 @@ const getTransfer = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.')
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
       if (!await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
       Util.breadcrumb(location, { path: 'validationPassed' })
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
@@ -887,8 +889,7 @@ const registerPrepareHandler = async () => {
     await Consumer.createHandler(topicName, consumeConfig, prepare)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -911,8 +912,7 @@ const registerFulfilHandler = async () => {
     await Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -935,8 +935,7 @@ const registerGetTransferHandler = async () => {
     await Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -955,8 +954,7 @@ const registerAllHandlers = async () => {
     await registerGetTransferHandler()
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 

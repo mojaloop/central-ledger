@@ -39,7 +39,6 @@ const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Time = require('@mojaloop/central-services-shared').Util.Time
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const Config = require('../../lib/config')
 const TransferService = require('../../domain/transfer')
@@ -47,6 +46,7 @@ const Db = require('../../lib/db')
 const httpPostRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_IN, Enum.Events.Event.Action.RECORD_FUNDS_OUT_PREPARE_RESERVE]
 const httpPutRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT, Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
+const util = require('../../lib/util')
 
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   /** @namespace Db.getKnex **/
@@ -64,8 +64,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
         await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        util.rethrowFspiopError(err)
       }
     })
   }
@@ -115,8 +114,7 @@ const transferExists = async (payload, transferId) => {
 
 const transfer = async (error, messages) => {
   if (error) {
-    Logger.isErrorEnabled && Logger.error(error)
-    throw ErrorHandler.Factory.reformatFSPIOPError(error)
+    util.rethrowFspiopError(error)
   }
   let message = {}
   try {
@@ -160,8 +158,7 @@ const transfer = async (error, messages) => {
     await Kafka.commitMessageSync(Consumer, kafkaTopic, message)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -184,8 +181,7 @@ const registerTransferHandler = async () => {
     await Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -202,8 +198,7 @@ const registerAllHandlers = async () => {
     await registerTransferHandler()
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 

@@ -42,6 +42,7 @@ const BulkTransferService = require('../../../domain/bulkTransfer')
 const BulkTransferModel = require('../../../models/bulkTransfer/bulkTransfer')
 const Validator = require('../shared/validator')
 const { ERROR_HANDLING } = require('../../../lib/config')
+const util = require('../../../lib/util')
 
 const location = { module: 'BulkGetHandler', method: '', path: '' }
 const consumerCommit = true
@@ -67,7 +68,7 @@ const getBulkTransfer = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
   if (error) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(error)
+    throw error
   }
   const message = Array.isArray(messages) ? messages[0] : messages
   const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
@@ -98,7 +99,7 @@ const getBulkTransfer = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorBulkTransferNotFound--${actionLetter}3`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.BULK_TRANSFER_ID_NOT_FOUND, 'Provided Bulk Transfer ID was not found on the server.')
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError)
     }
     // The SD says this should be 404 response which I think will not be constent with single transfers
     // which responds with CLIENT_ERROR instead
@@ -107,7 +108,7 @@ const getBulkTransfer = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError)
     }
     const isPayeeRequest = participants.payeeFsp === message.value.from
     Util.breadcrumb(location, { path: 'validationPassed' })
@@ -174,8 +175,7 @@ const registerGetBulkTransferHandler = async () => {
     await Consumer.createHandler(bulkGetHandler.topicName, bulkGetHandler.config, bulkGetHandler.command)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -198,8 +198,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 

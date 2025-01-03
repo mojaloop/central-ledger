@@ -32,6 +32,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
 const SettlementService = require('../../domain/settlement')
+const util = require('../../lib/util')
 
 const LocalEnum = {
   activated: 'activated',
@@ -107,8 +108,7 @@ const create = async function (request, h) {
     }
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -152,8 +152,7 @@ const createHubAccount = async function (request, h) {
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -187,8 +186,7 @@ const update = async function (request) {
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return entityItem(updatedEntity, ledgerAccountIds)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -197,8 +195,7 @@ const addEndpoint = async function (request, h) {
     await ParticipantService.addEndpoint(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -228,8 +225,7 @@ const getEndpoint = async function (request) {
       return endpoints
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -238,8 +234,7 @@ const addLimitAndInitialPosition = async function (request, h) {
     await ParticipantService.addLimitAndInitialPosition(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -261,8 +256,7 @@ const getLimits = async function (request) {
     }
     return limits
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -285,8 +279,7 @@ const getLimitsForAllParticipants = async function (request) {
     }
     return limits
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -305,8 +298,7 @@ const adjustLimits = async function (request, h) {
     }
     return h.response(updatedLimit).code(200)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -314,8 +306,7 @@ const getPositions = async function (request) {
   try {
     return await ParticipantService.getPositions(request.params.name, request.query)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -323,8 +314,7 @@ const getAccounts = async function (request) {
   try {
     return await ParticipantService.getAccounts(request.params.name, request.query)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -341,8 +331,7 @@ const updateAccount = async function (request, h) {
     }
     return h.response().code(200)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -352,8 +341,7 @@ const recordFunds = async function (request, h) {
     await ParticipantService.recordFundsInOut(request.payload, request.params, enums)
     return h.response().code(202)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 

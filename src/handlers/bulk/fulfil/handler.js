@@ -43,7 +43,7 @@ const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTran
 const encodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.encodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-
+const util = require('../../../lib/util')
 const location = { module: 'BulkFulfilHandler', method: '', path: '' } // var object used as pointer
 
 const consumerCommit = true
@@ -74,7 +74,6 @@ const bulkFulfil = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
   if (error) {
-    Logger.isErrorEnabled && Logger.error(error)
     throw error
   }
   let message = {}
@@ -111,7 +110,7 @@ const bulkFulfil = async (error, messages) => {
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError)
     }
 
     // TODO: move FSPIOP-Source validation before Transfer Duplicate Check to accept only Payee's first request
@@ -135,7 +134,7 @@ const bulkFulfil = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
@@ -241,7 +240,7 @@ const bulkFulfil = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        throw fspiopError
+        util.rethrowFspiopError(fspiopError)
       }
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
 
@@ -249,13 +248,12 @@ const bulkFulfil = async (error, messages) => {
       params.message.value.content.uriParams = { id: bulkTransferId }
 
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      throw validationFspiopError
+      util.rethrowFspiopError(validationFspiopError)
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
-    Logger.isErrorEnabled && Logger.error(err)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw err
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -321,8 +319,7 @@ const registerBulkFulfilHandler = async () => {
     await Consumer.createHandler(bulkFulfilHandler.topicName, bulkFulfilHandler.config, bulkFulfilHandler.command)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
@@ -345,8 +342,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    util.rethrowFspiopError(err)
   }
 }
 
