@@ -64,7 +64,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
         await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
       } catch (err) {
-        util.rethrowFspiopError(err)
+        util.rethrowFspiopError(err, 'adminCreateRecordFundsInOut')
       }
     })
   }
@@ -114,7 +114,7 @@ const transferExists = async (payload, transferId) => {
 
 const transfer = async (error, messages) => {
   if (error) {
-    util.rethrowFspiopError(error)
+    util.rethrowFspiopError(error, 'adminTransfer')
   }
   let message = {}
   try {
@@ -158,7 +158,7 @@ const transfer = async (error, messages) => {
     await Kafka.commitMessageSync(Consumer, kafkaTopic, message)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'adminTransfer')
   }
 }
 
@@ -181,7 +181,7 @@ const registerTransferHandler = async () => {
     await Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'registerTransferHandler')
   }
 }
 
@@ -198,7 +198,7 @@ const registerAllHandlers = async () => {
     await registerTransferHandler()
     return true
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'registerAllHandlers')
   }
 }
 

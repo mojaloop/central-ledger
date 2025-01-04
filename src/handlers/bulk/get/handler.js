@@ -99,7 +99,7 @@ const getBulkTransfer = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorBulkTransferNotFound--${actionLetter}3`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.BULK_TRANSFER_ID_NOT_FOUND, 'Provided Bulk Transfer ID was not found on the server.')
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'bulkGetGetBulkTransfer')
     }
     // The SD says this should be 404 response which I think will not be constent with single transfers
     // which responds with CLIENT_ERROR instead
@@ -108,7 +108,7 @@ const getBulkTransfer = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'bulkGetGetBulkTransfer')
     }
     const isPayeeRequest = participants.payeeFsp === message.value.from
     Util.breadcrumb(location, { path: 'validationPassed' })
@@ -152,7 +152,7 @@ const getBulkTransfer = async (error, messages) => {
 }
 
 /**
- * @function registerBulkFulfilHandler
+ * @function registerGetBulkTransferHandler
  *
  * @async
  * @description Registers the handler for bulk-transfer topic. Gets Kafka config from default.json
@@ -175,7 +175,7 @@ const registerGetBulkTransferHandler = async () => {
     await Consumer.createHandler(bulkGetHandler.topicName, bulkGetHandler.config, bulkGetHandler.command)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'registerGetBulkTransferHandler')
   }
 }
 
@@ -198,7 +198,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'registerAllHandlers')
   }
 }
 

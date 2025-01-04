@@ -43,7 +43,7 @@ async function create (request, h) {
       return h.response().code(201)
     }
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'ledgerAccountTypesCreate')
   }
 }
 

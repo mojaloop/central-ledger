@@ -57,7 +57,7 @@ const getTransferDuplicateCheck = async (transferId) => {
     return result
   } catch (err) {
     histTimerGetTransferDuplicateCheckEnd({ success: false, queryName: 'transferDuplicateCheck_getTransferDuplicateCheck' })
-    throw new Error(err.message)
+    util.rethrowDatabaseError(err)
   }
 }
 

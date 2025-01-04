@@ -108,7 +108,7 @@ const create = async function (request, h) {
     }
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantCreate')
   }
 }
 
@@ -152,7 +152,7 @@ const createHubAccount = async function (request, h) {
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantCreateHubAccount')
   }
 }
 
@@ -186,7 +186,7 @@ const update = async function (request) {
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return entityItem(updatedEntity, ledgerAccountIds)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantUpdate')
   }
 }
 
@@ -195,7 +195,7 @@ const addEndpoint = async function (request, h) {
     await ParticipantService.addEndpoint(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantAddEndpoint')
   }
 }
 
@@ -225,7 +225,7 @@ const getEndpoint = async function (request) {
       return endpoints
     }
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantGetEndpoint')
   }
 }
 
@@ -234,7 +234,7 @@ const addLimitAndInitialPosition = async function (request, h) {
     await ParticipantService.addLimitAndInitialPosition(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantAddLimitAndInitialPosition')
   }
 }
 
@@ -256,7 +256,7 @@ const getLimits = async function (request) {
     }
     return limits
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantGetLimits')
   }
 }
 
@@ -279,7 +279,7 @@ const getLimitsForAllParticipants = async function (request) {
     }
     return limits
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, ' participantGetLimitsForAllParticipants')
   }
 }
 
@@ -298,7 +298,7 @@ const adjustLimits = async function (request, h) {
     }
     return h.response(updatedLimit).code(200)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantAdjustLimits')
   }
 }
 
@@ -306,7 +306,7 @@ const getPositions = async function (request) {
   try {
     return await ParticipantService.getPositions(request.params.name, request.query)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantGetPositions')
   }
 }
 
@@ -314,7 +314,7 @@ const getAccounts = async function (request) {
   try {
     return await ParticipantService.getAccounts(request.params.name, request.query)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantGetAccounts')
   }
 }
 
@@ -331,7 +331,7 @@ const updateAccount = async function (request, h) {
     }
     return h.response().code(200)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantUpdateAccount')
   }
 }
 
@@ -341,7 +341,7 @@ const recordFunds = async function (request, h) {
     await ParticipantService.recordFundsInOut(request.payload, request.params, enums)
     return h.response().code(202)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'participantRecordFunds')
   }
 }
 

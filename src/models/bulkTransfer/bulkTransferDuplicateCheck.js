@@ -48,7 +48,7 @@ const getBulkTransferDuplicateCheck = async (bulkTransferId) => {
   try {
     return Db.from('bulkTransferDuplicateCheck').findOne({ bulkTransferId })
   } catch (err) {
-    throw new Error(err.message)
+    util.rethrowDatabaseError(err)
   }
 }
 

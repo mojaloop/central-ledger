@@ -48,7 +48,7 @@ const getTransferFulfilmentDuplicateCheck = async (transferId) => {
   try {
     return Db.from('transferFulfilmentDuplicateCheck').findOne({ transferId })
   } catch (err) {
-    throw new Error(err.message)
+    util.rethrowDatabaseError(err)
   }
 }
 

@@ -110,7 +110,7 @@ const bulkFulfil = async (error, messages) => {
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'bulkFulfil')
     }
 
     // TODO: move FSPIOP-Source validation before Transfer Duplicate Check to accept only Payee's first request
@@ -134,7 +134,7 @@ const bulkFulfil = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        util.rethrowFspiopError(fspiopError)
+        util.rethrowFspiopError(fspiopError, 'bulkFulfil')
       }
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
@@ -240,7 +240,7 @@ const bulkFulfil = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        util.rethrowFspiopError(fspiopError)
+        util.rethrowFspiopError(fspiopError, 'bulkFulfil')
       }
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
 
@@ -248,12 +248,12 @@ const bulkFulfil = async (error, messages) => {
       params.message.value.content.uriParams = { id: bulkTransferId }
 
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      util.rethrowFspiopError(validationFspiopError)
+      util.rethrowFspiopError(validationFspiopError, 'bulkFulfil')
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'bulkFulfil')
   }
 }
 
@@ -319,7 +319,7 @@ const registerBulkFulfilHandler = async () => {
     await Consumer.createHandler(bulkFulfilHandler.topicName, bulkFulfilHandler.config, bulkFulfilHandler.command)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'registerBulkFulfilHandler')
   }
 }
 
@@ -342,7 +342,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'registerAllHandlers')
   }
 }
 

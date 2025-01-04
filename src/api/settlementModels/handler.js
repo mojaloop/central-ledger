@@ -92,7 +92,7 @@ const update = async function (request) {
     const settlementDelayIds = Util.transpose(Enum.SettlementDelay)
     return entityItem(updatedEntity, ledgerAccountIds, settlementGranularityIds, settlementInterchangeIds, settlementDelayIds)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'settlementModelUpdate')
   }
 }
 const create = async function (request, h) {
@@ -100,7 +100,7 @@ const create = async function (request, h) {
     await SettlementService.createSettlementModel(request.payload)
     return h.response().code(201)
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'settlementModelCreate')
   }
 }
 

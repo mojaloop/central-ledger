@@ -88,7 +88,7 @@ const positions = async (error, messages) => {
 
   if (error) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action: 'error' })
-    util.rethrowFspiopError(error)
+    util.rethrowFspiopError(error, 'positionsHandler')
   }
   let message = {}
   let prepareBatch = []
@@ -112,7 +112,7 @@ const positions = async (error, messages) => {
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     if (!transferId) {
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transferId is null or undefined')
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'positionsHandler')
     }
 
     const kafkaTopic = message.topic
@@ -169,7 +169,7 @@ const positions = async (error, messages) => {
           const fspiopApiError = responseFspiopError.toApiErrorObject(Config.ERROR_HANDLING)
           await TransferService.logTransferError(transferId, fspiopApiError.errorInformation.errorCode, fspiopApiError.errorInformation.errorDescription)
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopApiError, eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-          util.rethrowFspiopError(responseFspiopError)
+          util.rethrowFspiopError(responseFspiopError, 'positionsHandler')
         }
       }
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
@@ -180,7 +180,7 @@ const positions = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid State: ${transferInfo.transferStateId} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        util.rethrowFspiopError(fspiopError)
+        util.rethrowFspiopError(fspiopError, 'positionsHandler')
       } else {
         Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `payee--${actionLetter}4`))
         const isReversal = false
@@ -228,7 +228,7 @@ const positions = async (error, messages) => {
       if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
         Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
         const error = ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
-        util.rethrowFspiopError(error)
+        util.rethrowFspiopError(error, 'positionsHandler')
       } else {
         Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `validationPassed2--${actionLetter}7`))
         const isReversal = true
@@ -248,14 +248,14 @@ const positions = async (error, messages) => {
             eventDetail,
             hubName: Config.HUB_NAME
           })
-        util.rethrowFspiopError(fspiopError)
+        util.rethrowFspiopError(fspiopError, 'positionsHandler')
       }
     } else {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}8`))
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${eventType})`)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.POSITION }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'positionsHandler')
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Utility.breadcrumb(location)}::${err.message}--0`)
@@ -292,7 +292,7 @@ const registerPositionHandler = async () => {
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'registerPositionHandler')
   }
 }
 
@@ -308,7 +308,7 @@ const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'registerAllHandlers')
   }
 }
 

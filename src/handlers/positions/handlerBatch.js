@@ -71,7 +71,7 @@ const positions = async (error, messages) => {
 
   if (error) {
     histTimerEnd({ success: false })
-    util.rethrowFspiopError(error)
+    util.rethrowFspiopError(error, 'positionsHandlerBatch')
   }
   let consumedMessages = []
 
@@ -237,7 +237,7 @@ const registerPositionHandler = async () => {
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'registerPositionHandler')
   }
 }
 
@@ -253,7 +253,7 @@ const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()
   } catch (err) {
-    util.rethrowFspiopError(err)
+    util.rethrowFspiopError(err, 'registerAllHandlers')
   }
 }
 

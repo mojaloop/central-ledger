@@ -70,7 +70,7 @@ class FxFulfilService {
         eventDetail,
         fromSwitch
       })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'getFxTransferDetails')
     }
 
     this.log.debug('fxTransfer is found', { fxTransfer })
@@ -99,7 +99,7 @@ class FxFulfilService {
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
       await this._handleAbortValidation(transfer, apiFSPIOPError, eventDetail)
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'validateHeaders')
     }
   }
 
@@ -123,7 +123,7 @@ class FxFulfilService {
       })
     } else {
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, '_handleAbortValidation')
     }
   }
 
@@ -171,7 +171,7 @@ class FxFulfilService {
         eventDetail,
         fromSwitch
       })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'checkDuplication')
     }
 
     // This is a duplicate message for a fxTransfer that is already in a finalized state
@@ -229,7 +229,7 @@ class FxFulfilService {
         eventDetail,
         fromSwitch
       })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'validateEventType')
     }
     this.log.debug('validateEventType is passed', { type, functionality })
   }
@@ -248,7 +248,7 @@ class FxFulfilService {
       await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(fxTransfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
 
       await this._handleAbortValidation(fxTransfer, apiFSPIOPError, eventDetail)
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'validateFulfilment')
     }
 
     this.log.info('fulfilmentCheck passed successfully', { isValid })
@@ -274,7 +274,7 @@ class FxFulfilService {
         eventDetail,
         fromSwitch
       })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'validateTransferState')
     }
     this.log.debug('validateTransferState is passed')
     return true
@@ -296,7 +296,7 @@ class FxFulfilService {
         eventDetail,
         fromSwitch
       })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'validateExpirationDate')
     }
   }
 
@@ -326,7 +326,7 @@ class FxFulfilService {
       })
     } else {
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'processFxAbort')
     }
     return true
   }

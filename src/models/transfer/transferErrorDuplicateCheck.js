@@ -48,7 +48,7 @@ const getTransferErrorDuplicateCheck = async (transferId) => {
   try {
     return Db.from('transferErrorDuplicateCheck').findOne({ transferId })
   } catch (err) {
-    throw new Error(err.message)
+    util.rethrowDatabaseError(err)
   }
 }
 

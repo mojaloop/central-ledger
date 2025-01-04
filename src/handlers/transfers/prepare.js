@@ -207,7 +207,7 @@ const calculateProxyObligation = async ({ payload, isFx, params, functionality, 
         fromSwitch,
         hubName: Config.HUB_NAME
       })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'calculateProxyObligation')
     }
   }
 
@@ -258,7 +258,7 @@ const processDuplication = async ({
       fromSwitch,
       hubName: Config.HUB_NAME
     })
-    util.rethrowFspiopError(error)
+    util.rethrowFspiopError(error, 'processDuplication')
   }
   logger.info(Util.breadcrumb(location, 'handleResend'))
 
@@ -284,7 +284,7 @@ const processDuplication = async ({
       logger.info(Util.breadcrumb(location, `validationError1--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'processDuplication')
     }
   } else {
     logger.info(Util.breadcrumb(location, 'inProgress'))
@@ -292,7 +292,7 @@ const processDuplication = async ({
       logger.info(Util.breadcrumb(location, `validationError2--${actionLetter}4`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'processDuplication')
     } else { // action === TransferEventAction.PREPARE
       logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
@@ -336,7 +336,7 @@ const savePreparedRequest = async ({
       fromSwitch,
       hubName: Config.HUB_NAME
     })
-    util.rethrowFspiopError(fspiopError)
+    util.rethrowFspiopError(fspiopError, 'savePreparedRequest')
   }
 }
 
@@ -452,7 +452,7 @@ const prepare = async (error, messages) => {
   ).startTimer()
   if (error) {
     histTimerEnd({ success: false, fspId })
-    util.rethrowFspiopError(error)
+    util.rethrowFspiopError(error, 'transferPrepare')
   }
 
   const {
@@ -536,7 +536,7 @@ const prepare = async (error, messages) => {
         fromSwitch,
         hubName: Config.HUB_NAME
       })
-      util.rethrowFspiopError(fspiopError)
+      util.rethrowFspiopError(fspiopError, 'transferPrepare')
     }
 
     logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
