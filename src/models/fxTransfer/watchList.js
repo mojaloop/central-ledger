@@ -26,14 +26,14 @@
 const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
 const { logger } = require('../../shared/logger')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getItemInWatchListByCommitRequestId = async (commitRequestId) => {
   logger.debug(`get item in watch list (commitRequestId=${commitRequestId})`)
   try {
     return Db.from(TABLE_NAMES.fxWatchList).findOne({ commitRequestId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -42,7 +42,7 @@ const getItemsInWatchListByDeterminingTransferId = async (determiningTransferId)
   try {
     return Db.from(TABLE_NAMES.fxWatchList).find({ determiningTransferId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -51,7 +51,7 @@ const addToWatchList = async (record) => {
   try {
     return Db.from(TABLE_NAMES.fxWatchList).insert(record)
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

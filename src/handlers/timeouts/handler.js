@@ -44,9 +44,8 @@ const EventSdk = require('@mojaloop/event-sdk')
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
 const { logger } = require('../../shared/logger')
-const util = require('../../lib/util')
 
-const { Kafka, resourceVersions } = Utility
+const { Kafka, resourceVersions, rethrow } = Utility
 const { Action, Type } = Enum.Events.Event
 
 let timeoutJob
@@ -158,7 +157,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
       await span.finish(fspiopError.message, state)
-      util.rethrowFspiopError(fspiopError, '_processTimedOutTransfers')
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: '_processTimedOutTransfers' })
     } finally {
       if (!span.isFinished) {
         await span.finish()
@@ -240,7 +239,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
       await span.finish(fspiopError.message, state)
-      util.rethrowFspiopError(fspiopError, '_processFxTimedOutTransfers')
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: '_processFxTimedOutTransfers' })
     } finally {
       if (!span.isFinished) {
         await span.finish()
@@ -295,7 +294,7 @@ const timeout = async () => {
     }
   } catch (err) {
     logger.error('error in timeout:', err)
-    util.rethrowFspiopError(err, 'timeoutHandler')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'timeoutHandler' })
   } finally {
     running = false
   }
@@ -351,7 +350,7 @@ const registerTimeoutHandler = async () => {
     return true
   } catch (err) {
     logger.error('error in registerTimeoutHandler:', err)
-    util.rethrowFspiopError(err, 'registerTimeoutHandler')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerTimeoutHandler' })
   }
 }
 
@@ -371,7 +370,7 @@ const registerAllHandlers = async () => {
     return true
   } catch (err) {
     logger.error('error in registerAllHandlers:', err)
-    util.rethrowFspiopError(err, 'registerAllHandlers')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
 }
 

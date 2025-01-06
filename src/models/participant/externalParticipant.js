@@ -26,7 +26,7 @@
 const Db = require('../../lib/db')
 const { logger } = require('../../shared/logger')
 const { TABLE_NAMES, DB_ERROR_CODES } = require('../../shared/constants')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const TABLE = TABLE_NAMES.externalParticipant
 const ID_FIELD = 'externalParticipantId'
@@ -44,7 +44,7 @@ const create = async ({ name, proxyId }) => {
       return null
     }
     log.error('error in create', err)
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -55,7 +55,7 @@ const getAll = async (options = {}) => {
     return result
   } catch (err) /* istanbul ignore next */ {
     log.error('error in getAll:', err)
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -66,7 +66,7 @@ const getOneBy = async (criteria, options) => {
     return result
   } catch (err) /* istanbul ignore next */ {
     log.error('error in getOneBy:', err)
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 const getById = async (id, options = {}) => getOneBy({ [ID_FIELD]: id }, options)
@@ -79,7 +79,7 @@ const destroyBy = async (criteria) => {
     return result
   } catch (err) /* istanbul ignore next */ {
     log.error('error in destroyBy', err)
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 const destroyById = async (id) => destroyBy({ [ID_FIELD]: id })

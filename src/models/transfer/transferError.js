@@ -31,7 +31,7 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 /**
  * @function Insert
@@ -51,7 +51,7 @@ const insert = async (transferId, transferStateChangeId, errorCode, errorDescrip
   try {
     return Db.from('transferError').insert({ transferId, transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -80,7 +80,7 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
   try {
     return Db.from('transferError').find({ transferStateChangeId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -117,7 +117,7 @@ const getByTransferId = async (id) => {
     transferError.errorCode = transferError.errorCode.toString()
     return transferError
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

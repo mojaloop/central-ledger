@@ -24,7 +24,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getByBulkTransferId = async (id) => {
   try {
@@ -35,7 +35,7 @@ const getByBulkTransferId = async (id) => {
       return result
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

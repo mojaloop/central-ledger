@@ -25,13 +25,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const insert = async (participantPosition) => {
   try {
     return await Db.from('participantPosition').insert(participantPosition)
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -39,7 +39,7 @@ const update = async (participantPosition) => {
   try {
     return await Db.from('participantPosition').update({ participantCurrencyId: participantPosition.participantCurrencyId }, { value: participantPosition.value, reservedValue: participantPosition.reservedValue, changedDate: new Date() })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -47,7 +47,7 @@ const getPositionByCurrencyId = async (participantCurrencyId) => {
   try {
     return await Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

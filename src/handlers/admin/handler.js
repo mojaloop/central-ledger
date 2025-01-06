@@ -46,7 +46,7 @@ const Db = require('../../lib/db')
 const httpPostRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_IN, Enum.Events.Event.Action.RECORD_FUNDS_OUT_PREPARE_RESERVE]
 const httpPutRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT, Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   /** @namespace Db.getKnex **/
@@ -64,7 +64,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
         await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
       } catch (err) {
-        util.rethrowFspiopError(err, 'adminCreateRecordFundsInOut')
+        rethrow.rethrowAndCountFspiopError(err, { operation: 'adminCreateRecordFundsInOut' })
       }
     })
   }
@@ -114,7 +114,7 @@ const transferExists = async (payload, transferId) => {
 
 const transfer = async (error, messages) => {
   if (error) {
-    util.rethrowFspiopError(error, 'adminTransfer')
+    rethrow.rethrowAndCountFspiopError(error, { operation: 'adminTransfer' })
   }
   let message = {}
   try {
@@ -158,7 +158,7 @@ const transfer = async (error, messages) => {
     await Kafka.commitMessageSync(Consumer, kafkaTopic, message)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err, 'adminTransfer')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'adminTransfer' })
   }
 }
 
@@ -181,7 +181,7 @@ const registerTransferHandler = async () => {
     await Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err, 'registerTransferHandler')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerTransferHandler' })
   }
 }
 
@@ -198,7 +198,7 @@ const registerAllHandlers = async () => {
     await registerTransferHandler()
     return true
   } catch (err) {
-    util.rethrowFspiopError(err, 'registerAllHandlers')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
 }
 

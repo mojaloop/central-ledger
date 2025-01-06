@@ -33,7 +33,7 @@
 const Cache = require('../../lib/cache')
 const Metrics = require('@mojaloop/central-services-metrics')
 const BatchPositionModel = require('./batch')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 let cacheClient
 let participantCurrencyAllCacheKey
@@ -116,7 +116,7 @@ exports.getParticipantCurrencyByIds = async (trx, participantCurrencyIds) => {
     }
     return participantCurrencies
   } catch (err) {
-    util.rethrowCachedDatabaseError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -129,6 +129,6 @@ exports.getParticipantCurrencyByParticipantIds = async (trx, participantIds) => 
     }
     return participantCurrencies
   } catch (err) {
-    util.rethrowCachedDatabaseError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }

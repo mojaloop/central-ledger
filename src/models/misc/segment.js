@@ -25,13 +25,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getByParams = async (params) => {
   try {
     return await Db.from('segment').findOne(params)
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

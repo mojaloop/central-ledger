@@ -27,7 +27,7 @@
 const Cache = require('../../lib/cache')
 const ParticipantModel = require('../../models/participant/participant')
 const Metrics = require('@mojaloop/central-services-metrics')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 let cacheClient
 let participantsAllCacheKey
@@ -109,7 +109,7 @@ exports.getById = async (id) => {
     const cachedParticipants = await getParticipantsCached()
     return cachedParticipants.indexById[id]
   } catch (err) {
-    util.rethrowCachedDatabaseError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -118,7 +118,7 @@ exports.getByName = async (name) => {
     const cachedParticipants = await getParticipantsCached()
     return cachedParticipants.indexByName[name]
   } catch (err) {
-    util.rethrowCachedDatabaseError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -127,7 +127,7 @@ exports.getAll = async () => {
     const cachedParticipants = await getParticipantsCached()
     return cachedParticipants.allParticipants
   } catch (err) {
-    util.rethrowCachedDatabaseError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -138,7 +138,7 @@ const withInvalidate = (theFunctionName) => {
       await exports.invalidateParticipantsCache()
       return result
     } catch (err) {
-      util.rethrowCachedDatabaseError(err)
+      rethrow.rethrowCachedDatabaseError(err)
     }
   }
 }

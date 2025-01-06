@@ -29,7 +29,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 /* istanbul ignore next */
 exports.getLedgerAccountByName = async (name, trx = null) => {
@@ -43,7 +43,7 @@ exports.getLedgerAccountByName = async (name, trx = null) => {
           .transacting(trx)
         return ledgerAccountType.length > 0 ? ledgerAccountType[0] : null
       } catch (err) {
-        util.rethrowDatabaseError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -52,7 +52,7 @@ exports.getLedgerAccountByName = async (name, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -68,7 +68,7 @@ exports.getLedgerAccountsByName = async (names, trx = null) => {
           .transacting(trx)
         return ledgerAccountTypes
       } catch (err) {
-        util.rethrowDatabaseError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -77,7 +77,7 @@ exports.getLedgerAccountsByName = async (names, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -97,7 +97,7 @@ exports.bulkInsert = async (records, trx = null) => {
           .transacting(trx)
         return createdIds.map(record => record.ledgerAccountTypeId)
       } catch (err) {
-        util.rethrowDatabaseError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -106,7 +106,7 @@ exports.bulkInsert = async (records, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -129,7 +129,7 @@ exports.create = async (name, description, isActive, isSettleable, trx = null) =
           .transacting(trx)
         return createdId[0].ledgerAccountTypeId
       } catch (err) {
-        util.rethrowDatabaseError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -138,7 +138,7 @@ exports.create = async (name, description, isActive, isSettleable, trx = null) =
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -146,6 +146,6 @@ exports.getAll = async () => {
   try {
     return await Db.from('ledgerAccountType').find({ })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }

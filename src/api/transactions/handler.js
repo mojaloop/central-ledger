@@ -25,9 +25,9 @@
 'use strict'
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const Transaction = require('../../domain/transactions')
-const util = require('../../lib/util')
 
 const getById = async function (request) {
   try {
@@ -37,7 +37,7 @@ const getById = async function (request) {
     }
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND, 'The requested resource could not be found.')
   } catch (err) {
-    util.rethrowFspiopError(err, 'transactionsGetById')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'transactionsGetById' })
   }
 }
 

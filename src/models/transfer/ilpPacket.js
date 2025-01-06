@@ -29,7 +29,7 @@
 
 const Db = require('../../lib/db')
 const Util = require('@mojaloop/central-services-shared').Util
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 exports.saveIlpPacket = async (record) => {
   try {
@@ -38,7 +38,7 @@ exports.saveIlpPacket = async (record) => {
       value: record.value
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -46,7 +46,7 @@ exports.getByTransferId = async (transferId) => {
   try {
     return await Db.from('ilpPacket').findOne({ transferId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -58,7 +58,7 @@ exports.update = async (record) => {
   try {
     return await Db.from('ilpPacket').update({ transferId: record.transferId }, Util.omitNil(fields))
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -66,6 +66,6 @@ exports.destroyByTransferId = async (record) => {
   try {
     return await Db.from('ilpPacket').destroy({ transferId: record.transferId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }

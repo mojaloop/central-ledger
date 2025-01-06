@@ -26,14 +26,14 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getByTransferId = async (transferId) => {
   Logger.isDebugEnabled && Logger.debug('getByTransferId ' + transferId.toString())
   try {
     return await Db.from('transferFulfilment').find({ transferId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -42,7 +42,7 @@ const saveTransferFulfilment = async (record) => {
   try {
     return await Db.from('transferFulfilment').insert(record)
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

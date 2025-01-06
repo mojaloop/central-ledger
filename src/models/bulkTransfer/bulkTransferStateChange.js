@@ -25,14 +25,14 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const create = async (stateChange) => {
   Logger.isDebugEnabled && Logger.debug('save bulkTransferStateChange' + stateChange.toString())
   try {
     return await Db.from('bulkTransferStateChange').insert(stateChange)
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -47,7 +47,7 @@ const getByBulkTransferId = async (id) => {
       return result
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -63,7 +63,7 @@ const getByTransferId = async (id) => {
       return result
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

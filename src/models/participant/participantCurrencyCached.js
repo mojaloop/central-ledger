@@ -28,7 +28,7 @@ const Cache = require('../../lib/cache')
 const Config = require('../../../src/lib/config')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const Metrics = require('@mojaloop/central-services-metrics')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 let cacheClient
 let participantCurrencyAllCacheKey
@@ -159,7 +159,7 @@ const withInvalidate = (theFunctionName) => {
       await exports.invalidateParticipantCurrencyCache()
       return result
     } catch (err) {
-      util.rethrowCachedDatabaseError(err)
+      rethrow.rethrowCachedDatabaseError(err)
     }
   }
 }

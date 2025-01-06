@@ -45,10 +45,9 @@ const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTran
 const encodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.encodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const util = require('../../../lib/util')
 
 const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var object used as pointer
-
+const { rethrow } = Util
 const consumerCommit = true
 const fromSwitch = true
 
@@ -167,7 +166,7 @@ const bulkPrepare = async (error, messages) => {
       params.message.value.content.uriParams = { id: bulkTransferId }
 
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      util.rethrowFspiopError(fspiopError, 'bulkPrepare')
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkPrepare' })
     }
 
     const { isValid, reasons, payerParticipantId, payeeParticipantId } = await Validator.validateBulkTransfer(payload, headers)
@@ -185,7 +184,7 @@ const bulkPrepare = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        util.rethrowFspiopError(fspiopError, 'bulkPrepare')
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkPrepare' })
       }
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransfers'))
@@ -223,7 +222,7 @@ const bulkPrepare = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        util.rethrowFspiopError(fspiopError, 'bulkPrepare')
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkPrepare' })
       }
     } else { // handle validation failure
       Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
@@ -259,7 +258,7 @@ const bulkPrepare = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        util.rethrowFspiopError(fspiopError, 'bulkPrepare')
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkPrepare' })
       }
       // produce validation error callback notification to payer
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
@@ -268,12 +267,12 @@ const bulkPrepare = async (error, messages) => {
       params.message.value.content.uriParams = { id: bulkTransferId }
 
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      util.rethrowFspiopError(validationFspiopError, 'bulkPrepare')
+      rethrow.rethrowAndCountFspiopError(validationFspiopError, { operation: 'bulkPrepare' })
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    util.rethrowFspiopError(err, 'bulkPrepare')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'bulkPrepare' })
   }
 }
 
@@ -301,7 +300,7 @@ const registerBulkPrepareHandler = async () => {
     await Consumer.createHandler(bulkPrepareHandler.topicName, bulkPrepareHandler.config, bulkPrepareHandler.command)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err, 'registerBulkPrepareHandler')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerBulkPrepareHandler' })
   }
 }
 
@@ -324,7 +323,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    util.rethrowFspiopError(err, 'registerAllHandlers')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
 }
 

@@ -27,7 +27,7 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 const TS = Enum.Transfers.TransferInternalState
 
 const cleanup = async () => {
@@ -59,7 +59,7 @@ const cleanup = async () => {
     })
     return ttIdList
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

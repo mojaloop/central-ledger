@@ -33,7 +33,7 @@
 const Db = require('../../lib/db')
 const TransferExtensionModel = require('../transfer/transferExtension')
 const { Enum } = require('@mojaloop/central-services-shared')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const startDbTransaction = async () => {
   const knex = await Db.getKnex()
@@ -58,7 +58,7 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
     }
     return latestTransferStateChanges
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -79,7 +79,7 @@ const getLatestFxTransferStateChangesByCommitRequestIdList = async (trx, commitR
     }
     return latestFxTransferStateChanges
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -148,7 +148,7 @@ const getTransferInfoList = async (trx, transferIds, transferParticipantRoleType
     }
     return info
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -201,7 +201,7 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
       }
       return transfers
     } catch (err) {
-      util.rethrowDatabaseError(err)
+      rethrow.rethrowDatabaseError(err)
     }
   }
   return {}
@@ -229,7 +229,7 @@ const getFxTransferInfoList = async (trx, commitRequestId, transferParticipantRo
     }
     return info
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -259,7 +259,7 @@ const getReservedPositionChangesByCommitRequestIds = async (trx, commitRequestId
     }
     return info
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

@@ -26,13 +26,13 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getById = async (transferId) => {
   try {
     return await Db.from('transfer').findOne({ transferId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -41,7 +41,7 @@ const saveTransfer = async (record) => {
   try {
     return Db.from('transfer').insert(record)
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -49,7 +49,7 @@ const destroyById = async (id) => {
   try {
     await Db.from('transfer').destroy({ transferId: id })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -57,7 +57,7 @@ const truncateTransfer = async () => {
   try {
     return await Db.from('transfer').truncate()
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

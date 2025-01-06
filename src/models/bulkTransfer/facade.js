@@ -31,7 +31,7 @@ const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Time = require('@mojaloop/central-services-shared').Util.Time
 // const BulkTransferAssociation = require('./BulkTransferAssociation')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const saveBulkTransferReceived = async (payload, participants, stateReason = null, isValid = true) => {
   try {
@@ -66,7 +66,7 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
       return state
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -104,7 +104,7 @@ const saveBulkTransferProcessing = async (payload, stateReason = null, isValid =
       return state
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -147,7 +147,7 @@ const saveBulkTransferErrorProcessing = async (payload, stateReason = null, isVa
       return state
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -183,7 +183,7 @@ const saveBulkTransferAborting = async (payload, stateReason = null) => {
       return state
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

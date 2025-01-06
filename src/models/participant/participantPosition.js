@@ -34,7 +34,7 @@
 
 const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrencyCached')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 /**
  * @function GetByParticipantCurrencyId
@@ -52,7 +52,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -72,7 +72,7 @@ const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.from('participantPosition').destroy({ participantCurrencyId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -96,7 +96,7 @@ const destroyByParticipantId = async (participantId) => {
       .whereIn('participantCurrencyId', participantCurrencyIdList)
       .del()
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -109,7 +109,7 @@ const createParticipantPositionRecords = async (participantPositions, trx) => {
           .batchInsert('participantPosition', participantPositions)
           .transacting(trx)
       } catch (err) {
-        util.rethrowDatabaseError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -118,7 +118,7 @@ const createParticipantPositionRecords = async (participantPositions, trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 module.exports = {

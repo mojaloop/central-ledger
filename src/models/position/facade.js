@@ -39,7 +39,7 @@ const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -248,7 +248,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
       } catch (err) {
         Logger.isErrorEnabled && Logger.error(err)
         histTimerChangeParticipantPositionTransEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
-        util.rethrowDatabaseError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     })
     const preparedMessagesList = Array.from(transferIdList.map(transferId =>
@@ -261,7 +261,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     histTimerChangeParticipantPositionEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction' })
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -303,13 +303,13 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
         await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
         histTimerChangeParticipantPositionTransactionEnd({ success: true, queryName: 'facade_changeParticipantPositionTransaction' })
       } catch (err) {
-        util.rethrowDatabaseError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }).catch((err) => {
-      util.rethrowDatabaseError(err)
+      rethrow.rethrowDatabaseError(err)
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -347,7 +347,7 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
           'pc.currencyId')
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -372,7 +372,7 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
         )
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

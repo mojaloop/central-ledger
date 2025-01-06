@@ -47,8 +47,8 @@ const { randomUUID } = require('crypto')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const BatchPositionModel = require('../../models/position/batch')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
-const util = require('../../lib/util')
 const consumerCommit = true
+const rethrow = Utility.rethrow
 
 /**
  * @function positions
@@ -71,7 +71,7 @@ const positions = async (error, messages) => {
 
   if (error) {
     histTimerEnd({ success: false })
-    util.rethrowFspiopError(error, 'positionsHandlerBatch')
+    rethrow.rethrowAndCountFspiopError(error, { operation: 'positionsHandlerBatch' })
   }
   let consumedMessages = []
 
@@ -237,7 +237,7 @@ const registerPositionHandler = async () => {
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err, 'registerPositionHandler')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerPositionHandler' })
   }
 }
 
@@ -253,7 +253,7 @@ const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()
   } catch (err) {
-    util.rethrowFspiopError(err, 'registerAllHandlers')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
 }
 

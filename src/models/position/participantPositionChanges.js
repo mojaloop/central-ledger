@@ -26,7 +26,7 @@
 
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getReservedPositionChangesByCommitRequestId = async (commitRequestId) => {
   try {
@@ -40,7 +40,7 @@ const getReservedPositionChangesByCommitRequestId = async (commitRequestId) => {
       )
     return participantPositionChanges
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -56,7 +56,7 @@ const getReservedPositionChangesByTransferId = async (transferId) => {
       )
     return participantPositionChanges
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

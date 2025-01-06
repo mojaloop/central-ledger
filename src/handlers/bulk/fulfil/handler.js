@@ -43,9 +43,9 @@ const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTran
 const encodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.encodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const util = require('../../../lib/util')
-const location = { module: 'BulkFulfilHandler', method: '', path: '' } // var object used as pointer
 
+const location = { module: 'BulkFulfilHandler', method: '', path: '' } // var object used as pointer
+const { rethrow } = Util
 const consumerCommit = true
 const fromSwitch = true
 
@@ -110,7 +110,7 @@ const bulkFulfil = async (error, messages) => {
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      util.rethrowFspiopError(fspiopError, 'bulkFulfil')
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkFulfil' })
     }
 
     // TODO: move FSPIOP-Source validation before Transfer Duplicate Check to accept only Payee's first request
@@ -134,7 +134,7 @@ const bulkFulfil = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        util.rethrowFspiopError(fspiopError, 'bulkFulfil')
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkFulfil' })
       }
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
@@ -240,7 +240,7 @@ const bulkFulfil = async (error, messages) => {
         params.message.value.content.uriParams = { id: bulkTransferId }
 
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        util.rethrowFspiopError(fspiopError, 'bulkFulfil')
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkFulfil' })
       }
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
 
@@ -248,12 +248,12 @@ const bulkFulfil = async (error, messages) => {
       params.message.value.content.uriParams = { id: bulkTransferId }
 
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: validationFspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      util.rethrowFspiopError(validationFspiopError, 'bulkFulfil')
+      rethrow.rethrowAndCountFspiopError(validationFspiopError, { operation: 'bulkFulfil' })
     }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    util.rethrowFspiopError(err, 'bulkFulfil')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'bulkFulfil' })
   }
 }
 
@@ -319,7 +319,7 @@ const registerBulkFulfilHandler = async () => {
     await Consumer.createHandler(bulkFulfilHandler.topicName, bulkFulfilHandler.config, bulkFulfilHandler.command)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err, 'registerBulkFulfilHandler')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerBulkFulfilHandler' })
   }
 }
 
@@ -342,7 +342,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    util.rethrowFspiopError(err, 'registerAllHandlers')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
 }
 

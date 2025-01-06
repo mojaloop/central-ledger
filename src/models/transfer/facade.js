@@ -45,7 +45,7 @@ const Config = require('../../lib/config')
 const ParticipantFacade = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
 const TransferExtensionModel = require('./transferExtension')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
@@ -127,7 +127,7 @@ const getById = async (id) => {
     })
   } catch (err) {
     logger.warn('error in transfer.getById', err)
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -180,7 +180,7 @@ const getByIdLight = async (id) => {
     })
   } catch (err) {
     logger.warn('error in transfer.getByIdLight', err)
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -235,7 +235,7 @@ const getAll = async () => {
     })
   } catch (err) {
     logger.warn('error in transfer.getAll', err)
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -262,7 +262,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
     })
   } catch (err) {
     logger.warn('error in getTransferInfoToChangePosition', err)
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -404,7 +404,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
       } catch (err) {
         logger.error('savePayeeTransferResponse::failure', err)
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-        util.rethrowDatabaseError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     })
     histTimerSavePayeeTranferResponsedEnd({ success: true, queryName: 'facade_savePayeeTransferResponse' })
@@ -412,7 +412,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   } catch (err) {
     logger.warn('error in savePayeeTransferResponse', err)
     histTimerSavePayeeTranferResponsedEnd({ success: false, queryName: 'facade_savePayeeTransferResponse' })
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -571,7 +571,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           histTimerSaveTransferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         } catch (err) {
           histTimerSaveTransferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-          util.rethrowDatabaseError(err)
+          rethrow.rethrowDatabaseError(err)
         }
       })
     } else {
@@ -629,7 +629,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
   } catch (err) {
     logger.warn('error in saveTransferPrepared', err)
     histTimerSaveTransferPreparedEnd({ success: false, queryName: 'transfer_model_facade_saveTransferPrepared' })
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -670,7 +670,7 @@ const getTransferStateByTransferId = async (id) => {
         .first()
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1094,10 +1094,10 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
           await knex('segment').transacting(trx).where({ segmentId: fxSegmentId }).update({ value: fxIntervalMax })
         }
       } catch (err) {
-        util.rethrowDatabaseError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }).catch((err) => {
-      util.rethrowDatabaseError(err)
+      rethrow.rethrowDatabaseError(err)
     })
 
     const transferTimeoutList = await _getTransferTimeoutList(knex, transactionTimestamp)
@@ -1108,7 +1108,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
       fxTransferTimeoutList
     }
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1237,7 +1237,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       return await knex.transaction(trxFunction)
     }
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1252,7 +1252,7 @@ const updatePrepareReservedForwarded = async function (transferId) {
         createdDate: Time.getUTCString(new Date())
       })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1368,7 +1368,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1402,7 +1402,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1453,7 +1453,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     }
     return 0
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1503,7 +1503,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     }
     return 0
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1522,7 +1522,7 @@ const getTransferParticipant = async (participantName, transferId) => {
         )
     })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1536,7 +1536,7 @@ const recordFundsIn = async (payload, transactionTimestamp, enums) => {
       await TransferFacade.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
     } catch (err) {
       logger.error('error in recordFundsIn:', err)
-      util.rethrowDatabaseError(err)
+      rethrow.rethrowDatabaseError(err)
     }
   })
 }

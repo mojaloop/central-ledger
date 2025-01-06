@@ -26,13 +26,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getByCommitRequestId = async (commitRequestId, isFulfilment = false, isError = false) => {
   try {
     return await Db.from('fxTransferExtension').find({ commitRequestId, isFulfilment, isError })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

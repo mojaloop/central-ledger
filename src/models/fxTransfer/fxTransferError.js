@@ -29,7 +29,7 @@
  */
 
 const Db = require('../../lib/db')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getByCommitRequestId = async (id) => {
   try {
@@ -43,7 +43,7 @@ const getByCommitRequestId = async (id) => {
     fxTransferError.errorCode = fxTransferError.errorCode.toString()
     return fxTransferError
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

@@ -42,10 +42,9 @@ const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTran
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Kafka = Util.Kafka
 const HeaderValidation = Util.HeaderValidation
-const util = require('../../../lib/util')
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
-
+const { rethrow } = Util
 const consumerCommit = true
 const fromSwitch = true
 
@@ -153,7 +152,7 @@ const bulkProcessing = async (error, messages) => {
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action ${action} for bulk in ${Enum.Transfers.BulkTransferState.RECEIVED} state`)
-        util.rethrowFspiopError(fspiopError, 'bulkProcessing')
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkProcessing' })
       }
     } else if ([Enum.Transfers.BulkTransferState.ACCEPTED].includes(bulkTransferInfo.bulkTransferStateId)) {
       if (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED) {
@@ -165,7 +164,7 @@ const bulkProcessing = async (error, messages) => {
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action ${action} for bulk in ${Enum.Transfers.BulkTransferState.ACCEPTED} state`)
-        util.rethrowFspiopError(fspiopError, 'bulkProcessing')
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkProcessing' })
       }
     } else if ([Enum.Transfers.BulkTransferState.PROCESSING, Enum.Transfers.BulkTransferState.PENDING_FULFIL, Enum.Transfers.BulkTransferState.EXPIRING].includes(bulkTransferInfo.bulkTransferStateId)) {
       criteriaState = Enum.Transfers.BulkTransferState.PROCESSING
@@ -193,7 +192,7 @@ const bulkProcessing = async (error, messages) => {
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action ${action} for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`)
-        util.rethrowFspiopError(fspiopError, 'bulkProcessing')
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkProcessing' })
       }
     } else if ([Enum.Transfers.BulkTransferState.ABORTING].includes(bulkTransferInfo.bulkTransferStateId)) {
       if (action === Enum.Events.Event.Action.BULK_ABORT) {
@@ -205,15 +204,15 @@ const bulkProcessing = async (error, messages) => {
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action ${action} for bulk in ${Enum.Transfers.BulkTransferState.ABORTING} state`)
-        util.rethrowFspiopError(fspiopError, 'bulkProcessing')
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkProcessing' })
       }
     } else if (bulkTransferInfo.bulkTransferStateId === Enum.Transfers.BulkTransferState.COMPLETED && action === Enum.Events.Event.Action.FULFIL_DUPLICATE) {
       /**
-       * Bulk transfer state is detected as COMPLETED, because data is fetched by trasnferId,
+       * Bulk transfer state is detected as COMPLETED, because data is fetched by transferId,
        * not by bulkTransferId, thus the duplicate fulfil refers to the original bulk where
        * it exists, not the current bulk in which duplicate fulfil is included.
        *
-       * TODO:967 BULK-NEEDS_CLAIRTY - Currently this is only added to the log and no
+       * TODO:967 BULK-NEEDS_CLARITY - Currently this is only added to the log and no
        * errorInformation is queued to be sent to Payee for the duplicate fulfil.
        * Also, please be aware, that such a duplicate fulfil may be processed after
        * all expected individual transfers have been processed and notification has
@@ -225,10 +224,10 @@ const bulkProcessing = async (error, messages) => {
       } else {
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `fulfil-duplicate error occurred for transferId ${transferId}`)
       }
-      util.rethrowFspiopError(fspiopError, 'bulkProcessing')
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkProcessing' })
     } else { // ['PENDING_INVALID', 'COMPLETED', 'REJECTED', 'INVALID']
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Could not process transferId ${transferId} after bulk is finilized`)
-      util.rethrowFspiopError(fspiopError, 'bulkProcessing')
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkProcessing' })
     }
 
     await BulkTransferService.bulkTransferAssociationUpdate(
@@ -362,7 +361,7 @@ const bulkProcessing = async (error, messages) => {
         eventDetail.action = Enum.Events.Event.Action.BULK_ABORT
         params.message.value.content.uriParams.id = bulkTransferInfo.bulkTransferId
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, hubName: Config.HUB_NAME })
-        util.rethrowFspiopError(fspiopError, 'bulkProcessing')
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkProcessing' })
       } else {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
         // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.
@@ -377,7 +376,7 @@ const bulkProcessing = async (error, messages) => {
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    util.rethrowFspiopError(err, 'bulkProcessing')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'bulkProcessing' })
   }
 }
 
@@ -405,7 +404,7 @@ const registerBulkProcessingHandler = async () => {
     await Consumer.createHandler(bulkProcessingHandler.topicName, bulkProcessingHandler.config, bulkProcessingHandler.command)
     return true
   } catch (err) {
-    util.rethrowFspiopError(err, 'registerBulkProcessingHandler')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerBulkProcessingHandler' })
   }
 }
 
@@ -428,7 +427,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    util.rethrowFspiopError(err, 'registerAllHandlers')
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
 }
 

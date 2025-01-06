@@ -30,13 +30,13 @@
 
 const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrencyCached')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const insert = async (participantLimit) => {
   try {
     return await Db.from('participantLimit').insert(participantLimit)
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -44,7 +44,7 @@ const update = async (participantLimit) => {
   try {
     return await Db.from('participantLimit').update({ participantCurrencyId: participantLimit.participantCurrencyId }, { value: participantLimit.value, isActive: participantLimit.isActive })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -52,7 +52,7 @@ const getAll = async () => {
   try {
     return await Db.from('participantLimit').find({})
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -72,7 +72,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.from('participantLimit').findOne({ participantCurrencyId, isActive: 1 })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -92,7 +92,7 @@ const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.from('participantLimit').destroy({ participantCurrencyId })
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -116,7 +116,7 @@ const destroyByParticipantId = async (participantId) => {
       .whereIn('participantCurrencyId', participantCurrencyIdList)
       .del()
   } catch (err) {
-    util.rethrowDatabaseError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

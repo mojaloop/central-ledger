@@ -27,7 +27,7 @@
 const Cache = require('../../lib/cache')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
 const Metrics = require('@mojaloop/central-services-metrics')
-const util = require('../../lib/util')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 let cacheClient
 let participantLimitAllCacheKey
@@ -113,7 +113,7 @@ const withInvalidate = (theFunctionName) => {
       await exports.invalidateParticipantLimitCache()
       return result
     } catch (err) {
-      util.rethrowCachedDatabaseError(err)
+      rethrow.rethrowCachedDatabaseError(err)
     }
   }
 }
