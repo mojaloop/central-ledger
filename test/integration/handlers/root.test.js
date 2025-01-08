@@ -27,7 +27,7 @@
 const Test = require('tape')
 const Joi = require('joi')
 const Logger = require('@mojaloop/central-services-logger')
-const Db = require('@mojaloop/database-lib').Db
+const Db = require('../../../src/lib/db')
 
 const Config = require('../../../src/lib/config')
 const ProxyCache = require('../../../src/lib/proxyCache')
