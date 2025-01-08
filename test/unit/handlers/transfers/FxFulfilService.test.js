@@ -25,7 +25,7 @@
 /* eslint-disable object-property-newline */
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
-const { Db } = require('@mojaloop/database-lib')
+const Db = require('../../../../src/lib/db')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 
