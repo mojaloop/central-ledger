@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -43,8 +46,6 @@ const handleFulfilResponse = async (transferId, payload, action, fspiopError) =>
 
   try {
     await FxTransferModel.fxTransfer.saveFxFulfilResponse(transferId, payload, action, fspiopError)
-    // TODO: Need to return a result if we need
-    // const result = TransferObjectTransform.toTransfer(fxTransfer)
     const result = {}
     histTimerTransferServiceHandlePayeeResponseEnd({ success: true, funcName: 'handleFulfilResponse' })
     return result
@@ -70,37 +71,10 @@ const forwardedFxPrepare = async (commitRequestId) => {
   }
 }
 
-// TODO: Need to implement this for fxTransferError
-// /**
-//  * @function LogFxTransferError
-//  *
-//  * @async
-//  * @description This will insert a record into the fxTransferError table for the latest fxTransfer stage change id.
-//  *
-//  * FxTransferModel.stateChange.getByCommitRequestId called to get the latest fx transfer state change id
-//  * FxTransferModel.error.insert called to insert the record into the fxTransferError table
-//  *
-//  * @param {string} commitRequestId - the transfer id
-//  * @param {integer} errorCode - the error code
-//  * @param {string} errorDescription - the description error
-//  *
-//  * @returns {integer} - Returns the id of the transferError record if successful, or throws an error if failed
-//  */
-
-// const logFxTransferError = async (commitRequestId, errorCode, errorDescription) => {
-//   try {
-//     const transferStateChange = await FxTransferModel.stateChange.getByCommitRequestId(commitRequestId)
-//     return FxTransferModel.error.insert(commitRequestId, transferStateChange.fxTransferStateChangeId, errorCode, errorDescription)
-//   } catch (err) {
-//     throw ErrorHandler.Factory.reformatFSPIOPError(err)
-//   }
-// }
-
 const TransferService = {
   handleFulfilResponse,
   forwardedFxPrepare,
   getByIdLight: FxTransferModel.fxTransfer.getByIdLight,
-  // logFxTransferError,
   Cyril
 }
 

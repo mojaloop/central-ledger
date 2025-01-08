@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -495,7 +498,6 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     let payerTransferParticipantRecord
     if (proxyObligation?.isInitiatingFspProxy) {
       const externalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(proxyObligation.initiatingFspProxyOrParticipantId)
-      // todo: think, what if externalParticipantId is null?
       payerTransferParticipantRecord = {
         transferId: payload.transferId,
         participantId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].id,
@@ -520,7 +522,6 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     let payeeTransferParticipantRecord
     if (proxyObligation?.isCounterPartyFspProxy) {
       const externalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(proxyObligation.counterPartyFspProxyOrParticipantId)
-      // todo: think, what if externalParticipantId is null?
       payeeTransferParticipantRecord = {
         transferId: payload.transferId,
         participantId: participants[proxyObligation.counterPartyFspProxyOrParticipantId.proxyId].id,
@@ -976,7 +977,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                 `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
                 `${Enum.Transfers.TransferState.RESERVED}`,
                 `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`
-              ]) // TODO: this needs to be updated to proper states for fx
+              ])
               .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timed out fxTransfer for all related fxTransfers
           })
 
@@ -1036,7 +1037,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                   .whereIn('ftsc.transferStateId', [
                   `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
                   `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
-                  ]) // TODO: need to check this for fx
+                  ])
                   .as('ftt1'),
                 'ft.commitRequestId', 'ftt1.commitRequestId'
               )

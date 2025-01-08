@@ -1,8 +1,8 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
 
@@ -15,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
@@ -50,7 +50,6 @@ const { ERROR_MESSAGES } = require('../../shared/constants')
 const Config = require('../../lib/config')
 const TransferService = require('../../domain/transfer')
 const FxService = require('../../domain/fx')
-// TODO: Can define domain functions instead of accessing model directly from handler
 const FxTransferModel = require('../../models/fxTransfer')
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Participant = require('../../domain/participant')
@@ -213,6 +212,9 @@ const processFulfilMessage = async (message, functionality, span) => {
       (headers[Enum.Http.Headers.FSPIOP.SOURCE] && !transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) ||
       (headers[Enum.Http.Headers.FSPIOP.DESTINATION] && !transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()))
     ) {
+      /**
+       * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
+       */
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorSourceNotMatchingTransferFSPs--${actionLetter}2`))
 
       // Lets set a default non-matching error to fallback-on
@@ -451,8 +453,6 @@ const processFulfilMessage = async (message, functionality, span) => {
     // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
     if (action === TransferEventAction.RESERVE) {
       // Get the updated transfer now that completedTimestamp will be different
-      // TODO: should we just modify TransferService.handlePayeeResponse to
-      // return the completed timestamp? Or is it safer to go back to the DB here?
       const transferAbortResult = await TransferService.getById(transferId)
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
       const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
@@ -495,9 +495,7 @@ const processFulfilMessage = async (message, functionality, span) => {
     // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
     if (action === TransferEventAction.RESERVE) {
       // Get the updated transfer now that completedTimestamp will be different
-      // TODO: should we just modify TransferService.handlePayeeResponse to
-      // return the completed timestamp? Or is it safer to go back to the DB here?
-      const transferAborted = await TransferService.getById(transferId) // TODO: remove this once it can be tested
+      const transferAborted = await TransferService.getById(transferId)
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
       const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
       const reservedAbortedPayload = {
@@ -581,7 +579,6 @@ const processFulfilMessage = async (message, functionality, span) => {
       }
       return true
     }
-    // TODO: why do we let this logic get this far? Why not remove it from validActions array above?
     case TransferEventAction.REJECT: {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
       const errorMessage = 'action REJECT is not allowed into fulfil handler'
@@ -615,8 +612,6 @@ const processFulfilMessage = async (message, functionality, span) => {
       // Key position abort with payer account id
       const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
-      // TODO(2556): I don't think we should emit an extra notification here
-      // this is the case where the Payee sent an ABORT, so we don't need to tell them to abort
       rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
       break
     }
@@ -627,10 +622,6 @@ const processFulfilMessage = async (message, functionality, span) => {
       try { // handle only valid errorCodes provided by the payee
         fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(eInfo)
       } catch (err) {
-        /**
-         * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
-         * so that such requests are rejected right away, instead of aborting the transfer here.
-         */
         Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
@@ -722,7 +713,6 @@ const processFxFulfilMessage = async (message, functionality, span) => {
   }
 
   const transfer = await fxFulfilService.getFxTransferDetails(commitRequestId, functionality)
-  // todo: rename to fxTransfer
   await fxFulfilService.validateHeaders({ transfer, headers, payload })
 
   // If execution continues after this point we are sure fxTransfer exists and source matches payee fsp

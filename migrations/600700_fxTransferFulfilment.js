@@ -18,7 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * ModusBox
+ * Infitx
  - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/

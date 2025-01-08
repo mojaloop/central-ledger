@@ -47,7 +47,6 @@ RECEIVED_FULFIL : only transfer
 [*] --> INVALID : Validation failed \n [Prepare handler]
 RECEIVED_PREPARE --> RESERVED : [Position handler]: Liquidity check passed, \n funds reserved
 RESERVED --> RECEIVED_REJECT : Reject callback from Payee with status "ABORTED"
-RECEIVED_PREPARE --> RECEIVED_ERROR : Transfer Error callback from Payee
 
 RECEIVED_FULFIL --> COMMITTED : Transfer committed [Position handler] \n <i>(commit funds, assign T. to settlement window)</i>
 RECEIVED_REJECT --> ABORTED_REJECTED : Transfer Aborted by Payee

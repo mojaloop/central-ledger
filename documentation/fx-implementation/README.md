@@ -1,8 +1,8 @@
 # FX Implementation
 
-## Proof of Concept (PoC) Implementation for Payer-Side Currency Conversion (Happy Path Only)
+## Implementation for Payer-Side Currency Conversion (Happy Path Only)
 
-We have developed a proof of concept for foreign exchange (FX) transfer focusing on a specific scenario: Payer-side currency conversion. Please note that this PoC covers only the happy path, with no test coverage and without handling error cases.
+We have developed functionality for foreign exchange (FX) transfer focusing on a specific scenario: Payer-side currency conversion.
 
 ### Testing using ml-core-test-harness
 

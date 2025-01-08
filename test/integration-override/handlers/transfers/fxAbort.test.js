@@ -1,10 +1,13 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -12,7 +15,7 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
  * Gates Foundation
@@ -474,7 +477,7 @@ Test('Handlers test', async handlersTest => {
       // Set up the testConsumer here
       await testConsumer.startListening()
 
-      // TODO: MIG - Disabling these handlers to test running the CL as a separate service independently.
+      // Disabling these handlers to test running the CL as a separate service independently.
       await new Promise(resolve => setTimeout(resolve, rebalanceDelay))
       testConsumer.clearEvents()
 
@@ -822,127 +825,6 @@ Test('Handlers test', async handlersTest => {
 
     abortTest.end()
   })
-
-  // TODO: This is payee side currency conversion. As we didn't implement this yet, this test is failing.
-  // await handlersTest.test('When a transfer followed by a transfer and fxAbort are sent', async abortTest => {
-  //   const td = await prepareFxTestData(testFxData)
-
-  //   await abortTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
-  //     const config = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.PREPARE.toUpperCase())
-  //     config.logger = Logger
-
-  //     const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
-  //     Logger.info(producerResponse)
-
-  //     try {
-  //       await wrapWithRetries(async () => {
-  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //         if (transfer?.transferState !== TransferState.RESERVED) {
-  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-  //           return null
-  //         }
-  //         return transfer
-  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-
-  //     test.end()
-  //   })
-
-  //   await abortTest.test('update fxTransfer state to RESERVED by PREPARE request', async (test) => {
-  //     const prepareConfig = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventAction.PREPARE.toUpperCase()
-  //     )
-  //     prepareConfig.logger = Logger
-  //     await Producer.produceMessage(
-  //       td.messageProtocolPayerInitiatedConversionFxPrepare,
-  //       td.topicConfFxTransferPrepare,
-  //       prepareConfig
-  //     )
-
-  //     try {
-  //       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-  //         topicFilter: TOPIC_POSITION_BATCH,
-  //         action: Enum.Events.Event.Action.FX_PREPARE,
-  //         keyFilter: td.payer.participantCurrencyId.toString()
-  //       }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //       test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
-  //     } catch (err) {
-  //       test.notOk('Error should not be thrown')
-  //       console.error(err)
-  //     }
-
-  //     try {
-  //       await wrapWithRetries(async () => {
-  //         const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
-  //         if (fxTransfer?.transferState !== TransferInternalState.RESERVED) {
-  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-  //           return null
-  //         }
-  //         return fxTransfer
-  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-
-  //     test.end()
-  //   })
-
-  //   await abortTest.test('update fxTransfer state to ABORTED by FULFIL-ABORT callback', async (test) => {
-  //     const config = Utility.getKafkaConfig(
-  //       Config.KAFKA_CONFIG,
-  //       Enum.Kafka.Config.PRODUCER,
-  //       TransferEventType.TRANSFER.toUpperCase(),
-  //       TransferEventType.FULFIL.toUpperCase())
-  //     config.logger = Logger
-
-  //     await Producer.produceMessage(td.messageProtocolFxAbort, td.topicConfTransferFulfil, config)
-
-  //     // Check for the fxTransfer state to be ABORTED
-  //     try {
-  //       await wrapWithRetries(async () => {
-  //         const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
-  //         if (fxTransfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
-  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-  //           return null
-  //         }
-  //         return fxTransfer
-  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-
-  //     // Check for the transfer state to be ABORTED
-  //     try {
-  //       await wrapWithRetries(async () => {
-  //         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-  //         if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
-  //           if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-  //           return null
-  //         }
-  //         return transfer
-  //       }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-  //     } catch (err) {
-  //       Logger.error(err)
-  //       test.fail(err.message)
-  //     }
-
-  //     test.end()
-  //   })
-
-  //   abortTest.end()
-  // })
 
   await handlersTest.test('teardown', async (assert) => {
     try {
