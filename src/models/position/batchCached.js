@@ -30,10 +30,10 @@
 
 'use strict'
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const Metrics = require('@mojaloop/central-services-metrics')
 const BatchPositionModel = require('./batch')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 let cacheClient
 let participantCurrencyAllCacheKey
@@ -116,7 +116,7 @@ exports.getParticipantCurrencyByIds = async (trx, participantCurrencyIds) => {
     }
     return participantCurrencies
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -129,6 +129,6 @@ exports.getParticipantCurrencyByParticipantIds = async (trx, participantIds) => 
     }
     return participantCurrencies
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }

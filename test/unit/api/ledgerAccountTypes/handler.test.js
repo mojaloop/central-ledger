@@ -30,10 +30,11 @@ const Logger = require('@mojaloop/central-services-logger')
 const Handler = require('../../../../src/api/ledgerAccountTypes/handler')
 const LedgerAccountTypeService = require('../../../../src/domain/ledgerAccountTypes')
 const ProxyCache = require('#src/lib/proxyCache')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 Test('LedgerAccountTypes', ledgerAccountTypesHandlerTest => {
   let sandbox
-
+  Metrics._setupDefaultServiceMetrics()
   ledgerAccountTypesHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Logger)

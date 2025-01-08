@@ -24,7 +24,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getById = async (id) => {
   try {
@@ -50,8 +50,7 @@ const getById = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -79,8 +78,7 @@ const getByTransferId = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -96,8 +94,7 @@ const getParticipantsById = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

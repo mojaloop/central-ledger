@@ -26,7 +26,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 /* istanbul ignore next */
 exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset, trx = null) => {
@@ -49,7 +49,7 @@ exports.create = async (name, isActive, settlementGranularityId, settlementInter
           })
           .transacting(trx)
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -58,7 +58,7 @@ exports.create = async (name, isActive, settlementGranularityId, settlementInter
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 /* istanbul ignore next */
@@ -73,7 +73,7 @@ exports.getByName = async (name, trx = null) => {
           .transacting(trx)
         return result.length > 0 ? result[0] : null
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -82,21 +82,21 @@ exports.getByName = async (name, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 exports.getAll = async () => {
   try {
     return await Db.from('settlementModel').find({ isActive: 1 })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 exports.update = async (settlementModel, isActive) => {
   try {
     return await Db.from('settlementModel').update({ settlementModelId: settlementModel.settlementModelId }, { isActive })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -112,7 +112,7 @@ exports.getSettlementModelsByName = async (names, trx = null) => {
           .transacting(trx)
         return settlementModelNames
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -121,6 +121,6 @@ exports.getSettlementModelsByName = async (names, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }

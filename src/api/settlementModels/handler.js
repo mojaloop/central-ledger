@@ -31,6 +31,7 @@ const Enums = require('../../lib/enumCached')
 const Util = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
 const Logger = require('@mojaloop/central-services-logger')
+const { rethrow } = Util
 
 const entityItem = ({ settlementModelId, name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, autoPositionReset }, ledgerAccountIds, settlementGranularityIds, settlementInterchangeIds, settlementDelayIds) => {
   return {
@@ -90,8 +91,7 @@ const update = async function (request) {
     const settlementDelayIds = Util.transpose(Enum.SettlementDelay)
     return entityItem(updatedEntity, ledgerAccountIds, settlementGranularityIds, settlementInterchangeIds, settlementDelayIds)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'settlementModelUpdate' })
   }
 }
 const create = async function (request, h) {
@@ -99,8 +99,7 @@ const create = async function (request, h) {
     await SettlementService.createSettlementModel(request.payload)
     return h.response().code(201)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'settlementModelCreate' })
   }
 }
 

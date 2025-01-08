@@ -29,8 +29,8 @@
  */
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
 const Metrics = require('@mojaloop/central-services-metrics')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 /**
  * @function getByParticipantPositionId
@@ -61,9 +61,8 @@ const getByParticipantPositionId = async (participantPositionId) => {
       return result
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
     histTimer({ success: false, queryName: 'model_getByParticipantPositionId', hit: false })
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 module.exports = {

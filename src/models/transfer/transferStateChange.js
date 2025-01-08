@@ -28,14 +28,14 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const saveTransferStateChange = async (stateChange) => {
   Logger.isDebugEnabled && Logger.debug('save transferStateChange' + stateChange.toString())
   try {
     return Db.from('transferStateChange').insert(stateChange)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -50,8 +50,7 @@ const getByTransferId = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -63,8 +62,7 @@ const getByTransferIdList = async (transfersIdList) => {
       return result
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -77,8 +75,7 @@ const getLatest = async () => {
         .first()
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -86,8 +83,7 @@ const truncate = async () => {
   try {
     return await Db.from('transferStateChange').truncate()
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
