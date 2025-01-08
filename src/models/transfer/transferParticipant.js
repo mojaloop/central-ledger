@@ -26,14 +26,14 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const saveTransferParticipant = async (record) => {
   Logger.isDebugEnabled && Logger.debug('save transferParticipant' + record.toString())
   try {
     return await Db.from('transferParticipant').insert(record)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

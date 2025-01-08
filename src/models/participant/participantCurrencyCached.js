@@ -24,11 +24,11 @@
 
 'use strict'
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const Config = require('../../../src/lib/config')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const Metrics = require('@mojaloop/central-services-metrics')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 let cacheClient
 let participantCurrencyAllCacheKey
@@ -159,7 +159,7 @@ const withInvalidate = (theFunctionName) => {
       await exports.invalidateParticipantCurrencyCache()
       return result
     } catch (err) {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      rethrow.rethrowCachedDatabaseError(err)
     }
   }
 }

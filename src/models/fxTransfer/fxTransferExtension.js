@@ -26,13 +26,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getByCommitRequestId = async (commitRequestId, isFulfilment = false, isError = false) => {
   try {
     return await Db.from('fxTransferExtension').find({ commitRequestId, isFulfilment, isError })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

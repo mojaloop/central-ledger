@@ -24,10 +24,10 @@
 
 'use strict'
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const SettlementModel = require('../../models/settlement/settlementModel')
 const Metrics = require('@mojaloop/central-services-metrics')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 let cacheClient
 let settlementModelsAllCacheKey
@@ -107,7 +107,7 @@ exports.getById = async (id) => {
     const cachedSettlementModels = await getSettlementModelsCached()
     return cachedSettlementModels.indexById[id]
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -116,7 +116,7 @@ exports.getByName = async (name) => {
     const cachedSettlementModels = await getSettlementModelsCached()
     return cachedSettlementModels.indexByName[name]
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -125,7 +125,7 @@ exports.getByLedgerAccountTypeId = async (ledgerAccountTypeId) => {
     const cachedSettlementModels = await getSettlementModelsCached()
     return cachedSettlementModels.indexByLedgerAccountTypeId[ledgerAccountTypeId]
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -134,6 +134,6 @@ exports.getAll = async () => {
     const cachedSettlementModels = await getSettlementModelsCached()
     return cachedSettlementModels.allSettlementModels
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }

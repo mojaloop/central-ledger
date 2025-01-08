@@ -33,7 +33,6 @@
  * @module src/handlers/positions
  */
 
-const Logger = require('@mojaloop/central-services-logger')
 const EventSdk = require('@mojaloop/event-sdk')
 const BinProcessor = require('../../domain/position/binProcessor')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
@@ -49,6 +48,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const BatchPositionModel = require('../../models/position/batch')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 const consumerCommit = true
+const rethrow = Utility.rethrow
 
 /**
  * @function positions
@@ -71,7 +71,7 @@ const positions = async (error, messages) => {
 
   if (error) {
     histTimerEnd({ success: false })
-    throw ErrorHandler.Factory.reformatFSPIOPError(error)
+    rethrow.rethrowAndCountFspiopError(error, { operation: 'positionsHandlerBatch' })
   }
   let consumedMessages = []
 
@@ -237,8 +237,7 @@ const registerPositionHandler = async () => {
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerPositionHandler' })
   }
 }
 
@@ -254,8 +253,7 @@ const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
 }
 

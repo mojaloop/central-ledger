@@ -28,13 +28,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const saveTransferExtension = async (extension) => {
   try {
     return await Db.from('transferExtension').insert(extension)
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -42,7 +42,7 @@ const getByTransferId = async (transferId, isFulfilment = false, isError = false
   try {
     return await Db.from('transferExtension').find({ transferId, isFulfilment, isError })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -50,7 +50,7 @@ const getByTransferExtensionId = async (transferExtensionId) => {
   try {
     return await Db.from('transferExtension').findOne({ transferExtensionId })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -58,7 +58,7 @@ const destroyByTransferId = async (transferId) => {
   try {
     return await Db.from('transferExtension').destroy({ transferId })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

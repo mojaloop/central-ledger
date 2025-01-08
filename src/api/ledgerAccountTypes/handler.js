@@ -26,7 +26,7 @@
 
 const LedgerAccountTypesService = require('../../domain/ledgerAccountTypes')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-logger')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getAll = async function () {
   return LedgerAccountTypesService.getAll()
@@ -42,8 +42,7 @@ async function create (request, h) {
       return h.response().code(201)
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'ledgerAccountTypesCreate' })
   }
 }
 

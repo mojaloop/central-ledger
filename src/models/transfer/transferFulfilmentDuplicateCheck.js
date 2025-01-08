@@ -30,7 +30,7 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 /**
  * @function GetTransferFulfilmentDuplicateCheck
@@ -48,7 +48,7 @@ const getTransferFulfilmentDuplicateCheck = async (transferId) => {
   try {
     return Db.from('transferFulfilmentDuplicateCheck').findOne({ transferId })
   } catch (err) {
-    throw new Error(err.message)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -69,7 +69,7 @@ const saveTransferFulfilmentDuplicateCheck = async (transferId, hash) => {
   try {
     return Db.from('transferFulfilmentDuplicateCheck').insert({ transferId, hash })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
