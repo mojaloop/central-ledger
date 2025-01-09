@@ -1,8 +1,8 @@
 /*****
  License
  --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
 
@@ -15,12 +15,12 @@
  should be listed with a '*' in the first column. People who have
  contributed from an organization can be listed under the organization
  that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
+ Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Lazola Lucas <lazola.lucas@modusbox.com>
  * Georgi Logodazhki <georgi.logodazhki@modusbox.com>
@@ -215,13 +215,7 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
     // Iterate through determiningTransferCheckResult.watchListRecords
     for (const watchListRecord of determiningTransferCheckResult.watchListRecords) {
       if (isFx) {
-        // TODO: Check the transfer state of determiningTransferId
-        // const latestTransferStateChange = await TransferStateChangeModel.getByTransferId(watchListRecord.determiningTransferId)
-        // if (latestTransferStateChange.transferStateId !== Enum.Transfers.TransferInternalState.RESERVED) {
-        //   reasons.push('Related Transfer is not in reserved state')
-        //   validationPassed = false
-        //   return { validationPassed, reasons }
-        // }
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED)
       } else {
         // Check the transfer state of commitRequestId
         const latestFxTransferStateChange = await FxTransferStateChangeModel.getByCommitRequestId(watchListRecord.commitRequestId)

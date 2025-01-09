@@ -18,7 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * ModusBox
+ * Infitx
  - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
@@ -29,7 +29,6 @@ exports.up = function (knex) {
   return knex.schema.table('fxTransferFulfilment', (t) => {
     t.index('commitRequestId')
     t.index('settlementWindowId')
-    // TODO: Need to check if this is required
     t.unique(['commitRequestId', 'ilpFulfilment'])
   })
 }

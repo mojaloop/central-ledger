@@ -32,24 +32,47 @@
  --------------
 
  ******/
-// Notes: these changes are required for the quoting-service and are not used by central-ledger
-'use strict'
 
-exports.up = (knex) => {
-  return knex.schema.hasTable('fxQuoteResponseConversionTermsExtension').then((exists) => {
-    if (!exists) {
-      return knex.schema.createTable('fxQuoteResponseConversionTermsExtension', (t) => {
-        t.bigIncrements('fxQuoteResponseConversionTermsExtension').primary().notNullable()
-        t.string('conversionId', 36).notNullable()
-        t.foreign('conversionId').references('conversionId').inTable('fxQuoteResponseConversionTerms')
-        t.string('key', 128).notNullable()
-        t.text('value').notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable().comment('System dateTime stamp pertaining to the inserted record')
-      })
-    }
-  })
+const { asyncStorage } = require('@mojaloop/central-services-logger/src/contextLogger')
+const { logger } = require('./logger') // pass though options
+
+const loggingPlugin = {
+  name: 'loggingPlugin',
+  version: '1.0.0',
+  once: true,
+  register: async (server, options) => {
+    // const { logger } = options;
+    server.ext({
+      type: 'onPreHandler',
+      method: (request, h) => {
+        const { path, method, headers, payload, query } = request
+        const { remoteAddress } = request.info
+        const requestId = request.info.id = `${request.info.id}__${headers.traceid}`
+        asyncStorage.enterWith({ requestId })
+
+        logger.isInfoEnabled && logger.info(`[==> req] ${method.toUpperCase()} ${path}`, { headers, payload, query, remoteAddress })
+        return h.continue
+      }
+    })
+
+    server.ext({
+      type: 'onPreResponse',
+      method: (request, h) => {
+        if (logger.isInfoEnabled) {
+          const { path, method, headers, payload, query, response } = request
+          const { received } = request.info
+
+          const statusCode = response instanceof Error
+            ? response.output?.statusCode
+            : response.statusCode
+          const respTimeSec = ((Date.now() - received) / 1000).toFixed(3)
+
+          logger.info(`[<== ${statusCode}][${respTimeSec} s] ${method.toUpperCase()} ${path}`, { headers, payload, query })
+        }
+        return h.continue
+      }
+    })
+  }
 }
 
-exports.down = (knex) => {
-  return knex.schema.dropTableIfExists('fxQuoteResponseConversionTermsExtension')
-}
+module.exports = loggingPlugin

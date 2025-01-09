@@ -1,3 +1,38 @@
+/*****
+ License
+ --------------
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * Infitx
+ - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
+ - Kevin Leyow <kevin.leyow@infitx.com>
+ - Kalin Krustev <kalin.krustev@infitx.com>
+ - Steven Oderayi <steven.oderayi@infitx.com>
+ - Eugen Klymniuk <eugen.klymniuk@infitx.com>
+
+ --------------
+
+ ******/
+
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
@@ -250,7 +285,6 @@ const savePreparedRequest = async (
       getParticipant(counterPartyFsp, payload.sourceAmount.currency),
       !proxyObligation.isCounterPartyFspProxy ? getParticipant(counterPartyFsp, payload.targetAmount.currency) : null
     ])
-    // todo: clarify, what we should do if no initiatingParticipant or counterParticipant found?
 
     const fxTransferRecord = {
       commitRequestId: payload.commitRequestId,
@@ -453,13 +487,6 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
     reason: errorDescription,
     createdDate: transactionTimestamp
   }
-  // const fxTransferErrorRecord = {
-  //   commitRequestId,
-  //   fxTransferStateChangeId: null,
-  //   errorCode,
-  //   errorDescription,
-  //   createdDate: transactionTimestamp
-  // }
 
   try {
     /** @namespace Db.getKnex **/
@@ -502,17 +529,6 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
         await knex('fxTransferStateChange').transacting(trx).insert(fxTransferStateChangeRecord)
         result.fxTransferStateChangeRecord = fxTransferStateChangeRecord
         logger.debug('saveFxFulfilResponse::fxTransferStateChange')
-        // TODO: Need to handle the following incase of error
-        // if (fspiopError) {
-        //   const insertedTransferStateChange = await knex('fxTransferStateChange').transacting(trx)
-        //     .where({ commitRequestId })
-        //     .forUpdate().first().orderBy('fxTransferStateChangeId', 'desc')
-        //   fxTransferStateChangeRecord.fxTransferStateChangeId = insertedTransferStateChange.fxTransferStateChangeId
-        //   fxTransferErrorRecord.fxTransferStateChangeId = insertedTransferStateChange.fxTransferStateChangeId
-        //   await knex('transferError').transacting(trx).insert(fxTransferErrorRecord)
-        //   result.fxTransferErrorRecord = fxTransferErrorRecord
-        //   logger.debug('saveFxFulfilResponse::transferError')
-        // }
         histTFxFulfilResponseValidationPassedEnd({ success: true, queryName: 'facade_saveFxFulfilResponse_transaction' })
         result.savePayeeTransferResponseExecuted = true
         logger.debug('saveFxFulfilResponse::success')
