@@ -104,7 +104,7 @@
     "base64url": "3.0.1",
     "blipp": "4.0.2",
     "commander": "13.0.0",
-    "cron": "3.3.2",
+    "cron": "3.4.0",
     "decimal.js": "10.4.3",
     "docdash": "2.0.2",
     "event-stream": "4.0.1",
