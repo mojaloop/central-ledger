@@ -817,7 +817,7 @@ Test('Handlers test', async handlersTest => {
       test.ok(payeeAbortNotificationEvent, 'Payee Abort notification sent')
 
       // grab kafka message
-      const payerAbortNotificationPayload = getMessagePayloadOrThrow(payeeAbortNotificationEvent)
+      const payerAbortNotificationPayload = getMessagePayloadOrThrow(payerAbortNotificationEvent)
 
       test.equal(
         payerAbortNotificationPayload.transferState,
