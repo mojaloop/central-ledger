@@ -46,6 +46,8 @@ const ilp = require('../../../../../src/models/transfer/ilpPacket')
 // const TransferState = Enum.Transfers.TransferState
 // const TransferInternalState = Enum.Transfers.TransferInternalState
 
+require('../../../../../src/lib/config').MONGODB_DISABLED = false
+
 const bulkTransfer = {
   bulkTransferId: 'fake-bulk-transfer-id',
   bulkQuoteId: 'fake-bulk-quote-id',

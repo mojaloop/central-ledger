@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
@@ -45,6 +45,7 @@ const externalParticipantModelCached = require('../../models/participant/externa
 const Config = require('../../lib/config')
 const SettlementModelModel = require('../settlement/settlementModel')
 const { logger } = require('../../shared/logger')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -108,7 +109,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
     return participant
   } catch (err) {
     histTimerParticipantGetByNameAndCurrencyEnd({ success: false, queryName: 'facade_getByNameAndCurrency' })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -174,7 +175,7 @@ const getByIDAndCurrency = async (participantId, currencyId, ledgerAccountTypeId
     return participant
   } catch (err) {
     histTimerParticipantGetByIDAndCurrencyEnd({ success: false, queryName: 'facade_getByIDAndCurrency' })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -196,7 +197,7 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
         )
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -246,7 +247,7 @@ const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId
         )
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -275,7 +276,7 @@ const getEndpoint = async (participantId, endpointType) => {
           'et.name')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -302,7 +303,7 @@ const getAllEndpoints = async (participantId) => {
           'et.name')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -357,7 +358,7 @@ const addEndpoint = async (participantId, endpoint) => {
       return newEndpoint
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -429,7 +430,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
     histGetParticipantLimitEnd({ success: true, queryName: 'facade_getParticipantLimitByParticipantCurrencyLimit' })
     return participantLimit
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -451,7 +452,7 @@ const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId,
         )
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 /**
@@ -544,7 +545,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
       return true
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -601,7 +602,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
           participantLimit: newLimit
         }
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
 
@@ -612,7 +613,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -648,7 +649,7 @@ const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => 
         ).orderBy('lt.name')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -688,7 +689,7 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
         ).orderBy('pc.currencyId', 'lt.name')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -721,7 +722,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
       }
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -748,7 +749,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccoun
         .select('*', 'lap.name AS ledgerAccountType', 'participantCurrency.isActive AS accountIsActive')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -766,7 +767,7 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
 
         return res
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -775,7 +776,7 @@ const getAllNonHubParticipantsWithCurrencies = async (trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

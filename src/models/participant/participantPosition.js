@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
@@ -37,8 +37,7 @@
 
 const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrencyCached')
-const Logger = require('@mojaloop/central-services-logger')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 /**
  * @function GetByParticipantCurrencyId
@@ -56,8 +55,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -77,8 +75,7 @@ const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.from('participantPosition').destroy({ participantCurrencyId })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -102,8 +99,7 @@ const destroyByParticipantId = async (participantId) => {
       .whereIn('participantCurrencyId', participantCurrencyIdList)
       .del()
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -116,7 +112,7 @@ const createParticipantPositionRecords = async (participantPositions, trx) => {
           .batchInsert('participantPosition', participantPositions)
           .transacting(trx)
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -125,7 +121,7 @@ const createParticipantPositionRecords = async (participantPositions, trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 module.exports = {

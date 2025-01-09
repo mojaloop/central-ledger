@@ -11,8 +11,10 @@ const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory
 const SettlementModel = require('../../../../src/domain/settlement')
 const ProxyCache = require('#src/lib/proxyCache')
 const Config = require('#src/lib/config')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const createRequest = ({ payload, params, query }) => {
+  Metrics._setupDefaultServiceMetrics()
   const sandbox = Sinon.createSandbox()
   const requestPayload = payload || {}
   const requestParams = params || {}
@@ -34,7 +36,7 @@ const createRequest = ({ payload, params, query }) => {
 
 Test('Participant', participantHandlerTest => {
   let sandbox
-
+  Metrics._setupDefaultServiceMetrics()
   const participantFixtures = [
     {
       participantId: 1,

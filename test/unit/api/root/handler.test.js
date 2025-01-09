@@ -32,6 +32,7 @@ const Joi = require('joi')
 const Sinon = require('sinon')
 
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
+const Metrics = require('@mojaloop/central-services-metrics')
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 const ProxyCache = require('#src/lib/proxyCache')
 const Config = require('#src/lib/config')
@@ -47,6 +48,8 @@ const requireUncached = module => {
 
 Test('Root', rootHandlerTest => {
   let sandbox
+  Metrics._setupDefaultServiceMetrics()
+
   rootHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(ProxyCache, 'getCache').returns({

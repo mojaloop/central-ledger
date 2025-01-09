@@ -45,6 +45,8 @@ const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTran
 const ilp = require('#src/models/transfer/ilpPacket')
 const ProxyCache = require('#src/lib/proxyCache')
 
+require('../../../../../src/lib/config').MONGODB_DISABLED = false
+
 // Sample Bulk Transfer Message received by the Bulk API Adapter
 const fspiopBulkTransferMsg = {
   bulkTransferId: 'fake-bulk-transfer-id',

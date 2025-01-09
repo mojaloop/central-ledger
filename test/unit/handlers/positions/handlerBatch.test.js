@@ -358,6 +358,29 @@ Test('Position handler', positionBatchHandlerTest => {
       }
     })
 
+    positionsTest.test('handle no messages', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+
+      // Act
+      try {
+        await allTransferHandlers.positions(null, [])
+        test.ok(BatchPositionModel.startDbTransaction.notCalled, 'startDbTransaction should not be called')
+        test.ok(BinProcessor.processBins.notCalled, 'processBins should not be called')
+        test.ok(Kafka.proceed.notCalled, 'kafkaProceed should not be called')
+        test.ok(trxStub.commit.notCalled, 'trx.commit should not be called')
+        test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called')
+        test.ok(Kafka.produceGeneralMessage.notCalled, 'produceGeneralMessage should not be called')
+        test.end()
+      } catch (err) {
+        test.fail('Error should not be thrown')
+        test.end()
+      }
+    })
+
     positionsTest.test('rollback DB transaction and audit error if BinProcessor fails', async test => {
       // Arrange
       BinProcessor.processBins.rejects(new Error('BinProcessor failed'))

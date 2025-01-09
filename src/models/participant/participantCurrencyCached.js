@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Roman Pietrzak <roman.pietrzak@modusbox.com>
  --------------
@@ -27,11 +27,11 @@
 
 'use strict'
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const Config = require('../../../src/lib/config')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const Metrics = require('@mojaloop/central-services-metrics')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 let cacheClient
 let participantCurrencyAllCacheKey
@@ -162,7 +162,7 @@ const withInvalidate = (theFunctionName) => {
       await exports.invalidateParticipantCurrencyCache()
       return result
     } catch (err) {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      rethrow.rethrowCachedDatabaseError(err)
     }
   }
 }

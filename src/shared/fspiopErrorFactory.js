@@ -19,10 +19,11 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
- * Eugen Klymniuk <eugen.klymniuk@infitx.com>
+ * Infitx
+ - Eugen Klymniuk <eugen.klymniuk@infitx.com>
  --------------
  **********/
 
@@ -76,7 +77,7 @@ const fspiopErrorFactory = {
     return Factory.createFSPIOPError(
       Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED,
       ERROR_MESSAGES.fxTransferExpired,
-      cause, replyTo
+      cause = null, replyTo = ''
     )
   },
 

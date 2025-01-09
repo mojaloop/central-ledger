@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
  * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
@@ -29,20 +29,33 @@
 const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
 const { logger } = require('../../shared/logger')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getItemInWatchListByCommitRequestId = async (commitRequestId) => {
   logger.debug(`get item in watch list (commitRequestId=${commitRequestId})`)
-  return Db.from(TABLE_NAMES.fxWatchList).findOne({ commitRequestId })
+  try {
+    return Db.from(TABLE_NAMES.fxWatchList).findOne({ commitRequestId })
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
 }
 
 const getItemsInWatchListByDeterminingTransferId = async (determiningTransferId) => {
   logger.debug(`get item in watch list (determiningTransferId=${determiningTransferId})`)
-  return Db.from(TABLE_NAMES.fxWatchList).find({ determiningTransferId })
+  try {
+    return Db.from(TABLE_NAMES.fxWatchList).find({ determiningTransferId })
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
 }
 
 const addToWatchList = async (record) => {
   logger.debug('add to fx watch list', record)
-  return Db.from(TABLE_NAMES.fxWatchList).insert(record)
+  try {
+    return Db.from(TABLE_NAMES.fxWatchList).insert(record)
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
 }
 
 module.exports = {

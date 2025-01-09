@@ -18,9 +18,12 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
- * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * Infitx
+ - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
@@ -229,10 +232,12 @@ const processFxFulfilMessage = async (commitRequestId) => {
  *
  * @param {Array<string>} commitRequestIdList - List of commit request IDs to retrieve FX-related position changes.
  * @param {Array<string>} transferIdList - List of transfer IDs to retrieve regular transfer-related position changes.
- * @returns {Promise<PositionChangeItem[]>} - A promise that resolves to an array of position change objects.
+ * @returns {Promise<{ PositionChangeItem[], TransferStateChangeItem[] }>} - A promise that resolves to an object containing
+ *  array of position change objects and transfer state change objects (transfer state changes with no position changes).
  */
-const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
+const _getPositionChanges = async (commitRequestIdList, transferIdList, originalId, isAbort = false) => {
   const positionChanges = []
+  const transferStateChanges = []
   for (const commitRequestId of commitRequestIdList) {
     const fxRecord = await fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
     const fxPositionChanges = await ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId(commitRequestId)
@@ -240,6 +245,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
       positionChanges.push({
         isFxTransferStateChange: true,
         commitRequestId,
+        isOriginalId: originalId === commitRequestId,
         notifyTo: fxRecord.externalInitiatingFspName || fxRecord.initiatingFspName,
         participantCurrencyId: fxPositionChange.participantCurrencyId,
         amount: -fxPositionChange.change
@@ -250,18 +256,35 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList) => {
   for (const transferId of transferIdList) {
     const transferRecord = await TransferFacade.getById(transferId)
     const transferPositionChanges = await ParticipantPositionChangesModel.getReservedPositionChangesByTransferId(transferId)
-    transferPositionChanges.forEach((transferPositionChange) => {
-      positionChanges.push({
-        isFxTransferStateChange: false,
+
+    // Context: processing interscheme transfer abort with accompanying fx transfer where the payee DFSP is proxied
+    //
+    // If the transferPositionChanges is empty and there is a commitRequestId and the tranferId is the same as the originalId,
+    // then it is a case where the transfer has no position change for the transfer in the buffer scheme but has position change for the fx transfer.
+    // In that case we need to add a transfer state change so that we can notify the payer and update the transfer state.
+    if (isAbort && transferRecord && transferRecord.payeeIsProxy && transferPositionChanges.length === 0 && !!commitRequestIdList.length && originalId === transferId) {
+      transferStateChanges.push({
         transferId,
-        notifyTo: transferRecord.externalPayerName || transferRecord.payerFsp,
-        participantCurrencyId: transferPositionChange.participantCurrencyId,
-        amount: -transferPositionChange.change
+        transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR,
+        reason: null,
+        isOriginalId: originalId === transferId, // added to help in constructing the notification
+        notifyTo: transferRecord.externalPayerName || transferRecord.payerFsp // added to help in constructing the notification
       })
-    })
+    } else {
+      transferPositionChanges.forEach((transferPositionChange) => {
+        positionChanges.push({
+          isFxTransferStateChange: false,
+          transferId,
+          isOriginalId: originalId === transferId,
+          notifyTo: transferRecord.externalPayerName || transferRecord.payerFsp,
+          participantCurrencyId: transferPositionChange.participantCurrencyId,
+          amount: -transferPositionChange.change
+        })
+      })
+    }
   }
 
-  return positionChanges
+  return { positionChanges, transferStateChanges }
 }
 
 /**
@@ -281,11 +304,12 @@ const processFxAbortMessage = async (commitRequestId) => {
   const relatedFxTransferRecords = await fxTransfer.getByDeterminingTransferId(fxTransferRecord.determiningTransferId)
 
   // Get position changes
-  const positionChanges = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [fxTransferRecord.determiningTransferId])
+  const { positionChanges, transferStateChanges } = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [fxTransferRecord.determiningTransferId], commitRequestId, false)
 
   histTimer({ success: true })
   return {
-    positionChanges
+    positionChanges,
+    transferStateChanges
   }
 }
 
@@ -300,11 +324,12 @@ const processAbortMessage = async (transferId) => {
   const relatedFxTransferRecords = await fxTransfer.getByDeterminingTransferId(transferId)
 
   // Get position changes
-  const positionChanges = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [transferId])
+  const { positionChanges, transferStateChanges } = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [transferId], transferId, true)
 
   histTimer({ success: true })
   return {
-    positionChanges
+    positionChanges,
+    transferStateChanges
   }
 }
 

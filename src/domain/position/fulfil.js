@@ -88,7 +88,7 @@ const processPositionFulfilBin = async (
         // Inform payee dfsp if transfer is not in RECEIVED_FULFIL state, skip making any transfer state changes
         if (accumulatedTransferStates[transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
           const resultMessage = _handleIncorrectTransferState(binItem, payeeFsp, transferId, accumulatedTransferStates)
-          resultMessages.push({ binItem, message: resultMessage })
+          resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
         } else {
           Logger.isDebugEnabled && Logger.debug(`processPositionFulfilBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
           Logger.isDebugEnabled && Logger.debug(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
@@ -131,7 +131,7 @@ const processPositionFulfilBin = async (
             if (nextIndex === -1) {
               // All position changes are done
               const resultMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers, transferStateIdCopy)
-              resultMessages.push({ binItem, message: resultMessage })
+              resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
             } else {
               // There are still position changes to be processed
               // Send position-commit kafka message again for the next item
@@ -151,7 +151,7 @@ const processPositionFulfilBin = async (
             transferStateChanges.push(transferStateChange)
             accumulatedTransferStatesCopy[transferId] = transferStateId
             const resultMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers, transferStateId)
-            resultMessages.push({ binItem, message: resultMessage })
+            resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
           }
         }
       }
@@ -203,7 +203,8 @@ const _handleIncorrectTransferState = (binItem, payeeFsp, transferId, accumulate
     headers,
     fspiopError,
     { id: transferId },
-    'application/json'
+    'application/json',
+    binItem.message.value.content.context
   )
 }
 
@@ -232,7 +233,8 @@ const _constructTransferFulfilResultMessage = (binItem, transferId, payerFsp, pa
     headers,
     transfer,
     { id: transferId },
-    'application/json'
+    'application/json',
+    binItem.message.value.content.context
   )
 
   if (binItem.message.value.metadata.event.action === Enum.Events.Event.Action.RESERVE) {
@@ -284,7 +286,8 @@ const _constructPatchNotificationResultMessage = (binItem, cyrilResult) => {
       headers,
       fulfil,
       { id: commitRequestId },
-      'application/json'
+      'application/json',
+      binItem.message.value.content.context
     )
 
     messages.push(resultMessage)

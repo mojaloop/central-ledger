@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
@@ -33,8 +33,9 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
+
 /**
  * @function GetTransferDuplicateCheck
  *
@@ -59,7 +60,7 @@ const getTransferDuplicateCheck = async (transferId) => {
     return result
   } catch (err) {
     histTimerGetTransferDuplicateCheckEnd({ success: false, queryName: 'transferDuplicateCheck_getTransferDuplicateCheck' })
-    throw new Error(err.message)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -88,7 +89,7 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
     return result
   } catch (err) {
     histTimerSaveTransferDuplicateCheckEnd({ success: false, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

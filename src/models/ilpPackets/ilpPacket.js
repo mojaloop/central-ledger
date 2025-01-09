@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * ModusBox
  - Lazola Lucas <lazola.lucas@modusbox.com>
@@ -28,12 +28,12 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 exports.getById = async (id) => {
   try {
     return await Db.from('ilpPacket').find({ transferId: id })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }

@@ -19,8 +19,8 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
-  * Gates Foundation
-  - Name Surname <name.surname@gatesfoundation.com>
+  * Mojaloop Foundation
+  - Name Surname <name.surname@mojaloop.io>
 
   * ModusBox
   - Georgi Georgiev <georgi.georgiev@modusbox.com>
@@ -45,7 +45,7 @@ const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
 const { logger } = require('../../shared/logger')
 
-const { Kafka, resourceVersions } = Utility
+const { Kafka, resourceVersions, rethrow } = Utility
 const { Action, Type } = Enum.Events.Event
 
 let timeoutJob
@@ -75,6 +75,11 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
       const source = TT.externalPayeeName || TT.payeeFsp
       const headers = Utility.Http.SwitchDefaultHeaders(destination, Enum.Http.HeaderResources.TRANSFERS, Config.HUB_NAME, resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion)
       const message = Utility.StreamingProtocol.createMessage(TT.transferId, destination, source, metadata, headers, fspiopError, { id: TT.transferId }, `application/vnd.interoperability.${Enum.Http.HeaderResources.TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion}`)
+      // Pass payer and payee names to the context for notification functionality
+      message.content.context = {
+        payer: TT.externalPayerName || TT.payerFsp,
+        payee: TT.externalPayeeName || TT.payeeFsp
+      }
 
       span.setTags(Utility.EventFramework.getTransferSpanTags({ payload: message.content.payload, headers }, Type.TRANSFER, Action.TIMEOUT_RECEIVED))
       await span.audit({
@@ -99,6 +104,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
             span
           )
         } else if (TT.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+          message.from = Config.HUB_NAME
           message.metadata.event.type = Type.POSITION
           message.metadata.event.action = Action.TIMEOUT_RESERVED
           // Key position timeouts with payer account id
@@ -151,7 +157,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
       await span.finish(fspiopError.message, state)
-      throw fspiopError
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: '_processTimedOutTransfers' })
     } finally {
       if (!span.isFinished) {
         await span.finish()
@@ -177,11 +183,16 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
     const span = EventSdk.Tracer.createSpan('cl_fx_transfer_timeout')
     try {
       const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
-      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(fTT.commitRequestId, Enum.Kafka.Topics.NOTIFICATION, Action.TIMEOUT_RECEIVED, state)
+      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(fTT.commitRequestId, Enum.Kafka.Topics.NOTIFICATION, Action.FX_TIMEOUT_RECEIVED, state)
       const destination = fTT.externalInitiatingFspName || fTT.initiatingFsp
       const source = fTT.externalCounterPartyFspName || fTT.counterPartyFsp
       const headers = Utility.Http.SwitchDefaultHeaders(destination, Enum.Http.HeaderResources.FX_TRANSFERS, Config.HUB_NAME, resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion)
       const message = Utility.StreamingProtocol.createMessage(fTT.commitRequestId, destination, source, metadata, headers, fspiopError, { id: fTT.commitRequestId }, `application/vnd.interoperability.${Enum.Http.HeaderResources.FX_TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion}`)
+      // Pass payer and payee names to the context for notification functionality
+      message.content.context = {
+        payer: fTT.externalInitiatingFspName || fTT.initiatingFsp,
+        payee: fTT.externalCounterPartyFspName || fTT.counterPartyFsp
+      }
 
       span.setTags(Utility.EventFramework.getTransferSpanTags({ payload: message.content.payload, headers }, Type.FX_TRANSFER, Action.TIMEOUT_RECEIVED))
       await span.audit({
@@ -193,18 +204,19 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
 
       if (fTT.transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
         message.from = Config.HUB_NAME
-        // event & type set above when `const metadata` is initialized to NOTIFICATION / TIMEOUT_RECEIVED
+        // event & type set above when `const metadata` is initialized to NOTIFICATION / FX_TIMEOUT_RECEIVED
         await Kafka.produceGeneralMessage(
           Config.KAFKA_CONFIG,
           Producer,
           Enum.Kafka.Topics.NOTIFICATION,
-          Action.FX_TIMEOUT_RESERVED,
+          Action.FX_TIMEOUT_RECEIVED,
           message,
           state,
           null,
           span
         )
       } else if (fTT.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+        message.from = Config.HUB_NAME
         message.metadata.event.type = Type.POSITION
         message.metadata.event.action = Action.FX_TIMEOUT_RESERVED
         // Key position timeouts with payer account id
@@ -226,7 +238,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
       await span.finish(fspiopError.message, state)
-      throw fspiopError
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: '_processFxTimedOutTransfers' })
     } finally {
       if (!span.isFinished) {
         await span.finish()
@@ -281,7 +293,7 @@ const timeout = async () => {
     }
   } catch (err) {
     logger.error('error in timeout:', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'timeoutHandler' })
   } finally {
     running = false
   }
@@ -337,7 +349,7 @@ const registerTimeoutHandler = async () => {
     return true
   } catch (err) {
     logger.error('error in registerTimeoutHandler:', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerTimeoutHandler' })
   }
 }
 
@@ -357,7 +369,7 @@ const registerAllHandlers = async () => {
     return true
   } catch (err) {
     logger.error('error in registerAllHandlers:', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
 }
 

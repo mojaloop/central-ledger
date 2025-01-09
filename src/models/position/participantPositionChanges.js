@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Vijaya Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
@@ -28,8 +28,8 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getReservedPositionChangesByCommitRequestId = async (commitRequestId) => {
   try {
@@ -43,8 +43,7 @@ const getReservedPositionChangesByCommitRequestId = async (commitRequestId) => {
       )
     return participantPositionChanges
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -60,8 +59,7 @@ const getReservedPositionChangesByTransferId = async (transferId) => {
       )
     return participantPositionChanges
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

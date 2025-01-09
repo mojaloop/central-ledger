@@ -33,11 +33,11 @@
 
  ******/
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Db = require('../../lib/db')
 const { logger } = require('../../shared/logger')
 const { TABLE_NAMES } = require('../../shared/constants')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const histName = 'model_fx_transfer'
 
@@ -55,7 +55,7 @@ const getOneByCommitRequestId = async ({ commitRequestId, table, queryName }) =>
     return result
   } catch (err) {
     histTimerEnd({ success: false, queryName })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -73,7 +73,7 @@ const saveCommitRequestIdAndHash = async ({ commitRequestId, hash, table, queryN
     return result
   } catch (err) {
     histTimerEnd({ success: false, queryName })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

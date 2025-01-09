@@ -26,7 +26,6 @@ Test('setup', setupTest => {
   // let ObjStoreStubThrows
   let MigratorStub
   let RegisterHandlersStub
-  let requestLoggerStub
   let PluginsStub
   let HapiStub
   let UrlParserStub
@@ -58,11 +57,6 @@ Test('setup', setupTest => {
 
     UrlParserStub = {
       idFromTransferUri: sandbox.stub()
-    }
-
-    requestLoggerStub = {
-      logRequest: sandbox.stub().resolves(),
-      logResponse: sandbox.stub().resolves()
     }
 
     DbStub = {
@@ -147,7 +141,6 @@ Test('setup', setupTest => {
       '../lib/cache': CacheStub,
       '@mojaloop/object-store-lib': ObjStoreStub,
       '../lib/migrator': MigratorStub,
-      '../lib/requestLogger': requestLoggerStub,
       './plugins': PluginsStub,
       '../lib/urlParser': UrlParserStub,
       '@hapi/hapi': HapiStub,
@@ -214,7 +207,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStubThrowError,
@@ -267,7 +259,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
@@ -384,7 +375,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
@@ -418,7 +408,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
@@ -453,7 +442,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
@@ -490,7 +478,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
@@ -740,7 +727,6 @@ Test('setup', setupTest => {
         '../lib/cache': CacheStub,
         '@mojaloop/object-store-lib': ObjStoreStub,
         '../lib/migrator': MigratorStub,
-        '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,

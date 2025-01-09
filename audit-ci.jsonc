@@ -18,6 +18,9 @@
     "GHSA-cm22-4g7w-348p", // https://github.com/advisories/GHSA-cm22-4g7w-348p
     "GHSA-m6fv-jmcg-4jfg", // https://github.com/advisories/GHSA-m6fv-jmcg-4jfg
     "GHSA-qw6h-vgh9-j6wx", // https://github.com/advisories/GHSA-qw6h-vgh9-j6wx
-    "GHSA-3xgq-45jj-v275"  // High vulnerability https://github.com/advisories/GHSA-3xgq-45jj-v275 ignoring for now since devDependency
+    "GHSA-3xgq-45jj-v275", // https://github.com/advisories/GHSA-3xgq-45jj-v275
+    "GHSA-m7xq-9374-9rvx", // https://github.com/advisories/GHSA-m7xq-9374-9rvx
+    "GHSA-rhx6-c78j-4q9w", // https://github.com/advisories/GHSA-rhx6-c78j-4q9w
+    "GHSA-mwcw-c2x4-8c55"  // https://github.com/advisories/GHSA-mwcw-c2x4-8c55
   ]
 }

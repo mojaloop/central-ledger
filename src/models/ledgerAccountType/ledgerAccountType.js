@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * ModusBox
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
@@ -32,7 +32,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 /* istanbul ignore next */
 exports.getLedgerAccountByName = async (name, trx = null) => {
@@ -46,7 +46,7 @@ exports.getLedgerAccountByName = async (name, trx = null) => {
           .transacting(trx)
         return ledgerAccountType.length > 0 ? ledgerAccountType[0] : null
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -55,7 +55,7 @@ exports.getLedgerAccountByName = async (name, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -71,7 +71,7 @@ exports.getLedgerAccountsByName = async (names, trx = null) => {
           .transacting(trx)
         return ledgerAccountTypes
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -80,7 +80,7 @@ exports.getLedgerAccountsByName = async (names, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -100,7 +100,7 @@ exports.bulkInsert = async (records, trx = null) => {
           .transacting(trx)
         return createdIds.map(record => record.ledgerAccountTypeId)
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -109,7 +109,7 @@ exports.bulkInsert = async (records, trx = null) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -132,7 +132,7 @@ exports.create = async (name, description, isActive, isSettleable, trx = null) =
           .transacting(trx)
         return createdId[0].ledgerAccountTypeId
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }
     if (trx) {
@@ -141,7 +141,7 @@ exports.create = async (name, description, isActive, isSettleable, trx = null) =
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -149,6 +149,6 @@ exports.getAll = async () => {
   try {
     return await Db.from('ledgerAccountType').find({ })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }

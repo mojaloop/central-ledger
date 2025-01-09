@@ -18,10 +18,12 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
 
- * Vijay Kumar Guthi <vijaya.guthi@infitx.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * Infitx
+ - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
  --------------
  ******/
 
