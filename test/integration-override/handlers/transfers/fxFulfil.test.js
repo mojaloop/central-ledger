@@ -26,7 +26,7 @@
  **********/
 
 const Test = require('tape')
-const { Db } = require('@mojaloop/database-lib')
+const Db = require('../../../../src/lib/db')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { Producer } = require('@mojaloop/central-services-stream').Kafka
 

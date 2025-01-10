@@ -34,7 +34,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Config = require('#src/lib/config')
 const ProxyCache = require('#src/lib/proxyCache')
 const Time = require('@mojaloop/central-services-shared').Util.Time
-const Db = require('@mojaloop/database-lib').Db
+const Db = require('../../../../src/lib/db')
 const Cache = require('#src/lib/cache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
@@ -817,16 +817,16 @@ Test('Handlers test', async handlersTest => {
       test.ok(payeeAbortNotificationEvent, 'Payee Abort notification sent')
 
       // grab kafka message
-      const payerAbortNotificationPayload = getMessagePayloadOrThrow(payeeAbortNotificationEvent)
+      const payeeAbortNotificationPayload = getMessagePayloadOrThrow(payeeAbortNotificationEvent)
 
       test.equal(
-        payerAbortNotificationPayload.transferState,
+        payeeAbortNotificationPayload.transferState,
         expectedAbortNotificationPayload.transferState,
         'Abort notification should be sent with the correct transferState'
       )
 
       test.equal(
-        payerAbortNotificationPayload.completedTimestamp,
+        payeeAbortNotificationPayload.completedTimestamp,
         expectedAbortNotificationPayload.completedTimestamp,
         'Abort notification should be sent with the correct completedTimestamp'
       )

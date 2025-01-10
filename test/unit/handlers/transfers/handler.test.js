@@ -297,6 +297,7 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(Comparators)
     sandbox.stub(Validator)
     sandbox.stub(TransferService)
+    TransferService.handlePayeeResponse.returns(Promise.resolve({}))
     sandbox.stub(Cyril)
     Cyril.processFulfilMessage.returns({
       isFx: false
