@@ -48,7 +48,6 @@ const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
 const TransferService = require('#src/domain/transfer/index')
 const ParticipantService = require('#src/domain/participant/index')
 const TransferExtensionModel = require('#src/models/transfer/transferExtension')
-const TransferFulfillmentModel = require('#src/models/transfer/transferFulfilment')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const {
@@ -786,13 +785,12 @@ Test('Handlers test', async handlersTest => {
       }
 
       const updatedTransfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-      const fulfillment = await TransferFulfillmentModel.getByTransferId(td.messageProtocolPrepare.content.payload.transferId)
       test.equal(updatedTransfer?.transferState, 'ABORTED_ERROR', 'Transfer is in ABORTED_ERROR state')
 
       let expectedAbortNotificationPayload = {}
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
-          completedTimestamp: (new Date(Date.parse(fulfillment.completedTimestamp))).toISOString(),
+          completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
           transferState: 'ABORTED'
         }
       }

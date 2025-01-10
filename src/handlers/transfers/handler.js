@@ -415,7 +415,11 @@ const processFulfilMessage = async (message, functionality, span) => {
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
     const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
-    await TransferService.handlePayeeResponse(transferId, payload, TransferEventAction.ABORT_VALIDATION, apiFSPIOPError)
+    const updatedTransfer = await TransferService.handlePayeeResponse(transferId, payload, TransferEventAction.ABORT_VALIDATION, apiFSPIOPError)
+    params.message.value.payload = {
+      ...params.message.value.payload,
+      completedTimestamp: updatedTransfer.completedTimestamp
+    }
     const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT_VALIDATION }
     /**
      * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
