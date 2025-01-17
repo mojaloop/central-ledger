@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "18.1.0-iso.2",
+  "version": "18.0.1",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -104,7 +104,7 @@
     "base64url": "3.0.1",
     "blipp": "4.0.2",
     "commander": "13.0.0",
-    "cron": "3.4.0",
+    "cron": "3.5.0",
     "decimal.js": "10.4.3",
     "docdash": "2.0.2",
     "event-stream": "4.0.1",
@@ -114,7 +114,6 @@
     "hapi-auth-bearer-token": "8.0.0",
     "hapi-swagger": "17.3.2",
     "ilp-packet": "2.2.0",
-    "joi": "17.13.3",
     "knex": "3.1.0",
     "lodash": "4.17.21",
     "moment": "2.30.1",
@@ -135,7 +134,7 @@
     "jsonpath": "1.1.1",
     "mock-knex": "0.4.13",
     "nodemon": "3.1.9",
-    "npm-check-updates": "17.1.13",
+    "npm-check-updates": "17.1.14",
     "nyc": "17.1.0",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",
@@ -165,7 +164,10 @@
       "@hapi/hoek": "9.0.3"
     },
     "jsonwebtoken": "9.0.0",
-    "jsonpointer": "5.0.0"
+    "jsonpointer": "5.0.0",
+    "trim": "0.0.3",
+    "cross-spawn": "7.0.6",
+    "yargs-parser": "21.1.1"
   },
   "config": {
     "knex": "--knexfile ./config/knexfile.js",
