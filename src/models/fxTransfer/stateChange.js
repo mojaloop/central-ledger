@@ -33,11 +33,10 @@
 
  ******/
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const TransferError = require('../../models/transfer/transferError')
 const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
-const { logger } = require('../../shared/logger')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const table = TABLE_NAMES.fxTransferStateChange
 
@@ -54,9 +53,9 @@ const getByCommitRequestId = async (id) => {
 const logTransferError = async (id, errorCode, errorDescription) => {
   try {
     const stateChange = await getByCommitRequestId(id)
-    return TransferError.insert(id, stateChange?.fxTransferStateChangeId, errorCode, errorDescription)
+    return TransferError.insert(id, stateChange.fxTransferStateChangeId, errorCode, errorDescription)
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -69,8 +68,7 @@ const getLatest = async () => {
         .first()
     })
   } catch (err) {
-    logger.error('getLatest::fxTransferStateChange', err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

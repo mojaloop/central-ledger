@@ -140,7 +140,8 @@ const processPositionPrepareBin = async (
           headers,
           fspiopError,
           { id: transfer.transferId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: false }
@@ -182,7 +183,8 @@ const processPositionPrepareBin = async (
           headers,
           fspiopError,
           { id: transfer.transferId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: false }
@@ -224,7 +226,8 @@ const processPositionPrepareBin = async (
           headers,
           fspiopError,
           { id: transfer.transferId },
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: false }
@@ -273,13 +276,14 @@ const processPositionPrepareBin = async (
           headers,
           transfer,
           {},
-          'application/json'
+          'application/json',
+          binItem.message.value.content.context
         )
 
         binItem.result = { success: true }
       }
 
-      resultMessages.push({ binItem, message: resultMessage })
+      resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
 
       if (changePositions) {
         Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)

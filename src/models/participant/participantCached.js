@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Roman Pietrzak <roman.pietrzak@modusbox.com>
  --------------
@@ -27,10 +27,10 @@
 
 'use strict'
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const ParticipantModel = require('../../models/participant/participant')
 const Metrics = require('@mojaloop/central-services-metrics')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 let cacheClient
 let participantsAllCacheKey
@@ -112,7 +112,7 @@ exports.getById = async (id) => {
     const cachedParticipants = await getParticipantsCached()
     return cachedParticipants.indexById[id]
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -121,7 +121,7 @@ exports.getByName = async (name) => {
     const cachedParticipants = await getParticipantsCached()
     return cachedParticipants.indexByName[name]
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -130,7 +130,7 @@ exports.getAll = async () => {
     const cachedParticipants = await getParticipantsCached()
     return cachedParticipants.allParticipants
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -141,7 +141,7 @@ const withInvalidate = (theFunctionName) => {
       await exports.invalidateParticipantsCache()
       return result
     } catch (err) {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      rethrow.rethrowCachedDatabaseError(err)
     }
   }
 }

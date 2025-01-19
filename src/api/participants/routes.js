@@ -19,8 +19,8 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
@@ -311,7 +311,7 @@ module.exports = [
       description: 'Record Funds In or Out of participant account',
       validate: {
         payload: Joi.object({
-          transferId: Joi.string().pattern(/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]}$|^[0-9A-HJKMNP-TV-Z]{26}$6})$/).required(),
+          transferId: Joi.string().guid().required(),
           externalReference: Joi.string().required(),
           action: Joi.string().required().valid('recordFundsIn', 'recordFundsOutPrepareReserve').label('action is missing or not supported'),
           reason: Joi.string().required(),
@@ -349,7 +349,7 @@ module.exports = [
         params: Joi.object({
           name: nameValidator,
           id: Joi.number().integer().positive(),
-          transferId: Joi.string().pattern(/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]}$|^[0-9A-HJKMNP-TV-Z]{26}$6})$/).required()
+          transferId: Joi.string().guid().required()
         })
       }
     }

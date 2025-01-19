@@ -19,8 +19,8 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * INFITX
  - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
@@ -31,9 +31,9 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
 const TransferExtensionModel = require('../transfer/transferExtension')
 const { Enum } = require('@mojaloop/central-services-shared')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const startDbTransaction = async () => {
   const knex = await Db.getKnex()
@@ -58,8 +58,7 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
     }
     return latestTransferStateChanges
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -80,8 +79,7 @@ const getLatestFxTransferStateChangesByCommitRequestIdList = async (trx, commitR
     }
     return latestFxTransferStateChanges
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -150,8 +148,7 @@ const getTransferInfoList = async (trx, transferIds, transferParticipantRoleType
     }
     return info
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -204,8 +201,7 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
       }
       return transfers
     } catch (err) {
-      Logger.isErrorEnabled && Logger.error(err)
-      throw err
+      rethrow.rethrowDatabaseError(err)
     }
   }
   return {}
@@ -233,8 +229,7 @@ const getFxTransferInfoList = async (trx, commitRequestId, transferParticipantRo
     }
     return info
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -264,8 +259,7 @@ const getReservedPositionChangesByCommitRequestIds = async (trx, commitRequestId
     }
     return info
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

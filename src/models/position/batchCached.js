@@ -19,8 +19,8 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * INFITX
  - Kevin Leyow <kevin.leyow@infitx.com>
@@ -30,10 +30,10 @@
 
 'use strict'
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const Metrics = require('@mojaloop/central-services-metrics')
 const BatchPositionModel = require('./batch')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 let cacheClient
 let participantCurrencyAllCacheKey
@@ -116,7 +116,7 @@ exports.getParticipantCurrencyByIds = async (trx, participantCurrencyIds) => {
     }
     return participantCurrencies
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }
 
@@ -129,6 +129,6 @@ exports.getParticipantCurrencyByParticipantIds = async (trx, participantIds) => 
     }
     return participantCurrencies
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowCachedDatabaseError(err)
   }
 }

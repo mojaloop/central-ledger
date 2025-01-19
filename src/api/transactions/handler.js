@@ -18,8 +18,9 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * ModusBox
  - Lazola Lucas <lazola.lucas@modusbox.com>
@@ -27,9 +28,10 @@
  ******/
 'use strict'
 
-const Transaction = require('../../domain/transactions')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-logger')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
+
+const Transaction = require('../../domain/transactions')
 
 const getById = async function (request) {
   try {
@@ -39,8 +41,7 @@ const getById = async function (request) {
     }
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND, 'The requested resource could not be found.')
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'transactionsGetById' })
   }
 }
 

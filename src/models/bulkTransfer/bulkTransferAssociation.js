@@ -18,8 +18,9 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
@@ -29,12 +30,13 @@
 const Db = require('../../lib/db')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const LibUtil = require('@mojaloop/central-services-shared').Util
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 exports.create = async (bulkTransferAssociation) => {
   try {
     return Db.from('bulkTransferAssociation').insert(bulkTransferAssociation)
   } catch (err) {
-    throw new Error(err.message)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -48,7 +50,7 @@ exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => 
     })
     return Db.from('bulkTransferAssociation').update({ transferId, bulkTransferId }, record)
   } catch (err) {
-    throw new Error(err.message)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -58,7 +60,7 @@ exports.exists = async (bulkTransferId, bulkProcessingStateId) => {
       bulkTransferId, bulkProcessingStateId
     })
   } catch (err) {
-    throw new Error(err.message)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -70,6 +72,6 @@ exports.count = async (bulkTransferId, bulkProcessingStateId) => {
       .first()
     return result.count
   } catch (err) {
-    throw new Error(err.message)
+    rethrow.rethrowDatabaseError(err)
   }
 }

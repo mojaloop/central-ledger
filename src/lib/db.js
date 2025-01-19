@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
 
@@ -27,4 +27,5 @@
  ******/
 'use strict'
 
-module.exports = require('@mojaloop/database-lib').Db
+const Database = require('@mojaloop/database-lib/src/database')
+module.exports = new Database()

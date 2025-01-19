@@ -64,3 +64,5 @@ devspace*
 *IGNORE*
 *ignore*
 !.npmignore
+
+.rush

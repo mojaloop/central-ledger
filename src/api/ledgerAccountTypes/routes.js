@@ -19,8 +19,8 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * ModusBox
  - Claudio Viola <claudio.viola@modusbox.com>
@@ -29,7 +29,7 @@
 'use strict'
 
 const Handler = require('./handler')
-const Joi = require('@hapi/joi')
+const Joi = require('joi')
 const tags = ['api', 'ledgerAccountTypes']
 
 module.exports = [

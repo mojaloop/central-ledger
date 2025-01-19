@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
@@ -48,6 +48,7 @@ const Config = require('../../lib/config')
 const ParticipantFacade = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
 const TransferExtensionModel = require('./transferExtension')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
@@ -129,7 +130,7 @@ const getById = async (id) => {
     })
   } catch (err) {
     logger.warn('error in transfer.getById', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -182,7 +183,7 @@ const getByIdLight = async (id) => {
     })
   } catch (err) {
     logger.warn('error in transfer.getByIdLight', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -237,7 +238,7 @@ const getAll = async () => {
     })
   } catch (err) {
     logger.warn('error in transfer.getAll', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -264,7 +265,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
     })
   } catch (err) {
     logger.warn('error in getTransferInfoToChangePosition', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -406,7 +407,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
       } catch (err) {
         logger.error('savePayeeTransferResponse::failure', err)
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-        throw err
+        rethrow.rethrowDatabaseError(err)
       }
     })
     histTimerSavePayeeTranferResponsedEnd({ success: true, queryName: 'facade_savePayeeTransferResponse' })
@@ -414,7 +415,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   } catch (err) {
     logger.warn('error in savePayeeTransferResponse', err)
     histTimerSavePayeeTranferResponsedEnd({ success: false, queryName: 'facade_savePayeeTransferResponse' })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -543,7 +544,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     const knex = await Db.getKnex()
     if (hasPassedValidation) {
-      const histTimerSaveTranferTransactionValidationPassedEnd = Metrics.getHistogram(
+      const histTimerSaveTransferTransactionValidationPassedEnd = Metrics.getHistogram(
         'model_transfer',
         'facade_saveTransferPrepared_transaction - Metrics for transfer model',
         ['success', 'queryName']
@@ -568,14 +569,14 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           }
           await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
           await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-          histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
+          histTimerSaveTransferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         } catch (err) {
-          histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-          throw err
+          histTimerSaveTransferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
+          rethrow.rethrowDatabaseError(err)
         }
       })
     } else {
-      const histTimerSaveTranferNoValidationEnd = Metrics.getHistogram(
+      const histTimerSaveTransferNoValidationEnd = Metrics.getHistogram(
         'model_transfer',
         'facade_saveTransferPrepared_no_validation - Metrics for transfer model',
         ['success', 'queryName']
@@ -585,13 +586,13 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
         logger.warn('Payer transferParticipant insert error', err)
-        histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
+        histTimerSaveTransferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferParticipant').insert(payeeTransferParticipantRecord)
       } catch (err) {
         logger.warn('Payee transferParticipant insert error:', err)
-        histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
+        histTimerSaveTransferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       payerTransferParticipantRecord.name = payload.payerFsp
       payeeTransferParticipantRecord.name = payload.payeeFsp
@@ -608,28 +609,28 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           await knex.batchInsert('transferExtension', transferExtensionsRecordList)
         } catch (err) {
           logger.warn('batchInsert transferExtension error:', err)
-          histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
+          histTimerSaveTransferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
         }
       }
       try {
         await knex('ilpPacket').insert(ilpPacketRecord)
       } catch (err) {
         logger.warn('ilpPacket insert error:', err)
-        histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
+        histTimerSaveTransferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferStateChange').insert(transferStateChangeRecord)
-        histTimerSaveTranferNoValidationEnd({ success: true, queryName: 'facade_saveTransferPrepared_no_validation' })
+        histTimerSaveTransferNoValidationEnd({ success: true, queryName: 'facade_saveTransferPrepared_no_validation' })
       } catch (err) {
         logger.warn('transferStateChange insert error:', err)
-        histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
+        histTimerSaveTransferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
     }
     histTimerSaveTransferPreparedEnd({ success: true, queryName: 'transfer_model_facade_saveTransferPrepared' })
   } catch (err) {
     logger.warn('error in saveTransferPrepared', err)
     histTimerSaveTransferPreparedEnd({ success: false, queryName: 'transfer_model_facade_saveTransferPrepared' })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -670,7 +671,7 @@ const getTransferStateByTransferId = async (id) => {
         .first()
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1094,10 +1095,10 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
           await knex('segment').transacting(trx).where({ segmentId: fxSegmentId }).update({ value: fxIntervalMax })
         }
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }).catch((err) => {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      rethrow.rethrowDatabaseError(err)
     })
 
     const transferTimeoutList = await _getTransferTimeoutList(knex, transactionTimestamp)
@@ -1108,7 +1109,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
       fxTransferTimeoutList
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1237,7 +1238,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       return await knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1252,7 +1253,7 @@ const updatePrepareReservedForwarded = async function (transferId) {
         createdDate: Time.getUTCString(new Date())
       })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1368,7 +1369,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1402,7 +1403,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1453,7 +1454,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     }
     return 0
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1503,7 +1504,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     }
     return 0
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1522,7 +1523,7 @@ const getTransferParticipant = async (participantName, transferId) => {
         )
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -1536,7 +1537,7 @@ const recordFundsIn = async (payload, transactionTimestamp, enums) => {
       await TransferFacade.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
     } catch (err) {
       logger.error('error in recordFundsIn:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      rethrow.rethrowDatabaseError(err)
     }
   })
 }

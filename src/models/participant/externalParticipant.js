@@ -19,17 +19,17 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Eugen Klymniuk <eugen.klymniuk@infitx.com>
  --------------
  **********/
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Db = require('../../lib/db')
 const { logger } = require('../../shared/logger')
 const { TABLE_NAMES, DB_ERROR_CODES } = require('../../shared/constants')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const TABLE = TABLE_NAMES.externalParticipant
 const ID_FIELD = 'externalParticipantId'
@@ -47,7 +47,7 @@ const create = async ({ name, proxyId }) => {
       return null
     }
     log.error('error in create', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -58,7 +58,7 @@ const getAll = async (options = {}) => {
     return result
   } catch (err) /* istanbul ignore next */ {
     log.error('error in getAll:', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -69,7 +69,7 @@ const getOneBy = async (criteria, options) => {
     return result
   } catch (err) /* istanbul ignore next */ {
     log.error('error in getOneBy:', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 const getById = async (id, options = {}) => getOneBy({ [ID_FIELD]: id }, options)
@@ -82,7 +82,7 @@ const destroyBy = async (criteria) => {
     return result
   } catch (err) /* istanbul ignore next */ {
     log.error('error in destroyBy', err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 const destroyById = async (id) => destroyBy({ [ID_FIELD]: id })

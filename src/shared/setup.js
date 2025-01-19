@@ -20,8 +20,8 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
@@ -34,27 +34,25 @@
 'use strict'
 
 const Hapi = require('@hapi/hapi')
-const Migrator = require('../lib/migrator')
-const Db = require('../lib/db')
-const ProxyCache = require('../lib/proxyCache')
+const MongoUriBuilder = require('mongo-uri-builder')
 const ObjStoreDb = require('@mojaloop/object-store-lib').Db
-const Plugins = require('./plugins')
-const Config = require('../lib/config')
-const RequestLogger = require('../lib/requestLogger')
-const { randomUUID } = require('crypto')
-const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-logger')
-const RegisterHandlers = require('../handlers/register')
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+
+const Migrator = require('../lib/migrator')
+const Config = require('../lib/config')
+const Db = require('../lib/db')
+const ProxyCache = require('../lib/proxyCache')
 const Cache = require('../lib/cache')
 const EnumCached = require('../lib/enumCached')
+const RegisterHandlers = require('../handlers/register')
 const ParticipantCached = require('../models/participant/participantCached')
 const ParticipantCurrencyCached = require('../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
 const externalParticipantCached = require('../models/participant/externalParticipantCached')
 const BatchPositionModelCached = require('../models/position/batchCached')
-const MongoUriBuilder = require('mongo-uri-builder')
+const Plugins = require('./plugins')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
@@ -116,16 +114,7 @@ const createServer = (port, modules) => {
         }
       }
     })
-    server.ext('onPostAuth', function (request, h) {
-      const transferId = UrlParser.idFromTransferUri(`${Config.HOSTNAME}${request.path}`)
-      request.headers.traceid = request.headers.traceid || transferId || randomUUID()
-      RequestLogger.logRequest(request)
-      return h.continue
-    })
-    server.ext('onPreResponse', function (request, h) {
-      RequestLogger.logResponse(request)
-      return h.continue
-    })
+
     await Plugins.registerPlugins(server)
     await server.register(modules)
     await server.start()

@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
@@ -31,14 +31,14 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 exports.getAll = async () => {
   try {
     const result = await Db.from('participant').find({}, { order: 'name asc' })
     return result
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -51,7 +51,7 @@ exports.create = async (participant) => {
     })
     return result
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -60,7 +60,7 @@ exports.update = async (participant, isActive) => {
     const result = await Db.from('participant').update({ participantId: participant.participantId }, { isActive })
     return result
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -69,7 +69,7 @@ exports.destroyByName = async (name) => {
     const result = await Db.from('participant').destroy({ name })
     return result
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -78,6 +78,6 @@ exports.destroyParticipantEndpointByParticipantId = async (participantId) => {
     const result = Db.from('participantEndpoint').destroy({ participantId })
     return result
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }

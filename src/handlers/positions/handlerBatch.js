@@ -19,8 +19,8 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * INFITX
  - Vijay Kumar Guthi <vijaya.guthi@infitx.com>
@@ -33,7 +33,6 @@
  * @module src/handlers/positions
  */
 
-const Logger = require('@mojaloop/central-services-logger')
 const EventSdk = require('@mojaloop/event-sdk')
 const BinProcessor = require('../../domain/position/binProcessor')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
@@ -48,7 +47,9 @@ const { randomUUID } = require('crypto')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const BatchPositionModel = require('../../models/position/batch')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
+
 const consumerCommit = true
+const rethrow = Utility.rethrow
 
 /**
  * @function positions
@@ -71,7 +72,7 @@ const positions = async (error, messages) => {
 
   if (error) {
     histTimerEnd({ success: false })
-    throw ErrorHandler.Factory.reformatFSPIOPError(error)
+    rethrow.rethrowAndCountFspiopError(error, { operation: 'positionsHandlerBatch' })
   }
   let consumedMessages = []
 
@@ -153,9 +154,9 @@ const positions = async (error, messages) => {
         // Produce notification message and audit message
         // NOTE: Not sure why we're checking the binItem for the action vs the message
         //       that is being created.
-        //       Handled FX_NOTIFY differently so as not to break existing functionality.
+        //       Handled FX_NOTIFY and FX_ABORT differently so as not to break existing functionality.
         let action
-        if (item?.message.metadata.event.action !== Enum.Events.Event.Action.FX_NOTIFY) {
+        if (![Enum.Events.Event.Action.FX_NOTIFY, Enum.Events.Event.Action.FX_ABORT].includes(item?.message.metadata.event.action)) {
           action = item.binItem.message?.value.metadata.event.action
         } else {
           action = item.message.metadata.event.action
@@ -237,8 +238,7 @@ const registerPositionHandler = async () => {
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerPositionHandler' })
   }
 }
 
@@ -254,8 +254,7 @@ const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
 }
 

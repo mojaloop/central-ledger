@@ -108,7 +108,7 @@ const processPositionTimeoutReservedBin = async (
         participantPositionChanges.push(participantPositionChange)
         transferStateChanges.push(transferStateChange)
         accumulatedTransferStatesCopy[transferId] = transferStateId
-        resultMessages.push({ binItem, message: resultMessage })
+        resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
       }
     }
   }
@@ -159,7 +159,8 @@ const _constructTimeoutReservedResultMessage = (binItem, transferId, payeeFsp, p
     binItem.message.value.content.headers, // Headers don't really matter here. ml-api-adapter will ignore them and create their own.
     fspiopError,
     { id: transferId },
-    'application/json'
+    'application/json',
+    binItem.message.value.content.context
   )
 
   return resultMessage

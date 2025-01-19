@@ -54,6 +54,7 @@ Test('Cyril', cyrilTest => {
   let sandbox
   let fxPayload
   let payload
+
   cyrilTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Logger, 'isDebugEnabled').value(true)
@@ -91,7 +92,7 @@ Test('Cyril', cyrilTest => {
 
     fxPayload = {
       commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
-      determiningTransferId: 'c05c3f31-33b5-4e33-8bfd-7c3a2685fb6c',
+      determiningTransferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
       condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
       expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)), // tomorrow
       initiatingFsp: 'fx_dfsp1',
@@ -1155,7 +1156,65 @@ Test('Cyril', cyrilTest => {
 
         const result = await Cyril.processAbortMessage(payload.transferId)
 
-        test.deepEqual(result, { positionChanges: [{ isFxTransferStateChange: true, commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4', notifyTo: 'fx_dfsp1', participantCurrencyId: 1, amount: -433.88 }, { isFxTransferStateChange: false, transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999', notifyTo: 'dfsp1', participantCurrencyId: 1, amount: -433.88 }] })
+        test.deepEqual(result, {
+          positionChanges: [
+            {
+              isFxTransferStateChange: true,
+              isOriginalId: false,
+              commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
+              notifyTo: 'fx_dfsp1',
+              participantCurrencyId: 1,
+              amount: -433.88
+            },
+            {
+              isFxTransferStateChange: false,
+              isOriginalId: true,
+              transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+              notifyTo: 'dfsp1',
+              participantCurrencyId: 1,
+              amount: -433.88
+            }
+          ],
+          transferStateChanges: []
+        })
+        test.pass('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    processAbortMessageTest.test('return transferStateChanges if no position changes but has commitRequestId', async (test) => {
+      try {
+        fxTransfer.getByDeterminingTransferId.returns(Promise.resolve([
+          { commitRequestId: fxPayload.commitRequestId }
+        ]))
+        // Mocks for _getPositionChnages
+        fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve({
+          initiatingFspName: fxPayload.initiatingFsp
+        }))
+        ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.returns(Promise.resolve([]))
+        TransferFacade.getById.returns(Promise.resolve({
+          payerFsp: payload.payerFsp,
+          payeeIsProxy: true
+        }))
+        ParticipantPositionChangesModel.getReservedPositionChangesByTransferId.returns(Promise.resolve([]))
+
+        const result = await Cyril.processAbortMessage(payload.transferId)
+
+        test.deepEqual(result, {
+          positionChanges: [],
+          transferStateChanges: [
+            {
+              isOriginalId: true,
+              notifyTo: 'dfsp1',
+              reason: null,
+              transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+              transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR
+            }
+          ]
+        })
         test.pass('Error not thrown')
         test.end()
       } catch (e) {
@@ -1196,22 +1255,25 @@ Test('Cyril', cyrilTest => {
           }
         ]))
 
-        const result = await Cyril.processFxAbortMessage(payload.transferId)
+        const result = await Cyril.processFxAbortMessage(fxPayload.commitRequestId)
 
         test.deepEqual(result, {
           positionChanges: [{
             isFxTransferStateChange: true,
-            commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
+            isOriginalId: true,
+            commitRequestId: fxPayload.commitRequestId,
             notifyTo: 'fx_dfsp1',
             participantCurrencyId: 1,
             amount: -433.88
           }, {
             isFxTransferStateChange: false,
-            transferId: 'c05c3f31-33b5-4e33-8bfd-7c3a2685fb6c',
+            isOriginalId: false,
+            transferId: payload.transferId,
             notifyTo: 'dfsp1',
             participantCurrencyId: 1,
             amount: -433.88
-          }]
+          }],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()

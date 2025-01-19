@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Eugen Klymniuk <eugen.klymniuk@infitx.com>
  --------------
@@ -50,6 +50,7 @@ const { FSPIOPErrorCodes } = ErrorHandler.Enums
 const { createFSPIOPError, reformatFSPIOPError } = ErrorHandler.Factory
 const { fspId } = Config.INSTRUMENTATION_METRICS_LABELS
 
+const { rethrow } = Util
 const consumerCommit = true
 const fromSwitch = true
 const proxyEnabled = Config.PROXY_CACHE_CONFIG.enabled
@@ -157,14 +158,7 @@ const calculateProxyObligation = async ({ payload, isFx, params, functionality, 
     const [initiatingFsp, counterPartyFsp] = isFx ? [payload.initiatingFsp, payload.counterPartyFsp] : [payload.payerFsp, payload.payeeFsp]
 
     // We need to double check the following validation logic incase of payee side currency conversion
-    const payeeFspLookupOptions = isFx
-      ? null
-      : {
-          validateCurrencyAccounts: true,
-          accounts: [
-            { currency: payload.amount.currency, accountType: Enum.Accounts.LedgerAccountType.POSITION }
-          ]
-        }
+    const payeeFspLookupOptions = isFx ? null : { validateCurrencyAccounts: true, accounts: [{ currency: payload.amount.currency, accountType: Enum.Accounts.LedgerAccountType.POSITION }] }
 
     ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
       ProxyCache.getFSPProxy(initiatingFsp),
@@ -216,7 +210,7 @@ const calculateProxyObligation = async ({ payload, isFx, params, functionality, 
         fromSwitch,
         hubName: Config.HUB_NAME
       })
-      throw fspiopError
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'calculateProxyObligation' })
     }
   }
 
@@ -267,7 +261,7 @@ const processDuplication = async ({
       fromSwitch,
       hubName: Config.HUB_NAME
     })
-    throw error
+    rethrow.rethrowAndCountFspiopError(error, { operation: 'processDuplication' })
   }
   logger.info(Util.breadcrumb(location, 'handleResend'))
 
@@ -293,7 +287,7 @@ const processDuplication = async ({
       logger.info(Util.breadcrumb(location, `validationError1--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      throw fspiopError
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processDuplication' })
     }
   } else {
     logger.info(Util.breadcrumb(location, 'inProgress'))
@@ -301,7 +295,7 @@ const processDuplication = async ({
       logger.info(Util.breadcrumb(location, `validationError2--${actionLetter}4`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      throw fspiopError
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processDuplication' })
     } else { // action === TransferEventAction.PREPARE
       logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
@@ -345,7 +339,7 @@ const savePreparedRequest = async ({
       fromSwitch,
       hubName: Config.HUB_NAME
     })
-    throw fspiopError
+    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'savePreparedRequest' })
   }
 }
 
@@ -354,7 +348,7 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
     .getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation)
 
   let messageKey
-  // On a proxied transfer prepare if there is a corresponding fx transfer `getPositionParticipant`
+  // On a proxied transfer prepare, if there is a corresponding fx transfer, `getPositionParticipant`
   // should return the fxp's proxy as the participantName since the fxp proxy would be saved as the counterPartyFsp
   // in the prior fx transfer prepare.
   // Following interscheme rules, if the debtor(fxTransfer FXP) and the creditor(transfer payee) are
@@ -461,7 +455,7 @@ const prepare = async (error, messages) => {
   ).startTimer()
   if (error) {
     histTimerEnd({ success: false, fspId })
-    throw reformatFSPIOPError(error)
+    rethrow.rethrowAndCountFspiopError(error, { operation: 'transferPrepare' })
   }
 
   const {
@@ -545,7 +539,7 @@ const prepare = async (error, messages) => {
         fromSwitch,
         hubName: Config.HUB_NAME
       })
-      throw fspiopError
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'transferPrepare' })
     }
 
     logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))

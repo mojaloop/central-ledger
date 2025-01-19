@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
@@ -30,11 +30,11 @@
  * @module src/models/transfer/facade/
  */
 
-const Logger = require('@mojaloop/central-services-logger')
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Time = require('@mojaloop/central-services-shared').Util.Time
 // const BulkTransferAssociation = require('./BulkTransferAssociation')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const saveBulkTransferReceived = async (payload, participants, stateReason = null, isValid = true) => {
   try {
@@ -69,8 +69,7 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
       return state
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -108,8 +107,7 @@ const saveBulkTransferProcessing = async (payload, stateReason = null, isValid =
       return state
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -152,8 +150,7 @@ const saveBulkTransferErrorProcessing = async (payload, stateReason = null, isVa
       return state
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -189,8 +186,7 @@ const saveBulkTransferAborting = async (payload, stateReason = null) => {
       return state
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

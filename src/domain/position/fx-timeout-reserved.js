@@ -108,7 +108,7 @@ const processPositionFxTimeoutReservedBin = async (
         participantPositionChanges.push(participantPositionChange)
         fxTransferStateChanges.push(fxTransferStateChange)
         accumulatedFxTransferStatesCopy[commitRequestId] = transferStateId
-        resultMessages.push({ binItem, message: resultMessage })
+        resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
       }
     }
   }
@@ -159,7 +159,8 @@ const _constructFxTimeoutReservedResultMessage = (binItem, commitRequestId, coun
     binItem.message.value.content.headers, // Headers don't really matter here. ml-api-adapter will ignore them and create their own.
     fspiopError,
     { id: commitRequestId },
-    'application/json'
+    'application/json',
+    binItem.message.value.content.context
   )
 
   return resultMessage

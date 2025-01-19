@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
@@ -28,7 +28,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
@@ -40,7 +40,7 @@ exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive
       createdBy: 'unknown'
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -48,7 +48,7 @@ exports.getAll = async () => {
   try {
     return await Db.from('participantCurrency').find({}, { order: 'participantCurrencyId asc' })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -56,7 +56,7 @@ exports.getById = async (id) => {
   try {
     return await Db.from('participantCurrency').findOne({ participantCurrencyId: id })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -64,7 +64,7 @@ exports.update = async (participantCurrencyId, isActive) => {
   try {
     return await Db.from('participantCurrency').update({ participantCurrencyId }, { isActive })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -76,7 +76,7 @@ exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
     }
     return await Db.from('participantCurrency').find(params)
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -84,7 +84,7 @@ exports.destroyByParticipantId = async (id) => {
   try {
     return await Db.from('participantCurrency').destroy({ participantId: id })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -93,6 +93,6 @@ exports.getByName = async (accountParams) => {
     const participantCurrency = await Db.from('participantCurrency').findOne(accountParams)
     return participantCurrency
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }

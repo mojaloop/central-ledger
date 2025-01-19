@@ -19,8 +19,8 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * ModusBox
  - Claudio Viola <claudio.viola@modusbox.com>
@@ -30,7 +30,7 @@
 
 const LedgerAccountTypesService = require('../../domain/ledgerAccountTypes')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-logger')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const getAll = async function () {
   return LedgerAccountTypesService.getAll()
@@ -46,8 +46,7 @@ async function create (request, h) {
       return h.response().code(201)
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'ledgerAccountTypesCreate' })
   }
 }
 

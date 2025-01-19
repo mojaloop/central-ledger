@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
@@ -42,6 +42,7 @@ const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -250,7 +251,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
       } catch (err) {
         Logger.isErrorEnabled && Logger.error(err)
         histTimerChangeParticipantPositionTransEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     })
     const preparedMessagesList = Array.from(transferIdList.map(transferId =>
@@ -263,7 +264,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     histTimerChangeParticipantPositionEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction' })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -305,14 +306,13 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
         await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
         histTimerChangeParticipantPositionTransactionEnd({ success: true, queryName: 'facade_changeParticipantPositionTransaction' })
       } catch (err) {
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        rethrow.rethrowDatabaseError(err)
       }
     }).catch((err) => {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      rethrow.rethrowDatabaseError(err)
     })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -350,7 +350,7 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
           'pc.currencyId')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -375,7 +375,7 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
         )
     })
   } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

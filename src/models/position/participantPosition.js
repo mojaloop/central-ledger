@@ -18,8 +18,8 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
@@ -28,14 +28,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 
 const insert = async (participantPosition) => {
   try {
     return await Db.from('participantPosition').insert(participantPosition)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -43,8 +42,7 @@ const update = async (participantPosition) => {
   try {
     return await Db.from('participantPosition').update({ participantCurrencyId: participantPosition.participantCurrencyId }, { value: participantPosition.value, reservedValue: participantPosition.reservedValue, changedDate: new Date() })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 
@@ -52,8 +50,7 @@ const getPositionByCurrencyId = async (participantCurrencyId) => {
   try {
     return await Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+    rethrow.rethrowDatabaseError(err)
   }
 }
 

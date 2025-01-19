@@ -35,6 +35,7 @@ const Config = require('../../../src/lib/config')
 const ProxyCache = require('#src/lib/proxyCache')
 const Routes = require('../../../src/api/routes')
 const Setup = require('../../../src/shared/setup')
+const MetricsPlugin = require('@mojaloop/central-services-metrics').plugin
 
 Test('Api index', indexTest => {
   let sandbox
@@ -70,7 +71,7 @@ Test('Api index', indexTest => {
       test.ok(Setup.initialize.calledWith({
         service: 'api',
         port: Config.PORT,
-        modules: [Routes],
+        modules: [Routes, MetricsPlugin],
         runMigrations: true,
         runHandlers: !Config.HANDLERS_DISABLED
       }))
