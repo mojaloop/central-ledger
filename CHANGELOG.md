@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.0.0](https://github.com/mojaloop/central-ledger/compare/v18.0.1...v19.0.0) (2025-01-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* add iso 20022 compatibility (#1142)
+
+### Features
+
+* add iso 20022 compatibility ([#1142](https://github.com/mojaloop/central-ledger/issues/1142)) ([04fccc0](https://github.com/mojaloop/central-ledger/commit/04fccc0d96e0caac7e1d8c6c23c650660dea1299)), closes [#988](https://github.com/mojaloop/central-ledger/issues/988) [#989](https://github.com/mojaloop/central-ledger/issues/989) [#986](https://github.com/mojaloop/central-ledger/issues/986) [mojaloop/#3689](https://github.com/mojaloop/project/issues/3689)
+
 ### [18.0.1](https://github.com/mojaloop/central-ledger/compare/v18.0.0...v18.0.1) (2025-01-10)
 
 
