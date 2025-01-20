@@ -526,8 +526,6 @@ const processFulfilMessage = async (message, functionality, span) => {
     // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
     if (action === TransferEventAction.RESERVE) {
       // Get the updated transfer now that completedTimestamp will be different
-      // TODO: should we just modify TransferService.handlePayeeResponse to
-      // return the completed timestamp? Or is it safer to go back to the DB here?
       const transferAborted = await TransferService.getById(transferId)
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
       const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
@@ -598,10 +596,6 @@ const processFulfilMessage = async (message, functionality, span) => {
       try { // handle only valid errorCodes provided by the payee
         fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(eInfo)
       } catch (err) {
-        /**
-         * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
-         * so that such requests are rejected right away, instead of aborting the transfer here.
-         */
         Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
