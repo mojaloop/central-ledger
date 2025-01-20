@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.0.2](https://github.com/mojaloop/central-ledger/compare/v19.0.1...v19.0.2) (2025-01-20)
+
+
+### Chore
+
+* address follow up iso comments ([#1145](https://github.com/mojaloop/central-ledger/issues/1145)) ([adcfc91](https://github.com/mojaloop/central-ledger/commit/adcfc91d17cbde2bd280eb47a7cd5f1f129a92e8))
+
 ### [19.0.1](https://github.com/mojaloop/central-ledger/compare/v19.0.0...v19.0.1) (2025-01-20)
 
 
