@@ -311,7 +311,8 @@ module.exports = [
       description: 'Record Funds In or Out of participant account',
       validate: {
         payload: Joi.object({
-          transferId: Joi.string().guid().required(),
+          // Some tests still use uuid, so we need to support both uuid and ulid here for now
+          transferId: Joi.string().pattern(/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$|^[0-9A-HJKMNP-TV-Z]{26})$/).required(),
           externalReference: Joi.string().required(),
           action: Joi.string().required().valid('recordFundsIn', 'recordFundsOutPrepareReserve').label('action is missing or not supported'),
           reason: Joi.string().required(),
