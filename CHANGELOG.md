@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.0.4](https://github.com/mojaloop/central-ledger/compare/v19.0.3...v19.0.4) (2025-01-21)
+
+
+### Chore
+
+* dep updates pi26 ([#1148](https://github.com/mojaloop/central-ledger/issues/1148)) ([663ce65](https://github.com/mojaloop/central-ledger/commit/663ce655ffcc93445e2ee723397f08230b2c521a))
+
 ### [19.0.3](https://github.com/mojaloop/central-ledger/compare/v19.0.2...v19.0.3) (2025-01-20)
 
 
