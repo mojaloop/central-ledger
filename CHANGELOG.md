@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.0.5](https://github.com/mojaloop/central-ledger/compare/v19.0.4...v19.0.5) (2025-01-22)
+
+
+### Bug Fixes
+
+* **csi-1130:** funds-out transferid regex ([#1150](https://github.com/mojaloop/central-ledger/issues/1150)) ([2e672ad](https://github.com/mojaloop/central-ledger/commit/2e672add79f2d275690fe44c5ce58cbe73d8a6a8))
+
 ### [19.0.4](https://github.com/mojaloop/central-ledger/compare/v19.0.3...v19.0.4) (2025-01-21)
 
 
