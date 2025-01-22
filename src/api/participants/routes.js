@@ -351,7 +351,7 @@ module.exports = [
           name: nameValidator,
           id: Joi.number().integer().positive(),
           // Some tests still use uuid, so we need to support both uuid and ulid here for now
-          transferId: Joi.string().pattern(/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]}$|^[0-9A-HJKMNP-TV-Z]{26}$6})$/).required()
+          transferId: Joi.string().pattern(/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$|^[0-9A-HJKMNP-TV-Z]{26})$/).required()
         })
       }
     }
