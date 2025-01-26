@@ -165,7 +165,6 @@
     },
     "jsonwebtoken": "9.0.0",
     "jsonpointer": "5.0.0",
-    "trim": "0.0.3",
     "cross-spawn": "7.0.6",
     "yargs-parser": "21.1.1"
   },
