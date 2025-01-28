@@ -1,0 +1,13 @@
+diff --git a/node_modules/standard/node_modules/eslint/lib/config/flat-config-array.js b/node_modules/standard/node_modules/eslint/lib/config/flat-config-array.js
+index 99d1dee..102227d 100644
+--- a/node_modules/standard/node_modules/eslint/lib/config/flat-config-array.js
++++ b/node_modules/standard/node_modules/eslint/lib/config/flat-config-array.js
+@@ -9,7 +9,7 @@
+ // Requirements
+ //-----------------------------------------------------------------------------
+ 
+-const { ConfigArray, ConfigArraySymbol } = require("@humanwhocodes/config-array");
++const { ConfigArray, ConfigArraySymbol } = require("@eslint/config-array");
+ const { flatConfigSchema } = require("./flat-config-schema");
+ const { RuleValidator } = require("./rule-validator");
+ const { defaultConfig } = require("./default-config");

@@ -78,7 +78,8 @@
     "dep:update": "npx ncu -u",
     "release": "npx standard-version --no-verify --releaseCommitMessageFormat 'chore(release): {{currentTag}} [skip ci]'",
     "snapshot": "npx standard-version --no-verify --skip.changelog --prerelease snapshot --releaseCommitMessageFormat 'chore(snapshot): {{currentTag}}'",
-    "wait-4-docker": "node ./scripts/_wait4_all.js"
+    "wait-4-docker": "node ./scripts/_wait4_all.js",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@hapi/basic": "7.0.2",
@@ -89,9 +90,9 @@
     "@hapi/vision": "7.0.3",
     "@mojaloop/central-services-error-handling": "13.0.4",
     "@mojaloop/central-services-health": "15.0.2",
-    "@mojaloop/central-services-logger": "11.5.3",
+    "@mojaloop/central-services-logger": "11.5.4",
     "@mojaloop/central-services-metrics": "12.4.4",
-    "@mojaloop/central-services-shared": "18.16.0",
+    "@mojaloop/central-services-shared": "18.16.2",
     "@mojaloop/central-services-stream": "11.4.3",
     "@mojaloop/database-lib": "11.1.2",
     "@mojaloop/event-sdk": "14.1.3",
@@ -119,6 +120,7 @@
     "moment": "2.30.1",
     "mongo-uri-builder": "^4.0.0",
     "parse-strings-in-object": "2.0.0",
+    "patch-package": "^8.0.0",
     "rc": "1.2.8",
     "require-glob": "^4.1.0"
   },
@@ -135,7 +137,7 @@
     "mock-knex": "0.4.13",
     "nodemon": "3.1.9",
     "npm-check-updates": "17.1.14",
-    "nyc": "17.1.0",
+    "nyc": "^17.1.0",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",
     "replace": "^1.2.2",

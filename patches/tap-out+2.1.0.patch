@@ -1,0 +1,13 @@
+diff --git a/node_modules/tap-out/index.js b/node_modules/tap-out/index.js
+index 2585dab..84c654a 100644
+--- a/node_modules/tap-out/index.js
++++ b/node_modules/tap-out/index.js
+@@ -2,7 +2,7 @@
+ 
+ var PassThrough = require('readable-stream/passthrough');
+ var split = require('split');
+-var trim = require('trim');
++// remove require 'trim' from this line
+ var util = require('util');
+ var EventEmitter = require('events').EventEmitter;
+ var reemit = require('re-emitter');

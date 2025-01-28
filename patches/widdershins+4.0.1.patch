@@ -1,0 +1,13 @@
+diff --git a/node_modules/widdershins/lib/common.js b/node_modules/widdershins/lib/common.js
+index e7a421d..84bbdc5 100644
+--- a/node_modules/widdershins/lib/common.js
++++ b/node_modules/widdershins/lib/common.js
+@@ -13,7 +13,7 @@ const walkSchema = require('oas-schema-walker').walkSchema;
+ const wsGetState = require('oas-schema-walker').getDefaultState;
+ const httpsnippetGenerator = require('./httpsnippetGenerator');
+ 
+-const hljs = require('highlightjs/highlight.pack.js');
++const hljs = require('highlight.js');
+ const emoji = require('markdown-it-emoji');
+ const md = require('markdown-it')({
+   html: true,
