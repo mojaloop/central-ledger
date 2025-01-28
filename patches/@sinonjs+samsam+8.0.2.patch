@@ -1,0 +1,13 @@
+diff --git a/node_modules/@sinonjs/samsam/lib/create-matcher.js b/node_modules/@sinonjs/samsam/lib/create-matcher.js
+index 81b49a5..a348462 100644
+--- a/node_modules/@sinonjs/samsam/lib/create-matcher.js
++++ b/node_modules/@sinonjs/samsam/lib/create-matcher.js
+@@ -4,7 +4,7 @@ var arrayProto = require("@sinonjs/commons").prototypes.array;
+ var deepEqual = require("./deep-equal").use(createMatcher); // eslint-disable-line no-use-before-define
+ var every = require("@sinonjs/commons").every;
+ var functionName = require("@sinonjs/commons").functionName;
+-var get = require("lodash.get");
++// removed require 'lodash.get' from this line
+ var iterableToString = require("./iterable-to-string");
+ var objectProto = require("@sinonjs/commons").prototypes.object;
+ var typeOf = require("@sinonjs/commons").typeOf;
