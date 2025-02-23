@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.1.0](https://github.com/mojaloop/central-ledger/compare/v19.0.7...v19.1.0) (2025-02-23)
+
+
+### Features
+
+* **csi-1161:** enabled otel for kafka ([#1154](https://github.com/mojaloop/central-ledger/issues/1154)) ([1429c75](https://github.com/mojaloop/central-ledger/commit/1429c75a8e1867a789224d44a562b6821b8b31c0))
+
 ### [19.0.7](https://github.com/mojaloop/central-ledger/compare/v19.0.6...v19.0.7) (2025-02-04)
 
 
