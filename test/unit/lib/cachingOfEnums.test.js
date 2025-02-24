@@ -1,9 +1,7 @@
 /*****
- Test that integrated enumsCached.js and cache.js work together as expected.
-
  License
  --------------
- Copyright © 2020-2024 Mojaloop Foundation
+ Copyright © 2020-2025 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -20,8 +18,9 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
 
  * Roman Pietrzak <roman.pietrzak@modusbox.com>
  --------------
