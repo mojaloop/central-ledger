@@ -453,9 +453,9 @@ jobs:
           name: Check for critical, high and medium vulnerabilities
           command: |
             # Count vulnerabilities in the filtered results
-            CRITICAL_COUNT=$(cat filtered-results.json | jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length')
-            HIGH_COUNT=$(cat filtered-results.json | jq '[.matches[] | select(.vulnerability.severity == "High")] | length')
-            MEDIUM_COUNT=$(cat filtered-results.json | jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length')
+            CRITICAL_COUNT=$(cat grype-results.json | jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length')
+            HIGH_COUNT=$(cat grype-results.json | jq '[.matches[] | select(.vulnerability.severity == "High")] | length')
+            MEDIUM_COUNT=$(cat grype-results.json | jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length')
 
             echo "Critical vulnerabilities found: $CRITICAL_COUNT"
             echo "High vulnerabilities found: $HIGH_COUNT"
@@ -466,10 +466,10 @@ jobs:
             cat grype-results.json | jq -r '.matches[] | select(.vulnerability.severity == "Critical") | "- \(.artifact.name) \(.artifact.version): \(.vulnerability.id)"'
 
             echo "High severity vulnerabilities:"
-            cat filtered-results.json | jq -r '.matches[] | select(.vulnerability.severity == "High") | "- \(.artifact.name) \(.artifact.version): \(.vulnerability.id)"'
+            cat grype-results.json | jq -r '.matches[] | select(.vulnerability.severity == "High") | "- \(.artifact.name) \(.artifact.version): \(.vulnerability.id)"'
 
             echo "Medium severity vulnerabilities:"
-            cat filtered-results.json | jq -r '.matches[] | select(.vulnerability.severity == "Medium") | "- \(.artifact.name) \(.artifact.version): \(.vulnerability.id)"'
+            cat grype-results.json | jq -r '.matches[] | select(.vulnerability.severity == "Medium") | "- \(.artifact.name) \(.artifact.version): \(.vulnerability.id)"'
 
             # Fail if any critical, high, or medium vulnerabilities are found
             if [ "$CRITICAL_COUNT" -gt 0 ] || [ "$HIGH_COUNT" -gt 0 ] || [ "$MEDIUM_COUNT" -gt 0 ]; then
@@ -483,8 +483,8 @@ jobs:
           path: grype-results.txt
           destination: grype-scan/scan-results.txt
       - store_artifacts:
-          path: filtered-results.json
-          destination: grype-scan/filtered-results.json
+          path: grype-results.json
+          destination: grype-scan/grype-results.json
 
   #  trivy-scan:
   #    executor: default-machine
