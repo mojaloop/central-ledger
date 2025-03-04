@@ -1,12 +1,918 @@
+# CircleCI v2.1 Config
 version: 2.1
-setup: true
+
+##
+# orbs
+#
+# Orbs used in this pipeline
+##
 orbs:
-  build: mojaloop/build@1.0.53
-workflows:
+  slack: circleci/slack@4.12.5 # Ref: https://github.com/mojaloop/ci-config/tree/master/slack-templates
+  pr-tools: mojaloop/pr-tools@0.1.10 # Ref: https://github.com/mojaloop/ci-config/
+  gh: circleci/github-cli@2.2.0
+  grype: anchore/grype@0.2.0
+#  trivy: cci-labs/trivy@1.0.0
+
+##
+# defaults
+#
+# YAML defaults templates, in alphabetical order
+##
+defaults_docker_Dependencies: &defaults_docker_Dependencies |
+  apk --no-cache add bash
+  apk --no-cache add git
+  apk --no-cache add ca-certificates
+  apk --no-cache add curl
+  apk --no-cache add openssh-client
+  apk add --no-cache -t build-dependencies make gcc g++ python3 libtool autoconf automake jq
+  apk add --no-cache -t openssl ncurses coreutils libgcc linux-headers grep util-linux binutils findutils
+  apk --no-cache add librdkafka-dev
+
+defaults_awsCliDependencies: &defaults_awsCliDependencies |
+  apk --no-cache add aws-cli
+
+defaults_license_scanner: &defaults_license_scanner
+  name: Install and set up license-scanner
+  command: |
+    git clone https://github.com/mojaloop/license-scanner /tmp/license-scanner
+    cd /tmp/license-scanner && make build default-files set-up
+
+defaults_export_version_from_package: &defaults_export_version_from_package
+  name: Format the changelog into the github release body and get release tag
+  command: |
+    git diff --no-indent-heuristic main~1 HEAD CHANGELOG.md | sed -n '/^+[^+]/ s/^+//p' > /tmp/changes
+    echo 'export RELEASE_CHANGES=`cat /tmp/changes`' >> $BASH_ENV
+    echo 'export RELEASE_TAG=`cat package-lock.json | jq -r .version`' >> $BASH_ENV
+
+defaults_configure_git: &defaults_configure_git
+  name: Configure git
+  command: |
+    git config user.email ${GIT_CI_EMAIL}
+    git config user.name ${GIT_CI_USER}
+
+defaults_configure_nvmrc: &defaults_configure_nvmrc
+  name: Configure NVMRC
+  command: |
+    if [ -z "$NVMRC_VERSION" ]; then
+      echo "==> Configuring NVMRC_VERSION!"
+
+      export ENV_DOT_PROFILE=$HOME/.profile
+      touch $ENV_DOT_PROFILE
+
+      export NVMRC_VERSION=$(cat $CIRCLE_WORKING_DIRECTORY/.nvmrc)
+      echo "export NVMRC_VERSION=$NVMRC_VERSION" >> $ENV_DOT_PROFILE
+    fi
+    echo "NVMRC_VERSION=$NVMRC_VERSION"
+
+defaults_configure_nvm: &defaults_configure_nvm
+  name: Configure NVM
+  command: |
+    cd $HOME
+    export ENV_DOT_PROFILE=$HOME/.profile
+    touch $ENV_DOT_PROFILE
+    echo "1. Check/Set NVM_DIR env variable"
+    if [ -z "$NVM_DIR" ]; then
+      export NVM_DIR="$HOME/.nvm"
+      echo "==> NVM_DIR has been exported - $NVM_DIR"
+    else
+      echo "==> NVM_DIR already exists - $NVM_DIR"
+    fi
+    echo "2. Check/Set NVMRC_VERSION env variable"
+    if [ -z "$NVMRC_VERSION" ]; then
+      echo "==> Configuring NVMRC_VERSION!"
+      export NVMRC_VERSION=$(cat $CIRCLE_WORKING_DIRECTORY/.nvmrc)
+      echo "export NVMRC_VERSION=$NVMRC_VERSION" >> $ENV_DOT_PROFILE
+    fi
+    echo "3. Configure NVM"
+    ## Lets check if an existing NVM_DIR exists, if it does lets skil
+    if [ -e "$NVM_DIR" ]; then
+      echo "==> $NVM_DIR exists. Skipping steps 3!"
+      # echo "5. Executing $NVM_DIR/nvm.sh"
+      # [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    else
+      echo "==> $NVM_DIR does not exists. Executing steps 4-5!"
+      echo "4. Installing NVM"
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+      echo "5. Executing $NVM_DIR/nvm.sh"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    fi
+    ## Ref: https://github.com/nvm-sh/nvm/issues/1102#issuecomment-550572252
+    if [ ! -z "$NVM_ARCH_UNOFFICIAL_OVERRIDE" ]; then
+      echo "==> Handle NVM_ARCH_UNOFFICIAL_OVERRIDE=$NVM_ARCH_UNOFFICIAL_OVERRIDE!"
+      echo "nvm_get_arch() { nvm_echo \"${NVM_ARCH_UNOFFICIAL_OVERRIDE}\"; }" >> $ENV_DOT_PROFILE
+      echo "export NVM_NODEJS_ORG_MIRROR=https://unofficial-builds.nodejs.org/download/release" >> $ENV_DOT_PROFILE
+      source $ENV_DOT_PROFILE
+    fi
+    echo "6. Setup Node version"
+    if [ -n "$NVMRC_VERSION" ]; then
+      echo "==> Installing Node version: $NVMRC_VERSION"
+      nvm install $NVMRC_VERSION
+      nvm alias default $NVMRC_VERSION
+      nvm use $NVMRC_VERSION
+      cd $CIRCLE_WORKING_DIRECTORY
+    else
+      echo "==> ERROR - NVMRC_VERSION has not been set! - NVMRC_VERSION: $NVMRC_VERSION"
+      exit 1
+    fi
+
+defaults_display_versions: &defaults_display_versions
+  name: Display Versions
+  command: |
+    echo "What is the active version of Nodejs?"
+    echo "node: $(node --version)"
+    echo "yarn: $(yarn --version)"
+    echo "npm: $(npm --version)"
+    echo "nvm: $(nvm --version)"
+
+defaults_environment: &defaults_environment
+  ## env var for nx to set main branch
+  MAIN_BRANCH_NAME: main
+  ## Disable LIBRDKAFKA build since we install it via general dependencies
+  # BUILD_LIBRDKAFKA: 0
+
+##
+# Executors
+#
+# CircleCI Executors
+##
+executors:
+  default-docker:
+    working_directory: &WORKING_DIR /home/circleci/project
+    shell: "/bin/sh -leo pipefail" ## Ref: https://circleci.com/docs/env-vars/#alpine-linux
+    environment:
+      BASH_ENV: /etc/profile ## Ref: https://circleci.com/docs/env-vars/#alpine-linux
+      NVM_ARCH_UNOFFICIAL_OVERRIDE: x64-musl ## Ref: https://github.com/nvm-sh/nvm/issues/1102#issuecomment-550572252
+    docker:
+      - image: node:lts-alpine # Ref: https://hub.docker.com/_/node?tab=tags&page=1&name=alpine
+
+  default-machine:
+    working_directory: *WORKING_DIR
+    shell: "/bin/bash -leo pipefail"
+    machine:
+      image: ubuntu-2404:2024.11.1 # Ref: https://circleci.com/developer/machine/image/ubuntu-2404
+
+##
+# Jobs
+#
+# A map of CircleCI jobs
+##
+jobs:
   setup:
+    executor: default-docker
+    environment:
+      <<: *defaults_environment
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_docker_Dependencies
+      - checkout
+      - run:
+          <<: *defaults_configure_nvm
+      - run:
+          <<: *defaults_display_versions
+      - run:
+          name: Update NPM install
+          command: npm ci
+      - save_cache:
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - node_modules
+
+  test-dependencies:
+    executor: default-docker
+    environment:
+      <<: *defaults_environment
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_docker_Dependencies
+      - checkout
+      - run:
+          <<: *defaults_configure_nvm
+      - run:
+          <<: *defaults_display_versions
+      - restore_cache:
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Execute dependency tests
+          command: npm run dep:check
+
+  test-lint:
+    executor: default-docker
+    environment:
+      <<: *defaults_environment
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_docker_Dependencies
+      - checkout
+      - run:
+          <<: *defaults_configure_nvm
+      - run:
+          <<: *defaults_display_versions
+      - restore_cache:
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Execute lint tests
+          command: npm run lint
+
+  test-unit:
+    executor: default-docker
+    environment:
+      <<: *defaults_environment
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_docker_Dependencies
+      - checkout
+      - run:
+          <<: *defaults_configure_nvm
+      - run:
+          <<: *defaults_display_versions
+      - restore_cache:
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Install jest
+          command: npm install jest
+      - run:
+          name: Create dir for test results
+          command: mkdir -p ./test/results
+      - run:
+          name: Execute unit tests
+          command: npm -s run test:junit
+      - store_artifacts:
+          path: ./test/results
+          destination: test
+      - store_test_results:
+          path: ./test/results
+
+  test-coverage:
+    executor: default-docker
+    environment:
+      <<: *defaults_environment
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_docker_Dependencies
+      - run:
+          name: Install AWS CLI dependencies
+          command: *defaults_awsCliDependencies
+      - checkout
+      - run:
+          <<: *defaults_configure_nvm
+      - run:
+          <<: *defaults_display_versions
+      - restore_cache:
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Execute code coverage check
+          command: npm -s run test:coverage-check
+      - store_artifacts:
+          path: coverage
+          destination: test
+
+  vulnerability-check:
+    executor: default-docker
+    environment:
+      <<: *defaults_environment
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_docker_Dependencies
+      - checkout
+      - run:
+          <<: *defaults_configure_nvm
+      - run:
+          <<: *defaults_display_versions
+      - restore_cache:
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Create dir for test results
+          command: mkdir -p ./audit/results
+      - run:
+          name: Check for new npm vulnerabilities
+          command: npm run audit:check -- -o json > ./audit/results/auditResults.json
+      - store_artifacts:
+          path: ./audit/results
+          destination: audit
+
+  audit-licenses:
+    executor: default-docker
+    environment:
+      <<: *defaults_environment
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_docker_Dependencies
+      - run:
+          <<: *defaults_license_scanner
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Run the license-scanner
+          command: cd /tmp/license-scanner && pathToRepo=$CIRCLE_WORKING_DIRECTORY make run
+      - store_artifacts:
+          path: /tmp/license-scanner/results
+          destination: licenses
+
+  build-local:
+    executor: default-machine
+    environment:
+      <<: *defaults_environment
+    steps:
+      - checkout
+      - run:
+          <<: *defaults_configure_nvmrc
+      - run:
+          <<: *defaults_display_versions
+      - run:
+          name: Build Docker local image
+          command: |
+            source ~/.profile
+            export DOCKER_NODE_VERSION="$NVMRC_VERSION-alpine"
+            echo "export DOCKER_NODE_VERSION=$NVMRC_VERSION-alpine" >> $BASH_ENV
+            echo "Building Docker image: ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local --build-arg NODE_VERSION=$DOCKER_NODE_VERSION"
+            docker build -t ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local --build-arg NODE_VERSION=$DOCKER_NODE_VERSION .
+      - run:
+          name: Save docker image to workspace
+          command: docker save -o /tmp/docker-image.tar ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - ./docker-image.tar
+
+  license-scan:
+    executor: default-machine
+    environment:
+      <<: *defaults_environment
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load the pre-built docker image from workspace
+          command: docker load -i /tmp/docker-image.tar
+      - run:
+          <<: *defaults_license_scanner
+      - run:
+          name: Run the license-scanner
+          command: cd /tmp/license-scanner && mode=docker dockerImages=${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local make run
+      - store_artifacts:
+          path: /tmp/license-scanner/results
+          destination: licenses
+
+  #  grype-scan-orb:
+  #    executor: grype/default
+  #    environment:
+  #      <<: *defaults_environment
+  #    steps:
+  #      - attach_workspace:
+  #          at: /tmp
+  #      - run:
+  #          name: Load the pre-built docker image from workspace
+  #          command: docker load -i /tmp/docker-image.tar
+  #      - grype/scan-image:
+  #          image-name: ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local
+  #          output-format: json
+  #          output-file: "grype-vulnerabilities-orb.json"
+  #          # You can uncomment to fail on severity levels if desired
+  #          # fail-on-severity: critical
+  #      - run:
+  #          name: Check critical vulnerabilities count
+  #          command: |
+  #            CRITICAL_COUNT=$(cat grype-vulnerabilities.json | jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length')
+  #            echo "Critical vulnerabilities found: $CRITICAL_COUNT"
+  #      - store_artifacts:
+  #          path: grype-vulnerabilities.json
+  #          destination: grype-scan-orb/scan-results-orb.json
+  #      - store_artifacts:
+  #          path: grype-vulnerabilities.txt
+  #          destination: grype-scan-orb/scan-results-orb.txt
+
+  #  grype-scan:
+  #    executor: default-machine
+  #    environment:
+  #      <<: *defaults_environment
+  #    steps:
+  #      - attach_workspace:
+  #          at: /tmp
+  #      - run:
+  #          name: Load the pre-built docker image from workspace
+  #          command: docker load -i /tmp/docker-image.tar
+  #      - run:
+  #          name: Install Grype
+  #          command: |
+  #            curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sudo sh -s -- -b /usr/local/bin
+  #      - run:
+  #          name: Run Grype scan
+  #          command: |
+  #            IMAGE_NAME="${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local"
+  #            echo "Scanning image: $IMAGE_NAME"
+  #            grype $IMAGE_NAME -o table > grype-results.txt
+  #            grype $IMAGE_NAME -o json > grype-results.json
+  #            cat grype-results.txt
+  #            cat grype-results.json
+  #      - run:
+  #          name: Check critical vulnerabilities count
+  #          command: |
+  #            CRITICAL_COUNT=$(cat grype-results.json | jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length')
+  #            echo "Critical vulnerabilities found: $CRITICAL_COUNT"
+  #      - store_artifacts:
+  #          path: grype-results.json
+  #          destination: grype-scan/scan-results.json
+  #      - store_artifacts:
+  #          path: grype-results.txt
+  #          destination: grype-scan/scan-results.txt
+
+  grype-scan:
+    executor: default-machine
+    environment:
+      <<: *defaults_environment
+    steps:
+      - checkout  # Add this to get your repo code including the .grype.yaml config
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load the pre-built docker image from workspace
+          command: docker load -i /tmp/docker-image.tar
+      - run:
+          name: Install Grype
+          command: |
+            curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sudo sh -s -- -b /usr/local/bin
+      - run:
+          name: Run Grype scan with custom config
+          command: |
+            IMAGE_NAME="${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local"
+            echo "Scanning image: $IMAGE_NAME"
+            # Use the config file in your repo
+            grype $IMAGE_NAME -c .grype.yaml -o table > grype-results.txt
+            grype $IMAGE_NAME -c .grype.yaml -o json > grype-results.json
+            cat grype-results.txt
+            cat grype-results.json
+      - run:
+          name: Check for critical, high and medium vulnerabilities
+          command: |
+            # Count vulnerabilities in the filtered results
+            CRITICAL_COUNT=$(cat filtered-results.json | jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length')
+            HIGH_COUNT=$(cat filtered-results.json | jq '[.matches[] | select(.vulnerability.severity == "High")] | length')
+            MEDIUM_COUNT=$(cat filtered-results.json | jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length')
+
+            echo "Critical vulnerabilities found: $CRITICAL_COUNT"
+            echo "High vulnerabilities found: $HIGH_COUNT"
+            echo "Medium vulnerabilities found: $MEDIUM_COUNT"
+
+            # List remaining critical, high and medium vulnerabilities for awareness
+            echo "Critical severity vulnerabilities:"
+            cat grype-results.json | jq -r '.matches[] | select(.vulnerability.severity == "Critical") | "- \(.artifact.name) \(.artifact.version): \(.vulnerability.id)"'
+
+            echo "High severity vulnerabilities:"
+            cat filtered-results.json | jq -r '.matches[] | select(.vulnerability.severity == "High") | "- \(.artifact.name) \(.artifact.version): \(.vulnerability.id)"'
+
+            echo "Medium severity vulnerabilities:"
+            cat filtered-results.json | jq -r '.matches[] | select(.vulnerability.severity == "Medium") | "- \(.artifact.name) \(.artifact.version): \(.vulnerability.id)"'
+
+            # Fail if any critical, high, or medium vulnerabilities are found
+            if [ "$CRITICAL_COUNT" -gt 0 ] || [ "$HIGH_COUNT" -gt 0 ] || [ "$MEDIUM_COUNT" -gt 0 ]; then
+              echo "Critical, High, or Medium vulnerabilities found. Failing the build."
+              exit 1
+            fi
+      - store_artifacts:
+          path: grype-results.json
+          destination: grype-scan/scan-results.json
+      - store_artifacts:
+          path: grype-results.txt
+          destination: grype-scan/scan-results.txt
+      - store_artifacts:
+          path: filtered-results.json
+          destination: grype-scan/filtered-results.json
+
+  #  trivy-scan:
+  #    executor: default-machine
+  #    environment:
+  #      <<: *defaults_environment
+  #    steps:
+  #      - checkout  # Add this to get your repo code including the .trivyignore.yaml config
+  #      - attach_workspace:
+  #          at: /tmp
+  #      - run:
+  #          name: Load the pre-built docker image from workspace
+  #          command: docker load -i /tmp/docker-image.tar
+  #      - trivy/scan:
+  #          image-ref: ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local
+  #          # You can uncomment to fail on severity levels if desired
+  #          # security-checks: vuln
+  #          # severity: 'CRITICAL,HIGH'
+  #          # exit-code: '1'
+  #          exit-code: '0'
+  #          format: 'table'
+  #          output: 'trivy-results.txt'
+  #          # ignore-policy: '.trivyignore.yaml'
+  #          additional-args: '--ignorefile .trivyignore.yaml'
+  #      - trivy/scan:
+  #          image-ref: ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local
+  #          format: 'json'
+  #          output: 'trivy-results.json'
+  #          #ignore-policy: '.trivyignore.yaml'
+  #          additional-args: '--ignorefile .trivyignore.yaml'
+  #          exit-code: '0'
+  #      - run:
+  #          name: Check critical vulnerabilities count
+  #          command: |
+  #            CRITICAL_COUNT=$(cat trivy-results.json | jq '[.Results[] | .Vulnerabilities // [] | .[] | select(.Severity == "CRITICAL")] | length')
+  #            echo "Critical vulnerabilities found: $CRITICAL_COUNT"
+  #
+  #            # Optional: Verify cross-spawn vulnerabilities are excluded
+  #            CROSS_SPAWN_COUNT=$(cat trivy-results.json | jq '[.Results[] | .Vulnerabilities // [] | .[] | select(.PkgName == "cross-spawn")] | length')
+  #            echo "Cross-spawn vulnerabilities found after filtering: $CROSS_SPAWN_COUNT"
+  #
+  #            # List remaining high vulnerabilities for awareness
+  #            echo "High severity vulnerabilities:"
+  #            cat trivy-results.json | jq -r '.Results[] | .Vulnerabilities // [] | .[] | select(.Severity == "HIGH") | "- \(.PkgName) \(.InstalledVersion): \(.VulnerabilityID)"'
+  #      - store_artifacts:
+  #          path: trivy-results.json
+  #          destination: trivy-scan/scan-results.json
+  #      - store_artifacts:
+  #          path: trivy-results.txt
+  #          destination: trivy-scan/scan-results.txt
+
+  release:
+    executor: default-docker
+    environment:
+      <<: *defaults_environment
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_docker_Dependencies
+      - checkout
+      - restore_cache:
+          keys:
+            - dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          <<: *defaults_configure_git
+      - run:
+          name: Setup Slack config
+          command: |
+            echo "export SLACK_PROJECT_NAME=${CIRCLE_PROJECT_REPONAME}" >> $BASH_ENV
+            echo "export SLACK_RELEASE_TYPE='GitHub Release'" >> $BASH_ENV
+            echo "export SLACK_RELEASE_TAG='${RELEASE_TAG} on ${CIRCLE_BRANCH} branch'" >> $BASH_ENV
+            echo "export SLACK_BUILD_ID=${CIRCLE_BUILD_NUM}" >> $BASH_ENV
+            echo "export SLACK_CI_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV
+      - run:
+          name: Generate changelog and bump package version
+          command: npm run release -- --no-verify
+      - run:
+          name: Push the release
+          command: git push --follow-tags origin ${CIRCLE_BRANCH}
+      - slack/notify:
+          event: fail
+          template: SLACK_TEMP_RELEASE_FAILURE
+
+  github-release:
+    executor: default-machine
+    shell: "/bin/bash -eo pipefail"
+    environment:
+      <<: *defaults_environment
+    steps:
+      - run:
+          name: Install git
+          command: |
+            sudo apt-get update && sudo apt-get install -y git
+      - gh/install
+      - checkout
+      - run:
+          <<: *defaults_configure_git
+      - run:
+          name: Fetch updated release branch
+          command: |
+            git fetch origin
+            git checkout origin/${CIRCLE_BRANCH}
+      - run:
+          <<: *defaults_export_version_from_package
+      - run:
+          name: Check the release changes
+          command: |
+            echo "Changes are: ${RELEASE_CHANGES}"
+      - run:
+          name: Setup Slack config
+          command: |
+            echo "export SLACK_PROJECT_NAME=${CIRCLE_PROJECT_REPONAME}" >> $BASH_ENV
+            echo "export SLACK_RELEASE_TYPE='Github Release'" >> $BASH_ENV
+            echo "export SLACK_RELEASE_TAG=v${RELEASE_TAG}" >> $BASH_ENV
+            echo "export SLACK_RELEASE_URL=https://github.com/mojaloop/${CIRCLE_PROJECT_REPONAME}/releases/tag/v${RELEASE_TAG}" >> $BASH_ENV
+            echo "export SLACK_BUILD_ID=${CIRCLE_BUILD_NUM}" >> $BASH_ENV
+            echo "export SLACK_CI_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV
+      - run:
+          name: Create Release
+          command: |
+            gh release create "v${RELEASE_TAG}" --title "v${RELEASE_TAG} Release" --draft=false --notes "${RELEASE_CHANGES}" ./CHANGELOG.md
+      - slack/notify:
+          event: pass
+          template: SLACK_TEMP_RELEASE_SUCCESS
+      - slack/notify:
+          event: fail
+          template: SLACK_TEMP_RELEASE_FAILURE
+
+  publish:
+    executor: default-machine
+    shell: "/bin/bash -eo pipefail"
+    environment:
+      <<: *defaults_environment
+    steps:
+      - checkout
+      - run:
+          name: Setup for LATEST release
+          command: |
+            echo "export RELEASE_TAG=$RELEASE_TAG_PROD" >> $BASH_ENV
+            echo "RELEASE_TAG=$RELEASE_TAG_PROD"
+
+            PACKAGE_VERSION=$(cat package-lock.json | jq -r .version)
+            echo "export PACKAGE_VERSION=${PACKAGE_VERSION}" >> $BASH_ENV
+            echo "PACKAGE_VERSION=${PACKAGE_VERSION}"
+      - run:
+          name: Setup Slack config
+          command: |
+            echo "export SLACK_PROJECT_NAME=${CIRCLE_PROJECT_REPONAME}" >> $BASH_ENV
+            echo "export SLACK_RELEASE_TYPE='Docker Release'" >> $BASH_ENV
+            echo "export SLACK_RELEASE_TAG=v${CIRCLE_TAG:1}" >> $BASH_ENV
+            echo "export SLACK_BUILD_ID=${CIRCLE_BUILD_NUM}" >> $BASH_ENV
+            echo "export SLACK_CI_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load the pre-built docker image from workspace
+          command: |
+            docker load -i /tmp/docker-image.tar
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run:
+          name: Re-tag pre built image
+          command: |
+            docker tag ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+            docker tag ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
+      - run:
+          name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
+          command: |
+            echo "Publishing ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+            docker push ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+            echo "Publishing ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
+            docker push ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
+      - run:
+          name: Set Image Digest
+          command: |
+            IMAGE_DIGEST=$(docker inspect ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:v${CIRCLE_TAG:1} | jq '.[0].RepoDigests | .[]')
+            echo "IMAGE_DIGEST=${IMAGE_DIGEST}"
+            echo "export IMAGE_DIGEST=${IMAGE_DIGEST}" >> $BASH_ENV
+      - run:
+          name: Update Slack config
+          command: |
+            echo "export SLACK_RELEASE_URL='https://hub.docker.com/layers/${CIRCLE_PROJECT_REPONAME}/${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}/v${CIRCLE_TAG:1}/images/${IMAGE_DIGEST}?context=explore'" | sed -r "s/${DOCKER_ORG}\/${CIRCLE_PROJECT_REPONAME}@sha256:/sha256-/g" >> $BASH_ENV
+      - slack/notify:
+          event: pass
+          template: SLACK_TEMP_RELEASE_SUCCESS
+      - slack/notify:
+          event: fail
+          template: SLACK_TEMP_RELEASE_FAILURE
+
+  publish-snapshot:
+    executor: default-machine
+    shell: "/bin/bash -eo pipefail"
+    environment:
+      <<: *defaults_environment
+    steps:
+      - checkout
+      - run:
+          name: Setup for SNAPSHOT release
+          command: |
+            echo "export RELEASE_TAG=$RELEASE_TAG_SNAPSHOT" >> $BASH_ENV
+            echo "RELEASE_TAG=$RELEASE_TAG_SNAPSHOT"
+
+            PACKAGE_VERSION=$(cat package-lock.json | jq -r .version)
+            echo "export PACKAGE_VERSION=${PACKAGE_VERSION}" >> $BASH_ENV
+            echo "PACKAGE_VERSION=${PACKAGE_VERSION}"
+      - run:
+          name: Setup Slack config
+          command: |
+            echo "export SLACK_PROJECT_NAME=${CIRCLE_PROJECT_REPONAME}" >> $BASH_ENV
+            echo "export SLACK_RELEASE_TYPE='Docker Release'" >> $BASH_ENV
+            echo "export SLACK_RELEASE_TAG=v${CIRCLE_TAG:1}" >> $BASH_ENV
+            echo "export SLACK_BUILD_ID=${CIRCLE_BUILD_NUM}" >> $BASH_ENV
+            echo "export SLACK_CI_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load the pre-built docker image from workspace
+          command: |
+            docker load -i /tmp/docker-image.tar
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run:
+          name: Re-tag pre built image
+          command: |
+            docker tag ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+            docker tag ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
+      - run:
+          name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
+          command: |
+            echo "Publishing ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+            docker push ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+            echo "Publishing ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
+            docker push ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
+      - run:
+          name: Set Image Digest
+          command: |
+            IMAGE_DIGEST=$(docker inspect ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:v${CIRCLE_TAG:1} | jq '.[0].RepoDigests | .[]')
+            echo "IMAGE_DIGEST=${IMAGE_DIGEST}"
+            echo "export IMAGE_DIGEST=${IMAGE_DIGEST}" >> $BASH_ENV
+      - run:
+          name: Update Slack config
+          command: |
+            echo "export SLACK_RELEASE_URL='https://hub.docker.com/layers/${CIRCLE_PROJECT_REPONAME}/${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}/v${CIRCLE_TAG:1}/images/${IMAGE_DIGEST}?context=explore'" | sed -r "s/${DOCKER_ORG}\/${CIRCLE_PROJECT_REPONAME}@sha256:/sha256-/g" >> $BASH_ENV
+      - slack/notify:
+          event: pass
+          template: SLACK_TEMP_RELEASE_SUCCESS
+      - slack/notify:
+          event: fail
+          template: SLACK_TEMP_RELEASE_FAILURE
+
+##
+# Workflows
+#
+# CircleCI Workflow config
+##
+workflows:
+  build_and_test:
     jobs:
-      - build/workflow:
+      - pr-tools/pr-title-check:
+          context: org-global
+      - setup:
           context: org-global
           filters:
             tags:
-              only: /v\d+(\.\d+){2}(-[a-zA-Z-][0-9a-zA-Z-]*\.\d+)?/
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - test-dependencies:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              ignore:
+                - main
+      - test-lint:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - vulnerability-check:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - audit-licenses:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - build-local:
+          context: org-global
+          requires:
+            - setup
+            - test-lint
+            # - test-unit
+            # - test-coverage
+            # - test-integration
+            # - test-functional
+            - vulnerability-check
+            - audit-licenses
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
+            branches:
+              only: /.*/
+      - license-scan:
+          context: org-global
+          requires:
+            - build-local
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
+            branches:
+              ignore:
+                - /.*/
+      - grype-scan:
+          context: org-global
+          requires:
+            - build-local
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
+            branches:
+              only: /.*/
+      #      - trivy-scan:
+      #          context: org-global
+      #          requires:
+      #            - build-local
+      #          filters:
+      #            tags:
+      #              only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
+      #            branches:
+      #              only: /.*/
+      # New commits to main release automatically
+      - release:
+          context: org-global
+          requires:
+            - pr-tools/pr-title-check
+            - test-lint
+            # - test-unit
+            # - test-coverage
+            # - test-integration
+            # - test-functional
+            - vulnerability-check
+            - audit-licenses
+            - license-scan
+            - grype-scan
+            #            - trivy-scan
+            # - grype-scan-orb
+          filters:
+            branches:
+              only:
+                - main
+                - /release\/v.*/
+      - github-release:
+          context: org-global
+          requires:
+            - release
+          filters:
+            branches:
+              only:
+                - main
+                - /release\/v.*/
+      - publish:
+          context: org-global
+          requires:
+            - pr-tools/pr-title-check
+            - test-lint
+            # - test-unit
+            # - test-coverage
+            # - test-integration
+            # - test-functional
+            - vulnerability-check
+            - audit-licenses
+            # - test-integration
+            - license-scan
+            - grype-scan
+            #            - trivy-scan
+            # - grype-scan-orb
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore:
+                - /.*/
+      - publish-snapshot:
+          context: org-global
+          requires:
+            - pr-tools/pr-title-check
+            - test-lint
+            # - test-unit
+            # - test-coverage
+            # - test-integration
+            # - test-functional
+            - vulnerability-check
+            - audit-licenses
+            # - test-integration
+            - license-scan
+            - grype-scan
+            #            - trivy-scan
+            # - grype-scan-orb
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-snapshot+((\.[0-9]+)?)/
+            branches:
+              ignore:
+                - /.*/
