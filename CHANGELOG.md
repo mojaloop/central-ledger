@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.1.2](https://github.com/mojaloop/central-ledger/compare/v19.1.1...v19.1.2) (2025-03-05)
+
+
+### Chore
+
+* add indexes ([#1157](https://github.com/mojaloop/central-ledger/issues/1157)) ([fb74c0d](https://github.com/mojaloop/central-ledger/commit/fb74c0d2a92c11a39775c2e0961c539f37e60b6f))
+
 ### [19.1.1](https://github.com/mojaloop/central-ledger/compare/v19.1.0...v19.1.1) (2025-02-25)
 
 
