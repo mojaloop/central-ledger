@@ -120,7 +120,7 @@ Note: The position messages with action 'FX_PREPARE', 'FX_COMMIT' and 'FX_TIMEOU
   Create a new Kafka topic named `topic-transfer-position-batch` to handle batch processing events.
 - **Step 2:** **Configure Action Type Mapping**
 
-  Point the prepare handler to the newly created topic for the action types those are supported in batch processing using the `KAFKA.EVENT_TYPE_ACTION_TOPIC_MAP` configuration as shown below:
+  Point the prepare handler to the newly created topic for the action types that are supported in batch processing using the `KAFKA.EVENT_TYPE_ACTION_TOPIC_MAP` configuration as shown below:
   ```
     "KAFKA": {
       "EVENT_TYPE_ACTION_TOPIC_MAP" : {
