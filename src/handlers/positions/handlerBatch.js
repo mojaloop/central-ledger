@@ -47,6 +47,7 @@ const { randomUUID } = require('crypto')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const BatchPositionModel = require('../../models/position/batch')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
+const { BATCHING } = require('../../shared/constants')
 
 const consumerCommit = true
 const rethrow = Utility.rethrow
@@ -219,6 +220,7 @@ const positions = async (error, messages) => {
  */
 const registerPositionHandler = async () => {
   try {
+    validateConfig()
     await SettlementModelCached.initialize()
     // If there is no mapping, use default transformGeneralTopicName
     const topicName =
@@ -239,6 +241,15 @@ const registerPositionHandler = async () => {
     return true
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'registerPositionHandler' })
+  }
+}
+
+const validateConfig = () => {
+  const batchConfig = Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.TRANSFER.toUpperCase(), 'POSITION_BATCH')
+  if (batchConfig.options.batchSize < BATCHING.MIN || batchConfig.options.batchSize > BATCHING.MAX) {
+    throw ErrorHandler.Factory.createFSPIOPError(
+      ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+      `POSITION BATCH Consumer: batchSize "${batchConfig.options.batchSize}" is out of range (acceptable range: ${BATCHING.MIN} - ${BATCHING.MAX})`)
   }
 }
 
