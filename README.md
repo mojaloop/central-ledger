@@ -374,13 +374,13 @@ The [audit-ci.jsonc](./audit-ci.jsonc) contains any audit-exceptions that cannot
 
 ## Container Scans
 
-As part of our CI/CD process, we use anchore-cli to scan our built docker container for vulnerabilities upon release.
+As part of our CI/CD process, we use grype a vulnerability scanner for container images and filesystems upon release.
 
-If you find your release builds are failing, refer to the [container scanning](https://github.com/mojaloop/ci-config#container-scanning) in our shared Mojaloop CI config repo. There is a good chance you simply need to update the `mojaloop-policy-generator.js` file and re-run the circleci workflow.
+If you find your release builds are failing, please review Mojaloop orb with grype image scan at [container scanning](https://github.com/mojaloop/ci-config-orb-build?tab=readme-ov-file#vulnerability-image-scan-configuration) and review [grype_image_scan.yml](https://github.com/mojaloop/ci-config-orb-build/blob/main/src/jobs/grype_image_scan.yml) job.
 
-For more information on anchore and anchore-cli, refer to:
-    - [Anchore CLI](https://github.com/anchore/anchore-cli)
-    - [Circle Orb Registry](https://circleci.com/orbs/registry/orb/anchore/anchore-engine)
+For more information on grype, refer to:
+
+- [Grype](https://github.com/anchore/grype)
 
 ## Automated Releases
 

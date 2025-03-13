@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.1.3](https://github.com/mojaloop/central-ledger/compare/v19.1.2...v19.1.3) (2025-03-06)
+
+
+### Build System
+
+* configure grype image scan ([#1158](https://github.com/mojaloop/central-ledger/issues/1158)) ([98d2a17](https://github.com/mojaloop/central-ledger/commit/98d2a175d871a0bd16aba3c8ee8568f2ce5dc693))
+
 ### [19.1.2](https://github.com/mojaloop/central-ledger/compare/v19.1.1...v19.1.2) (2025-03-05)
 
 
