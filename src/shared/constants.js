@@ -73,9 +73,16 @@ const DB_ERROR_CODES = Object.freeze({
   duplicateEntry: 'ER_DUP_ENTRY'
 })
 
+// Acceptable range for position batch handler's batch size
+const BATCHING = {
+  MIN: 1,
+  MAX: 100_000
+}
+
 module.exports = {
   DB_ERROR_CODES,
   ERROR_MESSAGES,
   TABLE_NAMES,
-  PROM_METRICS
+  PROM_METRICS,
+  BATCHING
 }
