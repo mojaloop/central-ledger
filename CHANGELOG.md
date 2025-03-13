@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.2.0](https://github.com/mojaloop/central-ledger/compare/v19.1.3...v19.2.0) (2025-03-13)
+
+
+### Features
+
+* **mojaloop/#4077:** add batch size range validation ([#1159](https://github.com/mojaloop/central-ledger/issues/1159)) ([a0475d1](https://github.com/mojaloop/central-ledger/commit/a0475d1199bb88cd3aba1d1ef916c7ebee9b7eca)), closes [mojaloop/#4077](https://github.com/mojaloop/project/issues/4077)
+
 ### [19.1.3](https://github.com/mojaloop/central-ledger/compare/v19.1.2...v19.1.3) (2025-03-06)
 
 
