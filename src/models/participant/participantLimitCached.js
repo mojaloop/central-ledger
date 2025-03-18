@@ -30,7 +30,7 @@
 const Cache = require('../../lib/cache')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
 const Metrics = require('@mojaloop/central-services-metrics')
-const { rethrow } = require('@mojaloop/central-services-shared').Util
+const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
 
 let cacheClient
 let participantLimitAllCacheKey

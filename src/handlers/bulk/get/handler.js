@@ -44,7 +44,7 @@ const Validator = require('../shared/validator')
 const { ERROR_HANDLING } = require('../../../lib/config')
 
 const location = { module: 'BulkGetHandler', method: '', path: '' }
-const { rethrow } = Util
+const rethrow = Util.rethrow.with('CL')
 
 const consumerCommit = true
 const fromSwitch = true

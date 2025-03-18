@@ -35,7 +35,7 @@ const Enums = require('../../lib/enumCached')
 const Util = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
 const Logger = require('@mojaloop/central-services-logger')
-const { rethrow } = Util
+const rethrow = Util.rethrow.with('CL')
 
 const entityItem = ({ settlementModelId, name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, autoPositionReset }, ledgerAccountIds, settlementGranularityIds, settlementInterchangeIds, settlementDelayIds) => {
   return {

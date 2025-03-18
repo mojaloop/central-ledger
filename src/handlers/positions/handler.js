@@ -58,7 +58,7 @@ const decodeMessages = require('@mojaloop/central-services-shared').Util.Streami
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
-const rethrow = Utility.rethrow
+const rethrow = Utility.rethrow.with('CL')
 const consumerCommit = true
 const fromSwitch = true
 

@@ -47,7 +47,7 @@ const Comparators = require('@mojaloop/central-services-shared').Util.Comparator
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var object used as pointer
-const { rethrow } = Util
+const rethrow = Util.rethrow.with('CL')
 const consumerCommit = true
 const fromSwitch = true
 
