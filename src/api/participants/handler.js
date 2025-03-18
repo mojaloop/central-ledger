@@ -36,7 +36,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
 const SettlementService = require('../../domain/settlement')
-const { rethrow } = Util
+const rethrow = Util.rethrow.with('CL')
 
 const LocalEnum = {
   activated: 'activated',

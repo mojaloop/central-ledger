@@ -29,7 +29,7 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const { rethrow } = require('@mojaloop/central-services-shared').Util
+const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
 
 const getByTransferId = async (transferId) => {
   Logger.isDebugEnabled && Logger.debug('getByTransferId ' + transferId.toString())

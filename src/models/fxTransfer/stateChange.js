@@ -36,7 +36,7 @@
 const TransferError = require('../../models/transfer/transferError')
 const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
-const { rethrow } = require('@mojaloop/central-services-shared').Util
+const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
 
 const table = TABLE_NAMES.fxTransferStateChange
 

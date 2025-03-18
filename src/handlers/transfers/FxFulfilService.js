@@ -35,7 +35,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Type, Action } = Enum.Events.Event
 const { SOURCE, DESTINATION } = Enum.Http.Headers.FSPIOP
 const { TransferState, TransferInternalState } = Enum.Transfers
-const { rethrow } = Util
+const rethrow = Util.rethrow.with('CL')
 const consumerCommit = true
 const fromSwitch = true
 

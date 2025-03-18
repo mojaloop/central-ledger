@@ -44,7 +44,7 @@ const Kafka = Util.Kafka
 const HeaderValidation = Util.HeaderValidation
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
-const { rethrow } = Util
+const rethrow = Util.rethrow.with('CL')
 const consumerCommit = true
 const fromSwitch = true
 

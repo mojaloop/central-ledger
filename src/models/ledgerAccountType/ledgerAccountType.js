@@ -32,7 +32,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const { rethrow } = require('@mojaloop/central-services-shared').Util
+const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
 
 /* istanbul ignore next */
 exports.getLedgerAccountByName = async (name, trx = null) => {

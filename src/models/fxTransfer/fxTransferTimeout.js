@@ -31,7 +31,7 @@ const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TS = Enum.Transfers.TransferInternalState
-const { rethrow } = require('@mojaloop/central-services-shared').Util
+const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
 
 const cleanup = async () => {
   Logger.isDebugEnabled && Logger.debug('cleanup fxTransferTimeout')

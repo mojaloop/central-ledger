@@ -65,7 +65,7 @@ const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 const decodePayload = Util.StreamingProtocol.decodePayload
 
-const { rethrow } = Util
+const rethrow = Util.rethrow.with('CL')
 const consumerCommit = true
 const fromSwitch = true
 

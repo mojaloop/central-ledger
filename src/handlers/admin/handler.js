@@ -46,7 +46,7 @@ const Db = require('../../lib/db')
 const httpPostRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_IN, Enum.Events.Event.Action.RECORD_FUNDS_OUT_PREPARE_RESERVE]
 const httpPutRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT, Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
-const { rethrow } = require('@mojaloop/central-services-shared').Util
+const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
 
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   /** @namespace Db.getKnex **/

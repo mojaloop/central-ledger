@@ -37,7 +37,7 @@
 
 const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrencyCached')
-const { rethrow } = require('@mojaloop/central-services-shared').Util
+const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
 
 /**
  * @function GetByParticipantCurrencyId

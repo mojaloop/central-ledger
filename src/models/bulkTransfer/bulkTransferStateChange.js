@@ -28,7 +28,7 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const { rethrow } = require('@mojaloop/central-services-shared').Util
+const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
 
 const create = async (stateChange) => {
   Logger.isDebugEnabled && Logger.debug('save bulkTransferStateChange' + stateChange.toString())
