@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.3.0](https://github.com/mojaloop/central-ledger/compare/v19.2.0...v19.3.0) (2025-03-18)
+
+
+### Features
+
+* rethrow with context ([#1160](https://github.com/mojaloop/central-ledger/issues/1160)) ([fb20c8f](https://github.com/mojaloop/central-ledger/commit/fb20c8f96a0a15ff3f028af276889ce7d438a178))
+
 ## [19.2.0](https://github.com/mojaloop/central-ledger/compare/v19.1.3...v19.2.0) (2025-03-13)
 
 
