@@ -31,7 +31,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 exports.getAll = async () => {
   try {

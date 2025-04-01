@@ -29,7 +29,7 @@
  ******/
 'use strict'
 
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../shared/logger').logger;
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
@@ -45,7 +45,7 @@ const Comparators = require('@mojaloop/central-services-shared').Util.Comparator
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const location = { module: 'BulkFulfilHandler', method: '', path: '' } // var object used as pointer
-const rethrow = Util.rethrow.with('CL')
+const rethrow = require('../../../shared/rethrow')
 const consumerCommit = true
 const fromSwitch = true
 

@@ -29,7 +29,7 @@
 
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const getReservedPositionChangesByCommitRequestId = async (commitRequestId) => {
   try {

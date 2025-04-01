@@ -45,7 +45,7 @@ const Db = require('../../lib/db')
 const participant = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
 const TransferExtensionModel = require('./fxTransferExtension')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const { TransferInternalState } = Enum.Transfers
 

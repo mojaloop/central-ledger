@@ -29,7 +29,7 @@
  ******/
 'use strict'
 
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../shared/logger').logger;
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
@@ -44,7 +44,7 @@ const Kafka = Util.Kafka
 const HeaderValidation = Util.HeaderValidation
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
-const rethrow = Util.rethrow.with('CL')
+const rethrow = require('../../../shared/rethrow')
 const consumerCommit = true
 const fromSwitch = true
 

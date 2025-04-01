@@ -38,7 +38,7 @@
  * @module src/handlers/transfers
  */
 
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger;
 const EventSdk = require('@mojaloop/event-sdk')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -65,7 +65,7 @@ const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 const decodePayload = Util.StreamingProtocol.decodePayload
 
-const rethrow = Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 const consumerCommit = true
 const fromSwitch = true
 

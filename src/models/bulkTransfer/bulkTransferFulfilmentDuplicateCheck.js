@@ -32,8 +32,8 @@
  */
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const Logger = require('../../shared/logger').logger;
+const rethrow = require('../../shared/rethrow')
 
 /**
  * @function GetBulkTransferFulfilmentDuplicateCheck

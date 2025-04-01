@@ -30,7 +30,7 @@
 const Cache = require('../../lib/cache')
 const SettlementModel = require('../../models/settlement/settlementModel')
 const Metrics = require('@mojaloop/central-services-metrics')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 let cacheClient
 let settlementModelsAllCacheKey

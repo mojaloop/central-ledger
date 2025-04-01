@@ -45,7 +45,7 @@ const externalParticipantModelCached = require('../../models/participant/externa
 const Config = require('../../lib/config')
 const SettlementModelModel = require('../settlement/settlementModel')
 const { logger } = require('../../shared/logger')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(

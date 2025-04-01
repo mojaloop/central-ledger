@@ -30,7 +30,7 @@
 const Db = require('../../lib/db')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const LibUtil = require('@mojaloop/central-services-shared').Util
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 exports.create = async (bulkTransferAssociation) => {
   try {

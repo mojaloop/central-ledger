@@ -50,7 +50,7 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const { BATCHING } = require('../../shared/constants')
 
 const consumerCommit = true
-const rethrow = Utility.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 /**
  * @function positions

@@ -46,7 +46,7 @@
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../shared/logger').logger;
 const requireGlob = require('require-glob')
 const TransferHandlers = require('./transfers/handler')
 const PositionHandlers = require('./positions/handler')
