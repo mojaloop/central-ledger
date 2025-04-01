@@ -34,7 +34,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const SettlementModel = require('../../../../src/models/settlement/settlementModel')
 const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 
 const SettlementService = require('../../../../src/domain/settlement/index')
 const ParticipantService = require('../../../../src/domain/participant')

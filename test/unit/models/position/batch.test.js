@@ -32,7 +32,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Model = require('../../../../src/models/position/batch')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
 const { Enum } = require('@mojaloop/central-services-shared')
 

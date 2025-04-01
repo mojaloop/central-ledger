@@ -6,7 +6,7 @@ const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 const Plugin = require('../../../src/handlers/api/plugin')
 const MetricsPlugin = require('@mojaloop/central-services-metrics').plugin
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../src/shared/logger').logger
 const ProxyCache = require('#src/lib/proxyCache')
 
 Test('cli', async (cliTest) => {

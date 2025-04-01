@@ -3,7 +3,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 const Handler = require('../../../../src/api/participants/handler')
 const Participant = require('../../../../src/domain/participant')
 const EnumCached = require('../../../../src/lib/enumCached')

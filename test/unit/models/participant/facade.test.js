@@ -35,7 +35,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Cache = require('../../../../src/lib/cache')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 const Proxyquire = require('proxyquire').callThru()
 const Model = Proxyquire('../../../../src/models/participant/facade', {
   '../../lib/config': {

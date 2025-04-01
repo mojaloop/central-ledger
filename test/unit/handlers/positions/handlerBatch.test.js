@@ -39,7 +39,7 @@ const BatchPositionModel = require('../../../../src/models/position/batch')
 const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Proxyquire = require('proxyquire')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 const ProxyCache = require('#src/lib/proxyCache')
 
 const topicName = 'topic-transfer-position-batch'
