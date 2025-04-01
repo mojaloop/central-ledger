@@ -32,7 +32,7 @@ const Test = require('tapes')(require('tape'))
 const { Enum } = require('@mojaloop/central-services-shared')
 const Sinon = require('sinon')
 const { processFxPositionPrepareBin } = require('../../../../src/domain/position/fx-prepare')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 const { randomUUID } = require('crypto')
 const Config = require('../../../../src/lib/config')
 

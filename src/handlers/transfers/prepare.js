@@ -50,7 +50,7 @@ const { FSPIOPErrorCodes } = ErrorHandler.Enums
 const { createFSPIOPError, reformatFSPIOPError } = ErrorHandler.Factory
 const { fspId } = Config.INSTRUMENTATION_METRICS_LABELS
 
-const rethrow = Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 const consumerCommit = true
 const fromSwitch = true
 const proxyEnabled = Config.PROXY_CACHE_CONFIG.enabled

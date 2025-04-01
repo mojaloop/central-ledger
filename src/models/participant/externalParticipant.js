@@ -29,7 +29,7 @@
 const Db = require('../../lib/db')
 const { logger } = require('../../shared/logger')
 const { TABLE_NAMES, DB_ERROR_CODES } = require('../../shared/constants')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const TABLE = TABLE_NAMES.externalParticipant
 const ID_FIELD = 'externalParticipantId'

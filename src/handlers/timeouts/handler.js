@@ -46,7 +46,7 @@ const TimeoutService = require('../../domain/timeout')
 const { logger } = require('../../shared/logger')
 
 const { Kafka, resourceVersions } = Utility
-const rethrow = Utility.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 const { Action, Type } = Enum.Events.Event
 
 let timeoutJob

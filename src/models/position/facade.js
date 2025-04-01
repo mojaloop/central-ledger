@@ -37,12 +37,12 @@ const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const participantFacade = require('../participant/facade')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const Metrics = require('@mojaloop/central-services-metrics')
 

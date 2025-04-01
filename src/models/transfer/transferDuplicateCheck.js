@@ -32,9 +32,9 @@
  */
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger
 const Metrics = require('@mojaloop/central-services-metrics')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 /**
  * @function GetTransferDuplicateCheck

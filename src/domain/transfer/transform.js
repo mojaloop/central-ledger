@@ -1,7 +1,7 @@
 'use strict'
 
 const Util = require('@mojaloop/central-services-shared').Util
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const transferProperties = [

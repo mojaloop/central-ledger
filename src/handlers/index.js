@@ -33,7 +33,7 @@
  * @module Handlers CLI Startup
  */
 
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../shared/logger').logger
 const Config = require('../lib/config')
 const Setup = require('../shared/setup')
 const PJson = require('../../package.json')

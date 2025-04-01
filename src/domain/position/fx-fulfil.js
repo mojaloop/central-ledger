@@ -37,7 +37,7 @@ const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger
 
 /**
  * @function processPositionFxFulfilBin

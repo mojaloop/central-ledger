@@ -28,9 +28,9 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger
 const Enum = require('@mojaloop/central-services-shared').Enum
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 const TS = Enum.Transfers.TransferInternalState
 
 const cleanup = async () => {

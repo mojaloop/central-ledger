@@ -29,7 +29,7 @@
 'use strict'
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const Transaction = require('../../domain/transactions')
 

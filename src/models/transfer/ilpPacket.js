@@ -30,7 +30,7 @@
 
 const Db = require('../../lib/db')
 const Util = require('@mojaloop/central-services-shared').Util
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 exports.saveIlpPacket = async (record) => {
   try {

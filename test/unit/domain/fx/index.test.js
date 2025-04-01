@@ -38,7 +38,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Fx = require('../../../../src/domain/fx')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 const { fxTransfer } = require('../../../../src/models/fxTransfer')
 const { Enum } = require('@mojaloop/central-services-shared')
 

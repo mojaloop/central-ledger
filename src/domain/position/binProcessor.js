@@ -29,7 +29,7 @@
  ******/
 'use strict'
 
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger
 const BatchPositionModel = require('../../models/position/batch')
 const BatchPositionModelCached = require('../../models/position/batchCached')
 const PositionPrepareDomain = require('./prepare')

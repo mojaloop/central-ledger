@@ -29,7 +29,7 @@
 const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
 const { logger } = require('../../shared/logger')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const getItemInWatchListByCommitRequestId = async (commitRequestId) => {
   logger.debug(`get item in watch list (commitRequestId=${commitRequestId})`)

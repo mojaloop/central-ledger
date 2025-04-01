@@ -36,7 +36,7 @@ const { statusEnum, serviceName } = require('@mojaloop/central-services-shared')
 
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 const ProxyCache = require('#src/lib/proxyCache')
 
 const {

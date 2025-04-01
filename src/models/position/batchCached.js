@@ -33,7 +33,7 @@
 const Cache = require('../../lib/cache')
 const Metrics = require('@mojaloop/central-services-metrics')
 const BatchPositionModel = require('./batch')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 let cacheClient
 let participantCurrencyAllCacheKey

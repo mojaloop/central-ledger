@@ -34,7 +34,7 @@
  * @module src/handlers/transfers
  */
 
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -46,7 +46,7 @@ const Db = require('../../lib/db')
 const httpPostRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_IN, Enum.Events.Event.Action.RECORD_FUNDS_OUT_PREPARE_RESERVE]
 const httpPutRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT, Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   /** @namespace Db.getKnex **/

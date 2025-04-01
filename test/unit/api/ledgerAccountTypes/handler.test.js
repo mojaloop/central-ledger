@@ -30,7 +30,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 const Handler = require('../../../../src/api/ledgerAccountTypes/handler')
 const LedgerAccountTypeService = require('../../../../src/domain/ledgerAccountTypes')
 const ProxyCache = require('#src/lib/proxyCache')

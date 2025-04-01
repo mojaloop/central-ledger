@@ -32,11 +32,11 @@ const ParticipantService = require('../../domain/participant')
 const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
 const Util = require('@mojaloop/central-services-shared').Util
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
 const SettlementService = require('../../domain/settlement')
-const rethrow = Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const LocalEnum = {
   activated: 'activated',

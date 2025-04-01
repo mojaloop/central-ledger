@@ -38,7 +38,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Cyril = require('../../../../src/domain/fx/cyril')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 const { Enum } = require('@mojaloop/central-services-shared')
 const TransferModel = require('../../../../src/models/transfer/transfer')
 const TransferFacade = require('../../../../src/models/transfer/facade')

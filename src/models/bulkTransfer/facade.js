@@ -34,7 +34,7 @@ const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Time = require('@mojaloop/central-services-shared').Util.Time
 // const BulkTransferAssociation = require('./BulkTransferAssociation')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const saveBulkTransferReceived = async (payload, participants, stateReason = null, isValid = true) => {
   try {

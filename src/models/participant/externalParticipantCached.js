@@ -29,7 +29,7 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const cache = require('../../lib/cache')
 const externalParticipantModel = require('./externalParticipant')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 let cacheClient
 let epAllCacheKey

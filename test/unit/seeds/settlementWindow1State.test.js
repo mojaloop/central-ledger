@@ -30,7 +30,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../src/shared/logger').logger
 const Model = require('../../../seeds/settlementWindow1State')
 
 Test('Settlement Window1 State', async (settlementWindow1StateTest) => {

@@ -33,7 +33,7 @@
 const Db = require('../../lib/db')
 const TransferExtensionModel = require('../transfer/transferExtension')
 const { Enum } = require('@mojaloop/central-services-shared')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const startDbTransaction = async () => {
   const knex = await Db.getKnex()

@@ -29,7 +29,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const getByCommitRequestId = async (commitRequestId, isFulfilment = false, isError = false) => {
   try {

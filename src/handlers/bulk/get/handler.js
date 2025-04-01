@@ -28,7 +28,7 @@
  ******/
 'use strict'
 
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../shared/logger').logger
 const EventSdk = require('@mojaloop/event-sdk')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
@@ -44,7 +44,7 @@ const Validator = require('../shared/validator')
 const { ERROR_HANDLING } = require('../../../lib/config')
 
 const location = { module: 'BulkGetHandler', method: '', path: '' }
-const rethrow = Util.rethrow.with('CL')
+const rethrow = require('../../../shared/rethrow')
 
 const consumerCommit = true
 const fromSwitch = true

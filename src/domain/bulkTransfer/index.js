@@ -42,7 +42,7 @@ const BulkTransferStateChangeModel = require('../../models/bulkTransfer/bulkTran
 const IndividualTransferModel = require('../../models/bulkTransfer/individualTransfer')
 const IndividualTransferExtensionModel = require('../../models/transfer/transferExtension')
 const MLNumber = require('@mojaloop/ml-number')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger
 
 const getBulkTransferById = async (id) => {
   try {

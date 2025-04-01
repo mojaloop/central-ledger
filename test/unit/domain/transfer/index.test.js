@@ -44,7 +44,7 @@ const TransferDuplicateCheckModel = require('../../../../src/models/transfer/tra
 const TransferFulfilmentDuplicateCheckModel = require('../../../../src/models/transfer/transferFulfilmentDuplicateCheck')
 const TransferErrorDuplicateCheckModel = require('../../../../src/models/transfer/transferErrorDuplicateCheck')
 const TransferInternalState = require('@mojaloop/central-services-shared').Enum.Transfers.TransferInternalState
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 
 const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',

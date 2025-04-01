@@ -33,7 +33,7 @@
 
 const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrencyCached')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const insert = async (participantLimit) => {
   try {

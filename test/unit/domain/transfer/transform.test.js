@@ -33,7 +33,7 @@ const Sinon = require('sinon')
 const { randomUUID } = require('crypto')
 const TransformService = require('../../../../src/domain/transfer/transform')
 const Util = require('@mojaloop/central-services-shared').Util
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../../../src/shared/logger').logger
 
 Test('Transform Service', transformTest => {
   let sandbox

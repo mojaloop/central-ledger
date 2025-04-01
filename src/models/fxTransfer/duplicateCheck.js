@@ -37,7 +37,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Db = require('../../lib/db')
 const { logger } = require('../../shared/logger')
 const { TABLE_NAMES } = require('../../shared/constants')
-const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('CL')
+const rethrow = require('../../shared/rethrow')
 
 const histName = 'model_fx_transfer'
 

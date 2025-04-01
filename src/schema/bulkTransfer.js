@@ -29,7 +29,7 @@
 'use strict'
 
 const mongoose = require('mongoose')
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../shared/logger').logger
 
 // single transfer model
 const transfer = {

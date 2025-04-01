@@ -27,7 +27,7 @@
 'use strict'
 
 const { statusEnum, serviceName } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
-const Logger = require('@mojaloop/central-services-logger')
+const Logger = require('../../shared/logger').logger
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const ProxyCache = require('../proxyCache')
 const MigrationLockModel = require('../../models/misc/migrationLock')
