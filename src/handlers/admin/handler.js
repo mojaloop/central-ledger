@@ -34,7 +34,7 @@
  * @module src/handlers/transfers
  */
 
-const Logger = require('../../shared/logger').logger;
+const Logger = require('../../shared/logger').logger
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum

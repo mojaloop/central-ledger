@@ -28,7 +28,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('../../shared/logger').logger;
+const Logger = require('../../shared/logger').logger
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TS = Enum.Transfers.TransferInternalState
 const rethrow = require('../../shared/rethrow')

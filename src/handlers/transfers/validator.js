@@ -37,7 +37,7 @@
  * @module src/handlers/transfers
  */
 
-const Logger = require('../../shared/logger').logger;
+const Logger = require('../../shared/logger').logger
 const Decimal = require('decimal.js')
 const Config = require('../../lib/config')
 const Participant = require('../../domain/participant')

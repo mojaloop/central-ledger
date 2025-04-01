@@ -33,7 +33,7 @@
  */
 
 const Db = require('../../lib/db')
-const Logger = require('../../shared/logger').logger;
+const Logger = require('../../shared/logger').logger
 const rethrow = require('../../shared/rethrow')
 
 /**

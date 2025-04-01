@@ -38,7 +38,7 @@
  * @module src/handlers/positions
  */
 
-const Logger = require('../../shared/logger').logger;
+const Logger = require('../../shared/logger').logger
 const EventSdk = require('@mojaloop/event-sdk')
 const TransferService = require('../../domain/transfer')
 const TransferObjectTransform = require('../../domain/transfer/transform')

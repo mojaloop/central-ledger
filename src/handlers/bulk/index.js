@@ -35,7 +35,7 @@ const BulkPrepareHandlers = require('./prepare/handler')
 const BulkFulfilHandlers = require('./fulfil/handler')
 const BulkProcessingHandlers = require('./processing/handler')
 const GetBulkTransferHandlers = require('./get/handler')
-const Logger = require('../../shared/logger').logger;
+const Logger = require('../../shared/logger').logger
 
 /**
  * @function RegisterAllHandlers

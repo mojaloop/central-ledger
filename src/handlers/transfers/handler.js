@@ -38,7 +38,7 @@
  * @module src/handlers/transfers
  */
 
-const Logger = require('../../shared/logger').logger;
+const Logger = require('../../shared/logger').logger
 const EventSdk = require('@mojaloop/event-sdk')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')

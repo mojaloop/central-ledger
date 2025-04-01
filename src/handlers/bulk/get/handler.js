@@ -28,7 +28,7 @@
  ******/
 'use strict'
 
-const Logger = require('../../../shared/logger').logger;
+const Logger = require('../../../shared/logger').logger
 const EventSdk = require('@mojaloop/event-sdk')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka

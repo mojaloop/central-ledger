@@ -34,7 +34,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
 const Util = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
-const Logger = require('../../shared/logger').logger;
+const Logger = require('../../shared/logger').logger
 const rethrow = require('../../shared/rethrow')
 
 const entityItem = ({ settlementModelId, name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, autoPositionReset }, ledgerAccountIds, settlementGranularityIds, settlementInterchangeIds, settlementDelayIds) => {

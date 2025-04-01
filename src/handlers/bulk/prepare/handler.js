@@ -30,7 +30,7 @@
  ******/
 'use strict'
 
-const Logger = require('../../../shared/logger').logger;
+const Logger = require('../../../shared/logger').logger
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka

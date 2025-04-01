@@ -36,7 +36,7 @@
 const Hapi = require('@hapi/hapi')
 const MongoUriBuilder = require('mongo-uri-builder')
 const ObjStoreDb = require('@mojaloop/object-store-lib').Db
-const Logger = require('../shared/logger').logger;
+const Logger = require('../shared/logger').logger
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 

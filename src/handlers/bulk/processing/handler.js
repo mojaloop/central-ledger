@@ -29,7 +29,7 @@
  ******/
 'use strict'
 
-const Logger = require('../../../shared/logger').logger;
+const Logger = require('../../../shared/logger').logger
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
