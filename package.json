@@ -95,7 +95,7 @@
     "@mojaloop/central-services-stream": "11.5.2",
     "@mojaloop/database-lib": "11.1.4",
     "@mojaloop/event-sdk": "14.4.0",
-    "@mojaloop/inter-scheme-proxy-cache-lib": "2.4.0",
+    "@mojaloop/inter-scheme-proxy-cache-lib": "2.5.0",
     "@mojaloop/ml-number": "11.2.7",
     "@mojaloop/object-store-lib": "12.0.7",
     "@now-ims/hapi-now-auth": "2.1.0",
