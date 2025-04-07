@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.4.3](https://github.com/mojaloop/central-ledger/compare/v19.4.2...v19.4.3) (2025-04-07)
+
+
+### Bug Fixes
+
+* migration script fix for updating existing databases ([#1163](https://github.com/mojaloop/central-ledger/issues/1163)) ([5f40ad5](https://github.com/mojaloop/central-ledger/commit/5f40ad52e603dd13fcb844568646476bf1adeb3a))
+
 ### [19.4.2](https://github.com/mojaloop/central-ledger/compare/v19.4.1...v19.4.2) (2025-04-07)
 
 
