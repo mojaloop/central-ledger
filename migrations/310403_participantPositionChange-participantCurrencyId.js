@@ -30,10 +30,27 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('participantPositionChange').then(function(exists) {
+  return await knex.schema.hasTable('participantPositionChange').then(async function(exists) {
     if (exists) {
-      return knex.schema.alterTable('participantPositionChange', (t) => {
-        t.integer('participantCurrencyId').unsigned().notNullable()
+      // Step 1: Add the column as nullable
+      await knex.schema.alterTable('participantPositionChange', (t) => {
+        t.integer('participantCurrencyId').unsigned()
+      })
+
+      // Step 2: Populate the column with participantCurrencyId from participantPosition
+      await knex('participantPositionChange')
+        .update({
+          participantCurrencyId: knex.raw(`
+            (SELECT pp.participantCurrencyId 
+             FROM participantPosition pp 
+             WHERE pp.participantPositionId = participantPositionChange.participantPositionId)
+          `)
+        })
+        .whereNull('participantCurrencyId')
+
+      // Step 3: Make it NOT NULL and add the foreign key
+      await knex.schema.alterTable('participantPositionChange', (t) => {
+        t.integer('participantCurrencyId').unsigned().notNullable().alter()
         t.foreign('participantCurrencyId').references('participantCurrencyId').inTable('participantCurrency')
       })
     }
