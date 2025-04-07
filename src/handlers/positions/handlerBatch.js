@@ -38,8 +38,7 @@ const BinProcessor = require('../../domain/position/binProcessor')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const Producer = require('@mojaloop/central-services-stream').Util.Producer
-const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
+const { Kafka: { otel }, Util: { Producer, Consumer } } = require('@mojaloop/central-services-stream')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
@@ -163,14 +162,17 @@ const positions = async (error, messages) => {
           action = item.message.metadata.event.action
         }
         const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
-        return Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
+        const produce = () => Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
+        return (Array.isArray(messages) && Config.KAFKA_CONFIG?.PRODUCER?.NOTIFICATION?.EVENT?.config)
+          ? otel.startConsumerTracingSpan(item.binItem, Config.KAFKA_CONFIG.PRODUCER.NOTIFICATION.EVENT.config).executeInsideSpanContext(produce)
+          : produce()
       }).concat(
         // Loop through followup messages and produce position messages for further processing of the transfer
         result.followupMessages.map(item => {
           // Produce position message and audit message
           const action = item.binItem.message?.value.metadata.event.action
           const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
-          return Kafka.produceGeneralMessage(
+          const produce = () => Kafka.produceGeneralMessage(
             Config.KAFKA_CONFIG,
             Producer,
             Enum.Events.Event.Type.POSITION,
@@ -181,6 +183,9 @@ const positions = async (error, messages) => {
             item.binItem.span,
             Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
           )
+          return (Array.isArray(messages) && Config.KAFKA_CONFIG?.PRODUCER?.TRANSFER?.POSITION?.config)
+            ? otel.startConsumerTracingSpan(item.binItem, Config.KAFKA_CONFIG.PRODUCER.TRANSFER.POSITION.config).executeInsideSpanContext(produce)
+            : produce()
         })
       ))
     }
