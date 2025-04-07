@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.4.2](https://github.com/mojaloop/central-ledger/compare/v19.4.1...v19.4.2) (2025-04-07)
+
+
+### Bug Fixes
+
+* preserve trace context during batch handling ([#1164](https://github.com/mojaloop/central-ledger/issues/1164)) ([ebfadc7](https://github.com/mojaloop/central-ledger/commit/ebfadc7dc604c5e7da51b0a097e500acf06acf88))
+
 ### [19.4.1](https://github.com/mojaloop/central-ledger/compare/v19.4.0...v19.4.1) (2025-04-01)
 
 
