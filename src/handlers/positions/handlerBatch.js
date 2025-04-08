@@ -63,7 +63,7 @@ const rethrow = require('../../shared/rethrow')
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 
-const positions = async (error, messages) => {
+const positions = batchConfig => async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_position_batch',
     'Consume a batch of prepare transfer messages from the kafka topic and process them',
@@ -163,8 +163,8 @@ const positions = async (error, messages) => {
         }
         const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
         const produce = () => Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
-        return (Array.isArray(messages) && Config.KAFKA_CONFIG?.PRODUCER?.NOTIFICATION?.EVENT?.config)
-          ? otel.startConsumerTracingSpan(item.binItem, Config.KAFKA_CONFIG.PRODUCER.NOTIFICATION.EVENT.config).executeInsideSpanContext(produce)
+        return (Array.isArray(messages) && messages.length > 1)
+          ? otel.startConsumerTracingSpan(item.binItem, batchConfig).executeInsideSpanContext(produce)
           : produce()
       }).concat(
         // Loop through followup messages and produce position messages for further processing of the transfer
@@ -183,8 +183,8 @@ const positions = async (error, messages) => {
             item.binItem.span,
             Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
           )
-          return (Array.isArray(messages) && Config.KAFKA_CONFIG?.PRODUCER?.TRANSFER?.POSITION?.config)
-            ? otel.startConsumerTracingSpan(item.binItem, Config.KAFKA_CONFIG.PRODUCER.TRANSFER.POSITION.config).executeInsideSpanContext(produce)
+          return (Array.isArray(messages) && messages.length > 1)
+            ? otel.startConsumerTracingSpan(item.binItem, batchConfig).executeInsideSpanContext(produce)
             : produce()
         })
       ))
@@ -225,7 +225,8 @@ const positions = async (error, messages) => {
  */
 const registerPositionHandler = async () => {
   try {
-    validateConfig()
+    const batchConfig = Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.TRANSFER.toUpperCase(), 'POSITION_BATCH')
+    validateConfig(batchConfig)
     await SettlementModelCached.initialize()
     // If there is no mapping, use default transformGeneralTopicName
     const topicName =
@@ -236,10 +237,10 @@ const registerPositionHandler = async () => {
         Enum.Events.Event.Action.PREPARE
       )
     const positionHandler = {
-      command: positions,
+      command: positions(batchConfig),
       topicName,
       // There is no corresponding action for POSITION_BATCH, so using straight value
-      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.TRANSFER.toUpperCase(), 'POSITION_BATCH')
+      config: batchConfig
     }
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${randomUUID()}`
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
@@ -249,8 +250,7 @@ const registerPositionHandler = async () => {
   }
 }
 
-const validateConfig = () => {
-  const batchConfig = Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.TRANSFER.toUpperCase(), 'POSITION_BATCH')
+const validateConfig = batchConfig => {
   if (batchConfig.options.batchSize < BATCHING.MIN || batchConfig.options.batchSize > BATCHING.MAX) {
     throw ErrorHandler.Factory.createFSPIOPError(
       ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
@@ -277,5 +277,5 @@ const registerAllHandlers = async () => {
 module.exports = {
   registerPositionHandler,
   registerAllHandlers,
-  positions
+  positions: positions()
 }
