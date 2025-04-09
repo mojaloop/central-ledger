@@ -164,7 +164,7 @@ const positions = batchConfig => async (error, messages) => {
         const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
         const produce = () => Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
         return (Array.isArray(messages) && messages.length > 1)
-          ? otel.startConsumerTracingSpan(item.binItem, batchConfig).executeInsideSpanContext(produce)
+          ? otel.startConsumerTracingSpan(item.binItem.message, batchConfig).executeInsideSpanContext(produce)
           : produce()
       }).concat(
         // Loop through followup messages and produce position messages for further processing of the transfer
@@ -184,7 +184,7 @@ const positions = batchConfig => async (error, messages) => {
             Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
           )
           return (Array.isArray(messages) && messages.length > 1)
-            ? otel.startConsumerTracingSpan(item.binItem, batchConfig).executeInsideSpanContext(produce)
+            ? otel.startConsumerTracingSpan(item.binItem.message, batchConfig).executeInsideSpanContext(produce)
             : produce()
         })
       ))
