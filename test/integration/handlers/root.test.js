@@ -31,13 +31,13 @@
 const Test = require('tape')
 const Joi = require('joi')
 const Logger = require('@mojaloop/central-services-logger')
-const Db = require('../../../src/lib/db')
+const Db = require('../../../dist/lib/db')
 
-const Config = require('../../../src/lib/config')
-const ProxyCache = require('../../../src/lib/proxyCache')
+const Config = require('../../../dist/lib/config')
+const ProxyCache = require('../../../dist/lib/proxyCache')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 // const Producer = require('@mojaloop/central-services-stream').Util.Producer
-const rootApiHandler = require('../../../src/api/root/handler')
+const rootApiHandler = require('../../../dist/api/root/handler')
 const {
   createRequest,
   unwrapResponse,
@@ -45,9 +45,9 @@ const {
 } = require('../../util/helpers')
 
 const Handlers = {
-  index: require('../../../src/handlers/register'),
-  positions: require('../../../src/handlers/positions/handler'),
-  transfers: require('../../../src/handlers/transfers/handler')
+  index: require('../../../dist/handlers/register'),
+  positions: require('../../../dist/handlers/positions/handler'),
+  transfers: require('../../../dist/handlers/transfers/handler')
 }
 
 const debug = false

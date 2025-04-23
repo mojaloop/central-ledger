@@ -32,8 +32,8 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/models/transfer/transfer')
-const Model = require('../../../src/models/transfer/transferExtension')
+const TransferModel = require('../../../dist/models/transfer/transfer')
+const Model = require('../../../dist/models/transfer/transferExtension')
 const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')

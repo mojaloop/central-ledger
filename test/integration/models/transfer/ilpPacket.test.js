@@ -33,12 +33,12 @@
 'use strict'
 
 const Test = require('tape')
-const Db = require('../../../../src/lib/db')
-const ProxyCache = require('../../../../src/lib/proxyCache')
+const Db = require('../../../../dist/lib/db')
+const ProxyCache = require('../../../../dist/lib/proxyCache')
 const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
-const Config = require('../../../../src/lib/config')
-const Service = require('../../../../src/models/transfer/ilpPacket')
+const Config = require('../../../../dist/lib/config')
+const Service = require('../../../../dist/models/transfer/ilpPacket')
 const HelperModule = require('../../helpers')
 
 Test('Ilp service tests', async (ilpTest) => {

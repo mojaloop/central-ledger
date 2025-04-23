@@ -31,9 +31,9 @@
 'use strict'
 
 const TransferPreparationModule = require('./transferTestHelper')
-const TransferModel = require('../../../src/models/transfer/facade')
+const TransferModel = require('../../../dist/models/transfer/facade')
 const TransferStatePreparationHelper = require('./transferState')
-const Model = require('../../../src/models/transfer/transferStateChange')
+const Model = require('../../../dist/models/transfer/transferStateChange')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async () => {

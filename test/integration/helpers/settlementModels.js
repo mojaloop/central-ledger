@@ -33,17 +33,17 @@
 
 'use strict'
 
-const Model = require('../../../src/domain/settlement')
-const Enums = require('../../../src/lib/enumCached')
+const Model = require('../../../dist/domain/settlement')
+const Enums = require('../../../dist/lib/enumCached')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Db = require('../../../src/lib/db')
-const Cache = require('../../../src/lib/cache')
-const ProxyCache = require('../../../src/lib/proxyCache')
-const ParticipantCached = require('../../../src/models/participant/participantCached')
-const ParticipantCurrencyCached = require('../../../src/models/participant/participantCurrencyCached')
-const ParticipantLimitCached = require('../../../src/models/participant/participantLimitCached')
-const SettlementModelCached = require('../../../src/models/settlement/settlementModelCached')
-const Config = require('../../../src/lib/config')
+const Db = require('../../../dist/lib/db')
+const Cache = require('../../../dist/lib/cache')
+const ProxyCache = require('../../../dist/lib/proxyCache')
+const ParticipantCached = require('../../../dist/models/participant/participantCached')
+const ParticipantCurrencyCached = require('../../../dist/models/participant/participantCurrencyCached')
+const ParticipantLimitCached = require('../../../dist/models/participant/participantLimitCached')
+const SettlementModelCached = require('../../../dist/models/settlement/settlementModelCached')
+const Config = require('../../../dist/lib/config')
 
 const settlementModels = [
   {

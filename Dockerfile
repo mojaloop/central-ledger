@@ -20,9 +20,12 @@ RUN apk add --no-cache -t build-dependencies make gcc g++ python3 py3-setuptools
     && cd $(npm root -g)/npm \
     && npm install -g node-gyp
 
-COPY package.json package-lock.json* /opt/app/
+COPY package.json package-lock.json* tsconfig.json /opt/app/
+COPY src /opt/app/src
 
 RUN npm ci
+RUN ls -la
+RUN npm run build
 RUN npm prune --omit=dev
 
 FROM node:${NODE_VERSION}
@@ -38,10 +41,7 @@ USER ml-user
 
 COPY --chown=ml-user --from=builder /opt/app .
 
-COPY src /opt/app/src
 COPY config /opt/app/config
-COPY migrations /opt/app/migrations
-COPY seeds /opt/app/seeds
 COPY test /opt/app/test
 
 EXPOSE 3001

@@ -27,9 +27,9 @@
  **********/
 
 const Test = require('tape')
-const externalParticipant = require('#src/models/participant/externalParticipant')
-const config = require('#src/lib/config')
-const db = require('#src/lib/db')
+const externalParticipant = require('../../../../dist/models/participant/externalParticipant')
+const config = require('../../../../dist/lib/config')
+const db = require('../../../../dist/lib/db')
 
 const fixtures = require('#test/fixtures')
 const { tryCatchEndTest } = require('#test/util/helpers')

@@ -29,13 +29,13 @@
 'use strict'
 
 const { randomUUID } = require('crypto')
-const TransferService = require('../../../src/domain/transfer')
+const TransferService = require('../../../dist/domain/transfer')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const CentralEnums = require('@mojaloop/central-services-shared').Enum
-const Config = require('../../../src/lib/config')
-const Enums = require('../../../src/lib/enumCached')
+const Config = require('../../../dist/lib/config')
+const Enums = require('../../../dist/lib/enumCached')
 
 const recordFundsInSampleData = {
   currency: 'USD',

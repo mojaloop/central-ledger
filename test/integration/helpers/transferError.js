@@ -30,9 +30,9 @@
 
 const TransferPreparationModule = require('./transfer')
 const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
-const TransferErrorDuplicateCheckModel = require('../../../src/models/transfer/transferErrorDuplicateCheck')
-const TransferErrorModel = require('../../../src/models/transfer/transferError')
-const TransferStateChangeModel = require('../../../src/models/transfer/transferStateChange')
+const TransferErrorDuplicateCheckModel = require('../../../dist/models/transfer/transferErrorDuplicateCheck')
+const TransferErrorModel = require('../../../dist/models/transfer/transferError')
+const TransferStateChangeModel = require('../../../dist/models/transfer/transferStateChange')
 const TransferStatePreparationHelper = require('./transferState')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 exports.prepareData = async () => {

@@ -32,7 +32,7 @@
 'use strict'
 
 // const ParticipantPreparationModule = require('./participant')
-const Model = require('../../../src/models/transfer/transfer')
+const Model = require('../../../dist/models/transfer/transfer')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 // const time = require('../../../src/lib/time')
 

@@ -28,7 +28,7 @@
 
 'use strict'
 
-const Model = require('../../../src/models/transfer/transferDuplicateCheck')
+const Model = require('../../../dist/models/transfer/transferDuplicateCheck')
 const ParticipantPreparationModule = require('./participant')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const Crypto = require('crypto')

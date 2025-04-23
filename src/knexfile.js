@@ -1,9 +1,6 @@
 'use strict'
 
-const migrationsDirectory = '../migrations'
-const seedsDirectory = '../seeds'
-
-const Config = require('../src/lib/config')
+const Config = require('./lib/config')
 
 module.exports = {
   client: 'mysql',
@@ -11,12 +8,12 @@ module.exports = {
   connection: Config.DATABASE.connection,
   pool: Config.DATABASE.pool,
   migrations: {
-    directory: migrationsDirectory,
+    directory: './migrations',
     tableName: 'migration',
-    stub: `${migrationsDirectory}/migration.template`
+    stub: './migrations/migration.template'
   },
   seeds: {
-    directory: seedsDirectory,
+    directory: './seeds',
     loadExtensions: ['.js']
   }
 }

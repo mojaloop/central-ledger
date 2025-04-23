@@ -28,7 +28,7 @@
 
 'use strict'
 
-const Model = require('../../../src/domain/participant')
+const Model = require('../../../dist/domain/participant')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async (name, endpointType, endpointValue) => {

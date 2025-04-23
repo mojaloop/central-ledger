@@ -32,11 +32,11 @@
 const Test = require('tape')
 const { randomUUID } = require('crypto')
 const Logger = require('@mojaloop/central-services-logger')
-const Config = require('#src/lib/config')
-const ProxyCache = require('#src/lib/proxyCache')
+const Config = require('../../../../dist/lib/config')
+const ProxyCache = require('../../../../dist/lib/proxyCache')
 const Time = require('@mojaloop/central-services-shared').Util.Time
-const Db = require('../../../../src/lib/db')
-const Cache = require('#src/lib/cache')
+const Db = require('../../../../dist/lib/db')
+const Cache = require('../../../../dist/lib/cache')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -46,9 +46,9 @@ const ParticipantFundsInOutHelper = require('#test/integration/helpers/participa
 const ParticipantEndpointHelper = require('#test/integration/helpers/participantEndpoint')
 const SettlementHelper = require('#test/integration/helpers/settlementModels')
 const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
-const TransferService = require('#src/domain/transfer/index')
-const ParticipantService = require('#src/domain/participant/index')
-const TransferExtensionModel = require('#src/models/transfer/transferExtension')
+const TransferService = require('../../../../dist/domain/transfer/index')
+const ParticipantService = require('../../../../dist/domain/participant/index')
+const TransferExtensionModel = require('../../../../dist/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const {
@@ -58,16 +58,16 @@ const {
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
 
-const ParticipantCached = require('#src/models/participant/participantCached')
-const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
-const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
-const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
+const ParticipantCached = require('../../../../dist/models/participant/participantCached')
+const ParticipantCurrencyCached = require('../../../../dist/models/participant/participantCurrencyCached')
+const ParticipantLimitCached = require('../../../../dist/models/participant/participantLimitCached')
+const SettlementModelCached = require('../../../../dist/models/settlement/settlementModelCached')
 
 const Handlers = {
-  index: require('#src/handlers/register'),
-  positions: require('#src/handlers/positions/handler'),
-  transfers: require('#src/handlers/transfers/handler'),
-  timeouts: require('#src/handlers/timeouts/handler')
+  index: require('../../../../dist/handlers/register'),
+  positions: require('../../../../dist/handlers/positions/handler'),
+  transfers: require('../../../../dist/handlers/transfers/handler'),
+  timeouts: require('../../../../dist/handlers/timeouts/handler')
 }
 
 const TransferState = Enum.Transfers.TransferState
@@ -452,7 +452,6 @@ Test('Handlers test', async handlersTest => {
         transfer = await wrapWithRetries(async () => {
           // lets fetch the transfer
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-          console.dir(transfer)
           // lets check its status, and if its what we expect return the result
           if (transfer?.transferState === 'RESERVED') return transfer
           // otherwise lets return nothing
