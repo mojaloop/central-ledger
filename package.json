@@ -10,7 +10,7 @@
     "Henk Kodde <henkkodde@modusbox.com>",
     "Kevin Leyow <kevin.leyow@modusbox.com>",
     "Lazola Lucas <lazola.lucas@modusbox.com>",
-    "Lewis Daly <lewisd@crosslaketech.com>",
+    "Lewis Daly <lewisd@tigerbeetle.com>",
     "Miguel de Barros <miguel.debarros@modusbox.com>",
     "Paweł Marzec <pawel.marzec@modusbox.com>",
     "Rajiv Mothilal <rajiv.mothilal@modusbox.com>",
@@ -35,11 +35,12 @@
     "test"
   ],
   "scripts": {
+    "build": "tsc",
     "start": "npm run start:api",
-    "start:api": "node src/api/index.js",
-    "start:handlers": "node src/handlers/index.js",
+    "start:api": "node dist/api/index.js",
+    "start:handlers": "node dist/handlers/index.js",
     "start:debug": "npm start --node-options --inspect=0.0.0.0",
-    "watch:api": "npx nodemon src/api/index.js",
+    "watch:api": "nodemon --exec ts-node ./src/api/index.js",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "lint": "npx standard",
     "lint:fix": "npx standard --fix",
@@ -54,7 +55,7 @@
     "test:int:spec": "npm run test:int | npx tap-spec",
     "test:xint": "npm run test:int | tee /dev/tty | tap-xunit > ./test/results/xunit-integration.xml",
     "test:xint-override": "npm run test:int-override | tee /dev/tty | tap-xunit > ./test/results/xunit-integration-override.xml",
-    "test:integration": "CSL_LOG_LEVEL=debug ./test/scripts/test-integration.sh",
+    "test:integration": "./test/scripts/test-integration.sh",
     "test:functional": "./test/scripts/test-functional.sh",
     "migrate": "npm run migrate:latest && npm run seed:run",
     "migrate:latest": "npx knex $npm_package_config_knex migrate:latest",
@@ -91,7 +92,7 @@
     "@mojaloop/central-services-health": "15.0.4",
     "@mojaloop/central-services-logger": "11.8.1",
     "@mojaloop/central-services-metrics": "12.5.0",
-    "@mojaloop/central-services-shared": "18.23.2",
+    "@mojaloop/central-services-shared": "18.24.0",
     "@mojaloop/central-services-stream": "11.5.2",
     "@mojaloop/database-lib": "11.1.4",
     "@mojaloop/event-sdk": "14.4.0",
@@ -104,7 +105,7 @@
     "base64url": "3.0.1",
     "blipp": "4.0.2",
     "commander": "13.1.0",
-    "cron": "4.1.4",
+    "cron": "4.3.0",
     "decimal.js": "10.5.0",
     "docdash": "2.0.2",
     "event-stream": "4.0.1",
@@ -127,7 +128,7 @@
   },
   "devDependencies": {
     "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.57.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.58.0",
     "@types/mock-knex": "0.4.8",
     "async-retry": "1.3.3",
     "audit-ci": "^7.1.0",
@@ -135,8 +136,8 @@
     "jsdoc": "4.0.4",
     "jsonpath": "1.1.1",
     "mock-knex": "0.4.13",
-    "nodemon": "3.1.9",
-    "npm-check-updates": "17.1.16",
+    "nodemon": "^3.1.10",
+    "npm-check-updates": "18.0.0",
     "nyc": "17.1.0",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",
@@ -147,7 +148,9 @@
     "tap-spec": "^5.0.0",
     "tap-xunit": "2.4.1",
     "tape": "4.16.2",
-    "tapes": "4.1.0"
+    "tapes": "4.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "overrides": {
     "undici": "6.21.1",
@@ -171,7 +174,7 @@
     "yargs-parser": "21.1.1"
   },
   "config": {
-    "knex": "--knexfile ./config/knexfile.js",
+    "knex": "--knexfile ./dist/knexfile.js",
     "images": {
       "api": "central-ledger",
       "admin": "central-ledger-admin"

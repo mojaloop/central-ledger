@@ -3,14 +3,20 @@
 echo "--=== Running Integration Test Runner ===--"
 echo
 
+## Set environment variables
+source ./docker/env.sh
+
 MYSQL_VERSION=${MYSQL_VERSION:-"latest"}
 KAFKA_VERSION=${MYSQL_VERSION:-"latest"}
 INT_TEST_SKIP_SHUTDOWN=${INT_TEST_SKIP_SHUTDOWN:-false}
+TEST_INT_RETRY_COUNT=10
 
 echo "==> Variables:"
 echo "====> MYSQL_VERSION=$MYSQL_VERSION"
 echo "====> KAFKA_VERSION=$KAFKA_VERSION"
 echo "====> INT_TEST_SKIP_SHUTDOWN=$INT_TEST_SKIP_SHUTDOWN"
+echo "====> TEST_INT_RETRY_COUNT=$TEST_INT_RETRY_COUNT"
+echo "====> REDIS_CLUSTER_ANNOUNCE_IP=$REDIS_CLUSTER_ANNOUNCE_IP"
 
 ## Set initial exit code value to 1 (i.e. assume error!)
 TTK_FUNC_TEST_EXIT_CODE=1
@@ -18,8 +24,9 @@ TTK_FUNC_TEST_EXIT_CODE=1
 ## Make reports directory
 mkdir ./test/results
 
-## Set environment variables
-source ./docker/env.sh
+## build typescript
+npm run build
+
 
 ## Start backend services
 echo "==> Starting Docker backend services"
@@ -54,6 +61,8 @@ echo "==> integration tests exited with code: $INTEGRATION_TEST_EXIT_CODE"
 echo "Stopping Service with Process ID=$PID"
 kill -9 $(cat /tmp/int-test-service.pid)
 kill -9 $(lsof -t -i:3001)
+
+exit 1
 
 ## Give some time before restarting service for override tests
 sleep $WAIT_FOR_REBALANCE

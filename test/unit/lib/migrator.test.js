@@ -17,7 +17,7 @@ Test('migrator', migratorTest => {
 
     configuredMigrationsFolder = 'migrations-path'
 
-    Migrator = Proxyquire('../../../src/lib/migrator', { '../../config/knexfile': { migrations: { directory: `../${configuredMigrationsFolder}` } } })
+    Migrator = Proxyquire('../../../src/lib/migrator', { '../../src/knexfile': { migrations: { directory: `../${configuredMigrationsFolder}` } } })
 
     t.end()
   })

@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "lib": [
+      "es2020", "esnext"
+    ],
+    "module": "commonjs",
+    "target": "es2020",
+    "allowJs": true,
+    "skipLibCheck": true,
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "config/knexfile.js",
+    "seeds/**/*.js",
+  ]
+}
