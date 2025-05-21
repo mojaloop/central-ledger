@@ -1,5 +1,4 @@
 version: 2.1
-setup: true
 orbs:
   build: mojaloop/build@1.0.58
   slack: circleci/slack@4.12.5
@@ -72,13 +71,123 @@ jobs:
           event: fail
           template: SLACK_TEMP_RELEASE_FAILURE
 workflows:
-  setup:
+  build_and_test:
     jobs:
       - build/workflow:
           context: org-global
           filters:
             tags:
               only: /v\d+(\.\d+){2}(-[a-zA-Z-][0-9a-zA-Z-]*\.\d+)?/
+      - pr-tools/pr-title-check:
+          context: org-global
+      - setup:
+          context: org-global
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - test-lint:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - test-unit:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - test-coverage:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - test-integration:
+          context: org-global
+          requires:
+            - setup
+            - build-local
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - test-functional:
+          context: org-global
+          requires:
+            - setup
+            - build-local
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - vulnerability-check:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - audit-licenses:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+      - license-scan:
+          context: org-global
+          requires:
+            - build-local
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
+            branches:
+              ignore:
+                - /.*/
+      - image-scan:
+          context: org-global
+          requires:
+            - build-local
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot(\.[0-9]+)?)?(\-hotfix(\.[0-9]+)?)?(\-perf(\.[0-9]+)?)?/
+            branches:
+              ignore:
+                - /.*/
       - release:
           context: org-global
           requires:
