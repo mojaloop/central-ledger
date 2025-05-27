@@ -4,6 +4,5 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
-    "GHSA-968p-4wvh-cqc8" // https://github.com/advisories/GHSA-968p-4wvh-cqc8
   ]
 }
