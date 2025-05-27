@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.5.0](https://github.com/mojaloop/central-ledger/compare/v19.4.4...v19.5.0) (2025-05-27)
+
+
+### Features
+
+* bump up node to v22.15.1 ([#1168](https://github.com/mojaloop/central-ledger/issues/1168)) ([11ba0e0](https://github.com/mojaloop/central-ledger/commit/11ba0e0ee2b98413e13687791321eb9f02ba8a09))
+
 ### [19.4.4](https://github.com/mojaloop/central-ledger/compare/v19.4.3...v19.4.4) (2025-04-10)
 
 
