@@ -104,6 +104,22 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       test.end()
     })
 
+    brokerTest.test('broker test fails when isConnected returns false for a topic', async test => {
+      // Arrange
+      Consumer.getListOfTopics.returns(['admin1', 'admin2'])
+      // First topic returns true, second returns false
+      Consumer.isConnected.withArgs('admin1').returns(Promise.resolve(true))
+      Consumer.isConnected.withArgs('admin2').returns(Promise.resolve(false))
+      const expected = { name: serviceName.broker, status: statusEnum.DOWN }
+
+      // Act
+      const result = await getSubServiceHealthBroker()
+
+      // Assert
+      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result when a topic is not connected')
+      test.end()
+    })
+
     brokerTest.end()
   })
 
