@@ -42,16 +42,16 @@ const MigrationLockModel = require('../../models/misc/migrationLock')
  * @returns Promise<SubServiceHealth> The SubService health object for the broker
  */
 const getSubServiceHealthBroker = async () => {
-  const consumerTopics = Consumer.getListOfTopics()
   let status = statusEnum.OK
 
   try {
+    const consumerTopics = Consumer.getListOfTopics()
     const results = await Promise.all(
       consumerTopics.map(async (t) => {
         try {
           return await Consumer.isConnected(t)
         } catch (err) {
-          Logger.isDebugEnabled && Logger.debug(`isConnected threw for topic ${t}: ${err.message}`)
+          Logger.isWarnEnabled && Logger.warn(`isConnected threw for topic ${t}: ${err.message}`)
           return false
         }
       })
@@ -61,7 +61,7 @@ const getSubServiceHealthBroker = async () => {
       status = statusEnum.DOWN
     }
   } catch (err) {
-    Logger.isDebugEnabled && Logger.debug(`getSubServiceHealthBroker failed with error ${err.message}.`)
+    Logger.isWarnEnabled && Logger.warn(`getSubServiceHealthBroker failed with error ${err.message}.`)
     status = statusEnum.DOWN
   }
 

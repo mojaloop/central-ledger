@@ -120,6 +120,35 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       test.end()
     })
 
+    brokerTest.test('broker test handles isConnected throwing for one topic', async test => {
+      // Arrange
+      Consumer.getListOfTopics.returns(['topic1', 'topic2'])
+      // topic1 resolves true, topic2 throws
+      Consumer.isConnected.withArgs('topic1').returns(Promise.resolve(true))
+      Consumer.isConnected.withArgs('topic2').throws(new Error('Connection error'))
+      const expected = { name: serviceName.broker, status: statusEnum.DOWN }
+
+      // Act
+      const result = await getSubServiceHealthBroker()
+
+      // Assert
+      test.deepEqual(result, expected, 'getSubServiceHealthBroker should be DOWN if isConnected throws for a topic')
+      test.end()
+    })
+
+    brokerTest.test('broker test handles getListOfTopics throwing error', async test => {
+      // Arrange
+      Consumer.getListOfTopics.throws(new Error('Failed to get topics'))
+      const expected = { name: serviceName.broker, status: statusEnum.DOWN }
+
+      // Act
+      const result = await getSubServiceHealthBroker()
+
+      // Assert
+      test.deepEqual(result, expected, 'getSubServiceHealthBroker should be DOWN if getListOfTopics throws')
+      test.end()
+    })
+
     brokerTest.end()
   })
 
