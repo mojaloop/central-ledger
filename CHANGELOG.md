@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.5.2](https://github.com/mojaloop/central-ledger/compare/v19.5.1...v19.5.2) (2025-06-02)
+
+
+### Chore
+
+* update check to account for false instead of just errors ([#1171](https://github.com/mojaloop/central-ledger/issues/1171)) ([ae18fcd](https://github.com/mojaloop/central-ledger/commit/ae18fcd6cf7865088a3a5388295a5dfb089d2ad2))
+
 ### [19.5.1](https://github.com/mojaloop/central-ledger/compare/v19.5.0...v19.5.1) (2025-05-28)
 
 
