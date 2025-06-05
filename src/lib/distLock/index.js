@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2024 Mojaloop Foundation
+ Copyright © 2020-2025 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -35,7 +35,7 @@ const Redis = require('ioredis')
 const { default: Redlock } = require('redlock')
 const { ERROR_MESSGAES } = require('./constants')
 
-// @todo Move to a shared library once stable
+// @todo Move to shared library once stable
 
 /**
  * @typedef {Object} DistributedLockConfig
@@ -64,17 +64,17 @@ const { ERROR_MESSGAES } = require('./constants')
  */
 class DistributedLock {
   constructor (config, logger) {
+    this.lock = null
     this.config = config
+    this.logger = logger || console
     this.redisInstances = config.redisConfig.instances.map(instance => this.createRedisClient(instance))
     this.redlock = new Redlock(this.redisInstances.map(instance => instance.nodes), {
-      driftFactor: config.driftFactor,
-      retryCount: config.retryCount,
-      retryDelay: config.retryDelay,
-      retryJitter: config.retryJitter
+      driftFactor: config.driftFactor || 0.01,
+      retryCount: config.retryCount || 3,
+      retryDelay: config.retryDelay || 200,
+      retryJitter: config.retryJitter || 100
     })
     this.redlock.on('error', this.handleError.bind(this))
-    this.lock = null
-    this.logger = logger || console
   }
 
   async createRedisClient (instance) {
@@ -114,7 +114,6 @@ class DistributedLock {
 
   handleError (error) {
     this.logger.error(ERROR_MESSGAES.REDLOCK_ERROR, error)
-    // Handle the error as needed, e.g., logging or retrying
   }
 }
 
@@ -125,7 +124,4 @@ const createDistLock = (config, logger) => {
   return new DistributedLock(config, logger)
 }
 
-module.exports = {
-  createDistLock,
-  ERROR_MESSGAES
-}
+module.exports = { createDistLock }

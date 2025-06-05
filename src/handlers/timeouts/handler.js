@@ -332,6 +332,7 @@ const initLock = async () => {
     if (!distLock) {
       distLock = createDistLock(Config.HANDLERS_TIMEOUT.DIST_LOCK)
     }
+    return
   }
   running = false
 }
@@ -342,6 +343,7 @@ const acquireLock = async () => {
       return await distLock.acquireLock(TIMEOUT_HANDLER_DIST_LOCK_KEY, Config.HANDLERS_TIMEOUT.DIST_LOCK.lockTimeout)
     } catch (err) {
       logger.warn('Error acquiring distributed lock:', err)
+      // should this be added to metric?
     }
   }
   logger.info('No distributed lock configured, running without distributed lock')
@@ -354,6 +356,7 @@ const releaseLock = async () => {
       return await distLock.releaseLock()
     } catch (error) {
       logger.warn('Error releasing distributed lock:', error)
+      // should this be added to metric?
     }
   }
   logger.info('No distributed lock configured, running without distributed lock')
