@@ -89,6 +89,7 @@ class DistributedLock {
     if (!this.lock) {
       throw new Error(ERROR_MESSGAES.ACQUIRE_ERROR)
     }
+    this.logger.info(`Lock acquired: ${this.lock.value} with TTL: ${ttl}ms`)
     return this.lock.value
   }
 
@@ -97,6 +98,7 @@ class DistributedLock {
       throw new Error(ERROR_MESSGAES.NO_LOCK_TO_RELEASE)
     }
     await this.redlock.release()
+    this.logger.info(`Lock released: ${this.lock.value}`)
     this.lock = null
     return true
   }
@@ -106,6 +108,7 @@ class DistributedLock {
       throw new Error(ERROR_MESSGAES.NO_LOCK_TO_EXTEND)
     }
     this.lock = await this.redlock.extend(ttl)
+    this.logger.info(`Lock extended: ${this.lock.value} with new TTL: ${ttl}ms`)
     return this.lock.value
   }
 
@@ -122,6 +125,7 @@ const createDistLock = (config, logger) => {
   if (!config || !config.redisConfig || !Array.isArray(config.redisConfig.instances)) {
     throw new Error(ERROR_MESSGAES.INVALID_CONFIG)
   }
+
   return new DistributedLock(config, logger)
 }
 
