@@ -36,6 +36,7 @@ const { default: Redlock } = require('redlock')
 const { ERROR_MESSGAES } = require('./constants')
 
 // @todo Move to shared library once stable
+// @todo determine which errors should be added to metrics and/or worth rethrowing
 
 /**
  * @typedef {Object} DistributedLockConfig
