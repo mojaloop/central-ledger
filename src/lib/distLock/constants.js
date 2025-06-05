@@ -1,0 +1,11 @@
+const ERROR_MESSGAES = {
+  ACQUIRE_ERROR: 'Failed to acquire distributed lock',
+  NO_LOCK_TO_RELEASE: 'No lock to release',
+  NO_LOCK_TO_EXTEND: 'No lock to extend',
+  REDLOCK_ERROR: 'Redlock error occurred',
+  INVALID_CONFIG: 'Invalid configuration for distributed lock'
+}
+
+module.exports = {
+  ERROR_MESSGAES
+}

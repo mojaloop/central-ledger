@@ -43,15 +43,18 @@ const EventSdk = require('@mojaloop/event-sdk')
 
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
+const { createDistLock } = require('../../lib/distLock')
 const { logger } = require('../../shared/logger')
 
 const { Kafka, resourceVersions } = Utility
 const rethrow = require('../../shared/rethrow')
+const { TIMEOUT_HANDLER_DIST_LOCK_KEY } = require('../../shared/constants')
 const { Action, Type } = Enum.Events.Event
 
 let timeoutJob
 let isRegistered
 let running = false
+let distLock
 
 /**
  * Processes timedOut transfers
@@ -261,9 +264,8 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
   */
 const timeout = async () => {
-  if (running) return
+  if (!await acquireLock()) return
   try {
-    running = true
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
     const intervalMin = timeoutSegment ? timeoutSegment.value : 0
     const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
@@ -296,7 +298,7 @@ const timeout = async () => {
     logger.error('error in timeout:', err)
     rethrow.rethrowAndCountFspiopError(err, { operation: 'timeoutHandler' })
   } finally {
-    running = false
+    await releaseLock()
   }
 }
 
@@ -325,6 +327,40 @@ const stop = async () => {
   }
 }
 
+const initLock = async () => {
+  if (Config.HANDLERS_TIMEOUT_DIST_LOCK_ENABLED === true) {
+    if (!distLock) {
+      distLock = createDistLock(Config.HANDLERS_TIMEOUT.DIST_LOCK)
+    }
+  }
+  running = false
+}
+
+const acquireLock = async () => {
+  if (distLock) {
+    try {
+      return await distLock.acquireLock(TIMEOUT_HANDLER_DIST_LOCK_KEY, Config.HANDLERS_TIMEOUT.DIST_LOCK.lockTimeout)
+    } catch (err) {
+      logger.warn('Error acquiring distributed lock:', err)
+    }
+  }
+  logger.info('No distributed lock configured, running without distributed lock')
+  return running ? false : (running = true)
+}
+
+const releaseLock = async () => {
+  if (distLock) {
+    try {
+      return await distLock.releaseLock()
+    } catch (error) {
+      logger.warn('Error releasing distributed lock:', error)
+    }
+  }
+  logger.info('No distributed lock configured, running without distributed lock')
+  running = false
+  return true
+}
+
 /**
   * @function RegisterTimeoutHandlers
   *
@@ -337,6 +373,8 @@ const registerTimeoutHandler = async () => {
     if (isRegistered) {
       await stop()
     }
+
+    await initLock()
 
     timeoutJob = CronJob.from({
       cronTime: Config.HANDLERS_TIMEOUT_TIMEXP,
