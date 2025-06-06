@@ -84,7 +84,7 @@ class DistributedLock extends LockInterface {
     this.#redlock.on('error', this.#handleError.bind(this))
   }
 
-  async acquire (key, ttl, aqcuireTimeout = 10000) {
+  async acquire (key, ttl, aqcuireTimeout = 5000) {
     let timeoutError
     const timeoutPromise = new Promise((_resolve, reject) => {
       const timeout = setTimeout(() => {
