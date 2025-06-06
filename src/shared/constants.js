@@ -79,7 +79,7 @@ const BATCHING = {
   MAX: 100_000
 }
 
-const TIMEOUT_HANDLER_DIST_LOCK_KEY = 'TimeoutHandlerLock'
+const TIMEOUT_HANDLER_DIST_LOCK_KEY = 'mutex:timeout-handler'
 
 module.exports = {
   DB_ERROR_CODES,

@@ -18,9 +18,6 @@ TTK_FUNC_TEST_EXIT_CODE=1
 ## Make reports directory
 mkdir ./test/results
 
-## Set environment variables
-source ./docker/env.sh
-
 ## Start backend services
 echo "==> Starting Docker backend services"
 docker compose pull mysql kafka init-kafka redis-node-0

@@ -55,6 +55,7 @@ let timeoutJob
 let isRegistered
 let running = false
 let distLock
+const distLockEnabled = Config.HANDLERS_TIMEOUT_DIST_LOCK_ENABLED === true
 
 /**
  * Processes timedOut transfers
@@ -328,7 +329,7 @@ const stop = async () => {
 }
 
 const initLock = async () => {
-  if (Config.HANDLERS_TIMEOUT_DIST_LOCK_ENABLED === true) {
+  if (distLockEnabled) {
     if (!distLock) {
       distLock = createDistLock(Config.HANDLERS_TIMEOUT.DIST_LOCK)
     }
@@ -338,26 +339,30 @@ const initLock = async () => {
 }
 
 const acquireLock = async () => {
-  if (distLock) {
+  if (distLockEnabled) {
     try {
-      return await distLock.acquireLock(TIMEOUT_HANDLER_DIST_LOCK_KEY, Config.HANDLERS_TIMEOUT.DIST_LOCK.lockTimeout)
+      return !!(await distLock.acquireLock(TIMEOUT_HANDLER_DIST_LOCK_KEY, Config.HANDLERS_TIMEOUT.DIST_LOCK.lockTimeout))
     } catch (err) {
       logger.warn('Error acquiring distributed lock:', err)
-      // should this be added to metric?
+      // should this be added to metrics?
     }
+    return false
   }
   logger.info('No distributed lock configured, running without distributed lock')
   return running ? false : (running = true)
 }
 
 const releaseLock = async () => {
-  if (distLock) {
+  if (distLockEnabled) {
     try {
-      return await distLock.releaseLock()
+      if (distLock.getLock()) {
+        return await distLock.releaseLock()
+      }
     } catch (error) {
       logger.warn('Error releasing distributed lock:', error)
-      // should this be added to metric?
+      // should this be added to metrics?
     }
+    return false
   }
   logger.info('No distributed lock configured, running without distributed lock')
   running = false
