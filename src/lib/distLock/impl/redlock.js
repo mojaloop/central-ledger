@@ -63,6 +63,7 @@ const { ERROR_MESSGAES } = require('../constants')
  *
  * @class DistributedLock
  * @param {DistributedLockConfig} config - Configuration for the distributed lock.
+ * @param {Object} [logger=console] - Logger instance for logging messages.
  */
 class DistributedLock extends LockInterface {
   #redlock = null
