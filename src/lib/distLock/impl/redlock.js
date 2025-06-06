@@ -67,6 +67,7 @@ const { ERROR_MESSGAES } = require('../constants')
 class DistributedLock extends LockInterface {
   #redlock = null
   #lock = null
+  #timeout = null
 
   constructor (config, logger) {
     super()
@@ -83,13 +84,33 @@ class DistributedLock extends LockInterface {
     this.#redlock.on('error', this.#handleError.bind(this))
   }
 
-  async acquire (key, ttl) {
-    this.#lock = await this.#redlock.acquire([key], ttl)
-    if (!this.#lock) {
-      throw new Error(ERROR_MESSGAES.ACQUIRE_ERROR)
+  async acquire (key, ttl, aqcuireTimeout = 10000) {
+    let timeoutError
+    const timeoutPromise = new Promise((_resolve, reject) => {
+      const timeout = setTimeout(() => {
+        timeoutError = new Error(ERROR_MESSGAES.TIMEOUT_ERROR)
+        reject(timeoutError)
+      }, aqcuireTimeout)
+      this.#timeout = timeout // Store timeout reference to clear it later
+    })
+
+    try {
+      this.#lock = await Promise.race([
+        this.#redlock.acquire([key], ttl),
+        timeoutPromise
+      ])
+      clearTimeout(this.#timeout) // Clear timeout if lock is acquired
+      if (!this.#lock) {
+        throw new Error(ERROR_MESSGAES.ACQUIRE_ERROR)
+      }
+      this.logger.debug(`Lock acquired: ${this.#lock.value} with TTL: ${ttl}ms`)
+      return this.#lock.value
+    } catch (error) {
+      if (error === timeoutError) {
+        this.logger.error(error.stack) // Possible redis connection issue
+      }
+      throw error // Re-throw the error for the caller to handle
     }
-    this.logger.debug(`Lock acquired: ${this.#lock.value} with TTL: ${ttl}ms`)
-    return this.#lock.value
   }
 
   async release () {

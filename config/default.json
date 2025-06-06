@@ -50,8 +50,9 @@
       "TIMEXP": "*/15 * * * * *",
       "TIMEZONE": "UTC",
       "DIST_LOCK": {
-        "enabled": false,
+        "enabled": true,
         "lockTimeout": 10000,
+        "acquireTimeout": 5000,
         "driftFactor": 0.01,
         "retryCount": 3,
         "retryDelay": 200,
