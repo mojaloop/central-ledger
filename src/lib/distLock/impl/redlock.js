@@ -102,7 +102,7 @@ class DistributedLock extends LockInterface {
     return true
   }
 
-  async _extend (ttl) {
+  async extend (ttl) {
     if (!this.#lock) {
       throw new Error(ERROR_MESSGAES.NO_LOCK_TO_EXTEND)
     }
