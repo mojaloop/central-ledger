@@ -43,7 +43,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
-const { createDistLock } = require('../../lib/distLock')
+const { createLock } = require('../../lib/distLock')
 const { logger } = require('../../shared/logger')
 
 const { Kafka, resourceVersions } = Utility
@@ -54,8 +54,11 @@ const { Action, Type } = Enum.Events.Event
 let timeoutJob
 let isRegistered
 let running = false
+
 let distLock
 const distLockEnabled = Config.HANDLERS_TIMEOUT_DIST_LOCK_ENABLED === true
+const distLockKey = TIMEOUT_HANDLER_DIST_LOCK_KEY
+const distLockTtl = Config.HANDLERS_TIMEOUT.DIST_LOCK.lockTimeout || 10000
 
 /**
  * Processes timedOut transfers
@@ -331,7 +334,7 @@ const stop = async () => {
 const initLock = async () => {
   if (distLockEnabled) {
     if (!distLock) {
-      distLock = createDistLock(Config.HANDLERS_TIMEOUT.DIST_LOCK)
+      distLock = createLock(Config.HANDLERS_TIMEOUT.DIST_LOCK, logger)
     }
     return
   }
@@ -341,7 +344,7 @@ const initLock = async () => {
 const acquireLock = async () => {
   if (distLockEnabled) {
     try {
-      return !!(await distLock.acquireLock(TIMEOUT_HANDLER_DIST_LOCK_KEY, Config.HANDLERS_TIMEOUT.DIST_LOCK.lockTimeout))
+      return !!(await distLock.acquire(distLockKey, distLockTtl))
     } catch (err) {
       logger.warn('Error acquiring distributed lock:', err)
       // should this be added to metrics?
@@ -356,7 +359,7 @@ const releaseLock = async () => {
   if (distLockEnabled) {
     try {
       if (distLock.getLock()) {
-        return await distLock.releaseLock()
+        return await distLock.release()
       }
     } catch (error) {
       logger.warn('Error releasing distributed lock:', error)

@@ -50,15 +50,13 @@
       "TIMEXP": "*/15 * * * * *",
       "TIMEZONE": "UTC",
       "DIST_LOCK": {
-        "enabled": false,
+        "enabled": true,
         "lockTimeout": 10000,
         "driftFactor": 0.01,
         "retryCount": 3,
         "retryDelay": 200,
         "retryJitter": 100,
-        "redisConfig": {
-          "instances": [{ "type": "redis-cluster", "cluster": [{ "host": "localhost", "port": 6379 }] }]
-        }
+        "redisConfigs": [{ "type": "redis-cluster", "cluster": [{ "host": "localhost", "port": 6379 }] }]
       }
     }
   },
