@@ -6,6 +6,13 @@
  */
 
 class LockInterface {
+  constructor () {
+    if (new.target === LockInterface) {
+      throw new TypeError('Cannot construct LockInterface instances directly')
+    }
+    validateInterface(this)
+  }
+
   acquire () {
     throw new Error('Method "acquire" must be implemented')
   }
@@ -17,14 +24,10 @@ class LockInterface {
   extend () {
     throw new Error('Method "extend" must be implemented')
   }
-
-  getLock () {
-    throw new Error('Method "getLock" must be implemented')
-  }
 }
 
-function getClassMethods (instance) {
-  const prototype = Object.getPrototypeOf(instance)
+function getClassMethodsFromClass (Class) {
+  const prototype = Class.prototype
   return Object.getOwnPropertyNames(prototype).filter(
     (prop) =>
       typeof prototype[prop] === 'function' &&
@@ -41,7 +44,7 @@ function hasOwnMethod (instance, methodName) {
 }
 
 function validateInterface (instance) {
-  const methods = getClassMethods(new LockInterface())
+  const methods = getClassMethodsFromClass(LockInterface)
   methods.forEach((method) => {
     if (!hasOwnMethod(instance, method)) {
       throw new Error(`Class must implement method: ${method}`)
@@ -49,7 +52,4 @@ function validateInterface (instance) {
   })
 }
 
-module.exports = {
-  LockInterface,
-  validateInterface
-}
+module.exports = LockInterface

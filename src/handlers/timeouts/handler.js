@@ -358,9 +358,7 @@ const acquireLock = async () => {
 const releaseLock = async () => {
   if (distLockEnabled) {
     try {
-      if (distLock.getLock()) {
-        return await distLock.release()
-      }
+      return await distLock.release()
     } catch (error) {
       logger.warn('Error releasing distributed lock:', error)
       // should this be added to metrics?

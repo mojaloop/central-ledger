@@ -33,7 +33,7 @@
 
 const Redis = require('ioredis')
 const { default: Redlock } = require('redlock')
-const { LockInterface, validateInterface } = require('../lock')
+const LockInterface = require('../lock')
 const { ERROR_MESSGAES } = require('../constants')
 
 // @todo Move to shared library once stable
@@ -111,10 +111,6 @@ class DistributedLock extends LockInterface {
     return this.#lock.value
   }
 
-  async getLock () {
-    return this.#lock
-  }
-
   #createRedisClient (instance) {
     return instance.type === 'redis-cluster'
       ? new Redis.Cluster(instance.cluster)
@@ -133,7 +129,6 @@ const createLock = (config, logger) => {
     throw new Error(ERROR_MESSGAES.INVALID_CONFIG)
   }
   const distLock = new DistributedLock(config, logger)
-  validateInterface(distLock)
   return distLock
 }
 
