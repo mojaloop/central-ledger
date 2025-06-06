@@ -1,1 +1,1 @@
-export * from './impl/redlock.js'
+module.exports = require('./impl/redlock.js')
