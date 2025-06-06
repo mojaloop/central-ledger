@@ -6,14 +6,14 @@
  */
 
 class LockInterface {
-  constructor () {
+  constructor (config, logger) {
     if (new.target === LockInterface) {
       throw new TypeError('Cannot construct LockInterface instances directly')
     }
     validateInterface(this)
   }
 
-  acquire () {
+  acquire (key, ttl, acquireTimeout) {
     throw new Error('Method "acquire" must be implemented')
   }
 
@@ -21,7 +21,7 @@ class LockInterface {
     throw new Error('Method "release" must be implemented')
   }
 
-  extend () {
+  extend (ttl) {
     throw new Error('Method "extend" must be implemented')
   }
 }
