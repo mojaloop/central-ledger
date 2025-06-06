@@ -54,7 +54,6 @@ Test('DistributedLock', async (distLockTest) => {
       t.ok(lock, 'Lock instance should be created')
       t.end()
     })
-
     t.test('should create a new DistributedLock with redis-cluster config', async (t) => {
       const minConfig = {
         redisConfigs: [{ type: 'redis-cluster', cluster: [{ host: 'localhost', port: 6379 }] }]
@@ -63,7 +62,6 @@ Test('DistributedLock', async (distLockTest) => {
       t.ok(lock, 'Lock instance with redis-cluster config should be created')
       t.end()
     })
-
     t.test('should create a new DistributedLock with defaults', async (t) => {
       const minConfig = {
         redisConfigs: [{ type: 'redis', host: 'localhost', port: 6379 }]
@@ -72,7 +70,6 @@ Test('DistributedLock', async (distLockTest) => {
       t.ok(lock, 'Lock instance with default config should be created')
       t.end()
     })
-
     t.test('should throw error for invalid config', async (t) => {
       const invalidConfig = { redisConfigs: 'invalid' }
       t.throws(() => DistributedLock.createLock(invalidConfig), /Invalid configuration/, 'Should throw error for invalid config')
@@ -88,7 +85,6 @@ Test('DistributedLock', async (distLockTest) => {
       t.equal(result, 'test-lock-value', 'Should return lock value')
       t.end()
     })
-
     t.test('should throw error on acquire timeout', async (t) => {
       const mockRedlockMod = sinon.stub().returns({
         acquire: async () => {
@@ -110,6 +106,7 @@ Test('DistributedLock', async (distLockTest) => {
       }
       t.end()
     })
+
     t.test('should throw error when lock cannot be acquired', async (t) => {
       const mockRedlockMod = sinon.stub().returns({
         acquire: async () => null,
@@ -139,7 +136,6 @@ Test('DistributedLock', async (distLockTest) => {
       t.true(result, 'Should return true on successful release')
       t.end()
     })
-
     t.test('should throw error when no lock to release', async (t) => {
       const lock = DistributedLock.createLock(mockConfig, mockLogger)
       try {
@@ -161,7 +157,6 @@ Test('DistributedLock', async (distLockTest) => {
       t.equal(result, 'test-lock-value', 'Should return lock value after extension')
       t.end()
     })
-
     t.test('should throw error when no lock to extend', async (t) => {
       const lock = DistributedLock.createLock(mockConfig, mockLogger)
       try {
@@ -189,12 +184,10 @@ Test('DistributedLock', async (distLockTest) => {
           }
         }
       })
-
       DistributedLock = Proxyquire('../../../../../src/lib/distLock/impl/redlock', {
         ioredis: mockRedis,
         redlock: { default: mockRedlockMod }
       })
-
       DistributedLock.createLock(mockConfig, errorLogger)
       t.true(errorLogged, 'Should log error')
       t.end()
