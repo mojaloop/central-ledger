@@ -34,20 +34,19 @@
 const Redis = require('ioredis')
 const { default: Redlock } = require('redlock')
 const LockInterface = require('../lock')
-const { ERROR_MESSGAES } = require('../constants')
+const { ERROR_MESSGAES, REDIS_TYPE } = require('../constants')
 
 // @todo Move to shared library once stable
 
 /**
  * @typedef {Object} DistributedLockConfig
- * @property {Object} redisConfig - Configuration for Redis instances.
  * @property {Array<Object>} redisConfigs - Array of Redis instance configurations.
  * @property {string} redisConfigs[].type - Type of Redis instance ('redis' or 'redis-cluster').
  * @property {string} redisConfigs[].host - Hostname of a standalone Redis instance when type is "redis".
  * @property {number} redisConfigs[].port - Port of a standalone Redis instance when type is "redis".
- * @property {number} redisConfigs[].cluster - Array of Redis nodes for cluster configuration.
- * @property {string} redisConfigs[].cluster[].host - Hostname of a standalone Redis instance when type is "redis".
- * @property {number} redisConfigs[].cluster[].port - Port of a standalone Redis instance when type is "redis".
+ * @property {number} redisConfigs[].cluster - Array of Redis leader nodes for cluster configuration when type is "redis-cluster".
+ * @property {string} redisConfigs[].cluster[].host - Hostname of the Redis leader node in a cluster.
+ * @property {number} redisConfigs[].cluster[].port - Port of a the Redis leader node in a cluster.
  * @property {number} [driftFactor=0.01] - Drift factor for Redlock.
  * @property {number} [retryCount=3] - Number of retry attempts for acquiring a lock.
  * @property {number} [retryDelay=200] - Delay in milliseconds between retry attempts.
@@ -108,7 +107,7 @@ class DistributedLock extends LockInterface {
       return this.#lock.value
     } catch (error) {
       if (error === timeoutError) {
-        this.logger.error(error.stack) // Possible redis connection issue
+        this.logger.error(error.stack) // Possible redis connection issue, cluster not correctly setup etc.
       }
       throw error // Re-throw the error for the caller to handle
     }
@@ -134,7 +133,7 @@ class DistributedLock extends LockInterface {
   }
 
   #createRedisClient (instance) {
-    return instance.type === 'redis-cluster'
+    return instance.type === REDIS_TYPE.REDIS_CLUSTER
       ? new Redis.Cluster(instance.cluster)
       : new Redis(instance)
   }

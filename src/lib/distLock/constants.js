@@ -7,6 +7,12 @@ const ERROR_MESSGAES = {
   TIMEOUT_ERROR: 'Timeout while trying to acquire lock'
 }
 
+const REDIS_TYPE = {
+  REDIS: 'redis',
+  REDIS_CLUSTER: 'redis-cluster'
+}
+
 module.exports = {
-  ERROR_MESSGAES
+  ERROR_MESSGAES,
+  REDIS_TYPE
 }

@@ -34,7 +34,7 @@
 const Test = require('tapes')(require('tape'))
 const sinon = require('sinon')
 const Proxyquire = require('proxyquire')
-const { mockRedis, mockRedlock, mockConfig, mockLogger } = require('./mocks')
+const { mockRedis, mockRedlock, mockConfig, mockLogger } = require('../mocks')
 const { ERROR_MESSGAES } = require('../../../../../src/lib/distLock/constants')
 
 Test('DistributedLock', async (distLockTest) => {
@@ -154,7 +154,7 @@ Test('DistributedLock', async (distLockTest) => {
       const lock = DistributedLock.createLock(mockConfig, mockLogger)
       await lock.acquire('test-key', 1000)
       const result = await lock.extend(2000)
-      t.equal(result, 'test-lock-value', 'Should return lock value after extension')
+      t.equal(result, 'test-lock-extend-value', 'Should return lock value after extension')
       t.end()
     })
     t.test('should throw error when no lock to extend', async (t) => {

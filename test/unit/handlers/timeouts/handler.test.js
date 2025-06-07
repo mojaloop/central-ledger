@@ -61,8 +61,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
     DistLockStub = {
       acquire: sandbox.stub().resolves(true),
       release: sandbox.stub().resolves(),
-      extend: sandbox.stub().resolves(),
-      getLock: sandbox.stub().resolves()
+      extend: sandbox.stub().resolves()
     }
     createDistLockStub = sandbox.stub(DistLock, 'createLock').returns(DistLockStub)
     Config.HANDLERS_TIMEOUT_DISABLED = false
