@@ -56,6 +56,7 @@ const getSubServiceHealthBroker = async () => {
         }
       })
     )
+
     if (results.some(connected => !connected)) {
       status = statusEnum.DOWN
     }
@@ -63,6 +64,7 @@ const getSubServiceHealthBroker = async () => {
     Logger.isWarnEnabled && Logger.warn(`getSubServiceHealthBroker failed with error ${err.message}.`)
     status = statusEnum.DOWN
   }
+
   return {
     name: serviceName.broker,
     status
