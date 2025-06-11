@@ -49,14 +49,13 @@ const getSubServiceHealthBroker = async () => {
     const results = await Promise.all(
       consumerTopics.map(async (t) => {
         try {
-          return await Consumer.isConnected(t)
+          return await Consumer.allConnected(t)
         } catch (err) {
           Logger.isWarnEnabled && Logger.warn(`isConnected threw for topic ${t}: ${err.message}`)
           return false
         }
       })
     )
-
     if (results.some(connected => !connected)) {
       status = statusEnum.DOWN
     }
@@ -64,7 +63,6 @@ const getSubServiceHealthBroker = async () => {
     Logger.isWarnEnabled && Logger.warn(`getSubServiceHealthBroker failed with error ${err.message}.`)
     status = statusEnum.DOWN
   }
-
   return {
     name: serviceName.broker,
     status
