@@ -12,5 +12,5 @@ reject: [
   "sinon",
   # glob >= 11 requires node >= 20
   "glob",
-  "@mojaloop/event-sdk"
+  "@mojaloop/event-sdk" # Tightly coupled peer dependencies with other Mojaloop components, need to be updated together.
 ]
