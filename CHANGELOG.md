@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.5.3](https://github.com/mojaloop/central-ledger/compare/v19.5.2...v19.5.3) (2025-06-11)
+
+
+### Bug Fixes
+
+* **csi-1538:** fix issue with broker reporting OK when kafka is disconnected ([#1173](https://github.com/mojaloop/central-ledger/issues/1173)) ([32c7f7a](https://github.com/mojaloop/central-ledger/commit/32c7f7a7db3ceefce49643ba0847f8063215d9f6))
+
 ### [19.5.2](https://github.com/mojaloop/central-ledger/compare/v19.5.1...v19.5.2) (2025-06-02)
 
 
