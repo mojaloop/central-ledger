@@ -65,7 +65,7 @@ Test('route handler', (handlerTest) => {
     healthTest.test('return status ok', async assert => {
       // Arrange
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
-      sandbox.stub(Consumer, 'isConnected').returns(Promise.resolve())
+      sandbox.stub(Consumer, 'allConnected').returns(Promise.resolve(true))
       sandbox.stub(ProxyCache, 'getCache').returns({
         connect: sandbox.stub(),
         disconnect: sandbox.stub(),
