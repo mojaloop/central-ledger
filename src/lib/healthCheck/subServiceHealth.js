@@ -51,7 +51,7 @@ const getSubServiceHealthBroker = async () => {
         try {
           return await Consumer.allConnected(t)
         } catch (err) {
-          Logger.isWarnEnabled && Logger.warn(`isConnected threw for topic ${t}: ${err.message}`)
+          Logger.isWarnEnabled && Logger.warn(`allConnected threw for topic ${t}: ${err.message}`)
           return false
         }
       })
