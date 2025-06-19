@@ -1,7 +1,7 @@
 version: 2.1
 setup: true
 orbs:
-  build: mojaloop/build@1.0.68
+  build: mojaloop/build@1.0.70
 workflows:
   setup:
     jobs:
