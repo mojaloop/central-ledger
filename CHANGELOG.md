@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.5.6](https://github.com/mojaloop/central-ledger/compare/v19.5.5...v19.5.6) (2025-06-19)
+
+
+### Chore
+
+* update orb version ([#1179](https://github.com/mojaloop/central-ledger/issues/1179)) ([30b6c11](https://github.com/mojaloop/central-ledger/commit/30b6c1195918fb7310a3b75a3b54f9be2fa3c1a3))
+
 ### [19.5.5](https://github.com/mojaloop/central-ledger/compare/v19.5.4...v19.5.5) (2025-06-13)
 
 
