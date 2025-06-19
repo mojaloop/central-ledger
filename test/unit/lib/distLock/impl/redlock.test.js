@@ -35,7 +35,7 @@ const Test = require('tapes')(require('tape'))
 const sinon = require('sinon')
 const Proxyquire = require('proxyquire')
 const { mockRedis, mockRedlock, mockConfig, mockLogger } = require('../mocks')
-const { ERROR_MESSGAES } = require('../../../../../src/lib/distLock/constants')
+const { ERROR_MESSAGES } = require('../../../../../src/lib/distLock/constants')
 
 Test('DistributedLock', async (distLockTest) => {
   let DistributedLock
@@ -102,7 +102,7 @@ Test('DistributedLock', async (distLockTest) => {
         await lock.acquire('test-key', 1000)
         t.fail('Should throw timeout error')
       } catch (error) {
-        t.equal(error.message, ERROR_MESSGAES.TIMEOUT_ERROR, 'Should throw timeout error')
+        t.equal(error.message, ERROR_MESSAGES.TIMEOUT_ERROR, 'Should throw timeout error')
       }
       t.end()
     })
@@ -121,7 +121,7 @@ Test('DistributedLock', async (distLockTest) => {
         await lock.acquire('test-key', 1000)
         t.fail('Should throw error when lock cannot be acquired')
       } catch (error) {
-        t.equal(error.message, ERROR_MESSGAES.ACQUIRE_ERROR, 'Should throw error when lock cannot be acquired')
+        t.equal(error.message, ERROR_MESSAGES.ACQUIRE_ERROR, 'Should throw error when lock cannot be acquired')
       }
       t.end()
     })
@@ -142,7 +142,7 @@ Test('DistributedLock', async (distLockTest) => {
         await lock.release()
         t.fail('Should throw error when no lock exists')
       } catch (error) {
-        t.equal(error.message, ERROR_MESSGAES.NO_LOCK_TO_RELEASE, 'Should throw error when no lock exists')
+        t.equal(error.message, ERROR_MESSAGES.NO_LOCK_TO_RELEASE, 'Should throw error when no lock exists')
       }
       t.end()
     })
@@ -163,7 +163,7 @@ Test('DistributedLock', async (distLockTest) => {
         await lock.extend(2000)
         t.fail('Should throw error when no lock exists')
       } catch (error) {
-        t.equal(error.message, ERROR_MESSGAES.NO_LOCK_TO_EXTEND, 'Should throw error when no lock exists')
+        t.equal(error.message, ERROR_MESSAGES.NO_LOCK_TO_EXTEND, 'Should throw error when no lock exists')
       }
       t.end()
     })

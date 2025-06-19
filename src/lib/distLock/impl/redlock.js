@@ -33,8 +33,9 @@
 
 const Redis = require('ioredis')
 const { default: Redlock } = require('redlock')
+const { logger: defaultLogger } = require('../../../shared/logger')
 const LockInterface = require('../lock')
-const { ERROR_MESSGAES, REDIS_TYPE } = require('../constants')
+const { ERROR_MESSAGES, REDIS_TYPE } = require('../constants')
 
 // @todo Move to shared library once stable
 
@@ -71,9 +72,8 @@ class DistributedLock extends LockInterface {
 
   constructor (config, logger) {
     super()
-    this.#lock = null
     this.config = config
-    this.logger = logger || console
+    this.logger = (logger || defaultLogger).child({ component: this.constructor.name })
     this.redisInstances = config.redisConfigs.map(instance => this.#createRedisClient(instance))
     this.#redlock = new Redlock(this.redisInstances, {
       driftFactor: config.driftFactor || 0.01,
@@ -88,7 +88,7 @@ class DistributedLock extends LockInterface {
     let timeoutError
     const timeoutPromise = new Promise((_resolve, reject) => {
       const timeout = setTimeout(() => {
-        timeoutError = new Error(ERROR_MESSGAES.TIMEOUT_ERROR)
+        timeoutError = new Error(ERROR_MESSAGES.TIMEOUT_ERROR)
         reject(timeoutError)
       }, aqcuireTimeout)
       this.#timeout = timeout // Store timeout reference to clear it later
@@ -101,7 +101,7 @@ class DistributedLock extends LockInterface {
       ])
       clearTimeout(this.#timeout) // Clear timeout if lock is acquired
       if (!this.#lock) {
-        throw new Error(ERROR_MESSGAES.ACQUIRE_ERROR)
+        throw new Error(ERROR_MESSAGES.ACQUIRE_ERROR)
       }
       this.logger.debug(`Lock acquired: ${this.#lock.value} with TTL: ${ttl}ms`)
       return this.#lock.value
@@ -115,7 +115,7 @@ class DistributedLock extends LockInterface {
 
   async release () {
     if (!this.#lock) {
-      throw new Error(ERROR_MESSGAES.NO_LOCK_TO_RELEASE)
+      throw new Error(ERROR_MESSAGES.NO_LOCK_TO_RELEASE)
     }
     await this.#redlock.release(this.#lock)
     this.logger.debug(`Lock released: ${this.#lock.value}`)
@@ -125,7 +125,7 @@ class DistributedLock extends LockInterface {
 
   async extend (ttl) {
     if (!this.#lock) {
-      throw new Error(ERROR_MESSGAES.NO_LOCK_TO_EXTEND)
+      throw new Error(ERROR_MESSAGES.NO_LOCK_TO_EXTEND)
     }
     this.#lock = await this.#redlock.extend(this.#lock, ttl)
     this.logger.debug(`Lock extended: ${this.#lock.value} with new TTL: ${ttl}ms`)
@@ -141,13 +141,13 @@ class DistributedLock extends LockInterface {
   #handleError (error) {
     // Logging with debug level as all redlock methods throw on all failures anyway.
     // The error here is only more specific for fixing technical issues.
-    this.logger.debug(ERROR_MESSGAES.REDLOCK_ERROR, error)
+    this.logger.debug(ERROR_MESSAGES.REDLOCK_ERROR, error)
   }
 }
 
 const createLock = (config, logger) => {
-  if (!Array.isArray(config.redisConfigs)) {
-    throw new Error(ERROR_MESSGAES.INVALID_CONFIG)
+  if (!Array.isArray(config?.redisConfigs)) {
+    throw new Error(ERROR_MESSAGES.INVALID_CONFIG)
   }
   const distLock = new DistributedLock(config, logger)
   return distLock
