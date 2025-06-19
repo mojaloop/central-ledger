@@ -33,15 +33,19 @@ const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const TimeoutHandler = require('../../../../src/handlers/timeouts/handler')
 const CronJob = require('cron').CronJob
+const Proxyquire = require('proxyquire')
 const TimeoutService = require('../../../../src/domain/timeout')
 const Config = require('../../../../src/lib/config')
 const { randomUUID } = require('crypto')
 const ProxyCache = require('#src/lib/proxyCache')
+const DistLock = require('../../../../src/lib/distLock')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 
 Test('Timeout handler', TimeoutHandlerTest => {
   let sandbox
+  let DistLockStub
+  let createDistLockStub
 
   TimeoutHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
@@ -54,6 +58,12 @@ Test('Timeout handler', TimeoutHandlerTest => {
       connect: sandbox.stub(),
       disconnect: sandbox.stub()
     })
+    DistLockStub = {
+      acquire: sandbox.stub().resolves(true),
+      release: sandbox.stub().resolves(),
+      extend: sandbox.stub().resolves()
+    }
+    createDistLockStub = sandbox.stub(DistLock, 'createLock').returns(DistLockStub)
     Config.HANDLERS_TIMEOUT_DISABLED = false
     test.end()
   })
@@ -172,7 +182,14 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
       Utility.produceGeneralMessage = sandbox.stub()
 
-      const result = await TimeoutHandler.timeout()
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
+      await TimeoutHandlerProxy.registerTimeoutHandler()
+      const result = await TimeoutHandlerProxy.timeout()
       const produceGeneralMessageCalls = Utility.produceGeneralMessage.getCalls()
 
       for (const message of produceGeneralMessageCalls) {
@@ -201,7 +218,14 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock1)
       Utility.produceGeneralMessage = sandbox.stub()
 
-      const result = await TimeoutHandler.timeout()
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
+      await TimeoutHandlerProxy.registerTimeoutHandler()
+      const result = await TimeoutHandlerProxy.timeout()
       const produceGeneralMessageCalls = Utility.produceGeneralMessage.getCalls()
 
       for (const message of produceGeneralMessageCalls) {
@@ -243,7 +267,14 @@ Test('Timeout handler', TimeoutHandlerTest => {
         ...resultMock1
       }
 
-      const result = await TimeoutHandler.timeout()
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
+      await TimeoutHandlerProxy.registerTimeoutHandler()
+      const result = await TimeoutHandlerProxy.timeout()
       test.deepEqual(result, expected, 'Expected result is returned')
       test.ok(Utility.produceGeneralMessage.notCalled, 'No messages have been produced produced')
       test.end()
@@ -251,8 +282,15 @@ Test('Timeout handler', TimeoutHandlerTest => {
 
     timeoutTest.test('throw error', async (test) => {
       TimeoutService.getTimeoutSegment = sandbox.stub().throws(new Error('Database unavailable'))
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
       try {
-        await TimeoutHandler.timeout()
+        await TimeoutHandlerProxy.registerTimeoutHandler()
+        await TimeoutHandlerProxy.timeout()
         test.fail('Error not thrown')
       } catch (err) {
         test.ok(err instanceof Error)
@@ -267,8 +305,15 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
       Utility.produceGeneralMessage = sandbox.stub().throws()
 
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
       try {
-        await TimeoutHandler.timeout()
+        await TimeoutHandlerProxy.registerTimeoutHandler()
+        await TimeoutHandlerProxy.timeout()
         test.error('Exception expected')
         test.end()
       } catch (err) {
@@ -292,8 +337,15 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(latestFxTransferStateChangeMock)
       Utility.produceGeneralMessage = sandbox.stub().throws()
 
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
       try {
-        await TimeoutHandler.timeout()
+        await TimeoutHandlerProxy.registerTimeoutHandler()
+        await TimeoutHandlerProxy.timeout()
         test.error('Exception expected')
         test.end()
       } catch (err) {
@@ -307,14 +359,24 @@ Test('Timeout handler', TimeoutHandlerTest => {
 
   TimeoutHandlerTest.test('registerAllHandlers should', registerHandlersTest => {
     registerHandlersTest.test('register timeout handler', async (test) => {
-      const result = await TimeoutHandler.registerAllHandlers()
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+      const result = await TimeoutHandlerProxy.registerAllHandlers()
       test.equal(result, true)
       test.end()
     })
 
     registerHandlersTest.test('do not start the handler when its disabled in config', async (test) => {
       Config.HANDLERS_TIMEOUT_DISABLED = true
-      const result = await TimeoutHandler.registerAllHandlers()
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+      const result = await TimeoutHandlerProxy.registerAllHandlers()
       test.equal(result, true)
       test.end()
     })
@@ -324,9 +386,14 @@ Test('Timeout handler', TimeoutHandlerTest => {
 
   TimeoutHandlerTest.test('registerTimeoutHandler should', registerTimeoutHandlerTest => {
     registerTimeoutHandlerTest.test('register timeout handler', async (test) => {
-      const result = await TimeoutHandler.registerAllHandlers()
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+      const result = await TimeoutHandlerProxy.registerAllHandlers()
       test.equal(result, true)
-      await TimeoutHandler.stop()
+      await TimeoutHandlerProxy.stop()
       test.end()
     })
 
@@ -337,8 +404,13 @@ Test('Timeout handler', TimeoutHandlerTest => {
     })
 
     registerTimeoutHandlerTest.test('isRunning', async (test) => {
-      await TimeoutHandler.registerAllHandlers()
-      const result = await TimeoutHandler.isRunning()
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+      await TimeoutHandlerProxy.registerAllHandlers()
+      const result = await TimeoutHandlerProxy.isRunning()
       test.equal(result, true)
       test.end()
     })
@@ -346,7 +418,12 @@ Test('Timeout handler', TimeoutHandlerTest => {
     registerTimeoutHandlerTest.test('should throw error', async (test) => {
       CronJob.prototype.start.throws(new Error())
       try {
-        await TimeoutHandler.registerAllHandlers()
+        const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+          '../../lib/distLock': {
+            createLock: createDistLockStub
+          }
+        })
+        await TimeoutHandlerProxy.registerAllHandlers()
         test.fail('should throw')
         test.end()
       } catch (e) {
@@ -360,7 +437,12 @@ Test('Timeout handler', TimeoutHandlerTest => {
 
   TimeoutHandlerTest.test('stop should', stopTest => {
     stopTest.test('to reach else branch', async (test) => {
-      await TimeoutHandler.stop()
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+      await TimeoutHandlerProxy.stop()
       test.pass('reached stop')
       test.end()
     })
