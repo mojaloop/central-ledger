@@ -35,6 +35,7 @@ const Test = require('tapes')(require('tape'))
 const sinon = require('sinon')
 const Proxyquire = require('proxyquire')
 const { mockRedis, mockRedlock, mockConfig, mockLogger } = require('../mocks')
+// todo: rename file back after resolving an issue with missed ../mocks
 const { ERROR_MESSAGES } = require('../../../../../src/lib/distLock/constants')
 
 Test('DistributedLock', async (distLockTest) => {
