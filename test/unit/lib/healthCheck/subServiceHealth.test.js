@@ -51,7 +51,7 @@ Test('SubServiceHealth test', subServiceHealthTest => {
   subServiceHealthTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Consumer, 'getListOfTopics')
-    sandbox.stub(Consumer, 'isConnected')
+    sandbox.stub(Consumer, 'allConnected')
     sandbox.stub(Logger, 'isDebugEnabled').value(true)
     proxyCacheStub = sandbox.stub(ProxyCache, 'getCache')
     t.end()
@@ -79,7 +79,7 @@ Test('SubServiceHealth test', subServiceHealthTest => {
     brokerTest.test('broker test fails when one broker cannot connect', async test => {
       // Arrange
       Consumer.getListOfTopics.returns(['admin1', 'admin2'])
-      Consumer.isConnected.throws(new Error('Not connected!'))
+      Consumer.allConnected.throws(new Error('Not connected!'))
       const expected = { name: serviceName.broker, status: statusEnum.DOWN }
 
       // Act
@@ -93,7 +93,7 @@ Test('SubServiceHealth test', subServiceHealthTest => {
     brokerTest.test('Passes when it connects', async test => {
       // Arrange
       Consumer.getListOfTopics.returns(['admin1', 'admin2'])
-      Consumer.isConnected.returns(Promise.resolve(true))
+      Consumer.allConnected.returns(Promise.resolve(true))
       const expected = { name: serviceName.broker, status: statusEnum.OK }
 
       // Act
@@ -108,8 +108,8 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       // Arrange
       Consumer.getListOfTopics.returns(['admin1', 'admin2'])
       // First topic returns true, second returns false
-      Consumer.isConnected.withArgs('admin1').returns(Promise.resolve(true))
-      Consumer.isConnected.withArgs('admin2').returns(Promise.resolve(false))
+      Consumer.allConnected.withArgs('admin1').returns(Promise.resolve(true))
+      Consumer.allConnected.withArgs('admin2').returns(Promise.resolve(false))
       const expected = { name: serviceName.broker, status: statusEnum.DOWN }
 
       // Act
@@ -124,8 +124,8 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       // Arrange
       Consumer.getListOfTopics.returns(['topic1', 'topic2'])
       // topic1 resolves true, topic2 throws
-      Consumer.isConnected.withArgs('topic1').returns(Promise.resolve(true))
-      Consumer.isConnected.withArgs('topic2').throws(new Error('Connection error'))
+      Consumer.allConnected.withArgs('topic1').returns(Promise.resolve(true))
+      Consumer.allConnected.withArgs('topic2').throws(new Error('Connection error'))
       const expected = { name: serviceName.broker, status: statusEnum.DOWN }
 
       // Act

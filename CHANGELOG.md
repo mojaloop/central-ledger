@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.5.6](https://github.com/mojaloop/central-ledger/compare/v19.5.5...v19.5.6) (2025-06-19)
+
+
+### Chore
+
+* update orb version ([#1179](https://github.com/mojaloop/central-ledger/issues/1179)) ([30b6c11](https://github.com/mojaloop/central-ledger/commit/30b6c1195918fb7310a3b75a3b54f9be2fa3c1a3))
+
+### [19.5.5](https://github.com/mojaloop/central-ledger/compare/v19.5.4...v19.5.5) (2025-06-13)
+
+
+### Chore
+
+* **sbom:** add initial sbom ([#1177](https://github.com/mojaloop/central-ledger/issues/1177)) ([bac8abb](https://github.com/mojaloop/central-ledger/commit/bac8abb756c9360cac4b371b6e23c68773791cb9))
+* **sbom:** update sbom-v19.5.4.csv [skip ci] ([c70b49b](https://github.com/mojaloop/central-ledger/commit/c70b49b4762296d92821cce99416ab2356e2e446))
+
+### [19.5.4](https://github.com/mojaloop/central-ledger/compare/v19.5.3...v19.5.4) (2025-06-12)
+
+
+### Chore
+
+* bump deps ([#1176](https://github.com/mojaloop/central-ledger/issues/1176)) ([b10d81c](https://github.com/mojaloop/central-ledger/commit/b10d81cfa283dabc5b5824b4bafa6c75fef2aed8))
+
+### [19.5.3](https://github.com/mojaloop/central-ledger/compare/v19.5.2...v19.5.3) (2025-06-11)
+
+
+### Bug Fixes
+
+* **csi-1538:** fix issue with broker reporting OK when kafka is disconnected ([#1173](https://github.com/mojaloop/central-ledger/issues/1173)) ([32c7f7a](https://github.com/mojaloop/central-ledger/commit/32c7f7a7db3ceefce49643ba0847f8063215d9f6))
+
 ### [19.5.2](https://github.com/mojaloop/central-ledger/compare/v19.5.1...v19.5.2) (2025-06-02)
 
 
