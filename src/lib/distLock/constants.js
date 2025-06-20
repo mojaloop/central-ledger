@@ -1,4 +1,4 @@
-const ERROR_MESSGAES = {
+const ERROR_MESSAGES = {
   ACQUIRE_ERROR: 'Failed to acquire lock',
   NO_LOCK_TO_RELEASE: 'No lock to release',
   NO_LOCK_TO_EXTEND: 'No lock to extend',
@@ -13,6 +13,6 @@ const REDIS_TYPE = {
 }
 
 module.exports = {
-  ERROR_MESSGAES,
+  ERROR_MESSAGES,
   REDIS_TYPE
 }
