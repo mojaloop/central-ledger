@@ -84,13 +84,13 @@ class DistributedLock extends LockInterface {
     this.#redlock.on('error', this.#handleError.bind(this))
   }
 
-  async acquire (key, ttl, aqcuireTimeout = 5000) {
+  async acquire (key, ttl, acquireTimeout = 2000) {
     let timeoutError
     const timeoutPromise = new Promise((_resolve, reject) => {
       const timeout = setTimeout(() => {
         timeoutError = new Error(ERROR_MESSAGES.TIMEOUT_ERROR)
         reject(timeoutError)
-      }, aqcuireTimeout)
+      }, acquireTimeout)
       this.#timeout = timeout // Store timeout reference to clear it later
     })
 
@@ -146,6 +146,7 @@ class DistributedLock extends LockInterface {
 }
 
 const createLock = (config, logger) => {
+  logger.verbose('createLock config: ', { config })
   if (!Array.isArray(config?.redisConfigs)) {
     throw new Error(ERROR_MESSAGES.INVALID_CONFIG)
   }
