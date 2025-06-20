@@ -43,13 +43,14 @@ const EventSdk = require('@mojaloop/event-sdk')
 
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
+const rethrow = require('../../shared/rethrow')
 const { createLock } = require('../../lib/distLock')
 const { logger } = require('../../shared/logger')
+const { TIMEOUT_HANDLER_DIST_LOCK_KEY } = require('../../shared/constants')
 
 const { Kafka, resourceVersions } = Utility
-const rethrow = require('../../shared/rethrow')
-const { TIMEOUT_HANDLER_DIST_LOCK_KEY } = require('../../shared/constants')
 const { Action, Type } = Enum.Events.Event
+const log = logger.child({ context: 'CL_TOH' })
 
 let timeoutJob
 let isRegistered
@@ -68,12 +69,13 @@ const distLockAcquireTimeout = Config.HANDLERS_TIMEOUT.DIST_LOCK.acquireTimeout 
  * @returns {Promise<void>}
  */
 const _processTimedOutTransfers = async (transferTimeoutList) => {
-  const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED).toApiErrorObject(Config.ERROR_HANDLING)
+  const fspiopError = createFSPIOPTimeoutError()
   if (!Array.isArray(transferTimeoutList)) {
     transferTimeoutList = [
       { ...transferTimeoutList }
     ]
   }
+  log.verbose(`processing ${transferTimeoutList.length} timed out transfers...`)
 
   for (const TT of transferTimeoutList) {
     const span = EventSdk.Tracer.createSpan('cl_transfer_timeout')
@@ -161,7 +163,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
         }
       }
     } catch (err) {
-      logger.error('error in _processTimedOutTransfers:', err)
+      log.error('error in _processTimedOutTransfers:', err)
       const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
@@ -182,12 +184,14 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
  * @returns {Promise<void>}
  */
 const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
-  const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED).toApiErrorObject(Config.ERROR_HANDLING)
+  const fspiopError = createFSPIOPTimeoutError()
   if (!Array.isArray(fxTransferTimeoutList)) {
     fxTransferTimeoutList = [
       { ...fxTransferTimeoutList }
     ]
   }
+  log.verbose(`processing ${fxTransferTimeoutList.length} timed out fxTransfers...`)
+
   for (const fTT of fxTransferTimeoutList) {
     const span = EventSdk.Tracer.createSpan('cl_fx_transfer_timeout')
     try {
@@ -242,7 +246,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
         )
       }
     } catch (err) {
-      logger.error('error in _processFxTimedOutTransfers:', err)
+      log.error('error in _processFxTimedOutTransfers:', err)
       const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
@@ -300,7 +304,7 @@ const timeout = async () => {
       fxTransferTimeoutList
     }
   } catch (err) {
-    logger.error('error in timeout:', err)
+    log.error('error in timeout:', err)
     rethrow.rethrowAndCountFspiopError(err, { operation: 'timeoutHandler' })
   } finally {
     await releaseLock()
@@ -335,7 +339,7 @@ const stop = async () => {
 const initLock = async () => {
   if (distLockEnabled) {
     if (!distLock) {
-      distLock = createLock(Config.HANDLERS_TIMEOUT.DIST_LOCK, logger)
+      distLock = createLock(Config.HANDLERS_TIMEOUT.DIST_LOCK, log)
     }
     return
   }
@@ -347,12 +351,12 @@ const acquireLock = async () => {
     try {
       return !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
     } catch (err) {
-      logger.warn('Error acquiring distributed lock:', err)
+      log.warn('Error acquiring distributed lock:', err)
       // should this be added to metrics?
     }
     return false
   }
-  logger.info('Distributed lock not configured or disabled, running without distributed lock')
+  log.info('Distributed lock not configured or disabled, running without distributed lock')
   return running ? false : (running = true)
 }
 
@@ -361,12 +365,12 @@ const releaseLock = async () => {
     try {
       return await distLock.release()
     } catch (error) {
-      logger.warn('Error releasing distributed lock:', error)
+      log.warn('Error releasing distributed lock:', error)
       // should this be added to metrics?
     }
     return false
   }
-  logger.info('Distributed lock not configured or disabled, running without distributed lock')
+  log.info('Distributed lock not configured or disabled, running without distributed lock')
   running = false
   return true
 }
@@ -395,9 +399,10 @@ const registerTimeoutHandler = async () => {
     isRegistered = true
 
     await timeoutJob.start()
+    log.error('registerTimeoutHandler is done')
     return true
   } catch (err) {
-    logger.error('error in registerTimeoutHandler:', err)
+    log.error('error in registerTimeoutHandler:', err)
     rethrow.rethrowAndCountFspiopError(err, { operation: 'registerTimeoutHandler' })
   }
 }
@@ -415,12 +420,15 @@ const registerAllHandlers = async () => {
     if (!Config.HANDLERS_TIMEOUT_DISABLED) {
       await registerTimeoutHandler()
     }
+    log.info('registerAllHandlers is done')
     return true
   } catch (err) {
-    logger.error('error in registerAllHandlers:', err)
+    log.error('error in registerAllHandlers:', err)
     rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
 }
+
+const createFSPIOPTimeoutError = () => ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED).toApiErrorObject(Config.ERROR_HANDLING)
 
 module.exports = {
   timeout,
