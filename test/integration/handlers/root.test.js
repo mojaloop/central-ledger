@@ -64,7 +64,7 @@ Test('Root handler test', async handlersTest => {
 
       const isReady = async () => {
         const consumerTopics = Consumer.getListOfTopics()
-        await Promise.all(consumerTopics.map(t => Consumer.isConnected(t)))
+        await Promise.all(consumerTopics.map(t => Consumer.allConnected(t)))
       }
       try {
         await waitFor(isReady, 'Consumers to be up', 5, 3)
