@@ -4,7 +4,7 @@ per-file: true
 lines: 90
 statements: 90
 functions: 90
-branches: 80 # todo: revert to 90 after adding needed tests to /src/handlers/timeouts/handler.js
+branches: 90
 all: true
 include: [
   "src/**/*.js"

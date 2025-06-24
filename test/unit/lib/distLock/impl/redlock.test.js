@@ -59,7 +59,7 @@ Test('DistributedLock', async (distLockTest) => {
       const minConfig = {
         redisConfigs: [{ type: 'redis-cluster', cluster: [{ host: 'localhost', port: 6379 }] }]
       }
-      const lock = DistributedLock.createLock(minConfig)
+      const lock = DistributedLock.createLock(minConfig, mockLogger)
       t.ok(lock, 'Lock instance with redis-cluster config should be created')
       t.end()
     })
@@ -67,13 +67,13 @@ Test('DistributedLock', async (distLockTest) => {
       const minConfig = {
         redisConfigs: [{ type: 'redis', host: 'localhost', port: 6379 }]
       }
-      const lock = DistributedLock.createLock(minConfig)
+      const lock = DistributedLock.createLock(minConfig, mockLogger)
       t.ok(lock, 'Lock instance with default config should be created')
       t.end()
     })
     t.test('should throw error for invalid config', async (t) => {
       const invalidConfig = { redisConfigs: 'invalid' }
-      t.throws(() => DistributedLock.createLock(invalidConfig), /Invalid configuration/, 'Should throw error for invalid config')
+      t.throws(() => DistributedLock.createLock(invalidConfig, mockLogger), /Invalid configuration/, 'Should throw error for invalid config')
       t.end()
     })
     t.end()
@@ -176,7 +176,9 @@ Test('DistributedLock', async (distLockTest) => {
       let errorLogged = false
       const errorLogger = {
         debug: () => { errorLogged = true },
-        error: () => {}
+        verbose: () => {},
+        error: () => {},
+        child: () => errorLogger
       }
       const mockRedlockMod = sinon.stub().returns({
         on: (event, handler) => {

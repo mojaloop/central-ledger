@@ -336,43 +336,42 @@ const stop = async () => {
   }
 }
 
+/* istanbul ignore next */
 const initLock = async () => {
   if (distLockEnabled) {
     if (!distLock) {
       distLock = createLock(Config.HANDLERS_TIMEOUT.DIST_LOCK, log)
     }
-    return
   }
-  running = false
 }
 
+/* istanbul ignore next */
 const acquireLock = async () => {
   if (distLockEnabled) {
     try {
       return !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
     } catch (err) {
-      log.warn('Error acquiring distributed lock:', err)
+      log.error('Error acquiring distributed lock:', err)
       // should this be added to metrics?
+      return false
     }
-    return false
   }
   log.info('Distributed lock not configured or disabled, running without distributed lock')
   return running ? false : (running = true)
 }
 
+/* istanbul ignore next */
 const releaseLock = async () => {
-  if (distLockEnabled) {
+  if (distLock) {
     try {
-      return await distLock.release()
+      await distLock.release()
     } catch (error) {
-      log.warn('Error releasing distributed lock:', error)
+      log.error('Error releasing distributed lock:', error)
       // should this be added to metrics?
     }
-    return false
   }
   log.info('Distributed lock not configured or disabled, running without distributed lock')
   running = false
-  return true
 }
 
 /**
@@ -399,7 +398,7 @@ const registerTimeoutHandler = async () => {
     isRegistered = true
 
     await timeoutJob.start()
-    log.error('registerTimeoutHandler is done')
+    log.info('registerTimeoutHandler is done')
     return true
   } catch (err) {
     log.error('error in registerTimeoutHandler:', err)
