@@ -1,8 +1,10 @@
 const sinon = require('sinon')
+const { logger } = require('#src/shared/logger/index')
 
 const mockRedis = sinon.stub()
 const mockCluster = sinon.stub()
 mockRedis.Cluster = mockCluster
+
 const mockRedlock = sinon.stub().returns({
   acquire: async () => ({ value: 'test-lock-value' }),
   release: async () => {},
@@ -10,10 +12,7 @@ const mockRedlock = sinon.stub().returns({
   on: () => {}
 })
 
-const mockLogger = {
-  debug: sinon.stub(),
-  error: sinon.stub()
-}
+const mockLogger = logger.child({ context: 'tests' })
 
 const mockConfig = {
   redisConfigs: [
