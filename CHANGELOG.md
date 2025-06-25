@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.6.0](https://github.com/mojaloop/central-ledger/compare/v19.5.6...v19.6.0) (2025-06-25)
+
+
+### Features
+
+* **csi-1510:** timeout handler distributed lock ([#1172](https://github.com/mojaloop/central-ledger/issues/1172)) ([747fda1](https://github.com/mojaloop/central-ledger/commit/747fda1ddea6fe91c660b89ace2d5764870b7fe2)), closes [#1180](https://github.com/mojaloop/central-ledger/issues/1180)
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([b57615c](https://github.com/mojaloop/central-ledger/commit/b57615c6bbe773934ff6bcf99bd3b497a7155186))
+
 ### [19.5.6](https://github.com/mojaloop/central-ledger/compare/v19.5.5...v19.5.6) (2025-06-19)
 
 
