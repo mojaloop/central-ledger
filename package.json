@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "19.5.6",
+  "version": "19.6.0-snapshot.2",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -46,6 +46,7 @@
     "test": "npm run test:unit:spec",
     "test:unit": "npx tape 'test/unit/**/*.test.js'",
     "test:unit:spec": "npm run test:unit | tap-spec",
+    "test:unit:distLock": "npx tape 'test/unit/lib/distLock/**/*.test.js'",
     "test:xunit": "npm run test:unit | tap-xunit > ./test/results/xunit.xml",
     "test:coverage": "npx nyc --reporter=lcov --reporter=text-summary tapes -- 'test/unit/**/**.test.js'",
     "test:coverage-check": "npm run test:coverage && nyc check-coverage",
@@ -63,7 +64,7 @@
     "migrate:current": "npx knex migrate:currentVersion $npm_package_config_knex",
     "seed:run": "npx knex seed:run $npm_package_config_knex",
     "docker:build": "docker build --build-arg NODE_VERSION=\"$(cat .nvmrc)-alpine\" -t mojaloop/central-ledger:local .",
-    "docker:up": ". ./docker/env.sh && docker-compose -f docker-compose.yml up -d",
+    "docker:up": "docker-compose -f docker-compose.yml up -d",
     "docker:up:backend": "docker-compose up -d ml-api-adapter mysql mockserver kafka kowl temp_curl",
     "docker:up:int": "docker compose up -d kafka init-kafka objstore mysql",
     "docker:script:populateTestData": "sh ./test/util/scripts/populateTestData.sh",
@@ -113,6 +114,7 @@
     "hapi-auth-bearer-token": "8.0.0",
     "hapi-swagger": "17.3.2",
     "ilp-packet": "2.2.0",
+    "ioredis": "5.6.1",
     "joi": "17.13.3",
     "knex": "3.1.0",
     "lodash": "4.17.21",
@@ -120,6 +122,7 @@
     "mongo-uri-builder": "^4.0.0",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8",
+    "redlock": "5.0.0-beta.2",
     "require-glob": "^4.1.0"
   },
   "optionalDependencies": {

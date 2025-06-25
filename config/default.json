@@ -48,7 +48,17 @@
     "TIMEOUT": {
       "DISABLED": false,
       "TIMEXP": "*/15 * * * * *",
-      "TIMEZONE": "UTC"
+      "TIMEZONE": "UTC",
+      "DIST_LOCK": {
+        "enabled": false,
+        "lockTimeout": 10000,
+        "acquireTimeout": 5000,
+        "driftFactor": 0.01,
+        "retryCount": 3,
+        "retryDelay": 200,
+        "retryJitter": 100,
+        "redisConfigs": [{ "type": "redis-cluster", "cluster": [{ "host": "localhost", "port": 6379 }] }]
+      }
     }
   },
   "INSTRUMENTATION": {

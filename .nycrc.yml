@@ -18,6 +18,7 @@ exclude: [
   '**/migrations/**',
   '**/ddl/**',
   '**/bulk*/**',
+  'src/lib/distLock/impl/**',
   'src/shared/logger/**',
   'src/shared/loggingPlugin.js',
   'src/shared/constants.js',
