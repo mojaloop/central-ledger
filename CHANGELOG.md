@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.6.2](https://github.com/mojaloop/central-ledger/compare/v19.6.1...v19.6.2) (2025-06-25)
+
+
+### Bug Fixes
+
+* **csi-1510:** fixed issue with DIST_LOCK config ([#1182](https://github.com/mojaloop/central-ledger/issues/1182)) ([ed330a7](https://github.com/mojaloop/central-ledger/commit/ed330a74e940935e21582a68188c59f0f97ae54e))
+
 ### [19.6.1](https://github.com/mojaloop/central-ledger/compare/v19.6.0...v19.6.1) (2025-06-25)
 
 
