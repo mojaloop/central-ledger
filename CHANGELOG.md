@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.6.3](https://github.com/mojaloop/central-ledger/compare/v19.6.2...v19.6.3) (2025-06-26)
+
+
+### Bug Fixes
+
+* **csi-1510:** fixed misleading log ([#1183](https://github.com/mojaloop/central-ledger/issues/1183)) ([c46d2ec](https://github.com/mojaloop/central-ledger/commit/c46d2ec094b6c2ab0b5a64f5a433fe93c8d572e4))
+
 ### [19.6.2](https://github.com/mojaloop/central-ledger/compare/v19.6.1...v19.6.2) (2025-06-25)
 
 
