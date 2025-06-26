@@ -365,12 +365,12 @@ const releaseLock = async () => {
   if (distLock) {
     try {
       await distLock.release()
+      log.verbose('Distributed lock released')
     } catch (error) {
       log.error('Error releasing distributed lock:', error)
       // should this be added to metrics?
     }
   }
-  log.info('Distributed lock not configured or disabled, running without distributed lock')
   running = false
 }
 
