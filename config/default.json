@@ -151,7 +151,9 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -177,7 +179,9 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -203,7 +207,9 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -229,7 +235,9 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -257,7 +265,9 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -283,7 +293,9 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -309,7 +321,9 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -336,7 +350,9 @@
               "allow.auto.create.topics": true,
               "enable.auto.commit": false,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -363,7 +379,9 @@
               "allow.auto.create.topics": true,
               "enable.auto.commit": false,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -391,7 +409,9 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -419,7 +439,9 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000
+              "request.timeout.ms": 60000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -445,7 +467,9 @@
               "enable.idempotence": true,
               "message.timeout.ms": 300000,
               "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000
+              "retry.backoff.ms": 1000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -470,7 +494,9 @@
               "enable.idempotence": true,
               "message.timeout.ms": 300000,
               "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000
+              "retry.backoff.ms": 1000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -493,7 +519,9 @@
               "enable.idempotence": true,
               "message.timeout.ms": 300000,
               "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000
+              "retry.backoff.ms": 1000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -516,7 +544,9 @@
               "enable.idempotence": true,
               "message.timeout.ms": 300000,
               "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000
+              "retry.backoff.ms": 1000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -541,7 +571,9 @@
               "enable.idempotence": true,
               "message.timeout.ms": 300000,
               "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000
+              "retry.backoff.ms": 1000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -566,7 +598,9 @@
               "enable.idempotence": true,
               "message.timeout.ms": 300000,
               "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000
+              "retry.backoff.ms": 1000,
+              "reconnect.backoff.max.ms": 60000,
+              "socket.timeout.ms": 60000
             },
             "topicConf": {
               "request.required.acks": "all",
