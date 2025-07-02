@@ -149,7 +149,8 @@
               "group.id": "cl-group-bulk-prepare",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -173,7 +174,8 @@
               "group.id": "cl-group-bulk-processing",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -197,7 +199,8 @@
               "group.id": "cl-group-bulk-fulfil",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -221,7 +224,8 @@
               "group.id": "cl-group-bulk-get",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -247,7 +251,8 @@
               "group.id": "cl-group-transfer-prepare",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -271,7 +276,8 @@
               "group.id": "cl-group-transfer-get",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -295,7 +301,8 @@
               "group.id": "cl-group-transfer-fulfil",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -320,7 +327,8 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "enable.auto.commit": false
+              "enable.auto.commit": false,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -345,7 +353,8 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "enable.auto.commit": false
+              "enable.auto.commit": false,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -371,7 +380,8 @@
               "group.id": "cl-group-transfer-admin",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -397,7 +407,8 @@
               "group.id": "TESTONLY",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -419,7 +430,8 @@
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000
+              "queue.buffering.max.messages": 10000000,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -440,7 +452,8 @@
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000
+              "queue.buffering.max.messages": 10000000,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -459,7 +472,8 @@
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000
+              "queue.buffering.max.messages": 10000000,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -478,7 +492,8 @@
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000
+              "queue.buffering.max.messages": 10000000,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -499,7 +514,8 @@
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000
+              "queue.buffering.max.messages": 10000000,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -520,7 +536,8 @@
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000
+              "queue.buffering.max.messages": 10000000,
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
