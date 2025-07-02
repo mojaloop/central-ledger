@@ -150,10 +150,7 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -178,10 +175,7 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -206,10 +200,7 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -234,10 +225,7 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -264,10 +252,7 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -292,10 +277,7 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -320,10 +302,7 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -349,10 +328,7 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "enable.auto.commit": false,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -378,10 +354,7 @@
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
               "enable.auto.commit": false,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -408,10 +381,7 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -438,10 +408,7 @@
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
               "allow.auto.create.topics": true,
-              "session.timeout.ms": 45000,
-              "request.timeout.ms": 60000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -464,11 +431,7 @@
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000,
-              "message.timeout.ms": 300000,
-              "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -490,11 +453,7 @@
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000,
-              "message.timeout.ms": 300000,
-              "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -514,11 +473,7 @@
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000,
-              "message.timeout.ms": 300000,
-              "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -538,11 +493,7 @@
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000,
-              "message.timeout.ms": 300000,
-              "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -564,11 +515,7 @@
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000,
-              "message.timeout.ms": 300000,
-              "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
@@ -590,11 +537,7 @@
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000,
-              "message.timeout.ms": 300000,
-              "delivery.timeout.ms": 180000,
-              "retry.backoff.ms": 1000,
-              "reconnect.backoff.max.ms": 60000,
-              "socket.timeout.ms": 60000
+              "statistics.interval.ms": 5000
             },
             "topicConf": {
               "request.required.acks": "all",
