@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "19.6.3",
+  "version": "19.7.0-snapshot.1",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -92,8 +92,8 @@
     "@mojaloop/central-services-health": "15.1.0",
     "@mojaloop/central-services-logger": "11.9.0",
     "@mojaloop/central-services-metrics": "12.6.0",
-    "@mojaloop/central-services-shared": "18.28.3",
-    "@mojaloop/central-services-stream": "11.7.0",
+    "@mojaloop/central-services-shared": "18.29.0",
+    "@mojaloop/central-services-stream": "11.8.0",
     "@mojaloop/database-lib": "11.2.0",
     "@mojaloop/event-sdk": "14.6.1",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.6.0",
@@ -114,7 +114,6 @@
     "hapi-auth-bearer-token": "8.0.0",
     "hapi-swagger": "17.3.2",
     "ilp-packet": "2.2.0",
-    "ioredis": "5.6.1",
     "joi": "17.13.3",
     "knex": "3.1.0",
     "lodash": "4.17.21",
@@ -122,7 +121,6 @@
     "mongo-uri-builder": "^4.0.0",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8",
-    "redlock": "5.0.0-beta.2",
     "require-glob": "^4.1.0"
   },
   "optionalDependencies": {
@@ -149,7 +147,7 @@
     "standard-version": "^9.5.0",
     "tap-spec": "^5.0.0",
     "tap-xunit": "2.4.1",
-    "tape": "4.16.2",
+    "tape": "4.17.0",
     "tapes": "4.1.0"
   },
   "overrides": {
