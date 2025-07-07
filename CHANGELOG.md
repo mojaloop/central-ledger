@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.7.0](https://github.com/mojaloop/central-ledger/compare/v19.6.3...v19.7.0) (2025-07-07)
+
+
+### Features
+
+* **csi-1604:** moved distLock to central-services-shared ([#1185](https://github.com/mojaloop/central-ledger/issues/1185)) ([a715a6a](https://github.com/mojaloop/central-ledger/commit/a715a6a1e5c88e437149718532247706af1ed09a))
+
 ### [19.6.3](https://github.com/mojaloop/central-ledger/compare/v19.6.2...v19.6.3) (2025-06-26)
 
 
