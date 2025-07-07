@@ -273,8 +273,10 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
   */
 const timeout = async () => {
-  if (!await acquireLock()) return
+  let isAcquired
   try {
+    isAcquired = await acquireLock()
+    if (!isAcquired) return
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
     const intervalMin = timeoutSegment ? timeoutSegment.value : 0
     const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
@@ -307,7 +309,7 @@ const timeout = async () => {
     log.error('error in timeout:', err)
     rethrow.rethrowAndCountFspiopError(err, { operation: 'timeoutHandler' })
   } finally {
-    await releaseLock()
+    if (isAcquired) await releaseLock()
   }
 }
 
