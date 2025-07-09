@@ -46,6 +46,7 @@ jspm_packages
 # VSCode directory
 .vscode
 
+.npmrc
 
 # --------------- #
 # IntelliJ #

@@ -22,8 +22,8 @@ RUN apk add --no-cache -t build-dependencies make gcc g++ python3 py3-setuptools
 
 COPY package.json package-lock.json* /opt/app/
 
-RUN npm ci --force
-RUN npm prune --omit=dev --force
+RUN npm ci
+RUN npm prune --omit=dev
 
 FROM node:${NODE_VERSION}
 WORKDIR /opt/app
