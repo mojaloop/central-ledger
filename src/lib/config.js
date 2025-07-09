@@ -1,5 +1,22 @@
 const RC = require('parse-strings-in-object')(require('rc')('CLEDG', require('../../config/default.json')))
 
+// Deep merge utility function
+const deepMerge = (target, source) => {
+  if (!source) return target
+
+  const result = { ...target }
+
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      result[key] = deepMerge(result[key] || {}, source[key])
+    } else {
+      result[key] = source[key]
+    }
+  }
+
+  return result
+}
+
 module.exports = {
   HOSTNAME: RC.HOSTNAME.replace(/\/$/, ''),
   PORT: RC.PORT,
@@ -37,7 +54,7 @@ module.exports = {
   INSTRUMENTATION_METRICS_DISABLED: RC.INSTRUMENTATION.METRICS.DISABLED,
   INSTRUMENTATION_METRICS_LABELS: RC.INSTRUMENTATION.METRICS.labels,
   INSTRUMENTATION_METRICS_CONFIG: RC.INSTRUMENTATION.METRICS.config,
-  DATABASE: {
+  DATABASE: deepMerge({
     client: RC.DATABASE.DIALECT,
     connection: {
       host: RC.DATABASE.HOST.replace(/\/$/, ''),
@@ -69,7 +86,7 @@ module.exports = {
       // ping: function (conn, cb) { conn.query('SELECT 1', cb) }
     },
     debug: RC.DATABASE.DEBUG
-  },
+  }, RC.DATABASE.ADDITIONAL_OPTIONS),
   API_DOC_ENDPOINTS_ENABLED: RC.API_DOC_ENDPOINTS_ENABLED || false,
   // If this is set to true, payee side currency conversion will not be allowed due to a limitation in the current implementation
   PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED: (RC.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED === true || RC.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED === 'true'),
