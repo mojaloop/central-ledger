@@ -861,8 +861,8 @@ Test('Handlers test', async handlersTest => {
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(+payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(+payerPositionChange.value, +payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 
@@ -902,8 +902,8 @@ Test('Handlers test', async handlersTest => {
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(transfer?.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
         test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
-        test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
-        test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+        test.equal(+payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
+        test.equal(+payeePositionChange.value, +payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
         test.equal(payeePositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
       }
 
@@ -962,8 +962,8 @@ Test('Handlers test', async handlersTest => {
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(+payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(+payerPositionChange.value, +payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 
@@ -1001,8 +1001,8 @@ Test('Handlers test', async handlersTest => {
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(transfer?.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
         test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
-        test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
-        test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+        test.equal(+payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
+        test.equal(+payeePositionChange.value, +payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
         test.equal(payeePositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
       }
 
@@ -1162,8 +1162,8 @@ Test('Handlers test', async handlersTest => {
         const transferExtension = await TransferExtensionModel.getByTransferId(transfer.transferId, false, true)
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(transfer?.transferState, TransferInternalState.ABORTED_ERROR, `Transfer state changed to ${TransferInternalState.ABORTED_ERROR}`)
-        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
-        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(+payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
+        test.equal(+payerPositionChange.value, +payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
         test.ok(transferError, 'A transfer error has been recorded')
         test.equal(transferError.errorCode, td.errorPayload.errorInformation.errorCode, 'Transfer error code matches')
@@ -1231,8 +1231,8 @@ Test('Handlers test', async handlersTest => {
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(+payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(+payerPositionChange.value, +payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 

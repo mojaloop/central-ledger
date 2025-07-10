@@ -372,7 +372,7 @@ Test('Participant service', async (participantTest) => {
     try {
       const result = await ParticipantService.getPositions(participantFixtures[0].name, participantFixtures[0].currencyList[0].currencyId)
       assert.equal(result[0].currency, participantFixtures[0].currencyList[0].currencyId, 'currencies are equal')
-      assert.equal(result[0].value, 0, 'position value match')
+      assert.equal(+result[0].value, 0, 'position value match')
       assert.end()
     } catch (err) {
       Logger.error(`get positions failed with error - ${err}`)
