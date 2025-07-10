@@ -42,5 +42,17 @@ Test('Config should', configTest => {
     test.end()
   })
 
+  // Test for ADDITIONAL_CONNECTION_OPTIONS in DATABASE config
+  configTest.test('ADDITIONAL_CONNECTION_OPTIONS should be merged to database connection config', async function (test) {
+    const DefaultsStub = { ...Defaults }
+    DefaultsStub.DATABASE.ADDITIONAL_CONNECTION_OPTIONS = { connectTimeout: 1000, ssl: { ca: 'cacert' } }
+    const Config = Proxyquire('../../../src/lib/config', {
+      '../../config/default.json': DefaultsStub
+    })
+    test.ok(Config.DATABASE.connection.connectTimeout === 1000)
+    test.ok(Config.DATABASE.connection.ssl.ca === 'cacert')
+    test.end()
+  })
+
   configTest.end()
 })

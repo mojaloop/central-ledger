@@ -1026,8 +1026,8 @@ Test('Handlers test', async handlersTest => {
           const payerInitialPosition = value.payer.payerLimitAndInitialPosition.participantPosition.value
           const payerExpectedPosition = payerInitialPosition + value.totalTransferAmount
           const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-          test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-          test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+          test.equal(+payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+          test.equal(+payerPositionChange.value, +payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         }
       }
 
@@ -1095,7 +1095,7 @@ Test('Handlers test', async handlersTest => {
 
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
       const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
-      test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
+      test.equal(+payerCurrentPosition.value, +payerExpectedPosition, 'Payer position should not have changed')
       testConsumer.clearEvents()
       test.end()
     })
@@ -1136,7 +1136,7 @@ Test('Handlers test', async handlersTest => {
 
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
       const payerExpectedPosition = td.transfersArray[0].payer.payerLimitAndInitialPositionSecondaryCurrency.participantPosition.value
-      test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should not have changed')
+      test.equal(+payerCurrentPosition.value, +payerExpectedPosition, 'Payer position should not have changed')
 
       testConsumer.clearEvents()
       test.end()
@@ -1176,7 +1176,7 @@ Test('Handlers test', async handlersTest => {
       // Check that payer position is only updated by sum of transfers that did not exceed NDC
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPosition = testDataMixedWithLimitExceeded.transfers[0].amount.amount + testDataMixedWithLimitExceeded.transfers[2].amount.amount
-      test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position should only increase by the amounts that did not exceed NDC')
+      test.equal(+payerCurrentPosition.value, +payerExpectedPosition, 'Payer position should only increase by the amounts that did not exceed NDC')
 
       // Check that the transfer state for transfers that exceeded NDC is ABORTED_REJECTED and for transfers that did not exceed NDC is RESERVED
       try {
@@ -1220,11 +1220,11 @@ Test('Handlers test', async handlersTest => {
       // Check that payer position is only updated by sum of transfers relevant to the currency
       const payerCurrentPositionForUSD = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPositionForUSD = 20 // Sum of USD transfers in testDataWithMixedCurrencies
-      test.equal(payerCurrentPositionForUSD.value, payerExpectedPositionForUSD, 'Payer position increases for USD transfers')
+      test.equal(+payerCurrentPositionForUSD.value, +payerExpectedPositionForUSD, 'Payer position increases for USD transfers')
 
       const payerCurrentPositionForXXX = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
       const payerExpectedPositionForXXX = 24 // Sum of XXX transfers in testDataWithMixedCurrencies
-      test.equal(payerCurrentPositionForXXX.value, payerExpectedPositionForXXX, 'Payer position increases for XXX transfers')
+      test.equal(+payerCurrentPositionForXXX.value, +payerExpectedPositionForXXX, 'Payer position increases for XXX transfers')
 
       // Check that the transfer state for transfers is RESERVED
       try {
@@ -1263,22 +1263,22 @@ Test('Handlers test', async handlersTest => {
       // Check that initiating FSP position is only updated by sum of transfers relevant to the source currency
       const initiatingFspCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const initiatingFspExpectedPositionForSourceCurrency = td.transfersArray.reduce((acc, tdTest) => acc + Number(tdTest.fxTransferPayload.sourceAmount.amount), 0)
-      test.equal(initiatingFspCurrentPositionForSourceCurrency.value, initiatingFspExpectedPositionForSourceCurrency, 'Initiating FSP position increases for Source Currency')
+      test.equal(+initiatingFspCurrentPositionForSourceCurrency.value, +initiatingFspExpectedPositionForSourceCurrency, 'Initiating FSP position increases for Source Currency')
 
       // Check that initiating FSP position is not updated for target currency
       const initiatingFspCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
       const initiatingFspExpectedPositionForTargetCurrency = 0
-      test.equal(initiatingFspCurrentPositionForTargetCurrency.value, initiatingFspExpectedPositionForTargetCurrency, 'Initiating FSP position not changed for Target Currency')
+      test.equal(+initiatingFspCurrentPositionForTargetCurrency.value, +initiatingFspExpectedPositionForTargetCurrency, 'Initiating FSP position not changed for Target Currency')
 
       // Check that CounterParty FSP position is only updated by sum of transfers relevant to the source currency
       const counterPartyFspCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyId) || {}
       const counterPartyFspExpectedPositionForSourceCurrency = 0
-      test.equal(counterPartyFspCurrentPositionForSourceCurrency.value, counterPartyFspExpectedPositionForSourceCurrency, 'CounterParty FSP position not changed for Source Currency')
+      test.equal(+counterPartyFspCurrentPositionForSourceCurrency.value, +counterPartyFspExpectedPositionForSourceCurrency, 'CounterParty FSP position not changed for Source Currency')
 
       // Check that CounterParty FSP position is not updated for target currency
       const counterPartyFspCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyIdSecondary) || {}
       const counterPartyFspExpectedPositionForTargetCurrency = 0
-      test.equal(counterPartyFspCurrentPositionForTargetCurrency.value, counterPartyFspExpectedPositionForTargetCurrency, 'CounterParty FSP position not changed for Target Currency')
+      test.equal(+counterPartyFspCurrentPositionForTargetCurrency.value, +counterPartyFspExpectedPositionForTargetCurrency, 'CounterParty FSP position not changed for Target Currency')
 
       // Check that the fx transfer state for fxTransfers is RESERVED
       try {
@@ -1327,22 +1327,22 @@ Test('Handlers test', async handlersTest => {
       // Check that payer / initiating FSP position is only updated by sum of transfers relevant to the source currency
       const payerCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPositionForSourceCurrency = td.transfersArray.reduce((acc, tdTest) => acc + Number(tdTest.transferPayload.amount.amount), 0) + td.transfersArray.reduce((acc, tdTest) => acc + Number(tdTest.fxTransferPayload.sourceAmount.amount), 0)
-      test.equal(payerCurrentPositionForSourceCurrency.value, payerExpectedPositionForSourceCurrency, 'Payer / Initiating FSP position increases for Source Currency')
+      test.equal(+payerCurrentPositionForSourceCurrency.value, +payerExpectedPositionForSourceCurrency, 'Payer / Initiating FSP position increases for Source Currency')
 
       // Check that payer / initiating FSP position is not updated for target currency
       const payerCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
       const payerExpectedPositionForTargetCurrency = 0
-      test.equal(payerCurrentPositionForTargetCurrency.value, payerExpectedPositionForTargetCurrency, 'Payer / Initiating FSP position not changed for Target Currency')
+      test.equal(+payerCurrentPositionForTargetCurrency.value, +payerExpectedPositionForTargetCurrency, 'Payer / Initiating FSP position not changed for Target Currency')
 
       // Check that FXP position is only updated by sum of transfers relevant to the source currency
       const fxpCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyId) || {}
       const fxpExpectedPositionForSourceCurrency = 0
-      test.equal(fxpCurrentPositionForSourceCurrency.value, fxpExpectedPositionForSourceCurrency, 'FXP position not changed for Source Currency')
+      test.equal(+fxpCurrentPositionForSourceCurrency.value, +fxpExpectedPositionForSourceCurrency, 'FXP position not changed for Source Currency')
 
       // Check that payee / CounterParty FSP position is not updated for target currency
       const fxpCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyIdSecondary) || {}
       const fxpExpectedPositionForTargetCurrency = 0
-      test.equal(fxpCurrentPositionForTargetCurrency.value, fxpExpectedPositionForTargetCurrency, 'FXP position not changed for Target Currency')
+      test.equal(+fxpCurrentPositionForTargetCurrency.value, +fxpExpectedPositionForTargetCurrency, 'FXP position not changed for Target Currency')
 
       // Check that the transfer state for transfers is RESERVED
       try {
@@ -1398,8 +1398,8 @@ Test('Handlers test', async handlersTest => {
           const payerInitialPosition = value.payer.payerLimitAndInitialPosition.participantPosition.value
           const payerExpectedPosition = payerInitialPosition + value.totalTransferAmount
           const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-          test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-          test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+          test.equal(+payerCurrentPosition.value, +payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+          test.equal(+payerPositionChange.value, +payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         }
       }
 
@@ -1455,8 +1455,8 @@ Test('Handlers test', async handlersTest => {
           const payeeInitialPosition = value.payee.payeeLimitAndInitialPosition.participantPosition.value
           const payeeExpectedPosition = payeeInitialPosition + value.totalTransferAmount
           const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
-          test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position incremented by transfer amount and updated in participantPosition')
-          test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+          test.equal(+payeeCurrentPosition.value, +payeeExpectedPosition, 'Payee position incremented by transfer amount and updated in participantPosition')
+          test.equal(+payeePositionChange.value, +payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
         }
       }
       try {
@@ -1515,8 +1515,8 @@ Test('Handlers test', async handlersTest => {
           const payerInitialPosition = value.payer.payerLimitAndInitialPosition.participantPosition.value
           const payerExpectedPosition = payerInitialPosition + value.totalTransferAmount
           const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-          test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-          test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+          test.equal(+payerCurrentPosition.value, +payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+          test.equal(+payerPositionChange.value, +payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         }
       }
 
@@ -1572,8 +1572,8 @@ Test('Handlers test', async handlersTest => {
           const payeeInitialPosition = value.payee.payeeLimitAndInitialPosition.participantPosition.value
           const payeeExpectedPosition = payeeInitialPosition + value.totalTransferAmount
           const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
-          test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position incremented by transfer amount and updated in participantPosition')
-          test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+          test.equal(+payeeCurrentPosition.value, +payeeExpectedPosition, 'Payee position incremented by transfer amount and updated in participantPosition')
+          test.equal(+payeePositionChange.value, +payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
         }
       }
       try {
@@ -1629,22 +1629,22 @@ Test('Handlers test', async handlersTest => {
       // Check that payer / initiating FSP position is only updated by sum of transfers relevant to the source currency
       const payerCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
       const payerExpectedPositionForSourceCurrency = td.transfersArray.reduce((acc, tdTest) => acc + Number(tdTest.fxTransferPayload.sourceAmount.amount), 0)
-      test.equal(payerCurrentPositionForSourceCurrency.value, payerExpectedPositionForSourceCurrency, 'Payer / Initiating FSP position increases for Source Currency')
+      test.equal(+payerCurrentPositionForSourceCurrency.value, +payerExpectedPositionForSourceCurrency, 'Payer / Initiating FSP position increases for Source Currency')
 
       // Check that payer / initiating FSP position is not updated for target currency
       const payerCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
       const payerExpectedPositionForTargetCurrency = 0
-      test.equal(payerCurrentPositionForTargetCurrency.value, payerExpectedPositionForTargetCurrency, 'Payer / Initiating FSP position not changed for Target Currency')
+      test.equal(+payerCurrentPositionForTargetCurrency.value, +payerExpectedPositionForTargetCurrency, 'Payer / Initiating FSP position not changed for Target Currency')
 
       // Check that FXP position is only updated by sum of transfers relevant to the source currency
       const fxpCurrentPositionForSourceCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyId) || {}
       const fxpExpectedPositionForSourceCurrency = 0
-      test.equal(fxpCurrentPositionForSourceCurrency.value, fxpExpectedPositionForSourceCurrency, 'FXP position not changed for Source Currency')
+      test.equal(+fxpCurrentPositionForSourceCurrency.value, +fxpExpectedPositionForSourceCurrency, 'FXP position not changed for Source Currency')
 
       // Check that FXP position is not updated for target currency
       const fxpCurrentPositionForTargetCurrency = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyIdSecondary) || {}
       const fxpExpectedPositionForTargetCurrency = 0
-      test.equal(fxpCurrentPositionForTargetCurrency.value, fxpExpectedPositionForTargetCurrency, 'FXP position not changed for Target Currency')
+      test.equal(+fxpCurrentPositionForTargetCurrency.value, +fxpExpectedPositionForTargetCurrency, 'FXP position not changed for Target Currency')
 
       // Check that the fx transfer state for fxTransfers is RESERVED
       try {
@@ -1680,19 +1680,19 @@ Test('Handlers test', async handlersTest => {
 
       // Check that payer / initiating FSP position is not updated for source currency
       const payerCurrentPositionForSourceCurrencyAfterFxFulfil = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyId) || {}
-      test.equal(payerCurrentPositionForSourceCurrencyAfterFxFulfil.value, payerExpectedPositionForSourceCurrency, 'Payer / Initiating FSP position not changed for Source Currency')
+      test.equal(+payerCurrentPositionForSourceCurrencyAfterFxFulfil.value, +payerExpectedPositionForSourceCurrency, 'Payer / Initiating FSP position not changed for Source Currency')
 
       // Check that payer / initiating FSP position is not updated for target currency
       const payerCurrentPositionForTargetCurrencyAfterFxFulfil = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].payer.participantCurrencyIdSecondary) || {}
-      test.equal(payerCurrentPositionForTargetCurrencyAfterFxFulfil.value, payerExpectedPositionForTargetCurrency, 'Payer / Initiating FSP position not changed for Target Currency')
+      test.equal(+payerCurrentPositionForTargetCurrencyAfterFxFulfil.value, +payerExpectedPositionForTargetCurrency, 'Payer / Initiating FSP position not changed for Target Currency')
 
       // Check that FXP position is only updated by sum of transfers relevant to the source currency
       const fxpCurrentPositionForSourceCurrencyAfterFxFulfil = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyId) || {}
-      test.equal(fxpCurrentPositionForSourceCurrencyAfterFxFulfil.value, fxpExpectedPositionForSourceCurrency, 'FXP position not changed for Source Currency')
+      test.equal(+fxpCurrentPositionForSourceCurrencyAfterFxFulfil.value, +fxpExpectedPositionForSourceCurrency, 'FXP position not changed for Source Currency')
 
       // Check that FXP position is not updated for target currency
       const fxpCurrentPositionForTargetCurrencyAfterFxFulfil = await ParticipantService.getPositionByParticipantCurrencyId(td.transfersArray[0].fxp.participantCurrencyIdSecondary) || {}
-      test.equal(fxpCurrentPositionForTargetCurrencyAfterFxFulfil.value, fxpExpectedPositionForTargetCurrency, 'FXP position not changed for Target Currency')
+      test.equal(+fxpCurrentPositionForTargetCurrencyAfterFxFulfil.value, +fxpExpectedPositionForTargetCurrency, 'FXP position not changed for Target Currency')
 
       testConsumer.clearEvents()
       test.end()
@@ -1727,8 +1727,8 @@ Test('Handlers test', async handlersTest => {
             const payerInitialPosition = value.payer.payerLimitAndInitialPosition.participantPosition.value
             const payerExpectedPosition = payerInitialPosition + value.totalTransferAmount
             const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-            test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-            test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+            test.equal(+payerCurrentPosition.value, +payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+            test.equal(+payerPositionChange.value, +payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
           }
         }
 
@@ -1823,14 +1823,14 @@ Test('Handlers test', async handlersTest => {
           const payerPositionDidReset = async () => {
             const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(payer.participantCurrencyId)
             console.log(payerCurrentPosition)
-            return payerCurrentPosition.value === payerInitialPosition
+            return +payerCurrentPosition.value === +payerInitialPosition
           }
           // wait until we know the position reset, or throw after 5 tries
           await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
           const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(payer.participantCurrencyId) || {}
 
           // Assert
-          test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
+          test.equal(+payerCurrentPosition.value, +payerInitialPosition, 'Position resets after a timeout')
         }
 
         test.end()
