@@ -1626,8 +1626,8 @@ Test('Handlers test', async handlersTest => {
         const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
         const payerExpectedPosition = Number(payerInitialPosition) + Number(td.fxTransferPayload.sourceAmount.amount)
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(+payerCurrentPosition.value, +payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(+payerPositionChange.value, +payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         payerPositionAfterFxPrepare = payerExpectedPosition
       }
       try {
@@ -1690,9 +1690,9 @@ Test('Handlers test', async handlersTest => {
       // Hard to test that the position messageKey=0 equates to doing nothing
       // so we'll just check that the positions are unchanged for the participants
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
-      test.equal(payerCurrentPosition.value, payerPositionAfterFxPrepare, 'Payer position unchanged')
+      test.equal(+payerCurrentPosition.value, +payerPositionAfterFxPrepare, 'Payer position unchanged')
       const proxyARCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.proxyAR.participantCurrencyId) || {}
-      test.equal(proxyARCurrentPosition.value, td.proxyARLimitAndInitialPosition.participantPosition.value, 'FXP position unchanged')
+      test.equal(+proxyARCurrentPosition.value, +td.proxyARLimitAndInitialPosition.participantPosition.value, 'FXP position unchanged')
 
       testConsumer.clearEvents()
       test.end()
