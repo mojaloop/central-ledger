@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "19.7.0",
+  "version": "19.8.0-snapshot.0",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -53,8 +53,8 @@
     "test:int": "npx tape 'test/integration/**/*.test.js' ",
     "test:int-override": "npx tape 'test/integration-override/**/*.test.js'",
     "test:int:spec": "npm run test:int | npx tap-spec",
-    "test:xint": "npm run test:int | tee /dev/tty | tap-xunit > ./test/results/xunit-integration.xml",
-    "test:xint-override": "npm run test:int-override | tee /dev/tty | tap-xunit > ./test/results/xunit-integration-override.xml",
+    "test:xint": "npm run test:int",
+    "test:xint-override": "npm run test:int-override",
     "test:integration": "CSL_LOG_LEVEL=debug ./test/scripts/test-integration.sh",
     "test:functional": "./test/scripts/test-functional.sh",
     "migrate": "npm run migrate:latest && npm run seed:run",
