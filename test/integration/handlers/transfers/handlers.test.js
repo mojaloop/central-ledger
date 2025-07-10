@@ -1333,14 +1333,14 @@ Test('Handlers test', async handlersTest => {
       // Act
       const payerPositionDidReset = async () => {
         const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
-        return payerCurrentPosition.value === payerInitialPosition
+        return +payerCurrentPosition.value === payerInitialPosition
       }
       // wait until we know the position reset, or throw after 5 tries
       await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
       // Assert
-      test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
+      test.equal(+payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
       test.end()
     })
 
