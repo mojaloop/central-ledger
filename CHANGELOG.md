@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.7.2](https://github.com/mojaloop/central-ledger/compare/v19.7.0...v19.7.2) (2025-07-11)
+
+
+### Chore
+
+* **release:** 19.7.1 [skip ci] ([ea3b0ea](https://github.com/mojaloop/central-ledger/commit/ea3b0ea4be97864645cf6d3aab67ee2aa8a4038d))
+* update deps ([18837ac](https://github.com/mojaloop/central-ledger/commit/18837ac8439c0a422fff8e7cb03c3ff87589b7f9))
+
+### [19.7.1](https://github.com/mojaloop/central-ledger/compare/v19.7.0...v19.7.1) (2025-07-11)
+
+
+### Chore
+
+* update deps ([18837ac](https://github.com/mojaloop/central-ledger/commit/18837ac8439c0a422fff8e7cb03c3ff87589b7f9))
+
 ## [19.7.0](https://github.com/mojaloop/central-ledger/compare/v19.6.3...v19.7.0) (2025-07-07)
 
 
