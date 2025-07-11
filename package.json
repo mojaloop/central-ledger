@@ -162,9 +162,6 @@
       "swagger2openapi": "7.0.8",
       "markdown-it": "12.3.2"
     },
-    "@now-ims/hapi-now-auth": {
-      "@hapi/hoek": "9.0.3"
-    },
     "jsonwebtoken": "9.0.0",
     "jsonpointer": "5.0.0",
     "trim": "0.0.3",
