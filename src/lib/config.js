@@ -45,7 +45,8 @@ module.exports = {
       user: RC.DATABASE.USER,
       password: RC.DATABASE.PASSWORD,
       database: RC.DATABASE.SCHEMA,
-      decimalNumbers: true
+      decimalNumbers: true,
+      jsonStrings: true
     },
     pool: {
       // minimum size
