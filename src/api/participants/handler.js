@@ -252,8 +252,8 @@ const getLimits = async function (request) {
           currency: (item.currencyId || request.query.currency),
           limit: {
             type: item.name,
-            value: item.value,
-            alarmPercentage: item.thresholdAlarmPercentage
+            value: parseFloat(item.value),
+            alarmPercentage: item.thresholdAlarmPercentage !== undefined ? parseFloat(item.thresholdAlarmPercentage) : undefined
           }
         })
       })
@@ -275,8 +275,8 @@ const getLimitsForAllParticipants = async function (request) {
           currency: item.currencyId,
           limit: {
             type: item.limitType,
-            value: item.value,
-            alarmPercentage: item.thresholdAlarmPercentage
+            value: parseFloat(item.value),
+            alarmPercentage: item.thresholdAlarmPercentage !== undefined ? parseFloat(item.thresholdAlarmPercentage) : undefined
           }
         })
       })
@@ -295,8 +295,8 @@ const adjustLimits = async function (request, h) {
       currency: request.payload.currency,
       limit: {
         type: request.payload.limit.type,
-        value: participantLimit.value,
-        alarmPercentage: participantLimit.thresholdAlarmPercentage
+        value: parseFloat(participantLimit.value),
+        alarmPercentage: participantLimit.thresholdAlarmPercentage !== undefined ? parseFloat(participantLimit.thresholdAlarmPercentage) : undefined
       }
 
     }
@@ -308,7 +308,23 @@ const adjustLimits = async function (request, h) {
 
 const getPositions = async function (request) {
   try {
-    return await ParticipantService.getPositions(request.params.name, request.query)
+    const result = await ParticipantService.getPositions(request.params.name, request.query)
+
+    // Convert value from string to number
+    if (Array.isArray(result)) {
+      // Multiple positions (no currency specified)
+      return result.map(position => ({
+        ...position,
+        value: position.value !== undefined ? parseFloat(position.value) : undefined
+      }))
+    } else if (result && typeof result === 'object' && result.value !== undefined) {
+      // Single position (currency specified)
+      return {
+        ...result,
+        value: parseFloat(result.value)
+      }
+    }
+    return result
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'participantGetPositions' })
   }
@@ -316,7 +332,17 @@ const getPositions = async function (request) {
 
 const getAccounts = async function (request) {
   try {
-    return await ParticipantService.getAccounts(request.params.name, request.query)
+    const result = await ParticipantService.getAccounts(request.params.name, request.query)
+
+    // Convert value and reservedValue from string to number
+    if (Array.isArray(result)) {
+      return result.map(account => ({
+        ...account,
+        value: account.value !== undefined ? parseFloat(account.value) : undefined,
+        reservedValue: account.reservedValue !== undefined ? parseFloat(account.reservedValue) : undefined
+      }))
+    }
+    return result
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'participantGetAccounts' })
   }
