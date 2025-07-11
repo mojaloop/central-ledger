@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "19.7.2",
+  "version": "19.7.0",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -93,8 +93,8 @@
     "@mojaloop/central-services-logger": "11.9.0",
     "@mojaloop/central-services-metrics": "12.6.0",
     "@mojaloop/central-services-shared": "18.29.0",
-    "@mojaloop/central-services-stream": "11.8.1",
-    "@mojaloop/database-lib": "11.2.1",
+    "@mojaloop/central-services-stream": "11.8.0",
+    "@mojaloop/database-lib": "11.2.0",
     "@mojaloop/event-sdk": "14.6.1",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.6.0",
     "@mojaloop/ml-number": "11.2.7",
@@ -106,7 +106,7 @@
     "blipp": "4.0.2",
     "commander": "14.0.0",
     "cron": "4.3.1",
-    "decimal.js": "10.6.0",
+    "decimal.js": "10.5.0",
     "docdash": "2.0.2",
     "event-stream": "4.0.1",
     "five-bells-condition": "5.0.1",
@@ -124,11 +124,11 @@
     "require-glob": "^4.1.0"
   },
   "optionalDependencies": {
-    "mysql2": "3.14.1"
+    "mysql": "2.18.1"
   },
   "devDependencies": {
     "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.62.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.60.1",
     "@types/mock-knex": "0.4.8",
     "async-retry": "1.3.3",
     "audit-ci": "^7.1.0",
