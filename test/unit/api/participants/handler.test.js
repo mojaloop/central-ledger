@@ -1152,6 +1152,121 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
+    // Test coverage for string-to-number conversion changes
+    handlerTest.test('getPositions should convert string values to numbers for single position', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        currency: 'USD'
+      }
+      const expected = {
+        currency: 'USD',
+        value: 1000.50,
+        updatedTime: '2018-08-14T04:01:55.000Z'
+      }
+      const positionReturn = {
+        currency: 'USD',
+        value: '1000.50', // String value from service
+        updatedTime: '2018-08-14T04:01:55.000Z'
+      }
+      Participant.getPositions.withArgs(params.name, query).returns(Promise.resolve(positionReturn))
+      const result = await Handler.getPositions(createRequest({ params, query }))
+      test.deepEqual(result, expected, 'String value converted to number')
+      test.equal(typeof result.value, 'number', 'Value is a number')
+      test.end()
+    })
+
+    handlerTest.test('getPositions should preserve undefined values', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const expected = [
+        {
+          currency: 'USD',
+          value: undefined,
+          updatedTime: '2018-08-14T04:01:55.000Z'
+        }
+      ]
+      const positionReturn = [
+        {
+          currency: 'USD',
+          value: undefined, // Undefined value should remain undefined
+          updatedTime: '2018-08-14T04:01:55.000Z'
+        }
+      ]
+      Participant.getPositions.withArgs(params.name, {}).returns(Promise.resolve(positionReturn))
+      const result = await Handler.getPositions(createRequest({ params }))
+      test.deepEqual(result, expected, 'Undefined value preserved')
+      test.equal(result[0].value, undefined, 'Value remains undefined')
+      test.end()
+    })
+
+    handlerTest.test('getAccounts should convert string values to numbers for array result', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        currency: 'USD'
+      }
+      const expected = [
+        {
+          id: 1,
+          currency: 'USD',
+          value: 1000.50,
+          reservedValue: 100.25
+        }
+      ]
+      const accountReturn = [
+        {
+          id: 1,
+          currency: 'USD',
+          value: '1000.50', // String values from service
+          reservedValue: '100.25'
+        }
+      ]
+      Participant.getAccounts.withArgs(params.name, query).returns(Promise.resolve(accountReturn))
+      const result = await Handler.getAccounts(createRequest({ params, query }))
+      test.deepEqual(result, expected, 'String values converted to numbers')
+      test.equal(typeof result[0].value, 'number', 'Account value is a number')
+      test.equal(typeof result[0].reservedValue, 'number', 'Account reservedValue is a number')
+      test.end()
+    })
+
+    handlerTest.test('getLimits should convert string values to numbers', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP'
+      }
+      const expected = [
+        {
+          currency: 'USD',
+          limit: {
+            type: 'NET_DEBIT_CAP',
+            value: 1000000.50,
+            alarmPercentage: 80.5
+          }
+        }
+      ]
+      const limitReturn = [
+        {
+          currencyId: 'USD',
+          name: 'NET_DEBIT_CAP',
+          value: '1000000.50', // String value from service
+          thresholdAlarmPercentage: '80.5' // String value from service
+        }
+      ]
+      Participant.getLimits.withArgs(params.name, query).returns(Promise.resolve(limitReturn))
+      const result = await Handler.getLimits(createRequest({ params, query }))
+      test.deepEqual(result, expected, 'String values converted to numbers')
+      test.equal(typeof result[0].limit.value, 'number', 'Limit value is a number')
+      test.equal(typeof result[0].limit.alarmPercentage, 'number', 'Alarm percentage is a number')
+      test.end()
+    })
+
     handlerTest.test('updateAccount should be called with the provided params and payload, and log when activated', async function (test) {
       const payload = {
         isActive: true
