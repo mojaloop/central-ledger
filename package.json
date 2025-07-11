@@ -93,7 +93,7 @@
     "@mojaloop/central-services-logger": "11.9.0",
     "@mojaloop/central-services-metrics": "12.6.0",
     "@mojaloop/central-services-shared": "18.29.0",
-    "@mojaloop/central-services-stream": "11.8.1",
+    "@mojaloop/central-services-stream": "11.8.2",
     "@mojaloop/database-lib": "^11.2.1",
     "@mojaloop/event-sdk": "14.6.1",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.6.0",
