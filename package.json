@@ -94,7 +94,7 @@
     "@mojaloop/central-services-metrics": "12.6.0",
     "@mojaloop/central-services-shared": "18.29.0",
     "@mojaloop/central-services-stream": "11.8.1",
-    "@mojaloop/database-lib": "11.2.1",
+    "@mojaloop/database-lib": "^11.2.1",
     "@mojaloop/event-sdk": "14.6.1",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.6.0",
     "@mojaloop/ml-number": "11.2.7",
@@ -124,7 +124,7 @@
     "require-glob": "^4.1.0"
   },
   "optionalDependencies": {
-    "mysql2": "3.14.1"
+    "mysql": "2.18.1"
   },
   "devDependencies": {
     "@opentelemetry/api": "^1.9.0",
