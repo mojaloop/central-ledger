@@ -6,11 +6,13 @@ echo
 MYSQL_VERSION=${MYSQL_VERSION:-"latest"}
 KAFKA_VERSION=${MYSQL_VERSION:-"latest"}
 INT_TEST_SKIP_SHUTDOWN=${INT_TEST_SKIP_SHUTDOWN:-false}
+WAIT_FOR_REBALANCE=${WAIT_FOR_REBALANCE:-15}
 
 echo "==> Variables:"
 echo "====> MYSQL_VERSION=$MYSQL_VERSION"
 echo "====> KAFKA_VERSION=$KAFKA_VERSION"
 echo "====> INT_TEST_SKIP_SHUTDOWN=$INT_TEST_SKIP_SHUTDOWN"
+echo "====> WAIT_FOR_REBALANCE=$WAIT_FOR_REBALANCE"
 
 ## Set initial exit code value to 1 (i.e. assume error!)
 TTK_FUNC_TEST_EXIT_CODE=1
@@ -47,10 +49,15 @@ npm run test:xint
 INTEGRATION_TEST_EXIT_CODE="$?"
 echo "==> integration tests exited with code: $INTEGRATION_TEST_EXIT_CODE"
 
-## Kill service
+## Kill service gracefully, then force if needed
 echo "Stopping Service with Process ID=$PID"
-kill -9 $(cat /tmp/int-test-service.pid)
-kill -9 $(lsof -t -i:3001)
+if [ -f /tmp/int-test-service.pid ]; then
+  kill $(cat /tmp/int-test-service.pid) 2>/dev/null || true
+  sleep 3
+  kill -9 $(cat /tmp/int-test-service.pid) 2>/dev/null || true
+fi
+# Force kill anything on port 3001 as fallback
+kill -9 $(lsof -t -i:3001) 2>/dev/null || true
 
 ## Give some time before restarting service for override tests
 sleep $WAIT_FOR_REBALANCE
@@ -98,12 +105,22 @@ npm run test:xint-override
 OVERRIDE_INTEGRATION_TEST_EXIT_CODE="$?"
 echo "==> override integration tests exited with code: $OVERRIDE_INTEGRATION_TEST_EXIT_CODE"
 
-## Kill service
+## Kill services gracefully, then force if needed
 echo "Stopping Service with Process ID=$PID1"
-kill -9 $(cat /tmp/int-test-service.pid)
-kill -9 $(lsof -t -i:3001)
+if [ -f /tmp/int-test-service.pid ]; then
+  kill $(cat /tmp/int-test-service.pid) 2>/dev/null || true
+  sleep 3
+  kill -9 $(cat /tmp/int-test-service.pid) 2>/dev/null || true
+fi
+# Force kill anything on port 3001 as fallback
+kill -9 $(lsof -t -i:3001) 2>/dev/null || true
+
 echo "Stopping Service with Process ID=$PID2"
-kill -9 $(cat /tmp/int-test-handler.pid)
+if [ -f /tmp/int-test-handler.pid ]; then
+  kill $(cat /tmp/int-test-handler.pid) 2>/dev/null || true
+  sleep 3
+  kill -9 $(cat /tmp/int-test-handler.pid) 2>/dev/null || true
+fi
 
 ## Shutdown the backend services
 if [ $INT_TEST_SKIP_SHUTDOWN == true ]; then
