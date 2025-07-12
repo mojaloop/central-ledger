@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>German Legal Assistant PoC</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; background-color: #f4f4f4; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 90%; max-width: 800px; }
+        h1, h2 { color: #333; text-align: center; }
+        label { margin-right: 10px; display: block; margin-bottom: 5px; }
+        input[type="text"], input[type="password"], textarea {
+            width: calc(100% - 22px); /* Adjust for padding and border */
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea { min-height: 80px; }
+        select, button { padding: 10px 15px; margin-top: 5px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ddd; }
+        button { background-color: #007bff; color: white; cursor: pointer; border-color: #007bff; }
+        button:hover { background-color: #0056b3; }
+        #results { margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 4px; background-color: #f9f9f9; white-space: pre-wrap; /* Preserve line breaks */ }
+        .result-item { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #ccc; }
+        .result-item:last-child { border-bottom: none; }
+        .result-item h3 { margin-top: 0; color: #0056b3;}
+        .result-item p { margin-left: 15px; }
+        .result-item a { color: #007bff; }
+        .status-message { font-style: italic; color: #555; }
+        .error-message { color: red; font-weight: bold; margin-top: 10px; }
+        .login-form, .query-interface { display: flex; flex-direction: column; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="login_section" class="login-form">
+            <h1>Login</h1>
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" value="test">
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" value="test">
+            </div>
+            <button id="login_button">Login</button>
+            <p id="login_error" class="error-message" style="display:none;"></p>
+        </div>
+
+        <div id="query_section" class="query-interface" style="display:none;">
+            <h1>German Legal Assistant PoC</h1>
+            <div>
+                <label for="query_text">Enter your legal query:</label>
+                <textarea id="query_text" name="query_text" rows="5"></textarea>
+            </div>
+            <div>
+                <label for="source_language">Query Language:</label>
+                <select id="source_language" name="source_language">
+                    <option value="de">German (Deutsch)</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <button id="submit_query">Submit Query</button>
+            <button id="download_results" style="display:none;">Download Results</button>
+            <h2>Results:</h2>
+            <div id="results">
+                <p class="status-message">Please enter your query and click "Submit Query".</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const loginSectionEl = document.getElementById('login_section');
+        const querySectionEl = document.getElementById('query_section');
+        const loginButtonEl = document.getElementById('login_button');
+        const usernameEl = document.getElementById('username');
+        const passwordEl = document.getElementById('password');
+        const loginErrorEl = document.getElementById('login_error');
+
+        const queryTextEl = document.getElementById('query_text');
+        const sourceLanguageEl = document.getElementById('source_language');
+        const submitButtonEl = document.getElementById('submit_query');
+        const resultsEl = document.getElementById('results');
+        const downloadButtonEl = document.getElementById('download_results');
+
+        let lastResultsForDownload = "";
+
+        // Hardcoded credentials for PoC
+        const HARDCODED_USER = "test";
+        const HARDCODED_PASS = "test";
+
+        // Event Listener for Login
+        loginButtonEl.addEventListener('click', () => {
+            const user = usernameEl.value;
+            const pass = passwordEl.value;
+
+            if (user === HARDCODED_USER && pass === HARDCODED_PASS) {
+                loginSectionEl.style.display = 'none';
+                querySectionEl.style.display = 'flex'; // Use flex as defined in CSS
+                loginErrorEl.style.display = 'none';
+            } else {
+                loginErrorEl.textContent = "Invalid credentials. Please try again.";
+                loginErrorEl.style.display = 'block';
+            }
+        });
+
+        // Prevent form submission on enter for login fields
+        usernameEl.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                loginButtonEl.click();
+            }
+        });
+        passwordEl.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                loginButtonEl.click();
+            }
+        });
+
+
+        // Event Listener for Query Submission
+        submitButtonEl.addEventListener('click', async () => {
+            const query = queryTextEl.value.trim();
+            const lang = sourceLanguageEl.value;
+
+            if (!query) {
+                resultsEl.innerHTML = '<p class="error-message">Please enter a query.</p>';
+                return;
+            }
+
+            resultsEl.innerHTML = '<p class="status-message">Processing your query...</p>';
+            downloadButtonEl.style.display = 'none';
+            lastResultsForDownload = "";
+
+            try {
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query_text: query,
+                        source_language: lang
+                    })
+                });
+
+                if (!response.ok) {
+                    // Try to parse error detail from backend if available
+                    let errorDetail = "Failed to fetch due to network or server error.";
+                    try {
+                        const errorData = await response.json();
+                        errorDetail = errorData.detail || errorData.message || errorDetail;
+                    } catch (e) { /* Ignore if response is not JSON */ }
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorDetail}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Error submitting query:', error);
+                resultsEl.innerHTML = `<p class="error-message">Error: ${error.message}</p>`;
+            }
+        });
+
+        function displayResults(data) {
+            resultsEl.innerHTML = ''; // Clear previous results
+
+            let htmlContent = `<p class="status-message"><strong>Overall Status:</strong> ${data.message || 'No specific status message.'}</p>`;
+            htmlContent += `<p><strong>Original Query:</strong> ${data.original_query}</p>`;
+            if (data.detected_language !== data.source_language && data.processed_query !== data.original_query && data.processed_query) {
+                 htmlContent += `<p><strong>Processed Query (for internal use):</strong> ${data.processed_query}</p>`;
+            }
+            htmlContent += `<p><strong>Detected Language:</strong> ${data.detected_language}</p>`;
+            htmlContent += `<p><strong>Keywords:</strong> ${(data.keywords && data.keywords.length > 0) ? data.keywords.join(', ') : 'None'}</p>`;
+
+            if (data.retrieved_laws && data.retrieved_laws.length > 0) {
+                htmlContent += '<h3>Retrieved Laws:</h3>';
+                data.retrieved_laws.forEach(law => {
+                    htmlContent += '<div class="result-item">';
+                    htmlContent += `<h3>${law.law_book || ''} §${law.paragraph || ''}</h3>`;
+                    if (law.url) {
+                        htmlContent += `<p><strong>Source:</strong> <a href="${law.url}" target="_blank">${law.url}</a> (${law.source || 'web'})</p>`;
+                    }
+                    htmlContent += `<p><strong>Content:</strong></p><pre>${law.content || 'No content available.'}</pre>`;
+                    if(law.relevance_note) {
+                        htmlContent += `<p><em>Note: ${law.relevance_note}</em></p>`;
+                    }
+                    htmlContent += '</div>';
+                });
+                downloadButtonEl.style.display = 'inline-block';
+                lastResultsForDownload = generateTextForDownload(data);
+
+            } else {
+                htmlContent += '<p>No specific law information retrieved.</p>';
+            }
+            resultsEl.innerHTML = htmlContent;
+        }
+
+        function generateTextForDownload(data) {
+            let text = `Legal Assistant PoC Query Results\n`;
+            text += `===================================\n`;
+            text += `Original Query: ${data.original_query}\n`;
+            text += `Detected Language: ${data.detected_language}\n`;
+            if (data.detected_language !== data.source_language && data.processed_query !== data.original_query && data.processed_query) {
+                 text += `Processed Query (for internal use): ${data.processed_query}\n`;
+            }
+            text += `Keywords: ${(data.keywords && data.keywords.length > 0) ? data.keywords.join(', ') : 'None'}\n`;
+            text += `Overall Status: ${data.message || 'No specific status message.'}\n\n`;
+
+            if (data.retrieved_laws && data.retrieved_laws.length > 0) {
+                text += `Retrieved Laws:\n`;
+                text += `---------------\n`;
+                data.retrieved_laws.forEach(law => {
+                    text += `Law: ${law.law_book || ''} §${law.paragraph || ''}\n`;
+                    if (law.url) {
+                        text += `Source: ${law.url} (${law.source || 'web'})\n`;
+                    }
+                    if(law.relevance_note) {
+                        text += `Note: ${law.relevance_note}\n`;
+                    }
+                    text += `Content:\n${law.content || 'No content available.'}\n\n`;
+                    text += `------------------------------------\n`;
+                });
+            } else {
+                text += 'No specific law information retrieved.\n';
+            }
+            return text;
+        }
+
+        downloadButtonEl.addEventListener('click', () => {
+            if(lastResultsForDownload){
+                const blob = new Blob([lastResultsForDownload], { type: 'text/plain;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'legal_assistant_results.txt';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }
+        });
+
+    </script>
+</body>
+</html>
