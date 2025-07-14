@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.7.4](https://github.com/mojaloop/central-ledger/compare/v19.7.3...v19.7.4) (2025-07-14)
+
+
+### Chore
+
+* use mysql2 dialect ([#1191](https://github.com/mojaloop/central-ledger/issues/1191)) ([4e459e6](https://github.com/mojaloop/central-ledger/commit/4e459e6bf5ad143beeed456ba241a6306d36df07))
+
 ### [19.7.3](https://github.com/mojaloop/central-ledger/compare/v19.7.0...v19.7.3) (2025-07-11)
 
 
