@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.7.4](https://github.com/mojaloop/central-ledger/compare/v19.7.3...v19.7.4) (2025-07-14)
+
+
+### Chore
+
+* use mysql2 dialect ([#1191](https://github.com/mojaloop/central-ledger/issues/1191)) ([4e459e6](https://github.com/mojaloop/central-ledger/commit/4e459e6bf5ad143beeed456ba241a6306d36df07))
+
+### [19.7.3](https://github.com/mojaloop/central-ledger/compare/v19.7.0...v19.7.3) (2025-07-11)
+
+
+### Bug Fixes
+
+* **knex:** switch to mysql2 client and update version for mysql v8 auth compatibility ([#1189](https://github.com/mojaloop/central-ledger/issues/1189)) ([c4ebf7b](https://github.com/mojaloop/central-ledger/commit/c4ebf7b7cbd461e5d1fe7fad39507b00aef8dbeb))
+* revert breaking commit and update dependencies ([#1190](https://github.com/mojaloop/central-ledger/issues/1190)) ([cc28663](https://github.com/mojaloop/central-ledger/commit/cc28663455d096210d79f6519fccdb64fd71b313)), closes [#1189](https://github.com/mojaloop/central-ledger/issues/1189)
+
+
+### Chore
+
+* bump stream for more health check ([#1187](https://github.com/mojaloop/central-ledger/issues/1187)) ([a6b5f16](https://github.com/mojaloop/central-ledger/commit/a6b5f1609ed21331fd94ed7f92e64b5da853f783))
+
+### [19.7.2](https://github.com/mojaloop/central-ledger/compare/v19.7.0...v19.7.2) (2025-07-11)
+
+
+### Chore
+
+* **release:** 19.7.1 [skip ci] ([ea3b0ea](https://github.com/mojaloop/central-ledger/commit/ea3b0ea4be97864645cf6d3aab67ee2aa8a4038d))
+* update deps ([18837ac](https://github.com/mojaloop/central-ledger/commit/18837ac8439c0a422fff8e7cb03c3ff87589b7f9))
+
+### [19.7.1](https://github.com/mojaloop/central-ledger/compare/v19.7.0...v19.7.1) (2025-07-11)
+
+
+### Chore
+
+* update deps ([18837ac](https://github.com/mojaloop/central-ledger/commit/18837ac8439c0a422fff8e7cb03c3ff87589b7f9))
+
 ## [19.7.0](https://github.com/mojaloop/central-ledger/compare/v19.6.3...v19.7.0) (2025-07-07)
 
 
