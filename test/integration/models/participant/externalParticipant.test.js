@@ -44,7 +44,9 @@ Test('externalParticipant Model Tests -->', (epModelTest) => {
   epModelTest.test('should throw error on inserting a record without related proxyId in participant table', tryCatchEndTest(async (t) => {
     const err = await externalParticipant.create({ proxyId: 0, name: 'name' })
       .catch(e => e)
-    t.ok(err.cause.includes('ER_NO_REFERENCED_ROW_2'))
+    const isDbError = err.extensions && err.extensions.some(ext => ext.key === 'system' && ext.value.includes('db'))
+    const isInternalError = err.apiErrorCode && err.apiErrorCode.code === '2001'
+    t.ok(isDbError && isInternalError)
   }))
 
   epModelTest.test('should not throw error on inserting a record, if the name already exists', tryCatchEndTest(async (t) => {
