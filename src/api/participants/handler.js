@@ -37,6 +37,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
 const SettlementService = require('../../domain/settlement')
 const rethrow = require('../../shared/rethrow')
+const MLNumber = require('@mojaloop/ml-number')
 
 const LocalEnum = {
   activated: 'activated',
@@ -252,8 +253,8 @@ const getLimits = async function (request) {
           currency: (item.currencyId || request.query.currency),
           limit: {
             type: item.name,
-            value: parseFloat(item.value),
-            alarmPercentage: item.thresholdAlarmPercentage !== undefined ? parseFloat(item.thresholdAlarmPercentage) : undefined
+            value: new MLNumber(item.value).toNumber(),
+            alarmPercentage: item.thresholdAlarmPercentage !== undefined ? new MLNumber(item.thresholdAlarmPercentage).toNumber() : undefined
           }
         })
       })
@@ -275,8 +276,8 @@ const getLimitsForAllParticipants = async function (request) {
           currency: item.currencyId,
           limit: {
             type: item.limitType,
-            value: parseFloat(item.value),
-            alarmPercentage: item.thresholdAlarmPercentage !== undefined ? parseFloat(item.thresholdAlarmPercentage) : undefined
+            value: new MLNumber(item.value).toNumber(),
+            alarmPercentage: item.thresholdAlarmPercentage !== undefined ? new MLNumber(item.thresholdAlarmPercentage).toNumber() : undefined
           }
         })
       })
@@ -295,8 +296,8 @@ const adjustLimits = async function (request, h) {
       currency: request.payload.currency,
       limit: {
         type: request.payload.limit.type,
-        value: parseFloat(participantLimit.value),
-        alarmPercentage: participantLimit.thresholdAlarmPercentage !== undefined ? parseFloat(participantLimit.thresholdAlarmPercentage) : undefined
+        value: new MLNumber(participantLimit.value).toNumber(),
+        alarmPercentage: participantLimit.thresholdAlarmPercentage !== undefined ? new MLNumber(participantLimit.thresholdAlarmPercentage).toNumber() : undefined
       }
 
     }
@@ -315,13 +316,13 @@ const getPositions = async function (request) {
       // Multiple positions (no currency specified)
       return result.map(position => ({
         ...position,
-        value: position.value !== undefined ? parseFloat(position.value) : undefined
+        value: position.value !== undefined ? new MLNumber(position.value).toNumber() : undefined
       }))
     } else if (result && typeof result === 'object' && result.value !== undefined) {
       // Single position (currency specified)
       return {
         ...result,
-        value: parseFloat(result.value)
+        value: new MLNumber(result.value).toNumber()
       }
     }
     return result
@@ -338,8 +339,8 @@ const getAccounts = async function (request) {
     if (Array.isArray(result)) {
       return result.map(account => ({
         ...account,
-        value: account.value !== undefined ? parseFloat(account.value) : undefined,
-        reservedValue: account.reservedValue !== undefined ? parseFloat(account.reservedValue) : undefined
+        value: account.value !== undefined ? new MLNumber(account.value).toNumber() : undefined,
+        reservedValue: account.reservedValue !== undefined ? new MLNumber(account.reservedValue).toNumber() : undefined
       }))
     }
     return result
