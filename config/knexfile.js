@@ -7,7 +7,6 @@ const Config = require('../src/lib/config')
 
 module.exports = {
   ...Config.DATABASE,
-  version: '5.5',
   migrations: {
     directory: migrationsDirectory,
     tableName: 'migration',
