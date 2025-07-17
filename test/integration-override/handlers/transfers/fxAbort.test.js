@@ -49,6 +49,7 @@ const TransferService = require('#src/domain/transfer/index')
 const FxTransferModels = require('#src/models/fxTransfer/index')
 const ParticipantService = require('#src/domain/participant/index')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const MLNumber = require('@mojaloop/ml-number')
 const {
   wrapWithRetries
 } = require('#test/util/helpers')
@@ -596,7 +597,7 @@ Test('Handlers test', async handlersTest => {
 
       // Check the position of the payer is updated
       const payerPositionAfterReserve = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
-      test.equal(payerPositionAfterReserve.value, testFxData.sourceAmount.amount)
+      test.ok(new MLNumber(payerPositionAfterReserve.value).isEqualTo(testFxData.sourceAmount.amount), 'Payer position incremented by source amount after reserve')
 
       testConsumer.clearEvents()
       test.end()
@@ -678,7 +679,7 @@ Test('Handlers test', async handlersTest => {
 
       // Check the position of the fxp is updated
       const fxpTargetPositionAfterReserve = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyIdSecondary)
-      test.equal(fxpTargetPositionAfterReserve.value, testFxData.targetAmount.amount)
+      test.ok(new MLNumber(fxpTargetPositionAfterReserve.value).isEqualTo(testFxData.targetAmount.amount), 'FXP target position incremented by target amount after reserve')
 
       testConsumer.clearEvents()
       test.end()
@@ -727,19 +728,19 @@ Test('Handlers test', async handlersTest => {
 
       // Check the position of the payer is reverted
       const payerPositionAfterAbort = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
-      test.equal(payerPositionAfterAbort.value, 0)
+      test.ok(new MLNumber(payerPositionAfterAbort.value).isEqualTo(0), 'Payer position reverted to 0 after abort')
 
       // Check the position of the fxp is reverted
       const fxpTargetPositionAfterAbort = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyIdSecondary)
-      test.equal(fxpTargetPositionAfterAbort.value, 0)
+      test.ok(new MLNumber(fxpTargetPositionAfterAbort.value).isEqualTo(0), 'FXP target position reverted to 0 after abort')
 
       // Check the position of the payee is not changed
       const payeePositionAfterAbort = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId)
-      test.equal(payeePositionAfterAbort.value, 0)
+      test.ok(new MLNumber(payeePositionAfterAbort.value).isEqualTo(0), 'Payee position not changed after abort')
 
       // Check the position of the fxp source currency is not changed
       const fxpSourcePositionAfterAbort = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyId)
-      test.equal(fxpSourcePositionAfterAbort.value, 0)
+      test.ok(new MLNumber(fxpSourcePositionAfterAbort.value).isEqualTo(0), 'FXP source position not changed after abort')
 
       testConsumer.clearEvents()
       test.end()

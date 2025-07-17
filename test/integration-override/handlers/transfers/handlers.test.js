@@ -46,6 +46,7 @@ const SettlementHelper = require('#test/integration/helpers/settlementModels')
 const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const MLNumber = require('@mojaloop/ml-number')
 const {
   wrapWithRetries
 } = require('#test/util/helpers')
@@ -1626,8 +1627,8 @@ Test('Handlers test', async handlersTest => {
         const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
         const payerExpectedPosition = Number(payerInitialPosition) + Number(td.fxTransferPayload.sourceAmount.amount)
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerExpectedPosition), 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.ok(new MLNumber(payerPositionChange.value).isEqualTo(payerCurrentPosition.value), 'Payer position change value inserted and matches the updated participantPosition value')
         payerPositionAfterFxPrepare = payerExpectedPosition
       }
       try {
@@ -1690,9 +1691,9 @@ Test('Handlers test', async handlersTest => {
       // Hard to test that the position messageKey=0 equates to doing nothing
       // so we'll just check that the positions are unchanged for the participants
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
-      test.equal(payerCurrentPosition.value, payerPositionAfterFxPrepare, 'Payer position unchanged')
+      test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerPositionAfterFxPrepare), 'Payer position unchanged')
       const proxyARCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.proxyAR.participantCurrencyId) || {}
-      test.equal(proxyARCurrentPosition.value, td.proxyARLimitAndInitialPosition.participantPosition.value, 'FXP position unchanged')
+      test.ok(new MLNumber(proxyARCurrentPosition.value).isEqualTo(td.proxyARLimitAndInitialPosition.participantPosition.value), 'FXP position unchanged')
 
       testConsumer.clearEvents()
       test.end()

@@ -47,6 +47,7 @@ const ParticipantHelper = require('../../helpers/participant')
 const ParticipantEndpointHelper = require('../../helpers/participantEndpoint')
 const ParticipantLimitHelper = require('../../helpers/participantLimit')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const MLNumber = require('@mojaloop/ml-number')
 
 const debug = false
 
@@ -372,7 +373,7 @@ Test('Participant service', async (participantTest) => {
     try {
       const result = await ParticipantService.getPositions(participantFixtures[0].name, participantFixtures[0].currencyList[0].currencyId)
       assert.equal(result[0].currency, participantFixtures[0].currencyList[0].currencyId, 'currencies are equal')
-      assert.equal(result[0].value, 0, 'position value match')
+      assert.equal(new MLNumber(result[0].value).toNumber(), 0, 'position value match')
       assert.end()
     } catch (err) {
       Logger.error(`get positions failed with error - ${err}`)

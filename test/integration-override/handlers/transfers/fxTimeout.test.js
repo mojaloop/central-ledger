@@ -49,6 +49,7 @@ const TransferService = require('#src/domain/transfer/index')
 const FxTransferModels = require('#src/models/fxTransfer/index')
 const ParticipantService = require('#src/domain/participant/index')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const MLNumber = require('@mojaloop/ml-number')
 const {
   wrapWithRetries
 } = require('#test/util/helpers')
@@ -582,14 +583,14 @@ Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
         console.log(td.payerLimitAndInitialPosition)
         console.log(payerInitialPosition)
         console.log(payerCurrentPosition)
-        return payerCurrentPosition.value === payerInitialPosition
+        return new MLNumber(payerCurrentPosition.value).isEqualTo(payerInitialPosition)
       }
       // wait until we know the position reset, or throw after 5 tries
       await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
       // Assert
-      test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
+      test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerInitialPosition), 'Position resets after a timeout')
       test.end()
     })
 
@@ -815,14 +816,14 @@ Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
       // Act
       const payerPositionDidReset = async () => {
         const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
-        return payerCurrentPosition.value === payerInitialPosition
+        return new MLNumber(payerCurrentPosition.value).isEqualTo(payerInitialPosition)
       }
       // wait until we know the position reset, or throw after 5 tries
       await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
       // Assert
-      test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
+      test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerInitialPosition), 'Position resets after a timeout')
       test.end()
     })
 
@@ -834,14 +835,14 @@ Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
       // Act
       const fxpPositionDidReset = async () => {
         const fxpCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyIdSecondary)
-        return fxpCurrentPosition.value === fxpInitialPosition
+        return new MLNumber(fxpCurrentPosition.value).isEqualTo(fxpInitialPosition)
       }
       // wait until we know the position reset, or throw after 5 tries
       await wrapWithRetries(fxpPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       const fxpCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.fxp.participantCurrencyIdSecondary) || {}
 
       // Assert
-      test.equal(fxpCurrentPosition.value, fxpInitialPosition, 'Position resets after a timeout')
+      test.ok(new MLNumber(fxpCurrentPosition.value).isEqualTo(fxpInitialPosition), 'Position resets after a timeout')
       test.end()
     })
 

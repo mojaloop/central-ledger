@@ -37,6 +37,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
 const SettlementService = require('../../domain/settlement')
 const rethrow = require('../../shared/rethrow')
+const MLNumber = require('@mojaloop/ml-number')
 
 const LocalEnum = {
   activated: 'activated',
@@ -252,8 +253,8 @@ const getLimits = async function (request) {
           currency: (item.currencyId || request.query.currency),
           limit: {
             type: item.name,
-            value: item.value,
-            alarmPercentage: item.thresholdAlarmPercentage
+            value: new MLNumber(item.value).toNumber(),
+            alarmPercentage: item.thresholdAlarmPercentage !== undefined ? new MLNumber(item.thresholdAlarmPercentage).toNumber() : undefined
           }
         })
       })
@@ -275,8 +276,8 @@ const getLimitsForAllParticipants = async function (request) {
           currency: item.currencyId,
           limit: {
             type: item.limitType,
-            value: item.value,
-            alarmPercentage: item.thresholdAlarmPercentage
+            value: new MLNumber(item.value).toNumber(),
+            alarmPercentage: item.thresholdAlarmPercentage !== undefined ? new MLNumber(item.thresholdAlarmPercentage).toNumber() : undefined
           }
         })
       })
@@ -295,8 +296,8 @@ const adjustLimits = async function (request, h) {
       currency: request.payload.currency,
       limit: {
         type: request.payload.limit.type,
-        value: participantLimit.value,
-        alarmPercentage: participantLimit.thresholdAlarmPercentage
+        value: new MLNumber(participantLimit.value).toNumber(),
+        alarmPercentage: participantLimit.thresholdAlarmPercentage !== undefined ? new MLNumber(participantLimit.thresholdAlarmPercentage).toNumber() : undefined
       }
 
     }
@@ -308,7 +309,23 @@ const adjustLimits = async function (request, h) {
 
 const getPositions = async function (request) {
   try {
-    return await ParticipantService.getPositions(request.params.name, request.query)
+    const result = await ParticipantService.getPositions(request.params.name, request.query)
+
+    // Convert value from string to number
+    if (Array.isArray(result)) {
+      // Multiple positions (no currency specified)
+      return result.map(position => ({
+        ...position,
+        value: position.value !== undefined ? new MLNumber(position.value).toNumber() : undefined
+      }))
+    } else if (result && typeof result === 'object' && result.value !== undefined) {
+      // Single position (currency specified)
+      return {
+        ...result,
+        value: new MLNumber(result.value).toNumber()
+      }
+    }
+    return result
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'participantGetPositions' })
   }
@@ -316,7 +333,17 @@ const getPositions = async function (request) {
 
 const getAccounts = async function (request) {
   try {
-    return await ParticipantService.getAccounts(request.params.name, request.query)
+    const result = await ParticipantService.getAccounts(request.params.name, request.query)
+
+    // Convert value and reservedValue from string to number
+    if (Array.isArray(result)) {
+      return result.map(account => ({
+        ...account,
+        value: account.value !== undefined ? new MLNumber(account.value).toNumber() : undefined,
+        reservedValue: account.reservedValue !== undefined ? new MLNumber(account.reservedValue).toNumber() : undefined
+      }))
+    }
+    return result
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'participantGetAccounts' })
   }
