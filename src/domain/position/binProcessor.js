@@ -145,6 +145,7 @@ const processBins = async (bins, trx) => {
     let accumulatedTransferStateChanges = []
     let accumulatedFxTransferStateChanges = []
     let accumulatedPositionChanges = []
+    let accumulatedTransferErrors = []
     let changePositions = false
 
     if (accountID !== '0') {
@@ -331,6 +332,7 @@ const processBins = async (bins, trx) => {
     accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(prepareActionResult.accumulatedTransferStateChanges)
     accumulatedPositionChanges = accumulatedPositionChanges.concat(prepareActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(prepareActionResult.notifyMessages)
+    accumulatedTransferErrors = accumulatedTransferErrors.concat(prepareActionResult.accumulatedTransferErrors)
 
     // ========== FX_PREPARE  ==========
     // If fx-prepare action found then call processPositionFxPrepareBin function
@@ -371,6 +373,13 @@ const processBins = async (bins, trx) => {
     const fetchedTransferStateChanges = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, accumulatedTransferStateChanges.map(item => item.transferId))
     // Bulk get the fxTransferStateChangeIds for commitRequestId using select whereIn
     const fetchedFxTransferStateChanges = await BatchPositionModel.getLatestFxTransferStateChangesByCommitRequestIdList(trx, accumulatedFxTransferStateChanges.map(item => item.commitRequestId))
+
+    // Bulk save error logs if there's any transfer errors
+    for (const transferError of accumulatedTransferErrors) {
+      // Get the latest transferStateChangeId to save it altogether as an error log
+      transferError.transferStateChangeId = fetchedTransferStateChanges[transferError.transferId].transferStateChangeId
+    }
+    await BatchPositionModel.bulkInsertTransferErrors(trx, accumulatedTransferErrors);
 
     if (changePositions) {
       // Mutate accumulated positionChanges with transferStateChangeIds and fxTransferStateChangeIds
