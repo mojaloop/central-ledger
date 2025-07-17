@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.8.0](https://github.com/mojaloop/central-ledger/compare/v19.7.4...v19.8.0) (2025-07-17)
+
+
+### Features
+
+* additional db options in config ([#1188](https://github.com/mojaloop/central-ledger/issues/1188)) ([ad9909b](https://github.com/mojaloop/central-ledger/commit/ad9909bb9b6c38318ba61b689adcf5356cad1d9a))
+
 ### [19.7.4](https://github.com/mojaloop/central-ledger/compare/v19.7.3...v19.7.4) (2025-07-14)
 
 
