@@ -151,6 +151,7 @@
     "tapes": "4.1.0"
   },
   "overrides": {
+    "brace-expansion": "2.0.2",
     "form-data": "4.0.4",
     "undici": "6.21.2",
     "shins": {
@@ -165,6 +166,7 @@
     },
     "jsonwebtoken": "9.0.0",
     "jsonpointer": "5.0.0",
+    "on-headers": "1.1.0",
     "trim": "0.0.3",
     "cross-spawn": "7.0.6",
     "yargs-parser": "21.1.1"
