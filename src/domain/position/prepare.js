@@ -69,6 +69,7 @@ const processPositionPrepareBin = async (
   }
 ) => {
   const transferStateChanges = []
+  const transferErrors = []
   const participantPositionChanges = []
   const resultMessages = []
   const limitAlarms = []
@@ -119,6 +120,14 @@ const processPositionPrepareBin = async (
           ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
         ).toApiErrorObject(Config.ERROR_HANDLING)
 
+        // Create a transferError for logging
+        transferErrors.push({
+          transferId: transfer.transferId,
+          transferStateChangeId: null,
+          errorCode: fspiopError.errorInformation.errorCode,
+          errorDescription: reason,
+        })
+
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.FAILURE.status,
           fspiopError.errorInformation.errorCode,
@@ -162,6 +171,14 @@ const processPositionPrepareBin = async (
           ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
         ).toApiErrorObject(Config.ERROR_HANDLING)
 
+        // Create a transferError for logging
+        transferErrors.push({
+          transferId: transfer.transferId,
+          transferStateChangeId: null,
+          errorCode: fspiopError.errorInformation.errorCode,
+          errorDescription: reason,
+        })
+
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.FAILURE.status,
           fspiopError.errorInformation.errorCode,
@@ -204,6 +221,14 @@ const processPositionPrepareBin = async (
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR
         ).toApiErrorObject(Config.ERROR_HANDLING)
+
+        // Create a transferError for logging
+        transferErrors.push({
+          transferId: transfer.transferId,
+          transferStateChangeId: null,
+          errorCode: fspiopError.errorInformation.errorCode,
+          errorDescription: reason,
+        })
 
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.FAILURE.status,
@@ -312,7 +337,8 @@ const processPositionPrepareBin = async (
     accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
     limitAlarms, // array of participant limits that have been breached
     accumulatedPositionChanges: changePositions ? participantPositionChanges : [], // participant position changes to be persisted in order
-    notifyMessages: resultMessages // array of objects containing bin item and result message. {binItem, message}
+    notifyMessages: resultMessages, // array of objects containing bin item and result message. {binItem, message}
+    accumulatedTransferErrors: transferErrors // array of transfer errors if any
   }
 }
 
