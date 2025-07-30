@@ -1,0 +1,85 @@
+# Unless you're building a Maven project containing child modules within the repo, it's best not to
+# copy this CI workflow. This is because the artifact is built outside of the docker runtime and
+# copied in to the docker runtime. See below for reasons/details.
+name: Publish image
+
+on:
+  # The build will run on all of the following event types. Semver tagged images will be published
+  # for a release. A long sha image will be published for every push.
+  release:
+    types: [published]
+  push:
+    branches:
+    - 'develop/main'
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name: Docker meta
+      id: docker_meta
+      uses: docker/metadata-action@v3
+      with:
+        # Except for Dockerhub, which is the default, tags need to have the registry name in
+        # them, e.g. ghcr.io for Github container registry, or gcr.io for Google container
+        # registry.
+        # Note that the generated tags will look like:
+        #   ghcr.io/{owner}/{repo}:version
+        images: ghcr.io/${{ github.repository }}
+        # For a release v1.2.3, we'll produce the following image tags
+        #   v1.2.3
+        #   1.2.3
+        #   1.2
+        #   latest
+        # For non-releases, we'll produce a long sha
+        flavor: |
+          latest=${{ github.event_name == 'release' }}
+        tags: |
+          type=match,pattern=v\d+\.\d+\.\d+,enable=${{ github.event_name == 'release' }}
+          type=match,pattern=v(\d+\.\d+\.\d+),enable=${{ github.event_name == 'release' }},group=1
+          type=match,pattern=v(\d+\.\d+)\.\d+,enable=${{ github.event_name == 'release' }},group=1
+          type=match,pattern=v(\d+)\.\d+\.\d+,group=1,enable=${{ !startsWith(github.ref, 'refs/tags/v0.') && github.event_name == 'release' }}
+          type=sha,event=push,value={{sha}},format=long,enable=${{ github.event_name != 'release' }}
+        labels: |
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}/tree/${{ github.sha }}
+    -
+      name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    -
+      name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    -
+      name: Login to GitHub Container Registry
+      if: ${{ github.event_name != 'pull_request' }}
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    -
+      name: Checkout repository
+      uses: actions/checkout@v2
+    # Here we build the package. Later, we copy the jar file into the built image. Don't copy this
+    # behaviour. Normally you should build your software *inside* your Dockerfile. But maven makes
+    # this exceptionally difficult when you have parent & child modules in the same repo.
+    # -
+    #   name: Build package
+    #   run: mvn clean package
+    -
+      name: Test print output
+      run: tree .
+    -
+      name: Build and push
+      id: docker_build
+      uses: docker/build-push-action@v2.2.1
+      with:
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.docker_meta.outputs.tags }}
+        labels: ${{ steps.docker_meta.outputs.labels }}
+        # This tells build-push-action to use our local checkout (with our built jar artifact in
+        # it) as the build context.
+        context: .
+    -
+      name: Image digest
+      run: echo ${{ steps.docker_build.outputs.digest }}
