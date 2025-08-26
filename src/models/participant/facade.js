@@ -345,7 +345,7 @@ const addEndpoint = async (participantId, endpoint) => {
         createdBy: 'unknown'
       })
       .onConflict(['participantId', 'endpointTypeId']).merge()
-    return getEndpoint(participantId, endpoint.type)
+    return (await getEndpoint(participantId, endpoint.type))[0]
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
