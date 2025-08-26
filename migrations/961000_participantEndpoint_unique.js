@@ -30,9 +30,9 @@
 
 // this migration deletes duplicates and enables unique constraint on the columns participantId and endpointTypeId,
 // so that deadlocks can be avoided during inserts against massively repeated inactive endpoints
-exports.up = function (knex) {
+exports.up = async function (knex) {
   // delete inactive, where active exists for same participantId and endpointId
-  knex('participantEndpoint').whereIn('participantEndpointId',
+  await knex('participantEndpoint').whereIn('participantEndpointId',
     knex.fromRaw(
       `(${knex('participantEndpoint').where('isActive', 0).whereIn(['participantId', 'endpointTypeId'],
         knex.select('participantId', 'endpointTypeId').from('participantEndpoint').where('isActive', 1)
@@ -41,7 +41,7 @@ exports.up = function (knex) {
   ).delete()
 
   // delete duplicates, leave row with max id
-  knex('participantEndpoint').where('participantEndpointId', '>', '0').whereNotIn('participantEndpointId',
+  await knex('participantEndpoint').where('participantEndpointId', '>', '0').whereNotIn('participantEndpointId',
     knex.fromRaw(
       `(${knex('participantEndpoint').max('participantEndpointId').groupBy('participantId', 'endpointTypeId')}) as temp`
     ).select('participantEndpointId')
