@@ -43,7 +43,7 @@ exports.up = async function (knex) {
   // delete duplicates, leave row with max id
   await knex('participantEndpoint').where('participantEndpointId', '>', '0').whereNotIn('participantEndpointId',
     knex.fromRaw(
-      `(${knex('participantEndpoint').max('participantEndpointId').groupBy('participantId', 'endpointTypeId')}) as temp`
+      `(${knex('participantEndpoint').max('participantEndpointId', { as: 'participantEndpointId' }).groupBy('participantId', 'endpointTypeId')}) as temp`
     ).select('participantEndpointId')
   ).delete()
 
