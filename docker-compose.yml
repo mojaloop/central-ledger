@@ -84,7 +84,7 @@ services:
       interval: 30s
 
   mysql:
-    image: mysql/mysql-server
+    image: mysql/mysql-server:8.0
     container_name: cl_mysql
     deploy:
       replicas: 1
@@ -109,7 +109,7 @@ services:
       retries: 10
       start_period: 40s
       interval: 30s
-  
+
   #  To use with proxyCache.type === 'redis-cluster'
   redis-node-0:
     container_name: redis-node-0
@@ -205,7 +205,7 @@ services:
       - mockserver
 
   kafka:
-    image: docker.io/bitnami/kafka:3.5
+    image: docker.io/bitnamilegacy/kafka:3.5
     container_name: cl_kafka
     networks:
       - cl-mojaloop-net
@@ -238,7 +238,7 @@ services:
     container_name: cl_init_kafka
     networks:
       - cl-mojaloop-net
-    image: docker.io/bitnami/kafka:3.5
+    image: docker.io/bitnamilegacy/kafka:3.5
     depends_on:
       - kafka
     volumes:

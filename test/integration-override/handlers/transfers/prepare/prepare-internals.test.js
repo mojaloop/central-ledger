@@ -27,7 +27,7 @@
  **********/
 
 const { randomUUID } = require('node:crypto')
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 
 const prepareHandler = require('#src/handlers/transfers/prepare')
 const config = require('#src/lib/config')
@@ -43,8 +43,15 @@ const transferFacade = require('#src/models/transfer/facade')
 const participantHelper = require('#test/integration/helpers/participant')
 const fixtures = require('#test/fixtures')
 const { tryCatchEndTest } = require('#test/util/helpers')
+const mysql = require('mysql2/promise')
+const Sinon = require('sinon')
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
+const { saveFxTransferDuplicateCheck } = require('#src/models/fxTransfer/duplicateCheck')
 
-Test('Prepare Handler internals Tests -->', (prepareHandlerTest) => {
+const Proxyquire = require('proxyquire')
+const fxTransfer = require('#src/models/fxTransfer/fxTransfer')
+
+Test('Prepare Handler internals Tests -->', prepareHandlerTest => {
   const initiatingFsp = `externalPayer-${Date.now()}`
   const counterPartyFsp = `externalPayee-${Date.now()}`
   const proxyId1 = `proxy1-${Date.now()}`
@@ -52,8 +59,18 @@ Test('Prepare Handler internals Tests -->', (prepareHandlerTest) => {
 
   const curr1 = 'BWP'
   // const curr2 = 'TZS';
-
+  let sandbox
   const transferId = randomUUID()
+
+  prepareHandlerTest.beforeEach((t) => {
+    sandbox = Sinon.createSandbox()
+    t.end()
+  })
+
+  prepareHandlerTest.afterEach((t) => {
+    sandbox.restore()
+    t.end()
+  })
 
   prepareHandlerTest.test('setup', tryCatchEndTest(async (t) => {
     await Db.connect(config.DATABASE)
@@ -165,6 +182,127 @@ Test('Prepare Handler internals Tests -->', (prepareHandlerTest) => {
     const [participant1] = await transferFacade.getTransferParticipant(proxyId1, transferId)
     t.equals(participant1.externalParticipantId, extPayer.externalParticipantId)
     t.equals(participant1.participantId, extPayer.proxyId)
+  }))
+
+  prepareHandlerTest.test('should throw lock timeout error when fxTransfer table is locked', tryCatchEndTest(async (t) => {
+    const rethrowStub = sandbox.stub().callsFake((err) => { throw err })
+    const prepareHandlerWithProxyquire = Proxyquire('#src/handlers/transfers/prepare', {
+      '../../shared/rethrow': {
+        rethrowDatabaseError: rethrowStub,
+        rethrowCachedDatabaseError: rethrowStub,
+        rethrowAndCountFspiopError: rethrowStub
+      }
+    })
+    sandbox.stub(Consumer, 'isConsumerAutoCommitEnabled')
+    Consumer.isConsumerAutoCommitEnabled.returns(true)
+    // Open a manual connection to the DB
+    const dbConfig = {
+      host: config.DATABASE.connection.host,
+      user: config.DATABASE.connection.user,
+      password: config.DATABASE.connection.password,
+      database: config.DATABASE.connection.database
+    }
+
+    const connection = await mysql.createConnection({
+      ...dbConfig,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 3000 // 0 by default.
+    })
+
+    // Prepare payload for transfer
+    const payload = fixtures.fxTransferDto({ initiatingFsp, counterPartyFsp })
+    const isFx = true
+    const proxyObligation = fixtures.mockProxyObligationDto({
+      isFx,
+      payloadClone: payload,
+      proxy1: proxyId1,
+      proxy2: proxyId2
+    })
+    const determiningTransferCheckResult = {
+      determiningTransferExistsInTransferList: null,
+      watchListRecords: [],
+      participantCurrencyValidationList: []
+    }
+
+    await saveFxTransferDuplicateCheck(payload.commitRequestId, randomUUID())
+
+    // Set lock wait timeout to 1 second
+    await connection.query('SET innodb_lock_wait_timeout = 1')
+
+    // Lock the fxTransfer table by starting a transaction and acquiring a lock
+    await connection.beginTransaction()
+    await connection.query('LOCK TABLES fxTransfer WRITE')
+
+    // Unlock tables after 10 seconds in the background, in case test fails
+    const timeoutId = setTimeout(async () => {
+      try {
+        await connection.query('UNLOCK TABLES')
+        await connection.commit()
+        await connection.end()
+        t.fail('Timeout did not occur')
+        throw new Error('Timeout did not occur')
+      } catch (err) {
+        // Ignore errors here, connection may already be closed
+      }
+    }, 10000)
+
+    // Try to save prepared request, expecting a lock timeout error
+    // Start saving prepared request, but unlock the table in parallel to simulate lock timeout
+    const savePromise = prepareHandlerWithProxyquire.savePreparedRequest({
+      isFx,
+      payload,
+      validationPassed: true,
+      reasons: [],
+      functionality: 'functionality',
+      params: {},
+      location: {},
+      determiningTransferCheckResult,
+      proxyObligation
+    })
+
+    // Unlock tables after a short delay to simulate contention
+    setTimeout(async () => {
+      try {
+        await connection.query('UNLOCK TABLES')
+      } catch (err) {
+        // Ignore errors if already unlocked
+      }
+    }, 7500)
+
+    await savePromise
+
+    const payload2 = fixtures.fxTransferDto({ initiatingFsp, counterPartyFsp })
+    const proxyObligation2 = fixtures.mockProxyObligationDto({
+      isFx,
+      payloadClone: payload2,
+      proxy1: proxyId1,
+      proxy2: proxyId2
+    })
+    await saveFxTransferDuplicateCheck(payload2.commitRequestId, randomUUID())
+    await prepareHandler.savePreparedRequest({
+      isFx,
+      payload: payload2,
+      validationPassed: true,
+      reasons: [],
+      functionality: 'functionality',
+      params: {},
+      location: {},
+      determiningTransferCheckResult,
+      proxyObligation: proxyObligation2
+    })
+
+    const dbFxTransfer1 = await fxTransfer.getByIdLight(payload.commitRequestId)
+    t.ok(dbFxTransfer1, 'fxTransfer is saved in db')
+    t.equals(dbFxTransfer1.commitRequestId, payload.commitRequestId, 'dbFxTransfer1.commitRequestId matches')
+
+    const dbFxTransfer2 = await fxTransfer.getByIdLight(payload2.commitRequestId)
+    t.ok(dbFxTransfer2, 'fxTransfer is saved in db')
+    t.equals(dbFxTransfer2.commitRequestId, payload2.commitRequestId, 'dbFxTransfer2.commitRequestId matches')
+
+    await connection.commit()
+    await connection.end()
+
+    clearTimeout(timeoutId)
   }))
 
   prepareHandlerTest.test('teardown', tryCatchEndTest(async (t) => {
