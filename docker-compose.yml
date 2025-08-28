@@ -100,7 +100,7 @@ services:
       - MYSQL_USER=${DBUSER:-central_ledger}
       - MYSQL_PASSWORD=${DBPASS:-password}
       - MYSQL_DATABASE=${DBUSER:-central_ledger}
-      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
     networks:
       - cl-mojaloop-net
     healthcheck:
