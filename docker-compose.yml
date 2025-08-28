@@ -84,7 +84,7 @@ services:
       interval: 30s
 
   mysql:
-    image: mysql/mysql-server
+    image: mysql/mysql-server:8.0
     container_name: cl_mysql
     deploy:
       replicas: 1
@@ -100,7 +100,7 @@ services:
       - MYSQL_USER=${DBUSER:-central_ledger}
       - MYSQL_PASSWORD=${DBPASS:-password}
       - MYSQL_DATABASE=${DBUSER:-central_ledger}
-      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_ROOT_PASSWORD=rootpassword
     networks:
       - cl-mojaloop-net
     healthcheck:
@@ -109,7 +109,7 @@ services:
       retries: 10
       start_period: 40s
       interval: 30s
-  
+
   #  To use with proxyCache.type === 'redis-cluster'
   redis-node-0:
     container_name: redis-node-0
