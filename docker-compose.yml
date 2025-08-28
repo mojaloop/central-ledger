@@ -205,7 +205,7 @@ services:
       - mockserver
 
   kafka:
-    image: docker.io/bitnami/kafka:3.5
+    image: docker.io/bitnamilegacy/kafka:3.5
     container_name: cl_kafka
     networks:
       - cl-mojaloop-net
@@ -238,7 +238,7 @@ services:
     container_name: cl_init_kafka
     networks:
       - cl-mojaloop-net
-    image: docker.io/bitnami/kafka:3.5
+    image: docker.io/bitnamilegacy/kafka:3.5
     depends_on:
       - kafka
     volumes:
