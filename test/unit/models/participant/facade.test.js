@@ -481,6 +481,19 @@ Test('Participant facade', async (facadeTest) => {
       const trxStub = sandbox.stub()
       trxStub.commit = sandbox.stub()
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      const builderStub = sandbox.stub()
+      const whereStub = sandbox.stub()
+      const selectStub = sandbox.stub()
+
+      builderStub.innerJoin = sandbox.stub()
+
+      Db.participantEndpoint.query.callsArgWith(0, builderStub)
+      Db.participantEndpoint.query.returns([endpoints[0]])
+      builderStub.innerJoin.returns({
+        where: whereStub.returns({
+          select: selectStub.returns([endpoints[0]])
+        })
+      })
       Db.getKnex.returns(knexStub)
 
       knexStub.returns({
@@ -489,16 +502,10 @@ Test('Participant facade', async (facadeTest) => {
             first: sandbox.stub().returns({ endpointTypeId: 1 })
           })
         }),
-        transacting: sandbox.stub().returns({
-          forUpdate: sandbox.stub().returns({
-            select: sandbox.stub().returns({
-              where: sandbox.stub().returns([{ participantEndpointId: 1 }])
-            })
-          }),
-          update: sandbox.stub().returns({
-            where: sandbox.stub().returns([1])
-          }),
-          insert: sandbox.stub().returns([1])
+        insert: sandbox.stub().returns({
+          onConflict: sandbox.stub().returns({
+            merge: sandbox.stub().returns([1])
+          })
         })
       })
 
@@ -513,63 +520,12 @@ Test('Participant facade', async (facadeTest) => {
         isActive: 1,
         participantEndpointId: 1,
         participantId: 1,
+        createdDate: '2018-07-11',
+        name: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
       const result = await Model.addEndpoint(participant.participantId, endpoint)
-      assert.ok(knexStub.withArgs('participantEndpoint').calledThrice, 'knex called with participantLimit thrice')
-      assert.ok(knexStub.withArgs('endpointType').calledOnce, 'knex called with endpointType once')
-      assert.deepEqual(result, expected)
-      assert.end()
-    } catch (err) {
-      Logger.error(`addEndpoint failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
-
-  await facadeTest.test('addEndpoint if it does not exist', async (assert) => {
-    try {
-      sandbox.stub(Db, 'getKnex')
-      const knexStub = sandbox.stub()
-      const trxStub = sandbox.stub()
-      trxStub.commit = sandbox.stub()
-      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-      Db.getKnex.returns(knexStub)
-
-      knexStub.returns({
-        where: sandbox.stub().returns({
-          select: sandbox.stub().returns({
-            first: sandbox.stub().returns({ endpointTypeId: 1 })
-          })
-        }),
-        transacting: sandbox.stub().returns({
-          forUpdate: sandbox.stub().returns({
-            select: sandbox.stub().returns({
-              where: sandbox.stub().returns([])
-            })
-          }),
-          update: sandbox.stub().returns({
-            where: sandbox.stub().returns([1])
-          }),
-          insert: sandbox.stub().returns([1])
-        })
-      })
-
-      const endpoint = {
-        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
-        value: 'http://localhost:3001/participants/dfsp1/notification1'
-      }
-
-      const expected = {
-        createdBy: 'unknown',
-        endpointTypeId: 1,
-        isActive: 1,
-        participantEndpointId: 1,
-        participantId: 1,
-        value: 'http://localhost:3001/participants/dfsp1/notification1'
-      }
-      const result = await Model.addEndpoint(participant.participantId, endpoint)
-      assert.ok(knexStub.withArgs('participantEndpoint').calledTwice, 'knex called with participantLimit twice')
+      assert.ok(knexStub.withArgs('participantEndpoint').calledOnce, 'knex called with participantEndpoint once')
       assert.ok(knexStub.withArgs('endpointType').calledOnce, 'knex called with endpointType once')
       assert.deepEqual(result, expected)
       assert.end()
