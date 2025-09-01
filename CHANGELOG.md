@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.8.4](https://github.com/mojaloop/central-ledger/compare/v19.8.3...v19.8.4) (2025-08-29)
+
+
+### Bug Fixes
+
+* addEndpoint deadlock ([#1200](https://github.com/mojaloop/central-ledger/issues/1200)) ([eb7d63e](https://github.com/mojaloop/central-ledger/commit/eb7d63eb3218a66a0636f48f4f911675970d95ce))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([85e4188](https://github.com/mojaloop/central-ledger/commit/85e41881160de7f66023fb7f67b9d3e6fbd60b31))
+
 ### [19.8.3](https://github.com/mojaloop/central-ledger/compare/v19.8.2...v19.8.3) (2025-07-27)
 
 
