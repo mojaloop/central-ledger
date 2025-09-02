@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.8.5](https://github.com/mojaloop/central-ledger/compare/v19.8.4...v19.8.5) (2025-09-02)
+
+
+### Bug Fixes
+
+* use the fixed cs-shared ([#1202](https://github.com/mojaloop/central-ledger/issues/1202)) ([a42965a](https://github.com/mojaloop/central-ledger/commit/a42965a59df5cdcb85e21338498f65f1f19bea0f))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([0078990](https://github.com/mojaloop/central-ledger/commit/007899010c1861b215e2b5ad4445bc5e1d241d02))
+
 ### [19.8.4](https://github.com/mojaloop/central-ledger/compare/v19.8.3...v19.8.4) (2025-08-29)
 
 
