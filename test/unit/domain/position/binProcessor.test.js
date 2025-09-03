@@ -390,7 +390,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       'ed6848e0-e2a8-45b0-9f98-59a2ffba8c10': {
         15: {
           value: 100,
-          change: 100
+          positionChange: 100
         }
       }
     })

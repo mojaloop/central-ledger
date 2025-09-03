@@ -242,13 +242,13 @@ Test('timeout reserved domain', positionIndexTest => {
             'd6a036a5-65a3-48af-a0c7-ee089c412ada': {
               51: {
                 value: 10,
-                change: 10
+                positionChange: 10
               }
             },
             '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': {
               51: {
                 value: 5,
-                change: 5
+                positionChange: 5
               }
             }
           }
