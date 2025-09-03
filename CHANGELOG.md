@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.8.7](https://github.com/mojaloop/central-ledger/compare/v19.8.6...v19.8.7) (2025-09-03)
+
+
+### Bug Fixes
+
+* rename column 'change' and fix datatype on participantPositionChange table ([#1203](https://github.com/mojaloop/central-ledger/issues/1203)) ([fd898b0](https://github.com/mojaloop/central-ledger/commit/fd898b08d1d291b0c203f7cb95972b127fd50a24))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([fb35f03](https://github.com/mojaloop/central-ledger/commit/fb35f0374264c8d23673e04db86ca72130271652))
+
 ### [19.8.6](https://github.com/mojaloop/central-ledger/compare/v19.8.5...v19.8.6) (2025-09-03)
 
 
