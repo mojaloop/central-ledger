@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.8.6](https://github.com/mojaloop/central-ledger/compare/v19.8.5...v19.8.6) (2025-09-03)
+
+
+### Chore
+
+* add lock test and bump deps ([#1201](https://github.com/mojaloop/central-ledger/issues/1201)) ([a2ab936](https://github.com/mojaloop/central-ledger/commit/a2ab936c630e974948737f7db43d33670f4f7754))
+* **sbom:** update sbom [skip ci] ([2b9e290](https://github.com/mojaloop/central-ledger/commit/2b9e290c70270a8ebcbb13cc07b77a36f5eb2737))
+
 ### [19.8.5](https://github.com/mojaloop/central-ledger/compare/v19.8.4...v19.8.5) (2025-09-02)
 
 
