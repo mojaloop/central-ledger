@@ -24,6 +24,7 @@
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
+ * Shashikant Hirugade <shashi.mojaloop@gmail.com>
  --------------
  ******/
 
@@ -239,7 +240,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             participantCurrencyId: participantCurrency.participantCurrencyId,
             transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
             value: runningPosition,
-            change: transferAmount.toNumber(),
+            positionChange: transferAmount.toNumber(),
             // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
             reservedValue: runningReservedValue
           }
@@ -299,7 +300,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
           participantCurrencyId,
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
           value: latestPosition,
-          change: isReversal ? -amount : amount,
+          positionChange: isReversal ? -amount : amount,
           reservedValue: participantPosition.reservedValue,
           createdDate: transactionTimestamp
         }
