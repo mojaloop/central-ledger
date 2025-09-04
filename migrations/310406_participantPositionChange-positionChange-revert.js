@@ -23,7 +23,7 @@
  - Name Surname <name.surname@mojaloop.io>
 
  * ModusBox
- - Shashikant Hirugade <shashi.mojaloop@gmail.com>
+ - Kevin Leyow <kevin.leyow@infitx.com>
  --------------
  ******/
 
@@ -33,10 +33,7 @@ exports.up = async (knex) => {
   return knex.schema.hasTable('participantPositionChange').then(async (exists) => {
     if (exists) {
       await knex.schema.alterTable('participantPositionChange', (t) => {
-        t.renameColumn('change', 'positionChange')
-      })
-      await knex.schema.alterTable('participantPositionChange', (t) => {
-        t.decimal('positionChange', 18, 4).notNullable().alter()
+        t.renameColumn('positionChange', 'change')
       })
     }
   })
@@ -46,10 +43,7 @@ exports.down = async (knex) => {
   return knex.schema.hasTable('participantPositionChange').then(async (exists) => {
     if (exists) {
       await knex.schema.alterTable('participantPositionChange', (t) => {
-        t.renameColumn('positionChange', 'change')
-      })
-      await knex.schema.alterTable('participantPositionChange', (t) => {
-        t.decimal('change', 18, 2).notNullable().alter()
+        t.renameColumn('change', 'positionChange')
       })
     }
   })
