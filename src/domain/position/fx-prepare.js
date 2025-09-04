@@ -244,7 +244,7 @@ const processFxPositionPrepareBin = async (
             commitRequestId: fxTransfer.commitRequestId, // Need to delete this in bin processor while updating fxTransferStateChangeId
             fxTransferStateChangeId: null, // Need to update this in bin processor while executing queries
             value: currentPosition.toNumber(),
-            positionChange: transferAmount,
+            change: transferAmount,
             reservedValue: accumulatedPositionReservedValue
           }
           participantPositionChanges.push(participantPositionChange)

@@ -99,7 +99,7 @@ const storeFxTransferPreparePayload = async (fxTransfer, transferStateId = '', a
         fxTransferStateChangeId: fxTransferStateChangeId[0].fxTransferStateChangeId,
         participantCurrencyId: 1,
         value: 0,
-        positionChange: 0,
+        change: 0,
         reservedValue: 0
       })
     }
