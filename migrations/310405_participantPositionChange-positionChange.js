@@ -54,4 +54,3 @@ exports.down = async (knex) => {
     }
   })
 }
-
