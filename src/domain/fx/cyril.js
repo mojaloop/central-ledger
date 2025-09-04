@@ -248,7 +248,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
         isOriginalId: originalId === commitRequestId,
         notifyTo: fxRecord.externalInitiatingFspName || fxRecord.initiatingFspName,
         participantCurrencyId: fxPositionChange.participantCurrencyId,
-        amount: -fxPositionChange.positionChange
+        amount: -fxPositionChange.change
       })
     })
   }
@@ -278,7 +278,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
           isOriginalId: originalId === transferId,
           notifyTo: transferRecord.externalPayerName || transferRecord.payerFsp,
           participantCurrencyId: transferPositionChange.participantCurrencyId,
-          amount: -transferPositionChange.positionChange
+          amount: -transferPositionChange.change
         })
       })
     }
