@@ -171,7 +171,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
     })
 
     methodTest.test('should process wrong fulfilment', async t => {
-      Db.getKnex.resolves({
+      Db.getKnex.returns({
         transaction: sandbox.stub
       })
       FxTransferModel.fxTransfer.saveFxFulfilResponse.restore() // to call real saveFxFulfilResponse impl.

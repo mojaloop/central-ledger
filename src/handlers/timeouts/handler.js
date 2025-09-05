@@ -295,7 +295,7 @@ const timeout = async () => {
     const fxIntervalMax = (latestFxTransferStateChange && parseInt(latestFxTransferStateChange.fxTransferStateChangeId)) || 0
 
     // Get database connection
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     let transferTimeoutList, fxTransferTimeoutList
 
@@ -332,7 +332,11 @@ const timeout = async () => {
       log.info('rolling back timeout transaction')
       // We await here to ensure rollback completes before the distlock is released.
       // This esentially prevents re-entry both locally and in a distributed setup.
-      await knexTrx.rollback()
+      try {
+        await knexTrx.rollback()
+      } catch (rollbackErr) {
+        log.error('error rolling back timeout transaction:', rollbackErr)
+      }
     }
     rethrow.rethrowAndCountFspiopError(err, { operation: 'timeoutHandler' })
   } finally {

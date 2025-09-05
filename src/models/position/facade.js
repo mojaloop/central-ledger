@@ -53,7 +53,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     ['success', 'queryName']
   ).startTimer()
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
     const allSettlementModels = await SettlementModelCached.getAll()
@@ -275,7 +275,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
     ['success', 'queryName']
   ).startTimer()
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
         const transactionTimestamp = Time.getUTCString(new Date())
