@@ -36,13 +36,13 @@ const { Enum } = require('@mojaloop/central-services-shared')
 const rethrow = require('../../shared/rethrow')
 
 const startDbTransaction = async () => {
-  const knex = await Db.getKnex()
+  const knex = Db.getKnex()
   const trx = await knex.transaction()
   return trx
 }
 
 const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdList) => {
-  const knex = await Db.getKnex()
+  const knex = Db.getKnex()
   try {
     const latestTransferStateChanges = {}
     const results = await knex('transferStateChange')
@@ -63,7 +63,7 @@ const getLatestTransferStateChangesByTransferIdList = async (trx, transfersIdLis
 }
 
 const getLatestFxTransferStateChangesByCommitRequestIdList = async (trx, commitRequestIdList) => {
-  const knex = await Db.getKnex()
+  const knex = Db.getKnex()
   try {
     const latestFxTransferStateChanges = {}
     const results = await knex('fxTransferStateChange')
@@ -84,7 +84,7 @@ const getLatestFxTransferStateChangesByCommitRequestIdList = async (trx, commitR
 }
 
 const getAllParticipantCurrency = async (trx) => {
-  const knex = await Db.getKnex()
+  const knex = Db.getKnex()
   if (trx) {
     const result = await knex('participantCurrency')
       .transacting(trx)
@@ -98,7 +98,7 @@ const getAllParticipantCurrency = async (trx) => {
 }
 
 const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
-  const knex = await Db.getKnex()
+  const knex = Db.getKnex()
   const participantPositions = await knex('participantPosition')
     .transacting(trx)
     .whereIn('participantCurrencyId', accountIds)
@@ -112,7 +112,7 @@ const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
 }
 
 const updateParticipantPosition = async (trx, participantPositionId, participantPositionValue, participantPositionReservedValue = null) => {
-  const knex = await Db.getKnex()
+  const knex = Db.getKnex()
   const optionalValues = {}
   if (participantPositionReservedValue !== null) {
     optionalValues.reservedValue = participantPositionReservedValue
@@ -128,7 +128,7 @@ const updateParticipantPosition = async (trx, participantPositionId, participant
 
 const getTransferInfoList = async (trx, transferIds, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     const transferInfos = await knex('transferParticipant')
       .transacting(trx)
       .where({
@@ -153,24 +153,24 @@ const getTransferInfoList = async (trx, transferIds, transferParticipantRoleType
 }
 
 const bulkInsertTransferStateChanges = async (trx, transferStateChangeList) => {
-  const knex = await Db.getKnex()
+  const knex = Db.getKnex()
   return await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
 }
 
 const bulkInsertFxTransferStateChanges = async (trx, fxTransferStateChangeList) => {
-  const knex = await Db.getKnex()
+  const knex = Db.getKnex()
   return await knex.batchInsert('fxTransferStateChange', fxTransferStateChangeList).transacting(trx)
 }
 
 const bulkInsertParticipantPositionChanges = async (trx, participantPositionChangeList) => {
-  const knex = await Db.getKnex()
+  const knex = Db.getKnex()
   return await knex.batchInsert('participantPositionChange', participantPositionChangeList).transacting(trx)
 }
 
 const getTransferByIdsForReserve = async (trx, transferIds) => {
   if (transferIds && transferIds.length > 0) {
     try {
-      const knex = await Db.getKnex()
+      const knex = Db.getKnex()
       const query = await knex('transfer')
         .transacting(trx)
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
@@ -209,7 +209,7 @@ const getTransferByIdsForReserve = async (trx, transferIds) => {
 
 const getFxTransferInfoList = async (trx, commitRequestId, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     const transferInfos = await knex('fxTransferParticipant')
       .transacting(trx)
       .where({
@@ -238,7 +238,7 @@ const getFxTransferInfoList = async (trx, commitRequestId, transferParticipantRo
 // for the same commitRequestId, this model will need to be updated.
 const getReservedPositionChangesByCommitRequestIds = async (trx, commitRequestIdList) => {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     const participantPositionChanges = await knex('fxTransferStateChange')
       .transacting(trx)
       .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)

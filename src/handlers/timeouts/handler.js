@@ -31,8 +31,8 @@
 'use strict'
 
 /**
-  * @module src/handlers/timeout
-  */
+ * @module src/handlers/timeout
+ */
 
 const CronJob = require('cron').CronJob
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -40,6 +40,7 @@ const Utility = require('@mojaloop/central-services-shared').Util
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
@@ -47,6 +48,7 @@ const rethrow = require('../../shared/rethrow')
 const { createLock } = require('../../lib/distLock')
 const { logger } = require('../../shared/logger')
 const { TIMEOUT_HANDLER_DIST_LOCK_KEY } = require('../../shared/constants')
+const Db = require('../../lib/db')
 
 const { Kafka, resourceVersions } = Utility
 const { Action, Type } = Enum.Events.Event
@@ -274,9 +276,11 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   */
 const timeout = async () => {
   let isAcquired
+  let knexTrx
   try {
     isAcquired = await acquireLock()
     if (!isAcquired) return
+
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
     const intervalMin = timeoutSegment ? timeoutSegment.value : 0
     const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
@@ -291,9 +295,27 @@ const timeout = async () => {
     const latestFxTransferStateChange = await TimeoutService.getLatestFxTransferStateChange()
     const fxIntervalMax = (latestFxTransferStateChange && parseInt(latestFxTransferStateChange.fxTransferStateChangeId)) || 0
 
-    const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
-    transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
-    fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
+    // Get database connection
+    const knex = Db.getKnex()
+
+    let transferTimeoutList, fxTransferTimeoutList
+
+    // Use transaction to ensure atomicity
+    await knex.transaction(async (trx) => {
+      try {
+        knexTrx = trx
+        const result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax, trx)
+        transferTimeoutList = result.transferTimeoutList
+        fxTransferTimeoutList = result.fxTransferTimeoutList
+
+        // Process the timeout transfers within the transaction
+        transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
+        fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
+      } catch (err) {
+        log.error('error in timeout transaction:', err)
+        throw err
+      }
+    })
 
     return {
       intervalMin,
@@ -307,6 +329,16 @@ const timeout = async () => {
     }
   } catch (err) {
     log.error('error in timeout:', err)
+    if (knexTrx) {
+      log.info('rolling back timeout transaction')
+      // We await here to ensure rollback completes before the distlock is released.
+      // This esentially prevents re-entry both locally and in a distributed setup.
+      try {
+        await knexTrx.rollback()
+      } catch (rollbackErr) {
+        log.error('error rolling back timeout transaction:', rollbackErr)
+      }
+    }
     rethrow.rethrowAndCountFspiopError(err, { operation: 'timeoutHandler' })
   } finally {
     if (isAcquired) await releaseLock()
@@ -351,10 +383,30 @@ const initLock = async () => {
 const acquireLock = async () => {
   if (distLockEnabled) {
     try {
-      return !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
+      const acquired = !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
+      if (acquired) {
+        let extensionCount = 0
+
+        // Set up automatic lock extension at one third of the lock TTL
+        const extensionInterval = Math.floor(distLockTtl / 3)
+        const lockExtender = setInterval(async () => {
+          try {
+            await distLock.extend(distLockTtl)
+            extensionCount++
+            log.debug(`Extended distributed lock for ${distLockTtl}ms (extension #${extensionCount})`)
+          } catch (err) {
+            log.error(`Error extending distributed lock (after ${extensionCount} extensions):`, err)
+            clearInterval(lockExtender)
+          }
+        }, extensionInterval)
+
+        // Store the interval ID so we can clear it when the lock is released
+        distLock.extensionTimer = lockExtender
+        distLock.extensionCount = extensionCount
+      }
+      return acquired
     } catch (err) {
       log.error('Error acquiring distributed lock:', err)
-      // should this be added to metrics?
       return false
     }
   }
@@ -366,14 +418,26 @@ const acquireLock = async () => {
 const releaseLock = async () => {
   if (distLock) {
     try {
+      // Clear the extension timer if it exists
+      if (distLock.extensionTimer) {
+        clearInterval(distLock.extensionTimer)
+        distLock.extensionTimer = null
+      }
+
       await distLock.release()
       log.verbose('Distributed lock released')
     } catch (error) {
       log.error('Error releasing distributed lock:', error)
-      // should this be added to metrics?
     }
   }
   running = false
+}
+
+const initializeMetrics = () => {
+  if (!Config.INSTRUMENTATION_METRICS_DISABLED) {
+    Metrics.setup(Config.INSTRUMENTATION_METRICS_CONFIG)
+    log.info('Metrics setup completed')
+  }
 }
 
 /**
@@ -385,6 +449,8 @@ const releaseLock = async () => {
   */
 const registerTimeoutHandler = async () => {
   try {
+    initializeMetrics()
+
     if (isRegistered) {
       await stop()
     }

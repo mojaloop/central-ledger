@@ -36,7 +36,7 @@ const rethrow = require('../../shared/rethrow')
 const cleanup = async () => {
   Logger.isDebugEnabled && Logger.debug('cleanup fxTransferTimeout')
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const ttIdList = await Db.from('fxTransferTimeout').query(async (builder) => {
       const b = await builder

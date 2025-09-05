@@ -52,7 +52,7 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
       reason: stateReason
     }
 
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     return await knex.transaction(async (trx) => {
       await knex('bulkTransfer').transacting(trx).insert(bulkTransferRecord)
       if (payload.extensionList && payload.extensionList.extension) {
@@ -89,7 +89,7 @@ const saveBulkTransferProcessing = async (payload, stateReason = null, isValid =
       reason: stateReason
     }
 
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     return await knex.transaction(async (trx) => {
       await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
       if (payload.extensionList && payload.extensionList.extension) {
@@ -125,7 +125,7 @@ const saveBulkTransferErrorProcessing = async (payload, stateReason = null, isVa
       reason: stateReason
     }
 
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     return await knex.transaction(async (trx) => {
       await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
       if (payload.errorInformation.extensionList && payload.errorInformation.extensionList.extension) {
@@ -168,7 +168,7 @@ const saveBulkTransferAborting = async (payload, stateReason = null) => {
       reason: stateReason
     }
 
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     return await knex.transaction(async (trx) => {
       await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
       if (payload.extensionList && payload.extensionList.extension) {

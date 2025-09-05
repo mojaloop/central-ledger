@@ -41,6 +41,7 @@ const ProxyCache = require('#src/lib/proxyCache')
 const DistLock = require('../../../../src/lib/distLock')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
+const Db = require('../../../../src/lib/db')
 
 Test('Timeout handler', TimeoutHandlerTest => {
   let sandbox
@@ -58,6 +59,9 @@ Test('Timeout handler', TimeoutHandlerTest => {
       connect: sandbox.stub(),
       disconnect: sandbox.stub()
     })
+    const knexStub = sandbox.stub()
+    knexStub.transaction = sandbox.stub().callsArgWith(0, sandbox.stub())
+    sandbox.stub(Db, 'getKnex').returns(knexStub)
     DistLockStub = {
       acquire: sandbox.stub().resolves(true),
       release: sandbox.stub().resolves(),

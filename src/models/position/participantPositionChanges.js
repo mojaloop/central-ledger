@@ -33,7 +33,7 @@ const rethrow = require('../../shared/rethrow')
 
 const getReservedPositionChangesByCommitRequestId = async (commitRequestId) => {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     const participantPositionChanges = await knex('fxTransferStateChange')
       .where('fxTransferStateChange.commitRequestId', commitRequestId)
       .where('fxTransferStateChange.transferStateId', Enum.Transfers.TransferInternalState.RESERVED)
@@ -49,7 +49,7 @@ const getReservedPositionChangesByCommitRequestId = async (commitRequestId) => {
 
 const getReservedPositionChangesByTransferId = async (transferId) => {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     const participantPositionChanges = await knex('transferStateChange')
       .where('transferStateChange.transferId', transferId)
       .where('transferStateChange.transferStateId', Enum.Transfers.TransferInternalState.RESERVED)

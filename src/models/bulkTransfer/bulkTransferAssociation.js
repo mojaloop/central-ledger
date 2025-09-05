@@ -66,7 +66,7 @@ exports.exists = async (bulkTransferId, bulkProcessingStateId) => {
 
 exports.count = async (bulkTransferId, bulkProcessingStateId) => {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     const result = await knex('bulkTransferAssociation').count({ count: '*' })
       .where({ bulkTransferId, bulkProcessingStateId })
       .first()
