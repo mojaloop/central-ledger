@@ -31,8 +31,8 @@
 'use strict'
 
 /**
-  * @module src/handlers/timeout
-  */
+ * @module src/handlers/timeout
+ */
 
 const CronJob = require('cron').CronJob
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -40,6 +40,7 @@ const Utility = require('@mojaloop/central-services-shared').Util
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
@@ -432,6 +433,13 @@ const releaseLock = async () => {
   running = false
 }
 
+const initializeMetrics = () => {
+  if (!Config.INSTRUMENTATION_METRICS_DISABLED) {
+    Metrics.setup(Config.INSTRUMENTATION_METRICS_CONFIG)
+    log.info('Metrics setup completed')
+  }
+}
+
 /**
   * @function RegisterTimeoutHandlers
   *
@@ -441,6 +449,8 @@ const releaseLock = async () => {
   */
 const registerTimeoutHandler = async () => {
   try {
+    initializeMetrics()
+
     if (isRegistered) {
       await stop()
     }
