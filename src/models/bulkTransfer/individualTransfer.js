@@ -31,7 +31,7 @@ const rethrow = require('../../shared/rethrow')
 
 const getAllById = async (id) => {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     return await Db.from('bulkTransferAssociation').query(async (builder) => {
       const result = builder
         .innerJoin('transfer AS t', 't.transferId', 'bulkTransferAssociation.transferId')
