@@ -40,6 +40,7 @@ const Utility = require('@mojaloop/central-services-shared').Util
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
@@ -418,6 +419,9 @@ const registerTimeoutHandler = async () => {
   */
 const registerAllHandlers = async () => {
   try {
+    // Initialize metrics
+    Metrics.setup(Config.INSTRUMENTATION_METRICS_CONFIG)
+
     if (!Config.HANDLERS_TIMEOUT_DISABLED) {
       await registerTimeoutHandler()
     }
