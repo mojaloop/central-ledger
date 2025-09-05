@@ -351,10 +351,26 @@ const initLock = async () => {
 const acquireLock = async () => {
   if (distLockEnabled) {
     try {
-      return !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
+      const acquired = !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
+      if (acquired) {
+        // Set up automatic lock extension at one third of the lock TTL
+        const extensionInterval = Math.floor(distLockTtl / 3)
+        const lockExtender = setInterval(async () => {
+          try {
+            await distLock.extend(distLockTtl)
+            log.debug(`Extended distributed lock for ${distLockTtl}ms`)
+          } catch (err) {
+            log.error('Error extending distributed lock:', err)
+            clearInterval(lockExtender)
+          }
+        }, extensionInterval)
+
+        // Store the interval ID so we can clear it when the lock is released
+        distLock.extensionTimer = lockExtender
+      }
+      return acquired
     } catch (err) {
       log.error('Error acquiring distributed lock:', err)
-      // should this be added to metrics?
       return false
     }
   }
@@ -366,11 +382,16 @@ const acquireLock = async () => {
 const releaseLock = async () => {
   if (distLock) {
     try {
+      // Clear the extension timer if it exists
+      if (distLock.extensionTimer) {
+        clearInterval(distLock.extensionTimer)
+        distLock.extensionTimer = null
+      }
+
       await distLock.release()
       log.verbose('Distributed lock released')
     } catch (error) {
       log.error('Error releasing distributed lock:', error)
-      // should this be added to metrics?
     }
   }
   running = false
