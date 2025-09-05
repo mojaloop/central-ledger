@@ -353,20 +353,24 @@ const acquireLock = async () => {
     try {
       const acquired = !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
       if (acquired) {
+        let extensionCount = 0
+
         // Set up automatic lock extension at one third of the lock TTL
         const extensionInterval = Math.floor(distLockTtl / 3)
         const lockExtender = setInterval(async () => {
           try {
             await distLock.extend(distLockTtl)
-            log.debug(`Extended distributed lock for ${distLockTtl}ms`)
+            extensionCount++
+            log.debug(`Extended distributed lock for ${distLockTtl}ms (extension #${extensionCount})`)
           } catch (err) {
-            log.error('Error extending distributed lock:', err)
+            log.error(`Error extending distributed lock (after ${extensionCount} extensions):`, err)
             clearInterval(lockExtender)
           }
         }, extensionInterval)
 
         // Store the interval ID so we can clear it when the lock is released
         distLock.extensionTimer = lockExtender
+        distLock.extensionCount = extensionCount
       }
       return acquired
     } catch (err) {
