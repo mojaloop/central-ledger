@@ -410,7 +410,7 @@ const acquireLock = async () => {
       return false
     }
   }
-  log.info('Distributed lock not configured or disabled, running without distributed lock')
+  log.info('Distributed lock not configured or disabled, proceeding local lock')
   return running ? false : (running = true)
 }
 

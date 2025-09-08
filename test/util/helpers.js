@@ -148,7 +148,7 @@ async function wrapWithRetries (func, remainingRetries = 10, timeout = 2) {
   try {
     const result = await func()
     if (!result) {
-      throw new Error('wrapWithRetries returned false of undefined response')
+      throw new Error('wrapWithRetries returned false or undefined response')
     }
     return result
   } catch (err) {
