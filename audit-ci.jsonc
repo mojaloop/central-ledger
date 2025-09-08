@@ -4,5 +4,15 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
+    "GHSA-2rv4-jp6r-xgq7", // https://github.com/advisories/GHSA-2rv4-jp6r-xgq7
+    "GHSA-2v46-p5h4-248w", // https://github.com/advisories/GHSA-2v46-p5h4-248w
+    "GHSA-3q87-f72r-3gm6", // https://github.com/advisories/GHSA-3q87-f72r-3gm6
+    "GHSA-hfm8-9jrf-7g9w", // https://github.com/advisories/GHSA-hfm8-9jrf-7g9w
+    "GHSA-jff9-gjh4-j359", // https://github.com/advisories/GHSA-jff9-gjh4-j359
+    "GHSA-jvhh-2m83-6w29", // https://github.com/advisories/GHSA-jvhh-2m83-6w29
+    "GHSA-m99c-cfww-cxqx", // https://github.com/advisories/GHSA-m99c-cfww-cxqx
+    "GHSA-p5rr-crjh-x7gr", // https://github.com/advisories/GHSA-p5rr-crjh-x7gr
+    "GHSA-pj3j-3w3f-j752", // https://github.com/advisories/GHSA-pj3j-3w3f-j752
+    "GHSA-vfjc-p7x3-q864" // https://github.com/advisories/GHSA-vfjc-p7x3-q864
   ]
 }

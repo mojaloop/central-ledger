@@ -62,6 +62,8 @@ kill -9 $(lsof -t -i:3001) 2>/dev/null || true
 ## Give some time before restarting service for override tests
 sleep $WAIT_FOR_REBALANCE
 
+# exit 0
+
 ## Restart service with topic name override
 echo "Starting Service in the background"
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE='topic-transfer-position-batch'

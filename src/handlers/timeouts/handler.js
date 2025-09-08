@@ -48,7 +48,6 @@ const rethrow = require('../../shared/rethrow')
 const { createLock } = require('../../lib/distLock')
 const { logger } = require('../../shared/logger')
 const { TIMEOUT_HANDLER_DIST_LOCK_KEY } = require('../../shared/constants')
-const Db = require('../../lib/db')
 
 const { Kafka, resourceVersions } = Utility
 const { Action, Type } = Enum.Events.Event
@@ -276,7 +275,6 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   */
 const timeout = async () => {
   let isAcquired
-  let knexTrx
   try {
     isAcquired = await acquireLock()
     if (!isAcquired) return
@@ -295,27 +293,12 @@ const timeout = async () => {
     const latestFxTransferStateChange = await TimeoutService.getLatestFxTransferStateChange()
     const fxIntervalMax = (latestFxTransferStateChange && parseInt(latestFxTransferStateChange.fxTransferStateChangeId)) || 0
 
-    // Get database connection
-    const knex = Db.getKnex()
-
-    let transferTimeoutList, fxTransferTimeoutList
-
     // Use transaction to ensure atomicity
-    await knex.transaction(async (trx) => {
-      try {
-        knexTrx = trx
-        const result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax, trx)
-        transferTimeoutList = result.transferTimeoutList
-        fxTransferTimeoutList = result.fxTransferTimeoutList
+    const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
 
-        // Process the timeout transfers within the transaction
-        transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
-        fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
-      } catch (err) {
-        log.error('error in timeout transaction:', err)
-        throw err
-      }
-    })
+    // Process the timeout transfers within the transaction
+    transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
+    fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
 
     return {
       intervalMin,
@@ -329,16 +312,6 @@ const timeout = async () => {
     }
   } catch (err) {
     log.error('error in timeout:', err)
-    if (knexTrx) {
-      log.info('rolling back timeout transaction')
-      // We await here to ensure rollback completes before the distlock is released.
-      // This esentially prevents re-entry both locally and in a distributed setup.
-      try {
-        await knexTrx.rollback()
-      } catch (rollbackErr) {
-        log.error('error rolling back timeout transaction:', rollbackErr)
-      }
-    }
     rethrow.rethrowAndCountFspiopError(err, { operation: 'timeoutHandler' })
   } finally {
     if (isAcquired) await releaseLock()
@@ -410,7 +383,7 @@ const acquireLock = async () => {
       return false
     }
   }
-  log.info('Distributed lock not configured or disabled, proceeding local lock')
+  log.info('Distributed lock not configured or disabled, proceeding with local lock')
   return running ? false : (running = true)
 }
 
