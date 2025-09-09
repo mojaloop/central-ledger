@@ -32,6 +32,12 @@
  * @module src/domain/participant/
  */
 
+const { randomUUID } = require('crypto')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
+
 const ParticipantModel = require('../../models/participant/participantCached')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrencyCached')
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
@@ -41,12 +47,11 @@ const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAcc
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
-const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
-const { randomUUID } = require('crypto')
-const Enum = require('@mojaloop/central-services-shared').Enum
 const Enums = require('../../lib/enumCached')
-const { logger } = require('../../shared/logger')
+const fspiopErrorFactory = require('../../shared/fspiopErrorFactory')
+const { destroyParticipantEndpointByParticipantId } = require('../../models/participant/participant')
+
+const logger = require('../../shared/logger').logger.child({ component: 'domain::participant' })
 
 // Alphabetically ordered list of error texts used below
 const AccountInactiveErrorText = 'Account is currently set inactive'
@@ -58,9 +63,7 @@ const ParticipantAccountCurrencyMismatchText = 'The account does not match parti
 const ParticipantAccountMismatchText = 'Participant/account mismatch'
 const ParticipantInactiveText = 'Participant is currently set inactive'
 const ParticipantInitialPositionExistsText = 'Participant Limit or Initial Position already set'
-const ParticipantNotFoundText = 'Participant does not exist'
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { destroyParticipantEndpointByParticipantId } = require('../../models/participant/participant')
+// const ParticipantNotFoundText = 'Participant does not exist'
 
 const create = async (payload) => {
   const log = logger.child({ payload })
@@ -116,7 +119,7 @@ const participantExists = (participant, checkIsActive = false) => {
     throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantInactiveText)
   }
   log.warn('participant not found')
-  throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantNotFoundText)
+  throw fspiopErrorFactory.participantNotFound()
 }
 
 const update = async (name, payload) => {
@@ -242,7 +245,7 @@ const getEndpoint = async (name, type) => {
     log.debug('getting endpoint for participant', { participant })
     return ParticipantFacade.getEndpoint(participant.participantId, type)
   } catch (err) {
-    log.error('error getting endpoint', err)
+    log.warn('error getting endpoint: ', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

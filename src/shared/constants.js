@@ -66,7 +66,8 @@ const ERROR_MESSAGES = Object.freeze({
   invalidFxTransferState: ({ transferStateEnum, action, type }) => `Invalid fxTransferStateEnumeration:(${transferStateEnum}) for event action:(${action}) and type:(${type})`,
   fxActionIsNotAllowed: action => `action ${action} is not allowed into fxFulfil handler`,
   noFxDuplicateHash: 'No fxDuplicateHash found',
-  transferNotFound: 'transfer not found'
+  transferNotFound: 'transfer not found',
+  participantNotFound: 'participant not found'
 })
 
 const DB_ERROR_CODES = Object.freeze({

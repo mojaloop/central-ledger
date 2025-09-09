@@ -28,16 +28,17 @@
 
 'use strict'
 
+const Util = require('@mojaloop/central-services-shared').Util
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const MLNumber = require('@mojaloop/ml-number')
+
 const ParticipantService = require('../../domain/participant')
+const SettlementService = require('../../domain/settlement')
 const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
-const Util = require('@mojaloop/central-services-shared').Util
-const Logger = require('../../shared/logger').logger
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
-const SettlementService = require('../../domain/settlement')
 const rethrow = require('../../shared/rethrow')
-const MLNumber = require('@mojaloop/ml-number')
+const logger = require('../../shared/logger').logger/* .child({ component: 'handler::participants' }) */
 
 const LocalEnum = {
   activated: 'activated',
@@ -172,11 +173,17 @@ const getAll = async function (request) {
 }
 
 const getByName = async function (request) {
-  const entity = await ParticipantService.getByName(request.params.name)
-  handleMissingRecord(entity)
-  const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
-  const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
-  return entityItem(entity, ledgerAccountIds)
+  try {
+    const entity = await ParticipantService.getByName(request.params.name)
+    handleMissingRecord(entity)
+    const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
+    const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
+    return entityItem(entity, ledgerAccountIds)
+  } catch (err) {
+    logger.error('error in handle getByName: ', err)
+    throw err
+    // todo: think if we need to reformat the error
+  }
 }
 
 const update = async function (request) {
@@ -185,7 +192,7 @@ const update = async function (request) {
     if (request.payload.isActive !== undefined) {
       const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
-      Logger.isInfoEnabled && Logger.info(`Participant has been ${isActiveText} :: ${changeLog}`)
+      logger.isInfoEnabled && logger.info(`Participant has been ${isActiveText} :: ${changeLog}`)
     }
     const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
@@ -230,6 +237,7 @@ const getEndpoint = async function (request) {
       return endpoints
     }
   } catch (err) {
+    logger.error('error in handle getEndpoint: ', err)
     rethrow.rethrowAndCountFspiopError(err, { operation: 'participantGetEndpoint' })
   }
 }
@@ -358,7 +366,7 @@ const updateAccount = async function (request, h) {
     if (request.payload.isActive !== undefined) {
       const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
-      Logger.isInfoEnabled && Logger.info(`Participant account has been ${isActiveText} :: ${changeLog}`)
+      logger.isInfoEnabled && logger.info(`Participant account has been ${isActiveText} :: ${changeLog}`)
     }
     return h.response().code(200)
   } catch (err) {
