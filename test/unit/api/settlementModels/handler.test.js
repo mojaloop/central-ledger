@@ -185,7 +185,7 @@ Test('SettlementModel', settlementModelHandlerTest => {
         await Handler.getByName(createRequest({ params: { name: settlementModel[0].name } }))
       } catch (e) {
         test.ok(e instanceof Error)
-        test.equal(e.message, 'The requested resource could not be found.')
+        test.equal(e.message, 'The requested resource could not be found')
         test.end()
       }
     })

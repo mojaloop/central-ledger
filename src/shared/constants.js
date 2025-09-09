@@ -67,7 +67,8 @@ const ERROR_MESSAGES = Object.freeze({
   fxActionIsNotAllowed: action => `action ${action} is not allowed into fxFulfil handler`,
   noFxDuplicateHash: 'No fxDuplicateHash found',
   transferNotFound: 'transfer not found',
-  participantNotFound: 'participant not found'
+  participantNotFound: 'participant not found',
+  resourceNotFound: 'The requested resource could not be found'
 })
 
 const DB_ERROR_CODES = Object.freeze({

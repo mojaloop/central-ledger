@@ -38,7 +38,8 @@ const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
 const Enums = require('../../lib/enumCached')
 const rethrow = require('../../shared/rethrow')
-const logger = require('../../shared/logger').logger/* .child({ component: 'handler::participants' }) */
+const fspiopErrorFactory = require('../../shared/fspiopErrorFactory')
+const logger = require('../../shared/logger').logger
 
 const LocalEnum = {
   activated: 'activated',
@@ -72,7 +73,7 @@ const entityItem = ({ name, createdDate, isActive, currencyList, isProxy }, ledg
 
 const handleMissingRecord = (entity) => {
   if (!entity) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND, 'The requested resource could not be found.')
+    throw fspiopErrorFactory.resourceNotFound()
   }
   return entity
 }
