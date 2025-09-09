@@ -293,10 +293,8 @@ const timeout = async () => {
     const latestFxTransferStateChange = await TimeoutService.getLatestFxTransferStateChange()
     const fxIntervalMax = (latestFxTransferStateChange && parseInt(latestFxTransferStateChange.fxTransferStateChangeId)) || 0
 
-    // Use transaction to ensure atomicity
     const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
 
-    // Process the timeout transfers within the transaction
     transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
     fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
 
