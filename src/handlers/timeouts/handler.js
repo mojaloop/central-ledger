@@ -350,6 +350,7 @@ const initLock = async () => {
       distLock = createLock(Config.HANDLERS_TIMEOUT.DIST_LOCK, log)
     }
   }
+  running = false
 }
 
 /* istanbul ignore next */
@@ -389,7 +390,7 @@ const acquireLock = async () => {
 
 /* istanbul ignore next */
 const releaseLock = async () => {
-  if (distLock) {
+  if (distLockEnabled && distLock) {
     try {
       // Clear the extension timer if it exists
       if (distLock.extensionTimer) {

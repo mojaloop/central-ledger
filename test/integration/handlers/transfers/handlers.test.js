@@ -65,12 +65,12 @@ const ParticipantCurrencyCached = require('#src/models/participant/participantCu
 const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
 const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
 
-const Handlers = {
-  index: require('#src/handlers/register'),
-  positions: require('#src/handlers/positions/handler'),
-  transfers: require('#src/handlers/transfers/handler'),
-  timeouts: require('#src/handlers/timeouts/handler')
-}
+// const Handlers = {
+//   index: require('#src/handlers/register'),
+//   positions: require('#src/handlers/positions/handler'),
+//   transfers: require('#src/handlers/transfers/handler'),
+//   timeouts: require('#src/handlers/timeouts/handler')
+// }
 
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
@@ -514,8 +514,6 @@ Test('Handlers test', async handlersTest => {
 
     await transferFulfilReserve.test('send a RESERVED_ABORTED notification if the transfer is expired', async (test) => {
       // Arrange
-      await Handlers.timeouts.registerTimeoutHandler() // Ensure the timeout handler is registered
-
       const customTestData = {
         ...testData,
         expiration: new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
@@ -621,8 +619,6 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
-
-      Handlers.timeouts.stop() // Clean up the timeout handler
 
       // Cleanup
       testConsumer.clearEvents()
@@ -1355,7 +1351,6 @@ Test('Handlers test', async handlersTest => {
 
   await handlersTest.test('teardown', async (assert) => {
     try {
-      await Handlers.timeouts.stop()
       await Cache.destroyCache()
       await Db.disconnect()
       await ProxyCache.disconnect()
