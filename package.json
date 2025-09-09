@@ -89,12 +89,12 @@
     "@hapi/hapi": "21.4.3",
     "@hapi/inert": "7.1.0",
     "@hapi/vision": "7.0.3",
-    "@mojaloop/central-services-error-handling": "13.1.1-snapshot.0",
+    "@mojaloop/central-services-error-handling": "13.1.1",
     "@mojaloop/central-services-health": "15.1.0",
     "@mojaloop/central-services-logger": "11.9.1",
     "@mojaloop/central-services-metrics": "12.7.1",
     "@mojaloop/central-services-shared": "18.32.0",
-    "@mojaloop/central-services-stream": "11.8.6",
+    "@mojaloop/central-services-stream": "11.8.7",
     "@mojaloop/database-lib": "11.3.2",
     "@mojaloop/event-sdk": "14.7.0",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.6.0",
@@ -152,7 +152,6 @@
     "tapes": "4.1.0"
   },
   "overrides": {
-    "@mojaloop/central-services-error-handling": "13.1.1-snapshot.0",
     "brace-expansion": "2.0.2",
     "form-data": "4.0.4",
     "undici": "6.21.2",

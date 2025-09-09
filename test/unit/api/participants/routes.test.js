@@ -27,6 +27,7 @@
  ******/
 
 'use strict'
+process.env.LOG_LEVEL = 'debug'
 
 const Test = require('tape')
 const Base = require('../../base')

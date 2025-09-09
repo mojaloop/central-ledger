@@ -77,12 +77,12 @@ const registerPlugins = async (server) => {
     plugin: require('hapi-auth-bearer-token')
   })
 
+  await server.register([Inert, Vision, Blipp, ErrorHandling])
+
   await server.register({
     plugin: loggingPlugin,
     options: { log: logger }
   })
-
-  await server.register([Inert, Vision, Blipp, ErrorHandling])
 }
 
 module.exports = {
