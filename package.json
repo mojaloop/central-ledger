@@ -30,9 +30,9 @@
   },
   "pre-commit": [
     "lint",
+    "test",
     "dep:check",
-    "audit:check",
-    "test"
+    "audit:check"
   ],
   "scripts": {
     "start": "npm run start:api",
