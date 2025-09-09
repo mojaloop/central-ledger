@@ -391,7 +391,6 @@ const acquireLock = async () => {
 /* istanbul ignore next */
 const releaseLock = async () => {
   if (distLockEnabled && distLock) {
-    running = false
     try {
       // Clear the extension timer if it exists
       if (distLock.extensionTimer) {
@@ -400,6 +399,7 @@ const releaseLock = async () => {
       }
 
       await distLock.release()
+      running = false
       log.verbose('Distributed lock released')
     } catch (error) {
       log.error('Error releasing distributed lock:', error)
