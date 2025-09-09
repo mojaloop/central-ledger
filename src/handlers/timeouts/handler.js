@@ -377,7 +377,6 @@ const acquireLock = async () => {
         // Store the interval ID so we can clear it when the lock is released
         distLock.extensionTimer = lockExtender
       }
-      running = true
       return running ? false : (running = true)
     } catch (err) {
       log.error('Error acquiring distributed lock:', err)
