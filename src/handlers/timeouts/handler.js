@@ -376,7 +376,13 @@ const acquireLock = async () => {
         distLock.extensionTimer = lockExtender
       }
 
-      return running ? false : (running = true)
+      if (acquired) {
+        return (running = true)
+      }
+
+      return false
+
+      // return running ? false : (running = true) // return (running = true): If another instance is running, returning true here without considering whether redis lock was acquired or not can lead to multiple instances running concurrently.
     } catch (err) {
       log.error('Error acquiring distributed lock:', err)
       return false
