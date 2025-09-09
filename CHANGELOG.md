@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.9.0](https://github.com/mojaloop/central-ledger/compare/v19.8.9...v19.9.0) (2025-09-09)
+
+
+### Features
+
+* **csi-1753:** enhance distributed lock management with automatic extension and fix metrics ([#1207](https://github.com/mojaloop/central-ledger/issues/1207)) ([e3fe7c4](https://github.com/mojaloop/central-ledger/commit/e3fe7c436d4b9f2fee4feaebdb17807463742dd1))
+
+
+### Chore
+
+* bump metrics for app critical metrics ([#1209](https://github.com/mojaloop/central-ledger/issues/1209)) ([9a0c81e](https://github.com/mojaloop/central-ledger/commit/9a0c81e1e04ecad8e2007144aeebb770045c8449))
+* **sbom:** update sbom [skip ci] ([8745229](https://github.com/mojaloop/central-ledger/commit/8745229476c4fabeb858910f5101d23bdb673004))
+
 ### [19.8.9](https://github.com/mojaloop/central-ledger/compare/v19.8.8...v19.8.9) (2025-09-04)
 
 
