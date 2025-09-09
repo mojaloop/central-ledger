@@ -355,6 +355,7 @@ const initLock = async () => {
 const acquireLock = async () => {
   /**
    * Hybrid Locking Mechanism
+   *
    * When redis is run in non-persistent mode, all data including locks are lost when redis restarts.
    * In such cases, we should not allow acquiring the lock if we already have a running instance in memory.
    */
@@ -408,7 +409,6 @@ const releaseLock = async () => {
       }
 
       await distLock.release()
-      running = false
       log.verbose('Distributed lock released')
     } catch (error) {
       log.error('Error releasing distributed lock:', error)
