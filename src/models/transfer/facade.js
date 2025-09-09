@@ -348,7 +348,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
 
   try {
     /** @namespace Db.getKnex **/
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     const histTPayeeResponseValidationPassedEnd = Metrics.getHistogram(
       'model_transfer',
       'facade_saveTransferPrepared_transaction - Metrics for transfer model',
@@ -542,7 +542,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       }
     }
 
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     if (hasPassedValidation) {
       const histTimerSaveTransferTransactionValidationPassedEnd = Metrics.getHistogram(
         'model_transfer',
@@ -936,7 +936,7 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
   try {
     const transactionTimestamp = Time.getUTCString(new Date())
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
         // Insert `transferTimeout` records for transfers found between the interval intervalMin <= intervalMax
@@ -1115,7 +1115,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
 
 const transferStateAndPositionUpdate = async function (param1, enums, trx = null) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const trxFunction = async (trx) => {
       const transactionTimestamp = Time.getUTCString(new Date())
@@ -1244,7 +1244,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
 
 const updatePrepareReservedForwarded = async function (transferId) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     return await knex('transferStateChange')
       .insert({
         transferId,
@@ -1259,7 +1259,7 @@ const updatePrepareReservedForwarded = async function (transferId) {
 
 const reconciliationTransferPrepare = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const trxFunction = async (trx) => {
       // transferDuplicateCheck check and insert is done prior to calling the prepare
@@ -1375,7 +1375,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
 
 const reconciliationTransferReserve = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const trxFunction = async (trx) => {
       const param1 = {
@@ -1409,7 +1409,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
 
 const reconciliationTransferCommit = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const trxFunction = async (trx) => {
       // Persist transfer state and participant position change
@@ -1460,7 +1460,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
 
 const reconciliationTransferAbort = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const trxFunction = async (trx) => {
       // Persist transfer state and participant position change

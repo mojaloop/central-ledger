@@ -344,7 +344,7 @@ const savePreparedRequest = async (
       }
     }
 
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     if (hasPassedValidation) {
       const histTimerSaveTranferTransactionValidationPassedEnd = Metrics.getHistogram(
         'model_fx_transfer',
@@ -490,7 +490,7 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
 
   try {
     /** @namespace Db.getKnex **/
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     const histTFxFulfilResponseValidationPassedEnd = Metrics.getHistogram(
       'model_transfer',
       'facade_saveTransferPrepared_transaction - Metrics for transfer model',
@@ -549,7 +549,7 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
 
 const updateFxPrepareReservedForwarded = async function (commitRequestId) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     return await knex('fxTransferStateChange')
       .insert({
         commitRequestId,

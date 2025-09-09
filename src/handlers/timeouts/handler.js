@@ -31,8 +31,8 @@
 'use strict'
 
 /**
-  * @module src/handlers/timeout
-  */
+ * @module src/handlers/timeout
+ */
 
 const CronJob = require('cron').CronJob
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -40,6 +40,7 @@ const Utility = require('@mojaloop/central-services-shared').Util
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
@@ -277,6 +278,7 @@ const timeout = async () => {
   try {
     isAcquired = await acquireLock()
     if (!isAcquired) return
+
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
     const intervalMin = timeoutSegment ? timeoutSegment.value : 0
     const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
@@ -292,6 +294,7 @@ const timeout = async () => {
     const fxIntervalMax = (latestFxTransferStateChange && parseInt(latestFxTransferStateChange.fxTransferStateChangeId)) || 0
 
     const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
+
     transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
     fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
 
@@ -345,35 +348,67 @@ const initLock = async () => {
       distLock = createLock(Config.HANDLERS_TIMEOUT.DIST_LOCK, log)
     }
   }
+  running = false
 }
 
 /* istanbul ignore next */
 const acquireLock = async () => {
   if (distLockEnabled) {
     try {
-      return !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
+      const acquired = !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
+      if (acquired) {
+        distLock.extensionCount = 0
+
+        // Set up automatic lock extension at one third of the lock TTL
+        const extensionInterval = Math.floor(distLockTtl / 3)
+        const lockExtender = setInterval(async () => {
+          try {
+            await distLock.extend(distLockTtl)
+            distLock.extensionCount++
+            log.debug(`Extended distributed lock for ${distLockTtl}ms (extension #${distLock.extensionCount})`)
+          } catch (err) {
+            log.error(`Error extending distributed lock (after ${distLock.extensionCount} extensions):`, err)
+            clearInterval(lockExtender)
+          }
+        }, extensionInterval)
+
+        // Store the interval ID so we can clear it when the lock is released
+        distLock.extensionTimer = lockExtender
+      }
+      return acquired
     } catch (err) {
       log.error('Error acquiring distributed lock:', err)
-      // should this be added to metrics?
       return false
     }
   }
-  log.info('Distributed lock not configured or disabled, running without distributed lock')
+  log.info('Distributed lock not configured or disabled, proceeding with local lock')
   return running ? false : (running = true)
 }
 
 /* istanbul ignore next */
 const releaseLock = async () => {
-  if (distLock) {
+  if (distLockEnabled && distLock) {
     try {
+      // Clear the extension timer if it exists
+      if (distLock.extensionTimer) {
+        clearInterval(distLock.extensionTimer)
+        distLock.extensionTimer = null
+      }
+
       await distLock.release()
       log.verbose('Distributed lock released')
     } catch (error) {
       log.error('Error releasing distributed lock:', error)
-      // should this be added to metrics?
     }
   }
   running = false
+}
+
+const initializeMetrics = () => {
+  if (!Config.INSTRUMENTATION_METRICS_DISABLED) {
+    Metrics.setup(Config.INSTRUMENTATION_METRICS_CONFIG)
+    log.info('Metrics setup completed')
+  }
 }
 
 /**
@@ -385,6 +420,8 @@ const releaseLock = async () => {
   */
 const registerTimeoutHandler = async () => {
   try {
+    initializeMetrics()
+
     if (isRegistered) {
       await stop()
     }
