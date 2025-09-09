@@ -353,6 +353,11 @@ const initLock = async () => {
 
 /* istanbul ignore next */
 const acquireLock = async () => {
+  /**
+   * Hybrid Locking Mechanism
+   * When redis is run in non-persistent mode, all data including locks are lost when redis restarts.
+   * In such cases, we should not allow acquiring the lock if we already have a running instance in memory.
+   */
   if (distLockEnabled && !running) {
     try {
       const acquired = !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
