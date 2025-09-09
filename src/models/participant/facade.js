@@ -294,7 +294,7 @@ const getEndpoint = async (participantId, endpointType) => {
 
 const getAllEndpoints = async (participantId) => {
   try {
-    return Db.from('participantEndpoint').query(builder => {
+    return await Db.from('participantEndpoint').query(builder => {
       return builder.innerJoin('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId')
         .where({
           'participantEndpoint.participantId': participantId,
@@ -303,6 +303,7 @@ const getAllEndpoints = async (participantId) => {
           'et.name')
     })
   } catch (err) {
+    logger.warn('DB error in getAllEndpoints: ', err)
     rethrow.rethrowDatabaseError(err)
   }
 }

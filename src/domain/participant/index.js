@@ -210,7 +210,7 @@ const destroyByName = async (name) => {
 const addEndpoint = async (name, payload) => {
   const log = logger.child({ name, payload })
   try {
-    log.info('adding endpoint')
+    log.verbose('getting participant by name...')
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     log.info('adding endpoint for participant', { participant })
@@ -239,7 +239,7 @@ const addEndpoint = async (name, payload) => {
 const getEndpoint = async (name, type) => {
   const log = logger.child({ name, type })
   try {
-    log.debug('getting endpoint')
+    log.debug('getting participant by name...')
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     log.debug('getting endpoint for participant', { participant })
@@ -271,9 +271,9 @@ const getAllEndpoints = async (name) => {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     log.debug('getting all endpoints for participant', { participant })
-    return ParticipantFacade.getAllEndpoints(participant.participantId)
+    return await ParticipantFacade.getAllEndpoints(participant.participantId)
   } catch (err) {
-    log.error('error getting all endpoints', err)
+    log.warn('error getting all endpoints: ', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
