@@ -124,8 +124,23 @@ const fspiopErrorFactory = {
       )
     }
     return fspiopError
-  }
+  },
 
+  participantNotFound: (cause = null, replyTo = '') => {
+    return Factory.createFSPIOPError(
+      Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+      ERROR_MESSAGES.participantNotFound,
+      cause, replyTo
+    )
+  },
+
+  resourceNotFound: (cause = null, replyTo = '') => {
+    return Factory.createFSPIOPError(
+      Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+      ERROR_MESSAGES.resourceNotFound,
+      cause, replyTo
+    )
+  }
 }
 
 module.exports = fspiopErrorFactory

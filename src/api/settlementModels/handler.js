@@ -29,13 +29,13 @@
  ******/
 'use strict'
 
-const SettlementService = require('../../domain/settlement')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Enums = require('../../lib/enumCached')
 const Util = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
+const SettlementService = require('../../domain/settlement')
+const Enums = require('../../lib/enumCached')
 const Logger = require('../../shared/logger').logger
 const rethrow = require('../../shared/rethrow')
+const fspiopErrorFactory = require('../../shared/fspiopErrorFactory')
 
 const entityItem = ({ settlementModelId, name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, autoPositionReset }, ledgerAccountIds, settlementGranularityIds, settlementInterchangeIds, settlementDelayIds) => {
   return {
@@ -54,7 +54,7 @@ const entityItem = ({ settlementModelId, name, isActive, settlementGranularityId
 }
 const handleMissingRecord = (entity) => {
   if (!entity) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND, 'The requested resource could not be found.')
+    throw fspiopErrorFactory.resourceNotFound()
   }
   return entity
 }

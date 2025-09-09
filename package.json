@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "19.9.0",
+  "version": "19.9.1-snapshot.2",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -30,9 +30,9 @@
   },
   "pre-commit": [
     "lint",
+    "test",
     "dep:check",
-    "audit:check",
-    "test"
+    "audit:check"
   ],
   "scripts": {
     "start": "npm run start:api",
@@ -47,6 +47,7 @@
     "test:unit": "npx tape 'test/unit/**/*.test.js'",
     "test:unit:spec": "npm run test:unit | tap-spec",
     "test:unit:distLock": "npx tape 'test/unit/lib/distLock/**/*.test.js'",
+    "test:unit:participants-routes": "npx tape test/unit/api/participants/routes.test.js",
     "test:xunit": "npm run test:unit | tap-xunit > ./test/results/xunit.xml",
     "test:coverage": "npx nyc --reporter=lcov --reporter=text-summary tapes -- 'test/unit/**/**.test.js'",
     "test:coverage-check": "npm run test:coverage && nyc check-coverage",
@@ -88,12 +89,12 @@
     "@hapi/hapi": "21.4.3",
     "@hapi/inert": "7.1.0",
     "@hapi/vision": "7.0.3",
-    "@mojaloop/central-services-error-handling": "13.1.0",
+    "@mojaloop/central-services-error-handling": "13.1.1",
     "@mojaloop/central-services-health": "15.1.0",
     "@mojaloop/central-services-logger": "11.9.1",
     "@mojaloop/central-services-metrics": "12.7.1",
     "@mojaloop/central-services-shared": "18.32.0",
-    "@mojaloop/central-services-stream": "11.8.6",
+    "@mojaloop/central-services-stream": "11.8.7",
     "@mojaloop/database-lib": "11.3.2",
     "@mojaloop/event-sdk": "14.7.0",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.6.0",

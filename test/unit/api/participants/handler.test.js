@@ -211,7 +211,7 @@ Test('Participant', participantHandlerTest => {
         await Handler.getByName(createRequest({ params: { name: participantFixtures[0].name } }))
       } catch (e) {
         test.ok(e instanceof Error)
-        test.equal(e.message, 'The requested resource could not be found.')
+        test.equal(e.message, 'The requested resource could not be found')
         test.end()
       }
     })

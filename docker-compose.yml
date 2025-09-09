@@ -37,8 +37,8 @@ services:
        - ./docker/central-ledger/default.json:/opt/app/config/default.json
        - ./docker/wait-for:/opt/wait-for
     environment:
-      - LOG_LEVEL=info
-      - CSL_LOG_TRANSPORT=file
+      - LOG_LEVEL=verbose
+#      - CSL_LOG_TRANSPORT=file
       - CLEDG_MONGODB__DISABLED=false
     networks:
       - cl-mojaloop-net

@@ -28,16 +28,18 @@
 
 'use strict'
 
+const Util = require('@mojaloop/central-services-shared').Util
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const MLNumber = require('@mojaloop/ml-number')
+
 const ParticipantService = require('../../domain/participant')
+const SettlementService = require('../../domain/settlement')
 const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
-const Util = require('@mojaloop/central-services-shared').Util
-const Logger = require('../../shared/logger').logger
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
-const SettlementService = require('../../domain/settlement')
 const rethrow = require('../../shared/rethrow')
-const MLNumber = require('@mojaloop/ml-number')
+const fspiopErrorFactory = require('../../shared/fspiopErrorFactory')
+const logger = require('../../shared/logger').logger
 
 const LocalEnum = {
   activated: 'activated',
@@ -71,7 +73,7 @@ const entityItem = ({ name, createdDate, isActive, currencyList, isProxy }, ledg
 
 const handleMissingRecord = (entity) => {
   if (!entity) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND, 'The requested resource could not be found.')
+    throw fspiopErrorFactory.resourceNotFound()
   }
   return entity
 }
@@ -113,7 +115,7 @@ const create = async function (request, h) {
     }
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantCreate' })
+    rethrowAndCountFspiopError(err, 'participantCreate')
   }
 }
 
@@ -157,26 +159,34 @@ const createHubAccount = async function (request, h) {
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantCreateHubAccount' })
+    rethrowAndCountFspiopError(err, 'participantCreateHubAccount')
   }
 }
 
 const getAll = async function (request) {
-  const results = await ParticipantService.getAll()
-  const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
-  const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
-  if (request.query.isProxy) {
-    return results.map(record => entityItem(record, ledgerAccountIds)).filter(record => record.isProxy)
+  try {
+    const results = await ParticipantService.getAll()
+    const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
+    const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
+    if (request.query.isProxy) {
+      return results.map(record => entityItem(record, ledgerAccountIds)).filter(record => record.isProxy)
+    }
+    return results.map(record => entityItem(record, ledgerAccountIds))
+  } catch (err) {
+    rethrowAndCountFspiopError(err, 'participantGetAll')
   }
-  return results.map(record => entityItem(record, ledgerAccountIds))
 }
 
 const getByName = async function (request) {
-  const entity = await ParticipantService.getByName(request.params.name)
-  handleMissingRecord(entity)
-  const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
-  const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
-  return entityItem(entity, ledgerAccountIds)
+  try {
+    const entity = await ParticipantService.getByName(request.params.name)
+    handleMissingRecord(entity)
+    const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
+    const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
+    return entityItem(entity, ledgerAccountIds)
+  } catch (err) {
+    rethrowAndCountFspiopError(err, 'participantGetByName')
+  }
 }
 
 const update = async function (request) {
@@ -185,13 +195,13 @@ const update = async function (request) {
     if (request.payload.isActive !== undefined) {
       const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
-      Logger.isInfoEnabled && Logger.info(`Participant has been ${isActiveText} :: ${changeLog}`)
+      logger.isInfoEnabled && logger.info(`Participant has been ${isActiveText} :: ${changeLog}`)
     }
     const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return entityItem(updatedEntity, ledgerAccountIds)
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantUpdate' })
+    rethrowAndCountFspiopError(err, 'participantUpdate')
   }
 }
 
@@ -200,7 +210,7 @@ const addEndpoint = async function (request, h) {
     await ParticipantService.addEndpoint(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantAddEndpoint' })
+    rethrowAndCountFspiopError(err, 'participantAddEndpoint')
   }
 }
 
@@ -230,7 +240,7 @@ const getEndpoint = async function (request) {
       return endpoints
     }
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantGetEndpoint' })
+    rethrowAndCountFspiopError(err, 'participantGetEndpoint')
   }
 }
 
@@ -239,7 +249,7 @@ const addLimitAndInitialPosition = async function (request, h) {
     await ParticipantService.addLimitAndInitialPosition(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantAddLimitAndInitialPosition' })
+    rethrowAndCountFspiopError(err, 'participantAddLimitAndInitialPosition')
   }
 }
 
@@ -261,7 +271,7 @@ const getLimits = async function (request) {
     }
     return limits
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantGetLimits' })
+    rethrowAndCountFspiopError(err, 'participantGetLimits')
   }
 }
 
@@ -284,7 +294,7 @@ const getLimitsForAllParticipants = async function (request) {
     }
     return limits
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: ' participantGetLimitsForAllParticipants' })
+    rethrowAndCountFspiopError(err, 'participantGetLimitsForAllParticipants')
   }
 }
 
@@ -303,7 +313,7 @@ const adjustLimits = async function (request, h) {
     }
     return h.response(updatedLimit).code(200)
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantAdjustLimits' })
+    rethrowAndCountFspiopError(err, 'participantAdjustLimits')
   }
 }
 
@@ -327,7 +337,7 @@ const getPositions = async function (request) {
     }
     return result
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantGetPositions' })
+    rethrowAndCountFspiopError(err, 'participantGetPositions')
   }
 }
 
@@ -345,7 +355,7 @@ const getAccounts = async function (request) {
     }
     return result
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantGetAccounts' })
+    rethrowAndCountFspiopError(err, 'participantGetAccounts')
   }
 }
 
@@ -358,11 +368,11 @@ const updateAccount = async function (request, h) {
     if (request.payload.isActive !== undefined) {
       const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
-      Logger.isInfoEnabled && Logger.info(`Participant account has been ${isActiveText} :: ${changeLog}`)
+      logger.isInfoEnabled && logger.info(`Participant account has been ${isActiveText} :: ${changeLog}`)
     }
     return h.response().code(200)
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantUpdateAccount' })
+    rethrowAndCountFspiopError(err, 'participantUpdateAccount')
   }
 }
 
@@ -372,8 +382,13 @@ const recordFunds = async function (request, h) {
     await ParticipantService.recordFundsInOut(request.payload, request.params, enums)
     return h.response().code(202)
   } catch (err) {
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'participantRecordFunds' })
+    rethrowAndCountFspiopError(err, 'participantRecordFunds')
   }
+}
+
+const rethrowAndCountFspiopError = (err, operation) => {
+  logger.error(`error in handle ${operation}: `, err)
+  rethrow.rethrowAndCountFspiopError(err, { operation })
 }
 
 module.exports = {

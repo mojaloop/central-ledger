@@ -27,10 +27,11 @@
  ******/
 
 'use strict'
+process.env.LOG_LEVEL = 'debug'
 
 const Test = require('tape')
+const AdminRoutes = require('#src/api/routes')
 const Base = require('../../base')
-const AdminRoutes = require('../../../../src/api/routes')
 
 Test('test participant routes', async function (assert) {
   const req = Base.buildRequest({ url: '/participants/{name}', method: 'GET' })
