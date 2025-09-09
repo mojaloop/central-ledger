@@ -936,7 +936,7 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
   try {
     const transactionTimestamp = Time.getUTCString(new Date())
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
         // Insert `transferTimeout` records for transfers found between the interval intervalMin <= intervalMax
