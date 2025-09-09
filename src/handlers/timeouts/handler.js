@@ -374,7 +374,6 @@ const acquireLock = async () => {
 
         // Store the interval ID so we can clear it when the lock is released
         distLock.extensionTimer = lockExtender
-        // distLock.extensionCount is already initialized above
       }
       return acquired
     } catch (err) {
