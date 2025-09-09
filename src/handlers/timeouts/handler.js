@@ -279,8 +279,6 @@ const timeout = async () => {
     isAcquired = await acquireLock()
     if (!isAcquired) return
 
-    running = true
-
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
     const intervalMin = timeoutSegment ? timeoutSegment.value : 0
     const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
@@ -377,6 +375,7 @@ const acquireLock = async () => {
         // Store the interval ID so we can clear it when the lock is released
         distLock.extensionTimer = lockExtender
       }
+
       return running ? false : (running = true)
     } catch (err) {
       log.error('Error acquiring distributed lock:', err)
