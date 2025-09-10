@@ -477,6 +477,5 @@ module.exports = {
   registerAllHandlers,
   registerTimeoutHandler,
   isRunning,
-  stop,
-  running
+  stop // exported for testing purposes only
 }

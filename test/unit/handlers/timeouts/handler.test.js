@@ -362,8 +362,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
         '../../lib/distLock': {
           createLock: createDistLockStub
-        },
-        releaseLock: sandbox.stub().resolves()
+        }
       })
 
       TimeoutService.timeoutExpireReserved = sandbox.stub().resolves({})
