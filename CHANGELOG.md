@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.9.2](https://github.com/mojaloop/central-ledger/compare/v19.9.1...v19.9.2) (2025-09-10)
+
+
+### Bug Fixes
+
+* **csi-1748:** use local lock with distlock ([#1212](https://github.com/mojaloop/central-ledger/issues/1212)) ([90b0d30](https://github.com/mojaloop/central-ledger/commit/90b0d309b6e862e111876a9f312300c924ac2b3e))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([4d5487d](https://github.com/mojaloop/central-ledger/commit/4d5487d194cd94b6017c00d3139a6282242be222))
+
 ### [19.9.1](https://github.com/mojaloop/central-ledger/compare/v19.9.0...v19.9.1) (2025-09-10)
 
 
