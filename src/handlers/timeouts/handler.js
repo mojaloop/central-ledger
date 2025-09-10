@@ -274,6 +274,8 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
   */
 const timeout = async () => {
+  if (running) return
+
   let isAcquired
   try {
     isAcquired = await acquireLock()

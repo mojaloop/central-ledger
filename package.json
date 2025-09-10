@@ -91,7 +91,7 @@
     "@hapi/vision": "7.0.3",
     "@mojaloop/central-services-error-handling": "13.1.1",
     "@mojaloop/central-services-health": "15.1.0",
-    "@mojaloop/central-services-logger": "11.9.1",
+    "@mojaloop/central-services-logger": "11.9.3",
     "@mojaloop/central-services-metrics": "12.7.1",
     "@mojaloop/central-services-shared": "18.32.0",
     "@mojaloop/central-services-stream": "11.8.7",
