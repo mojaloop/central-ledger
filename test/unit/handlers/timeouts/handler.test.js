@@ -312,6 +312,9 @@ Test('Timeout handler', TimeoutHandlerTest => {
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
         '../../lib/distLock': {
           createLock: createDistLockStub
+        },
+        '../../lib/config': {
+          INSTRUMENTATION_METRICS_DISABLED: true // disable metrics to avoid rethrow stub being called
         }
       })
 
@@ -358,6 +361,25 @@ Test('Timeout handler', TimeoutHandlerTest => {
       }
     })
 
+    timeoutTest.test('should return immediately if already running', async (test) => {
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
+      TimeoutService.timeoutExpireReserved = sandbox.stub().resolves({})
+      await TimeoutHandlerProxy.registerTimeoutHandler()
+      const [result1, result2] = await Promise.all([
+        TimeoutHandlerProxy.timeout(),
+        TimeoutHandlerProxy.timeout()
+      ])
+      test.notEqual(result1, undefined)
+      test.equal(result2, undefined)
+      test.ok(TimeoutService.timeoutExpireReserved.calledOnce)
+      test.end()
+    })
+
     timeoutTest.end()
   })
 
@@ -395,7 +417,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
           createLock: createDistLockStub
         }
       })
-      const result = await TimeoutHandlerProxy.registerAllHandlers()
+      const result = await TimeoutHandlerProxy.registerTimeoutHandler()
       test.equal(result, true)
       await TimeoutHandlerProxy.stop()
       test.end()
