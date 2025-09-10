@@ -312,6 +312,9 @@ Test('Timeout handler', TimeoutHandlerTest => {
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
         '../../lib/distLock': {
           createLock: createDistLockStub
+        },
+        '../../lib/config': {
+          INSTRUMENTATION_METRICS_DISABLED: true // disable metrics to avoid rethrow stub being called
         }
       })
 

@@ -169,7 +169,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
       await span.finish(fspiopError.message, state)
-      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: '_processTimedOutTransfers' })
+      countAndRethrow(fspiopError, { operation: '_processTimedOutTransfers' })
     } finally {
       if (!span.isFinished) {
         await span.finish()
@@ -252,7 +252,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
       await span.finish(fspiopError.message, state)
-      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: '_processFxTimedOutTransfers' })
+      countAndRethrow(fspiopError, { operation: '_processFxTimedOutTransfers' })
     } finally {
       if (!span.isFinished) {
         await span.finish()
@@ -314,7 +314,7 @@ const timeout = async () => {
     }
   } catch (err) {
     log.error('error in timeout:', err)
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'timeoutHandler' })
+    countAndRethrow(err, { operation: 'timeoutHandler' })
   } finally {
     if (isAcquired) await releaseLock()
   }
@@ -408,6 +408,13 @@ const releaseLock = async () => {
   running = false
 }
 
+const countAndRethrow = (err, params) => {
+  if (!Config.INSTRUMENTATION_METRICS_DISABLED) {
+    rethrow.rethrowAndCountFspiopError(err, params)
+  }
+  throw err
+}
+
 const initializeMetrics = () => {
   if (!Config.INSTRUMENTATION_METRICS_DISABLED) {
     Metrics.setup(Config.INSTRUMENTATION_METRICS_CONFIG)
@@ -445,7 +452,7 @@ const registerTimeoutHandler = async () => {
     return true
   } catch (err) {
     log.error('error in registerTimeoutHandler:', err)
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerTimeoutHandler' })
+    countAndRethrow(err, { operation: 'registerTimeoutHandler' })
   }
 }
 
@@ -466,7 +473,7 @@ const registerAllHandlers = async () => {
     return true
   } catch (err) {
     log.error('error in registerAllHandlers:', err)
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
+    countAndRethrow(err, { operation: 'registerAllHandlers' })
   }
 }
 
