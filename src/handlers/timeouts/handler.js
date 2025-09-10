@@ -281,6 +281,8 @@ const timeout = async () => {
     isAcquired = await acquireLock()
     if (!isAcquired) return
 
+    running = true
+
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
     const intervalMin = timeoutSegment ? timeoutSegment.value : 0
     const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
