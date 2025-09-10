@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.9.1](https://github.com/mojaloop/central-ledger/compare/v19.9.0...v19.9.1) (2025-09-10)
+
+
+### Bug Fixes
+
+* **csi-1772:** added participantNotFound FSPIOP error ([#1210](https://github.com/mojaloop/central-ledger/issues/1210)) ([0ee9ff2](https://github.com/mojaloop/central-ledger/commit/0ee9ff2218b5b561a409d0c043d058c809136c8a))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([49a4d04](https://github.com/mojaloop/central-ledger/commit/49a4d04fea212a5b4a57753f86dad476ad51cb04))
+
 ## [19.9.0](https://github.com/mojaloop/central-ledger/compare/v19.8.9...v19.9.0) (2025-09-09)
 
 
