@@ -125,9 +125,11 @@ const processPositionAbortBin = async (
         // Construct a list of messages excluding the original message as it will notified anyway
         for (const positionChange of cyrilResult.positionChanges) {
           if (positionChange.isFxTransferStateChange) {
-            // Construct notification message for fx transfer state change
-            const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, from, positionChange.notifyTo, positionChange.isOriginalId, true)
-            resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
+            if (positionChange.notifyTo) {
+              // Construct notification message for fx transfer state change
+              const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, from, positionChange.notifyTo, positionChange.isOriginalId, true)
+              resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
+            }
           } else {
             // Construct notification message for transfer state change
             const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, from, positionChange.notifyTo, positionChange.isOriginalId, false)

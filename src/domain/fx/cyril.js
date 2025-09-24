@@ -246,7 +246,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
         isFxTransferStateChange: true,
         commitRequestId,
         isOriginalId: originalId === commitRequestId,
-        notifyTo: fxRecord.externalInitiatingFspName || fxRecord.initiatingFspName,
+        notifyTo: (isAbort && originalId !== commitRequestId) ? undefined : fxRecord.externalInitiatingFspName || fxRecord.initiatingFspName, // Doesn't need to notify the initiating fsp about fx-abort if triggered by a transfer abort
         participantCurrencyId: fxPositionChange.participantCurrencyId,
         amount: -fxPositionChange.change
       })

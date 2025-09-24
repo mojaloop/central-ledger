@@ -1162,7 +1162,7 @@ Test('Cyril', cyrilTest => {
               isFxTransferStateChange: true,
               isOriginalId: false,
               commitRequestId: '88622a75-5bde-4da4-a6cc-f4cd23b268c4',
-              notifyTo: 'fx_dfsp1',
+              notifyTo: undefined,
               participantCurrencyId: 1,
               amount: -433.88
             },
