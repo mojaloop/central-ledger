@@ -238,6 +238,8 @@ const processFxFulfilMessage = async (commitRequestId) => {
 const _getPositionChanges = async (commitRequestIdList, transferIdList, originalId, isAbort = false) => {
   const positionChanges = []
   const transferStateChanges = []
+  const patchNotifications = []
+
   for (const commitRequestId of commitRequestIdList) {
     const fxRecord = await fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
     const fxPositionChanges = await ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId(commitRequestId)
@@ -251,6 +253,14 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
         amount: -fxPositionChange.change
       })
     })
+
+    // Patch notification to FXP (only internal participant) if the transfer is aborted
+    if (isAbort && originalId !== commitRequestId && !fxRecord.counterPartyFspIsProxy) {
+      patchNotifications.push({
+        commitRequestId: fxRecord.commitRequestId,
+        fxpName: fxRecord.counterPartyFspName
+      })
+    }
   }
 
   for (const transferId of transferIdList) {
@@ -284,7 +294,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
     }
   }
 
-  return { positionChanges, transferStateChanges }
+  return { positionChanges, transferStateChanges, patchNotifications }
 }
 
 /**
@@ -324,12 +334,13 @@ const processAbortMessage = async (transferId) => {
   const relatedFxTransferRecords = await fxTransfer.getByDeterminingTransferId(transferId)
 
   // Get position changes
-  const { positionChanges, transferStateChanges } = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [transferId], transferId, true)
+  const { positionChanges, transferStateChanges, patchNotifications } = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [transferId], transferId, true)
 
   histTimer({ success: true })
   return {
     positionChanges,
-    transferStateChanges
+    transferStateChanges,
+    patchNotifications
   }
 }
 
