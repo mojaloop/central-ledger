@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "19.10.0",
+  "version": "19.10.1",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -90,6 +90,7 @@
     "@hapi/inert": "7.1.0",
     "@hapi/vision": "7.0.3",
     "@mojaloop/central-services-error-handling": "13.1.3",
+    "@mojaloop/central-services-health": "15.2.0",
     "@mojaloop/central-services-health": "15.2.0",
     "@mojaloop/central-services-logger": "11.10.1",
     "@mojaloop/central-services-metrics": "12.8.0",

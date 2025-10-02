@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.10.1](https://github.com/mojaloop/central-ledger/compare/v19.10.0...v19.10.1) (2025-10-01)
+
+
+### Bug Fixes
+
+* fix transfer participant amount record for proxy debtors ([#1215](https://github.com/mojaloop/central-ledger/issues/1215)) ([ffab7cb](https://github.com/mojaloop/central-ledger/commit/ffab7cbbd19649a7987c231ee27a937e64a24a24))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([522789d](https://github.com/mojaloop/central-ledger/commit/522789d40f6856842c065a0f6d117341693e7ca2))
+
 ## [19.10.0](https://github.com/mojaloop/central-ledger/compare/v19.9.2...v19.10.0) (2025-09-25)
 
 
