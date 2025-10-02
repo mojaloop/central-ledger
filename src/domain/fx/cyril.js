@@ -354,7 +354,8 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
   const result = {
     isFx: false,
     positionChanges: [],
-    patchNotifications: []
+    patchNotifications: [],
+    transferStateChanges: []
   }
 
   // Does this transferId appear on the watch list?
@@ -452,6 +453,12 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
             amount: -sendingFxpRecord.targetAmount
           })
         }
+      } else {
+        result.transferStateChanges.push({
+          transferId,
+          transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR,
+          isOriginalId: true
+        })
       }
     } else if (receivingFxpExists) {
       // If we have a receiving FXP, Create obligation between debtor party to the transfer and FXP in currency of transfer

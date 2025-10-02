@@ -467,7 +467,8 @@ Test('Cyril', cyrilTest => {
         test.deepEqual(result, {
           isFx: false,
           positionChanges: [],
-          patchNotifications: []
+          patchNotifications: [],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()
@@ -537,7 +538,8 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
-          }]
+          }],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()
@@ -597,7 +599,8 @@ Test('Cyril', cyrilTest => {
             amount: -433.88
           }
           ],
-          patchNotifications: []
+          patchNotifications: [],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -679,7 +682,8 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
-          }]
+          }],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -739,6 +743,11 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
+          }],
+          transferStateChanges: [{
+            transferId: payload.transferId,
+            transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR,
+            isOriginalId: true
           }]
         })
         test.pass('Error not thrown')
@@ -813,7 +822,8 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
-          }]
+          }],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()
@@ -881,7 +891,8 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
-          }]
+          }],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()
@@ -929,7 +940,8 @@ Test('Cyril', cyrilTest => {
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [],
-          patchNotifications: []
+          patchNotifications: [],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -993,7 +1005,8 @@ Test('Cyril', cyrilTest => {
               amount: -433.88
             }
           ],
-          patchNotifications: []
+          patchNotifications: [],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -1051,7 +1064,8 @@ Test('Cyril', cyrilTest => {
               amount: -200
             }
           ],
-          patchNotifications: []
+          patchNotifications: [],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -1114,7 +1128,8 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
-          }]
+          }],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
