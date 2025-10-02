@@ -3,6 +3,11 @@ ignore:
   # as grype looks at package-lock.json where it shows versions with
   # vulnerabilities, npm ls shows only 7.0.6 verion is used
 
+  # Ignore OpenSSL vulnerabilities in Alpine libcrypto3 and libssl3
+  - vulnerability: CVE-2025-9230
+  - vulnerability: CVE-2025-9232
+  - vulnerability: CVE-2025-9231
+
 
 # Set output format defaults
 output:
