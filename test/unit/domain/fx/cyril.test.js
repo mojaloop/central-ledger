@@ -746,7 +746,7 @@ Test('Cyril', cyrilTest => {
           }],
           transferStateChanges: [{
             transferId: payload.transferId,
-            transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR,
+            transferStateId: Enum.Transfers.TransferInternalState.COMMITTED,
             isOriginalId: true
           }]
         })

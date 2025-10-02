@@ -456,7 +456,7 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
       } else {
         result.transferStateChanges.push({
           transferId,
-          transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR,
+          transferStateId: Enum.Transfers.TransferInternalState.COMMITTED,
           isOriginalId: true
         })
       }
