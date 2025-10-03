@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.11.0](https://github.com/mojaloop/central-ledger/compare/v19.10.1...v19.11.0) (2025-10-03)
+
+
+### Bug Fixes
+
+* abort notification to fxp ([#1216](https://github.com/mojaloop/central-ledger/issues/1216)) ([75593b6](https://github.com/mojaloop/central-ledger/commit/75593b626676c5ae6dd8be2c1909e23bf1be159e))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([a75f67b](https://github.com/mojaloop/central-ledger/commit/a75f67ba2ce46002b961d5b1d812b5c80a8cfd30))
+
 ### [19.10.1](https://github.com/mojaloop/central-ledger/compare/v19.10.0...v19.10.1) (2025-10-01)
 
 
