@@ -467,7 +467,8 @@ Test('Cyril', cyrilTest => {
         test.deepEqual(result, {
           isFx: false,
           positionChanges: [],
-          patchNotifications: []
+          patchNotifications: [],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()
@@ -537,7 +538,8 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
-          }]
+          }],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()
@@ -597,7 +599,8 @@ Test('Cyril', cyrilTest => {
             amount: -433.88
           }
           ],
-          patchNotifications: []
+          patchNotifications: [],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -679,7 +682,8 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
-          }]
+          }],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -739,6 +743,11 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
+          }],
+          transferStateChanges: [{
+            transferId: payload.transferId,
+            transferStateId: Enum.Transfers.TransferInternalState.COMMITTED,
+            isOriginalId: true
           }]
         })
         test.pass('Error not thrown')
@@ -813,7 +822,8 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
-          }]
+          }],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()
@@ -881,7 +891,8 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
-          }]
+          }],
+          transferStateChanges: []
         })
         test.pass('Error not thrown')
         test.end()
@@ -929,7 +940,8 @@ Test('Cyril', cyrilTest => {
         test.deepEqual(result, {
           isFx: true,
           positionChanges: [],
-          patchNotifications: []
+          patchNotifications: [],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -993,7 +1005,8 @@ Test('Cyril', cyrilTest => {
               amount: -433.88
             }
           ],
-          patchNotifications: []
+          patchNotifications: [],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -1051,7 +1064,8 @@ Test('Cyril', cyrilTest => {
               amount: -200
             }
           ],
-          patchNotifications: []
+          patchNotifications: [],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -1114,7 +1128,8 @@ Test('Cyril', cyrilTest => {
             fxpName: fxPayload.counterPartyFsp,
             fulfilment: 'fulfilment',
             completedTimestamp
-          }]
+          }],
+          transferStateChanges: []
         }
         )
         test.pass('Error not thrown')
@@ -1136,7 +1151,10 @@ Test('Cyril', cyrilTest => {
         ]))
         // Mocks for _getPositionChnages
         fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve({
-          initiatingFspName: fxPayload.initiatingFsp
+          initiatingFspName: fxPayload.initiatingFsp,
+          commitRequestId: fxPayload.commitRequestId,
+          counterPartyFspName: fxPayload.counterPartyFsp,
+          counterPartyFspIsProxy: false
         }))
         ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.returns(Promise.resolve([
           {
@@ -1175,7 +1193,11 @@ Test('Cyril', cyrilTest => {
               amount: -433.88
             }
           ],
-          transferStateChanges: []
+          transferStateChanges: [],
+          patchNotifications: [{
+            commitRequestId: fxPayload.commitRequestId,
+            fxpName: fxPayload.counterPartyFsp
+          }]
         })
         test.pass('Error not thrown')
         test.end()
@@ -1192,7 +1214,10 @@ Test('Cyril', cyrilTest => {
         ]))
         // Mocks for _getPositionChnages
         fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer.returns(Promise.resolve({
-          initiatingFspName: fxPayload.initiatingFsp
+          initiatingFspName: fxPayload.initiatingFsp,
+          commitRequestId: fxPayload.commitRequestId,
+          counterPartyFspName: fxPayload.counterPartyFsp,
+          counterPartyFspIsProxy: false
         }))
         ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId.returns(Promise.resolve([]))
         TransferFacade.getById.returns(Promise.resolve({
@@ -1213,7 +1238,11 @@ Test('Cyril', cyrilTest => {
               transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
               transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR
             }
-          ]
+          ],
+          patchNotifications: [{
+            commitRequestId: fxPayload.commitRequestId,
+            fxpName: fxPayload.counterPartyFsp
+          }]
         })
         test.pass('Error not thrown')
         test.end()
