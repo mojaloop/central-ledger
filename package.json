@@ -93,7 +93,7 @@
     "@mojaloop/central-services-health": "15.2.0",
     "@mojaloop/central-services-logger": "11.10.1",
     "@mojaloop/central-services-metrics": "12.8.0",
-    "@mojaloop/central-services-shared": "18.34.0",
+    "@mojaloop/central-services-shared": "18.34.1",
     "@mojaloop/central-services-stream": "11.8.8",
     "@mojaloop/database-lib": "11.3.3",
     "@mojaloop/event-sdk": "14.8.0",
