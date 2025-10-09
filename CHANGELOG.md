@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.11.2](https://github.com/mojaloop/central-ledger/compare/v19.11.1...v19.11.2) (2025-10-09)
+
+
+### Bug Fixes
+
+* **csi-1841:** participant limit cache could process transfer without erroring ([#1218](https://github.com/mojaloop/central-ledger/issues/1218)) ([68072d9](https://github.com/mojaloop/central-ledger/commit/68072d97ba9bb628038b09282220ccfb7b951516))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([3f087eb](https://github.com/mojaloop/central-ledger/commit/3f087ebea0487a5adf4622405439b921ef23a689))
+
 ### [19.11.1](https://github.com/mojaloop/central-ledger/compare/v19.11.0...v19.11.1) (2025-10-06)
 
 
