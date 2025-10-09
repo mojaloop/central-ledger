@@ -360,63 +360,27 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
   ).startTimer()
 
   try {
-    let participantLimit
-    if (Cache.isCacheEnabled()) {
-      /* Cached version - fetch data from Models (which we trust are cached) */
-      const participant = await ParticipantModelCached.getById(participantId)
+    const participantLimit = await Db.from('participant').query(async (builder) => {
+      return builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId,
+          'pl.participantLimitTypeId': participantLimitTypeId,
+          'participant.isActive': 1,
+          'pc.IsActive': 1,
+          'pl.isActive': 1
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
+        .select(
+          'participant.participantId AS participantId',
+          'pc.currencyId AS currencyId',
+          'pl.participantLimitTypeId as participantLimitTypeId',
+          'pl.value AS value'
+        ).first()
+    })
 
-      /* Checkpoint #1: participant found and is active */
-      if ((participant) && (participant.isActive)) {
-        /* use the participant id and incoming params to prepare the filter */
-        const searchFilter = {
-          participantId: participant.participantId,
-          currencyId,
-          ledgerAccountTypeId,
-          isActive: 1
-        }
-
-        /* find the participantCurrency by prepared filter */
-        const participantCurrency = await ParticipantCurrencyModelCached.findOneByParams(searchFilter)
-
-        /* Checkpoint #2: participantCurrency found and is active */
-        if ((participantCurrency) && (participantCurrency.isActive)) {
-          const participantLimitRow = await ParticipantLimitCached.getByParticipantCurrencyId(participantCurrency.participantCurrencyId)
-
-          /* Checkpoint #3: participantLimit found */
-          if ((participantLimitRow) && (participantLimitRow.isActive)) {
-            /* combine all needed info */
-            participantLimit = {
-              participantId,
-              currencyId: participantCurrency.currencyId,
-              participantLimitTypeId: participantLimitRow.participantLimitTypeId,
-              value: participantLimitRow.value
-            }
-          }
-        }
-      }
-    } else {
-      /* Non-cached version - direct call to DB */
-      participantLimit = await Db.from('participant').query(async (builder) => {
-        return builder
-          .where({
-            'participant.participantId': participantId,
-            'pc.currencyId': currencyId,
-            'pc.ledgerAccountTypeId': ledgerAccountTypeId,
-            'pl.participantLimitTypeId': participantLimitTypeId,
-            'participant.isActive': 1,
-            'pc.IsActive': 1,
-            'pl.isActive': 1
-          })
-          .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-          .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
-          .select(
-            'participant.participantId AS participantId',
-            'pc.currencyId AS currencyId',
-            'pl.participantLimitTypeId as participantLimitTypeId',
-            'pl.value AS value'
-          ).first()
-      })
-    }
     histGetParticipantLimitEnd({ success: true, queryName: 'facade_getParticipantLimitByParticipantCurrencyLimit' })
     return participantLimit
   } catch (err) {

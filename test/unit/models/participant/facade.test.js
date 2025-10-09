@@ -1284,83 +1284,6 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
-  await facadeTest.test('getParticipantLimitByParticipantCurrencyLimit (cache on)', async (assert) => {
-    try {
-      /* Setup case for full pass - return of data */
-      Cache.isCacheEnabled.returns(true)
-
-      const participantLimitData = {
-        participantId: 123,
-        currencyId: 456,
-        participantLimitTypeId: 789,
-        value: 1000000
-      }
-      const ledgerAccountTypeId = 1
-      const participantLimitTypeId = 2
-
-      const setupMockData = () => {
-        ParticipantModel.getById.withArgs(participantLimitData.participantId).returns({
-          participantId: participantLimitData.participantId,
-          isActive: true
-        })
-        ParticipantCurrencyModel.findOneByParams.returns({
-          participantCurrencyId: 321,
-          currencyId: participantLimitData.currencyId,
-          isActive: true
-        })
-        ParticipantLimitModel.getByParticipantCurrencyId.withArgs(321).returns({
-          isActive: true,
-          ...participantLimitData
-        })
-      }
-
-      const callGetParticipantLimitByParticipantCurrencyLimit = async () => {
-        return Model.getParticipantLimitByParticipantCurrencyLimit(
-          participantLimitData.participantId,
-          participantLimitData.currency,
-          ledgerAccountTypeId,
-          participantLimitTypeId
-        )
-      }
-
-      /* Check the data is returned correctly for correct setup of data in cache */
-      setupMockData()
-      const result = await callGetParticipantLimitByParticipantCurrencyLimit()
-      assert.deepEqual(result, participantLimitData, 'should return correct data')
-
-      /* Setup case for failure #1: can't find participant by participantId */
-      ParticipantModel.getById.withArgs(participantLimitData.participantId).returns()
-      const result2 = await callGetParticipantLimitByParticipantCurrencyLimit()
-      assert.deepEqual(result2, undefined, 'should return nothing when cannot find by participantId')
-
-      /* Ensure the data is returned correctly for correct setup of data in cache */
-      setupMockData()
-      const result3 = await callGetParticipantLimitByParticipantCurrencyLimit()
-      assert.deepEqual(result3, participantLimitData, 'should return correct data')
-
-      /* Setup case for failure #2: can't find participantCurrency */
-      ParticipantCurrencyModel.findOneByParams.returns()
-      const result4 = await callGetParticipantLimitByParticipantCurrencyLimit()
-      assert.deepEqual(result4, undefined, 'should return nothing when cannot find participantCurrency')
-
-      /* Ensure the data is returned correctly for correct setup of data in cache */
-      setupMockData()
-      const result5 = await callGetParticipantLimitByParticipantCurrencyLimit()
-      assert.deepEqual(result5, participantLimitData, 'should return correct data')
-
-      /* Setup case for failure #3: can't find participantLimit data */
-      ParticipantLimitModel.getByParticipantCurrencyId.withArgs(321).returns()
-      const result6 = await callGetParticipantLimitByParticipantCurrencyLimit()
-      assert.deepEqual(result6, undefined, 'should return nothing when cannot find participantLimit')
-
-      assert.end()
-    } catch (err) {
-      Logger.error(`getParticipantLimitByParticipantCurrencyLimit failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
-
   await facadeTest.test('getParticipantLimitByParticipantCurrencyLimit returns undefined when participant not found by participantId (cache on)', async (assert) => {
     try {
       Cache.isCacheEnabled.returns(true)
@@ -1421,25 +1344,6 @@ Test('Participant facade', async (facadeTest) => {
     } catch (err) {
       Logger.error(`getParticipantLimitByParticipantCurrencyLimit failed with error - ${err}`)
       assert.fail()
-      assert.end()
-    }
-  })
-
-  await facadeTest.test('getParticipantLimitByParticipantCurrencyLimit (cache on) should throw error', async (assert) => {
-    try {
-      Cache.isCacheEnabled.returns(true)
-
-      const ledgerAccountTypeId = 1
-      const participantLimitTypeId = 2
-
-      ParticipantModel.getById.withArgs(participant.participantId).throws(new Error())
-      await Model.getParticipantLimitByParticipantCurrencyLimit(participant.participantId, participant.currency, ledgerAccountTypeId, participantLimitTypeId)
-
-      assert.fail('should throw')
-      assert.end()
-    } catch (err) {
-      Logger.error(`getParticipantLimitByParticipantCurrencyLimit failed with error - ${err}`)
-      assert.pass('Did throw')
       assert.end()
     }
   })
