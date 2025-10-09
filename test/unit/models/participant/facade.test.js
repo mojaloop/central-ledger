@@ -1042,6 +1042,52 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
+  await facadeTest.test('adjustLimits should invalidate participantLimit cache', async (assert) => {
+    try {
+      const limit = {
+        type: 'NET_DEBIT_CAP',
+        value: 10000000,
+        thresholdAlarmPercentage: undefined
+      }
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        where: sandbox.stub().returns({
+          select: sandbox.stub().returns({
+            first: sandbox.stub().returns({ participantLimitTypeId: 1 })
+          })
+        }),
+        transacting: sandbox.stub().returns({
+          forUpdate: sandbox.stub().returns({
+            select: sandbox.stub().returns({
+              where: sandbox.stub().returns([{ participantLimitId: 1 }])
+            })
+          }),
+          update: sandbox.stub().returns({
+            where: sandbox.stub().returns([1])
+          }),
+          insert: sandbox.stub().returns([1])
+        })
+      })
+
+      // Reset call count before test
+      ParticipantLimitModel.invalidateParticipantLimitCache.resetHistory()
+
+      await Model.adjustLimits(1, limit)
+      assert.ok(ParticipantLimitModel.invalidateParticipantLimitCache.calledOnce, 'invalidateParticipantLimitCache should be called once')
+      assert.end()
+    } catch (err) {
+      Logger.error(`adjustLimits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
   await facadeTest.test('getParticipantLimitsByCurrencyId', async (assert) => {
     try {
       const participantLimit = {
