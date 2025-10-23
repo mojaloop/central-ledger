@@ -975,8 +975,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
               .whereNull('ftt.commitRequestId')
               .whereIn('ftsc.transferStateId', [
                 `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
-                `${Enum.Transfers.TransferState.RESERVED}`,
-                `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`
+                `${Enum.Transfers.TransferState.RESERVED}`
               ])
               .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timed out fxTransfer for all related fxTransfers
           })
