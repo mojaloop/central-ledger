@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.11.3](https://github.com/mojaloop/central-ledger/compare/v19.11.2...v19.11.3) (2025-10-27)
+
+
+### Bug Fixes
+
+* remove fulfil depdendant from being timedout ([#1219](https://github.com/mojaloop/central-ledger/issues/1219)) ([1503cf2](https://github.com/mojaloop/central-ledger/commit/1503cf22ac57e9b2afd2552c153895b54c0b7bb3))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([7d981aa](https://github.com/mojaloop/central-ledger/commit/7d981aa701c5243d3f42148ef58aeae87ac2e8f4))
+
 ### [19.11.2](https://github.com/mojaloop/central-ledger/compare/v19.11.1...v19.11.2) (2025-10-09)
 
 
