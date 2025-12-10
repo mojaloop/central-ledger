@@ -70,14 +70,14 @@ const getSettlementModelsCached = async () => {
     ['success', 'queryName', 'hit']
   ).startTimer()
   // Do we have valid settlement models list in the cache ?
-  let cachedSettlementModels = cacheClient.get(settlementModelsAllCacheKey)
+  let cachedSettlementModels = await cacheClient.get(settlementModelsAllCacheKey)
   if (!cachedSettlementModels) {
     // No settlement models in the cache, so fetch from participant API
     const allSettlementModels = await SettlementModel.getAll()
     cachedSettlementModels = buildUnifiedSettlementModelsData(allSettlementModels)
 
     // store in cache
-    cacheClient.set(settlementModelsAllCacheKey, cachedSettlementModels)
+    await cacheClient.set(settlementModelsAllCacheKey, cachedSettlementModels)
     histTimer({ success: true, queryName: 'model_getSettlementModelsCached', hit: false })
   } else {
     // unwrap settlement models list from catbox structure

@@ -60,13 +60,13 @@ const getExternalParticipantsCached = async () => {
     ['success', 'queryName', 'hit']
   ).startTimer()
 
-  let cachedParticipants = cacheClient.get(epAllCacheKey)
+  let cachedParticipants = await cacheClient.get(epAllCacheKey)
   const hit = !!cachedParticipants
 
   if (!cachedParticipants) {
     const allParticipants = await externalParticipantModel.getAll()
     cachedParticipants = buildUnifiedCachedData(allParticipants)
-    cacheClient.set(epAllCacheKey, cachedParticipants)
+    await cacheClient.set(epAllCacheKey, cachedParticipants)
   } else {
     // unwrap participants list from catbox structure
     cachedParticipants = cachedParticipants.item

@@ -72,14 +72,14 @@ const getParticipantsCached = async () => {
     ['success', 'queryName', 'hit']
   ).startTimer()
   // Do we have valid participants list in the cache ?
-  let cachedParticipants = cacheClient.get(participantsAllCacheKey)
+  let cachedParticipants = await cacheClient.get(participantsAllCacheKey)
   if (!cachedParticipants) {
     // No participants in the cache, so fetch from participant API
     const allParticipants = await ParticipantModel.getAll()
     cachedParticipants = buildUnifiedParticipantsData(allParticipants)
 
     // store in cache
-    cacheClient.set(participantsAllCacheKey, cachedParticipants)
+    await cacheClient.set(participantsAllCacheKey, cachedParticipants)
     histTimer({ success: true, queryName: 'model_getParticipantsCached', hit: false })
   } else {
     // unwrap participants list from catbox structure

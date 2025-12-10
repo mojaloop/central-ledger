@@ -31,7 +31,7 @@ class CacheClient {
   }
 
   set (key, value) {
-    catboxMemoryClient.set(key, value, parseInt(ttl))
+    return catboxMemoryClient.set(key, value, ttl)
   }
 
   drop (key) {
@@ -58,7 +58,7 @@ const registerCacheClient = (clientMeta) => {
 
 const initCache = async function () {
   // Read config
-  ttl = Config.CACHE_CONFIG.EXPIRES_IN_MS
+  ttl = parseInt(Config.CACHE_CONFIG.EXPIRES_IN_MS)
   enabled = Config.CACHE_CONFIG.CACHE_ENABLED
 
   // Init catbox.

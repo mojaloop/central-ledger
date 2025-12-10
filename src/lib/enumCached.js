@@ -38,13 +38,13 @@ let enumAllCacheKey
 */
 const _getAllEnums = async function () {
   let allEnums
-  const allEnumsFromCache = cacheClient.get(enumAllCacheKey)
+  const allEnumsFromCache = await cacheClient.get(enumAllCacheKey)
   if (allEnumsFromCache === null) {
     allEnums = {}
     for (const enumId of Enums.enumsIds) {
       allEnums[enumId] = await Enums[enumId]()
     }
-    cacheClient.set(enumAllCacheKey, allEnums)
+    await cacheClient.set(enumAllCacheKey, allEnums)
   } else {
     // unwrap from catbox structure
     allEnums = allEnumsFromCache.item

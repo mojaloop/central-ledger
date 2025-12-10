@@ -69,14 +69,14 @@ const getParticipantCurrencyCached = async () => {
     ['success', 'queryName', 'hit']
   ).startTimer()
   // Do we have valid participantsCurrency list in the cache ?
-  let cachedCurrencyParticipants = cacheClient.get(participantCurrencyAllCacheKey)
+  let cachedCurrencyParticipants = await cacheClient.get(participantCurrencyAllCacheKey)
   if (!cachedCurrencyParticipants) {
     // No participantsCurrency in the cache, so fetch from participantsCurrency API
     const allCurrencyParticipants = await ParticipantCurrencyModel.getAll()
     cachedCurrencyParticipants = buildUnifiedParticipantsCurrencyData(allCurrencyParticipants)
 
     // store in cache
-    cacheClient.set(participantCurrencyAllCacheKey, cachedCurrencyParticipants)
+    await cacheClient.set(participantCurrencyAllCacheKey, cachedCurrencyParticipants)
     histTimer({ success: true, queryName: 'model_getParticipantCurrencyCached', hit: false })
   } else {
     // unwrap participants list from catbox structure

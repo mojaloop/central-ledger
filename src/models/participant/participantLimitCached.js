@@ -68,14 +68,14 @@ const getParticipantLimitCached = async () => {
     ['success', 'queryName', 'hit']
   ).startTimer()
   // Do we have valid participantsLimit list in the cache ?
-  let cachedLimitParticipants = cacheClient.get(participantLimitAllCacheKey)
+  let cachedLimitParticipants = await cacheClient.get(participantLimitAllCacheKey)
   if (!cachedLimitParticipants) {
     // No participantsLimit in the cache, so fetch from participantsLimit API
     const allLimitParticipants = await ParticipantLimitModel.getAll()
     cachedLimitParticipants = buildUnifiedParticipantsLimitData(allLimitParticipants)
 
     // store in cache
-    cacheClient.set(participantLimitAllCacheKey, cachedLimitParticipants)
+    await cacheClient.set(participantLimitAllCacheKey, cachedLimitParticipants)
     histTimer({ success: true, queryName: 'model_getParticipantLimitCached', hit: false })
   } else {
     // unwrap participants list from catbox structure
