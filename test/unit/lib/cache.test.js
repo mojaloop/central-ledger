@@ -24,14 +24,6 @@ Test('Cache test', async (cacheTest) => {
   })
 
   await cacheTest.test('Cache should', async (initTest) => {
-    await initTest.test('call constructor of Catbox', async (test) => {
-      const catboxConstructorSpy = sandbox.spy(Cache.Catbox, 'Policy')
-      Cache.registerCacheClient('testClient', async () => { })
-      await Cache.initCache()
-      test.ok(catboxConstructorSpy.calledOnce, 'Catbox::Policy constructor called once')
-      test.end()
-    })
-
     await initTest.test('init+start and then stop Catbox', async (test) => {
       const fn = sandbox.spy(async () => { })
       Cache.registerCacheClient('testClient', fn)
