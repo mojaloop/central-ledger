@@ -44,7 +44,7 @@
     "lint": "npx standard",
     "lint:fix": "npx standard --fix",
     "test": "npm run test:unit:spec",
-    "test:unit": "npx tape 'test/unit/**/*.test.js'",
+    "test:unit": "tape 'test/unit/**/*.test.js'",
     "test:unit:spec": "npm run test:unit | tap-spec",
     "test:unit:distLock": "npx tape 'test/unit/lib/distLock/**/*.test.js'",
     "test:unit:participants-routes": "npx tape test/unit/api/participants/routes.test.js",
