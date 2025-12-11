@@ -81,29 +81,19 @@ Test('Batch cached model', async (batchCachedTest) => {
   })
 
   await batchCachedTest.test('initializes cache correctly', async (test) => {
-    const cacheClient = {
-      createKey: sandbox.stub().returns({})
-    }
-    Cache.registerCacheClient.returns(cacheClient)
+    Cache.registerCacheClient.returns({})
 
-    // initialize calls registerCacheClient and createKey
+    // initialize calls registerCacheClient
     test.notOk(Cache.registerCacheClient.calledOnce)
-    test.notOk(cacheClient.createKey.calledOnce)
     await Model.initialize()
     test.ok(Cache.registerCacheClient.calledOnce)
-    test.ok(cacheClient.createKey.calledOnce)
 
     test.end()
   })
 
   await batchCachedTest.test('getParticipantCurrencyByIds(), getParticipantCurrencyByParticipantIds() work', async (test) => {
-    let cache = null
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
-      get: () => cache,
-      set: (key, x) => {
-        cache = { item: x } // the cache retuns {item: <data>} structure
-      }
+      get: () => Model.build(participantCurrencyFixtures)
     }
     Cache.registerCacheClient.returns(cacheClient)
     await Model.initialize()
@@ -121,7 +111,6 @@ Test('Batch cached model', async (batchCachedTest) => {
 
   await batchCachedTest.test('getParticipantCurrencyByIds(), getParticipantCurrencyByParticipantIds() fail when error thrown', async (test) => {
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       get: () => null
     }
     Cache.registerCacheClient.returns(cacheClient)

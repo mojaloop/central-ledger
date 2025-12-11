@@ -26,13 +26,12 @@
  --------------
  **********/
 
-const Metrics = require('@mojaloop/central-services-metrics')
 const cache = require('../../lib/cache')
 const externalParticipantModel = require('./externalParticipant')
 const rethrow = require('../../shared/rethrow')
 
 let cacheClient
-let epAllCacheKey
+const epAllCacheKey = 'all'
 
 const buildUnifiedCachedData = (allExternalParticipants) => {
   // build indexes  - optimization for byId and byName access
@@ -52,28 +51,11 @@ const buildUnifiedCachedData = (allExternalParticipants) => {
   }
 }
 
-const getExternalParticipantsCached = async () => {
-  const queryName = 'model_getExternalParticipantsCached'
-  const histTimer = Metrics.getHistogram(
-    'model_externalParticipant',
-    `${queryName} - Metrics for externalParticipant model`,
-    ['success', 'queryName', 'hit']
-  ).startTimer()
+const getExternalParticipantsCached = () => cacheClient.get(epAllCacheKey)
 
-  let cachedParticipants = await cacheClient.get(epAllCacheKey)
-  const hit = !!cachedParticipants
-
-  if (!cachedParticipants) {
-    const allParticipants = await externalParticipantModel.getAll()
-    cachedParticipants = buildUnifiedCachedData(allParticipants)
-    await cacheClient.set(epAllCacheKey, cachedParticipants)
-  } else {
-    // unwrap participants list from catbox structure
-    cachedParticipants = cachedParticipants.item
-  }
-  histTimer({ success: true, queryName, hit })
-
-  return cachedParticipants
+const generateFunc = async function (key) {
+  const allParticipants = await externalParticipantModel.getAll()
+  return buildUnifiedCachedData(allParticipants)
 }
 
 /*
@@ -81,13 +63,7 @@ const getExternalParticipantsCached = async () => {
 */
 const initialize = () => {
   /* Register as cache client */
-  const cacheClientMeta = {
-    id: 'externalParticipants',
-    preloadCache: getExternalParticipantsCached
-  }
-
-  cacheClient = cache.registerCacheClient(cacheClientMeta)
-  epAllCacheKey = cacheClient.createKey('all')
+  cacheClient = cache.registerCacheClient('externalParticipants', generateFunc)
 }
 
 const invalidateCache = async () => {

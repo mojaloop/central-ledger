@@ -1,41 +1,30 @@
 'use strict'
 
 const CatboxMemory = require('@hapi/catbox-memory')
+const Catbox = require('@hapi/catbox')
 const Config = require('../lib/config')
 
-let enabled = true
-let ttl
-let catboxMemoryClient = null
+const expiresIn = parseInt(Config.CACHE_CONFIG.EXPIRES_IN_MS)
+// Init memory client
+const catboxMemoryClient = new CatboxMemory.Engine({ maxByteSize: Config.CACHE_CONFIG.MAX_BYTE_SIZE })
+catboxMemoryClient.start()
 
 class CacheClient {
-  constructor (meta) {
-    this.meta = meta
-  }
-
-  getMeta () {
-    return this.meta
-  }
-
-  createKey (id) {
-    return {
-      segment: this.meta.id,
-      id
-    }
+  constructor (segment, generateFunc) {
+    this.generateFunc = generateFunc
+    if (Config.CACHE_CONFIG.CACHE_ENABLED) this.policy = new Catbox.Policy({ generateFunc, expiresIn, generateTimeout: false }, catboxMemoryClient, segment)
   }
 
   get (key) {
-    if (enabled) {
-      return catboxMemoryClient.get(key)
-    }
-    return null
-  }
-
-  set (key, value) {
-    return catboxMemoryClient.set(key, value, ttl)
+    return Config.CACHE_CONFIG.CACHE_ENABLED ? this.policy.get(key) : this.generateFunc(key)
   }
 
   drop (key) {
-    catboxMemoryClient.drop(key)
+    return this.policy?.drop(key)
+  }
+
+  setGenerateFunc (generateFunc) {
+    this.policy?.options({ generateFunc, expiresIn, generateTimeout: false })
   }
 }
 
@@ -50,32 +39,22 @@ class CacheClient {
 */
 let cacheClients = {}
 
-const registerCacheClient = (clientMeta) => {
-  const newClient = new CacheClient(clientMeta)
-  cacheClients[clientMeta.id] = newClient
+const registerCacheClient = (id, generateFunc) => {
+  const newClient = new CacheClient(id, generateFunc)
+  cacheClients[id] = newClient
   return newClient
 }
 
 const initCache = async function () {
   // Read config
-  ttl = parseInt(Config.CACHE_CONFIG.EXPIRES_IN_MS)
-  enabled = Config.CACHE_CONFIG.CACHE_ENABLED
-
-  // Init catbox.
-  catboxMemoryClient = new CatboxMemory.Engine({
-    maxByteSize: Config.CACHE_CONFIG.MAX_BYTE_SIZE
-  })
-  catboxMemoryClient.start()
-
-  for (const clientId in cacheClients) {
-    const clientMeta = cacheClients[clientId].getMeta()
-    await clientMeta.preloadCache()
+  for (const client of Object.values(cacheClients)) {
+    await client.get('all') // preload cache
   }
 }
 
 const destroyCache = async function () {
-  catboxMemoryClient?.stop()
-  catboxMemoryClient = null
+  catboxMemoryClient.stop()
+  catboxMemoryClient.start()
 }
 
 const dropClients = function () {
@@ -83,7 +62,7 @@ const dropClients = function () {
 }
 
 const isCacheEnabled = function () {
-  return enabled
+  return Config.CACHE_CONFIG.CACHE_ENABLED
 }
 
 module.exports = {
@@ -96,6 +75,6 @@ module.exports = {
   isCacheEnabled,
 
   // exposed for tests
-  CatboxMemory,
+  Catbox,
   dropClients
 }

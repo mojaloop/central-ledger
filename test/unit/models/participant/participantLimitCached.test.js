@@ -87,17 +87,12 @@ Test('Participant Limit cached model', async (participantLimitCachedTest) => {
   })
 
   await participantLimitCachedTest.test('initializes cache correctly', async (test) => {
-    const cacheClient = {
-      createKey: sandbox.stub().returns({})
-    }
-    Cache.registerCacheClient.returns(cacheClient)
+    Cache.registerCacheClient.returns({})
 
-    // initialize calls registerCacheClient and createKey
+    // initialize calls registerCacheClient
     test.notOk(Cache.registerCacheClient.calledOnce)
-    test.notOk(cacheClient.createKey.calledOnce)
     await Model.initialize()
     test.ok(Cache.registerCacheClient.calledOnce)
-    test.ok(cacheClient.createKey.calledOnce)
 
     test.end()
   })
@@ -105,7 +100,6 @@ Test('Participant Limit cached model', async (participantLimitCachedTest) => {
   await participantLimitCachedTest.test('calls drop() for invalidateParticipantLimitCache', async (test) => {
     // initialize
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       drop: sandbox.stub()
     }
     Cache.registerCacheClient.returns(cacheClient)
@@ -120,18 +114,12 @@ Test('Participant Limit cached model', async (participantLimitCachedTest) => {
   })
 
   await participantLimitCachedTest.test('getByParticipantCurrencyId() works and manages cache correctly', async (test) => {
-    let cache = null
     let cacheGetCallsCnt = 0
-    let cacheSetCallsCnt = 0
+    const cacheSetCallsCnt = 0
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       get: () => {
         cacheGetCallsCnt++
-        return cache
-      },
-      set: (key, x) => {
-        cache = { item: x } // the cache retuns {item: <data>} structure
-        cacheSetCallsCnt++
+        return Model.build(participantLimitFixtures)
       }
     }
     Cache.registerCacheClient.returns(cacheClient)
@@ -147,7 +135,6 @@ Test('Participant Limit cached model', async (participantLimitCachedTest) => {
 
     // check that get/set was called once when getByParticipantCurrencyId() for the 1st time
     test.equal(cacheGetCallsCnt, 1, 'cache.get() called once')
-    test.equal(cacheSetCallsCnt, 1, 'cache.set() called once')
 
     // check getById()
     participantByParticipantId = await Model.getByParticipantCurrencyId(participantLimitFixtures[1].participantCurrencyId)
@@ -155,14 +142,12 @@ Test('Participant Limit cached model', async (participantLimitCachedTest) => {
 
     // check that get called again, but set wasn't
     test.equal(cacheGetCallsCnt, 2, 'cache.get() called twice')
-    test.equal(cacheSetCallsCnt, 1, 'cache.set() called once')
 
     test.end()
   })
 
   await participantLimitCachedTest.test('insert(), update(), destroyByParticipantCurrencyId() and destroyByParticipantId() call the participant-limit model and cache invalidation', async (test) => {
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       get: () => null
     }
     sandbox.stub(Model, 'invalidateParticipantLimitCache')
@@ -195,7 +180,6 @@ Test('Participant Limit cached model', async (participantLimitCachedTest) => {
 
   await participantLimitCachedTest.test('insert(), update(), destroyByParticipantCurrencyId() and destroyByParticipantId() fail when error thrown', async (test) => {
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       get: () => null
     }
     sandbox.stub(Model, 'invalidateParticipantLimitCache')
