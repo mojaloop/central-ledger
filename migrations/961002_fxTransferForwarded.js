@@ -38,6 +38,8 @@ exports.up = async (knex) => {
         t.foreign('commitRequestId').references('commitRequestId').inTable('fxTransfer')
         t.dateTime('expirationDate').notNullable()
         t.index(['expirationDate'])
+        t.integer('attemptCount').notNullable().defaultTo(0)
+        t.index(['attemptCount'])
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
     }

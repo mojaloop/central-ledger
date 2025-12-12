@@ -37,6 +37,8 @@ exports.up = async (knex) => {
         t.string('transferId', 36).notNullable().unique()
         t.foreign('transferId').references('transferId').inTable('transfer')
         t.dateTime('expirationDate').notNullable()
+        t.integer('attemptCount').notNullable().defaultTo(0)
+        t.index(['attemptCount'])
         t.index(['expirationDate'])
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
