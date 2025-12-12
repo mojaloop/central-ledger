@@ -179,6 +179,63 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
 }
 
 /**
+ * Processes forwarded transfers
+ *
+ * @param {ForwardedTransfer[]} transferForwardedList
+ * @returns {Promise<void>}
+ */
+const _processForwardedTransfers = async (transferForwardedList) => {
+  const fspiopError = createFSPIOPTimeoutError()
+  if (!Array.isArray(transferForwardedList)) {
+    transferForwardedList = [
+      { ...transferForwardedList }
+    ]
+  }
+  log.verbose(`processing ${transferForwardedList.length} forwarded timed out transfers...`)
+
+  for (const TF of transferForwardedList) {
+    try {
+      const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
+      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(TF.transferId, Enum.Kafka.Topics.NOTIFICATION, Action.GET, state)
+      const destination = TF.externalPayerName || TF.payerFsp
+      const source = TF.externalPayeeName || TF.payeeFsp
+      const headers = Utility.Http.SwitchDefaultHeaders(destination, Enum.Http.HeaderResources.TRANSFERS, source, resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion)
+      const message = Utility.StreamingProtocol.createMessage(TF.transferId, destination, source, metadata, headers, null , { id: TF.transferId }, `application/vnd.interoperability.${Enum.Http.HeaderResources.TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion}`)
+
+      if (TF.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+        message.from = Config.HUB_NAME
+        // TODO: check if notification handler can process GET TRANSFER message
+        await Kafka.produceGeneralMessage(
+          Config.KAFKA_CONFIG,
+          Producer,
+          Enum.Kafka.Topics.NOTIFICATION,
+          Action.GET,
+          message,
+          state,
+          null,
+          null
+        )
+      }
+    } catch (err) {
+      log.error('error in _processForwardedTransfers:', err)
+      const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+      countAndRethrow(fspiopError, { operation: '_processForwardedTransfers' })
+    }
+  }
+}
+
+
+/**
+ * Processes forwarded fxTransfers
+ *
+ * @param {ForwardedFxTransfer[]} fxTransferForwardedList
+ * @returns {Promise<void>}
+ */
+const _processFxForwardedTransfers = async (fxTransferForwardedList) => {
+  // TODO: In the same way as _processForwardedTransfers, implement _processFxForwardedTransfers
+}
+
+/**
  * Processes timedOut fxTransfers
  *
  * @param {TimedOutFxTransfer[]} fxTransferTimeoutList
@@ -299,8 +356,13 @@ const timeout = async () => {
 
     const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
 
+    const { transferForwardedList, fxTransferForwardedList } = await TimeoutService.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax)
+
     transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
     fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
+
+    transferForwardedList && await _processForwardedTransfers(transferForwardedList)
+    fxTransferForwardedList && await _processFxForwardedTransfers(fxTransferForwardedList)
 
     return {
       intervalMin,
@@ -310,7 +372,9 @@ const timeout = async () => {
       fxCleanup,
       fxIntervalMax,
       transferTimeoutList,
-      fxTransferTimeoutList
+      fxTransferTimeoutList,
+      transferForwardedList,
+      fxTransferForwardedList
     }
   } catch (err) {
     log.error('error in timeout:', err)
