@@ -81,7 +81,7 @@ const generateFunc = async function (key) {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  cacheClient = Cache.registerCacheClient('participantCurrency', generateFunc)
+  cacheClient = Cache.registerCacheClient('positionBatch', generateFunc)
 }
 
 exports.getParticipantCurrencyByIds = async (trx, participantCurrencyIds) => {
