@@ -215,6 +215,7 @@ const _processForwardedTransfers = async (transferForwardedList) => {
           null,
           null
         )
+        // TODO: We need to increment the attemptCount in the transferForwarded table here. If it reaches maxAttemptCount, we need to remove the record or mark it as failed.
       }
     } catch (err) {
       log.error('error in _processForwardedTransfers:', err)
