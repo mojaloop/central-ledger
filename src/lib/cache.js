@@ -47,19 +47,19 @@ const registerCacheClient = ({ id, preloadCache, generate }) => {
 }
 
 const initCache = async function () {
-  // Init catbox.
-  if (Config.CACHE_CONFIG.CACHE_ENABLED) {
+  if (isCacheEnabled()) {
+    // Init catbox.
     catboxMemoryClient = new CatboxMemory.Engine({
       maxByteSize: Config.CACHE_CONFIG.MAX_BYTE_SIZE
     })
     await catboxMemoryClient.start()
+
+    // Init each registered cache client
+    for (const client of Object.values(cacheClients)) {
+      await client.initCache(catboxMemoryClient)
+    }
   } else {
     catboxMemoryClient = null
-  }
-
-  // Init each registered cache client
-  for (const client of Object.values(cacheClients)) {
-    await client.initCache(catboxMemoryClient)
   }
 }
 
