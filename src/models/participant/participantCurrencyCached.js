@@ -73,7 +73,7 @@ const generate = async function (key) {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  cacheClient = Cache.registerCacheClient({ id: 'participantCurrency', generate, preloadCache: () => cacheClient.get(participantCurrencyAllCacheKey) })
+  cacheClient = Cache.registerCacheClient({ id: 'participantCurrency', generate, preloadCache: getParticipantCurrencyCached })
 }
 
 exports.invalidateParticipantCurrencyCache = async () => {

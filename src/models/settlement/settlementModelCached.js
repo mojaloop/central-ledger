@@ -74,7 +74,7 @@ const generate = async function (key) {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  cacheClient = Cache.registerCacheClient({ id: 'settlementModels', generate, preloadCache: () => cacheClient.get(settlementModelsAllCacheKey) })
+  cacheClient = Cache.registerCacheClient({ id: 'settlementModels', generate, preloadCache: getSettlementModelsCached })
 }
 
 exports.invalidateSettlementModelsCache = async () => {

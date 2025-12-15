@@ -59,7 +59,7 @@ exports.getEnums = async (id) => {
 
 exports.initialize = async () => {
   /* Register as cache client */
-  cacheClient = Cache.registerCacheClient({ id: 'enum', generate, preloadCache: () => cacheClient.get(enumAllCacheKey) })
+  cacheClient = Cache.registerCacheClient({ id: 'enum', generate, preloadCache: _getAllEnums })
 }
 
 exports.invalidateEnumCache = async () => {

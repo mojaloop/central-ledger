@@ -72,7 +72,7 @@ const generate = async function (key) {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  cacheClient = Cache.registerCacheClient({ id: 'participantLimit', generate, preloadCache: () => cacheClient.get(participantLimitAllCacheKey) })
+  cacheClient = Cache.registerCacheClient({ id: 'participantLimit', generate, preloadCache: getParticipantLimitCached })
 }
 
 exports.invalidateParticipantLimitCache = async () => {

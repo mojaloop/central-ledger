@@ -63,7 +63,7 @@ const generate = async function (key) {
 */
 const initialize = () => {
   /* Register as cache client */
-  cacheClient = cache.registerCacheClient({ id: 'externalParticipants', generate, preloadCache: () => cacheClient.get(epAllCacheKey) })
+  cacheClient = cache.registerCacheClient({ id: 'externalParticipants', generate, preloadCache: getExternalParticipantsCached })
 }
 
 const invalidateCache = async () => {

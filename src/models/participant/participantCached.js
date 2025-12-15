@@ -75,7 +75,7 @@ const generate = async function (key) {
   Public API
 */
 exports.initialize = async () => {
-  cacheClient = Cache.registerCacheClient({ id: 'participants', generate, preloadCache: () => cacheClient.get(participantsAllCacheKey) })
+  cacheClient = Cache.registerCacheClient({ id: 'participants', generate, preloadCache: getParticipantsCached })
 }
 
 exports.invalidateParticipantsCache = async () => {
