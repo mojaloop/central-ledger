@@ -6,55 +6,65 @@ const Config = require('../lib/config')
 
 const expiresIn = parseInt(Config.CACHE_CONFIG.EXPIRES_IN_MS)
 // Init memory client
-const catboxMemoryClient = new CatboxMemory.Engine({ maxByteSize: Config.CACHE_CONFIG.MAX_BYTE_SIZE })
-catboxMemoryClient.start()
+let catboxMemoryClient
 
 class CacheClient {
-  constructor (segment, generateFunc) {
+  constructor (segment, generateFunc, preloadCache) {
     this.generateFunc = generateFunc
-    if (Config.CACHE_CONFIG.CACHE_ENABLED) this.policy = new Catbox.Policy({ generateFunc, expiresIn, generateTimeout: false }, catboxMemoryClient, segment)
+    this.segment = segment
+    this.preloadCache = preloadCache
+  }
+
+  async initCache (catboxMemoryClient) {
+    if (catboxMemoryClient) {
+      this.policy = new Catbox.Policy({
+        generateFunc: this.generateFunc,
+        expiresIn,
+        generateTimeout: false
+      },
+      catboxMemoryClient,
+      this.segment
+      )
+    }
+    return await this.preloadCache?.()
   }
 
   get (key) {
-    return Config.CACHE_CONFIG.CACHE_ENABLED ? this.policy.get(key) : this.generateFunc(key)
+    return this.policy ? this.policy.get(key) : this.generateFunc(key)
   }
 
   drop (key) {
     return this.policy?.drop(key)
   }
-
-  setGenerateFunc (generateFunc) {
-    this.policy?.options({ generateFunc, expiresIn, generateTimeout: false })
-  }
 }
 
-/*
-  Each client should register itself during module load.
-  The client meta should be:
-  {
-    id [MANDATORY]
-    preloadCache() [OPTIONAL]
-      this will be called to preload data
-  }
-*/
 let cacheClients = {}
 
-const registerCacheClient = (id, generateFunc) => {
-  const newClient = new CacheClient(id, generateFunc)
+const registerCacheClient = ({ id, preloadCache, generate }) => {
+  const newClient = new CacheClient(id, generate, preloadCache)
   cacheClients[id] = newClient
   return newClient
 }
 
 const initCache = async function () {
-  // Read config
+  // Init catbox.
+  if (Config.CACHE_CONFIG.CACHE_ENABLED) {
+    catboxMemoryClient = new CatboxMemory.Engine({
+      maxByteSize: Config.CACHE_CONFIG.MAX_BYTE_SIZE
+    })
+    await catboxMemoryClient.start()
+  } else {
+    catboxMemoryClient = null
+  }
+
+  // Init each registered cache client
   for (const client of Object.values(cacheClients)) {
-    await client.get('all') // preload cache
+    await client.initCache(catboxMemoryClient)
   }
 }
 
 const destroyCache = async function () {
-  catboxMemoryClient.stop()
-  catboxMemoryClient.start()
+  catboxMemoryClient?.stop()
 }
 
 const dropClients = function () {
@@ -75,6 +85,6 @@ module.exports = {
   isCacheEnabled,
 
   // exposed for tests
-  Catbox,
+  CatboxMemory,
   dropClients
 }

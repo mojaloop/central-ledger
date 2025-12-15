@@ -38,7 +38,7 @@ const enumAllCacheKey = 'all'
 */
 const _getAllEnums = () => cacheClient.get(enumAllCacheKey)
 
-const generateFunc = async function (key) {
+const generate = async function (key) {
   const allEnums = {}
   for (const enumId of Enums.enumsIds) {
     allEnums[enumId] = await Enums[enumId]()
@@ -59,7 +59,7 @@ exports.getEnums = async (id) => {
 
 exports.initialize = async () => {
   /* Register as cache client */
-  cacheClient = Cache.registerCacheClient('enum', generateFunc)
+  cacheClient = Cache.registerCacheClient({ id: 'enum', generate, preloadCache: () => cacheClient.get(enumAllCacheKey) })
 }
 
 exports.invalidateEnumCache = async () => {

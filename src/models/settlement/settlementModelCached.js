@@ -64,7 +64,7 @@ const buildUnifiedSettlementModelsData = (allSettlementModels) => {
 
 const getSettlementModelsCached = () => cacheClient.get(settlementModelsAllCacheKey)
 
-const generateFunc = async function (key) {
+const generate = async function (key) {
   const allSettlementModels = await SettlementModel.getAll()
   return buildUnifiedSettlementModelsData(allSettlementModels)
 }
@@ -74,7 +74,7 @@ const generateFunc = async function (key) {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  cacheClient = Cache.registerCacheClient('settlementModels', generateFunc)
+  cacheClient = Cache.registerCacheClient({ id: 'settlementModels', generate, preloadCache: () => cacheClient.get(settlementModelsAllCacheKey) })
 }
 
 exports.invalidateSettlementModelsCache = async () => {

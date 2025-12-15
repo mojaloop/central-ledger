@@ -12,6 +12,12 @@ Test('Cache test', async (cacheTest) => {
   cacheTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Enums)
+    sandbox.stub(Config.CACHE_CONFIG, 'CACHE_ENABLED')
+    Cache.registerCacheClient({
+      id: 'testCacheClient',
+      generate: async () => {},
+      preloadCache: async () => sandbox.stub()
+    })
 
     t.end()
   })
@@ -24,11 +30,24 @@ Test('Cache test', async (cacheTest) => {
   })
 
   await cacheTest.test('Cache should', async (initTest) => {
-    await initTest.test('init+start and then stop Catbox', async (test) => {
-      const fn = sandbox.spy(async () => { })
-      Cache.registerCacheClient('testClient', fn)
+    await initTest.test('call constructor of CatboxMemory', async (test) => {
+      sandbox.stub(Cache.CatboxMemory.Engine)
+      const catboxMemoryConstructorSpy = sandbox.spy(Cache.CatboxMemory, 'Engine')
       await Cache.initCache()
-      test.ok(fn.calledOnce, 'generateFunc called once during initCache()')
+      test.ok(catboxMemoryConstructorSpy.calledOnce)
+      await Cache.destroyCache()
+      test.end()
+    })
+
+    await initTest.test('init+start and then stop CatboxMemory', async (test) => {
+      sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'start')
+      sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'stop')
+      await Cache.initCache()
+      test.ok(Cache.CatboxMemory.Engine.prototype.start.calledOnce)
+      test.notOk(Cache.CatboxMemory.Engine.prototype.stop.calledOnce)
+      await Cache.destroyCache()
+      test.ok(Cache.CatboxMemory.Engine.prototype.start.calledOnce)
+      test.ok(Cache.CatboxMemory.Engine.prototype.stop.calledOnce)
       test.end()
     })
     initTest.end()
@@ -37,8 +56,12 @@ Test('Cache test', async (cacheTest) => {
   await cacheTest.test('Cache client', async (cacheClientTest) => {
     await cacheClientTest.test('preload should be called once during Cache.initCache()', async (test) => {
       let preloadCacheCalledCnt = 0
-      Cache.registerCacheClient('testCacheClient', async () => {
-        preloadCacheCalledCnt++
+      Cache.registerCacheClient({
+        id: 'testCacheClient',
+        generate: async () => {},
+        preloadCache: async () => {
+          preloadCacheCalledCnt++
+        }
       })
 
       // Test participant-getAll gets called during cache init
@@ -47,107 +70,129 @@ Test('Cache test', async (cacheTest) => {
       test.ok(preloadCacheCalledCnt === 1, 'should be called 1 time')
 
       // end
+      await Cache.destroyCache()
       test.end()
     })
 
     await cacheClientTest.test('get() should call Catbox Memory get()', async (test) => {
       Config.CACHE_CONFIG.CACHE_ENABLED = true
-      const getSpy = sandbox.spy(Cache.Catbox.Policy.prototype, 'get')
+      const getSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'get')
 
-      const cacheClient = Cache.registerCacheClient('testCacheClient', async () => {})
+      const cacheClient = Cache.registerCacheClient({
+        id: 'testCacheClient',
+        generate: async () => {}
+      })
 
       // Test get()
-      test.notOk(getSpy.called, 'Catbox::get() not called before initCache()')
+      test.notOk(getSpy.called, 'CatboxMemory::get() not called before initCache()')
       await Cache.initCache()
       getSpy.resetHistory()
       await cacheClient.get('')
-      test.ok(getSpy.called, 'Catbox::get() was called once by direct get()')
+      test.ok(getSpy.called, 'CatboxMemory::get() was called once by direct get()')
 
       // end
+      await Cache.destroyCache()
       test.end()
     })
 
     await cacheClientTest.test('get() should NOT call Catbox Memory get() when cache is disabled', async (test) => {
       Config.CACHE_CONFIG.CACHE_ENABLED = false
-      const getSpy = sandbox.spy(Cache.Catbox.Policy.prototype, 'get')
+      const getSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'get')
 
-      const cacheClient = Cache.registerCacheClient('testClient', async () => { })
+      const cacheClient = Cache.registerCacheClient({
+        id: 'testCacheClient',
+        generate: async () => {}
+      })
 
       // Test get()
-      test.notOk(getSpy.called, 'Catbox::get() not called before initCache()')
+      test.notOk(getSpy.called, 'CatboxMemory::get() not called before initCache()')
       await Cache.initCache()
       getSpy.resetHistory()
       await cacheClient.get('')
-      test.notOk(getSpy.called, 'Catbox::get() was called once by direct get()')
+      test.notOk(getSpy.called, 'CatboxMemory::get() was called once by direct get()')
 
       // end
+      await Cache.destroyCache()
       test.end()
     })
 
     await cacheClientTest.test('set() should call Catbox Memory set() and should work', async (test) => {
       Config.CACHE_CONFIG.CACHE_ENABLED = true
-      const getSpy = sandbox.spy(Cache.Catbox.Policy.prototype, 'get')
-      const setSpy = sandbox.spy(Cache.Catbox.Policy.prototype, 'set')
-      const value = { a: 'some random value', b: 10 }
-      const cacheClient = Cache.registerCacheClient('testCacheClient', async () => value)
+      const getSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'get')
+      const setSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'set')
+      const cacheClient = Cache.registerCacheClient({
+        id: 'testCacheClient',
+        generate: async () => valueToCache
+      })
       const testKey = 'testKeyName'
+      const valueToCache = { a: 'some random value', b: 10 }
 
       // Init cache
-      test.notOk(setSpy.called, 'Catbox::set() not called before initCache()')
+      test.notOk(setSpy.called, 'CatboxMemory::set() not called before initCache()')
       await Cache.initCache()
       setSpy.resetHistory()
       getSpy.resetHistory()
 
       // Test set()
       await cacheClient.get(testKey)
-      test.ok(setSpy.called, 'Catbox::set() was called once by direct set()')
+      test.ok(setSpy.called, 'CatboxMemory::set() was called once by get()')
 
       // Verify the value with get()
       const valueFromCache = await cacheClient.get(testKey)
-      test.ok(getSpy.called, 'Catbox::get() was called once by direct get()')
-      test.deepEqual(valueFromCache, value, 'value get()-ed from cache equals the one set()-ed before')
+      test.ok(getSpy.called, 'CatboxMemory::get() was called once by direct get()')
+      test.deepEqual(valueFromCache, valueToCache, 'value get()-ed from cache equals the one set()-ed before')
+
+      // Test cache hit
+      getSpy.resetHistory()
+      setSpy.resetHistory()
+      const valueFromCacheHit = await cacheClient.get(testKey)
+      test.ok(getSpy.called, 'CatboxMemory::get() was called once by direct get() for cache hit')
+      test.deepEqual(valueFromCacheHit, valueToCache, 'value get()-ed from cache equals the one set()-ed before')
+      test.notOk(setSpy.called, 'CatboxMemory::set() not called during cache hit get()')
 
       // end
+      await Cache.destroyCache()
       test.end()
     })
 
     await cacheClientTest.test('drop() works', async (test) => {
       Config.CACHE_CONFIG.CACHE_ENABLED = true
-      const getSpy = sandbox.spy(Cache.Catbox.Policy.prototype, 'get')
-      const setSpy = sandbox.spy(Cache.Catbox.Policy.prototype, 'set')
-      const dropSpy = sandbox.spy(Cache.Catbox.Policy.prototype, 'drop')
-      const valueToCache = { a: 'some random value', b: 10 }
-      const fn = sandbox.spy(async () => valueToCache)
-      const cacheClient = Cache.registerCacheClient('testCacheClient', fn)
+      const getSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'get')
+      const setSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'set')
+      const dropSpy = sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'drop')
+      const cacheClient = Cache.registerCacheClient({
+        id: 'testCacheClient',
+        generate: async () => valueToCache
+      })
       const testKey = 'testKeyName'
+      const valueToCache = { a: 'some random value', b: 10 }
 
       // Init cache
-      test.notOk(dropSpy.called, 'Catbox::drop() not called before initCache()')
-      test.notOk(getSpy.called, 'Catbox::set() not called before initCache()')
+      test.notOk(dropSpy.called, 'CatboxMemory::drop() not called before initCache()')
+      test.notOk(getSpy.called, 'CatboxMemory::set() not called before initCache()')
       await Cache.initCache()
       setSpy.resetHistory()
       getSpy.resetHistory()
 
+      // Test set()
+      await cacheClient.get(testKey)
+      test.ok(setSpy.called, 'CatboxMemory::set() was called once by direct set()')
+
       // Verify the value with get()
       const valueFromCache = await cacheClient.get(testKey)
-      test.ok(getSpy.called, 'Catbox::get() was called once by direct get()')
-      test.deepEqual(valueFromCache, valueToCache, 'value from cache equals the generated one')
-      test.ok(fn.calledTwice, 'generation function was called twice')
-      fn.resetHistory()
-      await cacheClient.get(testKey)
-      test.notOk(fn.called, 'generation function was NOT called again on cache hit')
+      test.ok(getSpy.called, 'CatboxMemory::get() was called once by direct get()')
+      test.deepEqual(valueFromCache, valueToCache, 'value get()-ed from cache equals the one set()-ed before')
 
       // Test drop()
       await cacheClient.drop(testKey)
-      test.ok(setSpy.called, 'Catbox::set() was called once by direct set()')
+      test.ok(setSpy.called, 'CatboxMemory::set() was called once by direct set()')
 
-      // Verify the generation function is called after drop
-      const valueFromCacheAfterDrop = await cacheClient.get(testKey)
-      test.ok(fn.called, 'generation function was called again after drop()')
-      test.ok(getSpy.called, 'Catbox::get() was called once by direct get()')
-      test.equal(valueFromCacheAfterDrop, valueToCache, 'value from cache equals the generated one')
+      // Verify the value doesn't exist in cache with get()
+      test.ok(getSpy.called, 'CatboxMemory::get() was called once by after drop()')
+      test.ok(setSpy.called, 'CatboxMemory::set() was called once by after drop()')
 
       // end
+      await Cache.destroyCache()
       test.end()
     })
 

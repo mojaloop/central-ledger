@@ -66,7 +66,7 @@ const buildUnifiedParticipantsData = (allParticipants) => {
 
 const getParticipantsCached = () => cacheClient.get(participantsAllCacheKey)
 
-const generateFunc = async function (key) {
+const generate = async function (key) {
   const allParticipants = await ParticipantModel.getAll()
   return buildUnifiedParticipantsData(allParticipants)
 }
@@ -75,7 +75,7 @@ const generateFunc = async function (key) {
   Public API
 */
 exports.initialize = async () => {
-  cacheClient = Cache.registerCacheClient('participants', generateFunc)
+  cacheClient = Cache.registerCacheClient({ id: 'participants', generate, preloadCache: () => cacheClient.get(participantsAllCacheKey) })
 }
 
 exports.invalidateParticipantsCache = async () => {

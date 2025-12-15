@@ -71,7 +71,7 @@ const buildUnifiedParticipantCurrencyData = (allParticipantCurrency) => {
 
 const getParticipantCurrencyCached = (trx) => cacheClient.get({ id: participantCurrencyAllCacheKey, trx })
 
-const generateFunc = async function (key) {
+const generate = async function (key) {
   const allParticipantCurrency = await BatchPositionModel.getAllParticipantCurrency(key.trx)
   return buildUnifiedParticipantCurrencyData(allParticipantCurrency)
 }
@@ -81,7 +81,7 @@ const generateFunc = async function (key) {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  cacheClient = Cache.registerCacheClient('positionBatch', generateFunc)
+  cacheClient = Cache.registerCacheClient({ id: 'positionBatch', generate, preloadCache: () => cacheClient.get(participantCurrencyAllCacheKey) })
 }
 
 exports.getParticipantCurrencyByIds = async (trx, participantCurrencyIds) => {

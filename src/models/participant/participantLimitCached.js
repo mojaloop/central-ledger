@@ -62,7 +62,7 @@ const buildUnifiedParticipantsLimitData = (allLimitParticipants) => {
 
 const getParticipantLimitCached = () => cacheClient.get(participantLimitAllCacheKey)
 
-const generateFunc = async function (key) {
+const generate = async function (key) {
   const allLimitParticipants = await ParticipantLimitModel.getAll()
   return buildUnifiedParticipantsLimitData(allLimitParticipants)
 }
@@ -72,7 +72,7 @@ const generateFunc = async function (key) {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  cacheClient = Cache.registerCacheClient('participantLimit', generateFunc)
+  cacheClient = Cache.registerCacheClient({ id: 'participantLimit', generate, preloadCache: () => cacheClient.get(participantLimitAllCacheKey) })
 }
 
 exports.invalidateParticipantLimitCache = async () => {

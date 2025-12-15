@@ -53,7 +53,7 @@ const buildUnifiedCachedData = (allExternalParticipants) => {
 
 const getExternalParticipantsCached = () => cacheClient.get(epAllCacheKey)
 
-const generateFunc = async function (key) {
+const generate = async function (key) {
   const allParticipants = await externalParticipantModel.getAll()
   return buildUnifiedCachedData(allParticipants)
 }
@@ -63,7 +63,7 @@ const generateFunc = async function (key) {
 */
 const initialize = () => {
   /* Register as cache client */
-  cacheClient = cache.registerCacheClient('externalParticipants', generateFunc)
+  cacheClient = cache.registerCacheClient({ id: 'externalParticipants', generate, preloadCache: () => cacheClient.get(epAllCacheKey) })
 }
 
 const invalidateCache = async () => {

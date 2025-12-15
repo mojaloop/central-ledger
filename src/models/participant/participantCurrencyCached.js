@@ -63,7 +63,7 @@ const buildUnifiedParticipantsCurrencyData = (allCurrencyParticipants) => {
 
 const getParticipantCurrencyCached = () => cacheClient.get(participantCurrencyAllCacheKey)
 
-const generateFunc = async function (key) {
+const generate = async function (key) {
   const allCurrencyParticipants = await ParticipantCurrencyModel.getAll()
   return buildUnifiedParticipantsCurrencyData(allCurrencyParticipants)
 }
@@ -73,7 +73,7 @@ const generateFunc = async function (key) {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  cacheClient = Cache.registerCacheClient('participantCurrency', generateFunc)
+  cacheClient = Cache.registerCacheClient({ id: 'participantCurrency', generate, preloadCache: () => cacheClient.get(participantCurrencyAllCacheKey) })
 }
 
 exports.invalidateParticipantCurrencyCache = async () => {
