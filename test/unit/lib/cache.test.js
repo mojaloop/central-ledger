@@ -12,7 +12,6 @@ Test('Cache test', async (cacheTest) => {
   cacheTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Enums)
-    sandbox.stub(Config.CACHE_CONFIG, 'CACHE_ENABLED')
     Cache.registerCacheClient({
       id: 'testCacheClient',
       generate: async () => {},
@@ -30,6 +29,7 @@ Test('Cache test', async (cacheTest) => {
   })
 
   await cacheTest.test('Cache should', async (initTest) => {
+    Config.CACHE_CONFIG.CACHE_ENABLED = true
     await initTest.test('call constructor of CatboxMemory', async (test) => {
       sandbox.stub(Cache.CatboxMemory.Engine)
       const catboxMemoryConstructorSpy = sandbox.spy(Cache.CatboxMemory, 'Engine')
