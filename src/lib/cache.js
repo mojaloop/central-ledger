@@ -16,16 +16,11 @@ class CacheClient {
   }
 
   async initCache (catboxMemoryClient) {
-    if (catboxMemoryClient) {
-      this.policy = new Catbox.Policy({
-        generateFunc: this.generateFunc,
-        expiresIn,
-        generateTimeout: false
-      },
-      catboxMemoryClient,
-      this.segment
-      )
-    }
+    this.policy = new Catbox.Policy({
+      generateFunc: this.generateFunc,
+      expiresIn,
+      generateTimeout: false
+    }, catboxMemoryClient, this.segment)
     return await this.preloadCache?.()
   }
 
@@ -64,7 +59,7 @@ const initCache = async function () {
 }
 
 const destroyCache = async function () {
-  catboxMemoryClient?.stop()
+  await catboxMemoryClient?.stop()
 }
 
 const dropClients = function () {

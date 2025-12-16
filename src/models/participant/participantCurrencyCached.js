@@ -77,9 +77,7 @@ exports.initialize = async () => {
 }
 
 exports.invalidateParticipantCurrencyCache = async () => {
-  if (cacheClient) {
-    cacheClient.drop(participantCurrencyAllCacheKey)
-  }
+  cacheClient?.drop(participantCurrencyAllCacheKey)
 }
 
 exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {

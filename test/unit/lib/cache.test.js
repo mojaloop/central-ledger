@@ -29,9 +29,19 @@ Test('Cache test', async (cacheTest) => {
   })
 
   await cacheTest.test('Cache should', async (initTest) => {
-    Config.CACHE_CONFIG.CACHE_ENABLED = true
-    await initTest.test('call constructor of CatboxMemory', async (test) => {
-      sandbox.stub(Cache.CatboxMemory.Engine)
+    sandbox.stub(Cache.CatboxMemory.Engine)
+
+    await initTest.test('not call constructor of CatboxMemory when cache is not enabled', async (test) => {
+      Config.CACHE_CONFIG.CACHE_ENABLED = false
+      const catboxMemoryConstructorSpy = sandbox.spy(Cache.CatboxMemory, 'Engine')
+      await Cache.initCache()
+      test.notOk(catboxMemoryConstructorSpy.called)
+      await Cache.destroyCache()
+      test.end()
+    })
+
+    await initTest.test('call constructor of CatboxMemory when cache is enabled', async (test) => {
+      Config.CACHE_CONFIG.CACHE_ENABLED = true
       const catboxMemoryConstructorSpy = sandbox.spy(Cache.CatboxMemory, 'Engine')
       await Cache.initCache()
       test.ok(catboxMemoryConstructorSpy.calledOnce)
@@ -40,6 +50,7 @@ Test('Cache test', async (cacheTest) => {
     })
 
     await initTest.test('init+start and then stop CatboxMemory', async (test) => {
+      Config.CACHE_CONFIG.CACHE_ENABLED = true
       sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'start')
       sandbox.spy(Cache.CatboxMemory.Engine.prototype, 'stop')
       await Cache.initCache()

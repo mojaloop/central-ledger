@@ -81,7 +81,10 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
   })
 
   await participantCurrencyCachedTest.test('initializes cache correctly', async (test) => {
-    Cache.registerCacheClient.returns({})
+    Cache.registerCacheClient.callsFake(async ({ generate }) => {
+      await generate()
+      return {}
+    })
 
     // initialize calls registerCacheClient
     test.notOk(Cache.registerCacheClient.calledOnce)
@@ -115,8 +118,8 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
     await Model.initialize()
 
     // check getById()
-    const participantByParticipantId = await Model.getByParticipantId(participantCurrencyFixtures[1].participantId)
-    const participantByParticipantIdMatch = [participantCurrencyFixtures[0], participantCurrencyFixtures[1]]
+    const participantByParticipantId = await Model.getById(participantCurrencyFixtures[1].participantId)
+    const participantByParticipantIdMatch = participantCurrencyFixtures[0]
     test.equal(JSON.stringify(participantByParticipantId), JSON.stringify(participantByParticipantIdMatch), 'getByParticipantId(<arg>) works')
 
     // check getByParticipantId(<arg>, <arg>)

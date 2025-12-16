@@ -64,7 +64,10 @@ Test('SettlementModel cached model', async (settlementModelCachedTest) => {
   })
 
   await settlementModelCachedTest.test('initializes cache correctly', async (test) => {
-    Cache.registerCacheClient.returns({})
+    Cache.registerCacheClient.callsFake(async ({ generate }) => {
+      await generate()
+      return {}
+    })
 
     // initialize calls registerCacheClient
     test.notOk(Cache.registerCacheClient.calledOnce)
