@@ -68,17 +68,12 @@ Test('Participant cached model', async (participantCachedTest) => {
   })
 
   await participantCachedTest.test('initializes cache correctly', async (test) => {
-    const cacheClient = {
-      createKey: sandbox.stub().returns({})
-    }
-    Cache.registerCacheClient.returns(cacheClient)
+    Cache.registerCacheClient.returns({})
 
-    // initialize calls registerCacheClient and createKey
+    // initialize calls registerCacheClient
     test.notOk(Cache.registerCacheClient.calledOnce)
-    test.notOk(cacheClient.createKey.calledOnce)
     await Model.initialize()
     test.ok(Cache.registerCacheClient.calledOnce)
-    test.ok(cacheClient.createKey.calledOnce)
 
     test.end()
   })
@@ -86,7 +81,6 @@ Test('Participant cached model', async (participantCachedTest) => {
   await participantCachedTest.test('calls drop() for invalidateParticipantsCache', async (test) => {
     // initialize
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       drop: sandbox.stub()
     }
     Cache.registerCacheClient.returns(cacheClient)
@@ -101,13 +95,8 @@ Test('Participant cached model', async (participantCachedTest) => {
   })
 
   await participantCachedTest.test('getById(), getByName() and getAll() work', async (test) => {
-    let cache = null
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
-      get: () => cache,
-      set: (key, x) => {
-        cache = { item: x } // the cache retuns {item: <data>} structure
-      }
+      get: () => Model.build(participantFixtures)
     }
     Cache.registerCacheClient.returns(cacheClient)
     await Model.initialize()
@@ -129,7 +118,6 @@ Test('Participant cached model', async (participantCachedTest) => {
 
   await participantCachedTest.test('getById(), getByName() and getAll() fail when error thrown', async (test) => {
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       get: () => null
     }
     Cache.registerCacheClient.returns(cacheClient)
@@ -165,7 +153,6 @@ Test('Participant cached model', async (participantCachedTest) => {
 
   await participantCachedTest.test('create(), update(), destroyByName() and destroyParticipantEndpointByParticipantId() call the participant model and invalidation', async (test) => {
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       get: () => null
     }
     sandbox.stub(Model, 'invalidateParticipantsCache')
@@ -198,7 +185,6 @@ Test('Participant cached model', async (participantCachedTest) => {
 
   await participantCachedTest.test('create(), update(), destroyByName() and destroyParticipantEndpointByParticipantId() fail when error thrown', async (test) => {
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       get: () => null
     }
     sandbox.stub(Model, 'invalidateParticipantsCache')

@@ -51,7 +51,7 @@ const getByParticipantPositionId = async (participantPositionId) => {
   const histTimer = Metrics.getHistogram(
     'model_participant',
     'model_getByParticipantPositionId - Metrics for participant model',
-    ['success', 'queryName', 'hit']
+    ['success', 'queryName']
   ).startTimer()
   try {
     return await Db.from('participantPositionChange').query(async (builder) => {
@@ -60,11 +60,11 @@ const getByParticipantPositionId = async (participantPositionId) => {
         .select('participantPositionChange.*')
         .orderBy('participantPositionChangeId', 'desc')
         .first()
-      histTimer({ success: true, queryName: 'model_getByParticipantPositionId', hit: false })
+      histTimer({ success: true, queryName: 'model_getByParticipantPositionId' })
       return result
     })
   } catch (err) {
-    histTimer({ success: false, queryName: 'model_getByParticipantPositionId', hit: false })
+    histTimer({ success: false, queryName: 'model_getByParticipantPositionId' })
     rethrow.rethrowDatabaseError(err)
   }
 }

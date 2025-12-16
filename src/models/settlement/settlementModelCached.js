@@ -29,11 +29,10 @@
 
 const Cache = require('../../lib/cache')
 const SettlementModel = require('../../models/settlement/settlementModel')
-const Metrics = require('@mojaloop/central-services-metrics')
 const rethrow = require('../../shared/rethrow')
 
 let cacheClient
-let settlementModelsAllCacheKey
+const settlementModelsAllCacheKey = 'all'
 
 /*
   Private API
@@ -63,28 +62,11 @@ const buildUnifiedSettlementModelsData = (allSettlementModels) => {
   return unifiedSettlementModels
 }
 
-const getSettlementModelsCached = async () => {
-  const histTimer = Metrics.getHistogram(
-    'model_settlementModel',
-    'model_getSettlementModelsCached - Metrics for settlementModel model',
-    ['success', 'queryName', 'hit']
-  ).startTimer()
-  // Do we have valid settlement models list in the cache ?
-  let cachedSettlementModels = cacheClient.get(settlementModelsAllCacheKey)
-  if (!cachedSettlementModels) {
-    // No settlement models in the cache, so fetch from participant API
-    const allSettlementModels = await SettlementModel.getAll()
-    cachedSettlementModels = buildUnifiedSettlementModelsData(allSettlementModels)
+const getSettlementModelsCached = () => cacheClient.get(settlementModelsAllCacheKey)
 
-    // store in cache
-    cacheClient.set(settlementModelsAllCacheKey, cachedSettlementModels)
-    histTimer({ success: true, queryName: 'model_getSettlementModelsCached', hit: false })
-  } else {
-    // unwrap settlement models list from catbox structure
-    cachedSettlementModels = cachedSettlementModels.item
-    histTimer({ success: true, queryName: 'model_getSettlementModelsCached', hit: true })
-  }
-  return cachedSettlementModels
+const generate = async function (key) {
+  const allSettlementModels = await SettlementModel.getAll()
+  return buildUnifiedSettlementModelsData(allSettlementModels)
 }
 
 /*
@@ -92,13 +74,7 @@ const getSettlementModelsCached = async () => {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  const settlementModelCacheClientMeta = {
-    id: 'settlementModels',
-    preloadCache: getSettlementModelsCached
-  }
-
-  cacheClient = Cache.registerCacheClient(settlementModelCacheClientMeta)
-  settlementModelsAllCacheKey = cacheClient.createKey('all')
+  cacheClient = Cache.registerCacheClient({ id: 'settlementModels', generate, preloadCache: getSettlementModelsCached })
 }
 
 exports.invalidateSettlementModelsCache = async () => {
@@ -140,3 +116,5 @@ exports.getAll = async () => {
     rethrow.rethrowCachedDatabaseError(err)
   }
 }
+
+exports.build = buildUnifiedSettlementModelsData

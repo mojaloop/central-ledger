@@ -31,23 +31,17 @@ const Cache = require('../lib/cache')
 const Enums = require('./enum')
 
 let cacheClient
-let enumAllCacheKey
+const enumAllCacheKey = 'all'
 
 /*
   Private API
 */
-const _getAllEnums = async function () {
-  let allEnums
-  const allEnumsFromCache = cacheClient.get(enumAllCacheKey)
-  if (allEnumsFromCache === null) {
-    allEnums = {}
-    for (const enumId of Enums.enumsIds) {
-      allEnums[enumId] = await Enums[enumId]()
-    }
-    cacheClient.set(enumAllCacheKey, allEnums)
-  } else {
-    // unwrap from catbox structure
-    allEnums = allEnumsFromCache.item
+const _getAllEnums = () => cacheClient.get(enumAllCacheKey)
+
+const generate = async function (key) {
+  const allEnums = {}
+  for (const enumId of Enums.enumsIds) {
+    allEnums[enumId] = await Enums[enumId]()
   }
   return allEnums
 }
@@ -65,13 +59,7 @@ exports.getEnums = async (id) => {
 
 exports.initialize = async () => {
   /* Register as cache client */
-  const enumCacheClientMeta = {
-    id: 'enum',
-    preloadCache: _getAllEnums
-  }
-
-  cacheClient = Cache.registerCacheClient(enumCacheClientMeta)
-  enumAllCacheKey = cacheClient.createKey('all')
+  cacheClient = Cache.registerCacheClient({ id: 'enum', generate, preloadCache: _getAllEnums })
 }
 
 exports.invalidateEnumCache = async () => {
