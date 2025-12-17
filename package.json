@@ -112,7 +112,7 @@
     "docdash": "2.0.2",
     "event-stream": "4.0.1",
     "five-bells-condition": "5.0.1",
-    "glob": "10.4.3",
+    "glob": "10.5.0",
     "hapi-auth-bearer-token": "8.0.0",
     "hapi-swagger": "17.3.2",
     "ilp-packet": "2.2.0",
