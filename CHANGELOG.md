@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.11.4](https://github.com/mojaloop/central-ledger/compare/v19.11.3...v19.11.4) (2025-12-17)
+
+
+### Bug Fixes
+
+* use catbox policy.get for proper concurrency handling ([#1226](https://github.com/mojaloop/central-ledger/issues/1226)) ([ce5d587](https://github.com/mojaloop/central-ledger/commit/ce5d58771eed8aeab0014adf83bdc523deb9ae25))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([b6764c2](https://github.com/mojaloop/central-ledger/commit/b6764c277e9aa6c908da7d1718ba256e522758d3))
+
 ### [19.11.3](https://github.com/mojaloop/central-ledger/compare/v19.11.2...v19.11.3) (2025-10-27)
 
 
