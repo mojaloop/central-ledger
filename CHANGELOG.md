@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.11.5](https://github.com/mojaloop/central-ledger/compare/v19.11.4...v19.11.5) (2025-12-18)
+
+
+### Chore
+
+* **ci:** update CircleCI orb to 1.1.9 ([#1228](https://github.com/mojaloop/central-ledger/issues/1228)) ([4253e8d](https://github.com/mojaloop/central-ledger/commit/4253e8d0407a3e823b68670f274c14735b33a8c0))
+* **sbom:** update sbom [skip ci] ([553ac99](https://github.com/mojaloop/central-ledger/commit/553ac99d8dbcd6c6e1947f6e4320b01c27bd9d6a))
+
 ### [19.11.4](https://github.com/mojaloop/central-ledger/compare/v19.11.3...v19.11.4) (2025-12-17)
 
 
