@@ -66,6 +66,7 @@ const TransferEventAction = Enum.Events.Event.Action
 const decodePayload = Util.StreamingProtocol.decodePayload
 
 const rethrow = require('../../shared/rethrow')
+const externalParticipantCached = require('../../models/participant/externalParticipantCached')
 const consumerCommit = true
 const fromSwitch = true
 
@@ -803,6 +804,19 @@ const getTransfer = async (error, messages) => {
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
+
+    // Check if destination is an external participant
+    const destination = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.DESTINATION]
+    const isExternalParticipant = destination ? await externalParticipantCached.getByName(destination) : null
+
+    if (isExternalParticipant) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `externalParticipantDetected--${actionLetter}5`))
+      message.value.content.payload = {}
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: false, hubName: Config.HUB_NAME })
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      return true
+    }
+
     if (isFx) {
       const fxTransfer = await FxTransferModel.fxTransfer.getByIdLight(transferIdOrCommitRequestId)
       if (!fxTransfer) {
