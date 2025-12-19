@@ -56,6 +56,7 @@ const ProxyCache = require('#src/lib/proxyCache')
 
 const { getMessagePayloadOrThrow } = require('../../../util/helpers')
 const mocks = require('./mocks')
+const externalParticipantCached = require('../../../../src/models/participant/externalParticipantCached')
 
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
@@ -512,6 +513,9 @@ Test('Transfer handler', transferHandlerTest => {
       transferResult.extensionList = []
       TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
 
+      // Mock external participant
+      sandbox.stub(externalParticipantCached, 'getByName').resolves({})
+
       try {
         await allTransferHandlers.getTransfer(null, localMessages)
         const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '2001', 'Internal server error')
@@ -523,6 +527,90 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
+    transformTransfer.test('handle external participant transfer GET request', async (test) => {
+      const localMessages = MainUtil.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Kafka.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(true)
+      Validator.validateParticipantTransferId.returns(true)
+
+      // Mock external participant
+      sandbox.stub(externalParticipantCached, 'getByName').resolves({
+        name: 'externalFsp',
+        isProxy: false
+      })
+
+      // Set destination header to external participant
+      localMessages[0].value.content.headers = {
+        ...localMessages[0].value.content.headers,
+        'fspiop-destination': 'externalFsp'
+      }
+
+      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+
+      const result = await allTransferHandlers.getTransfer(null, localMessages)
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      test.end()
+    })
+
+    transformTransfer.test('handle external participant transfer GET request with autocommit enabled', async (test) => {
+      const localMessages = MainUtil.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Kafka.getKafkaConfig.returns(config)
+      Consumer.isConsumerAutoCommitEnabled.returns(true)
+      Validator.validateParticipantByName.returns(true)
+      Validator.validateParticipantTransferId.returns(true)
+
+      // Mock external participant
+      sandbox.stub(externalParticipantCached, 'getByName').resolves({
+        name: 'externalFsp',
+        isProxy: false
+      })
+
+      // Set destination header to external participant
+      localMessages[0].value.content.headers = {
+        ...localMessages[0].value.content.headers,
+        'fspiop-destination': 'externalFsp'
+      }
+
+      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+
+      const result = await allTransferHandlers.getTransfer(null, localMessages)
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      test.end()
+    })
+
+    transformTransfer.test('handle external participant transfer GET request without destination header', async (test) => {
+      const localMessages = MainUtil.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Kafka.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(true)
+      Validator.validateParticipantTransferId.returns(true)
+
+      // Mock external participant
+      sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
+
+      // Remove destination header
+      localMessages[0].value.content.headers = {
+        ...localMessages[0].value.content.headers
+      }
+      delete localMessages[0].value.content.headers['fspiop-destination']
+
+      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+
+      const result = await allTransferHandlers.getTransfer(null, localMessages)
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      test.end()
+    })
     transformTransfer.end()
   })
 

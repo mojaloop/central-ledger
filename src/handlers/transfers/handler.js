@@ -66,6 +66,7 @@ const TransferEventAction = Enum.Events.Event.Action
 const decodePayload = Util.StreamingProtocol.decodePayload
 
 const rethrow = require('../../shared/rethrow')
+const externalParticipantCached = require('../../models/participant/externalParticipantCached')
 const consumerCommit = true
 const fromSwitch = true
 
@@ -797,12 +798,29 @@ const getTransfer = async (error, messages) => {
     const eventDetail = { functionality: TransferEventType.NOTIFICATION, action }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
-    if (!await Validator.validateParticipantByName(message.value.from)) {
+    // Check if sender is an external participant
+    const sender = message.value.from
+    const isSenderExternal = sender ? await externalParticipantCached.getByName(sender) : null
+
+    if (!isSenderExternal && !await Validator.validateParticipantByName(message.value.from)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, hubName: Config.HUB_NAME })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
+
+    // Check if destination is an external participant
+    const destination = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.DESTINATION]
+    const isExternalParticipant = destination ? await externalParticipantCached.getByName(destination) : null
+
+    if (isExternalParticipant) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `externalParticipantDetected--${actionLetter}5`))
+      message.value.content.payload = {}
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: false, hubName: Config.HUB_NAME })
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      return true
+    }
+
     if (isFx) {
       const fxTransfer = await FxTransferModel.fxTransfer.getByIdLight(transferIdOrCommitRequestId)
       if (!fxTransfer) {
@@ -811,7 +829,7 @@ const getTransfer = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
-      if (!await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
+      if (!isSenderExternal && !await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
@@ -828,7 +846,7 @@ const getTransfer = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
-      if (!await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
+      if (!isSenderExternal && !await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
