@@ -796,13 +796,13 @@ const _insertFxTransferErrorEntries = async (knex, trx, transactionTimestamp) =>
     })
 }
 
-const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
+const _getTransferList = async (knex, tableName = 'transferTimeout', transactionTimestamp) => {
   /* istanbul ignore next */
-  return knex('transferTimeout AS tt')
+  return knex(`${tableName} AS tt`)
     .innerJoin(knex('transferStateChange AS tsc1')
       .select('tsc1.transferId')
       .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-      .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+      .innerJoin(`${tableName} AS tt1`, 'tt1.transferId', 'tsc1.transferId')
       .groupBy('tsc1.transferId')
       .as('ts'), 'ts.transferId', 'tt.transferId'
     )
@@ -823,7 +823,7 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
     .innerJoin('participant AS p2', 'p2.participantId', 'tp2.participantId')
     .innerJoin(knex('transferStateChange AS tsc2')
       .select('tsc2.transferId', 'tsc2.transferStateChangeId', 'ppc1.participantCurrencyId')
-      .innerJoin('transferTimeout AS tt2', 'tt2.transferId', 'tsc2.transferId')
+      .innerJoin(`${tableName} AS tt2`, 'tt2.transferId', 'tsc2.transferId')
       .innerJoin('participantPositionChange AS ppc1', 'ppc1.transferStateChangeId', 'tsc2.transferStateChangeId')
       .as('tpc'), 'tpc.transferId', 'tt.transferId'
     )
@@ -844,13 +844,13 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
     )
 }
 
-const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
+const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transactionTimestamp) => {
   /* istanbul ignore next */
-  return knex('fxTransferTimeout AS ftt')
+  return knex(`${tableName} AS ftt`)
     .innerJoin(knex('fxTransferStateChange AS ftsc1')
       .select('ftsc1.commitRequestId')
       .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
-      .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
+      .innerJoin(`${tableName} AS ftt1`, 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
       .groupBy('ftsc1.commitRequestId')
       .as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
     )
@@ -872,7 +872,7 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
     .innerJoin('participant AS p2', 'p2.participantId', 'ftp2.participantId')
     .innerJoin(knex('fxTransferStateChange AS ftsc2')
       .select('ftsc2.commitRequestId', 'ftsc2.fxTransferStateChangeId', 'ppc1.participantCurrencyId')
-      .innerJoin('fxTransferTimeout AS ftt2', 'ftt2.commitRequestId', 'ftsc2.commitRequestId')
+      .innerJoin(`${tableName} AS ftt2`, 'ftt2.commitRequestId', 'ftsc2.commitRequestId')
       .innerJoin('participantPositionChange AS ppc1', 'ppc1.fxTransferStateChangeId', 'ftsc2.fxTransferStateChangeId')
       .as('ftpc'), 'ftpc.commitRequestId', 'ftt.commitRequestId'
     )
@@ -1100,12 +1100,88 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
       rethrow.rethrowDatabaseError(err)
     })
 
-    const transferTimeoutList = await _getTransferTimeoutList(knex, transactionTimestamp)
-    const fxTransferTimeoutList = await _getFxTransferTimeoutList(knex, transactionTimestamp)
+    const transferTimeoutList = await _getTransferList(knex, 'transferTimeout', transactionTimestamp)
+    const fxTransferTimeoutList = await _getFxTransferList(knex, 'fxTransferTimeout', transactionTimestamp)
 
     return {
       transferTimeoutList,
       fxTransferTimeoutList
+    }
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
+/**
+ *  Returns the list of transfers/fxTransfers that are in RESERVED_FORWARDED state
+ *
+ * @returns {Promise<{
+ *    transferTimeoutList: TimedOutTransfer,
+ *    fxTransferTimeoutList: TimedOutFxTransfer
+ * }>}
+ */
+const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax) => {
+  try {
+    const transactionTimestamp = Time.getUTCString(new Date())
+    const knex = Db.getKnex()
+    await knex.transaction(async (trx) => {
+      try {
+        // Insert `transferForwarded` records for transfers found between the interval intervalMin <= intervalMax
+        await knex.from(knex.raw('transferForwarded (transferId, expirationDate)')).transacting(trx)
+          .insert(function () {
+            this.from('transfer AS t')
+              .innerJoin(knex('transferStateChange')
+                .select('transferId')
+                .max('transferStateChangeId AS maxTransferStateChangeId')
+                .where('transferStateChangeId', '>', intervalMin)
+                .andWhere('transferStateChangeId', '<=', intervalMax)
+                .groupBy('transferId')
+                .as('ts'), 'ts.transferId', 't.transferId'
+              )
+              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+              .leftJoin('transferForwarded AS tf', 'tf.transferId', 't.transferId')
+              .whereNull('tf.transferId')
+              .whereIn('tsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RESERVED_FORWARDED}`])
+              .select('t.transferId', 't.expirationDate')
+          })
+          .onConflict('transferId')
+          .ignore();
+
+        // Insert `fxTransferForwarded` records for fxTransfers found between the interval intervalMin <= intervalMax and related fxTransfers
+        await knex.from(knex.raw('fxTransferForwarded (commitRequestId, expirationDate)')).transacting(trx)
+          .insert(function () {
+            this.from('fxTransfer AS ft')
+              .innerJoin(knex('fxTransferStateChange')
+                .select('commitRequestId')
+                .max('fxTransferStateChangeId AS maxFxTransferStateChangeId')
+                .where('fxTransferStateChangeId', '>', fxIntervalMin)
+                .andWhere('fxTransferStateChangeId', '<=', fxIntervalMax)
+                .groupBy('commitRequestId').as('fts'), 'fts.commitRequestId', 'ft.commitRequestId'
+              )
+              .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+              .leftJoin('fxTransferForwarded AS ftf', 'ftf.commitRequestId', 'ft.commitRequestId')
+              .whereNull('ftf.commitRequestId')
+              .whereIn('ftsc.transferStateId', [
+                `${Enum.Transfers.TransferInternalState.RESERVED_FORWARDED}`
+              ])
+              .select('ft.commitRequestId', 'ft.expirationDate')
+          })
+          .onConflict('commitRequestId')
+          .ignore();
+
+      } catch (err) {
+        rethrow.rethrowDatabaseError(err)
+      }
+    }).catch((err) => {
+      rethrow.rethrowDatabaseError(err)
+    })
+
+    const transferForwardedList = await _getTransferList(knex, 'transferForwarded', transactionTimestamp)
+    const fxTransferForwardedList = await _getFxTransferList(knex, 'fxTransferForwarded', transactionTimestamp)
+
+    return {
+      transferForwardedList,
+      fxTransferForwardedList
     }
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
@@ -1550,6 +1626,7 @@ const TransferFacade = {
   saveTransferPrepared,
   getTransferStateByTransferId,
   timeoutExpireReserved,
+  reservedForwardedTransfers,
   transferStateAndPositionUpdate,
   reconciliationTransferPrepare,
   reconciliationTransferReserve,
