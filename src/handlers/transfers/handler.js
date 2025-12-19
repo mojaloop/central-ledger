@@ -798,7 +798,11 @@ const getTransfer = async (error, messages) => {
     const eventDetail = { functionality: TransferEventType.NOTIFICATION, action }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
-    if (!await Validator.validateParticipantByName(message.value.from)) {
+    // Check if sender is an external participant
+    const sender = message.value.from
+    const isSenderExternal = sender ? await externalParticipantCached.getByName(sender) : null
+
+    if (!isSenderExternal && !await Validator.validateParticipantByName(message.value.from)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, hubName: Config.HUB_NAME })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
