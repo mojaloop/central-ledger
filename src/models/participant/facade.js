@@ -588,7 +588,9 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         }
         const result = await knex('participantLimit').transacting(trx).insert(newLimit)
         newLimit.participantLimitId = result[0]
-        await ParticipantLimitCached.invalidateParticipantLimitCache()
+        if (Cache.isCacheEnabled()) {
+          await ParticipantLimitCached.invalidateParticipantLimitCache()
+        }
         return {
           participantLimit: newLimit
         }
