@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.11.8](https://github.com/mojaloop/central-ledger/compare/v19.11.7...v19.11.8) (2026-01-07)
+
+
+### Bug Fixes
+
+* ignore npm glob ([#1234](https://github.com/mojaloop/central-ledger/issues/1234)) ([5730014](https://github.com/mojaloop/central-ledger/commit/573001423933af845c679acc5b7b4d0b1bb841c5))
+* update glob package to version 10.5.0 to avoid CVE-2025-64756 ([#1233](https://github.com/mojaloop/central-ledger/issues/1233)) ([7de285e](https://github.com/mojaloop/central-ledger/commit/7de285eb370b3a2eacecec37e00722136a6037e2))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([ca70e0f](https://github.com/mojaloop/central-ledger/commit/ca70e0fc45ffe6da2d3e7d719484c20da562dac7))
+
+### [19.11.7](https://github.com/mojaloop/central-ledger/compare/v19.11.6...v19.11.7) (2026-01-07)
+
+
+### Bug Fixes
+
+* **csi-1091:** add condition on adjust limits ([#1232](https://github.com/mojaloop/central-ledger/issues/1232)) ([f04d0cb](https://github.com/mojaloop/central-ledger/commit/f04d0cbff4d38a01eb2bed94988e243afb4f70de))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([867ee56](https://github.com/mojaloop/central-ledger/commit/867ee5691c56b1b3b14f8e64e49cc0945297d972))
+
 ### [19.11.6](https://github.com/mojaloop/central-ledger/compare/v19.11.5...v19.11.6) (2026-01-04)
 
 
