@@ -515,7 +515,10 @@ const processFulfilMessage = async (message, functionality, span) => {
   }
 
   // Check if the transfer has expired
-  if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
+  // Not sure what do to here. Transfer is expired but in the case of RESERVED_FORWARDED
+  // do we still process it? Not sure how'd to propagate the error
+  if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
+      transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
     const eventDetail = { functionality, action: TransferEventAction.COMMIT }
