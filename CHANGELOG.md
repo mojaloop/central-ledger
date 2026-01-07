@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.11.7](https://github.com/mojaloop/central-ledger/compare/v19.11.6...v19.11.7) (2026-01-07)
+
+
+### Bug Fixes
+
+* **csi-1091:** add condition on adjust limits ([#1232](https://github.com/mojaloop/central-ledger/issues/1232)) ([f04d0cb](https://github.com/mojaloop/central-ledger/commit/f04d0cbff4d38a01eb2bed94988e243afb4f70de))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([867ee56](https://github.com/mojaloop/central-ledger/commit/867ee5691c56b1b3b14f8e64e49cc0945297d972))
+
 ### [19.11.6](https://github.com/mojaloop/central-ledger/compare/v19.11.5...v19.11.6) (2026-01-04)
 
 
