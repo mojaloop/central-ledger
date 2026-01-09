@@ -835,15 +835,9 @@ const getTransfer = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
-      if (!isSenderExternal && !await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
-      }
 
       // Check if proxy header exists and fxTransfer state is not COMMITTED/RESERVED/SETTLED
-      const hasProxyHeader = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.SOURCE] || message.value.content.headers?.[Enum.Http.Headers.FSPIOP.DESTINATION]
+      const hasProxyHeader = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.PROXY]
       const isInvalidState = fxTransfer.transferStateEnumeration !== TransferState.COMMITTED &&
         fxTransfer.transferStateEnumeration !== TransferState.RESERVED &&
         fxTransfer.transferStateEnumeration !== TransferState.SETTLED
@@ -871,6 +865,13 @@ const getTransfer = async (error, messages) => {
         }
       }
 
+      if (!isSenderExternal && !await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
+      }
+
       Util.breadcrumb(location, { path: 'validationPassed' })
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
       message.value.content.payload = TransferObjectTransform.toFulfil(fxTransfer, true)
@@ -882,15 +883,9 @@ const getTransfer = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
-      if (!isSenderExternal && !await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
-      }
 
       // Check if proxy header exists and transfer state is not COMMITTED/RESERVED/SETTLED
-      const hasProxyHeader = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.SOURCE] || message.value.content.headers?.[Enum.Http.Headers.FSPIOP.DESTINATION]
+      const hasProxyHeader = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.PROXY]
       const isInvalidState = transfer.transferStateEnumeration !== TransferState.COMMITTED &&
         transfer.transferStateEnumeration !== TransferState.RESERVED &&
         transfer.transferStateEnumeration !== TransferState.SETTLED
@@ -916,6 +911,13 @@ const getTransfer = async (error, messages) => {
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }
+      }
+
+      if (!isSenderExternal && !await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
 
       Util.breadcrumb(location, { path: 'validationPassed' })
