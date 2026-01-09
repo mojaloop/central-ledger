@@ -848,7 +848,8 @@ const getTransfer = async (error, messages) => {
         const fxTransferError = await FxTransferErrorModel.getByCommitRequestId(transferIdOrCommitRequestId)
         if (fxTransferError) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}6`))
-          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.ABORT }
+          // Not sure what action to use here
+          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FX_TIMEOUT_RESERVED }
 
           const errorPayload = {
             errorInformation: {
@@ -895,7 +896,8 @@ const getTransfer = async (error, messages) => {
         const transferError = await TransferErrorModel.getByTransferId(transferIdOrCommitRequestId)
         if (transferError) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}6`))
-          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.ABORT }
+          // Not sure what action to use here
+          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.TIMEOUT_RESERVED }
 
           // Get the transfer error details
           const errorPayload = {
