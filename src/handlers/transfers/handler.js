@@ -818,6 +818,7 @@ const getTransfer = async (error, messages) => {
 
     if (isExternalParticipant) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `externalParticipantDetected--${actionLetter}5`))
+      // Empty payload informs notification handler that this is to be forwarded to an external participant
       message.value.content.payload = {}
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: false, hubName: Config.HUB_NAME })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
