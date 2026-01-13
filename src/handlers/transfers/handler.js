@@ -346,7 +346,6 @@ const processFulfilMessage = async (message, functionality, span) => {
        *
        * TODO: find a way to trigger this code branch and handle it at BulkProcessingHandler (not in scope of #967)
        */
-      // Reaches here NOTE(kleyow)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, hubName: Config.HUB_NAME })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
@@ -517,8 +516,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   }
 
   // Check if the transfer has expired
-  // NOTE(kleyow): Not sure what do to here. Transfer is expired but in the case of RESERVED_FORWARDED
-  // do we still process it? Not sure how'd to propagate the error
+  // For interscheme we ignore expiration for forwarded transfers
   if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
       transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
@@ -588,7 +586,6 @@ const processFulfilMessage = async (message, functionality, span) => {
       return true
     }
     case TransferEventAction.REJECT: {
-      // NOTE(kleyow): Reaching here.
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
       const errorMessage = 'action REJECT is not allowed into fulfil handler'
       Logger.isErrorEnabled && Logger.error(errorMessage)
@@ -838,18 +835,21 @@ const getTransfer = async (error, messages) => {
 
       // Check if proxy header exists and fxTransfer state is not COMMITTED/RESERVED/SETTLED
       const hasProxyHeader = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.PROXY]
-      const isInvalidState = fxTransfer.transferStateEnumeration !== TransferState.COMMITTED &&
+      const replyWithPutErrorCallback = fxTransfer.transferStateEnumeration !== TransferState.COMMITTED &&
         fxTransfer.transferStateEnumeration !== TransferState.RESERVED &&
         fxTransfer.transferStateEnumeration !== TransferState.SETTLED
 
-      if (hasProxyHeader && isInvalidState) {
+      // Special scenario for interscheme transfers where we need to reply with the original error callback
+      // in order to resolve RESERVED_FORWARDED transfers in other regional/buffer schemes
+      if (hasProxyHeader && replyWithPutErrorCallback) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}5`))
         // Get the fxTransfer error details
         const fxTransferError = await FxTransferErrorModel.getByCommitRequestId(transferIdOrCommitRequestId)
         if (fxTransferError) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}6`))
-          // Not sure what action to use here
-          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FX_TIMEOUT_RESERVED }
+          // Action choice tells notification handler what to do.
+          // In this case inform payer.
+          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FX_TIMEOUT_RECEIVED }
 
           const errorPayload = {
             errorInformation: {
@@ -887,17 +887,20 @@ const getTransfer = async (error, messages) => {
 
       // Check if proxy header exists and transfer state is not COMMITTED/RESERVED/SETTLED
       const hasProxyHeader = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.PROXY]
-      const isInvalidState = transfer.transferStateEnumeration !== TransferState.COMMITTED &&
+      const replyWithPutErrorCallback = transfer.transferStateEnumeration !== TransferState.COMMITTED &&
         transfer.transferStateEnumeration !== TransferState.RESERVED &&
         transfer.transferStateEnumeration !== TransferState.SETTLED
 
-      if (hasProxyHeader && isInvalidState) {
+      // Special scenario for interscheme transfers where we need to reply with the original error callback
+      // in order to resolve RESERVED_FORWARDED transfers in other regional/buffer schemes
+      if (hasProxyHeader && replyWithPutErrorCallback) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}5`))
         const transferError = await TransferErrorModel.getByTransferId(transferIdOrCommitRequestId)
         if (transferError) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}6`))
-          // Not sure what action to use here
-          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.TIMEOUT_RESERVED }
+          // Action choice tells notification handler what to do.
+          // In this case inform payer.
+          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.TIMEOUT_RECEIVED }
 
           // Get the transfer error details
           const errorPayload = {
