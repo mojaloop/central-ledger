@@ -903,7 +903,7 @@ const getTransfer = async (error, messages) => {
           // In this case inform payer.
           const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.TIMEOUT_RECEIVED }
 
-          // Get the transfer error details
+          // Construct the transfer error payload from the stored error details
           const errorPayload = {
             errorInformation: {
               errorCode: transferError.errorCode,
