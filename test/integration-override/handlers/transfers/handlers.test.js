@@ -1246,7 +1246,7 @@ Test('Handlers test', async handlersTest => {
         test.ok(notificationMessages[0], 'GET notification message found for forwarded transfer')
         test.equal(notificationMessages[0].value.content.headers['FSPIOP-Destination'], td.payee.participant.name)
         test.equal(notificationMessages[0].value.content.headers['FSPIOP-Source'], td.payer.participant.name)
-        test.deepEqual(notificationMessages[0].value.content.payload, {}, 'Notification payload should be empty');
+        test.deepEqual(notificationMessages[0].value.content.payload, {}, 'Notification payload should be empty')
       } catch (err) {
         test.notOk('Error should not be thrown')
         console.error(err)
