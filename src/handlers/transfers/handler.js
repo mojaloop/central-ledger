@@ -55,7 +55,8 @@ const TransferObjectTransform = require('../../domain/transfer/transform')
 const Participant = require('../../domain/participant')
 const Validator = require('./validator')
 const FxFulfilService = require('./FxFulfilService')
-
+const TransferErrorModel = require('../../models/transfer/transferError')
+const FxTransferErrorModel = require('../../models/fxTransfer/fxTransferError')
 // particular handlers
 const { prepare } = require('./prepare')
 
@@ -66,6 +67,7 @@ const TransferEventAction = Enum.Events.Event.Action
 const decodePayload = Util.StreamingProtocol.decodePayload
 
 const rethrow = require('../../shared/rethrow')
+const externalParticipantCached = require('../../models/participant/externalParticipantCached')
 const consumerCommit = true
 const fromSwitch = true
 
@@ -514,7 +516,9 @@ const processFulfilMessage = async (message, functionality, span) => {
   }
 
   // Check if the transfer has expired
-  if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
+  // For interscheme we ignore expiration for forwarded transfers
+  if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
+      transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
     const eventDetail = { functionality, action: TransferEventAction.COMMIT }
@@ -797,12 +801,30 @@ const getTransfer = async (error, messages) => {
     const eventDetail = { functionality: TransferEventType.NOTIFICATION, action }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
-    if (!await Validator.validateParticipantByName(message.value.from)) {
+    // Check if sender is an external participant
+    const sender = message.value.from
+    const isSenderExternal = sender ? await externalParticipantCached.getByName(sender) : null
+
+    if (!isSenderExternal && !await Validator.validateParticipantByName(message.value.from)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, hubName: Config.HUB_NAME })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
+
+    // Check if destination is an external participant
+    const destination = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.DESTINATION]
+    const isExternalParticipant = destination ? await externalParticipantCached.getByName(destination) : null
+
+    if (isExternalParticipant) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `externalParticipantDetected--${actionLetter}5`))
+      // Empty payload informs notification handler that this is to be forwarded to an external participant
+      message.value.content.payload = {}
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: false, hubName: Config.HUB_NAME })
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      return true
+    }
+
     if (isFx) {
       const fxTransfer = await FxTransferModel.fxTransfer.getByIdLight(transferIdOrCommitRequestId)
       if (!fxTransfer) {
@@ -811,12 +833,47 @@ const getTransfer = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
-      if (!await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
+
+      // Check if proxy header exists and fxTransfer state is not COMMITTED/RESERVED/SETTLED
+      const hasProxyHeader = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.PROXY]
+      const replyWithPutErrorCallback = fxTransfer.transferStateEnumeration !== TransferState.COMMITTED &&
+        fxTransfer.transferStateEnumeration !== TransferState.RESERVED &&
+        fxTransfer.transferStateEnumeration !== TransferState.SETTLED
+
+      // Special scenario for interscheme transfers where we need to reply with the original error callback
+      // in order to resolve RESERVED_FORWARDED transfers in other regional/buffer schemes
+      if (hasProxyHeader && replyWithPutErrorCallback) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}5`))
+        // Get the fxTransfer error details
+        const fxTransferError = await FxTransferErrorModel.getByCommitRequestId(transferIdOrCommitRequestId)
+        if (fxTransferError) {
+          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}6`))
+          // Action choice tells notification handler what to do.
+          // In this case inform payer.
+          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FX_TIMEOUT_RECEIVED }
+
+          const errorPayload = {
+            errorInformation: {
+              errorCode: fxTransferError.errorCode,
+              errorDescription: fxTransferError.errorDescription
+            }
+          }
+          if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
+            message.value.content.uriParams = { id: transferIdOrCommitRequestId }
+          }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: errorPayload, eventDetail: errorEventDetail, fromSwitch, hubName: Config.HUB_NAME })
+          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+          return true
+        }
+      }
+
+      if (!isSenderExternal && !await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
+
       Util.breadcrumb(location, { path: 'validationPassed' })
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
       message.value.content.payload = TransferObjectTransform.toFulfil(fxTransfer, true)
@@ -828,12 +885,47 @@ const getTransfer = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
-      if (!await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
+
+      // Check if proxy header exists and transfer state is not COMMITTED/RESERVED/SETTLED
+      const hasProxyHeader = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.PROXY]
+      const replyWithPutErrorCallback = transfer.transferStateEnumeration !== TransferState.COMMITTED &&
+        transfer.transferStateEnumeration !== TransferState.RESERVED &&
+        transfer.transferStateEnumeration !== TransferState.SETTLED
+
+      // Special scenario for interscheme transfers where we need to reply with the original error callback
+      // in order to resolve RESERVED_FORWARDED transfers in other regional/buffer schemes
+      if (hasProxyHeader && replyWithPutErrorCallback) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}5`))
+        const transferError = await TransferErrorModel.getByTransferId(transferIdOrCommitRequestId)
+        if (transferError) {
+          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}6`))
+          // Action choice tells notification handler what to do.
+          // In this case inform payer.
+          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.TIMEOUT_RECEIVED }
+
+          // Construct the transfer error payload from the stored error details
+          const errorPayload = {
+            errorInformation: {
+              errorCode: transferError.errorCode,
+              errorDescription: transferError.errorDescription
+            }
+          }
+          if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
+            message.value.content.uriParams = { id: transferIdOrCommitRequestId }
+          }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: errorPayload, eventDetail: errorEventDetail, fromSwitch, hubName: Config.HUB_NAME })
+          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+          return true
+        }
+      }
+
+      if (!isSenderExternal && !await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
+
       Util.breadcrumb(location, { path: 'validationPassed' })
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
       message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
