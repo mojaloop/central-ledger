@@ -1145,7 +1145,7 @@ const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMi
               .select('t.transferId', 't.expirationDate')
           })
           .onConflict('transferId')
-          .ignore();
+          .ignore()
 
         // Insert `fxTransferForwarded` records for fxTransfers found between the interval intervalMin <= intervalMax and related fxTransfers
         await knex.from(knex.raw('fxTransferForwarded (commitRequestId, expirationDate)')).transacting(trx)
@@ -1167,8 +1167,7 @@ const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMi
               .select('ft.commitRequestId', 'ft.expirationDate')
           })
           .onConflict('commitRequestId')
-          .ignore();
-
+          .ignore()
       } catch (err) {
         rethrow.rethrowDatabaseError(err)
       }
@@ -1183,6 +1182,35 @@ const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMi
       transferForwardedList,
       fxTransferForwardedList
     }
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
+const incrementForwardedAttemptCount = async (transferId, isFxTransfer = false) => {
+  try {
+    const knex = Db.getKnex()
+    const tableName = isFxTransfer ? 'fxTransferForwarded' : 'transferForwarded'
+    const idColumn = isFxTransfer ? 'commitRequestId' : 'transferId'
+    const idValue = isFxTransfer ? transferId : transferId
+
+    return await knex(tableName)
+      .where(idColumn, idValue)
+      .increment('attemptCount', 1)
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
+const removeForwardedRecord = async (transferId, isFxTransfer = false) => {
+  try {
+    const knex = Db.getKnex()
+    const tableName = isFxTransfer ? 'fxTransferForwarded' : 'transferForwarded'
+    const idColumn = isFxTransfer ? 'commitRequestId' : 'transferId'
+
+    return await knex(tableName)
+      .where(idColumn, transferId)
+      .delete()
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -1627,6 +1655,8 @@ const TransferFacade = {
   getTransferStateByTransferId,
   timeoutExpireReserved,
   reservedForwardedTransfers,
+  incrementForwardedAttemptCount,
+  removeForwardedRecord,
   transferStateAndPositionUpdate,
   reconciliationTransferPrepare,
   reconciliationTransferReserve,

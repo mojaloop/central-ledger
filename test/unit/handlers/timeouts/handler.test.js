@@ -173,6 +173,8 @@ Test('Timeout handler', TimeoutHandlerTest => {
       intervalMax: 20,
       fxIntervalMin: 10,
       fxIntervalMax: 20,
+      transferForwardedList: [],
+      fxTransferForwardedList: [],
       ...resultMock
     }
 
@@ -184,6 +186,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
       TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(latestFxTransferStateChangeMock)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
       Utility.produceGeneralMessage = sandbox.stub()
 
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
@@ -220,6 +223,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
       TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(latestFxTransferStateChangeMock)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock1)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
       Utility.produceGeneralMessage = sandbox.stub()
 
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
@@ -260,6 +264,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
         fxTransferTimeoutList: null
       }
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock1)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
       Utility.produceGeneralMessage = sandbox.stub()
       expected = {
         cleanup: 1,
@@ -268,6 +273,8 @@ Test('Timeout handler', TimeoutHandlerTest => {
         intervalMax: 0,
         fxIntervalMin: 0,
         fxIntervalMax: 0,
+        transferForwardedList: [],
+        fxTransferForwardedList: [],
         ...resultMock1
       }
 
@@ -307,6 +314,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
       Utility.produceGeneralMessage = sandbox.stub().throws()
 
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
@@ -342,6 +350,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.cleanupFxTransferTimeout = sandbox.stub().returns(1)
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
       TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(latestFxTransferStateChangeMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
       Utility.produceGeneralMessage = sandbox.stub().throws()
 
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
@@ -369,6 +378,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       })
 
       TimeoutService.timeoutExpireReserved = sandbox.stub().resolves({})
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().resolves({ transferForwardedList: [], fxTransferForwardedList: [] })
       await TimeoutHandlerProxy.registerTimeoutHandler()
       const [result1, result2] = await Promise.all([
         TimeoutHandlerProxy.timeout(),
