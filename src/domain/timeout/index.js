@@ -83,6 +83,18 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
   return TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
 }
 
+const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax) => {
+  return TransferFacade.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax)
+}
+
+const incrementForwardedAttemptCount = async (transferId, isFxTransfer) => {
+  return TransferFacade.incrementForwardedAttemptCount(transferId, isFxTransfer)
+}
+
+const removeForwardedRecord = async (transferId, isFxTransfer) => {
+  return TransferFacade.removeForwardedRecord(transferId, isFxTransfer)
+}
+
 module.exports = {
   getTimeoutSegment,
   getFxTimeoutSegment,
@@ -90,5 +102,8 @@ module.exports = {
   cleanupFxTransferTimeout,
   getLatestTransferStateChange,
   getLatestFxTransferStateChange,
-  timeoutExpireReserved
+  timeoutExpireReserved,
+  reservedForwardedTransfers,
+  incrementForwardedAttemptCount,
+  removeForwardedRecord
 }

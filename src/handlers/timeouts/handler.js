@@ -179,6 +179,124 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
 }
 
 /**
+ * Processes forwarded transfers
+ *
+ * @param {ForwardedTransfer[]} transferForwardedList
+ * @returns {Promise<void>}
+ */
+const _processForwardedTransfers = async (transferForwardedList) => {
+  const fspiopError = createFSPIOPTimeoutError()
+  if (!Array.isArray(transferForwardedList)) {
+    transferForwardedList = [
+      { ...transferForwardedList }
+    ]
+  }
+  log.verbose(`processing ${transferForwardedList.length} forwarded timed out transfers...`)
+
+  for (const TF of transferForwardedList) {
+    try {
+      const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
+      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(TF.transferId, Enum.Kafka.Topics.NOTIFICATION, Action.GET, state)
+      const destination = TF.externalPayeeName || TF.payeeFsp
+      const source = TF.externalPayerName || TF.payerFsp
+      const headers = Utility.Http.SwitchDefaultHeaders(destination, Enum.Http.HeaderResources.TRANSFERS, source, resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion)
+      const message = Utility.StreamingProtocol.createMessage(
+        TF.transferId,
+        destination,
+        source,
+        metadata,
+        headers,
+        // Important that payload is empty for GET is falsy/empty object
+        null,
+        { id: TF.transferId },
+        `application/vnd.interoperability.${Enum.Http.HeaderResources.TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion}`)
+
+      if (TF.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+        message.from = Config.HUB_NAME
+        await Kafka.produceGeneralMessage(
+          Config.KAFKA_CONFIG,
+          Producer,
+          Enum.Kafka.Topics.NOTIFICATION,
+          Action.GET,
+          message,
+          state,
+          null,
+          null
+        )
+        await TimeoutService.incrementForwardedAttemptCount(TF.transferId)
+        if (TF.attemptCount >= Config.HANDLERS_TIMEOUT_FORWARDED_MAX_ATTEMPTS) {
+          await TimeoutService.removeForwardedRecord(TF.transferId)
+          log.debug(`Removed forwarded transfer ${TF.transferId} after ${TF.attemptCount} attempts`)
+        }
+      }
+    } catch (err) {
+      log.error('error in _processForwardedTransfers:', err)
+      const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+      countAndRethrow(fspiopError, { operation: '_processForwardedTransfers' })
+    }
+  }
+}
+
+/**
+ * Processes forwarded fxTransfers
+ *
+ * @param {ForwardedFxTransfer[]} fxTransferForwardedList
+ * @returns {Promise<void>}
+ */
+const _processFxForwardedTransfers = async (fxTransferForwardedList) => {
+  const fspiopError = createFSPIOPTimeoutError()
+  if (!Array.isArray(fxTransferForwardedList)) {
+    fxTransferForwardedList = [
+      { ...fxTransferForwardedList }
+    ]
+  }
+  log.verbose(`processing ${fxTransferForwardedList.length} forwarded timed out fxTransfers...`)
+
+  for (const FTF of fxTransferForwardedList) {
+    try {
+      const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
+      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(FTF.commitRequestId, Enum.Kafka.Topics.NOTIFICATION, Action.GET, state)
+      const destination = FTF.externalCounterPartyFspName || FTF.counterPartyFsp
+      const source = FTF.externalInitiatingFspName || FTF.initiatingFsp
+      const headers = Utility.Http.SwitchDefaultHeaders(destination, Enum.Http.HeaderResources.FX_TRANSFERS, source, resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion)
+      const message = Utility.StreamingProtocol.createMessage(
+        FTF.commitRequestId,
+        destination,
+        source,
+        metadata,
+        headers,
+        // Important that payload is empty for GET is falsy/empty object
+        null,
+        { id: FTF.commitRequestId },
+        `application/vnd.interoperability.${Enum.Http.HeaderResources.FX_TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion}`)
+
+      if (FTF.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+        message.from = Config.HUB_NAME
+        await Kafka.produceGeneralMessage(
+          Config.KAFKA_CONFIG,
+          Producer,
+          Enum.Kafka.Topics.NOTIFICATION,
+          Action.GET,
+          message,
+          state,
+          null,
+          null
+        )
+        await TimeoutService.incrementForwardedAttemptCount(FTF.commitRequestId, true)
+        if (FTF.attemptCount >= Config.HANDLERS_TIMEOUT_FORWARDED_MAX_ATTEMPTS) {
+          await TimeoutService.removeForwardedRecord(FTF.commitRequestId, true)
+          log.debug(`Removed forwarded fxTransfer ${FTF.commitRequestId} after ${FTF.attemptCount} attempts`)
+        }
+      }
+    } catch (err) {
+      log.error('error in _processFxForwardedTransfers:', err)
+      const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+      countAndRethrow(fspiopError, { operation: '_processFxForwardedTransfers' })
+    }
+  }
+}
+
+/**
  * Processes timedOut fxTransfers
  *
  * @param {TimedOutFxTransfer[]} fxTransferTimeoutList
@@ -299,8 +417,13 @@ const timeout = async () => {
 
     const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
 
+    const { transferForwardedList, fxTransferForwardedList } = await TimeoutService.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax)
+
     transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
     fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
+
+    transferForwardedList && await _processForwardedTransfers(transferForwardedList)
+    fxTransferForwardedList && await _processFxForwardedTransfers(fxTransferForwardedList)
 
     return {
       intervalMin,
@@ -310,7 +433,9 @@ const timeout = async () => {
       fxCleanup,
       fxIntervalMax,
       transferTimeoutList,
-      fxTransferTimeoutList
+      fxTransferTimeoutList,
+      transferForwardedList,
+      fxTransferForwardedList
     }
   } catch (err) {
     log.error('error in timeout:', err)
