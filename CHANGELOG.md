@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.12.0](https://github.com/mojaloop/central-ledger/compare/v19.11.8...v19.12.0) (2026-01-16)
+
+
+### Features
+
+* publish notification get msg on external participant ([#1229](https://github.com/mojaloop/central-ledger/issues/1229)) ([44ac5be](https://github.com/mojaloop/central-ledger/commit/44ac5be2ba2c0d5fd04cc0f5cd1992e9c9bb48f2))
+* timeout forwarded messages ([#1227](https://github.com/mojaloop/central-ledger/issues/1227)) ([d5a6219](https://github.com/mojaloop/central-ledger/commit/d5a62196ba668efdede21017aa90744aa622530c))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([955a100](https://github.com/mojaloop/central-ledger/commit/955a10018c92cdd4dc38e3772d2aa624195566d7))
+
 ### [19.11.8](https://github.com/mojaloop/central-ledger/compare/v19.11.7...v19.11.8) (2026-01-07)
 
 
