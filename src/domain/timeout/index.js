@@ -83,8 +83,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
   return TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
 }
 
-const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax) => {
-  return TransferFacade.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax)
+const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount) => {
+  return TransferFacade.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount)
 }
 
 const incrementForwardedAttemptCount = async (transferId, isFxTransfer) => {

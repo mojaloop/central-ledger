@@ -224,10 +224,6 @@ const _processForwardedTransfers = async (transferForwardedList) => {
           null
         )
         await TimeoutService.incrementForwardedAttemptCount(TF.transferId)
-        if (TF.attemptCount >= Config.HANDLERS_TIMEOUT_FORWARDED_MAX_ATTEMPTS) {
-          await TimeoutService.removeForwardedRecord(TF.transferId)
-          log.debug(`Removed forwarded transfer ${TF.transferId} after ${TF.attemptCount} attempts`)
-        }
       }
     } catch (err) {
       log.error('error in _processForwardedTransfers:', err)
@@ -283,10 +279,6 @@ const _processFxForwardedTransfers = async (fxTransferForwardedList) => {
           null
         )
         await TimeoutService.incrementForwardedAttemptCount(FTF.commitRequestId, true)
-        if (FTF.attemptCount >= Config.HANDLERS_TIMEOUT_FORWARDED_MAX_ATTEMPTS) {
-          await TimeoutService.removeForwardedRecord(FTF.commitRequestId, true)
-          log.debug(`Removed forwarded fxTransfer ${FTF.commitRequestId} after ${FTF.attemptCount} attempts`)
-        }
       }
     } catch (err) {
       log.error('error in _processFxForwardedTransfers:', err)
@@ -417,7 +409,7 @@ const timeout = async () => {
 
     const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
 
-    const { transferForwardedList, fxTransferForwardedList } = await TimeoutService.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax)
+    const { transferForwardedList, fxTransferForwardedList } = await TimeoutService.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, Config.HANDLERS_TIMEOUT_FORWARDED_MAX_ATTEMPTS)
 
     transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
     fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
