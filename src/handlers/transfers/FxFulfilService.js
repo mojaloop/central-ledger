@@ -283,7 +283,10 @@ class FxFulfilService {
   }
 
   async validateExpirationDate(transfer, functionality) {
-    if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
+    if (
+      transfer.transferState !== TransferInternalState.RESERVED_FORWARDED &&
+      transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
+    ) {
       const fspiopError = fspiopErrorFactory.fxTransferExpired()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
