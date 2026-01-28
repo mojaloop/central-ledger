@@ -64,7 +64,15 @@ Test('Root handler test', async handlersTest => {
 
       const isReady = async () => {
         const consumerTopics = Consumer.getListOfTopics()
-        await Promise.all(consumerTopics.map(t => Consumer.allConnected(t)))
+        const results = await Promise.all(
+          consumerTopics.map(async (topic) => {
+            const consumer = Consumer.getConsumer(topic)
+            return consumer.isHealthy()
+          })
+        )
+        if (results.some(healthy => !healthy)) {
+          throw new Error('Not all consumers are healthy yet')
+        }
       }
       try {
         await waitFor(isReady, 'Consumers to be up', 5, 3)
