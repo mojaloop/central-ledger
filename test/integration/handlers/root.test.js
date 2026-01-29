@@ -40,8 +40,7 @@ const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const rootApiHandler = require('../../../src/api/root/handler')
 const {
   createRequest,
-  unwrapResponse,
-  waitFor
+  unwrapResponse
 } = require('../../util/helpers')
 
 const Handlers = {
@@ -62,30 +61,43 @@ Test('Root handler test', async handlersTest => {
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
 
-      const isReady = async () => {
+      // Wait for all consumers to be healthy using consumer.isHealthy()
+      // This matches ml-api-adapter's approach and ensures partition assignments are complete
+      const sleep = (seconds) => new Promise(resolve => setTimeout(resolve, seconds * 1000))
+      const retries = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20] // retry delays in seconds
+
+      const areConsumersHealthy = async () => {
         const consumerTopics = Consumer.getListOfTopics()
         const results = await Promise.all(
           consumerTopics.map(async (topic) => {
             const consumer = Consumer.getConsumer(topic)
-            const isHealthy = await consumer.isHealthy()
-            if (!isHealthy) {
-              Logger.isWarnEnabled && Logger.warn(`consumer is NOT healthy  [topic: ${topic}]`, { topic, ...consumer.getHealthReport() })
-            }
-            return isHealthy
+            return consumer.isHealthy()
           })
         )
-        if (results.some(healthy => !healthy)) {
-          throw new Error('Not all consumers are healthy yet')
-        }
+        return results.every(healthy => healthy === true)
       }
-      try {
-        // Increase retries to 15 with 2 second increment to allow more time for Kafka partition assignments
-        // This gives us: 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28 = ~3.5 minutes max wait
-        await waitFor(isReady, 'Consumers to be up', 15, 2)
-      } catch (err) {
+
+      const ready = await retries.reduce(async (acc, curr) => {
+        const isReady = await acc
+        if (isReady) {
+          return Promise.resolve(true)
+        }
+
+        try {
+          const healthy = await areConsumersHealthy()
+          if (!healthy) {
+            throw new Error('Consumers not healthy yet')
+          }
+          return Promise.resolve(true)
+        } catch (err) {
+          Logger.info(`Consumers not ready yet. Sleeping for: ${curr} seconds.`)
+        }
+
+        return sleep(curr).then(() => false)
+      }, Promise.resolve(false))
+
+      if (!ready) {
         test.fail('Consumers were not ready in time')
-        test.end()
-        return
       }
 
       test.pass('done')
