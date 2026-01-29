@@ -67,7 +67,11 @@ Test('Root handler test', async handlersTest => {
         const results = await Promise.all(
           consumerTopics.map(async (topic) => {
             const consumer = Consumer.getConsumer(topic)
-            return consumer.isHealthy()
+            const isHealthy = await consumer.isHealthy()
+            if (!isHealthy) {
+              Logger.isWarnEnabled && Logger.warn(`consumer is NOT healthy  [topic: ${topic}]`, { topic, ...consumer.getHealthReport() })
+            }
+            return isHealthy
           })
         )
         if (results.some(healthy => !healthy)) {
@@ -75,9 +79,13 @@ Test('Root handler test', async handlersTest => {
         }
       }
       try {
-        await waitFor(isReady, 'Consumers to be up', 5, 3)
+        // Increase retries to 15 with 2 second increment to allow more time for Kafka partition assignments
+        // This gives us: 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28 = ~3.5 minutes max wait
+        await waitFor(isReady, 'Consumers to be up', 15, 2)
       } catch (err) {
         test.fail('Consumers were not ready in time')
+        test.end()
+        return
       }
 
       test.pass('done')
