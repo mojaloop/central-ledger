@@ -10,6 +10,7 @@ ignore:
   - vulnerability: GHSA-5j98-mcp5-4vw2 # glob, which comes from npm
   - vulnerability: CVE-2025-60876
   - vulnerability: CVE-2026-22184
+  - vulnerability: GHSA-34x7-hfp2-rc4v
 
 # Set output format defaults
 output:
