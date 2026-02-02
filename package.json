@@ -95,7 +95,7 @@
     "@mojaloop/central-services-logger": "11.10.3",
     "@mojaloop/central-services-metrics": "12.8.3",
     "@mojaloop/central-services-shared": "18.35.2",
-    "@mojaloop/central-services-stream": "11.8.14",
+    "@mojaloop/central-services-stream": "file:../central-services-stream",
     "@mojaloop/database-lib": "11.3.5",
     "@mojaloop/event-sdk": "14.8.2",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.9.0",
@@ -106,7 +106,7 @@
     "ajv-keywords": "5.1.0",
     "base64url": "3.0.1",
     "blipp": "4.0.2",
-    "commander": "14.0.2",
+    "commander": "14.0.3",
     "cron": "4.4.0",
     "decimal.js": "10.6.0",
     "docdash": "2.0.2",
@@ -178,7 +178,8 @@
     "on-headers": "1.1.0",
     "trim": "0.0.3",
     "cross-spawn": "7.0.6",
-    "yargs-parser": "21.1.1"
+    "yargs-parser": "21.1.1",
+    "fast-xml-parser": "5.3.4"
   },
   "config": {
     "knex": "--knexfile ./config/knexfile.js",

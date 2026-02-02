@@ -37,11 +37,11 @@ const MigrationLockModel = require('../../models/misc/migrationLock')
  *
  * @description
  *   Gets the health for the broker, by checking that each consumer is healthy.
- *   Uses the consumer's isHealthy() method which performs comprehensive checks:
+ *   Uses the consumer's isHealthy() method from central-services-stream which performs:
  *   - isConnected() - basic connection status
- *   - assignments().length > 0 - consumer has topic partition assignments
+ *   - isAssigned() - consumer has partition assignments
  *   - isPollHealthy() - last poll was within healthCheckPollInterval
- *   - getMetadataSync() - topic exists in broker metadata
+ *   - getMetadataSync() - all subscribed topics exist in broker metadata
  *
  * @returns Promise<SubServiceHealth> The SubService health object for the broker
  */

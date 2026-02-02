@@ -53,6 +53,8 @@ Test('SubServiceHealth test', subServiceHealthTest => {
     sandbox.stub(Consumer, 'getListOfTopics')
     sandbox.stub(Consumer, 'getConsumer')
     sandbox.stub(Logger, 'isDebugEnabled').value(true)
+    sandbox.stub(Logger, 'isWarnEnabled').value(true)
+    sandbox.stub(Logger, 'warn')
     proxyCacheStub = sandbox.stub(ProxyCache, 'getCache')
     t.end()
   })
@@ -217,7 +219,7 @@ Test('SubServiceHealth test', subServiceHealthTest => {
   })
 
   subServiceHealthTest.test('getSubServiceHealthProxyCache', proxyCacheTest => {
-    proxyCacheTest.test('Reports up when not health', async test => {
+    proxyCacheTest.test('Reports up when healthy', async test => {
       // Arrange
       proxyCacheStub.returns({
         healthCheck: sandbox.stub().returns(Promise.resolve(true))
@@ -228,11 +230,11 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       const result = await getSubServiceHealthProxyCache()
 
       // Assert
-      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result')
+      test.deepEqual(result, expected, 'getSubServiceHealthProxyCache should match expected result')
       test.end()
     })
 
-    proxyCacheTest.test('Reports down when not health', async test => {
+    proxyCacheTest.test('Reports down when not healthy', async test => {
       // Arrange
       proxyCacheStub.returns({
         healthCheck: sandbox.stub().returns(Promise.resolve(false))
@@ -243,7 +245,7 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       const result = await getSubServiceHealthProxyCache()
 
       // Assert
-      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result')
+      test.deepEqual(result, expected, 'getSubServiceHealthProxyCache should match expected result')
       test.end()
     })
     proxyCacheTest.end()
