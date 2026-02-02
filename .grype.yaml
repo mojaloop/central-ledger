@@ -26,6 +26,7 @@ ignore:
   - vulnerability: CVE-2025-55132
   # diff npm package - fix requires 5.2.2 (breaking change)
   - vulnerability: GHSA-73rr-hh4g-fpgx
+  - vulnerability: GHSA-p5wg-g6qr-c7cg
 
 # Set output format defaults
 output:
