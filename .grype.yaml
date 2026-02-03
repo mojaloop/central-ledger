@@ -17,14 +17,8 @@ ignore:
   - vulnerability: GHSA-xxjr-mmjv-4gpg
   - vulnerability: CVE-2026-22796
   - vulnerability: GHSA-g9mf-h72j-4rw9
-  # Ignore fast-xml-parser 4.5.3 vulnerability
   - vulnerability: GHSA-37qj-frw5-hhjh
-    package: fast-xml-parser
-    version: 4.5.3
-  # Ignore eslint 8.57.1 medium severity vulnerability
   - vulnerability: GHSA-p5wg-g6qr-c7cg
-    package: eslint
-    version: 8.57.1
 # Set output format defaults
 output:
   - "table"
