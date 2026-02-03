@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.12.2](https://github.com/mojaloop/central-ledger/compare/v19.12.1...v19.12.2) (2026-02-03)
+
+
+### Chore
+
+* bump dep ([#1241](https://github.com/mojaloop/central-ledger/issues/1241)) ([1917673](https://github.com/mojaloop/central-ledger/commit/1917673902174c305828e50a02620821f4b9eff6))
+* **sbom:** update sbom [skip ci] ([e9315ab](https://github.com/mojaloop/central-ledger/commit/e9315ab8263c6dbee99f7277bc98d279154d9399))
+
 ### [19.12.1](https://github.com/mojaloop/central-ledger/compare/v19.12.0...v19.12.1) (2026-01-29)
 
 
