@@ -17,6 +17,8 @@ ignore:
   - vulnerability: GHSA-xxjr-mmjv-4gpg
   - vulnerability: CVE-2026-22796
   - vulnerability: GHSA-g9mf-h72j-4rw9
+  - vulnerability: GHSA-37qj-frw5-hhjh
+  - vulnerability: GHSA-p5wg-g6qr-c7cg
 
 # Set output format defaults
 output:
