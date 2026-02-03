@@ -6,6 +6,8 @@
   "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
     "GHSA-xxjr-mmjv-4gpg",
     "GHSA-g9mf-h72j-4rw9",
-    "GHSA-p5wg-g6qr-c7cg"
+    "GHSA-p5wg-g6qr-c7cg",
+    "GHSA-37qj-frw5-hhjh",
+    "GHSA-6c59-mwgh-r2x6"
   ]
 }
