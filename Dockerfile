@@ -41,8 +41,6 @@ COPY --chown=ml-user --from=builder /opt/app .
 
 COPY src /opt/app/src
 COPY config /opt/app/config
-COPY migrations /opt/app/migrations
-COPY seeds /opt/app/seeds
 COPY test /opt/app/test
 
 EXPOSE 3001
