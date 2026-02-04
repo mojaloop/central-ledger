@@ -30,7 +30,7 @@
 
 const Handler = require('./handler')
 const Joi = require('joi')
-const currencyList = require('../../../seeds/currency.js').currencyList
+const currencyList = require('../../seeds/currency.js').currencyList
 
 const tags = ['api', 'participants']
 const nameValidator = Joi.string().min(2).max(30).required().description('Name of the participant')

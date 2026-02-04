@@ -10,7 +10,7 @@
     "Henk Kodde <henkkodde@modusbox.com>",
     "Kevin Leyow <kevin.leyow@modusbox.com>",
     "Lazola Lucas <lazola.lucas@modusbox.com>",
-    "Lewis Daly <lewisd@crosslaketech.com>",
+    "Lewis Daly <lewisd@tigerbeetle.com>",
     "Miguel de Barros <miguel.debarros@modusbox.com>",
     "Paweł Marzec <pawel.marzec@modusbox.com>",
     "Rajiv Mothilal <rajiv.mothilal@modusbox.com>",
@@ -35,11 +35,13 @@
     "test"
   ],
   "scripts": {
+    "build": "tsc",
     "start": "npm run start:api",
     "start:api": "node src/api/index.js",
     "start:handlers": "node src/handlers/index.js",
     "start:debug": "npm start --node-options --inspect=0.0.0.0",
-    "watch:api": "npx nodemon src/api/index.js",
+    "start:tsnode": "ts-node ./src/api/index.ts",
+    "watch:api": "nodemon --exec ts-node ./src/api/index.ts",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "lint": "npx standard",
     "lint:fix": "npx standard --fix",
@@ -92,9 +94,9 @@
     "@mojaloop/central-services-health": "15.1.0",
     "@mojaloop/central-services-logger": "11.9.0",
     "@mojaloop/central-services-metrics": "12.6.0",
-    "@mojaloop/central-services-shared": "18.30.6",
+    "@mojaloop/central-services-shared": "github:tigerbeetle/central-services-shared#lewis/improve-types-2",
     "@mojaloop/central-services-stream": "11.8.2",
-    "@mojaloop/database-lib": "11.3.2",
+    "@mojaloop/database-lib": "github:tigerbeetle/database-lib#main",
     "@mojaloop/event-sdk": "14.6.1",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.6.0",
     "@mojaloop/ml-number": "11.3.0",
@@ -148,7 +150,8 @@
     "tap-spec": "^5.0.0",
     "tap-xunit": "2.4.1",
     "tape": "4.17.0",
-    "tapes": "4.1.0"
+    "tapes": "4.1.0",
+    "ts-node": "^10.9.2"
   },
   "overrides": {
     "brace-expansion": "2.0.2",

@@ -28,7 +28,7 @@
  ******/
 
 'use strict'
-const Config = require('../src/lib/config')
+const Config = require('../lib/config')
 
 const participant = [
   {
