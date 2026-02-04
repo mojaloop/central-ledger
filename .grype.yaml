@@ -17,6 +17,7 @@ ignore:
   - vulnerability: GHSA-xxjr-mmjv-4gpg
   - vulnerability: CVE-2026-22796
   - vulnerability: GHSA-g9mf-h72j-4rw9
+<<<<<<< chore/enhance-kafka-health-check-4318
   # Node.js vulnerabilities - fix requires Node 22.22.0+ (not yet available in Alpine)
   - vulnerability: CVE-2025-59465
   - vulnerability: CVE-2025-55131
@@ -29,6 +30,10 @@ ignore:
   - vulnerability: GHSA-p5wg-g6qr-c7cg
   - vulnerability: GHSA-6c59-mwgh-r2x6
 
+=======
+  - vulnerability: GHSA-37qj-frw5-hhjh
+  - vulnerability: GHSA-p5wg-g6qr-c7cg
+>>>>>>> main
 # Set output format defaults
 output:
   - "table"
