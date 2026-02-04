@@ -35,10 +35,10 @@ exports.up = (knex) => {
   return knex.schema.hasTable('quote').then((exists) => {
     if (exists) {
       return knex.schema
-      .table('quote', (t) => {
-        // remove unnecessary foreign key constraint that has a conflict with transactionReferenceId foreign key constraint
-        t.dropForeign('transactionRequestId')
-      })
+        .table('quote', (t) => {
+          // remove unnecessary foreign key constraint that has a conflict with transactionReferenceId foreign key constraint
+          t.dropForeign('transactionRequestId')
+        })
     }
   })
 }
@@ -47,10 +47,10 @@ exports.down = (knex) => {
   return knex.schema.hasTable('quote').then((exists) => {
     if (exists) {
       return knex.schema
-      .table('quote', (t) => {
-        // lets reverse what we did
-        t.foreign('transactionRequestId').references('transactionReferenceId').inTable('transactionReference')
-      })
+        .table('quote', (t) => {
+          // lets reverse what we did
+          t.foreign('transactionRequestId').references('transactionReferenceId').inTable('transactionReference')
+        })
     }
   })
 }

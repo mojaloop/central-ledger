@@ -58,7 +58,7 @@ exports.up = function (knex) {
   `)
 }
 
-module.exports.down = async function(knex) {
+module.exports.down = async function (knex) {
   return knex.raw(`
     CREATE OR REPLACE VIEW quotePartyView AS
     SELECT

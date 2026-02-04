@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('settlementModel').then(function(exists) {
+  return await knex.schema.hasTable('settlementModel').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('settlementModel', (t) => {
         t.boolean('adjustPosition').defaultTo(false).notNullable()
@@ -40,7 +40,7 @@ exports.up = async (knex) => {
 }
 
 exports.down = function (knex) {
-  return knex.schema.alterTable('settlementModel',(t) => {
+  return knex.schema.alterTable('settlementModel', (t) => {
     t.dropColumn('adjustPosition')
   })
 }

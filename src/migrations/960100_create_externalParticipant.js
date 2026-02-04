@@ -27,7 +27,7 @@
  **********/
 
 exports.up = async (knex) => {
-  return knex.schema.hasTable('externalParticipant').then(function(exists) {
+  return knex.schema.hasTable('externalParticipant').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('externalParticipant', (t) => {
         t.bigIncrements('externalParticipantId').primary().notNullable()
@@ -42,7 +42,7 @@ exports.up = async (knex) => {
 }
 
 exports.down = function (knex) {
-  return knex.schema.hasTable('externalParticipant').then(function(exists) {
+  return knex.schema.hasTable('externalParticipant').then(function (exists) {
     if (!exists) {
       return knex.schema.dropTableIfExists('externalParticipant')
     }

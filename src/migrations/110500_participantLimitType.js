@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('participantLimitType').then(function(exists) {
+  return await knex.schema.hasTable('participantLimitType').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('participantLimitType', (t) => {
         t.increments('participantLimitTypeId').primary().notNullable()

@@ -30,14 +30,14 @@
 'use strict'
 
 exports.up = async (knex, Promise) => {
-  await knex.schema.hasTable('ledgerAccountType').then(function(exists) {
+  await knex.schema.hasTable('ledgerAccountType').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('ledgerAccountType', (t) => {
         t.boolean('isSettleable').defaultTo(false).notNullable()
       })
     }
   })
-  await knex.schema.hasTable('ledgerEntryType').then(function(exists) {
+  await knex.schema.hasTable('ledgerEntryType').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('ledgerEntryType', (t) => {
         t.integer('ledgerAccountTypeId').unsigned().nullable()
@@ -45,7 +45,7 @@ exports.up = async (knex, Promise) => {
       })
     }
   })
-  await knex.schema.hasTable('settlement').then(function(exists) {
+  await knex.schema.hasTable('settlement').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('settlement', (t) => {
         t.integer('settlementModelId').unsigned().nullable()

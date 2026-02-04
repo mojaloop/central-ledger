@@ -57,6 +57,6 @@ exports.up = function (knex) {
   `)
 }
 
-module.exports.down = async function(knex) {
+module.exports.down = async function (knex) {
   return knex.raw('DROP VIEW quoteView')
 }

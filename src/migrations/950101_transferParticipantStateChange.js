@@ -30,12 +30,12 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('transferParticipantStateChange').then(function(exists) {
+  return await knex.schema.hasTable('transferParticipantStateChange').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('transferParticipantStateChange', (t) => {
         t.bigIncrements('transferParticipantStateChangeId').primary().notNullable()
         t.bigInteger('transferParticipantId').notNullable().unsigned()
-        t.foreign('transferParticipantId','tt_transferParticipantId_fk').references('transferParticipantId').inTable('transferParticipant')
+        t.foreign('transferParticipantId', 'tt_transferParticipantId_fk').references('transferParticipantId').inTable('transferParticipant')
         t.string('settlementWindowStateId', 50)
         t.foreign('settlementWindowStateId').references('settlementWindowStateId').inTable('settlementWindowState')
         t.string('reason', 512).defaultTo(null).nullable()

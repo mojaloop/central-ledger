@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('settlementContentAggregation').then(function(exists) {
+  return await knex.schema.hasTable('settlementContentAggregation').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('settlementContentAggregation', (t) => {
         t.bigIncrements('settlementContentAggregationId').primary().notNullable()

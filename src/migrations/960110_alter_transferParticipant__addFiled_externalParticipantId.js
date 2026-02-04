@@ -29,7 +29,7 @@
 const EP_ID_FIELD = 'externalParticipantId'
 
 exports.up = async (knex) => {
-  return knex.schema.hasTable('transferParticipant').then(function(exists) {
+  return knex.schema.hasTable('transferParticipant').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('transferParticipant', (t) => {
         t.bigint(EP_ID_FIELD).unsigned().nullable()
@@ -41,7 +41,7 @@ exports.up = async (knex) => {
 }
 
 exports.down = async (knex) => {
-  return knex.schema.hasTable('transferParticipant').then(function(exists) {
+  return knex.schema.hasTable('transferParticipant').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('transferParticipant', (t) => {
         t.dropIndex(EP_ID_FIELD)

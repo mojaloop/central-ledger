@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('transferParticipant').then(function(exists) {
+  return await knex.schema.hasTable('transferParticipant').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('transferParticipant', (t) => {
         t.integer('participantId').unsigned().notNullable()
@@ -44,7 +44,7 @@ exports.up = async (knex) => {
 }
 
 exports.down = async (knex) => {
-  return await knex.schema.hasTable('transferParticipant').then(function(exists) {
+  return await knex.schema.hasTable('transferParticipant').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('transferParticipant', (t) => {
         t.dropIndex('participantId')

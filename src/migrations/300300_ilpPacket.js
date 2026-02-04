@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('ilpPacket').then(function(exists) {
+  return await knex.schema.hasTable('ilpPacket').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('ilpPacket', (t) => {
         t.string('transferId', 36).primary().notNullable()

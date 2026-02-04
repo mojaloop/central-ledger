@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('transferError').then(function(exists) {
+  return await knex.schema.hasTable('transferError').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('transferError', (t) => {
         t.bigInteger('transferErrorDuplicateCheckId').unsigned().nullable().index()

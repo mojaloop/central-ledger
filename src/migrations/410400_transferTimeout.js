@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('transferTimeout').then(function(exists) {
+  return await knex.schema.hasTable('transferTimeout').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('transferTimeout', (t) => {
         t.bigIncrements('transferTimeoutId').primary().notNullable()

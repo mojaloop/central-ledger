@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('participantPositionChange').then(function(exists) {
+  return await knex.schema.hasTable('participantPositionChange').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('participantPositionChange', (t) => {
         t.decimal('value', 18, 4).notNullable().alter()

@@ -59,25 +59,25 @@ const migrateDDL = async (knex) => {
   const tableNameSuffix = Time.getYMDString(new Date())
 
   // drop foreign keys to make names available to replacing table
-  await knex.schema.table(`transferExtension`, (t) => {
+  await knex.schema.table('transferExtension', (t) => {
     t.dropForeign('transferid')
     t.dropForeign('transfererrorid')
     t.dropForeign('transferfulfilmentid')
   })
   // drop foreign keys to make names available to replacing table
-  await knex.schema.table(`transferFulfilment`, (t) => {
+  await knex.schema.table('transferFulfilment', (t) => {
     t.dropForeign('transferid')
     t.dropForeign('settlementwindowid')
     t.dropForeign('transferfulfilmentid')
   })
   // drop foreign keys to make names available to replacing table
-  await knex.schema.table(`transferError`, (t) => {
-      t.dropForeign('transferstatechangeid')
-      t.dropForeign('transfererrorduplicatecheckid')
+  await knex.schema.table('transferError', (t) => {
+    t.dropForeign('transferstatechangeid')
+    t.dropForeign('transfererrorduplicatecheckid')
   })
   // drop foreign keys to make names available to replacing table
-  await knex.schema.table(`transferErrorDuplicateCheck`, (t) => {
-      t.dropForeign('transferid')
+  await knex.schema.table('transferErrorDuplicateCheck', (t) => {
+    t.dropForeign('transferid')
   })
   // rename   current tables to preserve currently stored data
   await knex.schema.renameTable('transferExtension', `transferExtension${tableNameSuffix}`)

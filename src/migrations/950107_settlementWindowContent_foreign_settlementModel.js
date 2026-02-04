@@ -27,37 +27,37 @@
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
- exports.up = async (knex) => {
-   return await knex.schema.hasTable('settlementWindowContent').then(async function (exists) {
-     if (exists) {
-       await knex.schema.hasColumn('settlementWindowContent', 'settlementModelId')
-         .then(async (columnExists) => {
-           if (!columnExists) {
-             return knex.schema.alterTable('settlementWindowContent', (t) => {
-               t.integer('SettlementModelId').unsigned().defaultTo(null)
-               t.foreign('SettlementModelId').references('SettlementModelId').inTable('settlementModel')
-             })
-           }
-         })
-     }
-   })
- }
+exports.up = async (knex) => {
+  return await knex.schema.hasTable('settlementWindowContent').then(async function (exists) {
+    if (exists) {
+      await knex.schema.hasColumn('settlementWindowContent', 'settlementModelId')
+        .then(async (columnExists) => {
+          if (!columnExists) {
+            return knex.schema.alterTable('settlementWindowContent', (t) => {
+              t.integer('SettlementModelId').unsigned().defaultTo(null)
+              t.foreign('SettlementModelId').references('SettlementModelId').inTable('settlementModel')
+            })
+          }
+        })
+    }
+  })
+}
 
- exports.down = async function (knex) {
-   return await knex.schema.hasTable('settlementWindowContent').then(async function (exists) {
-     if (exists) {
-       await knex.schema.hasColumn('settlementWindowContent', 'settlementModelId')
-         .then(async (columnExists) => {
-           if (columnExists) {
-             return knex.schema
-               .alterTable('settlementWindowContent', (t) => {
-                 t.dropForeign('SettlementModelId')
-                 t.dropColumn('SettlementModelId')
-               })
-           }
-         })
-     }
-   })
- }
+exports.down = async function (knex) {
+  return await knex.schema.hasTable('settlementWindowContent').then(async function (exists) {
+    if (exists) {
+      await knex.schema.hasColumn('settlementWindowContent', 'settlementModelId')
+        .then(async (columnExists) => {
+          if (columnExists) {
+            return knex.schema
+              .alterTable('settlementWindowContent', (t) => {
+                t.dropForeign('SettlementModelId')
+                t.dropColumn('SettlementModelId')
+              })
+          }
+        })
+    }
+  })
+}

@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('participantPositionChange').then(async function(exists) {
+  return await knex.schema.hasTable('participantPositionChange').then(async function (exists) {
     if (exists) {
       // Step 1: Add the column as nullable
       await knex.schema.alterTable('participantPositionChange', (t) => {
@@ -58,7 +58,7 @@ exports.up = async (knex) => {
 }
 
 exports.down = async (knex) => {
-  return await knex.schema.hasTable('participantPositionChange').then(function(exists) {
+  return await knex.schema.hasTable('participantPositionChange').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('participantPositionChange', (t) => {
         t.dropColumn('participantCurrencyId')

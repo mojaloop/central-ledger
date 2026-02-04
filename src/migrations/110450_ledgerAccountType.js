@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('ledgerAccountType').then(function(exists) {
+  return await knex.schema.hasTable('ledgerAccountType').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('ledgerAccountType', (t) => {
         t.increments('ledgerAccountTypeId').primary().notNullable()

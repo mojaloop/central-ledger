@@ -27,10 +27,10 @@
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('fxWatchList').then(function(exists) {
+  return await knex.schema.hasTable('fxWatchList').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('fxWatchList', (t) => {
         t.bigIncrements('fxWatchListId').primary().notNullable()

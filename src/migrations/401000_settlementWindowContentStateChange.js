@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('settlementWindowContentStateChange').then(function(exists) {
+  return await knex.schema.hasTable('settlementWindowContentStateChange').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('settlementWindowContentStateChange', (t) => {
         t.bigIncrements('settlementWindowContentStateChangeId').primary().notNullable()

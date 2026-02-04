@@ -32,26 +32,26 @@
 exports.up = function (knex) {
   // foreign keys sorted alphabetically by table name
   return knex.schema
-  .table('settlement', (t) => {
-    t.foreign('currentStateChangeId').references('settlementStateChange.settlementStateChangeId')
-  })
-  .table('settlementParticipantCurrency', (t) => {
-    t.foreign('currentStateChangeId', 'spc_currentstatechangeid_foreign').references('settlementParticipantCurrencyStateChange.settlementParticipantCurrencyStateChangeId')
-  })
-  .table('settlementWindow', (t) => {
-    t.foreign('currentStateChangeId').references('settlementWindowStateChange.settlementWindowStateChangeId')
-  })
+    .table('settlement', (t) => {
+      t.foreign('currentStateChangeId').references('settlementStateChange.settlementStateChangeId')
+    })
+    .table('settlementParticipantCurrency', (t) => {
+      t.foreign('currentStateChangeId', 'spc_currentstatechangeid_foreign').references('settlementParticipantCurrencyStateChange.settlementParticipantCurrencyStateChangeId')
+    })
+    .table('settlementWindow', (t) => {
+      t.foreign('currentStateChangeId').references('settlementWindowStateChange.settlementWindowStateChangeId')
+    })
 }
 
 exports.down = function (knex) {
   return knex.schema
-  .table('settlement', (t) => {
-    t.dropForeign('currentStateChangeId')
-  })
-  .table('settlementParticipantCurrency', (t) => {
-    t.dropForeign('currentStateChangeId', 'spc_settlementparticipantcurrencystatechangeid_foreign')
-  })
-  .table('settlementWindow', (t) => {
-    t.dropForeign('currentStateChangeId')
-  })
+    .table('settlement', (t) => {
+      t.dropForeign('currentStateChangeId')
+    })
+    .table('settlementParticipantCurrency', (t) => {
+      t.dropForeign('currentStateChangeId', 'spc_settlementparticipantcurrencystatechangeid_foreign')
+    })
+    .table('settlementWindow', (t) => {
+      t.dropForeign('currentStateChangeId')
+    })
 }

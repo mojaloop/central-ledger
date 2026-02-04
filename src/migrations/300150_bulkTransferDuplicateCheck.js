@@ -27,10 +27,10 @@
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('bulkTransferDuplicateCheck').then(function(exists) {
+  return await knex.schema.hasTable('bulkTransferDuplicateCheck').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('bulkTransferDuplicateCheck', (t) => {
         t.string('bulkTransferId', 36).primary().notNullable()

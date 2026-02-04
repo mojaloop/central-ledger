@@ -27,7 +27,7 @@
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
 exports.up = function (knex) {
   return knex.schema.table('token', (t) => {

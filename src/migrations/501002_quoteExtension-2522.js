@@ -40,13 +40,13 @@ exports.up = async (knex) => {
   return knex.schema.hasTable('quoteExtension').then(async (exists) => {
     if (exists) {
       try {
-      const result = await knex.select(knex.raw(`
+        const result = await knex.select(knex.raw(`
         table_name, column_name, character_set_name, collation_name
         FROM information_schema.COLUMNS
         WHERE table_name = 'quoteExtension' AND column_name = 'value';
       `))
-      console.log(`WARNING: Migration script 501002_quoteExtension-2522.js - take note of the current configuration if you wish to revert= ${JSON.stringify(result)}`)
-      await knex.raw(`
+        console.log(`WARNING: Migration script 501002_quoteExtension-2522.js - take note of the current configuration if you wish to revert= ${JSON.stringify(result)}`)
+        await knex.raw(`
         ALTER TABLE quoteExtension
         CHANGE COLUMN \`value\` \`value\` TEXT CHARACTER SET '${characterSet}' COLLATE '${coalition}' NOT NULL;
       `)

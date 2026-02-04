@@ -1,4 +1,3 @@
-
 /*****
  License
  --------------
@@ -28,10 +27,10 @@
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('bulkTransferAssociation').then(function(exists) {
+  return await knex.schema.hasTable('bulkTransferAssociation').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('bulkTransferAssociation', (t) => {
         t.bigIncrements('bulkTransferAssociationId').primary().notNullable()

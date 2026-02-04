@@ -30,12 +30,11 @@
 'use strict'
 
 exports.up = async (knex) => {
-
   /**
    * Make quoteResponseId column on quoteExtension table nullable.
    * This change comes from quote-service issue #174
    */
-  return await knex.schema.hasTable('quoteExtension').then(function(exists) {
+  return await knex.schema.hasTable('quoteExtension').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('quoteExtension', (t) => {
         t.bigInteger('quoteResponseId').unsigned().nullable().alter()

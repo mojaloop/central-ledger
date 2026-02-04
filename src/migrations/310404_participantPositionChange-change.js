@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('participantPositionChange').then(function(exists) {
+  return await knex.schema.hasTable('participantPositionChange').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('participantPositionChange', (t) => {
         t.decimal('change', 18, 2).notNullable()
@@ -40,7 +40,7 @@ exports.up = async (knex) => {
 }
 
 exports.down = async (knex) => {
-  return await knex.schema.hasTable('participantPositionChange').then(function(exists) {
+  return await knex.schema.hasTable('participantPositionChange').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('participantPositionChange', (t) => {
         t.dropColumn('change')

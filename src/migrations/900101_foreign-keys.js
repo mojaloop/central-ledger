@@ -32,14 +32,14 @@
 exports.up = function (knex) {
   // foreign keys sorted alphabetically by table name
   return knex.schema
-  .table('transferExtension', (t) => {
-    t.foreign('transferErrorId').references('transferError.transferErrorId')
-  })
+    .table('transferExtension', (t) => {
+      t.foreign('transferErrorId').references('transferError.transferErrorId')
+    })
 }
 
 exports.down = function (knex) {
   return knex.schema
-  .table('transferExtension', (t) => {
-    t.dropForeign('transferErrorId')
-  })
+    .table('transferExtension', (t) => {
+      t.dropForeign('transferErrorId')
+    })
 }

@@ -40,15 +40,15 @@ exports.up = async (knex) => {
   return knex.schema.hasTable('party').then(async (exists) => {
     if (exists) {
       try {
-      const result = await knex.select(knex.raw(`
+        const result = await knex.select(knex.raw(`
         CCSA.character_set_name, CCSA.collation_name
         FROM information_schema.TABLES T,
         information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA
         WHERE CCSA.collation_name = T.table_collation
         AND T.table_name = "party";
       `))
-      console.log(`WARNING: Migration script 500601_party-2480.js - take note of the current configuration if you wish to revert= ${JSON.stringify(result)}`)
-      await knex.raw(`
+        console.log(`WARNING: Migration script 500601_party-2480.js - take note of the current configuration if you wish to revert= ${JSON.stringify(result)}`)
+        await knex.raw(`
         ALTER TABLE party CONVERT TO CHARACTER
         SET ${characterSet} COLLATE ${coalition}
       `)

@@ -30,11 +30,11 @@
 'use strict'
 
 exports.up = async (knex) => {
-  await knex.schema.hasTable('settlementModel').then(async function(tableExists) {
+  await knex.schema.hasTable('settlementModel').then(async function (tableExists) {
     if (tableExists) {
       await knex.schema.hasColumn('settlementModel', 'settlementAccountTypeId')
         .then(async (columnExists) => {
-          if (!columnExists){
+          if (!columnExists) {
             await knex.schema.alterTable('settlementModel', (t) => {
               t.integer('settlementAccountTypeId').unsigned().defaultTo(null)
             })
@@ -66,7 +66,7 @@ exports.up = async (knex) => {
 }
 
 exports.down = function (knex) {
-  return knex.schema.alterTable('settlementModel',(t) => {
+  return knex.schema.alterTable('settlementModel', (t) => {
     t.dropColumn('settlementAccountTypeId')
   })
 }

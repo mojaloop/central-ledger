@@ -29,7 +29,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('fxTransferError').then(function(exists) {
+  return await knex.schema.hasTable('fxTransferError').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('fxTransferError', (t) => {
         t.string('commitRequestId', 36).primary().notNullable()

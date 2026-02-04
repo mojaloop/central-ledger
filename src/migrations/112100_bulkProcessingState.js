@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('bulkProcessingState').then(function(exists) {
+  return await knex.schema.hasTable('bulkProcessingState').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('bulkProcessingState', (t) => {
         t.increments('bulkProcessingStateId').primary().notNullable()

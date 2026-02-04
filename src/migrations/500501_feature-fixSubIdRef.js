@@ -32,20 +32,20 @@
 
 exports.up = (knex) => {
   return knex.schema
-  .table('quoteParty', (t) => {
-    t.dropForeign('partySubIdOrTypeId')
-  })
-  .alterTable('quoteParty', function(t) {
-    t.string('partySubIdOrTypeId', 128).defaultTo(null).nullable().comment('A sub-identifier or sub-type for the Party').alter();
-  })
+    .table('quoteParty', (t) => {
+      t.dropForeign('partySubIdOrTypeId')
+    })
+    .alterTable('quoteParty', function (t) {
+      t.string('partySubIdOrTypeId', 128).defaultTo(null).nullable().comment('A sub-identifier or sub-type for the Party').alter()
+    })
 }
 
 exports.down = (knex) => {
   return knex.schema
-  .alterTable('quoteParty', function(t) {
-    t.integer('partySubIdOrTypeId').unsigned().defaultTo(null).nullable().comment('A sub-identifier or sub-type for the Party').alter();
-  })
-  .table('quoteParty', (t) => {
-    t.foreign('partySubIdOrTypeId').references('partyIdentifierTypeId').inTable('partyIdentifierType')
-  })
+    .alterTable('quoteParty', function (t) {
+      t.integer('partySubIdOrTypeId').unsigned().defaultTo(null).nullable().comment('A sub-identifier or sub-type for the Party').alter()
+    })
+    .table('quoteParty', (t) => {
+      t.foreign('partySubIdOrTypeId').references('partyIdentifierTypeId').inTable('partyIdentifierType')
+    })
 }

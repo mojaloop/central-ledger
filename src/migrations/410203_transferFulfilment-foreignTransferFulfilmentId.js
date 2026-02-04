@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('transferFulfilment').then(function(exists) {
+  return await knex.schema.hasTable('transferFulfilment').then(function (exists) {
     if (exists) {
       return knex.schema.alterTable('transferFulfilment', (t) => {
         t.foreign('transferFulfilmentId').references('transferFulfilmentId').inTable('transferFulfilmentDuplicateCheck')

@@ -34,9 +34,9 @@ exports.up = function (knex, Promise) {
     t.index('settlementWindowContentId', 'swcsc_settlementwindowcontentid_index')
     t.index('settlementWindowStateId', 'swcsc_settlementwindowstateid_index')
   })
-  .table('settlementWindowContent', (t) => {
-    t.foreign('currentStateChangeId').references('settlementWindowContentStateChange.settlementWindowContentStateChangeId')
-  })
+    .table('settlementWindowContent', (t) => {
+      t.foreign('currentStateChangeId').references('settlementWindowContentStateChange.settlementWindowContentStateChangeId')
+    })
 }
 
 exports.down = function (knex, Promise) {
@@ -44,7 +44,7 @@ exports.down = function (knex, Promise) {
     t.dropIndex('settlementWindowContentId', 'swcsc_settlementwindowcontentid_index')
     t.dropIndex('settlementWindowStateId', 'swcsc_settlementwindowstateid_index')
   })
-  .table('settlementWindowContent', (t) => {
-    t.dropForeign('currentStateChangeId')
-  })
+    .table('settlementWindowContent', (t) => {
+      t.dropForeign('currentStateChangeId')
+    })
 }

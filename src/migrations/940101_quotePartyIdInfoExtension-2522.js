@@ -27,40 +27,40 @@
   --------------
   ******/
 
- // Notes: these changes are required for the quoting-service and are not used by central-ledger
- // This implements [Central-ledger migration scripts should configure the Quote Party table to utf8 follow-up #2522](https://github.com/mojaloop/project/issues/2522)
- // Referencing for MySQL Documentation: https://dev.mysql.com/doc/refman/5.6/en/alter-table.html#alter-table-character-set
- 'use strict'
+// Notes: these changes are required for the quoting-service and are not used by central-ledger
+// This implements [Central-ledger migration scripts should configure the Quote Party table to utf8 follow-up #2522](https://github.com/mojaloop/project/issues/2522)
+// Referencing for MySQL Documentation: https://dev.mysql.com/doc/refman/5.6/en/alter-table.html#alter-table-character-set
+'use strict'
 
- const characterSet = 'utf8mb4'
- const coalition = 'utf8mb4_unicode_ci'
+const characterSet = 'utf8mb4'
+const coalition = 'utf8mb4_unicode_ci'
 
- exports.up = async (knex) => {
-   console.log(`WARNING: Migration script 940101_quotePartyIdInfoExtension-2522.js is converting quotePartyIdInfoExtension table to use the following character set ${characterSet} with ${coalition} collation`)
-   return knex.schema.hasTable('quotePartyIdInfoExtension').then(async (exists) => {
-     if (exists) {
-       try {
-       const result = await knex.select(knex.raw(`
+exports.up = async (knex) => {
+  console.log(`WARNING: Migration script 940101_quotePartyIdInfoExtension-2522.js is converting quotePartyIdInfoExtension table to use the following character set ${characterSet} with ${coalition} collation`)
+  return knex.schema.hasTable('quotePartyIdInfoExtension').then(async (exists) => {
+    if (exists) {
+      try {
+        const result = await knex.select(knex.raw(`
          CCSA.character_set_name, CCSA.collation_name
          FROM information_schema.TABLES T,
          information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA
          WHERE CCSA.collation_name = T.table_collation
          AND T.table_name = "quotePartyIdInfoExtension";
        `))
-       console.log(`WARNING: Migration script 940101_quotePartyIdInfoExtension-2522.js - take note of the current configuration if you wish to revert= ${JSON.stringify(result)}`)
-       await knex.raw(`
+        console.log(`WARNING: Migration script 940101_quotePartyIdInfoExtension-2522.js - take note of the current configuration if you wish to revert= ${JSON.stringify(result)}`)
+        await knex.raw(`
          ALTER TABLE quotePartyIdInfoExtension CONVERT TO CHARACTER
          SET ${characterSet} COLLATE ${coalition}
        `)
-       } catch (err) {
-         console.log(`ERROR: Migration script 940101_quotePartyIdInfoExtension-2522.js - converting quotePartyIdInfoExtension table to use the following character set ${characterSet} with ${coalition} collation has failed!`)
-         console.error(err)
-         throw err
-       }
-     }
-   })
- }
+      } catch (err) {
+        console.log(`ERROR: Migration script 940101_quotePartyIdInfoExtension-2522.js - converting quotePartyIdInfoExtension table to use the following character set ${characterSet} with ${coalition} collation has failed!`)
+        console.error(err)
+        throw err
+      }
+    }
+  })
+}
 
- exports.down = (knex) => {
-   console.log('WARNING: Migration script 940101_quotePartyIdInfoExtension-2522.js must manually be reversed')
- }
+exports.down = (knex) => {
+  console.log('WARNING: Migration script 940101_quotePartyIdInfoExtension-2522.js must manually be reversed')
+}
