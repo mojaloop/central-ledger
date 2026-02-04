@@ -30,7 +30,6 @@
 const Cache = require('../../lib/cache')
 const ParticipantModel = require('../../models/participant/participant')
 const rethrow = require('../../shared/rethrow')
-const assert = require('assert')
 
 let cacheClient
 const participantsAllCacheKey = 'all'

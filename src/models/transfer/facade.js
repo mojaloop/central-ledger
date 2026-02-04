@@ -1242,7 +1242,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           this.on('cr.transferId', 't.transferId')
             .andOn('cr.amount', '<', 0)
         })
-        .join('participantCurrency AS crpc', 'crpc.participantCurrencyId', 'cr.participantCurrencyId')
+        .join('participantCurrency AS crpc', 'crpc.participantCurrencyId', 'dr.participantCurrencyId')
         .join('participantPosition AS crp', 'crp.participantCurrencyId', 'cr.participantCurrencyId')
         .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
         .where('t.transferId', param1.transferId)
