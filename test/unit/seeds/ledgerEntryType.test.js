@@ -32,7 +32,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('../../../src/shared/logger').logger
-const Model = require('../../../seeds/ledgerEntryType')
+const Model = require('../../../src/seeds/ledgerEntryType')
 
 Test('Ledger entry type', async (ledgerEntryTypeTest) => {
   let sandbox
