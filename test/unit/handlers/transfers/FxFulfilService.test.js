@@ -220,7 +220,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
       const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
       const transfer = {
         transferState: Enum.Transfers.TransferInternalState.RESERVED,
-        expirationDate: new Date(Date.now() + 10000).toISOString()
+        expirationDate: new Date(Util.Time.getUTCString(new Date(Date.now() + 10000)))
       }
       const functionality = 'POSITION'
       service.kafkaProceed = sandbox.stub()
@@ -231,16 +231,13 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
 
     methodTest.test('should handle expired transfer', async t => {
       const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
-      const expiredDate = new Date(Date.now() - 10000).toISOString()
+      const expiredDate = new Date(Util.Time.getUTCString(new Date(Date.now() - 10000)))
       const transfer = {
         transferState: Enum.Transfers.TransferInternalState.RESERVED,
         expirationDate: expiredDate
       }
       const functionality = 'POSITION'
       service.kafkaProceed = sandbox.stub()
-
-      // Mock Util.Time.getUTCString to return current time
-      sandbox.stub(Util.Time, 'getUTCString').returns(new Date())
 
       try {
         await service.validateExpirationDate(transfer, functionality)
