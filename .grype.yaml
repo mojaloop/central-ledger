@@ -27,6 +27,7 @@ ignore:
   # diff npm package - fix requires 5.2.2 (breaking change)
   - vulnerability: GHSA-73rr-hh4g-fpgx
   - vulnerability: GHSA-p5wg-g6qr-c7cg
+  - vulnerability: GHSA-6c59-mwgh-r2x6
 
 # Set output format defaults
 output:

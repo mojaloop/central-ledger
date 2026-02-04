@@ -31,33 +31,35 @@
 const Test = require('tape')
 const Joi = require('joi')
 const Logger = require('@mojaloop/central-services-logger')
+const Db = require('../../../src/lib/db')
+
+const Config = require('../../../src/lib/config')
+const ProxyCache = require('../../../src/lib/proxyCache')
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
+// const Producer = require('@mojaloop/central-services-stream').Util.Producer
+const rootApiHandler = require('../../../src/api/root/handler')
+const {
+  createRequest,
+  unwrapResponse,
+  waitFor
+} = require('../../util/helpers')
+
+const Handlers = {
+  index: require('../../../src/handlers/register'),
+  positions: require('../../../src/handlers/positions/handler'),
+  transfers: require('../../../src/handlers/transfers/handler')
+}
 
 const debug = false
 
-/**
- * Integration test for the health check endpoint.
- *
- * This test calls the main service's /health endpoint via HTTP to verify
- * the consumer.isHealthy() implementation from central-services-stream PR #186
- * works correctly with real Kafka consumers that have partition assignments.
- *
- * The main service is started by test-integration.sh before tests run,
- * so its consumers have partition assignments and isHealthy() returns true.
- *
- * We call the HTTP endpoint rather than creating local consumers because:
- * - The main service's consumers already hold all partitions
- * - New consumers in the same group can't get partition assignments
- * - This tests the REAL isHealthy() behavior with actual partition assignments
- */
 Test('Root handler test', async handlersTest => {
   const startTime = new Date()
-  const serviceUrl = 'http://localhost:3001'
-
   /* Health Check Tests */
 
   await handlersTest.test('healthCheck should', async healthCheckTest => {
-    await healthCheckTest.test('get the basic health of the service via HTTP', async (test) => {
+    await healthCheckTest.test('get the basic health of the service', async (test) => {
       // Arrange
+      await Db.connect(Config.DATABASE)
       const expectedSchema = Joi.compile({
         status: Joi.string().valid('OK').required(),
         uptime: Joi.number().required(),
@@ -72,15 +74,14 @@ Test('Root handler test', async handlersTest => {
         { name: 'proxyCache', status: 'OK' }
       ]
 
-      // Act - Call the running service's health endpoint via HTTP
-      // The main service has consumers with partition assignments (isAssigned: true)
-      // so consumer.isHealthy() from central-services-stream returns true
-      const response = await fetch(`${serviceUrl}/health`)
-      const responseBody = await response.json()
-      const responseCode = response.status
+      // Act
+      const {
+        responseBody,
+        responseCode
+      } = await unwrapResponse((reply) => rootApiHandler.getHealth(createRequest({}), reply))
 
       // Assert
-      const validationResult = Joi.attempt(responseBody, expectedSchema)
+      const validationResult = Joi.attempt(responseBody, expectedSchema) // We use Joi to validate the results as they rely on timestamps that are variable
       test.equal(validationResult.error, undefined, 'The response matches the validation schema')
       test.deepEqual(responseCode, expectedStatus, 'The response code matches')
       test.deepEqual(responseBody.services, expectedServices, 'The sub-services are correct')
@@ -90,13 +91,68 @@ Test('Root handler test', async handlersTest => {
     healthCheckTest.end()
   })
 
+  await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
+    await registerAllHandlers.test('setup handlers', async (test) => {
+      // await Db.connect(Config.DATABASE)
+      await ProxyCache.connect()
+      await Handlers.transfers.registerPrepareHandler()
+      await Handlers.positions.registerPositionHandler()
+      await Handlers.transfers.registerFulfilHandler()
+
+      const isReady = async () => {
+        const consumerTopics = Consumer.getListOfTopics()
+        await Promise.all(consumerTopics.map(t => Consumer.allConnected(t)))
+      }
+      try {
+        await waitFor(isReady, 'Consumers to be up', 5, 3)
+      } catch (err) {
+        test.fail('Consumers were not ready in time')
+      }
+      test.pass('done')
+      test.end()
+    })
+
+    await registerAllHandlers.end()
+  })
+
   await handlersTest.test('teardown', async (assert) => {
     try {
+      await Db.disconnect()
+      assert.pass('database connection closed')
+      await ProxyCache.disconnect()
+      // TODO: Replace this with KafkaHelper.topics
+      const topics = [
+        'topic-transfer-prepare',
+        'topic-transfer-position',
+        'topic-transfer-fulfil',
+        'topic-notification-event'
+      ]
+
+      // TODO: Story to investigate as to why the Producers failed reconnection on the ./transfers/handlers.test.js - https://github.com/mojaloop/project/issues/3067
+      // TODO: Clean this up once the above issue has been resolved.
+      // for (const topic of topics) {
+      //   try {
+      //     await Producer.getProducer(topic).disconnect()
+      //     assert.pass(`producer to ${topic} disconnected`)
+      //   } catch (err) {
+      //     assert.pass(err.message)
+      //   }
+      // }
+
+      // TODO: Replace this with await KafkaHelper.consumers.disconnect() once the above issue is resolved.
+      for (const topic of topics) {
+        try {
+          await Consumer.getConsumer(topic).disconnect()
+          assert.pass(`consumer to ${topic} disconnected`)
+        } catch (err) {
+          assert.pass(err.message)
+        }
+      }
+
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
         console.log(`root.test.js finished in (${elapsedTime}s)`)
       }
-      assert.pass('done')
       assert.end()
     } catch (err) {
       Logger.error(`teardown failed with error - ${err}`)
