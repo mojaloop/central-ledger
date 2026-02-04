@@ -17,6 +17,17 @@ ignore:
   - vulnerability: GHSA-xxjr-mmjv-4gpg
   - vulnerability: CVE-2026-22796
   - vulnerability: GHSA-g9mf-h72j-4rw9
+  # Node.js vulnerabilities - fix requires Node 22.22.0+ (not yet available in Alpine)
+  - vulnerability: CVE-2025-59465
+  - vulnerability: CVE-2025-55131
+  - vulnerability: CVE-2026-21637
+  - vulnerability: CVE-2025-59466
+  - vulnerability: CVE-2025-55130
+  - vulnerability: CVE-2025-55132
+  # diff npm package - fix requires 5.2.2 (breaking change)
+  - vulnerability: GHSA-73rr-hh4g-fpgx
+  - vulnerability: GHSA-6c59-mwgh-r2x6
+  
   # Ignored: GHSA-37qj-frw5-hhjh affects a dependency only used in local tooling/CI,
   # is not included in production runtime images, and is tracked for upgrade in our backlog.
   - vulnerability: GHSA-37qj-frw5-hhjh

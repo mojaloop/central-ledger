@@ -54,36 +54,12 @@ const debug = false
 
 Test('Root handler test', async handlersTest => {
   const startTime = new Date()
-  await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
-    await registerAllHandlers.test('setup handlers', async (test) => {
-      await Db.connect(Config.DATABASE)
-      await ProxyCache.connect()
-      await Handlers.transfers.registerPrepareHandler()
-      await Handlers.positions.registerPositionHandler()
-      await Handlers.transfers.registerFulfilHandler()
-
-      const isReady = async () => {
-        const consumerTopics = Consumer.getListOfTopics()
-        await Promise.all(consumerTopics.map(t => Consumer.allConnected(t)))
-      }
-      try {
-        await waitFor(isReady, 'Consumers to be up', 5, 3)
-      } catch (err) {
-        test.fail('Consumers were not ready in time')
-      }
-
-      test.pass('done')
-      test.end()
-    })
-
-    await registerAllHandlers.end()
-  })
-
   /* Health Check Tests */
 
   await handlersTest.test('healthCheck should', async healthCheckTest => {
     await healthCheckTest.test('get the basic health of the service', async (test) => {
       // Arrange
+      await Db.connect(Config.DATABASE)
       const expectedSchema = Joi.compile({
         status: Joi.string().valid('OK').required(),
         uptime: Joi.number().required(),
@@ -113,6 +89,30 @@ Test('Root handler test', async handlersTest => {
     })
 
     healthCheckTest.end()
+  })
+
+  await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
+    await registerAllHandlers.test('setup handlers', async (test) => {
+      // await Db.connect(Config.DATABASE)
+      await ProxyCache.connect()
+      await Handlers.transfers.registerPrepareHandler()
+      await Handlers.positions.registerPositionHandler()
+      await Handlers.transfers.registerFulfilHandler()
+
+      const isReady = async () => {
+        const consumerTopics = Consumer.getListOfTopics()
+        await Promise.all(consumerTopics.map(t => Consumer.allConnected(t)))
+      }
+      try {
+        await waitFor(isReady, 'Consumers to be up', 5, 3)
+      } catch (err) {
+        test.fail('Consumers were not ready in time')
+      }
+      test.pass('done')
+      test.end()
+    })
+
+    await registerAllHandlers.end()
   })
 
   await handlersTest.test('teardown', async (assert) => {

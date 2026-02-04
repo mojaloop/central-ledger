@@ -155,7 +155,8 @@
   "overrides": {
     "brace-expansion": "2.0.2",
     "form-data": "4.0.4",
-    "undici": "6.21.2",
+    "lodash": "4.17.23",
+    "undici": "6.23.0",
     "shins": {
       "ajv": "6.12.3",
       "ejs": "3.1.10",
@@ -177,7 +178,8 @@
     "on-headers": "1.1.0",
     "trim": "0.0.3",
     "cross-spawn": "7.0.6",
-    "yargs-parser": "21.1.1"
+    "yargs-parser": "21.1.1",
+    "fast-xml-parser": "5.3.4"
   },
   "config": {
     "knex": "--knexfile ./config/knexfile.js",

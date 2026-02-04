@@ -74,7 +74,8 @@ Test('Root', rootHandlerTest => {
       const Handler = requireUncached('../../../../src/api/root/handler')
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
       sandbox.stub(Consumer, 'getListOfTopics').returns(['admin'])
-      sandbox.stub(Consumer, 'allConnected').returns(Promise.resolve(true))
+      const mockConsumer = { isHealthy: sandbox.stub().resolves(true) }
+      sandbox.stub(Consumer, 'getConsumer').returns(mockConsumer)
       const schema = Joi.compile({
         status: Joi.string().valid('OK').required(),
         uptime: Joi.number().required(),
@@ -110,7 +111,8 @@ Test('Root', rootHandlerTest => {
 
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
       sandbox.stub(Consumer, 'getListOfTopics').returns(['admin'])
-      sandbox.stub(Consumer, 'allConnected').returns(Promise.resolve(true))
+      const mockConsumer = { isHealthy: sandbox.stub().resolves(true) }
+      sandbox.stub(Consumer, 'getConsumer').returns(mockConsumer)
       const schema = Joi.compile({
         status: Joi.string().valid('OK').required(),
         uptime: Joi.number().required(),
