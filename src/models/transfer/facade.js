@@ -796,9 +796,9 @@ const _insertFxTransferErrorEntries = async (knex, trx, transactionTimestamp) =>
     })
 }
 
-const _getTransferList = async (knex, tableName = 'transferTimeout', transactionTimestamp) => {
+const _getTransferList = async (knex, tableName = 'transferTimeout', transactionTimestamp, maxAttemptCount = null) => {
   /* istanbul ignore next */
-  return knex(`${tableName} AS tt`)
+  const query = knex(`${tableName} AS tt`)
     .innerJoin(knex('transferStateChange AS tsc1')
       .select('tsc1.transferId')
       .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
@@ -828,25 +828,29 @@ const _getTransferList = async (knex, tableName = 'transferTimeout', transaction
       .as('tpc'), 'tpc.transferId', 'tt.transferId'
     )
     .leftJoin('bulkTransferAssociation AS bta', 'bta.transferId', 'tt.transferId')
-
     .where('tt.expirationDate', '<', transactionTimestamp)
-    .select(
-      'tt.*',
-      'tsc.transferStateId',
-      'tp1.participantCurrencyId AS payerParticipantCurrencyId',
-      'p1.name AS payerFsp',
-      'p2.name AS payeeFsp',
-      'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
-      'bta.bulkTransferId',
-      'tpc.participantCurrencyId AS effectedParticipantCurrencyId',
-      'ep1.name AS externalPayerName',
-      'ep2.name AS externalPayeeName'
-    )
+
+  if (tableName === 'transferForwarded' && maxAttemptCount !== null) {
+    query.andWhere('tt.attemptCount', '<', maxAttemptCount)
+  }
+
+  return query.select(
+    'tt.*',
+    'tsc.transferStateId',
+    'tp1.participantCurrencyId AS payerParticipantCurrencyId',
+    'p1.name AS payerFsp',
+    'p2.name AS payeeFsp',
+    'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
+    'bta.bulkTransferId',
+    'tpc.participantCurrencyId AS effectedParticipantCurrencyId',
+    'ep1.name AS externalPayerName',
+    'ep2.name AS externalPayeeName'
+  )
 }
 
-const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transactionTimestamp) => {
+const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transactionTimestamp, maxAttemptCount = null) => {
   /* istanbul ignore next */
-  return knex(`${tableName} AS ftt`)
+  const query = knex(`${tableName} AS ftt`)
     .innerJoin(knex('fxTransferStateChange AS ftsc1')
       .select('ftsc1.commitRequestId')
       .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
@@ -877,17 +881,22 @@ const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transac
       .as('ftpc'), 'ftpc.commitRequestId', 'ftt.commitRequestId'
     )
     .where('ftt.expirationDate', '<', transactionTimestamp)
-    .select(
-      'ftt.*',
-      'ftsc.transferStateId',
-      'ftp1.participantCurrencyId AS initiatingParticipantCurrencyId',
-      'p1.name AS initiatingFsp',
-      'p2.name AS counterPartyFsp',
-      'ftp2.participantCurrencyId AS counterPartyParticipantCurrencyId',
-      'ftpc.participantCurrencyId AS effectedParticipantCurrencyId',
-      'ep1.name AS externalInitiatingFspName',
-      'ep2.name AS externalCounterPartyFspName'
-    )
+
+  if (tableName === 'fxTransferForwarded' && maxAttemptCount !== null) {
+    query.andWhere('ftt.attemptCount', '<', maxAttemptCount)
+  }
+
+  return query.select(
+    'ftt.*',
+    'ftsc.transferStateId',
+    'ftp1.participantCurrencyId AS initiatingParticipantCurrencyId',
+    'p1.name AS initiatingFsp',
+    'p2.name AS counterPartyFsp',
+    'ftp2.participantCurrencyId AS counterPartyParticipantCurrencyId',
+    'ftpc.participantCurrencyId AS effectedParticipantCurrencyId',
+    'ep1.name AS externalInitiatingFspName',
+    'ep2.name AS externalCounterPartyFspName'
+  )
 }
 
 /**
@@ -1120,7 +1129,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
  *    fxTransferTimeoutList: TimedOutFxTransfer
  * }>}
  */
-const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax) => {
+const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount) => {
   try {
     const transactionTimestamp = Time.getUTCString(new Date())
     const knex = Db.getKnex()
@@ -1175,8 +1184,8 @@ const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMi
       rethrow.rethrowDatabaseError(err)
     })
 
-    const transferForwardedList = await _getTransferList(knex, 'transferForwarded', transactionTimestamp)
-    const fxTransferForwardedList = await _getFxTransferList(knex, 'fxTransferForwarded', transactionTimestamp)
+    const transferForwardedList = await _getTransferList(knex, 'transferForwarded', transactionTimestamp, maxAttemptCount)
+    const fxTransferForwardedList = await _getFxTransferList(knex, 'fxTransferForwarded', transactionTimestamp, maxAttemptCount)
 
     return {
       transferForwardedList,

@@ -17,8 +17,13 @@ ignore:
   - vulnerability: GHSA-xxjr-mmjv-4gpg
   - vulnerability: CVE-2026-22796
   - vulnerability: GHSA-g9mf-h72j-4rw9
+  # Ignored: GHSA-37qj-frw5-hhjh affects a dependency only used in local tooling/CI,
+  # is not included in production runtime images, and is tracked for upgrade in our backlog.
   - vulnerability: GHSA-37qj-frw5-hhjh
+  # Ignored: GHSA-p5wg-g6qr-c7cg affects a non-production/dev-only dependency;
+  # no exploitable path exists in our deployed environment, and mitigations are in place.
   - vulnerability: GHSA-p5wg-g6qr-c7cg
+
 # Set output format defaults
 output:
   - "table"
