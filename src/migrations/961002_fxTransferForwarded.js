@@ -30,7 +30,7 @@
 'use strict'
 
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('fxTransferForwarded').then(function(exists) {
+  return await knex.schema.hasTable('fxTransferForwarded').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('fxTransferForwarded', (t) => {
         t.bigIncrements('fxTransferForwardedId').primary().notNullable()
