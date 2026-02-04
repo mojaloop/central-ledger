@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.12.4](https://github.com/mojaloop/central-ledger/compare/v19.12.3...v19.12.4) (2026-02-04)
+
+
+### Chore
+
+* enhance Kafka health check ([#1238](https://github.com/mojaloop/central-ledger/issues/1238)) ([66ac508](https://github.com/mojaloop/central-ledger/commit/66ac50805618b2043707dcf4eb829b1fae1624ac))
+* **sbom:** update sbom [skip ci] ([24d76ec](https://github.com/mojaloop/central-ledger/commit/24d76ec0cefd2b2ba5bcc4b0e04e1801785f8add))
+
 ### [19.12.3](https://github.com/mojaloop/central-ledger/compare/v19.12.2...v19.12.3) (2026-02-04)
 
 
