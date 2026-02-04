@@ -551,7 +551,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
           counterPartyFsp: 'dfsp2',
           externalInitiatingFspName: 'Initiating Bank',
           externalCounterPartyFspName: 'Counter Bank',
-          transferStateId: Enum.Transfers.TransferState.COMMITTED, // Different state
+          transferStateId: Enum.Transfers.TransferInternalState.RESERVED, // Different internal state
           attemptCount: 1
         }
       ]

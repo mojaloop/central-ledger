@@ -231,7 +231,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
 
     methodTest.test('should handle expired transfer', async t => {
       const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
-      const expiredDate = new Date(Date.now() - 10000)
+      const expiredDate = new Date(Date.now() - 10000).toISOString()
       const transfer = {
         transferState: Enum.Transfers.TransferInternalState.RESERVED,
         expirationDate: expiredDate
