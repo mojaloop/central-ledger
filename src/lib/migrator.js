@@ -10,8 +10,8 @@ exports.migrate = function () {
 
 const updateMigrationsLocation = (kf) => {
   const parsedMigrationDir = Path.parse(kf.migrations.directory)
-  kf.migrations.directory = Path.join(process.cwd(), parsedMigrationDir.base)
+  kf.migrations.directory = Path.join(__dirname, '..', parsedMigrationDir.base)
   const parsedSeedsDir = Path.parse(kf.seeds.directory)
-  kf.seeds.directory = Path.join(process.cwd(), parsedSeedsDir.base)
+  kf.seeds.directory = Path.join(__dirname, '..', parsedSeedsDir.base)
   return kf
 }

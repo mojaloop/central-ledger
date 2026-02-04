@@ -1,3 +1,4 @@
+/* istanbul ignore next */
 /*****
  License
  --------------
@@ -27,7 +28,6 @@
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
-
 'use strict'
 
 const settlementInterchangeTypes = [

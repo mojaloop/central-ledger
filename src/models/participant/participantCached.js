@@ -31,6 +31,7 @@ const Cache = require('../../lib/cache')
 const ParticipantModel = require('../../models/participant/participant')
 const Metrics = require('@mojaloop/central-services-metrics')
 const rethrow = require('../../shared/rethrow')
+const assert = require('assert')
 
 let cacheClient
 let participantsAllCacheKey
@@ -72,6 +73,7 @@ const getParticipantsCached = async () => {
     ['success', 'queryName', 'hit']
   ).startTimer()
   // Do we have valid participants list in the cache ?
+  assert(cacheClient, 'Expected cacheClient to be initialized')
   let cachedParticipants = cacheClient.get(participantsAllCacheKey)
   if (!cachedParticipants) {
     // No participants in the cache, so fetch from participant API
