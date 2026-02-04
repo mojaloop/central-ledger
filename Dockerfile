@@ -20,9 +20,10 @@ RUN apk add --no-cache -t build-dependencies make gcc g++ python3 py3-setuptools
     && cd $(npm root -g)/npm \
     && npm install -g node-gyp
 
-COPY package.json package-lock.json* /opt/app/
+COPY package.json package-lock.json* tsconfig.json /opt/app/
 
 RUN npm ci
+RUN npm run build
 RUN npm prune --omit=dev
 
 FROM node:${NODE_VERSION}
