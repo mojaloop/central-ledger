@@ -89,7 +89,7 @@ const getSubServiceHealthDatastore = async () => {
       status = statusEnum.DOWN
     }
   } catch (err) {
-    Logger.isDebugEnabled && Logger.debug(`getSubServiceHealthDatastore failed with error ${err.message}.`)
+    Logger.warn(`getSubServiceHealthDatastore failed with error ${err.message}.`, err)
     status = statusEnum.DOWN
   }
 

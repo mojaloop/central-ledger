@@ -567,6 +567,156 @@ Test('abort domain', positionIndexTest => {
       test.end()
     })
 
+    processPositionAbortBinTest.test('produce abort messages for ABORT_VALIDATION action', async (test) => {
+      const binItems = getAbortBinItems()
+      binItems.splice(1, 1)
+      binItems[0].message.value.metadata.event.action = Enum.Events.Event.Action.ABORT_VALIDATION
+      // Set context to null to test line 226 where context is created
+      binItems[0].message.value.content.context = null
+      binItems[0].message.value.content.context = {
+        cyrilResult: {
+          positionChanges: [
+            {
+              isFxTransferStateChange: false,
+              transferId: 'a0000001-0000-0000-0000-000000000000',
+              notifyTo: 'payerfsp1',
+              participantCurrencyId: 1,
+              amount: -10,
+              isOriginalId: false
+            }
+          ],
+          transferStateChanges: [
+            {
+              transferId: 'a0000003-0000-0000-0000-000000000000',
+              transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR,
+              notifyTo: 'payerfsp2',
+              isOriginalId: true
+            }
+          ]
+        }
+      }
+      try {
+        const processedResult = await processPositionAbortBin(
+          binItems,
+          {
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {},
+            isFx: false
+          }
+        )
+        test.pass('Error not thrown')
+        test.equal(processedResult.notifyMessages.length, 2)
+        test.ok(processedResult.notifyMessages[0].message.content.context)
+        test.ok(processedResult.notifyMessages[0].message.content.context.isOriginalId === false)
+        test.equal(processedResult.accumulatedTransferStateChanges.length, 2)
+      } catch (e) {
+        console.error(e)
+        test.fail('Error thrown')
+      }
+      test.end()
+    })
+
+    processPositionAbortBinTest.test('produce abort messages when context is undefined to test context initialization', async (test) => {
+      const binItems = getAbortBinItems()
+      binItems.splice(1, 1)
+      // Set content.context to undefined to ensure context initialization on line 226
+      binItems[0].message.value.content.context = undefined
+      // Now set it back with just cyrilResult
+      binItems[0].message.value.content.context = {
+        cyrilResult: {
+          positionChanges: [
+            {
+              isFxTransferStateChange: false,
+              transferId: 'a0000001-0000-0000-0000-000000000000',
+              notifyTo: 'payerfsp1',
+              participantCurrencyId: 1,
+              amount: -10,
+              isOriginalId: false
+            }
+          ],
+          transferStateChanges: []
+        }
+      }
+      try {
+        const processedResult = await processPositionAbortBin(
+          binItems,
+          {
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {},
+            isFx: false
+          }
+        )
+        test.pass('Error not thrown')
+        test.ok(processedResult.notifyMessages[0].message.content.context)
+        test.ok(typeof processedResult.notifyMessages[0].message.content.context.isOriginalId !== 'undefined')
+      } catch (e) {
+        console.error(e)
+        test.fail('Error thrown')
+      }
+      test.end()
+    })
+
+    processPositionAbortBinTest.test('produce abort messages with patchNotifications in cyrilResult for FX transfers', async (test) => {
+      const binItems = getAbortBinItems()
+      binItems.splice(1, 1)
+      // Make the first position change an FX transfer state change so we hit the patchNotifications path
+      // Set only one position change to ensure all are done and notifications are sent
+      binItems[0].message.value.content.context.cyrilResult.positionChanges = [
+        {
+          isFxTransferStateChange: true,
+          commitRequestId: 'b0000001-0000-0000-0000-000000000000',
+          notifyTo: 'fxp1',
+          participantCurrencyId: 1,
+          amount: -10
+        }
+      ]
+      binItems[0].message.value.content.context.cyrilResult.patchNotifications = [
+        {
+          commitRequestId: 'b0000001-0000-0000-0000-000000000000',
+          fxpName: 'fxp1'
+        }
+      ]
+      try {
+        const processedResult = await processPositionAbortBin(
+          binItems,
+          {
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: false
+          }
+        )
+        test.pass('Error not thrown')
+        // Should have at least one patch notification and one fx-transfer notification
+        test.ok(processedResult.notifyMessages.length >= 2, `Expected at least 2 notifications, got ${processedResult.notifyMessages.length}`)
+        test.ok(processedResult.followupMessages.length === 0, 'Should not have followup messages when all position changes are done')
+        // Find the patch notification message
+        const patchMessage = processedResult.notifyMessages.find(
+          msg => msg.message.id === 'b0000001-0000-0000-0000-000000000000'
+        )
+        test.ok(patchMessage, 'Patch notification message should exist')
+        test.equal(patchMessage.message.content.payload.conversionState, Enum.Transfers.TransferState.ABORTED)
+        test.equal(patchMessage.message.metadata.event.action, Enum.Events.Event.Action.FX_NOTIFY)
+      } catch (e) {
+        console.error(e)
+        test.fail('Error thrown')
+      }
+      test.end()
+    })
+
     processPositionAbortBinTest.end()
   })
 
@@ -683,6 +833,52 @@ Test('abort domain', positionIndexTest => {
         test.equal(processedResult.accumulatedFxTransferStates[fxAbortMessage1.value.id], Enum.Transfers.TransferInternalState.ABORTED_ERROR)
         test.equal(processedResult.accumulatedPositionValue, -10)
       } catch (e) {
+        test.fail('Error thrown')
+      }
+      test.end()
+    })
+
+    processPositionAbortBinTest.test('produce abort messages for FX_ABORT_VALIDATION action', async (test) => {
+      const binItems = getFxAbortBinItems()
+      binItems.splice(1, 1)
+      binItems[0].message.value.metadata.event.action = Enum.Events.Event.Action.FX_ABORT_VALIDATION
+      // Simplify to have just one position change to test validation error
+      binItems[0].message.value.content.context.cyrilResult.positionChanges = [
+        {
+          isFxTransferStateChange: true,
+          commitRequestId: 'c0000001-0000-0000-0000-000000000000',
+          notifyTo: 'fxp1',
+          participantCurrencyId: 1,
+          amount: -10,
+          isOriginalId: true
+        }
+      ]
+      try {
+        const processedResult = await processPositionAbortBin(
+          binItems,
+          {
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: true
+          }
+        )
+        test.pass('Error not thrown')
+        test.ok(processedResult.notifyMessages.length >= 1)
+        // Check the error code is VALIDATION_ERROR
+        // The FX_ABORT_VALIDATION action should have VALIDATION_ERROR (3100) in the notification
+        const message = processedResult.notifyMessages.find(m => {
+          const errorCode = m.message?.content?.payload?.errorInformation?.errorCode
+          return errorCode === '3100'
+        })
+        test.ok(message, 'Should have a message with VALIDATION_ERROR code 3100')
+      } catch (e) {
+        console.error(e)
         test.fail('Error thrown')
       }
       test.end()

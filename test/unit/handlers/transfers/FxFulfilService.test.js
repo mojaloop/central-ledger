@@ -98,6 +98,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
       disconnect: sandbox.stub()
     })
     sandbox.stub(Cyril)
+
     Cyril.processFxAbortMessage.returns({
       positionChanges: [{
         participantCurrencyId: 1
@@ -171,7 +172,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
     })
 
     methodTest.test('should process wrong fulfilment', async t => {
-      Db.getKnex.resolves({
+      Db.getKnex.returns({
         transaction: sandbox.stub
       })
       FxTransferModel.fxTransfer.saveFxFulfilResponse.restore() // to call real saveFxFulfilResponse impl.
@@ -201,6 +202,55 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
       t.end()
     })
 
+    methodTest.test('should pass expiration date validation for RESERVED_FORWARDED state', async t => {
+      const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
+      const transfer = {
+        transferState: Enum.Transfers.TransferInternalState.RESERVED_FORWARDED,
+        expirationDate: new Date(Date.now() - 10000).toISOString()
+      }
+      const functionality = 'POSITION'
+      service.kafkaProceed = sandbox.stub()
+
+      await service.validateExpirationDate(transfer, functionality)
+      t.ok(service.kafkaProceed.notCalled, 'Should not call kafkaProceed for RESERVED_FORWARDED')
+      t.end()
+    })
+
+    methodTest.test('should pass expiration date validation for future date', async t => {
+      const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
+      const transfer = {
+        transferState: Enum.Transfers.TransferInternalState.RESERVED,
+        expirationDate: new Date(Util.Time.getUTCString(new Date(Date.now() + 10000)))
+      }
+      const functionality = 'POSITION'
+      service.kafkaProceed = sandbox.stub()
+      await service.validateExpirationDate(transfer, functionality)
+      t.ok(service.kafkaProceed.notCalled, 'Should not call kafkaProceed for valid expiration')
+      t.end()
+    })
+
+    methodTest.test('should handle expired transfer', async t => {
+      const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
+      const expiredDate = new Date(Util.Time.getUTCString(new Date(Date.now() - 10000)))
+      const transfer = {
+        transferState: Enum.Transfers.TransferInternalState.RESERVED,
+        expirationDate: expiredDate
+      }
+      const functionality = 'POSITION'
+      service.kafkaProceed = sandbox.stub()
+
+      try {
+        await service.validateExpirationDate(transfer, functionality)
+        t.fail('Should throw fxTransferExpired error')
+      } catch (err) {
+        t.equal(err.message, ERROR_MESSAGES.fxTransferExpired)
+        t.ok(service.kafkaProceed.calledOnce)
+        const kafkaOpts = service.kafkaProceed.lastCall.args[0]
+        t.equal(kafkaOpts.eventDetail.action, Action.FX_RESERVE)
+        t.ok(kafkaOpts.fspiopError)
+      }
+      t.end()
+    })
     methodTest.end()
   })
 

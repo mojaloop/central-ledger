@@ -238,6 +238,8 @@ const processFxFulfilMessage = async (commitRequestId) => {
 const _getPositionChanges = async (commitRequestIdList, transferIdList, originalId, isAbort = false) => {
   const positionChanges = []
   const transferStateChanges = []
+  const patchNotifications = []
+
   for (const commitRequestId of commitRequestIdList) {
     const fxRecord = await fxTransfer.getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
     const fxPositionChanges = await ParticipantPositionChangesModel.getReservedPositionChangesByCommitRequestId(commitRequestId)
@@ -246,11 +248,19 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
         isFxTransferStateChange: true,
         commitRequestId,
         isOriginalId: originalId === commitRequestId,
-        notifyTo: fxRecord.externalInitiatingFspName || fxRecord.initiatingFspName,
+        notifyTo: (isAbort && originalId !== commitRequestId) ? undefined : fxRecord.externalInitiatingFspName || fxRecord.initiatingFspName, // Doesn't need to notify the initiating fsp about fx-abort if triggered by a transfer abort
         participantCurrencyId: fxPositionChange.participantCurrencyId,
         amount: -fxPositionChange.change
       })
     })
+
+    // Patch notification to FXP (only internal participant) if the transfer is aborted
+    if (isAbort && originalId !== commitRequestId && !fxRecord.counterPartyFspIsProxy) {
+      patchNotifications.push({
+        commitRequestId: fxRecord.commitRequestId,
+        fxpName: fxRecord.counterPartyFspName
+      })
+    }
   }
 
   for (const transferId of transferIdList) {
@@ -284,7 +294,7 @@ const _getPositionChanges = async (commitRequestIdList, transferIdList, original
     }
   }
 
-  return { positionChanges, transferStateChanges }
+  return { positionChanges, transferStateChanges, patchNotifications }
 }
 
 /**
@@ -324,12 +334,13 @@ const processAbortMessage = async (transferId) => {
   const relatedFxTransferRecords = await fxTransfer.getByDeterminingTransferId(transferId)
 
   // Get position changes
-  const { positionChanges, transferStateChanges } = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [transferId], transferId, true)
+  const { positionChanges, transferStateChanges, patchNotifications } = await _getPositionChanges(relatedFxTransferRecords.map(item => item.commitRequestId), [transferId], transferId, true)
 
   histTimer({ success: true })
   return {
     positionChanges,
-    transferStateChanges
+    transferStateChanges,
+    patchNotifications
   }
 }
 
@@ -343,7 +354,8 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
   const result = {
     isFx: false,
     positionChanges: [],
-    patchNotifications: []
+    patchNotifications: [],
+    transferStateChanges: []
   }
 
   // Does this transferId appear on the watch list?
@@ -441,6 +453,12 @@ const processFulfilMessage = async (transferId, payload, transfer) => {
             amount: -sendingFxpRecord.targetAmount
           })
         }
+      } else {
+        result.transferStateChanges.push({
+          transferId,
+          transferStateId: Enum.Transfers.TransferInternalState.COMMITTED,
+          isOriginalId: true
+        })
       }
     } else if (receivingFxpExists) {
       // If we have a receiving FXP, Create obligation between debtor party to the transfer and FXP in currency of transfer

@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2024 Mojaloop Foundation
+ Copyright © 2020-2025 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -18,50 +18,34 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
+
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
 
- * Roman Pietrzak <roman.pietrzak@modusbox.com>
+ * Infitx
+ - Vijay Kumar Guthi <vijay.guthi@infitx.com>
  --------------
  ******/
 
 'use strict'
 
-const Cache = require('../lib/cache')
-const Enums = require('./enum')
-
-let cacheClient
-const enumAllCacheKey = 'all'
-
-/*
-  Private API
-*/
-const _getAllEnums = () => cacheClient.get(enumAllCacheKey)
-
-const generate = async function (key) {
-  const allEnums = {}
-  for (const enumId of Enums.enumsIds) {
-    allEnums[enumId] = await Enums[enumId]()
-  }
-  return allEnums
+exports.up = async (knex) => {
+  return await knex.schema.hasTable('transferForwarded').then(function(exists) {
+    if (!exists) {
+      return knex.schema.createTable('transferForwarded', (t) => {
+        t.bigIncrements('transferForwardedId').primary().notNullable()
+        t.string('transferId', 36).notNullable().unique()
+        t.foreign('transferId').references('transferId').inTable('transfer')
+        t.dateTime('expirationDate').notNullable()
+        t.integer('attemptCount').notNullable().defaultTo(0)
+        t.index(['attemptCount'])
+        t.index(['expirationDate'])
+        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+      })
+    }
+  })
 }
 
-/*
-  Public API
-*/
-exports.getEnums = async (id) => {
-  let enums = await _getAllEnums()
-  if (id !== 'all') {
-    enums = enums[id]
-  }
-  return enums
-}
-
-exports.initialize = async () => {
-  /* Register as cache client */
-  cacheClient = Cache.registerCacheClient({ id: 'enum', generate, preloadCache: _getAllEnums })
-}
-
-exports.invalidateEnumCache = async () => {
-  cacheClient.drop(enumAllCacheKey)
+exports.down = function (knex) {
+  return knex.schema.dropTableIfExists('transferForwarded')
 }

@@ -2,6 +2,271 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.12.3](https://github.com/mojaloop/central-ledger/compare/v19.12.2...v19.12.3) (2026-02-04)
+
+
+### Bug Fixes
+
+* add new vulnerability exclusion GHSA-3966-f6p6-2qr9 ([#1242](https://github.com/mojaloop/central-ledger/issues/1242)) ([9211389](https://github.com/mojaloop/central-ledger/commit/9211389e8a3eb61a46fd31f52d27cf19a512ff49))
+* expiration check on reserved forwarded transfers ([#1235](https://github.com/mojaloop/central-ledger/issues/1235)) ([8d2a569](https://github.com/mojaloop/central-ledger/commit/8d2a569915ad3ad38078659a2e61365b5629f0fa))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([c8c800a](https://github.com/mojaloop/central-ledger/commit/c8c800ada03f4e8af29043fece06abb398369b1f))
+
+### [19.12.2](https://github.com/mojaloop/central-ledger/compare/v19.12.1...v19.12.2) (2026-02-03)
+
+
+### Chore
+
+* bump dep ([#1241](https://github.com/mojaloop/central-ledger/issues/1241)) ([1917673](https://github.com/mojaloop/central-ledger/commit/1917673902174c305828e50a02620821f4b9eff6))
+* **sbom:** update sbom [skip ci] ([e9315ab](https://github.com/mojaloop/central-ledger/commit/e9315ab8263c6dbee99f7277bc98d279154d9399))
+
+### [19.12.1](https://github.com/mojaloop/central-ledger/compare/v19.12.0...v19.12.1) (2026-01-29)
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([371702b](https://github.com/mojaloop/central-ledger/commit/371702b8ad6d821a4d9f1d14649d26614d274a6a))
+* update audit ([#1240](https://github.com/mojaloop/central-ledger/issues/1240)) ([b962b8d](https://github.com/mojaloop/central-ledger/commit/b962b8dd92c912e504d7424b9310d8cecaca0826))
+* update dependencies and audit ([#1239](https://github.com/mojaloop/central-ledger/issues/1239)) ([5885a2f](https://github.com/mojaloop/central-ledger/commit/5885a2f2583087f1fdb86b05a16ecc8c9b97e9b6))
+
+## [19.12.0](https://github.com/mojaloop/central-ledger/compare/v19.11.8...v19.12.0) (2026-01-16)
+
+
+### Features
+
+* publish notification get msg on external participant ([#1229](https://github.com/mojaloop/central-ledger/issues/1229)) ([44ac5be](https://github.com/mojaloop/central-ledger/commit/44ac5be2ba2c0d5fd04cc0f5cd1992e9c9bb48f2))
+* timeout forwarded messages ([#1227](https://github.com/mojaloop/central-ledger/issues/1227)) ([d5a6219](https://github.com/mojaloop/central-ledger/commit/d5a62196ba668efdede21017aa90744aa622530c))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([955a100](https://github.com/mojaloop/central-ledger/commit/955a10018c92cdd4dc38e3772d2aa624195566d7))
+
+### [19.11.8](https://github.com/mojaloop/central-ledger/compare/v19.11.7...v19.11.8) (2026-01-07)
+
+
+### Bug Fixes
+
+* ignore npm glob ([#1234](https://github.com/mojaloop/central-ledger/issues/1234)) ([5730014](https://github.com/mojaloop/central-ledger/commit/573001423933af845c679acc5b7b4d0b1bb841c5))
+* update glob package to version 10.5.0 to avoid CVE-2025-64756 ([#1233](https://github.com/mojaloop/central-ledger/issues/1233)) ([7de285e](https://github.com/mojaloop/central-ledger/commit/7de285eb370b3a2eacecec37e00722136a6037e2))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([ca70e0f](https://github.com/mojaloop/central-ledger/commit/ca70e0fc45ffe6da2d3e7d719484c20da562dac7))
+
+### [19.11.7](https://github.com/mojaloop/central-ledger/compare/v19.11.6...v19.11.7) (2026-01-07)
+
+
+### Bug Fixes
+
+* **csi-1091:** add condition on adjust limits ([#1232](https://github.com/mojaloop/central-ledger/issues/1232)) ([f04d0cb](https://github.com/mojaloop/central-ledger/commit/f04d0cbff4d38a01eb2bed94988e243afb4f70de))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([867ee56](https://github.com/mojaloop/central-ledger/commit/867ee5691c56b1b3b14f8e64e49cc0945297d972))
+
+### [19.11.6](https://github.com/mojaloop/central-ledger/compare/v19.11.5...v19.11.6) (2026-01-04)
+
+
+### Chore
+
+* bump dep and audit ([#1231](https://github.com/mojaloop/central-ledger/issues/1231)) ([f35384e](https://github.com/mojaloop/central-ledger/commit/f35384e90a063916b984868f4dbab7df8405e49f))
+* **sbom:** update sbom [skip ci] ([4906785](https://github.com/mojaloop/central-ledger/commit/4906785297634338da95d3f0bf781030c4e3a8ab))
+
+### [19.11.5](https://github.com/mojaloop/central-ledger/compare/v19.11.4...v19.11.5) (2025-12-18)
+
+
+### Chore
+
+* **ci:** update CircleCI orb to 1.1.9 ([#1228](https://github.com/mojaloop/central-ledger/issues/1228)) ([4253e8d](https://github.com/mojaloop/central-ledger/commit/4253e8d0407a3e823b68670f274c14735b33a8c0))
+* **sbom:** update sbom [skip ci] ([553ac99](https://github.com/mojaloop/central-ledger/commit/553ac99d8dbcd6c6e1947f6e4320b01c27bd9d6a))
+
+### [19.11.4](https://github.com/mojaloop/central-ledger/compare/v19.11.3...v19.11.4) (2025-12-17)
+
+
+### Bug Fixes
+
+* use catbox policy.get for proper concurrency handling ([#1226](https://github.com/mojaloop/central-ledger/issues/1226)) ([ce5d587](https://github.com/mojaloop/central-ledger/commit/ce5d58771eed8aeab0014adf83bdc523deb9ae25))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([b6764c2](https://github.com/mojaloop/central-ledger/commit/b6764c277e9aa6c908da7d1718ba256e522758d3))
+
+### [19.11.3](https://github.com/mojaloop/central-ledger/compare/v19.11.2...v19.11.3) (2025-10-27)
+
+
+### Bug Fixes
+
+* remove fulfil depdendant from being timedout ([#1219](https://github.com/mojaloop/central-ledger/issues/1219)) ([1503cf2](https://github.com/mojaloop/central-ledger/commit/1503cf22ac57e9b2afd2552c153895b54c0b7bb3))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([7d981aa](https://github.com/mojaloop/central-ledger/commit/7d981aa701c5243d3f42148ef58aeae87ac2e8f4))
+
+### [19.11.2](https://github.com/mojaloop/central-ledger/compare/v19.11.1...v19.11.2) (2025-10-09)
+
+
+### Bug Fixes
+
+* **csi-1841:** participant limit cache could process transfer without erroring ([#1218](https://github.com/mojaloop/central-ledger/issues/1218)) ([68072d9](https://github.com/mojaloop/central-ledger/commit/68072d97ba9bb628038b09282220ccfb7b951516))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([3f087eb](https://github.com/mojaloop/central-ledger/commit/3f087ebea0487a5adf4622405439b921ef23a689))
+
+### [19.11.1](https://github.com/mojaloop/central-ledger/compare/v19.11.0...v19.11.1) (2025-10-06)
+
+
+### Chore
+
+* bump deps ([#1217](https://github.com/mojaloop/central-ledger/issues/1217)) ([d6d7da5](https://github.com/mojaloop/central-ledger/commit/d6d7da5a7fa17ead256016fc326e0959c53c77ee))
+* **sbom:** update sbom [skip ci] ([4c9cc07](https://github.com/mojaloop/central-ledger/commit/4c9cc073556d029f131ac7848f25d2a471067e30))
+
+## [19.11.0](https://github.com/mojaloop/central-ledger/compare/v19.10.1...v19.11.0) (2025-10-03)
+
+
+### Bug Fixes
+
+* abort notification to fxp ([#1216](https://github.com/mojaloop/central-ledger/issues/1216)) ([75593b6](https://github.com/mojaloop/central-ledger/commit/75593b626676c5ae6dd8be2c1909e23bf1be159e))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([a75f67b](https://github.com/mojaloop/central-ledger/commit/a75f67ba2ce46002b961d5b1d812b5c80a8cfd30))
+
+### [19.10.1](https://github.com/mojaloop/central-ledger/compare/v19.10.0...v19.10.1) (2025-10-01)
+
+
+### Bug Fixes
+
+* fix transfer participant amount record for proxy debtors ([#1215](https://github.com/mojaloop/central-ledger/issues/1215)) ([ffab7cb](https://github.com/mojaloop/central-ledger/commit/ffab7cbbd19649a7987c231ee27a937e64a24a24))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([522789d](https://github.com/mojaloop/central-ledger/commit/522789d40f6856842c065a0f6d117341693e7ca2))
+
+## [19.10.0](https://github.com/mojaloop/central-ledger/compare/v19.9.2...v19.10.0) (2025-09-25)
+
+
+### Bug Fixes
+
+* fx abort notification ([#1214](https://github.com/mojaloop/central-ledger/issues/1214)) ([a34cb5e](https://github.com/mojaloop/central-ledger/commit/a34cb5eb3401c8e3b384acbb1208cb26b8a12332))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([86daa44](https://github.com/mojaloop/central-ledger/commit/86daa4439990a9b0d6cddd5635cb532bdc744662))
+
+### [19.9.2](https://github.com/mojaloop/central-ledger/compare/v19.9.1...v19.9.2) (2025-09-10)
+
+
+### Bug Fixes
+
+* **csi-1748:** use local lock with distlock ([#1212](https://github.com/mojaloop/central-ledger/issues/1212)) ([90b0d30](https://github.com/mojaloop/central-ledger/commit/90b0d309b6e862e111876a9f312300c924ac2b3e))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([4d5487d](https://github.com/mojaloop/central-ledger/commit/4d5487d194cd94b6017c00d3139a6282242be222))
+
+### [19.9.1](https://github.com/mojaloop/central-ledger/compare/v19.9.0...v19.9.1) (2025-09-10)
+
+
+### Bug Fixes
+
+* **csi-1772:** added participantNotFound FSPIOP error ([#1210](https://github.com/mojaloop/central-ledger/issues/1210)) ([0ee9ff2](https://github.com/mojaloop/central-ledger/commit/0ee9ff2218b5b561a409d0c043d058c809136c8a))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([49a4d04](https://github.com/mojaloop/central-ledger/commit/49a4d04fea212a5b4a57753f86dad476ad51cb04))
+
+## [19.9.0](https://github.com/mojaloop/central-ledger/compare/v19.8.9...v19.9.0) (2025-09-09)
+
+
+### Features
+
+* **csi-1753:** enhance distributed lock management with automatic extension and fix metrics ([#1207](https://github.com/mojaloop/central-ledger/issues/1207)) ([e3fe7c4](https://github.com/mojaloop/central-ledger/commit/e3fe7c436d4b9f2fee4feaebdb17807463742dd1))
+
+
+### Chore
+
+* bump metrics for app critical metrics ([#1209](https://github.com/mojaloop/central-ledger/issues/1209)) ([9a0c81e](https://github.com/mojaloop/central-ledger/commit/9a0c81e1e04ecad8e2007144aeebb770045c8449))
+* **sbom:** update sbom [skip ci] ([8745229](https://github.com/mojaloop/central-ledger/commit/8745229476c4fabeb858910f5101d23bdb673004))
+
+### [19.8.9](https://github.com/mojaloop/central-ledger/compare/v19.8.8...v19.8.9) (2025-09-04)
+
+
+### Reverts
+
+* Revert "fix: rename column 'change' and fix datatype on participantPositionChange table" (#1205) ([694ef0f](https://github.com/mojaloop/central-ledger/commit/694ef0ffaf78fd057738c677e8b3b925f8aaf4ce)), closes [#1205](https://github.com/mojaloop/central-ledger/issues/1205)
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([631d2af](https://github.com/mojaloop/central-ledger/commit/631d2afd7e007d8b9bde3c7cba2a148ee31ac3f2))
+
+### [19.8.8](https://github.com/mojaloop/central-ledger/compare/v19.8.7...v19.8.8) (2025-09-03)
+
+
+### Chore
+
+* bump stream ([#1204](https://github.com/mojaloop/central-ledger/issues/1204)) ([fdfb7be](https://github.com/mojaloop/central-ledger/commit/fdfb7be5b7acb03eb3287738e03be0c28d472586))
+* **sbom:** update sbom [skip ci] ([85992f6](https://github.com/mojaloop/central-ledger/commit/85992f682223b9b1519737a5518063c2771f9bb2))
+
+### [19.8.7](https://github.com/mojaloop/central-ledger/compare/v19.8.6...v19.8.7) (2025-09-03)
+
+
+### Bug Fixes
+
+* rename column 'change' and fix datatype on participantPositionChange table ([#1203](https://github.com/mojaloop/central-ledger/issues/1203)) ([fd898b0](https://github.com/mojaloop/central-ledger/commit/fd898b08d1d291b0c203f7cb95972b127fd50a24))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([fb35f03](https://github.com/mojaloop/central-ledger/commit/fb35f0374264c8d23673e04db86ca72130271652))
+
+### [19.8.6](https://github.com/mojaloop/central-ledger/compare/v19.8.5...v19.8.6) (2025-09-03)
+
+
+### Chore
+
+* add lock test and bump deps ([#1201](https://github.com/mojaloop/central-ledger/issues/1201)) ([a2ab936](https://github.com/mojaloop/central-ledger/commit/a2ab936c630e974948737f7db43d33670f4f7754))
+* **sbom:** update sbom [skip ci] ([2b9e290](https://github.com/mojaloop/central-ledger/commit/2b9e290c70270a8ebcbb13cc07b77a36f5eb2737))
+
+### [19.8.5](https://github.com/mojaloop/central-ledger/compare/v19.8.4...v19.8.5) (2025-09-02)
+
+
+### Bug Fixes
+
+* use the fixed cs-shared ([#1202](https://github.com/mojaloop/central-ledger/issues/1202)) ([a42965a](https://github.com/mojaloop/central-ledger/commit/a42965a59df5cdcb85e21338498f65f1f19bea0f))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([0078990](https://github.com/mojaloop/central-ledger/commit/007899010c1861b215e2b5ad4445bc5e1d241d02))
+
+### [19.8.4](https://github.com/mojaloop/central-ledger/compare/v19.8.3...v19.8.4) (2025-08-29)
+
+
+### Bug Fixes
+
+* addEndpoint deadlock ([#1200](https://github.com/mojaloop/central-ledger/issues/1200)) ([eb7d63e](https://github.com/mojaloop/central-ledger/commit/eb7d63eb3218a66a0636f48f4f911675970d95ce))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([85e4188](https://github.com/mojaloop/central-ledger/commit/85e41881160de7f66023fb7f67b9d3e6fbd60b31))
+
 ### [19.8.3](https://github.com/mojaloop/central-ledger/compare/v19.8.2...v19.8.3) (2025-07-27)
 
 

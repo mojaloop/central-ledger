@@ -599,9 +599,12 @@ Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
 
   await fxTimeoutTest.test('When fxTransfer followed by a transfer are sent, fxTimeout should', async timeoutTest => {
     const td = await prepareFxTestData(testFxData)
-    // Modify expiration of only fxTransfer
+    // Modify expiration of both fxTransfer and transfer.
+    // fxTransfer expiration should not affect if there is a dependent transfer associated with it.
     const expiration = new Date((new Date()).getTime() + (10 * 1000)) // 10 seconds
-    td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.expiration = expiration.toISOString()
+    const fxExpiration = new Date((new Date()).getTime() + (5 * 1000)) // 5 seconds
+    td.messageProtocolPrepare1.content.payload.expiration = expiration.toISOString()
+    td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.expiration = fxExpiration.toISOString()
 
     await timeoutTest.test('update fxTransfer state to RESERVED by PREPARE request', async (test) => {
       const prepareConfig = Utility.getKafkaConfig(
@@ -723,7 +726,7 @@ Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
       test.end()
     })
 
-    await timeoutTest.test('update fxTransfer after timeout with timeout status & error', async (test) => {
+    await timeoutTest.test('update transfer after timeout with timeout status & error', async (test) => {
       // Arrange
       // Nothing to do here...
 
@@ -732,48 +735,48 @@ Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
       // Re-try function with conditions
       const inspectTransferState = async () => {
         try {
-          // Fetch FxTransfer record
-          const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+          // Fetch transfer record
+          const transfer = await TransferService.getById(td.messageProtocolPrepare1.content.payload.transferId) || {}
           // Check Transfer for correct state
-          if (fxTransfer?.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
+          if (transfer?.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
             // We have a Transfer with the correct state, lets check if we can get the TransferError record
             try {
               // Fetch the TransferError record
-              const fxTransferError = await FxTransferModels.fxTransferError.getByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId)
-              // FxTransferError record found, so lets return it
+              const transferError = await TransferService.getTransferErrorByTransferId(td.messageProtocolPrepare1.content.payload.transferId)
+              // transferError record found, so lets return it
               return {
-                fxTransfer,
-                fxTransferError
+                transfer,
+                transferError
               }
             } catch (err) {
-              // NO FxTransferError record found, so lets return the fxTransfer and the error
+              // NO TransferError record found, so lets return the transfer and the error
               return {
-                fxTransfer,
+                transfer,
                 err
               }
             }
           } else {
-            // NO FxTransfer with the correct state was found, so we return false
+            // NO Transfer with the correct state was found, so we return false
             return false
           }
         } catch (err) {
-          // NO FxTransfer with the correct state was found, so we return false
+          // NO Transfer with the correct state was found, so we return false
           Logger.error(err)
           return false
         }
       }
 
-      // wait until we inspect a fxTransfer with the correct status, or return false if all re-try attempts have failed
+      // wait until we inspect a transfer with the correct status, or return false if all re-try attempts have failed
       const result = await wrapWithRetries(inspectTransferState, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
       // Assert
       if (result === false) {
-        test.fail(`FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.fail(`Transfer['${td.messageProtocolPrepare1.content.payload.transferId}'].TransferState failed to transition to ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
         test.end()
       } else {
-        test.equal(result.fxTransfer && result.fxTransfer?.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
-        test.equal(result.fxTransferError && result.fxTransferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
-        test.equal(result.fxTransferError && result.fxTransferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `FxTransfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
+        test.equal(result.transfer && result.transfer?.transferState, Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, `transfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].TransferState = ${Enum.Transfers.TransferInternalState.EXPIRED_RESERVED}`)
+        test.equal(result.transferError && result.transferError.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, `transfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorCode = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code}`)
+        test.equal(result.transferError && result.transferError.errorDescription, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message, `transfer['${td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId}'].transferError.errorDescription = ${ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message}`)
         test.pass()
         test.end()
       }

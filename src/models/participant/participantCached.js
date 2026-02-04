@@ -29,12 +29,11 @@
 
 const Cache = require('../../lib/cache')
 const ParticipantModel = require('../../models/participant/participant')
-const Metrics = require('@mojaloop/central-services-metrics')
 const rethrow = require('../../shared/rethrow')
 const assert = require('assert')
 
 let cacheClient
-let participantsAllCacheKey
+const participantsAllCacheKey = 'all'
 
 /*
   Private API
@@ -66,43 +65,18 @@ const buildUnifiedParticipantsData = (allParticipants) => {
   return unifiedParticipants
 }
 
-const getParticipantsCached = async () => {
-  const histTimer = Metrics.getHistogram(
-    'model_participant',
-    'model_getParticipantsCached - Metrics for participant model',
-    ['success', 'queryName', 'hit']
-  ).startTimer()
-  // Do we have valid participants list in the cache ?
-  assert(cacheClient, 'Expected cacheClient to be initialized')
-  let cachedParticipants = cacheClient.get(participantsAllCacheKey)
-  if (!cachedParticipants) {
-    // No participants in the cache, so fetch from participant API
-    const allParticipants = await ParticipantModel.getAll()
-    cachedParticipants = buildUnifiedParticipantsData(allParticipants)
+const getParticipantsCached = () => cacheClient.get(participantsAllCacheKey)
 
-    // store in cache
-    cacheClient.set(participantsAllCacheKey, cachedParticipants)
-    histTimer({ success: true, queryName: 'model_getParticipantsCached', hit: false })
-  } else {
-    // unwrap participants list from catbox structure
-    cachedParticipants = cachedParticipants.item
-    histTimer({ success: true, queryName: 'model_getParticipantsCached', hit: true })
-  }
-  return cachedParticipants
+const generate = async function (key) {
+  const allParticipants = await ParticipantModel.getAll()
+  return buildUnifiedParticipantsData(allParticipants)
 }
 
 /*
   Public API
 */
 exports.initialize = async () => {
-  /* Register as cache client */
-  const participantCacheClientMeta = {
-    id: 'participants',
-    preloadCache: getParticipantsCached
-  }
-
-  cacheClient = Cache.registerCacheClient(participantCacheClientMeta)
-  participantsAllCacheKey = cacheClient.createKey('all')
+  cacheClient = Cache.registerCacheClient({ id: 'participants', generate, preloadCache: getParticipantsCached })
 }
 
 exports.invalidateParticipantsCache = async () => {
@@ -152,3 +126,5 @@ exports.create = withInvalidate('create')
 exports.update = withInvalidate('update')
 exports.destroyByName = withInvalidate('destroyByName')
 exports.destroyParticipantEndpointByParticipantId = withInvalidate('destroyParticipantEndpointByParticipantId')
+
+exports.build = buildUnifiedParticipantsData

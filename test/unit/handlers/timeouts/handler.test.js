@@ -41,6 +41,7 @@ const ProxyCache = require('#src/lib/proxyCache')
 const DistLock = require('../../../../src/lib/distLock')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
+const Db = require('../../../../src/lib/db')
 
 Test('Timeout handler', TimeoutHandlerTest => {
   let sandbox
@@ -58,6 +59,9 @@ Test('Timeout handler', TimeoutHandlerTest => {
       connect: sandbox.stub(),
       disconnect: sandbox.stub()
     })
+    const knexStub = sandbox.stub()
+    knexStub.transaction = sandbox.stub().callsArgWith(0, sandbox.stub())
+    sandbox.stub(Db, 'getKnex').returns(knexStub)
     DistLockStub = {
       acquire: sandbox.stub().resolves(true),
       release: sandbox.stub().resolves(),
@@ -169,6 +173,8 @@ Test('Timeout handler', TimeoutHandlerTest => {
       intervalMax: 20,
       fxIntervalMin: 10,
       fxIntervalMax: 20,
+      transferForwardedList: [],
+      fxTransferForwardedList: [],
       ...resultMock
     }
 
@@ -180,6 +186,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
       TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(latestFxTransferStateChangeMock)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
       Utility.produceGeneralMessage = sandbox.stub()
 
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
@@ -216,6 +223,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
       TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(latestFxTransferStateChangeMock)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock1)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
       Utility.produceGeneralMessage = sandbox.stub()
 
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
@@ -256,6 +264,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
         fxTransferTimeoutList: null
       }
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock1)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
       Utility.produceGeneralMessage = sandbox.stub()
       expected = {
         cleanup: 1,
@@ -264,6 +273,8 @@ Test('Timeout handler', TimeoutHandlerTest => {
         intervalMax: 0,
         fxIntervalMin: 0,
         fxIntervalMax: 0,
+        transferForwardedList: [],
+        fxTransferForwardedList: [],
         ...resultMock1
       }
 
@@ -303,11 +314,15 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
       Utility.produceGeneralMessage = sandbox.stub().throws()
 
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
         '../../lib/distLock': {
           createLock: createDistLockStub
+        },
+        '../../lib/config': {
+          INSTRUMENTATION_METRICS_DISABLED: true // disable metrics to avoid rethrow stub being called
         }
       })
 
@@ -335,6 +350,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.cleanupFxTransferTimeout = sandbox.stub().returns(1)
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
       TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(latestFxTransferStateChangeMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
       Utility.produceGeneralMessage = sandbox.stub().throws()
 
       const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
@@ -354,6 +370,223 @@ Test('Timeout handler', TimeoutHandlerTest => {
       }
     })
 
+    timeoutTest.test('should return immediately if already running', async (test) => {
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
+      TimeoutService.timeoutExpireReserved = sandbox.stub().resolves({})
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().resolves({ transferForwardedList: [], fxTransferForwardedList: [] })
+      await TimeoutHandlerProxy.registerTimeoutHandler()
+      const [result1, result2] = await Promise.all([
+        TimeoutHandlerProxy.timeout(),
+        TimeoutHandlerProxy.timeout()
+      ])
+      test.notEqual(result1, undefined)
+      test.equal(result2, undefined)
+      test.ok(TimeoutService.timeoutExpireReserved.calledOnce)
+      test.end()
+    })
+
+    timeoutTest.test('perform timeout with forwarded transfers', async (test) => {
+      const transferForwardedListMock = [
+        {
+          transferId: randomUUID(),
+          payerFsp: 'dfsp1',
+          payeeFsp: 'dfsp2',
+          externalPayerName: 'Payer Bank',
+          externalPayeeName: 'Payee Bank',
+          transferStateId: Enum.Transfers.TransferInternalState.RESERVED_FORWARDED,
+          attemptCount: 1
+        }
+      ]
+      const fxTransferForwardedListMock = [
+        {
+          commitRequestId: randomUUID(),
+          initiatingFsp: 'dfsp1',
+          counterPartyFsp: 'dfsp2',
+          externalInitiatingFspName: 'Initiating Bank',
+          externalCounterPartyFspName: 'Counter Bank',
+          transferStateId: Enum.Transfers.TransferInternalState.RESERVED_FORWARDED,
+          attemptCount: 1
+        }
+      ]
+      const resultMock = {
+        transferTimeoutList: [],
+        fxTransferTimeoutList: []
+      }
+
+      TimeoutService.getTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.getFxTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.cleanupFxTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({
+        transferForwardedList: transferForwardedListMock,
+        fxTransferForwardedList: fxTransferForwardedListMock
+      })
+      TimeoutService.incrementForwardedAttemptCount = sandbox.stub().resolves()
+      TimeoutService.removeForwardedRecord = sandbox.stub().resolves()
+      Utility.produceGeneralMessage = sandbox.stub()
+
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
+      await TimeoutHandlerProxy.registerTimeoutHandler()
+      const result = await TimeoutHandlerProxy.timeout()
+
+      test.equal(Utility.produceGeneralMessage.callCount, 2, '2 forwarded messages were produced')
+      test.ok(TimeoutService.incrementForwardedAttemptCount.calledTwice, 'Attempt count incremented twice')
+      test.deepEqual(result.transferForwardedList, transferForwardedListMock)
+      test.deepEqual(result.fxTransferForwardedList, fxTransferForwardedListMock)
+      test.end()
+    })
+
+    timeoutTest.test('handle error in forwarded transfers processing', async (test) => {
+      const transferForwardedListMock = [
+        {
+          transferId: randomUUID(),
+          payerFsp: 'dfsp1',
+          payeeFsp: 'dfsp2',
+          transferStateId: Enum.Transfers.TransferInternalState.RESERVED_FORWARDED,
+          attemptCount: 1
+        }
+      ]
+      const resultMock = {
+        transferTimeoutList: [],
+        fxTransferTimeoutList: []
+      }
+
+      TimeoutService.getTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.getFxTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.cleanupFxTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({
+        transferForwardedList: transferForwardedListMock,
+        fxTransferForwardedList: []
+      })
+      Utility.produceGeneralMessage = sandbox.stub().throws(new Error('Kafka error'))
+
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        },
+        '../../lib/config': {
+          INSTRUMENTATION_METRICS_DISABLED: true
+        }
+      })
+
+      try {
+        await TimeoutHandlerProxy.registerTimeoutHandler()
+        await TimeoutHandlerProxy.timeout()
+        test.fail('Exception expected')
+      } catch (err) {
+        test.pass('Error thrown on forwarded transfer processing')
+      }
+      test.end()
+    })
+
+    timeoutTest.test('handle error in forwarded fx transfers processing', async (test) => {
+      const fxTransferForwardedListMock = [
+        {
+          commitRequestId: randomUUID(),
+          initiatingFsp: 'dfsp1',
+          counterPartyFsp: 'dfsp2',
+          transferStateId: Enum.Transfers.TransferInternalState.RESERVED_FORWARDED,
+          attemptCount: 1
+        }
+      ]
+      const resultMock = {
+        transferTimeoutList: [],
+        fxTransferTimeoutList: []
+      }
+
+      TimeoutService.getTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.getFxTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.cleanupFxTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({
+        transferForwardedList: [],
+        fxTransferForwardedList: fxTransferForwardedListMock
+      })
+      Utility.produceGeneralMessage = sandbox.stub().throws(new Error('Kafka error'))
+
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        },
+        '../../lib/config': {
+          INSTRUMENTATION_METRICS_DISABLED: true
+        }
+      })
+
+      try {
+        await TimeoutHandlerProxy.registerTimeoutHandler()
+        await TimeoutHandlerProxy.timeout()
+        test.fail('Exception expected')
+      } catch (err) {
+        test.pass('Error thrown on forwarded fx transfer processing')
+      }
+      test.end()
+    })
+
+    timeoutTest.test('handle forwarded fx transfer with non-RESERVED_FORWARDED state', async (test) => {
+      const fxTransferForwardedListMock = [
+        {
+          commitRequestId: randomUUID(),
+          initiatingFsp: 'dfsp1',
+          counterPartyFsp: 'dfsp2',
+          externalInitiatingFspName: 'Initiating Bank',
+          externalCounterPartyFspName: 'Counter Bank',
+          transferStateId: Enum.Transfers.TransferInternalState.RESERVED, // Different internal state
+          attemptCount: 1
+        }
+      ]
+      const resultMock = {
+        transferTimeoutList: [],
+        fxTransferTimeoutList: []
+      }
+
+      TimeoutService.getTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.getFxTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.cleanupFxTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({
+        transferForwardedList: [],
+        fxTransferForwardedList: fxTransferForwardedListMock
+      })
+      TimeoutService.incrementForwardedAttemptCount = sandbox.stub().resolves()
+      Utility.produceGeneralMessage = sandbox.stub()
+
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
+      await TimeoutHandlerProxy.registerTimeoutHandler()
+      await TimeoutHandlerProxy.timeout()
+
+      test.ok(Utility.produceGeneralMessage.notCalled, 'No messages produced for non-RESERVED_FORWARDED state')
+      test.ok(TimeoutService.incrementForwardedAttemptCount.notCalled, 'Attempt count not incremented')
+      test.end()
+    })
     timeoutTest.end()
   })
 
@@ -391,7 +624,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
           createLock: createDistLockStub
         }
       })
-      const result = await TimeoutHandlerProxy.registerAllHandlers()
+      const result = await TimeoutHandlerProxy.registerTimeoutHandler()
       test.equal(result, true)
       await TimeoutHandlerProxy.stop()
       test.end()

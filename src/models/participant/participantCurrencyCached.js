@@ -30,11 +30,10 @@
 const Cache = require('../../lib/cache')
 const Config = require('../../../src/lib/config')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
-const Metrics = require('@mojaloop/central-services-metrics')
 const rethrow = require('../../shared/rethrow')
 
 let cacheClient
-let participantCurrencyAllCacheKey
+const participantCurrencyAllCacheKey = 'all'
 
 /*
   Private API
@@ -62,28 +61,11 @@ const buildUnifiedParticipantsCurrencyData = (allCurrencyParticipants) => {
   return unifiedCurrencyParticipants
 }
 
-const getParticipantCurrencyCached = async () => {
-  const histTimer = Metrics.getHistogram(
-    'model_participant',
-    'model_getParticipantCurrencyCached - Metrics for participant model',
-    ['success', 'queryName', 'hit']
-  ).startTimer()
-  // Do we have valid participantsCurrency list in the cache ?
-  let cachedCurrencyParticipants = cacheClient.get(participantCurrencyAllCacheKey)
-  if (!cachedCurrencyParticipants) {
-    // No participantsCurrency in the cache, so fetch from participantsCurrency API
-    const allCurrencyParticipants = await ParticipantCurrencyModel.getAll()
-    cachedCurrencyParticipants = buildUnifiedParticipantsCurrencyData(allCurrencyParticipants)
+const getParticipantCurrencyCached = () => cacheClient.get(participantCurrencyAllCacheKey)
 
-    // store in cache
-    cacheClient.set(participantCurrencyAllCacheKey, cachedCurrencyParticipants)
-    histTimer({ success: true, queryName: 'model_getParticipantCurrencyCached', hit: false })
-  } else {
-    // unwrap participants list from catbox structure
-    cachedCurrencyParticipants = cachedCurrencyParticipants.item
-    histTimer({ success: true, queryName: 'model_getParticipantCurrencyCached', hit: true })
-  }
-  return cachedCurrencyParticipants
+const generate = async function (key) {
+  const allCurrencyParticipants = await ParticipantCurrencyModel.getAll()
+  return buildUnifiedParticipantsCurrencyData(allCurrencyParticipants)
 }
 
 /*
@@ -91,19 +73,11 @@ const getParticipantCurrencyCached = async () => {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  const participantCurrencyCacheClientMeta = {
-    id: 'participantCurrency',
-    preloadCache: getParticipantCurrencyCached
-  }
-
-  cacheClient = Cache.registerCacheClient(participantCurrencyCacheClientMeta)
-  participantCurrencyAllCacheKey = cacheClient.createKey('all')
+  cacheClient = Cache.registerCacheClient({ id: 'participantCurrency', generate, preloadCache: getParticipantCurrencyCached })
 }
 
 exports.invalidateParticipantCurrencyCache = async () => {
-  if (cacheClient) {
-    cacheClient.drop(participantCurrencyAllCacheKey)
-  }
+  cacheClient?.drop(participantCurrencyAllCacheKey)
 }
 
 exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
@@ -170,3 +144,4 @@ const withInvalidate = (theFunctionName) => {
 exports.create = withInvalidate('create')
 exports.update = withInvalidate('update')
 exports.destroyByParticipantId = withInvalidate('destroyByParticipantId')
+exports.build = buildUnifiedParticipantsCurrencyData

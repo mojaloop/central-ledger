@@ -36,7 +36,7 @@ const TS = Enum.Transfers.TransferInternalState
 const cleanup = async () => {
   Logger.isDebugEnabled && Logger.debug('cleanup transferTimeout')
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const ttIdList = await Db.from('transferTimeout').query(async (builder) => {
       const b = await builder

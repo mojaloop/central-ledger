@@ -109,7 +109,7 @@ Test('IlpPackets', IlpPacketsHandlerTest => {
         await Handler.getById({ params: { id: ilpPacket[0].transferId } })
       } catch (e) {
         test.ok(e instanceof Error)
-        test.equal(e.message, 'The requested resource could not be found.')
+        test.equal(e.message, 'The requested resource could not be found')
         test.end()
       }
     })

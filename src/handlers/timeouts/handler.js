@@ -31,8 +31,8 @@
 'use strict'
 
 /**
-  * @module src/handlers/timeout
-  */
+ * @module src/handlers/timeout
+ */
 
 const CronJob = require('cron').CronJob
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -40,6 +40,7 @@ const Utility = require('@mojaloop/central-services-shared').Util
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
@@ -168,11 +169,121 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
       await span.finish(fspiopError.message, state)
-      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: '_processTimedOutTransfers' })
+      countAndRethrow(fspiopError, { operation: '_processTimedOutTransfers' })
     } finally {
       if (!span.isFinished) {
         await span.finish()
       }
+    }
+  }
+}
+
+/**
+ * Processes forwarded transfers
+ *
+ * @param {ForwardedTransfer[]} transferForwardedList
+ * @returns {Promise<void>}
+ */
+const _processForwardedTransfers = async (transferForwardedList) => {
+  const fspiopError = createFSPIOPTimeoutError()
+  if (!Array.isArray(transferForwardedList)) {
+    transferForwardedList = [
+      { ...transferForwardedList }
+    ]
+  }
+  log.verbose(`processing ${transferForwardedList.length} forwarded timed out transfers...`)
+
+  for (const TF of transferForwardedList) {
+    try {
+      const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
+      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(TF.transferId, Enum.Kafka.Topics.NOTIFICATION, Action.GET, state)
+      const destination = TF.externalPayeeName || TF.payeeFsp
+      const source = TF.externalPayerName || TF.payerFsp
+      const headers = Utility.Http.SwitchDefaultHeaders(destination, Enum.Http.HeaderResources.TRANSFERS, source, resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion)
+      const message = Utility.StreamingProtocol.createMessage(
+        TF.transferId,
+        destination,
+        source,
+        metadata,
+        headers,
+        // Important that payload is empty for GET is falsy/empty object
+        null,
+        { id: TF.transferId },
+        `application/vnd.interoperability.${Enum.Http.HeaderResources.TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.TRANSFERS].contentVersion}`)
+
+      if (TF.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+        message.from = Config.HUB_NAME
+        await Kafka.produceGeneralMessage(
+          Config.KAFKA_CONFIG,
+          Producer,
+          Enum.Kafka.Topics.NOTIFICATION,
+          Action.GET,
+          message,
+          state,
+          null,
+          null
+        )
+        await TimeoutService.incrementForwardedAttemptCount(TF.transferId)
+      }
+    } catch (err) {
+      log.error('error in _processForwardedTransfers:', err)
+      const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+      countAndRethrow(fspiopError, { operation: '_processForwardedTransfers' })
+    }
+  }
+}
+
+/**
+ * Processes forwarded fxTransfers
+ *
+ * @param {ForwardedFxTransfer[]} fxTransferForwardedList
+ * @returns {Promise<void>}
+ */
+const _processFxForwardedTransfers = async (fxTransferForwardedList) => {
+  const fspiopError = createFSPIOPTimeoutError()
+  if (!Array.isArray(fxTransferForwardedList)) {
+    fxTransferForwardedList = [
+      { ...fxTransferForwardedList }
+    ]
+  }
+  log.verbose(`processing ${fxTransferForwardedList.length} forwarded timed out fxTransfers...`)
+
+  for (const FTF of fxTransferForwardedList) {
+    try {
+      const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
+      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(FTF.commitRequestId, Enum.Kafka.Topics.NOTIFICATION, Action.GET, state)
+      const destination = FTF.externalCounterPartyFspName || FTF.counterPartyFsp
+      const source = FTF.externalInitiatingFspName || FTF.initiatingFsp
+      const headers = Utility.Http.SwitchDefaultHeaders(destination, Enum.Http.HeaderResources.FX_TRANSFERS, source, resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion)
+      const message = Utility.StreamingProtocol.createMessage(
+        FTF.commitRequestId,
+        destination,
+        source,
+        metadata,
+        headers,
+        // Important that payload is empty for GET is falsy/empty object
+        null,
+        { id: FTF.commitRequestId },
+        `application/vnd.interoperability.${Enum.Http.HeaderResources.FX_TRANSFERS}+json;version=${resourceVersions[Enum.Http.HeaderResources.FX_TRANSFERS].contentVersion}`)
+
+      if (FTF.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+        message.from = Config.HUB_NAME
+        await Kafka.produceGeneralMessage(
+          Config.KAFKA_CONFIG,
+          Producer,
+          Enum.Kafka.Topics.NOTIFICATION,
+          Action.GET,
+          message,
+          state,
+          null,
+          null
+        )
+        await TimeoutService.incrementForwardedAttemptCount(FTF.commitRequestId, true)
+      }
+    } catch (err) {
+      log.error('error in _processFxForwardedTransfers:', err)
+      const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+      countAndRethrow(fspiopError, { operation: '_processFxForwardedTransfers' })
     }
   }
 }
@@ -251,7 +362,7 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       await span.error(fspiopError, state)
       await span.finish(fspiopError.message, state)
-      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: '_processFxTimedOutTransfers' })
+      countAndRethrow(fspiopError, { operation: '_processFxTimedOutTransfers' })
     } finally {
       if (!span.isFinished) {
         await span.finish()
@@ -273,10 +384,15 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
   */
 const timeout = async () => {
+  if (running) return
+
   let isAcquired
   try {
     isAcquired = await acquireLock()
     if (!isAcquired) return
+
+    running = true
+
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
     const intervalMin = timeoutSegment ? timeoutSegment.value : 0
     const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
@@ -292,8 +408,14 @@ const timeout = async () => {
     const fxIntervalMax = (latestFxTransferStateChange && parseInt(latestFxTransferStateChange.fxTransferStateChangeId)) || 0
 
     const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
+
+    const { transferForwardedList, fxTransferForwardedList } = await TimeoutService.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, Config.HANDLERS_TIMEOUT_FORWARDED_MAX_ATTEMPTS)
+
     transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
     fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)
+
+    transferForwardedList && await _processForwardedTransfers(transferForwardedList)
+    fxTransferForwardedList && await _processFxForwardedTransfers(fxTransferForwardedList)
 
     return {
       intervalMin,
@@ -303,11 +425,13 @@ const timeout = async () => {
       fxCleanup,
       fxIntervalMax,
       transferTimeoutList,
-      fxTransferTimeoutList
+      fxTransferTimeoutList,
+      transferForwardedList,
+      fxTransferForwardedList
     }
   } catch (err) {
     log.error('error in timeout:', err)
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'timeoutHandler' })
+    countAndRethrow(err, { operation: 'timeoutHandler' })
   } finally {
     if (isAcquired) await releaseLock()
   }
@@ -345,35 +469,74 @@ const initLock = async () => {
       distLock = createLock(Config.HANDLERS_TIMEOUT.DIST_LOCK, log)
     }
   }
+  running = false
 }
 
 /* istanbul ignore next */
 const acquireLock = async () => {
   if (distLockEnabled) {
     try {
-      return !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
+      const acquired = !!(await distLock.acquire(distLockKey, distLockTtl, distLockAcquireTimeout))
+      if (acquired) {
+        distLock.extensionCount = 0
+
+        // Set up automatic lock extension at one third of the lock TTL
+        const extensionInterval = Math.floor(distLockTtl / 3)
+        const lockExtender = setInterval(async () => {
+          try {
+            await distLock.extend(distLockTtl)
+            distLock.extensionCount++
+            log.debug(`Extended distributed lock for ${distLockTtl}ms (extension #${distLock.extensionCount})`)
+          } catch (err) {
+            log.error(`Error extending distributed lock (after ${distLock.extensionCount} extensions):`, err)
+            clearInterval(lockExtender)
+          }
+        }, extensionInterval)
+
+        // Store the interval ID so we can clear it when the lock is released
+        distLock.extensionTimer = lockExtender
+      }
+      return acquired
     } catch (err) {
       log.error('Error acquiring distributed lock:', err)
-      // should this be added to metrics?
       return false
     }
   }
-  log.info('Distributed lock not configured or disabled, running without distributed lock')
+  log.info('Distributed lock not configured or disabled, proceeding with local lock')
   return running ? false : (running = true)
 }
 
 /* istanbul ignore next */
 const releaseLock = async () => {
-  if (distLock) {
+  if (distLockEnabled && distLock) {
     try {
+      // Clear the extension timer if it exists
+      if (distLock.extensionTimer) {
+        clearInterval(distLock.extensionTimer)
+        distLock.extensionTimer = null
+      }
+
       await distLock.release()
       log.verbose('Distributed lock released')
     } catch (error) {
       log.error('Error releasing distributed lock:', error)
-      // should this be added to metrics?
     }
   }
   running = false
+}
+
+const countAndRethrow = (err, params) => {
+  if (!Config.INSTRUMENTATION_METRICS_DISABLED) {
+    rethrow.rethrowAndCountFspiopError(err, params)
+  }
+  throw err
+}
+
+const initializeMetrics = () => {
+  if (!Config.INSTRUMENTATION_METRICS_DISABLED) {
+    Metrics.setup(Config.INSTRUMENTATION_METRICS_CONFIG)
+    log.info('Metrics setup completed')
+  }
 }
 
 /**
@@ -385,6 +548,8 @@ const releaseLock = async () => {
   */
 const registerTimeoutHandler = async () => {
   try {
+    initializeMetrics()
+
     if (isRegistered) {
       await stop()
     }
@@ -404,7 +569,7 @@ const registerTimeoutHandler = async () => {
     return true
   } catch (err) {
     log.error('error in registerTimeoutHandler:', err)
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerTimeoutHandler' })
+    countAndRethrow(err, { operation: 'registerTimeoutHandler' })
   }
 }
 
@@ -425,7 +590,7 @@ const registerAllHandlers = async () => {
     return true
   } catch (err) {
     log.error('error in registerAllHandlers:', err)
-    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
+    countAndRethrow(err, { operation: 'registerAllHandlers' })
   }
 }
 
@@ -436,5 +601,5 @@ module.exports = {
   registerAllHandlers,
   registerTimeoutHandler,
   isRunning,
-  stop
+  stop // exported for testing purposes only
 }

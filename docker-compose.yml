@@ -5,7 +5,7 @@ networks:
 
 # @see https://uninterrupted.tech/blog/hassle-free-redis-cluster-deployment-using-docker/
 x-redis-node: &REDIS_NODE
-  image: docker.io/bitnami/redis-cluster:7.4.2
+  image: docker.io/bitnamilegacy/redis-cluster:7.4.2
   environment: &REDIS_ENVS
     ALLOW_EMPTY_PASSWORD: yes
     REDIS_NODES: redis-node-0:6379 redis-node-1:6380 redis-node-2:6381 redis-node-3:6382 redis-node-4:6383 redis-node-5:6384
@@ -37,8 +37,8 @@ services:
        - ./docker/central-ledger/default.json:/opt/app/config/default.json
        - ./docker/wait-for:/opt/wait-for
     environment:
-      - LOG_LEVEL=info
-      - CSL_LOG_TRANSPORT=file
+      - LOG_LEVEL=verbose
+#      - CSL_LOG_TRANSPORT=file
       - CLEDG_MONGODB__DISABLED=false
     networks:
       - cl-mojaloop-net
@@ -84,7 +84,7 @@ services:
       interval: 30s
 
   mysql:
-    image: mysql/mysql-server
+    image: mysql/mysql-server:8.0
     container_name: cl_mysql
     deploy:
       replicas: 1
@@ -109,7 +109,7 @@ services:
       retries: 10
       start_period: 40s
       interval: 30s
-  
+
   #  To use with proxyCache.type === 'redis-cluster'
   redis-node-0:
     container_name: redis-node-0
@@ -205,7 +205,7 @@ services:
       - mockserver
 
   kafka:
-    image: docker.io/bitnami/kafka:3.5
+    image: docker.io/bitnamilegacy/kafka:3.5
     container_name: cl_kafka
     networks:
       - cl-mojaloop-net
@@ -238,7 +238,7 @@ services:
     container_name: cl_init_kafka
     networks:
       - cl-mojaloop-net
-    image: docker.io/bitnami/kafka:3.5
+    image: docker.io/bitnamilegacy/kafka:3.5
     depends_on:
       - kafka
     volumes:

@@ -210,5 +210,111 @@ Test('Timeout Service', timeoutTest => {
     timeoutExpireReservedTest.end()
   })
 
+  timeoutTest.test('reservedForwardedTransfers should', reservedForwardedTransfersTest => {
+    reservedForwardedTransfersTest.test('return the reserved forwarded transfers', async (test) => {
+      try {
+        const intervalMin = 1
+        const intervalMax = 2
+        const fxIntervalMin = 1
+        const fxIntervalMax = 2
+        const expectedResult = [{ id: 1 }, { id: 2 }]
+
+        TransferFacade.reservedForwardedTransfers.withArgs(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax).returns(Promise.resolve(expectedResult))
+        const result = await TimeoutService.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax)
+        test.deepEqual(result, expectedResult, 'Results Match')
+        test.end()
+      } catch (e) {
+        Logger.error(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    reservedForwardedTransfersTest.end()
+  })
+
+  timeoutTest.test('incrementForwardedAttemptCount should', incrementForwardedAttemptCountTest => {
+    incrementForwardedAttemptCountTest.test('increment the forwarded attempt count', async (test) => {
+      try {
+        const transferId = 1
+        const isFxTransfer = false
+        TransferFacade.incrementForwardedAttemptCount.withArgs(transferId, isFxTransfer).returns(Promise.resolve(true))
+        const result = await TimeoutService.incrementForwardedAttemptCount(transferId, isFxTransfer)
+        test.equal(result, true, 'Results Match')
+        test.end()
+      } catch (e) {
+        Logger.error(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    incrementForwardedAttemptCountTest.test('increment the forwarded attempt count for fx transfer', async (test) => {
+      try {
+        const transferId = 2
+        const isFxTransfer = true
+        TransferFacade.incrementForwardedAttemptCount.withArgs(transferId, isFxTransfer).returns(Promise.resolve(true))
+        const result = await TimeoutService.incrementForwardedAttemptCount(transferId, isFxTransfer)
+        test.equal(result, true, 'Results Match')
+        test.end()
+      } catch (e) {
+        Logger.error(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    incrementForwardedAttemptCountTest.test('increment the forwarded attempt count for non-fx transfer with different id', async (test) => {
+      try {
+        const transferId = 3
+        const isFxTransfer = false
+        TransferFacade.incrementForwardedAttemptCount.withArgs(transferId, isFxTransfer).returns(Promise.resolve(true))
+        const result = await TimeoutService.incrementForwardedAttemptCount(transferId, isFxTransfer)
+        test.equal(result, true, 'Results Match')
+        test.end()
+      } catch (e) {
+        Logger.error(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    incrementForwardedAttemptCountTest.end()
+  })
+
+  timeoutTest.test('removeForwardedRecord should', removeForwardedRecordTest => {
+    removeForwardedRecordTest.test('remove the forwarded record', async (test) => {
+      try {
+        const transferId = 1
+        const isFxTransfer = false
+        TransferFacade.removeForwardedRecord.withArgs(transferId, isFxTransfer).returns(Promise.resolve(true))
+        const result = await TimeoutService.removeForwardedRecord(transferId, isFxTransfer)
+        test.equal(result, true, 'Results Match')
+        test.end()
+      } catch (e) {
+        Logger.error(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    removeForwardedRecordTest.test('remove the forwarded record for fx transfer', async (test) => {
+      try {
+        const transferId = 2
+        const isFxTransfer = true
+        TransferFacade.removeForwardedRecord.withArgs(transferId, isFxTransfer).returns(Promise.resolve(true))
+        const result = await TimeoutService.removeForwardedRecord(transferId, isFxTransfer)
+        test.equal(result, true, 'Results Match')
+        test.end()
+      } catch (e) {
+        Logger.error(e)
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    removeForwardedRecordTest.end()
+  })
+
   timeoutTest.end()
 })

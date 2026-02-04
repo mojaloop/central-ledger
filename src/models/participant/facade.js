@@ -294,7 +294,7 @@ const getEndpoint = async (participantId, endpointType) => {
 
 const getAllEndpoints = async (participantId) => {
   try {
-    return Db.from('participantEndpoint').query(builder => {
+    return await Db.from('participantEndpoint').query(builder => {
       return builder.innerJoin('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId')
         .where({
           'participantEndpoint.participantId': participantId,
@@ -303,6 +303,7 @@ const getAllEndpoints = async (participantId) => {
           'et.name')
     })
   } catch (err) {
+    logger.warn('DB error in getAllEndpoints: ', err)
     rethrow.rethrowDatabaseError(err)
   }
 }
@@ -331,32 +332,21 @@ const getAllEndpoints = async (participantId) => {
 const addEndpoint = async (participantId, endpoint) => {
   try {
     const knex = Db.getKnex()
-    return knex.transaction(async trx => {
-      const endpointType = await knex('endpointType').where({
-        name: endpoint.type,
-        isActive: 1
-      }).select('endpointTypeId').first()
+    const endpointType = await knex('endpointType').where({
+      name: endpoint.type,
+      isActive: 1
+    }).select('endpointTypeId').first()
 
-      const existingEndpoint = await knex('participantEndpoint').transacting(trx).forUpdate().select('*')
-        .where({
-          participantId,
-          endpointTypeId: endpointType.endpointTypeId,
-          isActive: 1
-        })
-      if (Array.isArray(existingEndpoint) && existingEndpoint.length > 0) {
-        await knex('participantEndpoint').transacting(trx).update({ isActive: 0 }).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
-      }
-      const newEndpoint = {
+    await knex('participantEndpoint')
+      .insert({
         participantId,
         endpointTypeId: endpointType.endpointTypeId,
         value: endpoint.value,
         isActive: 1,
         createdBy: 'unknown'
-      }
-      const result = await knex('participantEndpoint').transacting(trx).insert(newEndpoint)
-      newEndpoint.participantEndpointId = result[0]
-      return newEndpoint
-    })
+      })
+      .onConflict(['participantId', 'endpointTypeId']).merge()
+    return (await getEndpoint(participantId, endpoint.type))[0]
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -598,6 +588,9 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         }
         const result = await knex('participantLimit').transacting(trx).insert(newLimit)
         newLimit.participantLimitId = result[0]
+        if (Cache.isCacheEnabled()) {
+          await ParticipantLimitCached.invalidateParticipantLimitCache()
+        }
         return {
           participantLimit: newLimit
         }

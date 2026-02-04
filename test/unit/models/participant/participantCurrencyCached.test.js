@@ -81,17 +81,15 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
   })
 
   await participantCurrencyCachedTest.test('initializes cache correctly', async (test) => {
-    const cacheClient = {
-      createKey: sandbox.stub().returns({})
-    }
-    Cache.registerCacheClient.returns(cacheClient)
+    Cache.registerCacheClient.callsFake(async ({ generate }) => {
+      await generate()
+      return {}
+    })
 
-    // initialize calls registerCacheClient and createKey
+    // initialize calls registerCacheClient
     test.notOk(Cache.registerCacheClient.calledOnce)
-    test.notOk(cacheClient.createKey.calledOnce)
     await Model.initialize()
     test.ok(Cache.registerCacheClient.calledOnce)
-    test.ok(cacheClient.createKey.calledOnce)
 
     test.end()
   })
@@ -99,7 +97,6 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
   await participantCurrencyCachedTest.test('calls drop() for invalidateParticipantsCache', async (test) => {
     // initialize
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       drop: sandbox.stub()
     }
     Cache.registerCacheClient.returns(cacheClient)
@@ -114,20 +111,15 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
   })
 
   await participantCurrencyCachedTest.test('getById(), getByParticipantId() and findOneByParams() work', async (test) => {
-    let cache = null
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
-      get: () => cache,
-      set: (key, x) => {
-        cache = { item: x } // the cache retuns {item: <data>} structure
-      }
+      get: () => Model.build(participantCurrencyFixtures)
     }
     Cache.registerCacheClient.returns(cacheClient)
     await Model.initialize()
 
     // check getById()
-    const participantByParticipantId = await Model.getByParticipantId(participantCurrencyFixtures[1].participantId)
-    const participantByParticipantIdMatch = [participantCurrencyFixtures[0], participantCurrencyFixtures[1]]
+    const participantByParticipantId = await Model.getById(participantCurrencyFixtures[1].participantId)
+    const participantByParticipantIdMatch = participantCurrencyFixtures[0]
     test.equal(JSON.stringify(participantByParticipantId), JSON.stringify(participantByParticipantIdMatch), 'getByParticipantId(<arg>) works')
 
     // check getByParticipantId(<arg>, <arg>)
@@ -153,7 +145,6 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
 
   await participantCurrencyCachedTest.test('create(), update(), destroyByParticipantId() call the participant model and invalidation', async (test) => {
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       get: () => null
     }
     sandbox.stub(Model, 'invalidateParticipantCurrencyCache')
@@ -186,7 +177,6 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
 
   await participantCurrencyCachedTest.test('create(), update(), destroyByParticipantId() fail when error thrown', async (test) => {
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       get: () => null
     }
     sandbox.stub(Model, 'invalidateParticipantCurrencyCache')

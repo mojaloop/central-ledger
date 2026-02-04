@@ -296,7 +296,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
 
     return server
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`)
+    Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`, err)
 
     await Db.disconnect()
     if (Config.PROXY_CACHE_CONFIG?.enabled) {

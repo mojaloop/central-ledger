@@ -1197,6 +1197,65 @@ Test('Handlers test', async handlersTest => {
       testConsumer.clearEvents()
       test.end()
     })
+
+    await transferForwarded.test('should produce a get notification if transfer stuck in RESERVED_FORWARDED', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const messageProtocolPrepareWithShortExpiration = Util.clone(td.messageProtocolPrepare)
+      messageProtocolPrepareWithShortExpiration.content.payload.expiration = new Date(new Date().getTime() + 5000)
+      await Producer.produceMessage(messageProtocolPrepareWithShortExpiration, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const transfer = await TransferService.getByIdLight(td.messageProtocolPrepare.content.payload.transferId) || {}
+        test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      // Trigger timeout handler to process forwarded transfer
+      await Handlers.timeouts.timeout()
+
+      try {
+        const notificationMessages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'get',
+          valueToFilter: td.payee.participant.name
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(notificationMessages[0], 'GET notification message found for forwarded transfer')
+        test.equal(notificationMessages[0].value.content.headers['FSPIOP-Destination'], td.payee.participant.name)
+        test.equal(notificationMessages[0].value.content.headers['FSPIOP-Source'], td.payer.participant.name)
+        test.deepEqual(notificationMessages[0].value.content.payload, {}, 'Notification payload should be empty')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
     transferForwarded.end()
   })
 
@@ -1282,6 +1341,64 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await transferFxForwarded.test('should produce a get notification if fx transfer stuck in RESERVED_FORWARDED', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const messageProtocolFxPrepareWithShortExpiration = Util.clone(td.messageProtocolFxPrepare)
+      messageProtocolFxPrepareWithShortExpiration.content.payload.expiration = new Date(new Date().getTime() + 5000)
+      await Producer.produceMessage(messageProtocolFxPrepareWithShortExpiration, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'fx-prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position fx-prepare message with key found')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
+
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      try {
+        const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
+        test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED_FORWARDED, 'FxTransfer state updated to RESERVED_FORWARDED')
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      // Trigger timeout handler to process forwarded fxTransfer
+      await Handlers.timeouts.timeout()
+
+      try {
+        const notificationMessages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'get',
+          valueToFilter: td.fxp.participant.name
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(notificationMessages[0], 'GET notification message found for forwarded fxTransfer')
+        test.equal(notificationMessages[0].value.content.headers['FSPIOP-Destination'], td.fxp.participant.name)
+        test.equal(notificationMessages[0].value.content.headers['FSPIOP-Source'], td.payer.participant.name)
+        test.deepEqual(notificationMessages[0].value.content.payload, {}, 'Notification payload should be empty')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
       testConsumer.clearEvents()
       test.end()
     })

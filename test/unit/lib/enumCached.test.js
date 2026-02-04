@@ -50,17 +50,12 @@ Test('Enums cached model', async (enumCachedTest) => {
   })
 
   await enumCachedTest.test('initializes cache correctly', async (test) => {
-    const cacheClient = {
-      createKey: sandbox.stub().returns({})
-    }
-    Cache.registerCacheClient.returns(cacheClient)
+    Cache.registerCacheClient.returns({})
 
-    // initialize calls registerCacheClient and createKey
+    // initialize calls registerCacheClient
     test.notOk(Cache.registerCacheClient.calledOnce)
-    test.notOk(cacheClient.createKey.calledOnce)
     await Model.initialize()
     test.ok(Cache.registerCacheClient.calledOnce)
-    test.ok(cacheClient.createKey.calledOnce)
 
     test.end()
   })
@@ -68,7 +63,6 @@ Test('Enums cached model', async (enumCachedTest) => {
   await enumCachedTest.test('calls drop() for invalidateEnumCache', async (test) => {
     // initialize
     const cacheClient = {
-      createKey: sandbox.stub().returns({}),
       drop: sandbox.stub()
     }
     Cache.registerCacheClient.returns(cacheClient)

@@ -29,11 +29,10 @@
 
 const Cache = require('../../lib/cache')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
-const Metrics = require('@mojaloop/central-services-metrics')
 const rethrow = require('../../shared/rethrow')
 
 let cacheClient
-let participantLimitAllCacheKey
+const participantLimitAllCacheKey = 'all'
 
 /*
   Private API
@@ -61,28 +60,11 @@ const buildUnifiedParticipantsLimitData = (allLimitParticipants) => {
   return unifiedLimitParticipants
 }
 
-const getParticipantLimitCached = async () => {
-  const histTimer = Metrics.getHistogram(
-    'model_participant',
-    'model_getParticipantLimitCached - Metrics for participant model',
-    ['success', 'queryName', 'hit']
-  ).startTimer()
-  // Do we have valid participantsLimit list in the cache ?
-  let cachedLimitParticipants = cacheClient.get(participantLimitAllCacheKey)
-  if (!cachedLimitParticipants) {
-    // No participantsLimit in the cache, so fetch from participantsLimit API
-    const allLimitParticipants = await ParticipantLimitModel.getAll()
-    cachedLimitParticipants = buildUnifiedParticipantsLimitData(allLimitParticipants)
+const getParticipantLimitCached = () => cacheClient.get(participantLimitAllCacheKey)
 
-    // store in cache
-    cacheClient.set(participantLimitAllCacheKey, cachedLimitParticipants)
-    histTimer({ success: true, queryName: 'model_getParticipantLimitCached', hit: false })
-  } else {
-    // unwrap participants list from catbox structure
-    cachedLimitParticipants = cachedLimitParticipants.item
-    histTimer({ success: true, queryName: 'model_getParticipantLimitCached', hit: true })
-  }
-  return cachedLimitParticipants
+const generate = async function (key) {
+  const allLimitParticipants = await ParticipantLimitModel.getAll()
+  return buildUnifiedParticipantsLimitData(allLimitParticipants)
 }
 
 /*
@@ -90,13 +72,7 @@ const getParticipantLimitCached = async () => {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  const participantLimitCacheClientMeta = {
-    id: 'participantLimit',
-    preloadCache: getParticipantLimitCached
-  }
-
-  cacheClient = Cache.registerCacheClient(participantLimitCacheClientMeta)
-  participantLimitAllCacheKey = cacheClient.createKey('all')
+  cacheClient = Cache.registerCacheClient({ id: 'participantLimit', generate, preloadCache: getParticipantLimitCached })
 }
 
 exports.invalidateParticipantLimitCache = async () => {
@@ -125,3 +101,4 @@ exports.insert = withInvalidate('insert')
 exports.update = withInvalidate('update')
 exports.destroyByParticipantCurrencyId = withInvalidate('destroyByParticipantCurrencyId')
 exports.destroyByParticipantId = withInvalidate('destroyByParticipantId')
+exports.build = buildUnifiedParticipantsLimitData

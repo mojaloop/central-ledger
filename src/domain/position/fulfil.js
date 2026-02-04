@@ -130,6 +130,15 @@ const processPositionFulfilBin = async (
             const nextIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
             if (nextIndex === -1) {
               // All position changes are done
+              // Handle transferStateChanges if any
+              if (cyrilResult.transferStateChanges && Array.isArray(cyrilResult.transferStateChanges)) {
+                for (const transferStateChange of cyrilResult.transferStateChanges) {
+                  delete transferStateChange.isOriginalId
+                  delete transferStateChange.notifyTo
+                  transferStateChanges.push({ ...transferStateChange })
+                  accumulatedTransferStatesCopy[transferStateChange.transferId] = transferStateChange.transferStateId
+                }
+              }
               const resultMessage = _constructTransferFulfilResultMessage(binItem, transferId, payerFsp, payeeFsp, transfer, reservedActionTransfers, transferStateIdCopy)
               resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
             } else {

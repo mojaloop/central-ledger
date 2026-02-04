@@ -348,7 +348,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
 
   try {
     /** @namespace Db.getKnex **/
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     const histTPayeeResponseValidationPassedEnd = Metrics.getHistogram(
       'model_transfer',
       'facade_saveTransferPrepared_transaction - Metrics for transfer model',
@@ -504,7 +504,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         participantCurrencyId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].participantCurrencyId,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
-        amount: -payload.amount.amount,
+        amount: payload.amount.amount,
         externalParticipantId
       }
     } else {
@@ -542,7 +542,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       }
     }
 
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     if (hasPassedValidation) {
       const histTimerSaveTransferTransactionValidationPassedEnd = Metrics.getHistogram(
         'model_transfer',
@@ -796,13 +796,13 @@ const _insertFxTransferErrorEntries = async (knex, trx, transactionTimestamp) =>
     })
 }
 
-const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
+const _getTransferList = async (knex, tableName = 'transferTimeout', transactionTimestamp, maxAttemptCount = null) => {
   /* istanbul ignore next */
-  return knex('transferTimeout AS tt')
+  const query = knex(`${tableName} AS tt`)
     .innerJoin(knex('transferStateChange AS tsc1')
       .select('tsc1.transferId')
       .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-      .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+      .innerJoin(`${tableName} AS tt1`, 'tt1.transferId', 'tsc1.transferId')
       .groupBy('tsc1.transferId')
       .as('ts'), 'ts.transferId', 'tt.transferId'
     )
@@ -823,34 +823,38 @@ const _getTransferTimeoutList = async (knex, transactionTimestamp) => {
     .innerJoin('participant AS p2', 'p2.participantId', 'tp2.participantId')
     .innerJoin(knex('transferStateChange AS tsc2')
       .select('tsc2.transferId', 'tsc2.transferStateChangeId', 'ppc1.participantCurrencyId')
-      .innerJoin('transferTimeout AS tt2', 'tt2.transferId', 'tsc2.transferId')
+      .innerJoin(`${tableName} AS tt2`, 'tt2.transferId', 'tsc2.transferId')
       .innerJoin('participantPositionChange AS ppc1', 'ppc1.transferStateChangeId', 'tsc2.transferStateChangeId')
       .as('tpc'), 'tpc.transferId', 'tt.transferId'
     )
     .leftJoin('bulkTransferAssociation AS bta', 'bta.transferId', 'tt.transferId')
-
     .where('tt.expirationDate', '<', transactionTimestamp)
-    .select(
-      'tt.*',
-      'tsc.transferStateId',
-      'tp1.participantCurrencyId AS payerParticipantCurrencyId',
-      'p1.name AS payerFsp',
-      'p2.name AS payeeFsp',
-      'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
-      'bta.bulkTransferId',
-      'tpc.participantCurrencyId AS effectedParticipantCurrencyId',
-      'ep1.name AS externalPayerName',
-      'ep2.name AS externalPayeeName'
-    )
+
+  if (tableName === 'transferForwarded' && maxAttemptCount !== null) {
+    query.andWhere('tt.attemptCount', '<', maxAttemptCount)
+  }
+
+  return query.select(
+    'tt.*',
+    'tsc.transferStateId',
+    'tp1.participantCurrencyId AS payerParticipantCurrencyId',
+    'p1.name AS payerFsp',
+    'p2.name AS payeeFsp',
+    'tp2.participantCurrencyId AS payeeParticipantCurrencyId',
+    'bta.bulkTransferId',
+    'tpc.participantCurrencyId AS effectedParticipantCurrencyId',
+    'ep1.name AS externalPayerName',
+    'ep2.name AS externalPayeeName'
+  )
 }
 
-const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
+const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transactionTimestamp, maxAttemptCount = null) => {
   /* istanbul ignore next */
-  return knex('fxTransferTimeout AS ftt')
+  const query = knex(`${tableName} AS ftt`)
     .innerJoin(knex('fxTransferStateChange AS ftsc1')
       .select('ftsc1.commitRequestId')
       .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
-      .innerJoin('fxTransferTimeout AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
+      .innerJoin(`${tableName} AS ftt1`, 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
       .groupBy('ftsc1.commitRequestId')
       .as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
     )
@@ -872,22 +876,27 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
     .innerJoin('participant AS p2', 'p2.participantId', 'ftp2.participantId')
     .innerJoin(knex('fxTransferStateChange AS ftsc2')
       .select('ftsc2.commitRequestId', 'ftsc2.fxTransferStateChangeId', 'ppc1.participantCurrencyId')
-      .innerJoin('fxTransferTimeout AS ftt2', 'ftt2.commitRequestId', 'ftsc2.commitRequestId')
+      .innerJoin(`${tableName} AS ftt2`, 'ftt2.commitRequestId', 'ftsc2.commitRequestId')
       .innerJoin('participantPositionChange AS ppc1', 'ppc1.fxTransferStateChangeId', 'ftsc2.fxTransferStateChangeId')
       .as('ftpc'), 'ftpc.commitRequestId', 'ftt.commitRequestId'
     )
     .where('ftt.expirationDate', '<', transactionTimestamp)
-    .select(
-      'ftt.*',
-      'ftsc.transferStateId',
-      'ftp1.participantCurrencyId AS initiatingParticipantCurrencyId',
-      'p1.name AS initiatingFsp',
-      'p2.name AS counterPartyFsp',
-      'ftp2.participantCurrencyId AS counterPartyParticipantCurrencyId',
-      'ftpc.participantCurrencyId AS effectedParticipantCurrencyId',
-      'ep1.name AS externalInitiatingFspName',
-      'ep2.name AS externalCounterPartyFspName'
-    )
+
+  if (tableName === 'fxTransferForwarded' && maxAttemptCount !== null) {
+    query.andWhere('ftt.attemptCount', '<', maxAttemptCount)
+  }
+
+  return query.select(
+    'ftt.*',
+    'ftsc.transferStateId',
+    'ftp1.participantCurrencyId AS initiatingParticipantCurrencyId',
+    'p1.name AS initiatingFsp',
+    'p2.name AS counterPartyFsp',
+    'ftp2.participantCurrencyId AS counterPartyParticipantCurrencyId',
+    'ftpc.participantCurrencyId AS effectedParticipantCurrencyId',
+    'ep1.name AS externalInitiatingFspName',
+    'ep2.name AS externalCounterPartyFspName'
+  )
 }
 
 /**
@@ -936,7 +945,7 @@ const _getFxTransferTimeoutList = async (knex, transactionTimestamp) => {
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
   try {
     const transactionTimestamp = Time.getUTCString(new Date())
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
         // Insert `transferTimeout` records for transfers found between the interval intervalMin <= intervalMax
@@ -975,8 +984,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
               .whereNull('ftt.commitRequestId')
               .whereIn('ftsc.transferStateId', [
                 `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
-                `${Enum.Transfers.TransferState.RESERVED}`,
-                `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`
+                `${Enum.Transfers.TransferState.RESERVED}`
               ])
               .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timed out fxTransfer for all related fxTransfers
           })
@@ -1101,8 +1109,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
       rethrow.rethrowDatabaseError(err)
     })
 
-    const transferTimeoutList = await _getTransferTimeoutList(knex, transactionTimestamp)
-    const fxTransferTimeoutList = await _getFxTransferTimeoutList(knex, transactionTimestamp)
+    const transferTimeoutList = await _getTransferList(knex, 'transferTimeout', transactionTimestamp)
+    const fxTransferTimeoutList = await _getFxTransferList(knex, 'fxTransferTimeout', transactionTimestamp)
 
     return {
       transferTimeoutList,
@@ -1113,9 +1121,113 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
   }
 }
 
+/**
+ *  Returns the list of transfers/fxTransfers that are in RESERVED_FORWARDED state
+ *
+ * @returns {Promise<{
+ *    transferTimeoutList: TimedOutTransfer,
+ *    fxTransferTimeoutList: TimedOutFxTransfer
+ * }>}
+ */
+const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount) => {
+  try {
+    const transactionTimestamp = Time.getUTCString(new Date())
+    const knex = Db.getKnex()
+    await knex.transaction(async (trx) => {
+      try {
+        // Insert `transferForwarded` records for transfers found between the interval intervalMin <= intervalMax
+        await knex.from(knex.raw('transferForwarded (transferId, expirationDate)')).transacting(trx)
+          .insert(function () {
+            this.from('transfer AS t')
+              .innerJoin(knex('transferStateChange')
+                .select('transferId')
+                .max('transferStateChangeId AS maxTransferStateChangeId')
+                .where('transferStateChangeId', '>', intervalMin)
+                .andWhere('transferStateChangeId', '<=', intervalMax)
+                .groupBy('transferId')
+                .as('ts'), 'ts.transferId', 't.transferId'
+              )
+              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+              .leftJoin('transferForwarded AS tf', 'tf.transferId', 't.transferId')
+              .whereNull('tf.transferId')
+              .whereIn('tsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RESERVED_FORWARDED}`])
+              .select('t.transferId', 't.expirationDate')
+          })
+          .onConflict('transferId')
+          .ignore()
+
+        // Insert `fxTransferForwarded` records for fxTransfers found between the interval intervalMin <= intervalMax and related fxTransfers
+        await knex.from(knex.raw('fxTransferForwarded (commitRequestId, expirationDate)')).transacting(trx)
+          .insert(function () {
+            this.from('fxTransfer AS ft')
+              .innerJoin(knex('fxTransferStateChange')
+                .select('commitRequestId')
+                .max('fxTransferStateChangeId AS maxFxTransferStateChangeId')
+                .where('fxTransferStateChangeId', '>', fxIntervalMin)
+                .andWhere('fxTransferStateChangeId', '<=', fxIntervalMax)
+                .groupBy('commitRequestId').as('fts'), 'fts.commitRequestId', 'ft.commitRequestId'
+              )
+              .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+              .leftJoin('fxTransferForwarded AS ftf', 'ftf.commitRequestId', 'ft.commitRequestId')
+              .whereNull('ftf.commitRequestId')
+              .whereIn('ftsc.transferStateId', [
+                `${Enum.Transfers.TransferInternalState.RESERVED_FORWARDED}`
+              ])
+              .select('ft.commitRequestId', 'ft.expirationDate')
+          })
+          .onConflict('commitRequestId')
+          .ignore()
+      } catch (err) {
+        rethrow.rethrowDatabaseError(err)
+      }
+    }).catch((err) => {
+      rethrow.rethrowDatabaseError(err)
+    })
+
+    const transferForwardedList = await _getTransferList(knex, 'transferForwarded', transactionTimestamp, maxAttemptCount)
+    const fxTransferForwardedList = await _getFxTransferList(knex, 'fxTransferForwarded', transactionTimestamp, maxAttemptCount)
+
+    return {
+      transferForwardedList,
+      fxTransferForwardedList
+    }
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
+const incrementForwardedAttemptCount = async (transferId, isFxTransfer = false) => {
+  try {
+    const knex = Db.getKnex()
+    const tableName = isFxTransfer ? 'fxTransferForwarded' : 'transferForwarded'
+    const idColumn = isFxTransfer ? 'commitRequestId' : 'transferId'
+    const idValue = isFxTransfer ? transferId : transferId
+
+    return await knex(tableName)
+      .where(idColumn, idValue)
+      .increment('attemptCount', 1)
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
+const removeForwardedRecord = async (transferId, isFxTransfer = false) => {
+  try {
+    const knex = Db.getKnex()
+    const tableName = isFxTransfer ? 'fxTransferForwarded' : 'transferForwarded'
+    const idColumn = isFxTransfer ? 'commitRequestId' : 'transferId'
+
+    return await knex(tableName)
+      .where(idColumn, transferId)
+      .delete()
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
 const transferStateAndPositionUpdate = async function (param1, enums, trx = null) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const trxFunction = async (trx) => {
       const transactionTimestamp = Time.getUTCString(new Date())
@@ -1244,7 +1356,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
 
 const updatePrepareReservedForwarded = async function (transferId) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
     return await knex('transferStateChange')
       .insert({
         transferId,
@@ -1259,7 +1371,7 @@ const updatePrepareReservedForwarded = async function (transferId) {
 
 const reconciliationTransferPrepare = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const trxFunction = async (trx) => {
       // transferDuplicateCheck check and insert is done prior to calling the prepare
@@ -1375,7 +1487,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
 
 const reconciliationTransferReserve = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const trxFunction = async (trx) => {
       const param1 = {
@@ -1409,7 +1521,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
 
 const reconciliationTransferCommit = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const trxFunction = async (trx) => {
       // Persist transfer state and participant position change
@@ -1460,7 +1572,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
 
 const reconciliationTransferAbort = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
-    const knex = await Db.getKnex()
+    const knex = Db.getKnex()
 
     const trxFunction = async (trx) => {
       // Persist transfer state and participant position change
@@ -1551,6 +1663,9 @@ const TransferFacade = {
   saveTransferPrepared,
   getTransferStateByTransferId,
   timeoutExpireReserved,
+  reservedForwardedTransfers,
+  incrementForwardedAttemptCount,
+  removeForwardedRecord,
   transferStateAndPositionUpdate,
   reconciliationTransferPrepare,
   reconciliationTransferReserve,

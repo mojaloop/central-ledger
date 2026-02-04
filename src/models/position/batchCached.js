@@ -31,7 +31,6 @@
 'use strict'
 
 const Cache = require('../../lib/cache')
-const Metrics = require('@mojaloop/central-services-metrics')
 const BatchPositionModel = require('./batch')
 const rethrow = require('../../shared/rethrow')
 
@@ -70,27 +69,11 @@ const buildUnifiedParticipantCurrencyData = (allParticipantCurrency) => {
   return unifiedParticipantsCurrency
 }
 
-const getParticipantCurrencyCached = async (trx) => {
-  const histTimer = Metrics.getHistogram(
-    'model_participant_batch',
-    'model_getParticipantsCached - Metrics for participant model',
-    ['success', 'queryName', 'hit']
-  ).startTimer()
-  // Do we have valid participants list in the cache ?
-  let cachedParticipantCurrency = cacheClient.get(participantCurrencyAllCacheKey)
-  if (!cachedParticipantCurrency) {
-    const allParticipantCurrency = await BatchPositionModel.getAllParticipantCurrency(trx)
-    cachedParticipantCurrency = buildUnifiedParticipantCurrencyData(allParticipantCurrency)
+const getParticipantCurrencyCached = (trx) => cacheClient.get({ id: participantCurrencyAllCacheKey, trx })
 
-    // store in cache
-    cacheClient.set(participantCurrencyAllCacheKey, cachedParticipantCurrency)
-    histTimer({ success: true, queryName: 'model_getParticipantCurrencyBatchCached', hit: false })
-  } else {
-    // unwrap participants list from catbox structure
-    cachedParticipantCurrency = cachedParticipantCurrency.item
-    histTimer({ success: true, queryName: 'model_getParticipantCurrencyBatchCached', hit: true })
-  }
-  return cachedParticipantCurrency
+const generate = async function (key) {
+  const allParticipantCurrency = await BatchPositionModel.getAllParticipantCurrency(key.trx)
+  return buildUnifiedParticipantCurrencyData(allParticipantCurrency)
 }
 
 /*
@@ -98,13 +81,7 @@ const getParticipantCurrencyCached = async (trx) => {
 */
 exports.initialize = async () => {
   /* Register as cache client */
-  const participantCurrencyCacheClientMeta = {
-    id: 'participantCurrency',
-    preloadCache: getParticipantCurrencyCached
-  }
-
-  cacheClient = Cache.registerCacheClient(participantCurrencyCacheClientMeta)
-  participantCurrencyAllCacheKey = cacheClient.createKey('participantCurrency')
+  cacheClient = Cache.registerCacheClient({ id: 'positionBatch', generate, preloadCache: getParticipantCurrencyCached })
 }
 
 exports.getParticipantCurrencyByIds = async (trx, participantCurrencyIds) => {
@@ -132,3 +109,5 @@ exports.getParticipantCurrencyByParticipantIds = async (trx, participantIds) => 
     rethrow.rethrowCachedDatabaseError(err)
   }
 }
+
+exports.build = buildUnifiedParticipantCurrencyData
