@@ -180,7 +180,8 @@
     "on-headers": "1.1.0",
     "trim": "0.0.3",
     "cross-spawn": "7.0.6",
-    "yargs-parser": "21.1.1"
+    "yargs-parser": "21.1.1",
+    "fast-xml-parser": "5.3.4"
   },
   "config": {
     "knex": "--knexfile ./src/knexfile.js",
