@@ -2,7 +2,7 @@
 
 const Path = require('path')
 const Migrations = require('@mojaloop/database-lib').Migrations
-const Knexfile = require('../../config/knexfile')
+const Knexfile = require('../knexfile')
 
 exports.migrate = function () {
   return Migrations.migrate(updateMigrationsLocation(Knexfile))
