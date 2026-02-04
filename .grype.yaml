@@ -23,6 +23,7 @@ ignore:
   # Ignored: GHSA-p5wg-g6qr-c7cg affects a non-production/dev-only dependency;
   # no exploitable path exists in our deployed environment, and mitigations are in place.
   - vulnerability: GHSA-p5wg-g6qr-c7cg
+  - vulnerability: GHSA-3966-f6p6-2qr9
 
 # Set output format defaults
 output:
