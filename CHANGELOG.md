@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.12.3](https://github.com/mojaloop/central-ledger/compare/v19.12.2...v19.12.3) (2026-02-04)
+
+
+### Bug Fixes
+
+* add new vulnerability exclusion GHSA-3966-f6p6-2qr9 ([#1242](https://github.com/mojaloop/central-ledger/issues/1242)) ([9211389](https://github.com/mojaloop/central-ledger/commit/9211389e8a3eb61a46fd31f52d27cf19a512ff49))
+* expiration check on reserved forwarded transfers ([#1235](https://github.com/mojaloop/central-ledger/issues/1235)) ([8d2a569](https://github.com/mojaloop/central-ledger/commit/8d2a569915ad3ad38078659a2e61365b5629f0fa))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([c8c800a](https://github.com/mojaloop/central-ledger/commit/c8c800ada03f4e8af29043fece06abb398369b1f))
+
 ### [19.12.2](https://github.com/mojaloop/central-ledger/compare/v19.12.1...v19.12.2) (2026-02-03)
 
 

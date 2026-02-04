@@ -449,96 +449,6 @@ Test('Timeout handler', TimeoutHandlerTest => {
       test.end()
     })
 
-    timeoutTest.test('remove forwarded transfers when max attempts exceeded', async (test) => {
-      const transferForwardedListMock = [
-        {
-          transferId: randomUUID(),
-          payerFsp: 'dfsp1',
-          payeeFsp: 'dfsp2',
-          externalPayerName: 'Payer Bank',
-          externalPayeeName: 'Payee Bank',
-          transferStateId: Enum.Transfers.TransferInternalState.RESERVED_FORWARDED,
-          attemptCount: 10 // Max attempts exceeded
-        }
-      ]
-      const resultMock = {
-        transferTimeoutList: [],
-        fxTransferTimeoutList: []
-      }
-
-      TimeoutService.getTimeoutSegment = sandbox.stub().returns(null)
-      TimeoutService.getFxTimeoutSegment = sandbox.stub().returns(null)
-      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
-      TimeoutService.cleanupFxTransferTimeout = sandbox.stub().returns(1)
-      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
-      TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(null)
-      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
-      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({
-        transferForwardedList: transferForwardedListMock,
-        fxTransferForwardedList: []
-      })
-      TimeoutService.incrementForwardedAttemptCount = sandbox.stub().resolves()
-      TimeoutService.removeForwardedRecord = sandbox.stub().resolves()
-      Utility.produceGeneralMessage = sandbox.stub()
-
-      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
-        '../../lib/distLock': {
-          createLock: createDistLockStub
-        }
-      })
-
-      await TimeoutHandlerProxy.registerTimeoutHandler()
-      await TimeoutHandlerProxy.timeout()
-
-      test.ok(TimeoutService.removeForwardedRecord.calledOnce, 'Forwarded record removed')
-      test.end()
-    })
-
-    timeoutTest.test('remove forwarded fx transfers when max attempts exceeded', async (test) => {
-      const fxTransferForwardedListMock = [
-        {
-          commitRequestId: randomUUID(),
-          initiatingFsp: 'dfsp1',
-          counterPartyFsp: 'dfsp2',
-          externalInitiatingFspName: 'Initiating Bank',
-          externalCounterPartyFspName: 'Counter Bank',
-          transferStateId: Enum.Transfers.TransferInternalState.RESERVED_FORWARDED,
-          attemptCount: 10 // Max attempts exceeded
-        }
-      ]
-      const resultMock = {
-        transferTimeoutList: [],
-        fxTransferTimeoutList: []
-      }
-
-      TimeoutService.getTimeoutSegment = sandbox.stub().returns(null)
-      TimeoutService.getFxTimeoutSegment = sandbox.stub().returns(null)
-      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
-      TimeoutService.cleanupFxTransferTimeout = sandbox.stub().returns(1)
-      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
-      TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(null)
-      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
-      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({
-        transferForwardedList: [],
-        fxTransferForwardedList: fxTransferForwardedListMock
-      })
-      TimeoutService.incrementForwardedAttemptCount = sandbox.stub().resolves()
-      TimeoutService.removeForwardedRecord = sandbox.stub().resolves()
-      Utility.produceGeneralMessage = sandbox.stub()
-
-      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
-        '../../lib/distLock': {
-          createLock: createDistLockStub
-        }
-      })
-
-      await TimeoutHandlerProxy.registerTimeoutHandler()
-      await TimeoutHandlerProxy.timeout()
-
-      test.ok(TimeoutService.removeForwardedRecord.calledOnce, 'Forwarded fx record removed')
-      test.end()
-    })
-
     timeoutTest.test('handle error in forwarded transfers processing', async (test) => {
       const transferForwardedListMock = [
         {
@@ -630,6 +540,51 @@ Test('Timeout handler', TimeoutHandlerTest => {
       } catch (err) {
         test.pass('Error thrown on forwarded fx transfer processing')
       }
+      test.end()
+    })
+
+    timeoutTest.test('handle forwarded fx transfer with non-RESERVED_FORWARDED state', async (test) => {
+      const fxTransferForwardedListMock = [
+        {
+          commitRequestId: randomUUID(),
+          initiatingFsp: 'dfsp1',
+          counterPartyFsp: 'dfsp2',
+          externalInitiatingFspName: 'Initiating Bank',
+          externalCounterPartyFspName: 'Counter Bank',
+          transferStateId: Enum.Transfers.TransferInternalState.RESERVED, // Different internal state
+          attemptCount: 1
+        }
+      ]
+      const resultMock = {
+        transferTimeoutList: [],
+        fxTransferTimeoutList: []
+      }
+
+      TimeoutService.getTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.getFxTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.cleanupFxTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({
+        transferForwardedList: [],
+        fxTransferForwardedList: fxTransferForwardedListMock
+      })
+      TimeoutService.incrementForwardedAttemptCount = sandbox.stub().resolves()
+      Utility.produceGeneralMessage = sandbox.stub()
+
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
+      await TimeoutHandlerProxy.registerTimeoutHandler()
+      await TimeoutHandlerProxy.timeout()
+
+      test.ok(Utility.produceGeneralMessage.notCalled, 'No messages produced for non-RESERVED_FORWARDED state')
+      test.ok(TimeoutService.incrementForwardedAttemptCount.notCalled, 'Attempt count not incremented')
       test.end()
     })
     timeoutTest.end()
