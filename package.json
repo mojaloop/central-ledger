@@ -78,7 +78,6 @@
     "audit:check": "npx audit-ci --config ./audit-ci.jsonc",
     "dep:check": "npx ncu -e 2",
     "dep:update": "npx ncu -u",
-    "dep:automate": "sh ./updateDepAndAudit.sh",
     "release": "npx standard-version --no-verify --releaseCommitMessageFormat 'chore(release): {{currentTag}} [skip ci]'",
     "snapshot": "npx standard-version --no-verify --skip.changelog --prerelease snapshot --releaseCommitMessageFormat 'chore(snapshot): {{currentTag}}'",
     "wait-4-docker": "node ./scripts/_wait4_all.js"
