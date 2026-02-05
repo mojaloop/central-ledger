@@ -128,7 +128,7 @@
     "require-glob": "^4.1.0"
   },
   "optionalDependencies": {
-    "ed25519": "^0.0.4",
+    "ed25519": "^0.0.5",
     "mysql": "2.18.1"
   },
   "devDependencies": {
@@ -139,7 +139,7 @@
     "audit-ci": "^7.1.0",
     "get-port": "5.1.1",
     "jsdoc": "4.0.5",
-    "jsonpath": "1.1.1",
+    "jsonpath": "1.2.0",
     "mock-knex": "0.4.13",
     "nodemon": "3.1.11",
     "npm-check-updates": "19.3.2",
