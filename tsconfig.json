@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "lib": [
+      "es2020", "esnext"
+    ],
+    "module": "commonjs",
+    "target": "es2020",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "baseUrl": "./"
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+  ],
+  "exclude": [
+    "node_modules",
+    "src/**/*.int.ts",
+    "src/**/*.unit.ts",
+  ]
+}

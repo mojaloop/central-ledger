@@ -10,7 +10,7 @@
     "Henk Kodde <henkkodde@modusbox.com>",
     "Kevin Leyow <kevin.leyow@modusbox.com>",
     "Lazola Lucas <lazola.lucas@modusbox.com>",
-    "Lewis Daly <lewisd@crosslaketech.com>",
+    "Lewis Daly <lewisd@tigerbeetle.com>",
     "Miguel de Barros <miguel.debarros@modusbox.com>",
     "Paweł Marzec <pawel.marzec@modusbox.com>",
     "Rajiv Mothilal <rajiv.mothilal@modusbox.com>",
@@ -35,11 +35,13 @@
     "audit:check"
   ],
   "scripts": {
+    "build": "tsc",
     "start": "npm run start:api",
     "start:api": "node src/api/index.js",
     "start:handlers": "node src/handlers/index.js",
     "start:debug": "npm start --node-options --inspect=0.0.0.0",
-    "watch:api": "npx nodemon src/api/index.js",
+    "start:tsnode": "ts-node ./src/api/index.ts",
+    "watch:api": "nodemon --exec ts-node ./src/api/index.ts",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "lint": "npx standard",
     "lint:fix": "npx standard --fix",
@@ -84,8 +86,8 @@
   },
   "dependencies": {
     "@hapi/basic": "7.0.2",
-    "@hapi/catbox-memory": "6.0.2",
     "@hapi/catbox": "12.1.1",
+    "@hapi/catbox-memory": "6.0.2",
     "@hapi/good": "9.0.1",
     "@hapi/hapi": "21.4.4",
     "@hapi/inert": "7.1.0",
@@ -94,9 +96,9 @@
     "@mojaloop/central-services-health": "15.2.1",
     "@mojaloop/central-services-logger": "11.10.3",
     "@mojaloop/central-services-metrics": "12.8.3",
-    "@mojaloop/central-services-shared": "18.35.2",
+    "@mojaloop/central-services-shared": "github:tigerbeetle/central-services-shared#lewis/improve-types-2",
     "@mojaloop/central-services-stream": "11.9.0",
-    "@mojaloop/database-lib": "11.3.5",
+    "@mojaloop/database-lib": "github:tigerbeetle/database-lib#main",
     "@mojaloop/event-sdk": "14.8.2",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.9.0",
     "@mojaloop/ml-number": "11.4.2",
@@ -126,6 +128,7 @@
     "require-glob": "^4.1.0"
   },
   "optionalDependencies": {
+    "ed25519": "^0.0.5",
     "mysql": "2.18.1"
   },
   "devDependencies": {
@@ -136,7 +139,7 @@
     "audit-ci": "^7.1.0",
     "get-port": "5.1.1",
     "jsdoc": "4.0.5",
-    "jsonpath": "1.1.1",
+    "jsonpath": "1.2.0",
     "mock-knex": "0.4.13",
     "nodemon": "3.1.11",
     "npm-check-updates": "19.3.2",
@@ -150,7 +153,8 @@
     "tap-spec": "^5.0.0",
     "tap-xunit": "2.4.1",
     "tape": "4.17.0",
-    "tapes": "4.1.0"
+    "tapes": "4.1.0",
+    "ts-node": "^10.9.2"
   },
   "overrides": {
     "brace-expansion": "2.0.2",
@@ -177,10 +181,11 @@
     "on-headers": "1.1.0",
     "trim": "0.0.3",
     "cross-spawn": "7.0.6",
-    "yargs-parser": "21.1.1"
+    "yargs-parser": "21.1.1",
+    "fast-xml-parser": "5.3.4"
   },
   "config": {
-    "knex": "--knexfile ./config/knexfile.js",
+    "knex": "--knexfile ./src/knexfile.js",
     "images": {
       "api": "central-ledger",
       "admin": "central-ledger-admin"

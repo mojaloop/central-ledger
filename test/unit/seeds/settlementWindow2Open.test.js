@@ -31,7 +31,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('../../../src/shared/logger').logger
-const Model = require('../../../seeds/settlementWindow2Open')
+const Model = require('../../../src/seeds/settlementWindow2Open')
 
 Test('Settlement Window2 Open seed should', async (settlementWindow2OpenTest) => {
   let sandbox
