@@ -42,9 +42,7 @@ USER ml-user
 
 COPY --chown=ml-user --from=builder /opt/app .
 
-COPY dist /opt/app/dist
 COPY config /opt/app/config
-COPY test /opt/app/test
 
 EXPOSE 3001
 CMD ["npm", "run", "start"]
