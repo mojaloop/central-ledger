@@ -22,7 +22,10 @@ RUN apk add --no-cache -t build-dependencies make gcc g++ python3 py3-setuptools
 
 COPY package.json package-lock.json* tsconfig.json /opt/app/
 
+RUN stat package.json
+RUN stat package-lock.json
 RUN npm ci
+COPY src /opt/app/src
 RUN npm run build
 RUN npm prune --omit=dev
 
@@ -39,7 +42,7 @@ USER ml-user
 
 COPY --chown=ml-user --from=builder /opt/app .
 
-COPY src /opt/app/src
+COPY dist /opt/app/dist
 COPY config /opt/app/config
 COPY test /opt/app/test
 

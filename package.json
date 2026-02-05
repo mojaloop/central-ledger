@@ -86,8 +86,8 @@
   },
   "dependencies": {
     "@hapi/basic": "7.0.2",
-    "@hapi/catbox-memory": "6.0.2",
     "@hapi/catbox": "12.1.1",
+    "@hapi/catbox-memory": "6.0.2",
     "@hapi/good": "9.0.1",
     "@hapi/hapi": "21.4.4",
     "@hapi/inert": "7.1.0",
@@ -128,6 +128,7 @@
     "require-glob": "^4.1.0"
   },
   "optionalDependencies": {
+    "ed25519": "^0.0.4",
     "mysql": "2.18.1"
   },
   "devDependencies": {
