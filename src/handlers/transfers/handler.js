@@ -801,9 +801,9 @@ const getTransfer = async (error, messages) => {
     const eventDetail = { functionality: TransferEventType.NOTIFICATION, action }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
-    // Check if message source is an external participant
-    const source = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.SOURCE]
-    const isSourceExternal = source ? await externalParticipantCached.getByName(source) : null
+    // Check if get is an interscheme request by checking if FSPIOP-Proxy header exists
+    const proxy = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.PROXY]
+    const isSourceExternal = proxy ? true : null
 
     if (!isSourceExternal && !await Validator.validateParticipantByName(message.value.from)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
@@ -867,7 +867,7 @@ const getTransfer = async (error, messages) => {
         }
       }
 
-      if (!isSourceExternal && !await Validator.validateParticipantForCommitRequestId(source, transferIdOrCommitRequestId)) {
+      if (!isSourceExternal && !await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
@@ -919,7 +919,7 @@ const getTransfer = async (error, messages) => {
         }
       }
 
-      if (!isSourceExternal && !await Validator.validateParticipantTransferId(source, transferIdOrCommitRequestId)) {
+      if (!isSourceExternal && !await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
