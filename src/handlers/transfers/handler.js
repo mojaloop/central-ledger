@@ -801,11 +801,19 @@ const getTransfer = async (error, messages) => {
     const eventDetail = { functionality: TransferEventType.NOTIFICATION, action }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
-    // Check if get is an interscheme request by checking if FSPIOP-Proxy header exists
-    const proxy = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.PROXY]
-    const isSourceExternal = proxy ? true : null
 
-    if (!isSourceExternal && !await Validator.validateParticipantByName(message.value.from)) {
+    // When the GET is triggered in a interscheme timeout scenario the source will be
+    // the hub participant. Since they are not considered an external participant, we need to
+    // check the presence of the proxy header to determine if this is a proxied GET from an hub
+    const proxy = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.PROXY]
+    const isProxiedGet = proxy ? true : null
+
+    // When a interscheme GET is triggered by a participant the source will be the participant name.
+    const source = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.SOURCE]
+    const isSourceExternal = source ? await externalParticipantCached.getByName(source) : null
+    const skipParticipantValidation = isProxiedGet || isSourceExternal
+
+    if (!skipParticipantValidation && !await Validator.validateParticipantByName(message.value.from)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, hubName: Config.HUB_NAME })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -867,7 +875,7 @@ const getTransfer = async (error, messages) => {
         }
       }
 
-      if (!isSourceExternal && !await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
+      if (!skipParticipantValidation && !await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
@@ -919,7 +927,7 @@ const getTransfer = async (error, messages) => {
         }
       }
 
-      if (!isSourceExternal && !await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
+      if (!skipParticipantValidation && !await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
