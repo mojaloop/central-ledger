@@ -801,11 +801,11 @@ const getTransfer = async (error, messages) => {
     const eventDetail = { functionality: TransferEventType.NOTIFICATION, action }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
-    // Check if sender is an external participant
-    const sender = message.value.from
-    const isSenderExternal = sender ? await externalParticipantCached.getByName(sender) : null
+    // Check if message source is an external participant
+    const source = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.SOURCE]
+    const isSourceExternal = source ? await externalParticipantCached.getByName(source) : null
 
-    if (!isSenderExternal && !await Validator.validateParticipantByName(message.value.from)) {
+    if (!isSourceExternal && !await Validator.validateParticipantByName(message.value.from)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, hubName: Config.HUB_NAME })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -867,7 +867,7 @@ const getTransfer = async (error, messages) => {
         }
       }
 
-      if (!isSenderExternal && !await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
+      if (!isSourceExternal && !await Validator.validateParticipantForCommitRequestId(source, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
@@ -919,7 +919,7 @@ const getTransfer = async (error, messages) => {
         }
       }
 
-      if (!isSenderExternal && !await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
+      if (!isSourceExternal && !await Validator.validateParticipantTransferId(source, transferIdOrCommitRequestId)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
