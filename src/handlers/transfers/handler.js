@@ -850,10 +850,10 @@ const getTransfer = async (error, messages) => {
         fxTransfer.transferStateEnumeration !== TransferState.SETTLED
 
       // Special scenario for interscheme fxTransfers where we need to reply with the original error callback
-      // in order to resolve RESERVED_FORWARDED transfers in other regional/buffer schemes.
+      // in order to resolve RESERVED_FORWARDED fxTransfers in other regional/buffer schemes.
       // i.e Will trigger an interscheme PUT /fxTransfers/{id}/error callback to
       // inform the original initiating fsp of the error that caused the fxTransfer to not
-      // be in a COMMITTED/RESERVED/SETTLED state, so that the payer can
+      // be in a COMMITTED/RESERVED/SETTLED state, so that the external hub can
       // resolve the RESERVED_FORWARDED state in their scheme.
       if (isProxiedGet && replyWithPutErrorCallback) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}5`))
@@ -917,7 +917,7 @@ const getTransfer = async (error, messages) => {
       // in order to resolve RESERVED_FORWARDED transfers in other regional/buffer schemes.
       // i.e Will trigger an interscheme PUT /transfers/{id}/error callback to
       // inform the original payer of the error that caused the transfer to not
-      // be in a COMMITTED/RESERVED/SETTLED state, so that the payer can
+      // be in a COMMITTED/RESERVED/SETTLED state, so that the external hub can
       // resolve the RESERVED_FORWARDED state in their scheme.
       if (isProxiedGet && replyWithPutErrorCallback) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}5`))
