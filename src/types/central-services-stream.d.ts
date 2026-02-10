@@ -1,5 +1,5 @@
 declare module '@mojaloop/central-services-stream' {
-  import { EventEmitter } from 'events';
+  import { EventEmitter } from 'events'
 
   export namespace Kafka {
     interface ConsumerConfig {
@@ -91,7 +91,7 @@ declare module '@mojaloop/central-services-stream' {
           poll: 'poll';
           recursive: 'recursive';
         };
-      };
+      }
     }
 
     class Producer extends EventEmitter {
@@ -118,7 +118,7 @@ declare module '@mojaloop/central-services-stream' {
           snappy: 'snappy';
           lz4: 'lz4';
         };
-      };
+      }
     }
 
     namespace Protocol {
