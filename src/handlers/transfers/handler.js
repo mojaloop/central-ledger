@@ -819,24 +819,30 @@ const getTransfer = async (error, messages) => {
     const destination = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.DESTINATION]
     const isExternalParticipant = destination ? await externalParticipantCached.getByName(destination) : null
 
-    // Interscheme gets are only allowed to be triggered by hubs.
-    // Assumption is that proxy headers will have logic outside of central-ledger to ensure they are
-    // only added passing through a proxy and can not be added by a participant directly.
-    // This code only executes in a regional scheme between two buffer schemes in a
-    // GET /transfer/{ID} scenario triggered by a timeout, where the hub needs to retrieve transfer details from the buffer scheme to inform the notification callback.
-    // isProxiedGet stops a participant from triggering this code.
-    // Buffer Scheme A <---> Regional Scheme <---> Buffer Scheme B
-    if (isProxiedGet && isExternalParticipant) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `externalParticipantDetected--${actionLetter}5`))
-      // Empty payload informs notification handler that this is to be forwarded to an external participant
-      message.value.content.payload = {}
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: false, hubName: Config.HUB_NAME })
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
-    }
-
     if (isFx) {
-      const fxTransfer = await FxTransferModel.fxTransfer.getAllDetailsByCommitRequestId(transferIdOrCommitRequestId)
+      let fxTransfer
+      if (isProxiedGet) {
+        fxTransfer = await FxTransferModel.fxTransfer.getAllDetailsByCommitRequestId(transferIdOrCommitRequestId)
+      } else {
+        fxTransfer = await FxTransferModel.fxTransfer.getByIdLight(transferIdOrCommitRequestId)
+      }
+
+      // Interscheme gets are only allowed to be triggered by hubs.
+      // Assumption is that proxy headers will have logic outside of central-ledger to ensure they are
+      // only added passing through a proxy and can not be added by a participant directly.
+      // This code only executes in a regional scheme between two buffer schemes.
+
+      // Each hub will only ask the adjacent scheme for the transfer details.
+      // If the regional scheme also has the transfer in a RESERVED_FORWARDED state then do nothing
+      // The self heal in the regional scheme will resolve the RESERVED_FORWARDED state
+      // and then the initiating buffer hub will be able to retrieve the transfer details successfully in the next retry,
+      // which will trigger the correct notification callback to resolve the RESERVED_FORWARDED state in the initiating buffer hub's scheme.
+      if (isProxiedGet && isExternalParticipant && fxTransfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForFxReservedForwarded--${actionLetter}4`))
+        // Do nothing
+        return true
+      }
+
       if (!fxTransfer) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided commitRequest ID was not found on the server.')
@@ -874,7 +880,6 @@ const getTransfer = async (error, messages) => {
           if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
             message.value.content.uriParams = { id: transferIdOrCommitRequestId }
           }
-          console.log(eventDetail)
           await Kafka.proceed(
             Config.KAFKA_CONFIG,
             params, {
@@ -911,7 +916,6 @@ const getTransfer = async (error, messages) => {
       message.value.content.payload = TransferObjectTransform.toFulfil(fxTransfer, true)
 
       if (isProxiedGet) {
-        console.log(eventDetail)
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnInterschemePassedFxTransfer--${actionLetter}7`))
         await Kafka.proceed(
           Config.KAFKA_CONFIG,
@@ -929,7 +933,29 @@ const getTransfer = async (error, messages) => {
         return true
       }
     } else {
-      const transfer = await TransferService.getById(transferIdOrCommitRequestId)
+      let transfer
+      if (isProxiedGet) {
+        transfer = await TransferService.getById(transferIdOrCommitRequestId)
+      } else {
+        transfer = await TransferService.getByIdLight(transferIdOrCommitRequestId)
+      }
+
+      // Interscheme gets are only allowed to be triggered by hubs.
+      // Assumption is that proxy headers will have logic outside of central-ledger to ensure they are
+      // only added passing through a proxy and can not be added by a participant directly.
+      // This code only executes in a regional scheme between two buffer schemes.
+
+      // Each hub will only ask the adjacent scheme for the transfer details.
+      // If the regional scheme also has the transfer in a RESERVED_FORWARDED state then do nothing
+      // The self heal in the regional scheme will resolve the RESERVED_FORWARDED state
+      // and then the initiating buffer hub will be able to retrieve the transfer details successfully in the next retry,
+      // which will trigger the correct notification callback to resolve the RESERVED_FORWARDED state in the initiating buffer hub's scheme.
+      if (isProxiedGet && isExternalParticipant && transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForReservedForwarded--${actionLetter}4`))
+        // Do nothing
+        return true
+      }
+
       if (!transfer) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.')

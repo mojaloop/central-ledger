@@ -850,18 +850,19 @@ Test('Transfer handler', transferHandlerTest => {
 
       // Mock external participant as proxy with valid state
       sandbox.stub(externalParticipantCached, 'getByName').resolves({
-        name: 'proxyFsp',
-        isProxy: true
+        name: 'payeeFsp'
       })
 
       // Set destination header to proxy participant
       localMessages[0].value.content.headers = {
         ...localMessages[0].value.content.headers,
-        'fspiop-destination': 'proxyFsp'
+        'fspiop-destination': 'payeeFsp',
+        'fspiop-proxy': 'hubProxy'
       }
 
       // Return transfer in valid state
-      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve({
+      const transferId = localMessages[0].value.content.uriParams.id
+      TransferService.getById.withArgs(transferId).returns(Promise.resolve({
         ...transferReturn,
         transferState: 'COMMITTED'
       }))
@@ -1061,6 +1062,38 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCall.args[2].eventDetail.functionality, 'notification')
       test.equal(kafkaCall.args[2].eventDetail.action, 'fx-get')
       test.equal(kafkaCall.args[2].toDestination, 'externalInitiator')
+      test.end()
+    })
+
+    transformTransfer.test('handle proxy GET state in RESERVED_FORWARDED - Do nothing', async (test) => {
+      const localMessages = MainUtil.clone(getProxyMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Kafka.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(true)
+
+      // Mock external participant
+      sandbox.stub(externalParticipantCached, 'getByName').resolves({ name: 'internalFsp' })
+
+      // Set destination and proxy headers
+      localMessages[0].value.content.headers = {
+        ...localMessages[0].value.content.headers,
+        'fspiop-destination': 'internalFsp',
+        'fspiop-proxy': 'hubProxy'
+      }
+
+      // Return transfer in RESERVED_FORWARDED state
+      TransferService.getById.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
+        ...transferReturn,
+        transferState: TransferInternalState.RESERVED_FORWARDED,
+        transferStateEnumeration: TransferInternalState.RESERVED_FORWARDED,
+        externalPayerName: 'externalPayer'
+      }))
+
+      const result = await allTransferHandlers.getTransfer(null, localMessages[0])
+      test.equal(result, true)
+      test.ok(Kafka.proceed.notCalled, 'Kafka.proceed was not called')
       test.end()
     })
 
