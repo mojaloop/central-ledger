@@ -492,7 +492,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
-      TransferService.getByIdLight.returns(null)
+      TransferService.getById.returns(null)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
       test.end()
@@ -506,7 +506,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
-      TransferService.getByIdLight.returns(null)
+      TransferService.getById.returns(null)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -521,7 +521,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(false)
-      TransferService.getByIdLight.returns({})
+      TransferService.getById.returns({})
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -536,7 +536,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(false)
-      TransferService.getByIdLight.returns({})
+      TransferService.getById.returns({})
       Consumer.isConsumerAutoCommitEnabled.returns(false)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -551,7 +551,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
-      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -567,7 +567,7 @@ Test('Transfer handler', transferHandlerTest => {
       const transferResult = MainUtil.clone(transferReturn)
       transferResult.transferState = 'EXPIRED_RESERVED'
       transferResult.extensionList = []
-      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
+      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -583,7 +583,7 @@ Test('Transfer handler', transferHandlerTest => {
       const transferResult = MainUtil.clone(transferReturn)
       transferReturn.transferState = 'ABORTED_REJECTED'
       transferResult.extensionList = []
-      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
+      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves({})
@@ -620,7 +620,7 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-destination': 'externalFsp'
       }
 
-      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -650,7 +650,7 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-destination': 'externalFsp'
       }
 
-      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -676,7 +676,7 @@ Test('Transfer handler', transferHandlerTest => {
       }
       delete localMessages[0].value.content.headers['fspiop-destination']
 
-      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -782,7 +782,7 @@ Test('Transfer handler', transferHandlerTest => {
       sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
 
       // Return transfer in invalid state for proxy
-      TransferService.getByIdLight.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
+      TransferService.getById.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
         ...transferReturn,
         transferStateEnumeration: 'ABORTED',
         transferState: 'ABORTED_ERROR'
@@ -813,7 +813,7 @@ Test('Transfer handler', transferHandlerTest => {
       sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
 
       // Return transfer in invalid state for proxy
-      FxTransferModel.getByIdLight.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve({
+      FxTransferModel.getAllDetailsByCommitRequestId.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve({
         ...transferReturn,
         transferStateEnumeration: 'ABORTED',
         transferState: 'ABORTED_ERROR'
@@ -861,12 +861,224 @@ Test('Transfer handler', transferHandlerTest => {
       }
 
       // Return transfer in valid state
-      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve({
+      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve({
         ...transferReturn,
         transferState: 'COMMITTED'
       }))
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      test.end()
+    })
+
+    transformTransfer.test('handle interscheme transfer GET with proxy header and COMMITTED state', async (test) => {
+      const localMessages = MainUtil.clone(getProxyMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Kafka.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(true)
+
+      // Mock external participant
+      sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
+
+      // Set destination and proxy headers
+      localMessages[0].value.content.headers = {
+        ...localMessages[0].value.content.headers,
+        'fspiop-destination': 'internalFsp',
+        'fspiop-proxy': 'hubProxy'
+      }
+
+      // Return transfer with external payer name
+      TransferService.getById.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
+        ...transferReturn,
+        transferState: 'COMMITTED',
+        transferStateEnumeration: 'COMMITTED',
+        externalPayerName: 'externalPayer'
+      }))
+
+      const result = await allTransferHandlers.getTransfer(null, localMessages[0])
+      test.equal(result, true)
+      test.equal(Kafka.proceed.getCall(0).args[2].eventDetail.functionality, 'notification')
+      test.equal(Kafka.proceed.getCall(0).args[2].eventDetail.action, 'get')
+      test.equal(Kafka.proceed.getCall(0).args[2].toDestination, 'externalPayer')
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      test.end()
+    })
+
+    transformTransfer.test('handle interscheme fx transfer GET timeout with error callback', async (test) => {
+      const localMessages = MainUtil.clone(getProxyMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Kafka.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(true)
+
+      // Set up fx-get action
+      localMessages[1].value.metadata.event.action = 'fx-get'
+
+      // Mock external participant
+      sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
+
+      // Set destination and proxy headers
+      localMessages[1].value.content.headers = {
+        ...localMessages[1].value.content.headers,
+        'fspiop-destination': 'internalFsp',
+        'fspiop-proxy': 'hubProxy'
+      }
+
+      // Return fx transfer in invalid state
+      FxTransferModel.getAllDetailsByCommitRequestId.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve({
+        ...transferReturn,
+        commitRequestId: localMessages[1].value.content.uriParams.id,
+        transferStateEnumeration: 'ABORTED',
+        externalInitiatingFspName: 'externalInitiator'
+      }))
+
+      // Mock the fx transfer error
+      FxTransferErrorModel.getByCommitRequestId.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve({
+        errorCode: '3303',
+        errorDescription: 'FX Transfer expired'
+      }))
+
+      const result = await allTransferHandlers.getTransfer(null, localMessages[1])
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+
+      // Verify the error event detail action for fx timeout
+      const kafkaCall = Kafka.proceed.getCall(0)
+      test.equal(kafkaCall.args[2].eventDetail.functionality, 'notification')
+      test.equal(kafkaCall.args[2].eventDetail.action, 'fx-timeout-received')
+      test.equal(kafkaCall.args[2].toDestination, 'externalInitiator')
+      test.end()
+    })
+
+    transformTransfer.test('handle interscheme GET without proxy header but with external participant', async (test) => {
+      const localMessages = MainUtil.clone(getMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Kafka.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(true)
+      Validator.validateParticipantTransferId.returns(true)
+
+      // Mock external participant
+      sandbox.stub(externalParticipantCached, 'getByName').resolves({
+        name: 'externalFsp',
+        isProxy: false
+      })
+
+      // Set destination header to external participant but no proxy header
+      localMessages[0].value.content.headers = {
+        ...localMessages[0].value.content.headers,
+        'fspiop-destination': 'externalFsp'
+      }
+      // Remove proxy header
+      delete localMessages[0].value.content.headers['fspiop-proxy']
+
+      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+
+      const result = await allTransferHandlers.getTransfer(null, localMessages[0])
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      test.end()
+    })
+
+    transformTransfer.test('handle interscheme GET with successful state transfer', async (test) => {
+      const localMessages = MainUtil.clone(getProxyMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Kafka.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(true)
+
+      // Mock external participant
+      sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
+
+      // Set destination and proxy headers
+      localMessages[0].value.content.headers = {
+        ...localMessages[0].value.content.headers,
+        'fspiop-destination': 'internalFsp',
+        'fspiop-proxy': 'hubProxy'
+      }
+
+      // Return transfer in successful state
+      TransferService.getById.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
+        ...transferReturn,
+        transferState: 'COMMITTED',
+        transferStateEnumeration: 'COMMITTED',
+        externalPayerName: 'externalPayer'
+      }))
+
+      const result = await allTransferHandlers.getTransfer(null, localMessages[0])
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+
+      // Verify successful transfer response
+      const kafkaCall = Kafka.proceed.getCall(0)
+      test.equal(kafkaCall.args[2].eventDetail.functionality, 'notification')
+      test.equal(kafkaCall.args[2].eventDetail.action, 'get')
+      test.equal(kafkaCall.args[2].toDestination, 'externalPayer')
+      test.end()
+    })
+
+    transformTransfer.test('handle interscheme fx GET with successful state', async (test) => {
+      const localMessages = MainUtil.clone(getProxyMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Kafka.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(true)
+
+      // Set up fx-get action
+      localMessages[1].value.metadata.event.action = 'fx-get'
+
+      // Mock external participant
+      sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
+
+      // Set destination and proxy headers
+      localMessages[1].value.content.headers = {
+        ...localMessages[1].value.content.headers,
+        'fspiop-destination': 'internalFsp',
+        'fspiop-proxy': 'hubProxy'
+      }
+
+      // Return fx transfer in successful state
+      FxTransferModel.getAllDetailsByCommitRequestId.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve({
+        ...transferReturn,
+        commitRequestId: localMessages[1].value.content.uriParams.id,
+        transferStateEnumeration: 'COMMITTED',
+        externalInitiatingFspName: 'externalInitiator'
+      }))
+
+      const result = await allTransferHandlers.getTransfer(null, localMessages[1])
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+
+      // Verify successful fx transfer response
+      const kafkaCall = Kafka.proceed.getCall(0)
+      test.equal(kafkaCall.args[2].eventDetail.functionality, 'notification')
+      test.equal(kafkaCall.args[2].eventDetail.action, 'fx-get')
+      test.equal(kafkaCall.args[2].toDestination, 'externalInitiator')
+      test.end()
+    })
+
+    transformTransfer.test('handle proxy GET validation - participant does not exist', async (test) => {
+      const localMessages = MainUtil.clone(getProxyMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      Kafka.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(false)
+
+      // Mock external participant doesn't exist
+      sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
+
+      // Set proxy header but participant validation fails
+      localMessages[0].value.content.headers['fspiop-proxy'] = 'hubProxy'
+
+      const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
       test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
       test.end()

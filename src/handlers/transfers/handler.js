@@ -836,7 +836,7 @@ const getTransfer = async (error, messages) => {
     }
 
     if (isFx) {
-      const fxTransfer = await FxTransferModel.fxTransfer.getByIdLight(transferIdOrCommitRequestId)
+      const fxTransfer = await FxTransferModel.fxTransfer.getAllDetailsByCommitRequestId(transferIdOrCommitRequestId)
       if (!fxTransfer) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided commitRequest ID was not found on the server.')
@@ -874,7 +874,17 @@ const getTransfer = async (error, messages) => {
           if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
             message.value.content.uriParams = { id: transferIdOrCommitRequestId }
           }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: errorPayload, eventDetail: errorEventDetail, fromSwitch, hubName: Config.HUB_NAME })
+          console.log(eventDetail)
+          await Kafka.proceed(
+            Config.KAFKA_CONFIG,
+            params, {
+              consumerCommit,
+              fspiopError: errorPayload,
+              eventDetail: errorEventDetail,
+              fromSwitch,
+              hubName: Config.HUB_NAME,
+              toDestination: fxTransfer.externalInitiatingFspName
+            })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }
@@ -899,8 +909,27 @@ const getTransfer = async (error, messages) => {
       Util.breadcrumb(location, { path: 'validationPassed' })
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
       message.value.content.payload = TransferObjectTransform.toFulfil(fxTransfer, true)
+
+      if (isProxiedGet) {
+        console.log(eventDetail)
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnInterschemePassedFxTransfer--${actionLetter}7`))
+        await Kafka.proceed(
+          Config.KAFKA_CONFIG,
+          params,
+          {
+            consumerCommit,
+            eventDetail,
+            fromSwitch,
+            hubName: Config.HUB_NAME,
+            // Hubs trigger interscheme GETs, but the transfer details need to be sent to the original payer
+            // which can be found as the external initiating FSP in the fxTransfer details.
+            toDestination: fxTransfer.externalInitiatingFspName
+          })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        return true
+      }
     } else {
-      const transfer = await TransferService.getByIdLight(transferIdOrCommitRequestId)
+      const transfer = await TransferService.getById(transferIdOrCommitRequestId)
       if (!transfer) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.')
@@ -938,7 +967,19 @@ const getTransfer = async (error, messages) => {
           if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
             message.value.content.uriParams = { id: transferIdOrCommitRequestId }
           }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: errorPayload, eventDetail: errorEventDetail, fromSwitch, hubName: Config.HUB_NAME })
+          await Kafka.proceed(
+            Config.KAFKA_CONFIG,
+            params,
+            {
+              consumerCommit,
+              fspiopError: errorPayload,
+              eventDetail: errorEventDetail,
+              fromSwitch,
+              hubName: Config.HUB_NAME,
+              // Hubs trigger interscheme GETs, but the fulfil error needs to be sent to the original payer
+              // which can be found as the external payer in the transfer details.
+              toDestination: transfer.externalPayerName
+            })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }
@@ -963,6 +1004,24 @@ const getTransfer = async (error, messages) => {
       Util.breadcrumb(location, { path: 'validationPassed' })
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
       message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
+
+      if (isProxiedGet) {
+        logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnInterschemePassedTransfer--${actionLetter}7`))
+        await Kafka.proceed(
+          Config.KAFKA_CONFIG,
+          params,
+          {
+            consumerCommit,
+            eventDetail,
+            fromSwitch,
+            hubName: Config.HUB_NAME,
+            // Hubs trigger interscheme GETs, but the transfer details need to be sent to the original payer
+            // which can be found as the external payer in the transfer details.
+            toDestination: transfer.externalPayerName
+          })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        return true
+      }
     }
 
     await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch, hubName: Config.HUB_NAME })
