@@ -92,7 +92,7 @@
     "@hapi/vision": "7.0.3",
     "@mojaloop/central-services-error-handling": "13.1.5",
     "@mojaloop/central-services-health": "15.2.1",
-    "@mojaloop/central-services-logger": "11.10.3",
+    "@mojaloop/central-services-logger": "v11.11.0-infitx.0",
     "@mojaloop/central-services-metrics": "12.8.3",
     "@mojaloop/central-services-shared": "18.35.3",
     "@mojaloop/central-services-stream": "11.9.0",
@@ -153,6 +153,8 @@
     "tapes": "4.1.0"
   },
   "overrides": {
+    "@mojaloop/central-services-logger": "v11.11.0-infitx.0",
+    "axios": ">=1.13.5",
     "brace-expansion": "2.0.2",
     "form-data": "4.0.4",
     "lodash": "4.17.23",

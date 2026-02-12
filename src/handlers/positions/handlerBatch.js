@@ -33,23 +33,25 @@
  * @module src/handlers/positions
  */
 
+const { randomUUID } = require('node:crypto')
 const EventSdk = require('@mojaloop/event-sdk')
-const BinProcessor = require('../../domain/position/binProcessor')
-const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const { Kafka: { otel }, Util: { Producer, Consumer } } = require('@mojaloop/central-services-stream')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
-const Config = require('../../lib/config')
-const { randomUUID } = require('crypto')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const BatchPositionModel = require('../../models/position/batch')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
+
+const BinProcessor = require('../../domain/position/binProcessor')
+const SettlementModelCached = require('../../models/settlement/settlementModelCached')
+const BatchPositionModel = require('../../models/position/batch')
+const Config = require('../../lib/config')
+const rethrow = require('../../shared/rethrow')
 const { BATCHING } = require('../../shared/constants')
+const { logger } = require('../../shared/logger')
 
 const consumerCommit = true
-const rethrow = require('../../shared/rethrow')
 
 /**
  * @function positions
@@ -69,11 +71,15 @@ const positions = batchConfig => async (error, messages) => {
     'Consume a batch of prepare transfer messages from the kafka topic and process them',
     ['success']
   ).startTimer()
+  const operation = 'positionsHandlerBatch'
+  const log = logger.child({ operation, batchUuid: randomUUID() })
 
   if (error) {
     histTimerEnd({ success: false })
-    rethrow.rethrowAndCountFspiopError(error, { operation: 'positionsHandlerBatch' })
+    log.warn('error consumed: ', error)
+    rethrow.rethrowAndCountFspiopError(error, { operation })
   }
+
   let consumedMessages = []
 
   if (Array.isArray(messages)) {
@@ -85,50 +91,16 @@ const positions = batchConfig => async (error, messages) => {
   const firstMessageOffset = consumedMessages[0]?.offset
   const lastMessageOffset = consumedMessages[consumedMessages.length - 1]?.offset
   const binId = `${firstMessageOffset}-${lastMessageOffset}`
+  log.info(`[=>> msg] start batch processing  [length: ${consumedMessages.length}] ...`, { binId }) // todo: add topic details
 
   // Iterate through consumedMessages
   const bins = {}
   const lastPerPartition = {}
-  await Promise.all(consumedMessages.map(message => {
-    const histTimerMsgEnd = Metrics.getHistogram(
-      'transfer_position',
-      'Process a prepare transfer message',
-      ['success', 'action']
-    ).startTimer()
 
-    // Create a span for each message
-    const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
-    const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_position', contextFromMessage)
-    span.setTags({
-      processedAsBatch: true,
-      binId
-    })
-
-    const accountID = message.key.toString()
-
-    // Assign message to account-bin by accountID and child action-bin by action
-    // (References to the messages to be stored in bins, no duplication of messages)
-    const action = message.value.metadata.event.action
-    const accountBin = bins[accountID] || (bins[accountID] = {})
-    const actionBin = accountBin[action] || (accountBin[action] = [])
-
-    // Decode the payload and pass it as a separate parameter
-    const decodedPayload = decodePayload(message.value.content.payload)
-    actionBin.push({
-      message,
-      decodedPayload,
-      span,
-      result: {},
-      histTimerMsgEnd
-    })
-
-    const last = lastPerPartition[message.partition]
-    if (!last || message.offset > last.offset) {
-      lastPerPartition[message.partition] = message
-    }
-
-    return span.audit(message, EventSdk.AuditEventAction.start)
-  }))
+  await Promise.all(consumedMessages.map(
+    message => addToBinSortedByActionDecodedPayload({ message, binId, bins, lastPerPartition, log })
+  ))
+  log.verbose('all messages in batch are decoded and sorted')
 
   // Start DB Transaction if there are any bins to process
   const trx = !!Object.keys(bins).length && await BatchPositionModel.startDbTransaction()
@@ -137,6 +109,7 @@ const positions = batchConfig => async (error, messages) => {
     if (trx) {
       // Call Bin Processor with the list of account-bins and trx
       const result = await BinProcessor.processBins(bins, trx)
+      log.verbose('BinProcessor.processBins is done')
 
       // If Bin Processor processed bins successfully, commit Kafka offset
       // Commit the offset of last message in the array
@@ -145,9 +118,11 @@ const positions = batchConfig => async (error, messages) => {
         // We are using Kafka.proceed() to just commit the offset of the last message in the array
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
       }
+      log.verbose('all kafka messages are committed')
 
       // Commit DB transaction
-      await trx.commit()
+      await trx.commit() // todo: think if we need trx.commit() BEFORE Kafka.proceed() ??
+      log.info('DB trx committed')
 
       // Loop through results and produce notification messages and audit messages
       await Promise.all(result.notifyMessages.map(item => {
@@ -188,11 +163,11 @@ const positions = batchConfig => async (error, messages) => {
             : produce()
         })
       ))
+      log.verbose('notification, audit and position messages are sent')
     }
     histTimerEnd({ success: true })
   } catch (err) {
-    // If Bin Processor returns failure
-    // -  Rollback DB transaction
+    log.warn('error in bin processing, rolling trx back: ', err)
     await trx?.rollback()
 
     // - Audit Error for each message
@@ -212,6 +187,7 @@ const positions = batchConfig => async (error, messages) => {
         await span.finish()
       }
     })
+    log.info('[<<= msg] batch processing is done')
   }
 }
 
@@ -272,6 +248,54 @@ const registerAllHandlers = async () => {
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'registerAllHandlers' })
   }
+}
+
+const addToBinSortedByActionDecodedPayload = ({ message, binId, bins, lastPerPartition, log }) => {
+  const histTimerMsgEnd = Metrics.getHistogram(
+    'transfer_position',
+    'Process a prepare transfer message',
+    ['success', 'action']
+  ).startTimer()
+  // // Create a span for each message
+  const span = createSpanFromMessage(message, binId)
+
+  const accountID = message.key.toString()
+
+  // Assign message to account-bin by accountID and child action-bin by action
+  // (References to the messages to be stored in bins, no duplication of messages)
+  const action = message.value.metadata.event.action
+  const accountBin = bins[accountID] || (bins[accountID] = {})
+  const actionBin = accountBin[action] || (accountBin[action] = [])
+
+  // Decode the payload and pass it as a separate parameter
+  const decodedPayload = decodePayload(message.value.content.payload)
+  log.debug('accountID, action and decoded payload: ', { accountID, action, decodedPayload })
+
+  actionBin.push({
+    message,
+    decodedPayload,
+    span,
+    histTimerMsgEnd,
+    result: {}
+  })
+
+  const last = lastPerPartition[message.partition]
+  if (!last || message.offset > last.offset) {
+    lastPerPartition[message.partition] = message
+  }
+
+  return span.audit(message, EventSdk.AuditEventAction.start)
+}
+
+const createSpanFromMessage = (message, binId) => {
+  const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
+  const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_position', contextFromMessage)
+  span.setTags({
+    processedAsBatch: true,
+    binId
+  })
+
+  return span
 }
 
 module.exports = {
