@@ -433,7 +433,7 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
   let state
   let isFulfilment = false
   let isError = false
-  // const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
+  const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
   const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
   let extensionList
   switch (action) {
@@ -491,6 +491,13 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
     reason: errorDescription,
     createdDate: transactionTimestamp
   }
+  const fxTransferErrorRecord = {
+    commitRequestId,
+    fxTransferStateChangeId: null, // will be updated after insert
+    errorCode,
+    errorDescription,
+    createdDate: transactionTimestamp
+  }
 
   try {
     /** @namespace Db.getKnex **/
@@ -530,9 +537,22 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
           result.fxTransferExtensionRecordsList = fxTransferExtensionRecordsList
           logger.debug('saveFxFulfilResponse::transferExtensionRecordsList')
         }
-        await knex('fxTransferStateChange').transacting(trx).insert(fxTransferStateChangeRecord)
-        result.fxTransferStateChangeRecord = fxTransferStateChangeRecord
+        // Insert fxTransferStateChange and get its id
+        const [fxTransferStateChangeId] = await knex('fxTransferStateChange')
+          .transacting(trx)
+          .insert(fxTransferStateChangeRecord)
+          .returning('fxTransferStateChangeId')
+        result.fxTransferStateChangeRecord = { ...fxTransferStateChangeRecord, fxTransferStateChangeId }
         logger.debug('saveFxFulfilResponse::fxTransferStateChange')
+
+        // Save fxTransferError if error
+        if (isError || fspiopError) {
+          fxTransferErrorRecord.fxTransferStateChangeId = fxTransferStateChangeId
+          await knex('fxTransferError').transacting(trx).insert(fxTransferErrorRecord)
+          result.fxTransferErrorRecord = fxTransferErrorRecord
+          logger.debug('saveFxFulfilResponse::fxTransferError')
+        }
+
         histTFxFulfilResponseValidationPassedEnd({ success: true, queryName: 'facade_saveFxFulfilResponse_transaction' })
         result.savePayeeTransferResponseExecuted = true
         logger.debug('saveFxFulfilResponse::success')
