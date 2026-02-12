@@ -551,7 +551,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
-      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -567,7 +567,7 @@ Test('Transfer handler', transferHandlerTest => {
       const transferResult = MainUtil.clone(transferReturn)
       transferResult.transferState = 'EXPIRED_RESERVED'
       transferResult.extensionList = []
-      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
+      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -583,7 +583,7 @@ Test('Transfer handler', transferHandlerTest => {
       const transferResult = MainUtil.clone(transferReturn)
       transferReturn.transferState = 'ABORTED_REJECTED'
       transferResult.extensionList = []
-      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
+      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves({})
@@ -617,7 +617,8 @@ Test('Transfer handler', transferHandlerTest => {
       // Set destination header to external participant
       localMessages[0].value.content.headers = {
         ...localMessages[0].value.content.headers,
-        'fspiop-destination': 'externalFsp'
+        'fspiop-destination': 'externalFsp',
+        'proxy-header': 'proxyFsp'
       }
 
       TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))

@@ -837,7 +837,7 @@ const getTransfer = async (error, messages) => {
       // The self heal in the regional scheme will resolve the RESERVED_FORWARDED state
       // and then the initiating buffer hub will be able to retrieve the transfer details successfully in the next retry,
       // which will trigger the correct notification callback to resolve the RESERVED_FORWARDED state in the initiating buffer hub's scheme.
-      if (isProxiedGet && isExternalParticipant && fxTransfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+      if (isProxiedGet && isExternalParticipant && fxTransfer && fxTransfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForFxReservedForwarded--${actionLetter}4`))
         // Do nothing
         return true
@@ -950,7 +950,7 @@ const getTransfer = async (error, messages) => {
       // The self heal in the regional scheme will resolve the RESERVED_FORWARDED state
       // and then the initiating buffer hub will be able to retrieve the transfer details successfully in the next retry,
       // which will trigger the correct notification callback to resolve the RESERVED_FORWARDED state in the initiating buffer hub's scheme.
-      if (isProxiedGet && isExternalParticipant && transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+      if (isProxiedGet && isExternalParticipant && transfer && transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForReservedForwarded--${actionLetter}4`))
         // Do nothing
         return true
@@ -1032,7 +1032,7 @@ const getTransfer = async (error, messages) => {
       message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
 
       if (isProxiedGet) {
-        logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnInterschemePassedTransfer--${actionLetter}7`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnInterschemePassedTransfer--${actionLetter}7`))
         await Kafka.proceed(
           Config.KAFKA_CONFIG,
           params,
