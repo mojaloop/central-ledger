@@ -10,7 +10,7 @@
     "Henk Kodde <henkkodde@modusbox.com>",
     "Kevin Leyow <kevin.leyow@modusbox.com>",
     "Lazola Lucas <lazola.lucas@modusbox.com>",
-    "Lewis Daly <lewisd@crosslaketech.com>",
+    "Lewis Daly <lewisd@tigerbeetle.com>",
     "Miguel de Barros <miguel.debarros@modusbox.com>",
     "Paweł Marzec <pawel.marzec@modusbox.com>",
     "Rajiv Mothilal <rajiv.mothilal@modusbox.com>",
@@ -35,11 +35,13 @@
     "audit:check"
   ],
   "scripts": {
+    "build": "tsc",
     "start": "npm run start:api",
     "start:api": "node src/api/index.js",
     "start:handlers": "node src/handlers/index.js",
     "start:debug": "npm start --node-options --inspect=0.0.0.0",
-    "watch:api": "npx nodemon src/api/index.js",
+    "start:tsnode": "ts-node ./src/api/index.ts",
+    "watch:api": "nodemon --exec ts-node ./src/api/index.ts",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "lint": "npx standard",
     "lint:fix": "npx standard --fix",
@@ -124,6 +126,7 @@
     "require-glob": "^4.1.0"
   },
   "optionalDependencies": {
+    "ed25519": "^0.0.5",
     "mysql": "2.18.1"
   },
   "devDependencies": {
@@ -148,7 +151,8 @@
     "tap-spec": "^5.0.0",
     "tap-xunit": "2.4.1",
     "tape": "4.17.0",
-    "tapes": "4.1.0"
+    "tapes": "4.1.0",
+    "ts-node": "^10.9.2"
   },
   "overrides": {
     "ajv": "8.18.0",
@@ -199,7 +203,7 @@
     "underscore": "1.13.8"
   },
   "config": {
-    "knex": "--knexfile ./config/knexfile.js",
+    "knex": "--knexfile ./src/knexfile.js",
     "images": {
       "api": "central-ledger",
       "admin": "central-ledger-admin"

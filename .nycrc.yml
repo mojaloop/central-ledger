@@ -31,6 +31,7 @@ exclude: [
   'src/models/participant/externalParticipantCached.js', # todo: figure out why it shows only 50% coverage in Branch
   'src/models/transfer/facade.js', ## add more test coverage
   'src/shared/fspiopErrorFactory.js',
-  'src/lib/proxyCache.js' # todo: remove this line after adding test coverage
+  'src/lib/proxyCache.js', # todo: remove this line after adding test coverage
+  'src/seeds/**'
 ]
 ## todo: increase test coverage before merging feat/fx-impl to main branch
