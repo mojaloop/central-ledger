@@ -51,8 +51,10 @@ Test('SubServiceHealth test', subServiceHealthTest => {
   subServiceHealthTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Consumer, 'getListOfTopics')
-    sandbox.stub(Consumer, 'allConnected')
+    sandbox.stub(Consumer, 'getConsumer')
     sandbox.stub(Logger, 'isDebugEnabled').value(true)
+    sandbox.stub(Logger, 'isWarnEnabled').value(true)
+    sandbox.stub(Logger, 'warn')
     proxyCacheStub = sandbox.stub(ProxyCache, 'getCache')
     t.end()
   })
@@ -76,10 +78,11 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       test.end()
     })
 
-    brokerTest.test('broker test fails when one broker cannot connect', async test => {
+    brokerTest.test('broker test fails when consumer isHealthy returns false', async test => {
       // Arrange
       Consumer.getListOfTopics.returns(['admin1', 'admin2'])
-      Consumer.allConnected.throws(new Error('Not connected!'))
+      const mockConsumer = { isHealthy: sandbox.stub().resolves(false) }
+      Consumer.getConsumer.returns(mockConsumer)
       const expected = { name: serviceName.broker, status: statusEnum.DOWN }
 
       // Act
@@ -90,10 +93,11 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       test.end()
     })
 
-    brokerTest.test('Passes when it connects', async test => {
+    brokerTest.test('Passes when all consumers are healthy', async test => {
       // Arrange
       Consumer.getListOfTopics.returns(['admin1', 'admin2'])
-      Consumer.allConnected.returns(Promise.resolve(true))
+      const mockConsumer = { isHealthy: sandbox.stub().resolves(true) }
+      Consumer.getConsumer.returns(mockConsumer)
       const expected = { name: serviceName.broker, status: statusEnum.OK }
 
       // Act
@@ -104,35 +108,51 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       test.end()
     })
 
-    brokerTest.test('broker test fails when isConnected returns false for a topic', async test => {
+    brokerTest.test('broker test fails when isHealthy returns false for one topic', async test => {
       // Arrange
       Consumer.getListOfTopics.returns(['admin1', 'admin2'])
-      // First topic returns true, second returns false
-      Consumer.allConnected.withArgs('admin1').returns(Promise.resolve(true))
-      Consumer.allConnected.withArgs('admin2').returns(Promise.resolve(false))
+      const mockConsumer1 = { isHealthy: sandbox.stub().resolves(true) }
+      const mockConsumer2 = { isHealthy: sandbox.stub().resolves(false) }
+      Consumer.getConsumer.withArgs('admin1').returns(mockConsumer1)
+      Consumer.getConsumer.withArgs('admin2').returns(mockConsumer2)
       const expected = { name: serviceName.broker, status: statusEnum.DOWN }
 
       // Act
       const result = await getSubServiceHealthBroker()
 
       // Assert
-      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result when a topic is not connected')
+      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result when a topic is not healthy')
       test.end()
     })
 
-    brokerTest.test('broker test handles isConnected throwing for one topic', async test => {
+    brokerTest.test('broker test handles isHealthy throwing for one topic', async test => {
       // Arrange
       Consumer.getListOfTopics.returns(['topic1', 'topic2'])
-      // topic1 resolves true, topic2 throws
-      Consumer.allConnected.withArgs('topic1').returns(Promise.resolve(true))
-      Consumer.allConnected.withArgs('topic2').throws(new Error('Connection error'))
+      const mockConsumer1 = { isHealthy: sandbox.stub().resolves(true) }
+      const mockConsumer2 = { isHealthy: sandbox.stub().rejects(new Error('Health check error')) }
+      Consumer.getConsumer.withArgs('topic1').returns(mockConsumer1)
+      Consumer.getConsumer.withArgs('topic2').returns(mockConsumer2)
       const expected = { name: serviceName.broker, status: statusEnum.DOWN }
 
       // Act
       const result = await getSubServiceHealthBroker()
 
       // Assert
-      test.deepEqual(result, expected, 'getSubServiceHealthBroker should be DOWN if isConnected throws for a topic')
+      test.deepEqual(result, expected, 'getSubServiceHealthBroker should be DOWN if isHealthy throws for a topic')
+      test.end()
+    })
+
+    brokerTest.test('broker test handles getConsumer throwing for one topic', async test => {
+      // Arrange
+      Consumer.getListOfTopics.returns(['topic1', 'topic2'])
+      Consumer.getConsumer.throws(new Error('Consumer not found'))
+      const expected = { name: serviceName.broker, status: statusEnum.DOWN }
+
+      // Act
+      const result = await getSubServiceHealthBroker()
+
+      // Assert
+      test.deepEqual(result, expected, 'getSubServiceHealthBroker should be DOWN if getConsumer throws')
       test.end()
     })
 
@@ -199,7 +219,7 @@ Test('SubServiceHealth test', subServiceHealthTest => {
   })
 
   subServiceHealthTest.test('getSubServiceHealthProxyCache', proxyCacheTest => {
-    proxyCacheTest.test('Reports up when not health', async test => {
+    proxyCacheTest.test('Reports up when healthy', async test => {
       // Arrange
       proxyCacheStub.returns({
         healthCheck: sandbox.stub().returns(Promise.resolve(true))
@@ -210,11 +230,11 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       const result = await getSubServiceHealthProxyCache()
 
       // Assert
-      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result')
+      test.deepEqual(result, expected, 'getSubServiceHealthProxyCache should match expected result')
       test.end()
     })
 
-    proxyCacheTest.test('Reports down when not health', async test => {
+    proxyCacheTest.test('Reports down when not healthy', async test => {
       // Arrange
       proxyCacheStub.returns({
         healthCheck: sandbox.stub().returns(Promise.resolve(false))
@@ -225,7 +245,7 @@ Test('SubServiceHealth test', subServiceHealthTest => {
       const result = await getSubServiceHealthProxyCache()
 
       // Assert
-      test.deepEqual(result, expected, 'getSubServiceHealthBroker should match expected result')
+      test.deepEqual(result, expected, 'getSubServiceHealthProxyCache should match expected result')
       test.end()
     })
     proxyCacheTest.end()

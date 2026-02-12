@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2024 Mojaloop Foundation
+ Copyright © 2020-2025 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -36,8 +36,12 @@ const MigrationLockModel = require('../../models/misc/migrationLock')
  * @function getSubServiceHealthBroker
  *
  * @description
- *   Gets the health for the broker, by checking that the consumer is
- *   connected for each topic
+ *   Gets the health for the broker, by checking that each consumer is healthy.
+ *   Uses the consumer's isHealthy() method from central-services-stream which performs:
+ *   - isConnected() - basic connection status
+ *   - isAssigned() - consumer has partition assignments
+ *   - isPollHealthy() - last poll was within healthCheckPollInterval
+ *   - getMetadataSync() - all subscribed topics exist in broker metadata
  *
  * @returns Promise<SubServiceHealth> The SubService health object for the broker
  */
@@ -47,17 +51,22 @@ const getSubServiceHealthBroker = async () => {
   try {
     const consumerTopics = Consumer.getListOfTopics()
     const results = await Promise.all(
-      consumerTopics.map(async (t) => {
+      consumerTopics.map(async (topic) => {
         try {
-          return await Consumer.allConnected(t)
+          const consumer = Consumer.getConsumer(topic)
+          const isHealthy = await consumer.isHealthy()
+          if (!isHealthy) {
+            Logger.isWarnEnabled && Logger.warn(`Consumer is not healthy for topic ${topic}`)
+          }
+          return isHealthy
         } catch (err) {
-          Logger.isWarnEnabled && Logger.warn(`allConnected threw for topic ${t}: ${err.message}`)
+          Logger.isWarnEnabled && Logger.warn(`isHealthy check failed for topic ${topic}: ${err.message}`)
           return false
         }
       })
     )
 
-    if (results.some(connected => !connected)) {
+    if (results.some(healthy => !healthy)) {
       status = statusEnum.DOWN
     }
   } catch (err) {

@@ -3,11 +3,6 @@
   // audit-ci supports reading JSON, JSONC, and JSON5 config files.
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
-  "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
-    "GHSA-xxjr-mmjv-4gpg",
-    "GHSA-g9mf-h72j-4rw9",
-    "GHSA-p5wg-g6qr-c7cg",
-    "GHSA-37qj-frw5-hhjh", // Allowed: affects a transitive dependency used only in development tooling; no production or user-facing services rely on the vulnerable code paths. Monitored for upstream fix; will be removed from allowlist once a patched version is available.
-    "GHSA-6c59-mwgh-r2x6"  // Allowed: vulnerability exists in a dependency that processes no untrusted input in this project’s usage. Risk assessed as low; builds are blocked from introducing direct runtime use of the affected functionality and dependency updates are tracked regularly.
+  "allowlist": [
   ]
 }
