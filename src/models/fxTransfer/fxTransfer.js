@@ -111,11 +111,13 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
         .innerJoin('fxTransferParticipant AS tp1', 'tp1.commitRequestId', 'fxTransfer.commitRequestId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
         .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
+        .leftJoin('externalParticipant AS ep1', 'ep1.externalParticipantId', 'tp1.externalParticipantId')
         // COUNTER_PARTY_FSP SOURCE currency
         .innerJoin('fxTransferParticipant AS tp21', 'tp21.commitRequestId', 'fxTransfer.commitRequestId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp21.transferParticipantRoleTypeId')
         .innerJoin('fxParticipantCurrencyType AS fpct1', 'fpct1.fxParticipantCurrencyTypeId', 'tp21.fxParticipantCurrencyTypeId')
         .innerJoin('participant AS ca', 'ca.participantId', 'tp21.participantId')
+        .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'tp21.externalParticipantId')
         .leftJoin('participantCurrency AS pc21', 'pc21.participantCurrencyId', 'tp21.participantCurrencyId')
         // COUNTER_PARTY_FSP TARGET currency
         .innerJoin('fxTransferParticipant AS tp22', 'tp22.commitRequestId', 'fxTransfer.commitRequestId')
@@ -136,6 +138,8 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
           // 'pc22.participantCurrencyId AS counterPartyFspTargetParticipantCurrencyId',
           'tp21.participantCurrencyId AS counterPartyFspSourceParticipantCurrencyId',
           'tp22.participantCurrencyId AS counterPartyFspTargetParticipantCurrencyId',
+          'ep1.name AS externalInitiatingFspName',
+          'ep2.name AS externalCounterPartyFspName',
           'ca.participantId AS counterPartyFspParticipantId',
           'ca.name AS counterPartyFspName',
           'ca.isProxy AS counterPartyFspIsProxy',
