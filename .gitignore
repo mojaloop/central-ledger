@@ -66,3 +66,7 @@ devspace*
 !.npmignore
 
 .rush
+
+
+# Build output
+dist
