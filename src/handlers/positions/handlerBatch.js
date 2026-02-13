@@ -34,14 +34,14 @@
  */
 
 const { randomUUID } = require('node:crypto')
-const EventSdk = require('@mojaloop/event-sdk')
+const { Kafka: { otel }, Util: { Producer, Consumer } } = require('@mojaloop/central-services-stream')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const { Kafka: { otel }, Util: { Producer, Consumer } } = require('@mojaloop/central-services-stream')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
+const EventSdk = require('@mojaloop/event-sdk')
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 
 const BinProcessor = require('../../domain/position/binProcessor')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
@@ -100,7 +100,7 @@ const positions = batchConfig => async (error, messages) => {
   await Promise.all(consumedMessages.map(
     message => addToBinSortedByActionDecodedPayload({ message, binId, bins, lastPerPartition, log })
   ))
-  log.verbose('all messages in batch are decoded and sorted')
+  log.verbose('all messages in batch are decoded and sorted', { batchConfig })
 
   // Start DB Transaction if there are any bins to process
   const trx = !!Object.keys(bins).length && await BatchPositionModel.startDbTransaction()
@@ -109,7 +109,6 @@ const positions = batchConfig => async (error, messages) => {
     if (trx) {
       // Call Bin Processor with the list of account-bins and trx
       const result = await BinProcessor.processBins(bins, trx)
-      log.verbose('BinProcessor.processBins is done')
 
       // If Bin Processor processed bins successfully, commit Kafka offset
       // Commit the offset of last message in the array
@@ -122,7 +121,7 @@ const positions = batchConfig => async (error, messages) => {
 
       // Commit DB transaction
       await trx.commit() // todo: think if we need trx.commit() BEFORE Kafka.proceed() ??
-      log.info('DB trx committed')
+      log.info('DB transaction committed')
 
       // Loop through results and produce notification messages and audit messages
       await Promise.all(result.notifyMessages.map(item => {
@@ -136,8 +135,19 @@ const positions = batchConfig => async (error, messages) => {
         } else {
           action = item.message.metadata.event.action
         }
-        const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
-        const produce = () => Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Events.Event.Type.NOTIFICATION, action, item.message, eventStatus, null, item.binItem.span)
+        const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status
+          ? Enum.Events.EventStatus.SUCCESS
+          : Enum.Events.EventStatus.FAILURE
+        const produce = () => Kafka.produceGeneralMessage(
+          Config.KAFKA_CONFIG,
+          Producer,
+          Enum.Events.Event.Type.NOTIFICATION,
+          action,
+          item.message,
+          eventStatus,
+          null,
+          item.binItem.span
+        )
         return (Array.isArray(messages) && messages.length > 1)
           ? otel.startConsumerTracingSpan(item.binItem.message, batchConfig).executeInsideSpanContext(produce)
           : produce()
@@ -286,6 +296,37 @@ const addToBinSortedByActionDecodedPayload = ({ message, binId, bins, lastPerPar
 
   return span.audit(message, EventSdk.AuditEventAction.start)
 }
+
+// const produceNotificationMessages = async (notifyMessages) => {
+//   return notifyMessages.map(item => {
+//     // Produce notification message and audit message
+//     // NOTE: Not sure why we're checking the binItem for the action vs the message
+//     //       that is being created.
+//     //       Handled FX_NOTIFY and FX_ABORT differently so as not to break existing functionality.
+//     let action
+//     if (![Enum.Events.Event.Action.FX_NOTIFY, Enum.Events.Event.Action.FX_ABORT].includes(item?.message.metadata.event.action)) {
+//       action = item.binItem.message?.value.metadata.event.action
+//     } else {
+//       action = item.message.metadata.event.action
+//     }
+//     const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status
+//       ? Enum.Events.EventStatus.SUCCESS
+//       : Enum.Events.EventStatus.FAILURE
+//     const produce = () => Kafka.produceGeneralMessage(
+//       Config.KAFKA_CONFIG,
+//       Producer,
+//       Enum.Events.Event.Type.NOTIFICATION,
+//       action,
+//       item.message,
+//       eventStatus,
+//       null,
+//       item.binItem.span
+//     )
+//     return (Array.isArray(messages) && messages.length > 1)
+//       ? otel.startConsumerTracingSpan(item.binItem.message, batchConfig).executeInsideSpanContext(produce)
+//       : produce()
+//   })
+// }
 
 const createSpanFromMessage = (message, binId) => {
   const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
