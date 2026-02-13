@@ -71,8 +71,10 @@ const positions = batchConfig => async (error, messages) => {
     'Consume a batch of prepare transfer messages from the kafka topic and process them',
     ['success']
   ).startTimer()
+  const startTime = Date.now()
   const operation = 'positionsHandlerBatch'
-  const log = logger.child({ operation, batchUuid: randomUUID() })
+  const batchId = randomUUID() // todo: think if we can use binId instead
+  const log = logger.child({ operation, batchId, startTime })
 
   if (error) {
     histTimerEnd({ success: false })
@@ -91,7 +93,7 @@ const positions = batchConfig => async (error, messages) => {
   const firstMessageOffset = consumedMessages[0]?.offset
   const lastMessageOffset = consumedMessages[consumedMessages.length - 1]?.offset
   const binId = `${firstMessageOffset}-${lastMessageOffset}`
-  log.info(`[=>> msg] start batch processing  [length: ${consumedMessages.length}] ...`, { binId }) // todo: add topic details
+  log.info(`[=>> msg] start batch processing  [length: ${consumedMessages.length}, id: ${batchId}, binId: ${binId}]...`, { binId }) // todo: add topic details
 
   // Iterate through consumedMessages
   const bins = {}
@@ -197,7 +199,7 @@ const positions = batchConfig => async (error, messages) => {
         await span.finish()
       }
     })
-    log.info('[<<= msg] batch processing is done')
+    log.info(`[<<= msg] batch processing is done  [id: $${batchId}, binId: ${binId}, duration: ${(Date.now() - startTime) / 1000}s]`)
   }
 }
 
