@@ -133,13 +133,13 @@ const processPositionAbortBin = async (
         for (const positionChange of cyrilResult.positionChanges) {
           if (positionChange.isFxTransferStateChange) {
             if (positionChange.notifyTo) {
-              // Construct notification message for fx transfer state change
-              const resultMessage = _constructAbortResultMessage(binItem, positionChange.commitRequestId, from, positionChange.notifyTo, positionChange.isOriginalId, true)
+              // Forward the error message
+              const resultMessage = _forwardAbortResultMessage(binItem, positionChange.commitRequestId, from, positionChange.notifyTo, positionChange.isOriginalId, true)
               resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
             }
           } else {
-            // Construct notification message for transfer state change
-            const resultMessage = _constructAbortResultMessage(binItem, positionChange.transferId, from, positionChange.notifyTo, positionChange.isOriginalId, false)
+            // Forward the error message
+            const resultMessage = _forwardAbortResultMessage(binItem, positionChange.transferId, from, positionChange.notifyTo, positionChange.isOriginalId, false)
             resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
           }
         }
@@ -178,6 +178,46 @@ const processPositionAbortBin = async (
     notifyMessages: resultMessages, // array of objects containing bin item and result message. {binItem, message}
     followupMessages // array of objects containing bin item, message key and followup message. {binItem, messageKey, message}
   }
+}
+
+const _forwardAbortResultMessage = (binItem, id, from, notifyTo, isOriginalId, isFx) => {
+  const errorInformation = binItem.decodedPayload?.errorInformation
+  let fromCalculated = from
+
+  if (!isOriginalId) {
+    fromCalculated = Config.HUB_NAME
+  }
+  const fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(errorInformation, null, null).toApiErrorObject(Config.ERROR_HANDLING)
+
+  const state = Utility.StreamingProtocol.createEventState(
+    Enum.Events.EventStatus.FAILURE.status,
+    fspiopError.errorInformation.errorCode,
+    fspiopError.errorInformation.errorDescription
+  )
+  // Create metadata for the message
+  const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
+    id,
+    Enum.Kafka.Topics.POSITION,
+    (isFx && !isOriginalId) ? Enum.Events.Event.Action.FX_ABORT : binItem.message?.value.metadata.event.action, // This will be replaced anyway in Kafka.produceGeneralMessage function
+    state
+  )
+  const resultMessage = Utility.StreamingProtocol.createMessage(
+    id,
+    notifyTo,
+    fromCalculated,
+    metadata,
+    binItem.message.value.content.headers, // Headers don't really matter here. ml-api-adapter will ignore them and create their own.
+    fspiopError,
+    { id },
+    'application/json',
+    binItem.message.value.content.context
+  )
+  if (!resultMessage.content.context) {
+    resultMessage.content.context = {}
+  }
+  resultMessage.content.context.isOriginalId = isOriginalId
+
+  return resultMessage
 }
 
 const _constructAbortResultMessage = (binItem, id, from, notifyTo, isOriginalId, isFx) => {

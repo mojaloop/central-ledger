@@ -94,7 +94,7 @@
     "@mojaloop/central-services-health": "15.2.1",
     "@mojaloop/central-services-logger": "11.10.3",
     "@mojaloop/central-services-metrics": "12.8.3",
-    "@mojaloop/central-services-shared": "18.35.2",
+    "@mojaloop/central-services-shared": "18.35.3",
     "@mojaloop/central-services-stream": "11.9.0",
     "@mojaloop/database-lib": "11.3.5",
     "@mojaloop/event-sdk": "14.8.2",
@@ -136,7 +136,7 @@
     "audit-ci": "^7.1.0",
     "get-port": "5.1.1",
     "jsdoc": "4.0.5",
-    "jsonpath": "1.2.0",
+    "jsonpath": "1.2.1",
     "mock-knex": "0.4.13",
     "nodemon": "3.1.11",
     "npm-check-updates": "19.3.2",
@@ -153,6 +153,7 @@
     "tapes": "4.1.0"
   },
   "overrides": {
+    "axios": "1.13.5",
     "brace-expansion": "2.0.2",
     "form-data": "4.0.4",
     "lodash": "4.17.23",

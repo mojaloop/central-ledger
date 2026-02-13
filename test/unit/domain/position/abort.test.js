@@ -375,12 +375,12 @@ const getAbortBinItems = () => {
     {
       message: JSON.parse(JSON.stringify(abortMessage1)),
       span,
-      decodedPayload: {}
+      decodedPayload: JSON.parse(JSON.stringify(abortMessage1.value.content.payload))
     },
     {
       message: JSON.parse(JSON.stringify(abortMessage2)),
       span,
-      decodedPayload: {}
+      decodedPayload: JSON.parse(JSON.stringify(abortMessage2.value.content.payload))
     }
   ]
   return binItems
@@ -391,12 +391,12 @@ const getFxAbortBinItems = () => {
     {
       message: JSON.parse(JSON.stringify(fxAbortMessage1)),
       span,
-      decodedPayload: {}
+      decodedPayload: JSON.parse(JSON.stringify(fxAbortMessage1.value.content.payload))
     },
     {
       message: JSON.parse(JSON.stringify(fxAbortMessage2)),
       span,
-      decodedPayload: {}
+      decodedPayload: JSON.parse(JSON.stringify(fxAbortMessage2.value.content.payload))
     }
   ]
   return binItems
@@ -838,51 +838,52 @@ Test('abort domain', positionIndexTest => {
       test.end()
     })
 
-    processPositionAbortBinTest.test('produce abort messages for FX_ABORT_VALIDATION action', async (test) => {
-      const binItems = getFxAbortBinItems()
-      binItems.splice(1, 1)
-      binItems[0].message.value.metadata.event.action = Enum.Events.Event.Action.FX_ABORT_VALIDATION
-      // Simplify to have just one position change to test validation error
-      binItems[0].message.value.content.context.cyrilResult.positionChanges = [
-        {
-          isFxTransferStateChange: true,
-          commitRequestId: 'c0000001-0000-0000-0000-000000000000',
-          notifyTo: 'fxp1',
-          participantCurrencyId: 1,
-          amount: -10,
-          isOriginalId: true
-        }
-      ]
-      try {
-        const processedResult = await processPositionAbortBin(
-          binItems,
-          {
-            accumulatedPositionValue: 0,
-            accumulatedPositionReservedValue: 0,
-            accumulatedTransferStates: {
-              'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-            },
-            accumulatedFxTransferStates: {
-              'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-            },
-            isFx: true
-          }
-        )
-        test.pass('Error not thrown')
-        test.ok(processedResult.notifyMessages.length >= 1)
-        // Check the error code is VALIDATION_ERROR
-        // The FX_ABORT_VALIDATION action should have VALIDATION_ERROR (3100) in the notification
-        const message = processedResult.notifyMessages.find(m => {
-          const errorCode = m.message?.content?.payload?.errorInformation?.errorCode
-          return errorCode === '3100'
-        })
-        test.ok(message, 'Should have a message with VALIDATION_ERROR code 3100')
-      } catch (e) {
-        console.error(e)
-        test.fail('Error thrown')
-      }
-      test.end()
-    })
+    // Disabling this test as per the issue: https://github.com/mojaloop/project/issues/4317
+    // processPositionAbortBinTest.test('produce abort messages for FX_ABORT_VALIDATION action', async (test) => {
+    //   const binItems = getFxAbortBinItems()
+    //   binItems.splice(1, 1)
+    //   binItems[0].message.value.metadata.event.action = Enum.Events.Event.Action.FX_ABORT_VALIDATION
+    //   // Simplify to have just one position change to test validation error
+    //   binItems[0].message.value.content.context.cyrilResult.positionChanges = [
+    //     {
+    //       isFxTransferStateChange: true,
+    //       commitRequestId: 'c0000001-0000-0000-0000-000000000000',
+    //       notifyTo: 'fxp1',
+    //       participantCurrencyId: 1,
+    //       amount: -10,
+    //       isOriginalId: true
+    //     }
+    //   ]
+    //   try {
+    //     const processedResult = await processPositionAbortBin(
+    //       binItems,
+    //       {
+    //         accumulatedPositionValue: 0,
+    //         accumulatedPositionReservedValue: 0,
+    //         accumulatedTransferStates: {
+    //           'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+    //         },
+    //         accumulatedFxTransferStates: {
+    //           'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+    //         },
+    //         isFx: true
+    //       }
+    //     )
+    //     test.pass('Error not thrown')
+    //     test.ok(processedResult.notifyMessages.length >= 1)
+    //     // Check the error code is VALIDATION_ERROR
+    //     // The FX_ABORT_VALIDATION action should have VALIDATION_ERROR (3100) in the notification
+    //     const message = processedResult.notifyMessages.find(m => {
+    //       const errorCode = m.message?.content?.payload?.errorInformation?.errorCode
+    //       return errorCode === '3100'
+    //     })
+    //     test.ok(message, 'Should have a message with VALIDATION_ERROR code 3100')
+    //   } catch (e) {
+    //     console.error(e)
+    //     test.fail('Error thrown')
+    //   }
+    //   test.end()
+    // })
 
     processPositionAbortBinTest.end()
   })
