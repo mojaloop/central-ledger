@@ -999,7 +999,7 @@ Test('Handlers test', async handlersTest => {
     fulfilConfig.logger = Logger
     positionConfig.logger = Logger
 
-    await transferPositionPrepare.skip('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
+    await transferPositionPrepare('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testData)
 
@@ -1060,7 +1060,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
+    await transferPositionPrepare('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataLimitExceeded)
 
@@ -1101,7 +1101,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
+    await transferPositionPrepare('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataLimitNoLiquidity)
 
@@ -1143,7 +1143,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
+    await transferPositionPrepare('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataMixedWithLimitExceeded)
 
@@ -1199,7 +1199,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of transfers with mixed currencies', async (test) => {
+    await transferPositionPrepare('process batch of transfers with mixed currencies', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataWithMixedCurrencies)
 
@@ -1242,7 +1242,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of fxtransfers', async (test) => {
+    await transferPositionPrepare('process batch of fxtransfers', async (test) => {
       // Construct test data for 10 fxTransfers.
       const td = await prepareTestData(testFxData)
 
@@ -1296,7 +1296,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of transfers and fxtransfers', async (test) => {
+    await transferPositionPrepare('process batch of transfers and fxtransfers', async (test) => {
       // Construct test data for 10 transfers / fxTransfers.
       const td = await prepareTestData(testFxData)
 
@@ -1371,7 +1371,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of prepare/commit messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+    await transferPositionPrepare('process batch of prepare/commit messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testData)
 
@@ -1488,7 +1488,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of prepare/reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+    await transferPositionPrepare('process batch of prepare/reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testData)
 
@@ -1605,7 +1605,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of fx prepare/ fx reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+    await transferPositionPrepare('process batch of fx prepare/ fx reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testFxData)
 
@@ -1699,10 +1699,10 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('timeout should', async timeoutTest => {
+    await transferPositionPrepare('timeout should', async timeoutTest => {
       const td = await prepareTestData(testData)
 
-      await timeoutTest.skip('update transfer state to RESERVED by PREPARE request', async (test) => {
+      await timeoutTest('update transfer state to RESERVED by PREPARE request', async (test) => {
         // Produce prepare messages for transfersArray
         for (const transfer of td.transfersArray) {
           transfer.messageProtocolPrepare.content.payload.expiration = new Date((new Date()).getTime() + (5 * 1000)) // 4 seconds
@@ -1761,7 +1761,7 @@ Test('Handlers test', async handlersTest => {
         test.end()
       })
 
-      await timeoutTest.skip('update transfer after timeout with timeout status & error', async (test) => {
+      await timeoutTest('update transfer after timeout with timeout status & error', async (test) => {
         for (const tf of td.transfersArray) {
           // Re-try function with conditions
           const inspectTransferState = async () => {
@@ -1816,7 +1816,7 @@ Test('Handlers test', async handlersTest => {
         test.end()
       })
 
-      await timeoutTest.skip('position resets after a timeout', async (test) => {
+      await timeoutTest('position resets after a timeout', async (test) => {
         // Arrange
         for (const payer of td.payerList) {
           const payerInitialPosition = payer.payerLimitAndInitialPosition.participantPosition.value
