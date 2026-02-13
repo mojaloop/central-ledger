@@ -93,7 +93,7 @@ const positions = batchConfig => async (error, messages) => {
   const firstMessageOffset = consumedMessages[0]?.offset
   const lastMessageOffset = consumedMessages[consumedMessages.length - 1]?.offset
   const binId = `${firstMessageOffset}-${lastMessageOffset}`
-  log.info(`[=>> msg] start batch processing  [length: ${consumedMessages.length}, id: ${batchId}, binId: ${binId}]...`, { binId }) // todo: add topic details
+  log.info(`[=>> msg] start batch processing  [length: ${consumedMessages.length},  binId: ${binId}]...`, { binId, batchId }) // todo: add topic details
 
   // Iterate through consumedMessages
   const bins = {}
@@ -102,7 +102,7 @@ const positions = batchConfig => async (error, messages) => {
   await Promise.all(consumedMessages.map(
     message => addToBinSortedByActionDecodedPayload({ message, binId, bins, lastPerPartition, log })
   ))
-  log.verbose('all messages in batch are decoded and sorted', { batchConfig })
+  log.verbose('all messages in batch are decoded and sorted by action')
 
   // Start DB Transaction if there are any bins to process
   const trx = !!Object.keys(bins).length && await BatchPositionModel.startDbTransaction()
@@ -199,7 +199,7 @@ const positions = batchConfig => async (error, messages) => {
         await span.finish()
       }
     })
-    log.info(`[<<= msg] batch processing is done  [id: $${batchId}, binId: ${binId}, duration: ${(Date.now() - startTime) / 1000}s]`)
+    log.info(`[<<= msg] batch processing is done  [durationS: ${(Date.now() - startTime) / 1000},  binId: ${binId}]`)
   }
 }
 
