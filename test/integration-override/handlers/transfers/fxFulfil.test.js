@@ -229,7 +229,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     const extension = await wrapWithRetries(async () => {
       const result = await knex(TABLE_NAMES.fxTransferExtension).where({ commitRequestId }).select('key', 'value')
       if (!result || result.length === 0) {
-      throw new Error('No extension found')
+        throw new Error('No extension found')
       }
       return result
     })
