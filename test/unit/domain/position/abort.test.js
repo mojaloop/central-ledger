@@ -35,6 +35,7 @@ const Test = require('tapes')(require('tape'))
 const { Enum } = require('@mojaloop/central-services-shared')
 const Sinon = require('sinon')
 const { processPositionAbortBin } = require('../../../../src/domain/position/abort')
+const Config = require('../../../../src/lib/config')
 
 const abortMessage1 = {
   value: {
@@ -838,53 +839,251 @@ Test('abort domain', positionIndexTest => {
       test.end()
     })
 
-    // Disabling this test as per the issue: https://github.com/mojaloop/project/issues/4317
-    // processPositionAbortBinTest.test('produce abort messages for FX_ABORT_VALIDATION action', async (test) => {
-    //   const binItems = getFxAbortBinItems()
-    //   binItems.splice(1, 1)
-    //   binItems[0].message.value.metadata.event.action = Enum.Events.Event.Action.FX_ABORT_VALIDATION
-    //   // Simplify to have just one position change to test validation error
-    //   binItems[0].message.value.content.context.cyrilResult.positionChanges = [
-    //     {
-    //       isFxTransferStateChange: true,
-    //       commitRequestId: 'c0000001-0000-0000-0000-000000000000',
-    //       notifyTo: 'fxp1',
-    //       participantCurrencyId: 1,
-    //       amount: -10,
-    //       isOriginalId: true
-    //     }
-    //   ]
-    //   try {
-    //     const processedResult = await processPositionAbortBin(
-    //       binItems,
-    //       {
-    //         accumulatedPositionValue: 0,
-    //         accumulatedPositionReservedValue: 0,
-    //         accumulatedTransferStates: {
-    //           'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-    //         },
-    //         accumulatedFxTransferStates: {
-    //           'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-    //         },
-    //         isFx: true
-    //       }
-    //     )
-    //     test.pass('Error not thrown')
-    //     test.ok(processedResult.notifyMessages.length >= 1)
-    //     // Check the error code is VALIDATION_ERROR
-    //     // The FX_ABORT_VALIDATION action should have VALIDATION_ERROR (3100) in the notification
-    //     const message = processedResult.notifyMessages.find(m => {
-    //       const errorCode = m.message?.content?.payload?.errorInformation?.errorCode
-    //       return errorCode === '3100'
-    //     })
-    //     test.ok(message, 'Should have a message with VALIDATION_ERROR code 3100')
-    //   } catch (e) {
-    //     console.error(e)
-    //     test.fail('Error thrown')
-    //   }
-    //   test.end()
-    // })
+    processPositionAbortBinTest.test('FX mode: should process a NON-FX positionChange when the FX one is already done', async (test) => {
+      const binItems = getFxAbortBinItems()
+      binItems.splice(1, 1) // single message
 
+      // Make the FX positionChange already done, so the "to be processed" becomes the NON-FX entry
+      const cyrilResult = binItems[0].message.value.content.context.cyrilResult
+      cyrilResult.positionChanges[0].isDone = true // FX entry done
+      cyrilResult.positionChanges[1].isDone = false // NON-FX entry not done
+
+      try {
+        const processedResult = await processPositionAbortBin(
+          binItems,
+          {
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              // NON-FX transfer must be in RECEIVED_ERROR, because _handleParticipantPositionChange updates this map
+              'd0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              // FX abort message id must be in RECEIVED_ERROR for the FX-mode guard
+              'c0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: true
+          }
+        )
+
+        test.pass('No error thrown')
+
+        // This should have updated NON-FX transfer states/changes (not FX state changes)
+        test.equal(processedResult.accumulatedTransferStateChanges.length, 1)
+        test.equal(processedResult.accumulatedFxTransferStateChanges.length, 0)
+
+        test.equal(
+          processedResult.accumulatedTransferStates['d0000001-0000-0000-0000-000000000000'],
+          Enum.Transfers.TransferInternalState.ABORTED_ERROR
+        )
+
+        test.equal(processedResult.accumulatedPositionChanges.length, 1)
+        test.equal(processedResult.accumulatedPositionValue, -10)
+
+        // Still has a followup because the FX positionChange remains (even though marked done,
+        // forwarding only happens when nextIndex === -1 after processing AND all remaining are done)
+        // Here: after processing second, nextIndex === -1 (both done), so it forwards instead of followup.
+        // But we did not provide notifyTo expectations. Just assert no followup since both done.
+        test.equal(processedResult.followupMessages.length, 0)
+      } catch (e) {
+        console.error(e)
+        test.fail('Error thrown')
+      }
+      test.end()
+    })
+
+    processPositionAbortBinTest.test('Forwarding: FX forwarded message uses FX_ABORT action when isOriginalId=false', async (test) => {
+      const binItems = getAbortBinItems()
+      binItems.splice(1, 1) // single message
+
+      // Force "all done" forwarding path:
+      // - Make one FX positionChange already done, and one NON-FX not done
+      // - After processing the NON-FX one, nextIndex === -1 and it forwards all positionChanges
+      binItems[0].message.value.content.context.cyrilResult.positionChanges = [
+        {
+          isFxTransferStateChange: false,
+          transferId: 'a0000001-0000-0000-0000-000000000000',
+          notifyTo: 'payerfsp1',
+          participantCurrencyId: 1,
+          amount: -10,
+          isOriginalId: true,
+          isDone: false
+        },
+        {
+          isFxTransferStateChange: true,
+          commitRequestId: 'b0000001-0000-0000-0000-000000000000',
+          notifyTo: 'fxp1',
+          participantCurrencyId: 2,
+          amount: -10,
+          isOriginalId: false, // IMPORTANT: makes ternary choose FX_ABORT
+          isDone: true
+        }
+      ]
+      // Must include state for commitRequestId in accumulatedFxTransferStates if/when FX gets processed later
+      // (we won't process it now, but safe to include)
+      try {
+        const processedResult = await processPositionAbortBin(
+          binItems,
+          {
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: false
+          }
+        )
+
+        test.pass('No error thrown')
+
+        // Should forward notifications for both entries (non-FX always, FX only if notifyTo exists)
+        test.ok(processedResult.notifyMessages.length >= 2, `Expected >=2 notify messages, got ${processedResult.notifyMessages.length}`)
+
+        const fxForward = processedResult.notifyMessages.find(
+          m => m.message.id === 'b0000001-0000-0000-0000-000000000000'
+        )
+        test.ok(fxForward, 'Expected FX forward message to exist')
+
+        // When forwarding FX and isOriginalId=false, metadata action should be forced to FX_ABORT
+        test.equal(fxForward.message.metadata.event.action, Enum.Events.Event.Action.FX_ABORT)
+
+        // Also covers fromCalculated branch: isOriginalId=false => fromCalculated = HUB_NAME
+        test.equal(fxForward.message.from, Config.HUB_NAME)
+      } catch (e) {
+        console.error(e)
+        test.fail('Error thrown')
+      }
+      test.end()
+    })
+
+    processPositionAbortBinTest.test('Forwarding: FX positionChange without notifyTo should be skipped (branch coverage)', async (test) => {
+      const binItems = getAbortBinItems()
+      binItems.splice(1, 1)
+
+      binItems[0].message.value.content.context.cyrilResult.positionChanges = [
+        {
+          isFxTransferStateChange: false,
+          transferId: 'a0000001-0000-0000-0000-000000000000',
+          notifyTo: 'payerfsp1',
+          participantCurrencyId: 1,
+          amount: -10,
+          isOriginalId: true,
+          isDone: false
+        },
+        {
+          isFxTransferStateChange: true,
+          commitRequestId: 'b0000001-0000-0000-0000-000000000000',
+          // notifyTo intentionally missing -> should NOT forward a message for this FX entry
+          participantCurrencyId: 2,
+          amount: -10,
+          isOriginalId: false,
+          isDone: true
+        }
+      ]
+
+      try {
+        const processedResult = await processPositionAbortBin(
+          binItems,
+          {
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {
+              'b0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            isFx: false
+          }
+        )
+
+        test.pass('No error thrown')
+
+        // Only the non-FX forward should exist (FX is skipped due to missing notifyTo)
+        const fxForward = processedResult.notifyMessages.find(
+          m => m.message.id === 'b0000001-0000-0000-0000-000000000000'
+        )
+        test.notOk(fxForward, 'FX forward message should be skipped when notifyTo is missing')
+      } catch (e) {
+        console.error(e)
+        test.fail('Error thrown')
+      }
+      test.end()
+    })
+
+    processPositionAbortBinTest.test('produce abort messages for FX_ABORT_VALIDATION action (validation branch)', async (test) => {
+      const binItems = getAbortBinItems()
+      binItems.splice(1, 1)
+
+      binItems[0].message.value.metadata.event.action = Enum.Events.Event.Action.FX_ABORT_VALIDATION
+
+      // Force forwarding path and transferStateChanges path
+      binItems[0].message.value.content.context = {
+        cyrilResult: {
+          positionChanges: [
+            {
+              isFxTransferStateChange: false,
+              transferId: 'a0000001-0000-0000-0000-000000000000',
+              notifyTo: 'payerfsp1',
+              participantCurrencyId: 1,
+              amount: -10,
+              isOriginalId: false,
+              isDone: false
+            }
+          ],
+          transferStateChanges: [
+            {
+              transferId: 'a0000009-0000-0000-0000-000000000000',
+              transferStateId: Enum.Transfers.TransferInternalState.ABORTED_ERROR,
+              notifyTo: 'payerfsp9',
+              isOriginalId: true
+            }
+          ]
+        }
+      }
+
+      try {
+        const processedResult = await processPositionAbortBin(
+          binItems,
+          {
+            accumulatedPositionValue: 0,
+            accumulatedPositionReservedValue: 0,
+            accumulatedTransferStates: {
+              'a0000001-0000-0000-0000-000000000000': Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+            },
+            accumulatedFxTransferStates: {},
+            isFx: false
+          }
+        )
+
+        test.pass('No error thrown')
+
+        // Expect:
+        // - one forward for positionChanges
+        // - one constructed message for transferStateChanges
+        test.equal(processedResult.notifyMessages.length, 2)
+
+        // In validation actions, fromCalculated should become HUB_NAME
+        processedResult.notifyMessages.forEach(nm => {
+          test.equal(nm.message.from, Config.HUB_NAME)
+        })
+
+        // Also covers: delete notifyTo/isOriginalId before pushing transferStateChanges
+        test.equal(processedResult.accumulatedTransferStateChanges.length, 2)
+        const extra = processedResult.accumulatedTransferStateChanges.find(t => t.transferId === 'a0000009-0000-0000-0000-000000000000')
+        test.ok(extra, 'Expected extra transferStateChange to be persisted')
+        test.equal(extra.transferStateId, Enum.Transfers.TransferInternalState.ABORTED_ERROR)
+        test.equal(typeof extra.notifyTo, 'undefined')
+        test.equal(typeof extra.isOriginalId, 'undefined')
+      } catch (e) {
+        console.error(e)
+        test.fail('Error thrown')
+      }
+      test.end()
+    })
     processPositionAbortBinTest.end()
   })
 

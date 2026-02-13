@@ -248,7 +248,8 @@ const _constructAbortResultMessage = (binItem, id, from, notifyTo, isOriginalId,
   const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
     id,
     Enum.Kafka.Topics.POSITION,
-    (isFx && !isOriginalId) ? Enum.Events.Event.Action.FX_ABORT : binItem.message?.value.metadata.event.action, // This will be replaced anyway in Kafka.produceGeneralMessage function
+    // (isFx && !isOriginalId) ? Enum.Events.Event.Action.FX_ABORT : binItem.message?.value.metadata.event.action, // No isFx
+    binItem.message?.value.metadata.event.action, // This will be replaced anyway in Kafka.produceGeneralMessage function
     state
   )
   const resultMessage = Utility.StreamingProtocol.createMessage(
