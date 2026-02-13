@@ -216,6 +216,8 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     await storeFxTransferPreparePayload(fxTransfer, Enum.Transfers.TransferState.RESERVED)
     t.pass(`fxTransfer prepare is saved in DB: ${commitRequestId}`)
 
+    testConsumer.clearEvents()
+
     const fxFulfilMessage = createFxFulfilKafkaMessage({ commitRequestId })
     const isTriggered = await produceMessageToFxFulfilTopic(fxFulfilMessage)
     t.ok(isTriggered, 'test is triggered')
