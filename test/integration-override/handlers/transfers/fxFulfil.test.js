@@ -201,6 +201,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.ok(messages[0], 'Notification event message is sent')
     t.equal(messages[0].value.id, noFxTransferMessage.id)
     checkErrorPayload(t)(messages[0].value.content.payload, fspiopErrorFactory.fxTransferNotFound())
+    testConsumer.clearEvents()
     t.end()
   })
 
@@ -215,8 +216,6 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
 
     await storeFxTransferPreparePayload(fxTransfer, Enum.Transfers.TransferState.RESERVED)
     t.pass(`fxTransfer prepare is saved in DB: ${commitRequestId}`)
-
-    testConsumer.clearEvents()
 
     const fxFulfilMessage = createFxFulfilKafkaMessage({ commitRequestId })
     const isTriggered = await produceMessageToFxFulfilTopic(fxFulfilMessage)
@@ -242,6 +241,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.equal(from, FXP)
     t.equal(to, DFSP_1)
     t.equal(content.payload.fulfilment, fxFulfilMessage.content.payload.fulfilment, 'fulfilment is correct')
+    testConsumer.clearEvents()
     t.end()
   })
 
@@ -272,6 +272,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.equal(to, FXP)
     t.equal(metadata.event.type, Type.NOTIFICATION)
     checkErrorPayload(t)(content.payload, fspiopErrorFactory.noFxDuplicateHash())
+    testConsumer.clearEvents()
     t.end()
   })
 
@@ -301,6 +302,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.equal(from, fixtures.SWITCH_ID)
     t.equal(to, DFSP_1)
     checkErrorPayload(t)(content.payload, fspiopErrorFactory.fxInvalidFulfilment())
+    testConsumer.clearEvents()
     t.end()
   })
 
