@@ -199,7 +199,7 @@ const positions = batchConfig => async (error, messages) => {
         await span.finish()
       }
     })
-    log.info(`[<<= msg] batch processing is done  [durationS: ${(Date.now() - startTime) / 1000},  binId: ${binId}]`)
+    log.info(`[<=> msg] batch processing is done  [durationS: ${(Date.now() - startTime) / 1000},  binId: ${binId}]`)
   }
 }
 
