@@ -831,7 +831,7 @@ Test('Handlers test', async handlersTest => {
         test.ok(fxTransferError, 'fxTransferError record is inserted')
         test.equal(
           fxTransferError.errorCode,
-          td.errorPayload.errorInformation.errorCode,
+          Number(td.errorPayload.errorInformation.errorCode),
           'fxTransferError.errorCode matches'
         )
       } catch (err) {
