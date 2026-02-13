@@ -226,7 +226,13 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     }))
     t.ok(messages[0], `Message is sent to ${TOPICS.transferPositionBatch}`)
     const knex = Db.getKnex()
-    const extension = await knex(TABLE_NAMES.fxTransferExtension).where({ commitRequestId }).select('key', 'value')
+    const extension = await wrapWithRetries(async () => {
+      const result = await knex(TABLE_NAMES.fxTransferExtension).where({ commitRequestId }).select('key', 'value')
+      if (!result || result.length === 0) {
+      throw new Error('No extension found')
+      }
+      return result
+    })
     const { from, to, content } = messages[0].value
     t.equal(extension.length, fxFulfilMessage.content.payload.extensionList.extension.length, 'Saved extension')
     t.equal(extension[0].key, fxFulfilMessage.content.payload.extensionList.extension[0].key, 'Saved extension key')
