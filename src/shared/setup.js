@@ -36,10 +36,11 @@
 const Hapi = require('@hapi/hapi')
 const MongoUriBuilder = require('mongo-uri-builder')
 const ObjStoreDb = require('@mojaloop/object-store-lib').Db
-const Logger = require('../shared/logger').logger
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
+const { name, version } = require('../../package.json')
+const { logger } = require('../shared/logger')
 const Migrator = require('../lib/migrator')
 const Config = require('../lib/config')
 const Db = require('../lib/db')
@@ -54,22 +55,24 @@ const externalParticipantCached = require('../models/participant/externalPartici
 const BatchPositionModelCached = require('../models/position/batchCached')
 const Plugins = require('./plugins')
 
+const log = logger.child({ serviceName: `${name}:${version}` })
+
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
 }
 
 const connectDatabase = async () => {
-  Logger.isDebugEnabled && Logger.debug(`Connecting to DB ${JSON.stringify(Config.DATABASE)}`)
+  log.debug('Connecting to DB: ', { dbConfig: Config.DATABASE })
   await Db.connect(Config.DATABASE)
   const dbLoadedTables = Db._tables ? Db._tables.length : -1
-  Logger.isDebugEnabled && Logger.debug(`DB.connect loaded '${dbLoadedTables}' tables!`)
+  log.verbose(`DB.connect loaded '${dbLoadedTables}' tables!`)
 }
 
 const connectMongoose = async () => {
   if (!Config.MONGODB_DISABLED) {
     try {
       if (Config.MONGODB_DEBUG) {
-        Logger.isWarnEnabled && Logger.warn('Enabling debug for Mongoose...')
+        log.info('Enabling debug for Mongoose...')
         ObjStoreDb.Mongoose.set('debug', Config.MONGODB_DEBUG) // enable debug
       }
       const connectionString = MongoUriBuilder({
@@ -82,10 +85,8 @@ const connectMongoose = async () => {
 
       return await ObjStoreDb.connect(connectionString)
     } catch (err) {
+      log.warn('error in connectMongoose: ', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
-      // TODO: review as code is being changed from returning null to returning a FSPIOPError
-      // Logger.isErrorEnabled && Logger.error(`error - ${err}`)
-      // return null
     }
   } else {
     return null
@@ -118,7 +119,7 @@ const createServer = (port, modules) => {
     await Plugins.registerPlugins(server)
     await server.register(modules)
     await server.start()
-    Logger.isInfoEnabled && Logger.info(`Server running at: ${server.info.uri}`)
+    log.info(`Server running at: ${server.info.uri}`, { serverInfo: server.info })
     return server
   })()
 }
@@ -149,7 +150,7 @@ const createHandlers = async (handlers) => {
 
   for (const handler of handlers) {
     if (handler.enabled) {
-      Logger.isInfoEnabled && Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
+      log.verbose('Handler setup - registering handler...', { handler })
       switch (handler.type) {
         case 'prepare': {
           await RegisterHandlers.transfers.registerPrepareHandler()
@@ -204,9 +205,9 @@ const createHandlers = async (handlers) => {
           break
         }
         default: {
-          const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
-          Logger.isErrorEnabled && Logger.error(error)
-          throw new Error(error)
+          const errMessage = `Handler setup - failed due to not valid handler to register  [type: ${handler?.type}] `
+          log.error(errMessage, { handler })
+          throw new Error(errMessage)
         }
       }
     }
@@ -258,6 +259,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     await connectDatabase()
     await connectMongoose()
     await initializeCache()
+
     if (Config.PROXY_CACHE_CONFIG?.enabled) {
       await ProxyCache.connect()
     }
@@ -276,7 +278,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
         break
       }
       default: {
-        Logger.isErrorEnabled && Logger.error(`No valid service type ${service} found!`)
+        log.error(`No valid service type ${service} found!`)
         throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
       }
     }
@@ -286,17 +288,13 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
         await createHandlers(handlers)
       } else {
         await RegisterHandlers.registerAllHandlers()
-        // if (!Config.HANDLERS_CRON_DISABLED) {
-        //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
-        //   // await KafkaCron.start('prepare')
-        //   await KafkaCron.start('position')
-        // }
       }
     }
+    log.info('initialize is done')
 
     return server
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`, err)
+    log.error('initialize is failed with te error: ', err)
 
     await Db.disconnect()
     if (Config.PROXY_CACHE_CONFIG?.enabled) {

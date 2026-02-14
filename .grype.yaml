@@ -27,7 +27,7 @@ ignore:
   # diff npm package - fix requires 5.2.2 (breaking change)
   - vulnerability: GHSA-73rr-hh4g-fpgx
   - vulnerability: GHSA-6c59-mwgh-r2x6
-  
+
   # Ignored: GHSA-37qj-frw5-hhjh affects a dependency only used in local tooling/CI,
   # is not included in production runtime images, and is tracked for upgrade in our backlog.
   - vulnerability: GHSA-37qj-frw5-hhjh
@@ -35,6 +35,7 @@ ignore:
   # no exploitable path exists in our deployed environment, and mitigations are in place.
   - vulnerability: GHSA-p5wg-g6qr-c7cg
   - vulnerability: GHSA-3966-f6p6-2qr9
+  - vulnerability: GHSA-43fc-jf86-j433
 
 # Set output format defaults
 output:

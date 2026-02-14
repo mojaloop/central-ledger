@@ -33,7 +33,7 @@
 
  ******/
 
-const TransferError = require('../../models/transfer/transferError')
+const FxTransferError = require('../../models/fxTransfer/fxTransferError')
 const Db = require('../../lib/db')
 const { TABLE_NAMES } = require('../../shared/constants')
 const rethrow = require('../../shared/rethrow')
@@ -53,7 +53,7 @@ const getByCommitRequestId = async (id) => {
 const logTransferError = async (id, errorCode, errorDescription) => {
   try {
     const stateChange = await getByCommitRequestId(id)
-    return TransferError.insert(id, stateChange.fxTransferStateChangeId, errorCode, errorDescription)
+    return FxTransferError.insert(id, stateChange.fxTransferStateChangeId, errorCode, errorDescription)
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }

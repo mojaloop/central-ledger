@@ -50,6 +50,15 @@ const getByCommitRequestId = async (id) => {
   }
 }
 
+const insert = async (id, fxTransferStateChangeId, errorCode, errorDescription) => {
+  try {
+    return Db.from('fxTransferError').insert({ commitRequestId: id, fxTransferStateChangeId, errorCode, errorDescription })
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
 module.exports = {
-  getByCommitRequestId
+  getByCommitRequestId,
+  insert
 }

@@ -29,9 +29,15 @@
  ******/
 'use strict'
 
-const Logger = require('../../shared/logger').logger
+const Enum = require('@mojaloop/central-services-shared').Enum
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+
 const BatchPositionModel = require('../../models/position/batch')
 const BatchPositionModelCached = require('../../models/position/batchCached')
+const SettlementModelCached = require('../../models/settlement/settlementModelCached')
+const participantFacade = require('../../models/participant/facade')
+const logger = require('../../shared/logger').logger.child({ component: 'binProcessor' })
+
 const PositionPrepareDomain = require('./prepare')
 const PositionFxPrepareDomain = require('./fx-prepare')
 const PositionFulfilDomain = require('./fulfil')
@@ -39,10 +45,6 @@ const PositionFxFulfilDomain = require('./fx-fulfil')
 const PositionTimeoutReservedDomain = require('./timeout-reserved')
 const PositionFxTimeoutReservedDomain = require('./fx-timeout-reserved')
 const PositionAbortDomain = require('./abort')
-const SettlementModelCached = require('../../models/settlement/settlementModelCached')
-const Enum = require('@mojaloop/central-services-shared').Enum
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const participantFacade = require('../../models/participant/facade')
 
 /**
  * @function processBins
@@ -130,7 +132,7 @@ const processBins = async (bins, trx) => {
       Enum.Events.Event.Action.FX_ABORT_VALIDATION
     ]
     if (!isSubset(allowedActions, actions)) {
-      Logger.isErrorEnabled && Logger.error(`Only ${allowedActions.join()} are allowed in a batch`)
+      logger.warn(`allowed actions in a batch: ${allowedActions.join()}, accountBin actions is not subset`, { actions })
     }
 
     let settlementParticipantPosition = 0
@@ -393,6 +395,7 @@ const processBins = async (bins, trx) => {
     limitAlarms = limitAlarms.concat(prepareActionResult.limitAlarms)
   }
 
+  logger.verbose('processBins is done', { accountIds })
   // Return results
   return {
     notifyMessages,
@@ -424,7 +427,7 @@ const iterateThroughBins = async (bins, cb, errCb) => {
           await cb(accountID, action, item)
         } catch (err) {
           if (errCb === undefined) {
-            Logger.isErrorEnabled && Logger.error(err)
+            logger.error('error inside iterateThroughBins and no errCb provided:', err)
           } else {
             await errCb(accountID, action, item)
           }
@@ -432,6 +435,7 @@ const iterateThroughBins = async (bins, cb, errCb) => {
       }
     }
   }
+  logger.verbose('iterateThroughBins is done')
 }
 
 const _getSettlementModelForCurrency = (currencyId, allSettlementModels) => {

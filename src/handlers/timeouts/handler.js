@@ -272,7 +272,7 @@ const _processFxForwardedTransfers = async (fxTransferForwardedList) => {
           Config.KAFKA_CONFIG,
           Producer,
           Enum.Kafka.Topics.NOTIFICATION,
-          Action.GET,
+          Action.FX_GET,
           message,
           state,
           null,
