@@ -201,6 +201,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.ok(messages[0], 'Notification event message is sent')
     t.equal(messages[0].value.id, noFxTransferMessage.id)
     checkErrorPayload(t)(messages[0].value.content.payload, fspiopErrorFactory.fxTransferNotFound())
+    testConsumer.clearEvents()
     t.end()
   })
 
@@ -226,7 +227,13 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     }))
     t.ok(messages[0], `Message is sent to ${TOPICS.transferPositionBatch}`)
     const knex = Db.getKnex()
-    const extension = await knex(TABLE_NAMES.fxTransferExtension).where({ commitRequestId }).select('key', 'value')
+    const extension = await wrapWithRetries(async () => {
+      const result = await knex(TABLE_NAMES.fxTransferExtension).where({ commitRequestId }).select('key', 'value')
+      if (!result || result.length === 0) {
+        throw new Error('No extension found')
+      }
+      return result
+    })
     const { from, to, content } = messages[0].value
     t.equal(extension.length, fxFulfilMessage.content.payload.extensionList.extension.length, 'Saved extension')
     t.equal(extension[0].key, fxFulfilMessage.content.payload.extensionList.extension[0].key, 'Saved extension key')
@@ -234,6 +241,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.equal(from, FXP)
     t.equal(to, DFSP_1)
     t.equal(content.payload.fulfilment, fxFulfilMessage.content.payload.fulfilment, 'fulfilment is correct')
+    testConsumer.clearEvents()
     t.end()
   })
 
@@ -264,6 +272,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.equal(to, FXP)
     t.equal(metadata.event.type, Type.NOTIFICATION)
     checkErrorPayload(t)(content.payload, fspiopErrorFactory.noFxDuplicateHash())
+    testConsumer.clearEvents()
     t.end()
   })
 
@@ -293,6 +302,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
     t.equal(from, fixtures.SWITCH_ID)
     t.equal(to, DFSP_1)
     checkErrorPayload(t)(content.payload, fspiopErrorFactory.fxInvalidFulfilment())
+    testConsumer.clearEvents()
     t.end()
   })
 

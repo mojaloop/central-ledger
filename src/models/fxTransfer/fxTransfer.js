@@ -111,11 +111,13 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
         .innerJoin('fxTransferParticipant AS tp1', 'tp1.commitRequestId', 'fxTransfer.commitRequestId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
         .innerJoin('participant AS da', 'da.participantId', 'tp1.participantId')
+        .leftJoin('externalParticipant AS ep1', 'ep1.externalParticipantId', 'tp1.externalParticipantId')
         // COUNTER_PARTY_FSP SOURCE currency
         .innerJoin('fxTransferParticipant AS tp21', 'tp21.commitRequestId', 'fxTransfer.commitRequestId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp21.transferParticipantRoleTypeId')
         .innerJoin('fxParticipantCurrencyType AS fpct1', 'fpct1.fxParticipantCurrencyTypeId', 'tp21.fxParticipantCurrencyTypeId')
         .innerJoin('participant AS ca', 'ca.participantId', 'tp21.participantId')
+        .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'tp21.externalParticipantId')
         .leftJoin('participantCurrency AS pc21', 'pc21.participantCurrencyId', 'tp21.participantCurrencyId')
         // COUNTER_PARTY_FSP TARGET currency
         .innerJoin('fxTransferParticipant AS tp22', 'tp22.commitRequestId', 'fxTransfer.commitRequestId')
@@ -136,6 +138,8 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
           // 'pc22.participantCurrencyId AS counterPartyFspTargetParticipantCurrencyId',
           'tp21.participantCurrencyId AS counterPartyFspSourceParticipantCurrencyId',
           'tp22.participantCurrencyId AS counterPartyFspTargetParticipantCurrencyId',
+          'ep1.name AS externalInitiatingFspName',
+          'ep2.name AS externalCounterPartyFspName',
           'ca.participantId AS counterPartyFspParticipantId',
           'ca.name AS counterPartyFspName',
           'ca.isProxy AS counterPartyFspIsProxy',
@@ -429,7 +433,7 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
   let state
   let isFulfilment = false
   let isError = false
-  // const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
+  const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
   const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
   let extensionList
   switch (action) {
@@ -487,6 +491,13 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
     reason: errorDescription,
     createdDate: transactionTimestamp
   }
+  const fxTransferErrorRecord = {
+    commitRequestId,
+    fxTransferStateChangeId: null, // will be updated after insert
+    errorCode,
+    errorDescription,
+    createdDate: transactionTimestamp
+  }
 
   try {
     /** @namespace Db.getKnex **/
@@ -526,9 +537,22 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
           result.fxTransferExtensionRecordsList = fxTransferExtensionRecordsList
           logger.debug('saveFxFulfilResponse::transferExtensionRecordsList')
         }
-        await knex('fxTransferStateChange').transacting(trx).insert(fxTransferStateChangeRecord)
-        result.fxTransferStateChangeRecord = fxTransferStateChangeRecord
+        // Insert fxTransferStateChange and get its id
+        const [fxTransferStateChangeId] = await knex('fxTransferStateChange')
+          .transacting(trx)
+          .insert(fxTransferStateChangeRecord)
+          .returning('fxTransferStateChangeId')
+        result.fxTransferStateChangeRecord = { ...fxTransferStateChangeRecord, fxTransferStateChangeId }
         logger.debug('saveFxFulfilResponse::fxTransferStateChange')
+
+        // Save fxTransferError if error
+        if (isError || fspiopError) {
+          fxTransferErrorRecord.fxTransferStateChangeId = fxTransferStateChangeId
+          await knex('fxTransferError').transacting(trx).insert(fxTransferErrorRecord)
+          result.fxTransferErrorRecord = fxTransferErrorRecord
+          logger.debug('saveFxFulfilResponse::fxTransferError')
+        }
+
         histTFxFulfilResponseValidationPassedEnd({ success: true, queryName: 'facade_saveFxFulfilResponse_transaction' })
         result.savePayeeTransferResponseExecuted = true
         logger.debug('saveFxFulfilResponse::success')

@@ -821,6 +821,24 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+
+      // Check that fxTransferError is inserted
+      try {
+        const knex = Db.getKnex()
+        const fxTransferError = await knex('fxTransferError')
+          .where({ commitRequestId: td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId })
+          .first()
+        test.ok(fxTransferError, 'fxTransferError record is inserted')
+        test.equal(
+          fxTransferError.errorCode,
+          Number(td.errorPayload.errorInformation.errorCode),
+          'fxTransferError.errorCode matches'
+        )
+      } catch (err) {
+        Logger.error(err)
+        test.fail('fxTransferError record not found or error occurred')
+      }
+
       testConsumer.clearEvents()
       test.end()
     })

@@ -4,5 +4,6 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [
+    "GHSA-43fc-jf86-j433"
   ]
 }

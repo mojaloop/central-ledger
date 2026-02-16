@@ -29,36 +29,35 @@
 'use strict'
 
 const Test = require('tape')
-const { randomUUID } = require('crypto')
-const Logger = require('@mojaloop/central-services-logger')
-const Config = require('#src/lib/config')
-const ProxyCache = require('#src/lib/proxyCache')
-const Db = require('../../../../src/lib/db')
-const Cache = require('#src/lib/cache')
+const { randomUUID } = require('node:crypto')
 const { Producer, Consumer } = require('@mojaloop/central-services-stream').Util
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
+const Util = require('@mojaloop/central-services-shared').Util
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const MLNumber = require('@mojaloop/ml-number')
+const Logger = require('@mojaloop/central-services-logger')
+
+const Config = require('#src/lib/config')
+const ProxyCache = require('#src/lib/proxyCache')
+const Db = require('#src/lib/db')
+const Cache = require('#src/lib/cache')
+const TransferService = require('#src/domain/transfer/index')
+const FxTransferModels = require('#src/models/fxTransfer/index')
+const ParticipantService = require('#src/domain/participant/index')
+const ParticipantCached = require('#src/models/participant/participantCached')
+const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
+const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
+const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
+
 const ParticipantHelper = require('#test/integration/helpers/participant')
 const ParticipantLimitHelper = require('#test/integration/helpers/participantLimit')
 const ParticipantFundsInOutHelper = require('#test/integration/helpers/participantFundsInOut')
 const ParticipantEndpointHelper = require('#test/integration/helpers/participantEndpoint')
 const SettlementHelper = require('#test/integration/helpers/settlementModels')
 const HubAccountsHelper = require('#test/integration/helpers/hubAccounts')
-const TransferService = require('#src/domain/transfer/index')
-const FxTransferModels = require('#src/models/fxTransfer/index')
-const ParticipantService = require('#src/domain/participant/index')
-const Util = require('@mojaloop/central-services-shared').Util
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const MLNumber = require('@mojaloop/ml-number')
-const {
-  wrapWithRetries
-} = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
-
-const ParticipantCached = require('#src/models/participant/participantCached')
-const ParticipantCurrencyCached = require('#src/models/participant/participantCurrencyCached')
-const ParticipantLimitCached = require('#src/models/participant/participantLimitCached')
-const SettlementModelCached = require('#src/models/settlement/settlementModelCached')
+const { wrapWithRetries } = require('#test/util/helpers')
 
 const Handlers = {
   index: require('#src/handlers/register'),
@@ -67,6 +66,15 @@ const Handlers = {
   transfers: require('#src/handlers/transfers/handler'),
   timeouts: require('#src/handlers/timeouts/handler')
 }
+
+const {
+  testData,
+  testFxData,
+  testDataLimitExceeded,
+  testDataLimitNoLiquidity,
+  testDataMixedWithLimitExceeded,
+  testDataWithMixedCurrencies
+} = require('./fixtures')
 
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
@@ -81,521 +89,6 @@ const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
   maxTimeout: retryDelay
-}
-
-const testData = {
-  currencies: ['USD', 'XXX'],
-  transfers: [
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    }
-  ],
-  payer: {
-    name: 'payerFsp',
-    limit: 1000,
-    number: 2,
-    fundsIn: 10000
-  },
-  payee: {
-    name: 'payeeFsp',
-    number: 2,
-    limit: 1000
-  },
-  endpoint: {
-    base: 'http://localhost:1080',
-    email: 'test@example.com'
-  },
-  now: new Date(),
-  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
-}
-
-const testFxData = {
-  currencies: ['USD', 'XXX'],
-  transfers: [
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      },
-      fx: {
-        targetAmount: {
-          currency: 'XXX',
-          amount: 50
-        }
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      },
-      fx: {
-        targetAmount: {
-          currency: 'XXX',
-          amount: 50
-        }
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      },
-      fx: {
-        targetAmount: {
-          currency: 'XXX',
-          amount: 50
-        }
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      },
-      fx: {
-        targetAmount: {
-          currency: 'XXX',
-          amount: 50
-        }
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      },
-      fx: {
-        targetAmount: {
-          currency: 'XXX',
-          amount: 50
-        }
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      },
-      fx: {
-        targetAmount: {
-          currency: 'XXX',
-          amount: 50
-        }
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      },
-      fx: {
-        targetAmount: {
-          currency: 'XXX',
-          amount: 50
-        }
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      },
-      fx: {
-        targetAmount: {
-          currency: 'XXX',
-          amount: 50
-        }
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      },
-      fx: {
-        targetAmount: {
-          currency: 'XXX',
-          amount: 50
-        }
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      },
-      fx: {
-        targetAmount: {
-          currency: 'XXX',
-          amount: 50
-        }
-      }
-    }
-  ],
-  payer: {
-    name: 'payerFsp',
-    limit: 1000,
-    number: 1,
-    fundsIn: 10000
-  },
-  payee: {
-    name: 'payeeFsp',
-    number: 1,
-    limit: 1000
-  },
-  fxp: {
-    name: 'testFxp',
-    number: 1,
-    limit: 1000
-  },
-  endpoint: {
-    base: 'http://localhost:1080',
-    email: 'test@example.com'
-  },
-  now: new Date(),
-  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
-}
-
-const testDataLimitExceeded = {
-  currencies: ['USD', 'XXX'],
-  transfers: [
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    }
-  ],
-  payer: {
-    name: 'payerFsp',
-    limit: 1, // Limit set low
-    number: 1,
-    fundsIn: 10000
-  },
-  payee: {
-    name: 'payeeFsp',
-    number: 2,
-    limit: 0
-  },
-  endpoint: {
-    base: 'http://localhost:1080',
-    email: 'test@example.com'
-  },
-  now: new Date(),
-  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
-}
-
-const testDataLimitNoLiquidity = {
-  currencies: ['USD', 'XXX'],
-  transfers: [
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-    }
-  ],
-  payer: {
-    name: 'payerFsp',
-    limit: 10000,
-    number: 1,
-    fundsIn: 1 // Low liquidity
-  },
-  payee: {
-    name: 'payeeFsp',
-    number: 2,
-    limit: 0
-  },
-  endpoint: {
-    base: 'http://localhost:1080',
-    email: 'test@example.com'
-  },
-  now: new Date(),
-  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
-}
-
-const testDataMixedWithLimitExceeded = {
-  currencies: ['USD', 'XXX'],
-  transfers: [
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 5000
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 6
-      }
-    }
-  ],
-  payer: {
-    name: 'payerFsp',
-    limit: 1000,
-    number: 1,
-    fundsIn: 10000
-  },
-  payee: {
-    name: 'payeeFsp',
-    number: 2,
-    limit: 1000
-  },
-  endpoint: {
-    base: 'http://localhost:1080',
-    email: 'test@example.com'
-  },
-  now: new Date(),
-  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
-}
-
-const testDataWithMixedCurrencies = {
-  currencies: ['USD', 'XXX'],
-  transfers: [
-    {
-      amount: {
-        currency: 'USD',
-        amount: 2
-      }
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 3
-      }
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 4
-      }
-
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 5
-      }
-
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 6
-      }
-
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 7
-      }
-
-    },
-    {
-      amount: {
-        currency: 'USD',
-        amount: 8
-      }
-
-    },
-    {
-      amount: {
-        currency: 'XXX',
-        amount: 9
-      }
-
-    }
-  ],
-  payer: {
-    name: 'payerFsp',
-    limit: 1000,
-    number: 1,
-    fundsIn: 10000
-  },
-  payee: {
-    name: 'payeeFsp',
-    number: 2,
-    limit: 1000
-  },
-  endpoint: {
-    base: 'http://localhost:1080',
-    email: 'test@example.com'
-  },
-  now: new Date(),
-  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
 }
 
 const _endpointSetup = async (participantName, baseURL) => {
@@ -907,7 +400,7 @@ const prepareTestData = async (dataObj) => {
   }
 }
 
-Test('Handlers test', async handlersTest => {
+Test('Position batch handler Tests -->', async handlersTest => {
   const startTime = new Date()
   await Db.connect(Config.DATABASE)
   await ParticipantCached.initialize()
@@ -999,7 +492,7 @@ Test('Handlers test', async handlersTest => {
     fulfilConfig.logger = Logger
     positionConfig.logger = Logger
 
-    await transferPositionPrepare.skip('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with mixed keys (accountIds) and update transfer state to RESERVED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testData)
 
@@ -1060,7 +553,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with payer limit reached and update transfer state to ABORTED_REJECTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataLimitExceeded)
 
@@ -1101,7 +594,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with not enough liquidity and update transfer state to ABORTED_REJECTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataLimitNoLiquidity)
 
@@ -1143,7 +636,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
+    await transferPositionPrepare.test('process batch of messages with some transfers having amount that exceeds NDC. Those transfers should be ABORTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataMixedWithLimitExceeded)
 
@@ -1199,7 +692,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of transfers with mixed currencies', async (test) => {
+    await transferPositionPrepare.test('process batch of transfers with mixed currencies', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testDataWithMixedCurrencies)
 
@@ -1242,7 +735,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of fxtransfers', async (test) => {
+    await transferPositionPrepare.test('process batch of fxTransfers', async (test) => {
       // Construct test data for 10 fxTransfers.
       const td = await prepareTestData(testFxData)
 
@@ -1296,7 +789,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of transfers and fxtransfers', async (test) => {
+    await transferPositionPrepare.test('process batch of transfers and fxTransfers', async (test) => {
       // Construct test data for 10 transfers / fxTransfers.
       const td = await prepareTestData(testFxData)
 
@@ -1371,7 +864,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of prepare/commit messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+    await transferPositionPrepare.test('process batch of prepare/commit messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testData)
 
@@ -1488,7 +981,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of prepare/reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+    await transferPositionPrepare.test('process batch of prepare/reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testData)
 
@@ -1605,7 +1098,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('process batch of fx prepare/ fx reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
+    await transferPositionPrepare.test('process batch of fx prepare/ fx reserve messages with mixed keys (accountIds) and update transfer state to COMMITTED', async (test) => {
       // Construct test data for 10 transfers. Default object contains 10 transfers.
       const td = await prepareTestData(testFxData)
 
@@ -1699,10 +1192,10 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferPositionPrepare.skip('timeout should', async timeoutTest => {
+    await transferPositionPrepare.test('timeout should', async timeoutTest => {
       const td = await prepareTestData(testData)
 
-      await timeoutTest.skip('update transfer state to RESERVED by PREPARE request', async (test) => {
+      await timeoutTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
         // Produce prepare messages for transfersArray
         for (const transfer of td.transfersArray) {
           transfer.messageProtocolPrepare.content.payload.expiration = new Date((new Date()).getTime() + (5 * 1000)) // 4 seconds
@@ -1761,7 +1254,7 @@ Test('Handlers test', async handlersTest => {
         test.end()
       })
 
-      await timeoutTest.skip('update transfer after timeout with timeout status & error', async (test) => {
+      await timeoutTest.test('update transfer after timeout with timeout status & error', async (test) => {
         for (const tf of td.transfersArray) {
           // Re-try function with conditions
           const inspectTransferState = async () => {
@@ -1816,7 +1309,7 @@ Test('Handlers test', async handlersTest => {
         test.end()
       })
 
-      await timeoutTest.skip('position resets after a timeout', async (test) => {
+      await timeoutTest.test('position resets after a timeout', async (test) => {
         // Arrange
         for (const payer of td.payerList) {
           const payerInitialPosition = payer.payerLimitAndInitialPosition.participantPosition.value

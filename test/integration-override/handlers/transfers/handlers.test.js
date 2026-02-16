@@ -1387,7 +1387,7 @@ Test('Handlers test', async handlersTest => {
       try {
         const notificationMessages = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
-          action: 'get',
+          action: 'fx-get',
           valueToFilter: td.fxp.participant.name
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(notificationMessages[0], 'GET notification message found for forwarded fxTransfer')

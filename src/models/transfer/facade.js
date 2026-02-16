@@ -899,6 +899,84 @@ const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transac
   )
 }
 
+const _getTransferListForForwarded = async (knex, transactionTimestamp, maxAttemptCount) => {
+  /* istanbul ignore next */
+  const query = knex('transferForwarded AS tt')
+    .innerJoin(knex('transferStateChange AS tsc1')
+      .select('tsc1.transferId')
+      .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+      .innerJoin('transferForwarded AS tt1', 'tt1.transferId', 'tsc1.transferId')
+      .groupBy('tsc1.transferId')
+      .as('ts'), 'ts.transferId', 'tt.transferId'
+    )
+    .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+    .innerJoin('transferParticipant AS tp1', function () {
+      this.on('tp1.transferId', 'tt.transferId')
+        .andOn('tp1.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP)
+        .andOn('tp1.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+    })
+    .leftJoin('externalParticipant AS ep1', 'ep1.externalParticipantId', 'tp1.externalParticipantId')
+    .innerJoin('transferParticipant AS tp2', function () {
+      this.on('tp2.transferId', 'tt.transferId')
+        .andOn('tp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP)
+        .andOn('tp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+    })
+    .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'tp2.externalParticipantId')
+    .innerJoin('participant AS p1', 'p1.participantId', 'tp1.participantId')
+    .innerJoin('participant AS p2', 'p2.participantId', 'tp2.participantId')
+    .where('tt.expirationDate', '<', transactionTimestamp)
+    .andWhere('tsc.transferStateId', Enum.Transfers.TransferInternalState.RESERVED_FORWARDED)
+    .andWhere('tt.attemptCount', '<', maxAttemptCount)
+
+  return query.select(
+    'tt.*',
+    'tsc.transferStateId',
+    'p1.name AS payerFsp',
+    'p2.name AS payeeFsp',
+    'ep1.name AS externalPayerName',
+    'ep2.name AS externalPayeeName'
+  )
+}
+
+const _getFxTransferListForForwarded = async (knex, transactionTimestamp, maxAttemptCount) => {
+  /* istanbul ignore next */
+  const query = knex('fxTransferForwarded AS ftt')
+    .innerJoin(knex('fxTransferStateChange AS ftsc1')
+      .select('ftsc1.commitRequestId')
+      .max('ftsc1.fxTransferStateChangeId AS maxFxTransferStateChangeId')
+      .innerJoin('fxTransferForwarded AS ftt1', 'ftt1.commitRequestId', 'ftsc1.commitRequestId')
+      .groupBy('ftsc1.commitRequestId')
+      .as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
+    )
+    .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+    .innerJoin('fxTransferParticipant AS ftp1', function () {
+      this.on('ftp1.commitRequestId', 'ftt.commitRequestId')
+        .andOn('ftp1.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.INITIATING_FSP)
+        .andOn('ftp1.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+    })
+    .leftJoin('externalParticipant AS ep1', 'ep1.externalParticipantId', 'ftp1.externalParticipantId')
+    .innerJoin('fxTransferParticipant AS ftp2', function () {
+      this.on('ftp2.commitRequestId', 'ftt.commitRequestId')
+        .andOn('ftp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.COUNTER_PARTY_FSP)
+        .andOn('ftp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+    })
+    .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'ftp2.externalParticipantId')
+    .innerJoin('participant AS p1', 'p1.participantId', 'ftp1.participantId')
+    .innerJoin('participant AS p2', 'p2.participantId', 'ftp2.participantId')
+    .where('ftt.expirationDate', '<', transactionTimestamp)
+    .andWhere('ftsc.transferStateId', Enum.Transfers.TransferInternalState.RESERVED_FORWARDED)
+    .andWhere('ftt.attemptCount', '<', maxAttemptCount)
+
+  return query.select(
+    'ftt.*',
+    'ftsc.transferStateId',
+    'p1.name AS initiatingFsp',
+    'p2.name AS counterPartyFsp',
+    'ep1.name AS externalInitiatingFspName',
+    'ep2.name AS externalCounterPartyFspName'
+  )
+}
+
 /**
  * @typedef {Object} TimedOutTransfer
  *
@@ -1184,8 +1262,8 @@ const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMi
       rethrow.rethrowDatabaseError(err)
     })
 
-    const transferForwardedList = await _getTransferList(knex, 'transferForwarded', transactionTimestamp, maxAttemptCount)
-    const fxTransferForwardedList = await _getFxTransferList(knex, 'fxTransferForwarded', transactionTimestamp, maxAttemptCount)
+    const transferForwardedList = await _getTransferListForForwarded(knex, transactionTimestamp, maxAttemptCount)
+    const fxTransferForwardedList = await _getFxTransferListForForwarded(knex, transactionTimestamp, maxAttemptCount)
 
     return {
       transferForwardedList,

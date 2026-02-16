@@ -20,8 +20,8 @@ const expectedContainers = [
   // 'kowl'
 ]
 
-let retries = 40
-const waitTimeMs = 30000
+let retries = 70
+const waitTimeMs = 2_000
 
 async function main () {
   const waitingMap = {}
