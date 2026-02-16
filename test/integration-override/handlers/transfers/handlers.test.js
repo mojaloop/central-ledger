@@ -73,7 +73,7 @@ const TransferEventAction = Enum.Events.Event.Action
 
 const debug = process?.env?.TEST_INT_DEBUG || false
 const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
-const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 1
 const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
 const retryOpts = {
   retries: retryCount,
