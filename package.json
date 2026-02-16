@@ -103,7 +103,7 @@
     "@mojaloop/ml-number": "11.4.3",
     "@mojaloop/object-store-lib": "12.2.2",
     "@now-ims/hapi-now-auth": "2.1.0",
-    "ajv": "8.17.1",
+    "ajv": "8.18.0",
     "ajv-keywords": "5.1.0",
     "base64url": "3.0.1",
     "blipp": "4.0.2",
