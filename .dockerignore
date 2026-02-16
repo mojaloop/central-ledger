@@ -1,4 +1,5 @@
 deploy/
+docker/
 coverage/
 node_modules/
 .dockerignore
