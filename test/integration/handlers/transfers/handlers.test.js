@@ -516,7 +516,7 @@ Test('Handlers test', async handlersTest => {
       // Arrange
       const customTestData = {
         ...testData,
-        expiration: new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
+        expiration: new Date((new Date()).getTime() + (10 * 1000)) // 10 seconds
       }
       const td = await prepareTestData(customTestData)
 

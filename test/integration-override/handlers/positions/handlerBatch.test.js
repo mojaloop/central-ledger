@@ -744,14 +744,18 @@ Test('Position batch handler Tests -->', async handlersTest => {
         await Producer.produceMessage(transfer.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
       await new Promise(resolve => setTimeout(resolve, 5000))
-      // Consume messages from notification topic
-      const positionFxPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-        topicFilter: 'topic-notification-event',
-        action: 'fx-prepare'
-      }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
-      // filter positionFxPrepare messages where destination is not Hub
-      const positionFxPrepareFiltered = positionFxPrepare.filter((notification) => notification.to !== 'Hub')
+      // Consume messages from notification topic, retrying until all 10 non-Hub notifications arrive
+      const positionFxPrepareFiltered = await wrapWithRetries(() => {
+        const events = testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-prepare'
+        })
+        const filtered = events.filter((notification) => notification.to !== 'Hub')
+        if (filtered.length < 10) return null
+        return filtered
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
       test.equal(positionFxPrepareFiltered.length, 10, 'Notification Messages received for all 10 fxTransfers')
 
       // Check that initiating FSP position is only updated by sum of transfers relevant to the source currency

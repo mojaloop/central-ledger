@@ -1018,8 +1018,8 @@ Test('Handlers test', async handlersTest => {
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(positionPrepare[0], 'Position prepare message with key found')
       } catch (err) {
-        test.notOk('Error should not be thrown')
-        console.error(err)
+        Logger.error(err)
+        test.fail(err.message)
       }
 
       await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
