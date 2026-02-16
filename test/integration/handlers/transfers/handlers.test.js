@@ -55,8 +55,7 @@ const MLNumber = require('@mojaloop/ml-number')
 
 const {
   wrapWithRetries,
-  getMessagePayloadOrThrow,
-  sleepPromise
+  getMessagePayloadOrThrow
 } = require('#test/util/helpers')
 const TestConsumer = require('#test/integration/helpers/testConsumer')
 
@@ -516,7 +515,7 @@ Test('Handlers test', async handlersTest => {
       // Arrange
       const customTestData = {
         ...testData,
-        expiration: new Date((new Date()).getTime() + (10 * 1000)) // 10 seconds
+        expiration: new Date((new Date()).getTime() + (5 * 1000))
       }
       const td = await prepareTestData(customTestData)
 
@@ -546,8 +545,12 @@ Test('Handlers test', async handlersTest => {
 
       test.equal(transfer?.transferState, 'RESERVED', 'Transfer is in reserved state')
 
-      // 2. sleep so that the RESERVED transfer expires
-      await sleepPromise(wrapWithRetriesConf.timeout)
+      // 2. wait for the timeout handler to expire the RESERVED transfer
+      await wrapWithRetries(async () => {
+        const tr = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+        if (tr?.transferState !== 'RESERVED') return tr
+        return null
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
 
       // 3. send a RESERVED request from Payee
       td.messageProtocolFulfil.metadata.event.action = TransferEventAction.RESERVE
