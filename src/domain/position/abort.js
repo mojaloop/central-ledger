@@ -133,12 +133,12 @@ const processPositionAbortBin = async (
         for (const positionChange of cyrilResult.positionChanges) {
           if (positionChange.isFxTransferStateChange) {
             if (positionChange.notifyTo) {
-              // Forward the error message
+              // Construct/Forward the error message
               const resultMessage = _constructOrForwardAbortResultMessage(binItem, positionChange.commitRequestId, from, positionChange.notifyTo, positionChange.isOriginalId, true)
               resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
             }
           } else {
-            // Forward the error message
+            // Construct/Forward the error message
             const resultMessage = _constructOrForwardAbortResultMessage(binItem, positionChange.transferId, from, positionChange.notifyTo, positionChange.isOriginalId, false)
             resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
           }
