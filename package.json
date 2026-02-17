@@ -96,7 +96,7 @@
     "@mojaloop/central-services-logger": "11.11.0-infitx.0",
     "@mojaloop/central-services-metrics": "12.8.4",
     "@mojaloop/central-services-shared": "18.36.0-infitx.1",
-    "@mojaloop/central-services-stream": "11.10.0-iad-608.0",
+    "@mojaloop/central-services-stream": "11.10.0-infitx.2",
     "@mojaloop/database-lib": "11.3.5",
     "@mojaloop/event-sdk": "14.8.2",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.9.0",
@@ -131,7 +131,7 @@
   },
   "devDependencies": {
     "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.69.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.70.0",
     "@types/mock-knex": "0.4.8",
     "async-retry": "1.3.3",
     "audit-ci": "^7.1.0",
