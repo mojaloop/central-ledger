@@ -73,8 +73,7 @@ Test('route handler', (handlerTest) => {
         disconnect: sandbox.stub(),
         healthCheck: sandbox.stub().returns(Promise.resolve(true))
       })
-      const jp = require('jsonpath')
-      const healthHandler = jp.query(Handler, '$[?(@.path=="/health")]')
+      const healthHandler = Handler.filter(route => route.path === '/health')
 
       const reply = {
         response: (response) => {

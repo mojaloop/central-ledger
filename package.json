@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "19.13.0-iad-608.5",
+  "version": "19.13.0-infitx.8",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -88,7 +88,7 @@
     "@hapi/catbox": "12.1.1",
     "@hapi/catbox-memory": "6.0.2",
     "@hapi/good": "9.0.1",
-    "@hapi/hapi": "21.4.4",
+    "@hapi/hapi": "21.4.5",
     "@hapi/inert": "7.1.0",
     "@hapi/vision": "7.0.3",
     "@mojaloop/central-services-error-handling": "13.1.6",
@@ -137,7 +137,6 @@
     "audit-ci": "^7.1.0",
     "get-port": "5.1.1",
     "jsdoc": "4.0.5",
-    "jsonpath": "1.2.1",
     "mock-knex": "0.4.13",
     "nodemon": "3.1.11",
     "npm-check-updates": "19.3.2",
@@ -183,7 +182,7 @@
     "trim": "0.0.3",
     "cross-spawn": "7.0.6",
     "yargs-parser": "21.1.1",
-    "fast-xml-parser": "5.3.4"
+    "fast-xml-parser": "5.3.6"
   },
   "config": {
     "knex": "--knexfile ./config/knexfile.js",
