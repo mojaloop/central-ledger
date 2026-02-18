@@ -589,6 +589,58 @@ Test('Position handler', positionBatchHandlerTest => {
       }
     })
 
+    positionsTest.test('uses action from item.message for FX_NOTIFY notify messages', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+
+      const fxNotifyMessage = {
+        key: '1001',
+        value: {
+          metadata: {
+            event: {
+              action: Enum.Events.Event.Action.FX_NOTIFY
+            }
+          },
+          content: {
+            payload: {}
+          }
+        },
+        topic: topicName
+      }
+
+      BinProcessor.processBins.resolves({
+        notifyMessages: [{
+          binItem: { message: fxNotifyMessage, span: SpanStub },
+          message: {
+            metadata: {
+              event: {
+                action: Enum.Events.Event.Action.FX_NOTIFY,
+                state: { status: 'success' }
+              }
+            }
+          }
+        }],
+        followupMessages: []
+      })
+
+      // Act
+      try {
+        await allTransferHandlers.positions(null, fxNotifyMessage)
+        test.equal(Kafka.produceGeneralMessage.callCount, 1, 'produceGeneralMessage should be called once')
+        test.equal(Kafka.produceGeneralMessage.getCall(0).args[2], Enum.Events.Event.Type.NOTIFICATION, 'produceGeneralMessage should be called with eventType NOTIFICATION')
+        test.equal(Kafka.produceGeneralMessage.getCall(0).args[3], Enum.Events.Event.Action.FX_NOTIFY, 'produceGeneralMessage should use action from item.message for FX_NOTIFY')
+        test.equal(Kafka.produceGeneralMessage.getCall(0).args[5], Enum.Events.EventStatus.SUCCESS, 'produceGeneralMessage should be called with eventStatus SUCCESS')
+        test.end()
+      } catch (err) {
+        Logger.info(err)
+        test.fail('Error should not be thrown')
+        test.end()
+      }
+    })
+
     positionsTest.end()
   })
 

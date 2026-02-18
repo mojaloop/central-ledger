@@ -184,7 +184,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
   }
   testConsumer.handlers.push(batchTopicConfig)
   await testConsumer.startListening()
-  await new Promise(resolve => setTimeout(resolve, 5_000))
+  await new Promise(resolve => setTimeout(resolve, 3_000))
   testConsumer.clearEvents()
   fxFulfilTest.pass('setup is done')
 
@@ -314,7 +314,7 @@ Test('FxFulfil flow Integration Tests -->', async fxFulfilTest => {
       testConsumer.destroy()
     ])
     await ProxyCache.disconnect()
-    await new Promise(resolve => setTimeout(resolve, 5_000))
+    await new Promise(resolve => setTimeout(resolve, 2_000))
     t.pass('teardown is finished')
     t.end()
   })

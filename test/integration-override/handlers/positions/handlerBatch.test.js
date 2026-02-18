@@ -81,10 +81,10 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
-const debug = process?.env?.skip_INT_DEBUG || false
-// const rebalanceDelay = process?.env?.skip_INT_REBALANCE_DELAY || 10000
-const retryDelay = process?.env?.skip_INT_RETRY_DELAY || 2
-const retryCount = process?.env?.skip_INT_RETRY_COUNT || 40
+const debug = process?.env?.TEST_INT_DEBUG || false
+// const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 1
+const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
 const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
@@ -463,7 +463,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
     await setupTests.test('start testConsumer', async (test) => {
       // Set up the testConsumer here
       await testConsumer.startListening()
-      await new Promise(resolve => setTimeout(resolve, 5_000))
+      await new Promise(resolve => setTimeout(resolve, 2_000))
       testConsumer.clearEvents()
 
       test.pass('done')
@@ -500,7 +500,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -561,7 +561,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -602,7 +602,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -648,7 +648,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       // Consume messages from notification topic
       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
         topicFilter: 'topic-notification-event',
@@ -700,7 +700,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       // Consume messages from notification topic
       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
         topicFilter: 'topic-notification-event',
@@ -743,15 +743,19 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
-      // Consume messages from notification topic
-      const positionFxPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
-        topicFilter: 'topic-notification-event',
-        action: 'fx-prepare'
-      }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // filter positionFxPrepare messages where destination is not Hub
-      const positionFxPrepareFiltered = positionFxPrepare.filter((notification) => notification.to !== 'Hub')
+      // Consume messages from notification topic, retrying until all 10 non-Hub notifications arrive
+      const positionFxPrepareFiltered = await wrapWithRetries(() => {
+        const events = testConsumer.getEventsForFilter({
+          topicFilter: 'topic-notification-event',
+          action: 'fx-prepare'
+        })
+        const filtered = events.filter((notification) => notification.to !== 'Hub')
+        if (filtered.length < 10) return null
+        return filtered
+      }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
       test.equal(positionFxPrepareFiltered.length, 10, 'Notification Messages received for all 10 fxTransfers')
 
       // Check that initiating FSP position is only updated by sum of transfers relevant to the source currency
@@ -799,7 +803,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
         await Producer.produceMessage(transfer.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       // Consume messages from notification topic
       const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
         topicFilter: 'topic-notification-event',
@@ -872,7 +876,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -928,7 +932,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolFulfil, td.topicConfTransferFulfil, fulfilConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -989,7 +993,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -1045,7 +1049,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolFulfilReserved, td.topicConfTransferFulfil, fulfilConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -1106,7 +1110,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionFxPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
@@ -1157,7 +1161,7 @@ Test('Position batch handler Tests -->', async handlersTest => {
       for (const transfer of td.transfersArray) {
         await Producer.produceMessage(transfer.messageProtocolFxFulfil, td.topicConfTransferFulfil, fulfilConfig)
       }
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const positionFxFulfil = await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',

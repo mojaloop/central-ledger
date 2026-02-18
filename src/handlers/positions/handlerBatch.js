@@ -34,7 +34,7 @@
  */
 
 const { randomUUID } = require('node:crypto')
-const { Kafka: { otel }, Util: { Producer, Consumer } } = require('@mojaloop/central-services-stream')
+const { Util: { Producer, Consumer } } = require('@mojaloop/central-services-stream')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -61,11 +61,11 @@ const consumerCommit = true
  *
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
+ * @param {object} [meta] - metadata passed from Kafka consumer
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
-
-const positions = batchConfig => async (error, messages) => {
+const positions = async (error, messages, meta = {}) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_position_batch',
     'Consume a batch of prepare transfer messages from the kafka topic and process them',
@@ -73,8 +73,7 @@ const positions = batchConfig => async (error, messages) => {
   ).startTimer()
   const startTime = Date.now()
   const operation = 'positionsHandlerBatch'
-  const batchId = randomUUID() // todo: think if we can use binId instead
-  const log = logger.child({ operation, batchId, startTime })
+  const log = logger.child({ operation, batchId: meta?.batchId, startTime })
 
   if (error) {
     histTimerEnd({ success: false })
@@ -90,10 +89,15 @@ const positions = batchConfig => async (error, messages) => {
     consumedMessages = [Object.assign({}, Utility.clone(messages))]
   }
 
+  if (consumedMessages.length === 0) {
+    log.info('empty batch, stop further processing')
+    histTimerEnd({ success: true })
+    return
+  }
+
   const firstMessageOffset = consumedMessages[0]?.offset
   const lastMessageOffset = consumedMessages[consumedMessages.length - 1]?.offset
   const binId = `${firstMessageOffset}-${lastMessageOffset}`
-  log.info(`[=>> msg] start batch processing  [length: ${consumedMessages.length},  binId: ${binId}]...`, { binId, batchId }) // todo: add topic details
 
   // Iterate through consumedMessages
   const bins = {}
@@ -102,14 +106,13 @@ const positions = batchConfig => async (error, messages) => {
   await Promise.all(consumedMessages.map(
     message => addToBinSortedByActionDecodedPayload({ message, binId, bins, lastPerPartition, log })
   ))
-  log.verbose('all messages in batch are decoded and sorted by action')
+  log.verbose('all messages in batch are decoded and sorted by action', { binId })
 
   // Start DB Transaction if there are any bins to process
   const trx = !!Object.keys(bins).length && await BatchPositionModel.startDbTransaction()
 
   try {
     if (trx) {
-      // Call Bin Processor with the list of account-bins and trx
       const result = await BinProcessor.processBins(bins, trx)
 
       // If Bin Processor processed bins successfully, commit Kafka offset
@@ -126,55 +129,12 @@ const positions = batchConfig => async (error, messages) => {
       log.info('DB transaction committed')
 
       // Loop through results and produce notification messages and audit messages
-      await Promise.all(result.notifyMessages.map(item => {
-        // Produce notification message and audit message
-        // NOTE: Not sure why we're checking the binItem for the action vs the message
-        //       that is being created.
-        //       Handled FX_NOTIFY and FX_ABORT differently so as not to break existing functionality.
-        let action
-        if (![Enum.Events.Event.Action.FX_NOTIFY, Enum.Events.Event.Action.FX_ABORT].includes(item?.message.metadata.event.action)) {
-          action = item.binItem.message?.value.metadata.event.action
-        } else {
-          action = item.message.metadata.event.action
-        }
-        const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status
-          ? Enum.Events.EventStatus.SUCCESS
-          : Enum.Events.EventStatus.FAILURE
-        const produce = () => Kafka.produceGeneralMessage(
-          Config.KAFKA_CONFIG,
-          Producer,
-          Enum.Events.Event.Type.NOTIFICATION,
-          action,
-          item.message,
-          eventStatus,
-          null,
-          item.binItem.span
+      await Promise.all(result.notifyMessages.map(produceNotificationMessage)
+        .concat(
+          // Loop through followup messages and produce position messages for further processing of the transfer
+          result.followupMessages.map(producePositionMessage)
         )
-        return (Array.isArray(messages) && messages.length > 1)
-          ? otel.startConsumerTracingSpan(item.binItem.message, batchConfig).executeInsideSpanContext(produce)
-          : produce()
-      }).concat(
-        // Loop through followup messages and produce position messages for further processing of the transfer
-        result.followupMessages.map(item => {
-          // Produce position message and audit message
-          const action = item.binItem.message?.value.metadata.event.action
-          const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status ? Enum.Events.EventStatus.SUCCESS : Enum.Events.EventStatus.FAILURE
-          const produce = () => Kafka.produceGeneralMessage(
-            Config.KAFKA_CONFIG,
-            Producer,
-            Enum.Events.Event.Type.POSITION,
-            action,
-            item.message,
-            eventStatus,
-            item.messageKey,
-            item.binItem.span,
-            Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
-          )
-          return (Array.isArray(messages) && messages.length > 1)
-            ? otel.startConsumerTracingSpan(item.binItem.message, batchConfig).executeInsideSpanContext(produce)
-            : produce()
-        })
-      ))
+      )
       log.verbose('notification, audit and position messages are sent')
     }
     histTimerEnd({ success: true })
@@ -190,6 +150,7 @@ const positions = batchConfig => async (error, messages) => {
       await span.error(fspiopError, state)
     })
     histTimerEnd({ success: false })
+    // todo: think if we need to rethrow here (to catch failed span properly)
   } finally {
     // Finish span for each message
     await BinProcessor.iterateThroughBins(bins, async (_accountID, action, item) => {
@@ -199,7 +160,6 @@ const positions = batchConfig => async (error, messages) => {
         await span.finish()
       }
     })
-    log.info(`[<=> msg] batch processing is done  [durationS: ${(Date.now() - startTime) / 1000},  binId: ${binId}]`)
   }
 }
 
@@ -225,7 +185,7 @@ const registerPositionHandler = async () => {
         Enum.Events.Event.Action.PREPARE
       )
     const positionHandler = {
-      command: positions(batchConfig),
+      command: positions,
       topicName,
       // There is no corresponding action for POSITION_BATCH, so using straight value
       config: batchConfig
@@ -299,36 +259,52 @@ const addToBinSortedByActionDecodedPayload = ({ message, binId, bins, lastPerPar
   return span.audit(message, EventSdk.AuditEventAction.start)
 }
 
-// const produceNotificationMessages = async (notifyMessages) => {
-//   return notifyMessages.map(item => {
-//     // Produce notification message and audit message
-//     // NOTE: Not sure why we're checking the binItem for the action vs the message
-//     //       that is being created.
-//     //       Handled FX_NOTIFY and FX_ABORT differently so as not to break existing functionality.
-//     let action
-//     if (![Enum.Events.Event.Action.FX_NOTIFY, Enum.Events.Event.Action.FX_ABORT].includes(item?.message.metadata.event.action)) {
-//       action = item.binItem.message?.value.metadata.event.action
-//     } else {
-//       action = item.message.metadata.event.action
-//     }
-//     const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status
-//       ? Enum.Events.EventStatus.SUCCESS
-//       : Enum.Events.EventStatus.FAILURE
-//     const produce = () => Kafka.produceGeneralMessage(
-//       Config.KAFKA_CONFIG,
-//       Producer,
-//       Enum.Events.Event.Type.NOTIFICATION,
-//       action,
-//       item.message,
-//       eventStatus,
-//       null,
-//       item.binItem.span
-//     )
-//     return (Array.isArray(messages) && messages.length > 1)
-//       ? otel.startConsumerTracingSpan(item.binItem.message, batchConfig).executeInsideSpanContext(produce)
-//       : produce()
-//   })
-// }
+const producePositionMessage = async item => {
+  // Produce position message and audit message
+  const action = item.binItem.message?.value.metadata.event.action
+  const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status
+    ? Enum.Events.EventStatus.SUCCESS
+    : Enum.Events.EventStatus.FAILURE
+
+  return Kafka.produceGeneralMessage(
+    Config.KAFKA_CONFIG,
+    Producer,
+    Enum.Events.Event.Type.POSITION,
+    action,
+    item.message,
+    eventStatus,
+    item.messageKey,
+    item.binItem.span,
+    Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+  )
+}
+
+const produceNotificationMessage = async item => {
+  // Produce notification message and audit message
+  // NOTE: Not sure why we're checking the binItem for the action vs the message
+  //       that is being created.
+  //       Handled FX_NOTIFY and FX_ABORT differently so as not to break existing functionality.
+  let action
+  if (![Enum.Events.Event.Action.FX_NOTIFY, Enum.Events.Event.Action.FX_ABORT].includes(item?.message.metadata.event.action)) {
+    action = item.binItem.message?.value.metadata.event.action
+  } else {
+    action = item.message.metadata.event.action
+  }
+  const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status
+    ? Enum.Events.EventStatus.SUCCESS
+    : Enum.Events.EventStatus.FAILURE
+
+  return Kafka.produceGeneralMessage(
+    Config.KAFKA_CONFIG,
+    Producer,
+    Enum.Events.Event.Type.NOTIFICATION,
+    action,
+    item.message,
+    eventStatus,
+    null,
+    item.binItem.span
+  )
+}
 
 const createSpanFromMessage = (message, binId) => {
   const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
@@ -344,5 +320,5 @@ const createSpanFromMessage = (message, binId) => {
 module.exports = {
   registerPositionHandler,
   registerAllHandlers,
-  positions: positions()
+  positions
 }

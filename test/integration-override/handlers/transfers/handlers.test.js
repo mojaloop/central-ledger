@@ -71,10 +71,10 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferEventType = Enum.Events.Event.Type
 const TransferEventAction = Enum.Events.Event.Action
 
-const debug = process?.env?.test_INT_DEBUG || false
-const rebalanceDelay = process?.env?.test_INT_REBALANCE_DELAY || 10000
-const retryDelay = process?.env?.test_INT_RETRY_DELAY || 2
-const retryCount = process?.env?.test_INT_RETRY_COUNT || 40
+const debug = process?.env?.TEST_INT_DEBUG || false
+const rebalanceDelay = process?.env?.TEST_INT_REBALANCE_DELAY || 10000
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 1
+const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
 const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
@@ -618,7 +618,7 @@ Test('Handlers test', async handlersTest => {
       }
       testConsumer.clearEvents()
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
       try {
         await wrapWithRetries(() => testConsumer.getEventsForFilter({
@@ -931,7 +931,7 @@ Test('Handlers test', async handlersTest => {
 
       await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       try {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -971,7 +971,7 @@ Test('Handlers test', async handlersTest => {
 
       await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       try {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -981,7 +981,7 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         test.equal(transfer?.transferState, TransferInternalState.RESERVED_FORWARDED, 'Transfer state is still RESERVED_FORWARDED')
@@ -1018,13 +1018,13 @@ Test('Handlers test', async handlersTest => {
         }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.ok(positionPrepare[0], 'Position prepare message with key found')
       } catch (err) {
-        test.notOk('Error should not be thrown')
-        console.error(err)
+        Logger.error(err)
+        test.fail(err.message)
       }
 
       await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       try {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -1089,7 +1089,7 @@ Test('Handlers test', async handlersTest => {
 
       await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       try {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -1100,7 +1100,7 @@ Test('Handlers test', async handlersTest => {
       }
       await Producer.produceMessage(td.messageProtocolError, td.topicConfTransferFulfil, fulfilConfig)
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       try {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -1158,7 +1158,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       try {
         await wrapWithRetries(async () => {
@@ -1224,7 +1224,7 @@ Test('Handlers test', async handlersTest => {
 
       await Producer.produceMessage(td.messageProtocolPrepareForwarded, td.topicConfTransferPrepare, prepareConfig)
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       try {
         const transfer = await TransferService.getByIdLight(td.messageProtocolPrepare.content.payload.transferId) || {}
@@ -1284,7 +1284,7 @@ Test('Handlers test', async handlersTest => {
 
       await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       try {
         const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
@@ -1324,7 +1324,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
         test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED_FORWARDED, 'FxTransfer state updated to RESERVED_FORWARDED')
@@ -1333,7 +1333,7 @@ Test('Handlers test', async handlersTest => {
         test.fail(err.message)
       }
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
         test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED_FORWARDED, 'FxTransfer still in RESERVED_FORWARDED')
@@ -1371,7 +1371,7 @@ Test('Handlers test', async handlersTest => {
 
       await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
 
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       try {
         const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
@@ -1426,7 +1426,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
         test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED_FORWARDED, 'FxTransfer state updated to RESERVED_FORWARDED')
@@ -1492,7 +1492,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       await Producer.produceMessage(td.messageProtocolPrepareFxForwarded, td.topicConfTransferPrepare, prepareConfig)
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
         test.equal(fxTransfer?.fxTransferState, TransferInternalState.RESERVED_FORWARDED, 'FxTransfer state updated to RESERVED_FORWARDED')
@@ -1511,7 +1511,7 @@ Test('Handlers test', async handlersTest => {
 
       console.log('messageProtocolFxError', td.messageProtocolFxError)
       await Producer.produceMessage(td.messageProtocolFxError, td.topicConfTransferFulfil, fulfilConfig)
-      await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
       try {
         const fxTransfer = await FxTransferService.getByIdLight(td.messageProtocolFxPrepare.content.payload.commitRequestId) || {}
         test.equal(fxTransfer?.fxTransferState, TransferInternalState.ABORTED_ERROR, 'FxTransfer state updated to ABORTED_ERROR')
@@ -1568,7 +1568,7 @@ Test('Handlers test', async handlersTest => {
         TransferEventType.PREPARE.toUpperCase())
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolFxPrepare, td.topicConfTransferPrepare, prepareConfig)
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       try {
         await wrapWithRetries(async () => {
