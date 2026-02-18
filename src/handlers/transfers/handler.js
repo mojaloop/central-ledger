@@ -55,6 +55,7 @@ const TransferObjectTransform = require('../../domain/transfer/transform')
 const Participant = require('../../domain/participant')
 const Validator = require('./validator')
 const FxFulfilService = require('./FxFulfilService')
+const FulfilService = require('./FulfilService')
 const TransferErrorModel = require('../../models/transfer/transferError')
 const FxTransferErrorModel = require('../../models/fxTransfer/fxTransferError')
 // particular handlers
@@ -147,6 +148,10 @@ const processFulfilMessage = async (message, functionality, span) => {
   const action = message.value.metadata.event.action
   const transferId = message.value.content.uriParams.id
   const kafkaTopic = message.topic
+
+  const log = logger.child({ transferId, type, action })
+  log.info('processFulfilMessage start...', { payload })
+
   Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
 
   const actionLetter = (() => {
@@ -172,13 +177,31 @@ const processFulfilMessage = async (message, functionality, span) => {
   }
 
   // fulfil-specific declarations
-  const isTransferError = action === TransferEventAction.ABORT
   const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
+
+  const fulfilService = new FulfilService({
+    log,
+    Config,
+    Comparators,
+    Validator,
+    TransferService,
+    FxService,
+    Participant,
+    Kafka,
+    params
+  })
+
+  // Validate event type and action early
+  await fulfilService.validateEventType(type, functionality)
+  await fulfilService.validateAction(action, functionality)
 
   Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'getById' }))
 
-  const transfer = await TransferService.getById(transferId)
-  const transferStateEnum = transfer?.transferStateEnumeration
+  const transfer = await fulfilService.getTransferDetails(transferId, functionality)
+
+  // CRITICAL: Validate transfer state early to prevent race conditions
+  // This ensures only valid state transitions are allowed before any processing
+  await fulfilService.validateTransferState(transfer, action, functionality)
 
   // List of valid actions for which source & destination headers are checked
   const validActionsForRouteValidations = [
@@ -188,109 +211,14 @@ const processFulfilMessage = async (message, functionality, span) => {
     TransferEventAction.ABORT
   ]
 
-  if (!transfer) {
-    Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackInternalServerErrorNotFound--${actionLetter}1`))
-    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transfer not found')
-    const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-    /**
-     * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
-     * HOWTO: The list of individual transfers being committed should contain
-     * non-existing transferId
-     */
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
-  }
-
-  // Lets validate FSPIOP Source & Destination Headers
-  // We only check headers for specific actions that need checking (i.e. bulk should not be checked since it's already done elsewhere)
-  // In interscheme scenario, we store proxy fsp id in transferParticipant table and hence we can't compare that data with fspiop headers in fulfil
-
-  if (validActionsForRouteValidations.includes(action)) {
-    // Ensure payerFsp and payeeFsp are not proxies and if they are, skip validating headers
-    /**
-     * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
-     */
-    if (
-      (headers[Enum.Http.Headers.FSPIOP.SOURCE] && !transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) ||
-      (headers[Enum.Http.Headers.FSPIOP.DESTINATION] && !transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()))
-    ) {
-      /**
-       * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
-       */
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorSourceNotMatchingTransferFSPs--${actionLetter}2`))
-
-      // Lets set a default non-matching error to fallback-on
-      let fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'FSP does not match one of the fsp-id\'s associated with a transfer on the Fulfil callback response')
-
-      // Lets make the error specific if the PayeeFSP IDs do not match
-      if (!transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) {
-        fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.SOURCE} does not match payee fsp on the Fulfil callback response`)
-      }
-
-      // Lets make the error specific if the PayerFSP IDs do not match
-      if (!transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase())) {
-        fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.DESTINATION} does not match payer fsp on the Fulfil callback response`)
-      }
-
-      const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
-
-      // Lets handle the abort validation and change the transfer state to reflect this
-      const transferAbortResult = await TransferService.handlePayeeResponse(transferId, payload, TransferEventAction.ABORT_VALIDATION, apiFSPIOPError)
-
-      /**
-       * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
-       * HOWTO: For regular transfers, send the fulfil from non-payee dfsp.
-       * Not sure if it will apply to bulk, as it could/should be captured
-       * at BulkPrepareHander. To be verified as part of future story.
-       */
-
-      // Set the event details to map to an ABORT_VALIDATION event targeted to the Position Handler
-      const eventDetail = {
-        functionality: TransferEventType.POSITION,
-        action: TransferEventAction.ABORT_VALIDATION
-      }
-
-      // Key position abort with payer account id
-      const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
-
-      // Publish message to Position Handler
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, toDestination: transfer.payerFsp, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
-
-      /**
-       * Send patch notification callback to original payee fsp if they asked for a patch response.
-       */
-      if (action === TransferEventAction.RESERVE) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
-
-        // Set the event details to map to an RESERVE_ABORTED event targeted to the Notification Handler
-        const reserveAbortedEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
-
-        // Extract error information
-        const errorCode = apiFSPIOPError?.errorInformation?.errorCode
-        const errorDescription = apiFSPIOPError?.errorInformation?.errorDescription
-
-        // TODO: This should be handled by a PATCH /transfers/{id}/error callback in the future FSPIOP v1.2 specification, and instead we should just send the FSPIOP-Error instead!
-        // Ref: https://github.com/mojaloop/mojaloop-specification/issues/106.
-        const reservedAbortedPayload = {
-          transferId: transferAbortResult?.id,
-          completedTimestamp: transferAbortResult?.completedTimestamp && (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
-          transferState: TransferState.ABORTED,
-          extensionList: { // lets add the extension list to handle the limitation of the FSPIOP v1.1 specification by adding the error cause...
-            extension: [
-              {
-                key: 'cause',
-                value: `${errorCode}: ${errorDescription}`
-              }
-            ]
-          }
-        }
-        message.value.content.payload = reservedAbortedPayload
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail: reserveAbortedEventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
-      }
-
-      rethrow.rethrowAndCountFspiopError(apiFSPIOPError, { operation: 'processFulfilMessage' })
-    }
-  }
+  // Validate FSPIOP Source & Destination Headers using FulfilService
+  await fulfilService.validateHeaders({
+    transfer,
+    headers,
+    payload,
+    action,
+    validActionsForRouteValidations
+  })
 
   // If execution continues after this point we are sure transfer exists and source matches payee fsp
 
@@ -304,245 +232,33 @@ const processFulfilMessage = async (message, functionality, span) => {
     ['success', 'funcName']
   ).startTimer()
 
-  let dupCheckResult
-  if (!isTransferError) {
-    dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferFulfilmentDuplicateCheck, TransferService.saveTransferFulfilmentDuplicateCheck)
-  } else {
-    dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferErrorDuplicateCheck, TransferService.saveTransferErrorDuplicateCheck)
-  }
-  const { hasDuplicateId, hasDuplicateHash } = dupCheckResult
+  const dupCheckResult = await fulfilService.getDuplicateCheckResult({ transferId, payload, action })
   histTimerDuplicateCheckEnd({ success: true, funcName: 'fulfil_duplicateCheckComparator' })
-  if (hasDuplicateId && hasDuplicateHash) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'handleResend'))
 
-    // This is a duplicate message for a transfer that is already in a finalized state
-    // respond as if we received a GET /transfers/{ID} from the client
-    if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
-      message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
-      const eventDetail = { functionality, action }
-      if (action !== TransferEventAction.RESERVE) {
-        if (!isTransferError) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinalized2--${actionLetter}3`))
-          eventDetail.action = TransferEventAction.FULFIL_DUPLICATE
-          /**
-           * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil
-           */
-        } else {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinalized3--${actionLetter}4`))
-          eventDetail.action = TransferEventAction.ABORT_DUPLICATE
-        }
-      }
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
-    }
-
-    if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `inProgress2--${actionLetter}5`))
-      /**
-       * HOWTO: Nearly impossible to trigger for bulk - an individual transfer from a bulk needs to be triggered
-       * for processing in order to have the fulfil duplicate hash recorded. While it is still in RESERVED state
-       * the individual transfer needs to be requested by another bulk fulfil request!
-       *
-       * TODO: find a way to trigger this code branch and handle it at BulkProcessingHandler (not in scope of #967)
-       */
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, hubName: Config.HUB_NAME })
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
-    }
-
-    // Error scenario - transfer.transferStateEnumeration is in some invalid state
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidTransferStateEnum--${actionLetter}6`))
-    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
-      `Invalid transferStateEnumeration:(${transferStateEnum}) for event action:(${action}) and type:(${type})`).toApiErrorObject(Config.ERROR_HANDLING)
-    const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-    /**
-     * HOWTO: Impossible to trigger for individual transfer in a bulk? (not in scope of #967)
-     */
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch, hubName: Config.HUB_NAME })
+  const isDuplicate = await fulfilService.checkDuplication({
+    dupCheckResult,
+    transfer,
+    functionality,
+    action,
+    type
+  })
+  if (isDuplicate) {
+    log.info('Transfer duplication detected, skip further processing')
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     return true
   }
-
-  // ERROR: We have seen a transfer of this ID before, but it's message hash doesn't match
-  // the previous message hash.
-  if (hasDuplicateId && !hasDuplicateHash) {
-    const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${actionLetter}7`))
-    const action = isTransferError ? TransferEventAction.ABORT_DUPLICATE : TransferEventAction.FULFIL_DUPLICATE
-
-    /**
-     * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil,
-     * but use different fulfilment value.
-     */
-    const eventDetail = { functionality, action }
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
-  }
+  Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheckPassed' }))
 
   // Transfer is not a duplicate, or message hasn't been changed.
 
-  if (type !== TransferEventType.FULFIL) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventType--${actionLetter}15`))
-    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event type:(${type})`)
-    const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-    /**
-     * TODO: BulkProcessingHandler (not in scope of #967)
-     */
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
-  }
+  // Validate fulfilment condition using FulfilService
+  await fulfilService.validateFulfilment(transfer, payload, action)
 
-  const validActions = [
-    TransferEventAction.COMMIT,
-    TransferEventAction.RESERVE,
-    TransferEventAction.REJECT,
-    TransferEventAction.ABORT,
-    TransferEventAction.BULK_COMMIT,
-    TransferEventAction.BULK_ABORT
-  ]
-  if (!validActions.includes(action)) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${actionLetter}15`))
-    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${type})`)
-    const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-    /**
-     * TODO: BulkProcessingHandler (not in scope of #967)
-     */
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
-  }
+  // NOTE: Transfer state validation is now done early in the process to prevent race conditions
+  // See fulfilService.validateTransferState() call above
 
-  Util.breadcrumb(location, { path: 'validationCheck' })
-  if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
-    const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
-    const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
-    const updatedTransfer = await TransferService.handlePayeeResponse(transferId, payload, TransferEventAction.ABORT_VALIDATION, apiFSPIOPError)
-    params.message.value.payload = {
-      ...params.message.value.payload,
-      completedTimestamp: updatedTransfer.completedTimestamp
-    }
-    const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT_VALIDATION }
-    /**
-     * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
-     */
-    // Key position validation abort with payer account id
-
-    const cyrilResult = await FxService.Cyril.processAbortMessage(transferId)
-
-    params.message.value.content.context = {
-      ...params.message.value.content.context,
-      cyrilResult
-    }
-    if (cyrilResult.positionChanges.length > 0) {
-      const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
-      await Kafka.proceed(
-        Config.KAFKA_CONFIG,
-        params,
-        {
-          consumerCommit,
-          fspiopError: apiFSPIOPError,
-          eventDetail,
-          messageKey: participantCurrencyId.toString(),
-          topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.ABORT,
-          hubName: Config.HUB_NAME
-        }
-      )
-    } else {
-      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
-      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
-    }
-
-    // const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
-    // await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
-
-    // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
-    if (action === TransferEventAction.RESERVE) {
-      // Get the updated transfer now that completedTimestamp will be different
-      const transferAbortResult = await TransferService.getById(transferId)
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
-      const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
-
-      // Extract error information
-      const errorCode = apiFSPIOPError && apiFSPIOPError.errorInformation && apiFSPIOPError.errorInformation.errorCode
-      const errorDescription = apiFSPIOPError && apiFSPIOPError.errorInformation && apiFSPIOPError.errorInformation.errorDescription
-
-      // TODO: This should be handled by a PATCH /transfers/{id}/error callback in the future FSPIOP v1.2 specification, and instead we should just send the FSPIOP-Error instead! Ref: https://github.com/mojaloop/mojaloop-specification/issues/106.
-      const reservedAbortedPayload = {
-        transferId: transferAbortResult && transferAbortResult.id,
-        completedTimestamp: transferAbortResult && transferAbortResult.completedTimestamp && (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
-        transferState: TransferState.ABORTED,
-        extensionList: { // lets add the extension list to handle the limitation of the FSPIOP v1.1 specification by adding the error cause...
-          extension: [
-            {
-              key: 'cause',
-              value: `${errorCode}: ${errorDescription}`
-            }
-          ]
-        }
-      }
-      message.value.content.payload = reservedAbortedPayload
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
-    }
-    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
-  }
-
-  if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
-      transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
-  ) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
-    const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state')
-    const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-    /**
-     * TODO: BulkProcessingHandler (not in scope of #967)
-     */
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-
-    // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
-    if (action === TransferEventAction.RESERVE) {
-      // Get the updated transfer now that completedTimestamp will be different
-      const transferAborted = await TransferService.getById(transferId)
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
-      const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
-      const reservedAbortedPayload = {
-        transferId: transferAborted.id,
-        completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)), // TODO: remove this once it can be tested
-        transferState: TransferState.ABORTED
-      }
-      message.value.content.payload = reservedAbortedPayload
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
-    }
-    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
-  }
-
-  // Check if the transfer has expired
-  // For interscheme we ignore expiration for forwarded transfers
-  if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
-      transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
-    const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
-    const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-    /**
-     * TODO: BulkProcessingHandler (not in scope of #967)
-     */
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-
-    // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
-    if (action === TransferEventAction.RESERVE) {
-      // Get the updated transfer now that completedTimestamp will be different
-      const transferAborted = await TransferService.getById(transferId)
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
-      const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
-      const reservedAbortedPayload = {
-        transferId: transferAborted.id,
-        completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
-        transferState: TransferState.ABORTED
-      }
-      message.value.content.payload = reservedAbortedPayload
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, hubName: Config.HUB_NAME })
-    }
-    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
-  }
+  // Validate expiration date using FulfilService
+  await fulfilService.validateExpirationDate(transfer, functionality, action)
 
   // Validations Succeeded - process the fulfil
   Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
@@ -659,6 +375,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
       }
+      return true
     }
   }
 }
@@ -827,6 +544,17 @@ const getTransfer = async (error, messages) => {
         fxTransfer = await FxTransferModel.fxTransfer.getByIdLight(transferIdOrCommitRequestId)
       }
 
+      // If scheme has no record of the fxTransfer, return error 3208 before any other check.
+      // This is an edge case where data loss might have occurred in the upstream scheme,
+      // and the downstream hub is trying to retrieve the fxTransfer details in order to
+      // release reserved positions.
+      if (!fxTransfer) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided commitRequest ID was not found on the server.')
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
+        return true
+      }
+
       // Interscheme gets are only allowed to be triggered by hubs.
       // Assumption is that proxy headers will have logic outside of central-ledger to ensure they are
       // only added passing through a proxy and can not be added by a participant directly.
@@ -841,13 +569,6 @@ const getTransfer = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForFxReservedForwarded--${actionLetter}4`))
         // Do nothing
         return true
-      }
-
-      if (!fxTransfer) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided commitRequest ID was not found on the server.')
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
 
       // Check if fxTransfer state is not COMMITTED/RESERVED/SETTLED
@@ -940,6 +661,17 @@ const getTransfer = async (error, messages) => {
         transfer = await TransferService.getByIdLight(transferIdOrCommitRequestId)
       }
 
+      // If scheme has no record of the transfer, return error 3208 before any other check.
+      // This is an edge case where data loss might have occurred in the upstream scheme,
+      // and the downstream hub is trying to retrieve the transfer details in order to
+      // release reserved positions.
+      if (!transfer) {
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.')
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
+        return true
+      }
+
       // Interscheme gets are only allowed to be triggered by hubs.
       // Assumption is that proxy headers will have logic outside of central-ledger to ensure they are
       // only added passing through a proxy and can not be added by a participant directly.
@@ -954,13 +686,6 @@ const getTransfer = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForReservedForwarded--${actionLetter}4`))
         // Do nothing
         return true
-      }
-
-      if (!transfer) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.')
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
 
       // Check if transfer state is not COMMITTED/RESERVED/SETTLED
