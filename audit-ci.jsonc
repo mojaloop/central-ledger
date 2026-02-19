@@ -1,6 +1,8 @@
 {
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
   // audit-ci supports reading JSON, JSONC, and JSON5 config files.
+  // Only check production dependencies (devDependencies ignored)
+  "skip-dev": true,  
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [
