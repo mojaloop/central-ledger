@@ -69,6 +69,7 @@ const decodePayload = Util.StreamingProtocol.decodePayload
 
 const rethrow = require('../../shared/rethrow')
 const externalParticipantCached = require('../../models/participant/externalParticipantCached')
+const facade = require('../../models/participant/facade')
 const consumerCommit = true
 const fromSwitch = true
 
@@ -546,9 +547,15 @@ const getTransfer = async (error, messages) => {
       // release reserved positions.
       if (!fxTransfer) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
+
+        // If this is a proxied GET, add the source hub as an external participant so we can direct the callback to that hub
+        if (isProxiedGet && proxy) {
+          await facade.getExternalParticipantIdByNameOrCreate({ name: message.value.from, proxyId: proxy })
+        }
+
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided commitRequest ID was not found on the server.')
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        return true
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
 
       // Interscheme gets are only allowed to be triggered by hubs.
@@ -663,9 +670,15 @@ const getTransfer = async (error, messages) => {
       // release reserved positions.
       if (!transfer) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
+
+        // If this is a proxied GET, add the source hub as an external participant so we can direct the callback to that hub
+        if (isProxiedGet && proxy) {
+          await facade.getExternalParticipantIdByNameOrCreate({ name: message.value.from, proxyId: proxy })
+        }
+
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.')
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        return true
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
 
       // Interscheme gets are only allowed to be triggered by hubs.

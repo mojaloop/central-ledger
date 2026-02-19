@@ -323,8 +323,8 @@ class FulfilService {
         apiFSPIOPError
       )
 
-      this.params.message.value.payload = {
-        ...this.params.message.value.payload,
+      this.params.message.value.content.payload = {
+        ...this.params.message.value.content.payload,
         completedTimestamp: updatedTransfer.completedTimestamp
       }
 
