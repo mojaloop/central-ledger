@@ -199,10 +199,6 @@ const processFulfilMessage = async (message, functionality, span) => {
 
   const transfer = await fulfilService.getTransferDetails(transferId, functionality)
 
-  // CRITICAL: Validate transfer state early to prevent race conditions
-  // This ensures only valid state transitions are allowed before any processing
-  await fulfilService.validateTransferState(transfer, action, functionality)
-
   // List of valid actions for which source & destination headers are checked
   const validActionsForRouteValidations = [
     TransferEventAction.COMMIT,
@@ -251,14 +247,14 @@ const processFulfilMessage = async (message, functionality, span) => {
 
   // Transfer is not a duplicate, or message hasn't been changed.
 
+  // Validate expiration date using FulfilService
+  await fulfilService.validateExpirationDate(transfer, functionality, action)
+
   // Validate fulfilment condition using FulfilService
   await fulfilService.validateFulfilment(transfer, payload, action)
 
-  // NOTE: Transfer state validation is now done early in the process to prevent race conditions
-  // See fulfilService.validateTransferState() call above
-
-  // Validate expiration date using FulfilService
-  await fulfilService.validateExpirationDate(transfer, functionality, action)
+  // This ensures only valid state transitions are allowed before any processing
+  await fulfilService.validateTransferState(transfer, functionality, action)
 
   // Validations Succeeded - process the fulfil
   Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))

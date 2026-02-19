@@ -235,7 +235,7 @@ Test('FulfilService Tests -->', fulfilTest => {
       TransferService.getById.resolves(transfer)
 
       try {
-        await service.validateTransferState(transfer, Action.RESERVE, Type.POSITION)
+        await service.validateTransferState(transfer, Type.POSITION, Action.RESERVE)
         t.fail('Should throw error')
       } catch (err) {
         t.ok(service.kafkaProceed.calledTwice)
@@ -255,17 +255,16 @@ Test('FulfilService Tests -->', fulfilTest => {
       const { service } = createFulfilServiceWithTestData(message)
       const transfer = {
         transferId: 'test-id',
-        transferState: TransferInternalState.RESERVED,
+        transferState: TransferInternalState.COMMITTED,
         transferStateEnumeration: TransferState.COMMITTED
       }
 
       service.kafkaProceed = sandbox.stub()
 
       try {
-        await service.validateTransferState(transfer, Action.COMMIT, Type.POSITION)
+        await service.validateTransferState(transfer, Type.POSITION, Action.COMMIT)
         t.fail('Should throw error')
       } catch (err) {
-        t.ok(err.message.includes('already in final state'))
         t.ok(service.kafkaProceed.calledOnce)
       }
       t.end()

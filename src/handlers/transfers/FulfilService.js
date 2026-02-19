@@ -71,7 +71,7 @@ class FulfilService {
     return transfer
   }
 
-  async validateTransferState (transfer, action, functionality) {
+  async validateTransferState (transfer, functionality, action) {
     const transferState = transfer.transferState
     const transferStateEnum = transfer.transferStateEnumeration
 
@@ -84,7 +84,7 @@ class FulfilService {
         `Transfer is in invalid state: ${transferState}. Expected: RESERVED or RESERVED_FORWARDED`
       )
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
-      const eventDetail = { functionality, action: action || Action.COMMIT }
+      const eventDetail = { functionality, action: Action.COMMIT }
 
       this.log.warn('Transfer state validation failed - invalid state for fulfil processing', {
         transferId: transfer.transferId,
@@ -236,7 +236,7 @@ class FulfilService {
     const reservedAbortedPayload = {
       transferId: transferAbortResult?.id,
       completedTimestamp: transferAbortResult?.completedTimestamp &&
-        (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
+        Util.Time.getUTCString(new Date(transferAbortResult.completedTimestamp)),
       transferState: TransferState.ABORTED,
       extensionList: {
         extension: [
@@ -265,7 +265,7 @@ class FulfilService {
         ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED
       )
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
-      const eventDetail = { functionality, action: action || Action.COMMIT }
+      const eventDetail = { functionality, action: Action.COMMIT }
 
       this.log.warn('Transfer expired validation failed', {
         transferId: transfer.transferId,
@@ -280,12 +280,13 @@ class FulfilService {
         eventDetail,
         fromSwitch
       })
-      this.log.warn('Emitting RESERVED_ABORTED event due to transfer expiration', {
-        transferId: transfer.transferId,
-        eventDetail
-      })
+
       // emit an extra message - RESERVED_ABORTED if action === Action.RESERVE
       if (action === Action.RESERVE) {
+        this.log.warn('Emitting RESERVED_ABORTED event due to transfer expiration', {
+          transferId: transfer.transferId,
+          eventDetail
+        })
         await this._handleReservedAborted(transfer, apiFSPIOPError)
       }
 

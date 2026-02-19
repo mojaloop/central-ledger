@@ -428,6 +428,7 @@ Test('Handlers test', async handlersTest => {
         test.notOk('Error should not be thrown')
         console.error(err)
       }
+      testConsumer.clearEvents()
       test.end()
     })
 
@@ -575,7 +576,15 @@ Test('Handlers test', async handlersTest => {
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
           completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
-          transferState: 'ABORTED'
+          transferState: 'ABORTED',
+          extensionList: {
+            extension: [
+              {
+                key: 'cause',
+                value: '3303: Transfer expired'
+              }
+            ]
+          }
         }
       }
 
@@ -687,7 +696,15 @@ Test('Handlers test', async handlersTest => {
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
           completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
-          transferState: 'ABORTED'
+          transferState: 'ABORTED',
+          extensionList: {
+            extension: [
+              {
+                key: 'cause',
+                value: '3100: Generic validation error - Transfer is in invalid state: INVALID. Expected: RESERVED or RESERVED_FORWARDED'
+              }
+            ]
+          }
         }
       }
 
@@ -796,7 +813,7 @@ Test('Handlers test', async handlersTest => {
       let expectedAbortNotificationPayload = {}
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
-          completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
+          completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
           transferState: 'ABORTED'
         }
       }
@@ -986,8 +1003,10 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      testConsumer.clearEvents()
       test.end()
     })
+
     await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
@@ -1025,6 +1044,7 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      testConsumer.clearEvents()
       test.end()
     })
     transferFulfilCommit.end()
@@ -1104,6 +1124,7 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
+      testConsumer.clearEvents()
       test.end()
     })
 
@@ -1255,7 +1276,6 @@ Test('Handlers test', async handlersTest => {
         Logger.error(err)
         test.fail(err.message)
       }
-
       test.end()
     })
 
@@ -1346,6 +1366,7 @@ Test('Handlers test', async handlersTest => {
 
       // Assert
       test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerInitialPosition), 'Position resets after a timeout')
+      testConsumer.clearEvents()
       test.end()
     })
 
