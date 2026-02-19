@@ -150,7 +150,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   const kafkaTopic = message.topic
 
   const log = logger.child({ transferId, type, action })
-  log.info('processFulfilMessage start...', { payload })
+  log.debug('processFulfilMessage start...')
 
   Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
 

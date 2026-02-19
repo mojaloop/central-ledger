@@ -416,7 +416,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    transformTransfer.test('return an error when the transfer by id is not found', async (test) => {
+    transformTransfer.test('return an error when the transfer by id is not found with autocommit enabled', async (test) => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
@@ -499,7 +499,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
       const transferResult = MainUtil.clone(transferReturn)
-      transferReturn.transferState = 'ABORTED_REJECTED'
+      transferResult.transferState = 'ABORTED_REJECTED'
       transferResult.extensionList = []
       TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
 

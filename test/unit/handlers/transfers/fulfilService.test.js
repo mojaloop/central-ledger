@@ -177,7 +177,7 @@ Test('FulfilService Tests -->', fulfilTest => {
 
       service.kafkaProceed = sandbox.stub()
 
-      const result = await service.validateTransferState(transfer, Action.COMMIT, Type.POSITION)
+      const result = await service.validateTransferState(transfer, Type.POSITION, Action.COMMIT)
       t.true(result)
       t.ok(service.kafkaProceed.notCalled)
       t.end()
@@ -194,7 +194,7 @@ Test('FulfilService Tests -->', fulfilTest => {
 
       service.kafkaProceed = sandbox.stub()
 
-      const result = await service.validateTransferState(transfer, Action.COMMIT, Type.POSITION)
+      const result = await service.validateTransferState(transfer, Type.POSITION, Action.COMMIT)
       t.true(result)
       t.ok(service.kafkaProceed.notCalled)
       t.end()
@@ -212,7 +212,7 @@ Test('FulfilService Tests -->', fulfilTest => {
       service.kafkaProceed = sandbox.stub()
 
       try {
-        await service.validateTransferState(transfer, Action.COMMIT, Type.POSITION)
+        await service.validateTransferState(transfer, Type.POSITION, Action.COMMIT)
         t.fail('Should throw error')
       } catch (err) {
         t.ok(err.message.includes('Transfer is in invalid state'))
