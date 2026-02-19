@@ -34,7 +34,6 @@ RUN ln -sf /dev/stdout ./logs/combined.log
 
 # Create a non-root user: ml-user
 RUN adduser -D ml-user
-USER ml-user
 
 COPY --chown=ml-user --from=builder /opt/app .
 
@@ -44,5 +43,25 @@ COPY migrations /opt/app/migrations
 COPY seeds /opt/app/seeds
 COPY test /opt/app/test
 
+# Remove npm/npx from runtime image to eliminate npm's vulnerable tar - failing grype scan
+USER root
+RUN rm -rf \
+  /usr/local/lib/node_modules/npm \
+  /usr/local/bin/npm \
+  /usr/local/bin/npx
+
+# Remove vulnerable nested minimatch copies (if present)
+RUN rm -rf \
+  /opt/app/node_modules/@redocly/openapi-core/node_modules/minimatch \
+  /opt/app/node_modules/filelist/node_modules/minimatch || true
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    /usr/local/bin/npm /usr/local/bin/npx
+RUN rm -rf \
+/opt/app/node_modules/@redocly/openapi-core/node_modules/minimatch \
+/opt/app/node_modules/filelist/node_modules/minimatch
+RUN node -e "require('./src/api/index.js'); console.log('startup ok')"    
+
+USER ml-user
+
 EXPOSE 3001
-CMD ["npm", "run", "start"]
+CMD ["node", "src/api/index.js"]
