@@ -56,7 +56,6 @@ RUN rm -rf /usr/local/lib/node_modules/npm \
 RUN rm -rf \
 /opt/app/node_modules/@redocly/openapi-core/node_modules/minimatch \
 /opt/app/node_modules/filelist/node_modules/minimatch
-RUN node -e "require('./src/api/index.js'); console.log('startup ok')" 
 
 USER ml-user
 
