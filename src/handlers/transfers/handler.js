@@ -475,16 +475,6 @@ const processFxFulfilMessage = async (message, functionality, span) => {
 const processFxGetMessage = async (message, commitRequestId, headers, destination, params, eventDetail, histTimerEnd) => {
   const log = logger.child({ commitRequestId })
   const location = { module: 'GetTransferHandler', method: 'processFxGetMessage', path: '' }
-  const actionLetter = (() => {
-    switch (eventDetail.action) {
-      case TransferEventAction.FX_COMMIT: return Enum.Events.ActionLetter.fxCommit
-      case TransferEventAction.FX_RESERVE: return Enum.Events.ActionLetter.fxReserve
-      case TransferEventAction.FX_REJECT: return Enum.Events.ActionLetter.fxReject
-      case TransferEventAction.FX_ABORT: return Enum.Events.ActionLetter.fxAbort
-      case TransferEventAction.FX_FORWARDED: return Enum.Events.ActionLetter.fxForwarded
-      default: return Enum.Events.ActionLetter.unknown
-    }
-  })()
 
   const fxGetService = new FxGetService({
     log,
@@ -498,6 +488,7 @@ const processFxGetMessage = async (message, commitRequestId, headers, destinatio
     FxTransferErrorModel
   })
 
+  const actionLetter = fxGetService.getActionLetter(eventDetail.action)
   const isProxiedGet = fxGetService.isProxiedGet(headers)
   const isExternalParticipant = await fxGetService.getExternalParticipant(destination)
 
@@ -578,16 +569,6 @@ const processFxGetMessage = async (message, commitRequestId, headers, destinatio
 const processGetMessage = async (message, transferId, headers, destination, params, eventDetail, histTimerEnd) => {
   const log = logger.child({ transferId })
   const location = { module: 'GetTransferHandler', method: 'processGetMessage', path: '' }
-  const actionLetter = (() => {
-    switch (eventDetail.action) {
-      case TransferEventAction.FX_COMMIT: return Enum.Events.ActionLetter.fxCommit
-      case TransferEventAction.FX_RESERVE: return Enum.Events.ActionLetter.fxReserve
-      case TransferEventAction.FX_REJECT: return Enum.Events.ActionLetter.fxReject
-      case TransferEventAction.FX_ABORT: return Enum.Events.ActionLetter.fxAbort
-      case TransferEventAction.FX_FORWARDED: return Enum.Events.ActionLetter.fxForwarded
-      default: return Enum.Events.ActionLetter.unknown
-    }
-  })()
 
   const getService = new GetService({
     log,
@@ -601,6 +582,7 @@ const processGetMessage = async (message, transferId, headers, destination, para
     TransferErrorModel
   })
 
+  const actionLetter = getService.getActionLetter(eventDetail.action)
   const isProxiedGet = getService.isProxiedGet(headers)
   const isExternalParticipant = await getService.getExternalParticipant(destination)
 

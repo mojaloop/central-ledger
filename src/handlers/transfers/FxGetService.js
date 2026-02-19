@@ -223,6 +223,17 @@ class FxGetService {
   async getExternalParticipant (destination) {
     return destination ? await this.externalParticipantCached.getByName(destination) : null
   }
+
+  getActionLetter (action) {
+    switch (action) {
+      case Action.FX_COMMIT: return Enum.Events.ActionLetter.fxCommit
+      case Action.FX_RESERVE: return Enum.Events.ActionLetter.fxReserve
+      case Action.FX_REJECT: return Enum.Events.ActionLetter.fxReject
+      case Action.FX_ABORT: return Enum.Events.ActionLetter.fxAbort
+      case Action.FX_FORWARDED: return Enum.Events.ActionLetter.fxForwarded
+      default: return Enum.Events.ActionLetter.unknown
+    }
+  }
 }
 
 module.exports = FxGetService
