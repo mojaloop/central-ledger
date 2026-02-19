@@ -51,11 +51,12 @@ const Config = require('../../lib/config')
 const TransferService = require('../../domain/transfer')
 const FxService = require('../../domain/fx')
 const FxTransferModel = require('../../models/fxTransfer')
-const TransferObjectTransform = require('../../domain/transfer/transform')
 const Participant = require('../../domain/participant')
 const Validator = require('./validator')
 const FxFulfilService = require('./FxFulfilService')
 const FulfilService = require('./FulfilService')
+const GetService = require('./GetService')
+const FxGetService = require('./FxGetService')
 const TransferErrorModel = require('../../models/transfer/transferError')
 const FxTransferErrorModel = require('../../models/fxTransfer/fxTransferError')
 // particular handlers
@@ -69,9 +70,7 @@ const decodePayload = Util.StreamingProtocol.decodePayload
 
 const rethrow = require('../../shared/rethrow')
 const externalParticipantCached = require('../../models/participant/externalParticipantCached')
-const facade = require('../../models/participant/facade')
 const consumerCommit = true
-const fromSwitch = true
 
 const fulfil = async (error, messages) => {
   if (error) {
@@ -473,6 +472,212 @@ const processFxFulfilMessage = async (message, functionality, span) => {
   }
 }
 
+const processFxGetMessage = async (message, commitRequestId, headers, destination, params, eventDetail, histTimerEnd) => {
+  const log = logger.child({ commitRequestId })
+  const location = { module: 'GetTransferHandler', method: 'processFxGetMessage', path: '' }
+  const actionLetter = (() => {
+    switch (eventDetail.action) {
+      case TransferEventAction.FX_COMMIT: return Enum.Events.ActionLetter.fxCommit
+      case TransferEventAction.FX_RESERVE: return Enum.Events.ActionLetter.fxReserve
+      case TransferEventAction.FX_REJECT: return Enum.Events.ActionLetter.fxReject
+      case TransferEventAction.FX_ABORT: return Enum.Events.ActionLetter.fxAbort
+      case TransferEventAction.FX_FORWARDED: return Enum.Events.ActionLetter.fxForwarded
+      default: return Enum.Events.ActionLetter.unknown
+    }
+  })()
+
+  const fxGetService = new FxGetService({
+    log,
+    Config,
+    Validator,
+    FxTransferModel,
+    Participant,
+    Kafka,
+    params,
+    externalParticipantCached,
+    FxTransferErrorModel
+  })
+
+  const isProxiedGet = fxGetService.isProxiedGet(headers)
+  const isExternalParticipant = await fxGetService.getExternalParticipant(destination)
+
+  // Validate participant
+  if (!await fxGetService.validateParticipant(message.value.from, isProxiedGet)) {
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    return true
+  }
+
+  // Get FX transfer details
+  let fxTransfer
+  try {
+    if (isProxiedGet) {
+      fxTransfer = await fxGetService.getProxiedFxTransferDetails(commitRequestId)
+    } else {
+      fxTransfer = await fxGetService.getFxTransferDetails(commitRequestId, eventDetail.functionality)
+    }
+  } catch (err) {
+    // Error already handled in service, just return
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    return true
+  }
+
+  if (!fxTransfer) {
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    try {
+      await fxGetService.validateNotFoundError(commitRequestId, eventDetail.functionality, isProxiedGet, headers?.[Enum.Http.Headers.FSPIOP.PROXY], message.value.from)
+    } catch (err) {
+      // Error already handled in service
+    }
+    return true
+  }
+
+  // Interscheme gets are only allowed to be triggered by hubs.
+  // Assumption is that proxy headers will have logic outside of central-ledger to ensure they are
+  // only added passing through a proxy and can not be added by a participant directly.
+  // This code only executes in a regional scheme between two buffer schemes.
+
+  // Each hub will only ask the adjacent scheme for the transfer details.
+  // If the regional scheme also has the transfer in a RESERVED_FORWARDED state then do nothing
+  // The self heal in the regional scheme will resolve the RESERVED_FORWARDED state
+  // and then the initiating buffer hub will be able to retrieve the transfer details successfully in the next retry,
+  // which will trigger the correct notification callback to resolve the RESERVED_FORWARDED state in the initiating buffer hub's scheme.
+  if (isProxiedGet && isExternalParticipant && fxTransfer && fxTransfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForFxReservedForwarded--${actionLetter}4`))
+    // Do nothing
+    return true
+  }
+
+  // Check if we should reply with error callback
+  const replyWithErrorCallback = fxGetService.shouldReplyWithErrorCallback(fxTransfer)
+  if (isProxiedGet && replyWithErrorCallback) {
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    return await fxGetService.handleErrorCallback(fxTransfer, commitRequestId, eventDetail.functionality)
+  }
+
+  // Validate participant for commit request
+  try {
+    await fxGetService.validateParticipantCommitRequest(message.value.from, commitRequestId, isProxiedGet)
+  } catch (err) {
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    return true
+  }
+
+  // Create payload and proceed
+  message.value.content.payload = fxGetService.createFxTransferPayload(fxTransfer)
+
+  if (isProxiedGet) {
+    await fxGetService.handleProxiedGetSuccess(fxTransfer, commitRequestId)
+  } else {
+    await fxGetService.handleStandardGetSuccess(eventDetail)
+  }
+
+  histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+  return true
+}
+
+const processGetMessage = async (message, transferId, headers, destination, params, eventDetail, histTimerEnd) => {
+  const log = logger.child({ transferId })
+  const location = { module: 'GetTransferHandler', method: 'processGetMessage', path: '' }
+  const actionLetter = (() => {
+    switch (eventDetail.action) {
+      case TransferEventAction.FX_COMMIT: return Enum.Events.ActionLetter.fxCommit
+      case TransferEventAction.FX_RESERVE: return Enum.Events.ActionLetter.fxReserve
+      case TransferEventAction.FX_REJECT: return Enum.Events.ActionLetter.fxReject
+      case TransferEventAction.FX_ABORT: return Enum.Events.ActionLetter.fxAbort
+      case TransferEventAction.FX_FORWARDED: return Enum.Events.ActionLetter.fxForwarded
+      default: return Enum.Events.ActionLetter.unknown
+    }
+  })()
+
+  const getService = new GetService({
+    log,
+    Config,
+    Validator,
+    TransferService,
+    Participant,
+    Kafka,
+    params,
+    externalParticipantCached,
+    TransferErrorModel
+  })
+
+  const isProxiedGet = getService.isProxiedGet(headers)
+  const isExternalParticipant = await getService.getExternalParticipant(destination)
+
+  // Validate participant
+  if (!await getService.validateParticipant(message.value.from, isProxiedGet)) {
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    return true
+  }
+
+  // Get transfer details
+  let transfer
+  try {
+    if (isProxiedGet) {
+      transfer = await getService.getProxiedTransferDetails(transferId)
+    } else {
+      transfer = await getService.getTransferDetails(transferId, eventDetail.functionality)
+    }
+  } catch (err) {
+    // Error already handled in service, just return
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    return true
+  }
+
+  if (!transfer) {
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    try {
+      await getService.validateNotFoundError(transferId, eventDetail.functionality, isProxiedGet, headers?.[Enum.Http.Headers.FSPIOP.PROXY], message.value.from)
+    } catch (err) {
+      // Error already handled in service
+    }
+    return true
+  }
+
+  // Interscheme gets are only allowed to be triggered by hubs.
+  // Assumption is that proxy headers will have logic outside of central-ledger to ensure they are
+  // only added passing through a proxy and can not be added by a participant directly.
+  // This code only executes in a regional scheme between two buffer schemes.
+
+  // Each hub will only ask the adjacent scheme for the transfer details.
+  // If the regional scheme also has the transfer in a RESERVED_FORWARDED state then do nothing
+  // The self heal in the regional scheme will resolve the RESERVED_FORWARDED state
+  // and then the initiating buffer hub will be able to retrieve the transfer details successfully in the next retry,
+  // which will trigger the correct notification callback to resolve the RESERVED_FORWARDED state in the initiating buffer hub's scheme.
+  if (isProxiedGet && isExternalParticipant && transfer && transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForReservedForwarded--${actionLetter}4`))
+    // Do nothing
+    return true
+  }
+
+  // Check if we should reply with error callback
+  const replyWithErrorCallback = getService.shouldReplyWithErrorCallback(transfer)
+  if (isProxiedGet && replyWithErrorCallback) {
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    return await getService.handleErrorCallback(transfer, transferId, eventDetail.functionality)
+  }
+
+  // Validate participant for transfer
+  try {
+    await getService.validateParticipantTransfer(message.value.from, transferId, isProxiedGet)
+  } catch (err) {
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    return true
+  }
+
+  // Create payload and proceed
+  message.value.content.payload = getService.createTransferPayload(transfer)
+
+  if (isProxiedGet) {
+    await getService.handleProxiedGetSuccess(transfer, transferId)
+  } else {
+    await getService.handleStandardGetSuccess(eventDetail)
+  }
+
+  histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+  return true
+}
+
 /**
  * @function getTransfer
  *
@@ -510,283 +715,20 @@ const getTransfer = async (error, messages) => {
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `getTransfer:${action}` }))
 
-    const actionLetter = Enum.Events.ActionLetter.get
     const params = { message, kafkaTopic, span, consumer: Consumer, producer: Producer }
     const eventDetail = { functionality: TransferEventType.NOTIFICATION, action }
-
-    Util.breadcrumb(location, { path: 'validationFailed' })
 
     // When the GET is triggered in a interscheme timeout scenario the source will be
     // the hub participant. Since they are not considered an external participant, we need to
     // check the presence of the proxy header to determine if this is a proxied GET from an hub
-    const proxy = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.PROXY]
-    const isProxiedGet = proxy ? true : null
-
-    if (!isProxiedGet && !await Validator.validateParticipantByName(message.value.from)) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, hubName: Config.HUB_NAME })
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
-    }
-
-    // Check if destination is an external participant
-    const destination = message.value.content.headers?.[Enum.Http.Headers.FSPIOP.DESTINATION]
-    const isExternalParticipant = destination ? await externalParticipantCached.getByName(destination) : null
+    const headers = message.value.content.headers
+    const destination = headers?.[Enum.Http.Headers.FSPIOP.DESTINATION]
 
     if (isFx) {
-      let fxTransfer
-      if (isProxiedGet) {
-        fxTransfer = await FxTransferModel.fxTransfer.getAllDetailsByCommitRequestId(transferIdOrCommitRequestId)
-      } else {
-        fxTransfer = await FxTransferModel.fxTransfer.getByIdLight(transferIdOrCommitRequestId)
-      }
-
-      // If scheme has no record of the fxTransfer, return error 3208 before any other check.
-      // This is an edge case where data loss might have occurred in the upstream scheme,
-      // and the downstream hub is trying to retrieve the fxTransfer details in order to
-      // release reserved positions.
-      if (!fxTransfer) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
-
-        // If this is a proxied GET, add the source hub as an external participant so we can direct the callback to that hub
-        if (isProxiedGet && proxy) {
-          await facade.getExternalParticipantIdByNameOrCreate({ name: message.value.from, proxyId: proxy })
-        }
-
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided commitRequest ID was not found on the server.')
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
-      }
-
-      // Interscheme gets are only allowed to be triggered by hubs.
-      // Assumption is that proxy headers will have logic outside of central-ledger to ensure they are
-      // only added passing through a proxy and can not be added by a participant directly.
-      // This code only executes in a regional scheme between two buffer schemes.
-
-      // Each hub will only ask the adjacent scheme for the transfer details.
-      // If the regional scheme also has the transfer in a RESERVED_FORWARDED state then do nothing
-      // The self heal in the regional scheme will resolve the RESERVED_FORWARDED state
-      // and then the initiating buffer hub will be able to retrieve the transfer details successfully in the next retry,
-      // which will trigger the correct notification callback to resolve the RESERVED_FORWARDED state in the initiating buffer hub's scheme.
-      if (isProxiedGet && isExternalParticipant && fxTransfer && fxTransfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForFxReservedForwarded--${actionLetter}4`))
-        // Do nothing
-        return true
-      }
-
-      // Check if fxTransfer state is not COMMITTED/RESERVED/SETTLED
-      const replyWithPutErrorCallback = fxTransfer.transferStateEnumeration !== TransferState.COMMITTED &&
-        fxTransfer.transferStateEnumeration !== TransferState.RESERVED &&
-        fxTransfer.transferStateEnumeration !== TransferState.SETTLED
-
-      // Special scenario for interscheme fxTransfers where we need to reply with the original error callback
-      // in order to resolve RESERVED_FORWARDED fxTransfers in other regional/buffer schemes.
-      // i.e Will trigger an interscheme PUT /fxTransfers/{id}/error callback to
-      // inform the original initiating fsp of the error that caused the fxTransfer to not
-      // be in a COMMITTED/RESERVED/SETTLED state, so that the external hub can
-      // resolve the RESERVED_FORWARDED state in their scheme.
-      if (isProxiedGet && replyWithPutErrorCallback) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}5`))
-        // Get the fxTransfer error details
-        const fxTransferError = await FxTransferErrorModel.getByCommitRequestId(transferIdOrCommitRequestId)
-        if (fxTransferError) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}6`))
-          // Action choice tells notification handler what to do.
-          // In this case inform payer.
-          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FX_TIMEOUT_RECEIVED }
-
-          const errorPayload = {
-            errorInformation: {
-              errorCode: fxTransferError.errorCode,
-              errorDescription: fxTransferError.errorDescription
-            }
-          }
-          if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
-            message.value.content.uriParams = { id: transferIdOrCommitRequestId }
-          }
-          await Kafka.proceed(
-            Config.KAFKA_CONFIG,
-            params, {
-              consumerCommit,
-              fspiopError: errorPayload,
-              eventDetail: errorEventDetail,
-              fromSwitch,
-              hubName: Config.HUB_NAME,
-              toDestination: fxTransfer.externalInitiatingFspName
-            })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
-        }
-      }
-
-      // Ignore validation for proxied GETs since they are triggered by the hub and not an external participant,
-      // so the hub might be trying to retrieve fxTransfer details for a fxTransfer they are not a party of in order
-      // to trigger the correct notification callback to resolve a RESERVED_FORWARDED state in another scheme.
-      if (!isProxiedGet && !await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
-      }
-
-      // If execution continues after this point we are sure that either this
-      // is not a proxied GET or it is a proxied GET that an external hub is asking
-      // for a status update, so we can proceed with retrieving
-      // the fxTransfer details and returning them in the payload.
-      // i.e Will trigger a PUT /fxTransfers/{id} callback to inform the original
-      // payer of the transfer details or a external hub of the transfer details in order to resolve a RESERVED_FORWARDED state in another scheme.
-      Util.breadcrumb(location, { path: 'validationPassed' })
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
-      message.value.content.payload = TransferObjectTransform.toFulfil(fxTransfer, true)
-
-      if (isProxiedGet) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnInterschemePassedFxTransfer--${actionLetter}7`))
-        await Kafka.proceed(
-          Config.KAFKA_CONFIG,
-          params,
-          {
-            consumerCommit,
-            eventDetail,
-            fromSwitch,
-            hubName: Config.HUB_NAME,
-            // Hubs trigger interscheme GETs, but the transfer details need to be sent to the original payer
-            // which can be found as the external initiating FSP in the fxTransfer details.
-            toDestination: fxTransfer.externalInitiatingFspName
-          })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
-      }
+      return await processFxGetMessage(message, transferIdOrCommitRequestId, headers, destination, params, eventDetail, histTimerEnd)
     } else {
-      let transfer
-      if (isProxiedGet) {
-        transfer = await TransferService.getById(transferIdOrCommitRequestId)
-      } else {
-        transfer = await TransferService.getByIdLight(transferIdOrCommitRequestId)
-      }
-
-      // If scheme has no record of the transfer, return error 3208 before any other check.
-      // This is an edge case where data loss might have occurred in the upstream scheme,
-      // and the downstream hub is trying to retrieve the transfer details in order to
-      // release reserved positions.
-      if (!transfer) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
-
-        // If this is a proxied GET, add the source hub as an external participant so we can direct the callback to that hub
-        if (isProxiedGet && proxy) {
-          await facade.getExternalParticipantIdByNameOrCreate({ name: message.value.from, proxyId: proxy })
-        }
-
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.')
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
-      }
-
-      // Interscheme gets are only allowed to be triggered by hubs.
-      // Assumption is that proxy headers will have logic outside of central-ledger to ensure they are
-      // only added passing through a proxy and can not be added by a participant directly.
-      // This code only executes in a regional scheme between two buffer schemes.
-
-      // Each hub will only ask the adjacent scheme for the transfer details.
-      // If the regional scheme also has the transfer in a RESERVED_FORWARDED state then do nothing
-      // The self heal in the regional scheme will resolve the RESERVED_FORWARDED state
-      // and then the initiating buffer hub will be able to retrieve the transfer details successfully in the next retry,
-      // which will trigger the correct notification callback to resolve the RESERVED_FORWARDED state in the initiating buffer hub's scheme.
-      if (isProxiedGet && isExternalParticipant && transfer && transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForReservedForwarded--${actionLetter}4`))
-        // Do nothing
-        return true
-      }
-
-      // Check if transfer state is not COMMITTED/RESERVED/SETTLED
-      const replyWithPutErrorCallback = transfer.transferStateEnumeration !== TransferState.COMMITTED &&
-        transfer.transferStateEnumeration !== TransferState.RESERVED &&
-        transfer.transferStateEnumeration !== TransferState.SETTLED
-
-      // Special scenario for interscheme transfers where we need to reply with the original error callback
-      // in order to resolve RESERVED_FORWARDED transfers in other regional/buffer schemes.
-      // i.e Will trigger an interscheme PUT /transfers/{id}/error callback to
-      // inform the original payer of the error that caused the transfer to not
-      // be in a COMMITTED/RESERVED/SETTLED state, so that the external hub can
-      // resolve the RESERVED_FORWARDED state in their scheme.
-      if (isProxiedGet && replyWithPutErrorCallback) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}5`))
-        const transferError = await TransferErrorModel.getByTransferId(transferIdOrCommitRequestId)
-        if (transferError) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}6`))
-          // Action choice tells notification handler what to do.
-          // In this case inform payer.
-          const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.TIMEOUT_RECEIVED }
-
-          // Construct the transfer error payload from the stored error details
-          const errorPayload = {
-            errorInformation: {
-              errorCode: transferError.errorCode,
-              errorDescription: transferError.errorDescription
-            }
-          }
-          if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
-            message.value.content.uriParams = { id: transferIdOrCommitRequestId }
-          }
-          await Kafka.proceed(
-            Config.KAFKA_CONFIG,
-            params,
-            {
-              consumerCommit,
-              fspiopError: errorPayload,
-              eventDetail: errorEventDetail,
-              fromSwitch,
-              hubName: Config.HUB_NAME,
-              // Hubs trigger interscheme GETs, but the fulfil error needs to be sent to the original payer
-              // which can be found as the external payer in the transfer details.
-              toDestination: transfer.externalPayerName
-            })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
-        }
-      }
-
-      // Ignore validation for proxied GETs since they are triggered by an external hub trying to retrieve transfer
-      // details for a transfer they are not a party of in order
-      // to trigger the correct notification callback to resolve a RESERVED_FORWARDED state in another scheme.
-      if (!isProxiedGet && !await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
-      }
-
-      // If execution continues after this point we are sure that either this
-      // is not a proxied GET or it is a proxied GET that an external hub is asking
-      // for a status update, so we can proceed with retrieving
-      // the transfer details and returning them in the payload.
-      // i.e Will trigger a PUT /transfers/{id} callback to inform the original
-      // payer of the transfer details or a external hub of the transfer details in order to resolve a RESERVED_FORWARDED state in another scheme.
-      Util.breadcrumb(location, { path: 'validationPassed' })
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
-      message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
-
-      if (isProxiedGet) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnInterschemePassedTransfer--${actionLetter}7`))
-        await Kafka.proceed(
-          Config.KAFKA_CONFIG,
-          params,
-          {
-            consumerCommit,
-            eventDetail,
-            fromSwitch,
-            hubName: Config.HUB_NAME,
-            // Hubs trigger interscheme GETs, but the transfer details need to be sent to the original payer
-            // which can be found as the external payer in the transfer details.
-            toDestination: transfer.externalPayerName
-          })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
-      }
+      return await processGetMessage(message, transferIdOrCommitRequestId, headers, destination, params, eventDetail, histTimerEnd)
     }
-
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    return true
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)

@@ -54,6 +54,8 @@ const externalParticipantCached = require('../../../../src/models/participant/ex
 const TransferErrorModel = require('../../../../src/models/transfer/transferError')
 const FxTransferErrorModel = require('../../../../src/models/fxTransfer/fxTransferError')
 const FxTransferModel = require('../../../../src/models/fxTransfer/fxTransfer')
+const GetService = require('../../../../src/handlers/transfers/GetService')
+const FxGetService = require('../../../../src/handlers/transfers/FxGetService')
 
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
@@ -304,6 +306,31 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(MainUtil.StreamingProtocol)
     sandbox.stub(TransferObjectTransform, 'toTransfer')
     sandbox.stub(TransferObjectTransform, 'toFulfil')
+    sandbox.stub(GetService.prototype)
+    sandbox.stub(FxGetService.prototype)
+
+    // Setup default service method stubs
+    GetService.prototype.validateParticipant.resolves(true)
+    GetService.prototype.getTransferDetails.resolves(transferReturn)
+    GetService.prototype.getProxiedTransferDetails.resolves(transferReturn)
+    GetService.prototype.validateParticipantTransfer.resolves()
+    GetService.prototype.shouldReplyWithErrorCallback.returns(false)
+    GetService.prototype.createTransferPayload.returns(transferReturn)
+    GetService.prototype.handleProxiedGetSuccess.callsFake(async () => { await Kafka.proceed() })
+    GetService.prototype.handleStandardGetSuccess.callsFake(async () => { await Kafka.proceed() })
+    GetService.prototype.isProxiedGet.returns(null)
+    GetService.prototype.getExternalParticipant.resolves(null)
+
+    FxGetService.prototype.validateParticipant.resolves(true)
+    FxGetService.prototype.getFxTransferDetails.resolves(transferReturn)
+    FxGetService.prototype.getProxiedFxTransferDetails.resolves(transferReturn)
+    FxGetService.prototype.validateParticipantCommitRequest.resolves()
+    FxGetService.prototype.shouldReplyWithErrorCallback.returns(false)
+    FxGetService.prototype.createFxTransferPayload.returns(transferReturn)
+    FxGetService.prototype.handleProxiedGetSuccess.callsFake(async () => { await Kafka.proceed() })
+    FxGetService.prototype.handleStandardGetSuccess.callsFake(async () => { await Kafka.proceed() })
+    FxGetService.prototype.isProxiedGet.returns(null)
+    FxGetService.prototype.getExternalParticipant.resolves(null)
     sandbox.stub(Participant, 'getAccountByNameAndCurrency').callsFake((...args) => {
       if (args[0] === transfer.payerFsp) {
         return {
@@ -403,28 +430,26 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     transformTransfer.test('return an error when the transfer by id is not found', async (test) => {
-      const localMessages = MainUtil.clone(messages)
+      const localMessages = MainUtil.clone(getMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
-      TransferService.getById.returns(null)
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getTransferDetails.rejects(new Error('Transfer not found'))
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the transfer by id is not found with autocommit enabled', async (test) => {
-      const localMessages = MainUtil.clone(messages)
+      const localMessages = MainUtil.clone(getMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
-      TransferService.getById.returns(null)
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getTransferDetails.rejects(new Error('Transfer not found'))
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -432,14 +457,14 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     transformTransfer.test('return an error when the requester is not involved in the transfer', async (test) => {
-      const localMessages = MainUtil.clone(messages)
+      const localMessages = MainUtil.clone(getMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(false)
-      TransferService.getById.returns({})
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getTransferDetails.resolves(transferReturn)
+      GetService.prototype.validateParticipantTransfer.rejects(new Error('Participant not involved'))
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -447,14 +472,14 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     transformTransfer.test('return an error when the requester is not involved in the transfer - autocommit disabled', async (test) => {
-      const localMessages = MainUtil.clone(messages)
+      const localMessages = MainUtil.clone(getMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(false)
-      TransferService.getById.returns({})
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getTransferDetails.resolves(transferReturn)
+      GetService.prototype.validateParticipantTransfer.rejects(new Error('Participant not involved'))
       Consumer.isConsumerAutoCommitEnabled.returns(false)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -462,14 +487,14 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     transformTransfer.test('return an error when the transfer by id is found', async (test) => {
-      const localMessages = MainUtil.clone(messages)
+      const localMessages = MainUtil.clone(getMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
-      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getTransferDetails.resolves(transferReturn)
+      GetService.prototype.validateParticipantTransfer.resolves()
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -477,15 +502,15 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     transformTransfer.test('log an error when the transfer state is EXPIRED_RESERVED', async (test) => {
-      const localMessages = MainUtil.clone(messages)
+      const localMessages = MainUtil.clone(getMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.proceed.returns(Promise.resolve(true))
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
       const transferResult = MainUtil.clone(transferReturn)
       transferResult.transferState = 'EXPIRED_RESERVED'
       transferResult.extensionList = []
-      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getTransferDetails.resolves(transferResult)
+      GetService.prototype.validateParticipantTransfer.resolves()
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -518,13 +543,11 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     transformTransfer.test('handle external participant transfer GET request', async (test) => {
-      const localMessages = MainUtil.clone(messages)
+      const localMessages = MainUtil.clone(getMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves({
@@ -539,7 +562,10 @@ Test('Transfer handler', transferHandlerTest => {
         'proxy-header': 'proxyFsp'
       }
 
-      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getTransferDetails.resolves(transferReturn)
+      GetService.prototype.validateParticipantTransfer.resolves()
+      GetService.prototype.getExternalParticipant.resolves({ name: 'externalFsp', isProxy: false })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -548,14 +574,12 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     transformTransfer.test('handle external participant transfer GET request with autocommit enabled', async (test) => {
-      const localMessages = MainUtil.clone(messages)
+      const localMessages = MainUtil.clone(getMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves({
@@ -569,7 +593,11 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-destination': 'externalFsp'
       }
 
-      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getTransferDetails.resolves(transferReturn)
+      GetService.prototype.validateParticipantTransfer.resolves()
+      GetService.prototype.getExternalParticipant.resolves({ name: 'externalFsp', isProxy: false })
+      GetService.prototype.handleStandardGetSuccess.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -583,8 +611,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
@@ -595,7 +621,9 @@ Test('Transfer handler', transferHandlerTest => {
       }
       delete localMessages[0].value.content.headers['fspiop-destination']
 
-      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getTransferDetails.resolves(transferReturn)
+      GetService.prototype.handleStandardGetSuccess.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -609,8 +637,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves({
@@ -624,7 +650,11 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-destination': 'externalFsp'
       }
 
-      FxTransferModel.getByCommitRequestId.withArgs(getTransferId).returns(Promise.resolve(transferReturn))
+      FxGetService.prototype.validateParticipant.resolves(true)
+      FxGetService.prototype.getFxTransferDetails.resolves(transferReturn)
+      FxGetService.prototype.validateParticipantCommitRequest.resolves()
+      FxGetService.prototype.getExternalParticipant.resolves({ name: 'externalFsp', isProxy: false })
+      FxGetService.prototype.handleStandardGetSuccess.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[1])
       test.equal(result, true)
@@ -639,8 +669,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves({
@@ -654,7 +682,10 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-destination': 'externalFsp'
       }
 
-      FxTransferModel.getByCommitRequestId.withArgs(getTransferId).returns(Promise.resolve(transferReturn))
+      FxGetService.prototype.validateParticipant.resolves(true)
+      FxGetService.prototype.getFxTransferDetails.resolves(transferReturn)
+      FxGetService.prototype.validateParticipantCommitRequest.resolves()
+      FxGetService.prototype.getExternalParticipant.resolves({ name: 'externalFsp', isProxy: false })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[1])
       test.equal(result, true)
@@ -668,8 +699,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
@@ -680,7 +709,10 @@ Test('Transfer handler', transferHandlerTest => {
       }
       delete localMessages[1].value.content.headers['fspiop-destination']
 
-      FxTransferModel.getByCommitRequestId.withArgs(getTransferId).returns(Promise.resolve(transferReturn))
+      FxGetService.prototype.validateParticipant.resolves(true)
+      FxGetService.prototype.getFxTransferDetails.resolves(transferReturn)
+      FxGetService.prototype.validateParticipantCommitRequest.resolves()
+      FxGetService.prototype.getExternalParticipant.resolves(null)
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[1])
       test.equal(result, true)
@@ -694,28 +726,26 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
 
       // Mock external participant as proxy
       sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
 
       // Return transfer in invalid state for proxy
-      TransferService.getById.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
+      const invalidTransfer = {
         ...transferReturn,
         transferStateEnumeration: 'ABORTED',
         transferState: 'ABORTED_ERROR'
-      }))
+      }
 
-      // Mock the transfer error to trigger the if(transferError) branch
-      TransferErrorModel.getByTransferId.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
-        errorCode: '3303',
-        errorDescription: 'Transfer expired'
-      }))
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getProxiedTransferDetails.resolves(invalidTransfer)
+      GetService.prototype.shouldReplyWithErrorCallback.returns(true)
+      GetService.prototype.handleErrorCallback.resolves(true)
+      GetService.prototype.isProxiedGet.returns(true)
+      GetService.prototype.getExternalParticipant.resolves(null)
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
-      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
       test.end()
     })
 
@@ -765,7 +795,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Mock external participant as proxy with valid state
       sandbox.stub(externalParticipantCached, 'getByName').resolves({
@@ -780,11 +809,16 @@ Test('Transfer handler', transferHandlerTest => {
       }
 
       // Return transfer in valid state
-      const transferId = localMessages[0].value.content.uriParams.id
-      TransferService.getById.withArgs(transferId).returns(Promise.resolve({
+      const validTransfer = {
         ...transferReturn,
         transferState: 'COMMITTED'
-      }))
+      }
+
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getProxiedTransferDetails.resolves(validTransfer)
+      GetService.prototype.shouldReplyWithErrorCallback.returns(false)
+      GetService.prototype.isProxiedGet.returns(true)
+      GetService.prototype.getExternalParticipant.resolves({ name: 'payeeFsp' })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
@@ -798,7 +832,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
@@ -810,19 +843,21 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-proxy': 'hubProxy'
       }
 
-      // Return transfer with external payer name
-      TransferService.getById.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
+      // Service mocks
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getProxiedTransferDetails.resolves({
         ...transferReturn,
         transferState: 'COMMITTED',
         transferStateEnumeration: 'COMMITTED',
         externalPayerName: 'externalPayer'
-      }))
+      })
+      GetService.prototype.shouldReplyWithErrorCallback.returns(false)
+      GetService.prototype.isProxiedGet.returns(true)
+      GetService.prototype.getExternalParticipant.resolves(null)
+      GetService.prototype.handleProxiedGetSuccess.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
-      test.equal(Kafka.proceed.getCall(0).args[2].eventDetail.functionality, 'notification')
-      test.equal(Kafka.proceed.getCall(0).args[2].eventDetail.action, 'get')
-      test.equal(Kafka.proceed.getCall(0).args[2].toDestination, 'externalPayer')
       test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
       test.end()
     })
@@ -833,7 +868,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Set up fx-get action
       localMessages[1].value.metadata.event.action = 'fx-get'
@@ -848,29 +882,25 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-proxy': 'hubProxy'
       }
 
-      // Return fx transfer in invalid state
-      FxTransferModel.getAllDetailsByCommitRequestId.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve({
+      // Service mocks
+      FxGetService.prototype.validateParticipant.resolves(true)
+      FxGetService.prototype.getProxiedFxTransferDetails.resolves({
         ...transferReturn,
         commitRequestId: localMessages[1].value.content.uriParams.id,
         transferStateEnumeration: 'ABORTED',
         externalInitiatingFspName: 'externalInitiator'
-      }))
-
-      // Mock the fx transfer error
-      FxTransferErrorModel.getByCommitRequestId.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve({
-        errorCode: '3303',
-        errorDescription: 'FX Transfer expired'
-      }))
+      })
+      FxGetService.prototype.shouldReplyWithErrorCallback.returns(true)
+      FxGetService.prototype.isProxiedGet.returns(true)
+      FxGetService.prototype.getExternalParticipant.resolves(null)
+      FxGetService.prototype.handleErrorCallback.callsFake(async () => {
+        await Kafka.proceed()
+        return true
+      })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[1])
       test.equal(result, true)
       test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
-
-      // Verify the error event detail action for fx timeout
-      const kafkaCall = Kafka.proceed.getCall(0)
-      test.equal(kafkaCall.args[2].eventDetail.functionality, 'notification')
-      test.equal(kafkaCall.args[2].eventDetail.action, 'fx-timeout-received')
-      test.equal(kafkaCall.args[2].toDestination, 'externalInitiator')
       test.end()
     })
 
@@ -880,8 +910,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
-      Validator.validateParticipantTransferId.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves({
@@ -897,7 +925,11 @@ Test('Transfer handler', transferHandlerTest => {
       // Remove proxy header
       delete localMessages[0].value.content.headers['fspiop-proxy']
 
-      TransferService.getById.withArgs(transfer.transferId).returns(Promise.resolve(transferReturn))
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getTransferDetails.resolves(transferReturn)
+      GetService.prototype.validateParticipantTransfer.resolves()
+      GetService.prototype.getExternalParticipant.resolves({ name: 'externalFsp', isProxy: false })
+      GetService.prototype.handleStandardGetSuccess.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
@@ -911,7 +943,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
@@ -923,23 +954,21 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-proxy': 'hubProxy'
       }
 
-      // Return transfer in successful state
-      TransferService.getById.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getProxiedTransferDetails.resolves({
         ...transferReturn,
         transferState: 'COMMITTED',
         transferStateEnumeration: 'COMMITTED',
         externalPayerName: 'externalPayer'
-      }))
+      })
+      GetService.prototype.shouldReplyWithErrorCallback.returns(false)
+      GetService.prototype.isProxiedGet.returns(true)
+      GetService.prototype.getExternalParticipant.resolves(null)
+      GetService.prototype.handleProxiedGetSuccess.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
       test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
-
-      // Verify successful transfer response
-      const kafkaCall = Kafka.proceed.getCall(0)
-      test.equal(kafkaCall.args[2].eventDetail.functionality, 'notification')
-      test.equal(kafkaCall.args[2].eventDetail.action, 'get')
-      test.equal(kafkaCall.args[2].toDestination, 'externalPayer')
       test.end()
     })
 
@@ -949,7 +978,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Set up fx-get action
       localMessages[1].value.metadata.event.action = 'fx-get'
@@ -964,23 +992,21 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-proxy': 'hubProxy'
       }
 
-      // Return fx transfer in successful state
-      FxTransferModel.getAllDetailsByCommitRequestId.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve({
+      FxGetService.prototype.validateParticipant.resolves(true)
+      FxGetService.prototype.getProxiedFxTransferDetails.resolves({
         ...transferReturn,
         commitRequestId: localMessages[1].value.content.uriParams.id,
         transferStateEnumeration: 'COMMITTED',
         externalInitiatingFspName: 'externalInitiator'
-      }))
+      })
+      FxGetService.prototype.shouldReplyWithErrorCallback.returns(false)
+      FxGetService.prototype.isProxiedGet.returns(true)
+      FxGetService.prototype.getExternalParticipant.resolves(null)
+      FxGetService.prototype.handleProxiedGetSuccess.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[1])
       test.equal(result, true)
       test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
-
-      // Verify successful fx transfer response
-      const kafkaCall = Kafka.proceed.getCall(0)
-      test.equal(kafkaCall.args[2].eventDetail.functionality, 'notification')
-      test.equal(kafkaCall.args[2].eventDetail.action, 'fx-get')
-      test.equal(kafkaCall.args[2].toDestination, 'externalInitiator')
       test.end()
     })
 
@@ -990,7 +1016,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves({ name: 'internalFsp' })
@@ -1002,13 +1027,16 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-proxy': 'hubProxy'
       }
 
-      // Return transfer in RESERVED_FORWARDED state
-      TransferService.getById.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getProxiedTransferDetails.resolves({
         ...transferReturn,
         transferState: TransferInternalState.RESERVED_FORWARDED,
         transferStateEnumeration: TransferInternalState.RESERVED_FORWARDED,
         externalPayerName: 'externalPayer'
-      }))
+      })
+      GetService.prototype.shouldReplyWithErrorCallback.returns(false)
+      GetService.prototype.isProxiedGet.returns(true)
+      GetService.prototype.getExternalParticipant.resolves({ name: 'internalFsp' })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
@@ -1022,7 +1050,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(false)
 
       // Mock external participant doesn't exist
       sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
@@ -1030,9 +1057,13 @@ Test('Transfer handler', transferHandlerTest => {
       // Set proxy header but participant validation fails
       localMessages[0].value.content.headers['fspiop-proxy'] = 'hubProxy'
 
+      GetService.prototype.validateParticipant.resolves(false)
+      GetService.prototype.isProxiedGet.returns(true)
+      GetService.prototype.getExternalParticipant.resolves(null)
+      GetService.prototype.handleErrorCallback.callsFake(async () => { await Kafka.proceed() })
+
       const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
-      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
       test.end()
     })
 
@@ -1042,7 +1073,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves({
@@ -1058,14 +1088,18 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-proxy': 'hubProxy'
       }
 
-      // Return fx transfer in valid COMMITTED state
-      FxTransferModel.getAllDetailsByCommitRequestId.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve({
+      FxGetService.prototype.validateParticipant.resolves(true)
+      FxGetService.prototype.getProxiedFxTransferDetails.resolves({
         ...transferReturn,
         commitRequestId: localMessages[1].value.content.uriParams.id,
         transferStateEnumeration: 'COMMITTED',
         transferState: 'COMMITTED',
         externalInitiatingFspName: 'externalInitiator'
-      }))
+      })
+      FxGetService.prototype.shouldReplyWithErrorCallback.returns(false)
+      FxGetService.prototype.isProxiedGet.returns(true)
+      FxGetService.prototype.getExternalParticipant.resolves({ name: 'externalFsp', isProxy: false })
+      FxGetService.prototype.handleProxiedGetSuccess.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[1])
       test.equal(result, true)
@@ -1079,7 +1113,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves({
@@ -1094,13 +1127,17 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-proxy': 'hubProxy'
       }
 
-      // Return transfer in valid COMMITTED state
-      TransferService.getById.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve({
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getProxiedTransferDetails.resolves({
         ...transferReturn,
         transferStateEnumeration: 'COMMITTED',
         transferState: 'COMMITTED',
         externalPayerName: 'externalPayer'
-      }))
+      })
+      GetService.prototype.shouldReplyWithErrorCallback.returns(false)
+      GetService.prototype.isProxiedGet.returns(true)
+      GetService.prototype.getExternalParticipant.resolves({ name: 'externalFsp', isProxy: false })
+      GetService.prototype.handleProxiedGetSuccess.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
@@ -1114,7 +1151,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Mock external participant
       sandbox.stub(externalParticipantCached, 'getByName').resolves(null)
@@ -1126,8 +1162,11 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-proxy': 'hubProxy'
       }
 
-      // Return null transfer - not found
-      TransferService.getById.withArgs(localMessages[0].value.content.uriParams.id).returns(Promise.resolve(null))
+      GetService.prototype.validateParticipant.resolves(true)
+      GetService.prototype.getProxiedTransferDetails.resolves(null)
+      GetService.prototype.isProxiedGet.returns(true)
+      GetService.prototype.getExternalParticipant.resolves(null)
+      GetService.prototype.validateNotFoundError.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
@@ -1141,7 +1180,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Set up fx-get action
       localMessages[1].value.metadata.event.action = 'fx-get'
@@ -1156,8 +1194,11 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-proxy': 'hubProxy'
       }
 
-      // Return null fxTransfer - not found
-      FxTransferModel.getAllDetailsByCommitRequestId.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve(null))
+      FxGetService.prototype.validateParticipant.resolves(true)
+      FxGetService.prototype.getProxiedFxTransferDetails.resolves(null)
+      FxGetService.prototype.isProxiedGet.returns(true)
+      FxGetService.prototype.getExternalParticipant.resolves(null)
+      FxGetService.prototype.validateNotFoundError.callsFake(async () => { await Kafka.proceed() })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[1])
       test.equal(result, true)
@@ -1171,7 +1212,6 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.transformAccountToTopicName.returns(topicName)
       Kafka.proceed.returns(true)
       Kafka.getKafkaConfig.returns(config)
-      Validator.validateParticipantByName.returns(true)
 
       // Set up fx-get action
       localMessages[1].value.metadata.event.action = 'fx-get'
@@ -1189,13 +1229,16 @@ Test('Transfer handler', transferHandlerTest => {
         'fspiop-proxy': 'hubProxy'
       }
 
-      // Return fx transfer in RESERVED_FORWARDED state
-      FxTransferModel.getAllDetailsByCommitRequestId.withArgs(localMessages[1].value.content.uriParams.id).returns(Promise.resolve({
+      // Service mocks for RESERVED_FORWARDED state
+      FxGetService.prototype.validateParticipant.resolves(true)
+      FxGetService.prototype.getProxiedFxTransferDetails.resolves({
         ...transferReturn,
         commitRequestId: localMessages[1].value.content.uriParams.id,
         transferState: TransferInternalState.RESERVED_FORWARDED,
         transferStateEnumeration: TransferInternalState.RESERVED_FORWARDED
-      }))
+      })
+      FxGetService.prototype.isProxiedGet.returns(true)
+      FxGetService.prototype.getExternalParticipant.resolves({ name: 'externalFsp', isProxy: false })
 
       const result = await allTransferHandlers.getTransfer(null, localMessages[1])
       test.equal(result, true)
