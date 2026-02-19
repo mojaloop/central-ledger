@@ -353,7 +353,7 @@ class FulfilService {
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('Invalid cyril result')
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'validateFulfilment' })
       }
-      this.log.warn(action)
+      this.log.debug('Processing additional handling after invalid fulfilment', { action })
       // emit an extra message - RESERVED_ABORTED if action === Action.RESERVE
       if (action === Action.RESERVE) {
         await this._handleReservedAborted(transfer, apiFSPIOPError)
