@@ -297,7 +297,8 @@ Test('FulfilService Tests -->', fulfilTest => {
         headers,
         payload,
         action: Action.COMMIT,
-        validActionsForRouteValidations: [Action.COMMIT]
+        validActionsForRouteValidations: [Action.COMMIT],
+        hubName: Config.HUB_NAME
       })
       t.true(result)
       t.ok(service.kafkaProceed.notCalled)
@@ -318,7 +319,8 @@ Test('FulfilService Tests -->', fulfilTest => {
         headers,
         payload,
         action: Action.RESERVE,
-        validActionsForRouteValidations: [Action.COMMIT]
+        validActionsForRouteValidations: [Action.COMMIT],
+        hubName: Config.HUB_NAME
       })
       t.true(result)
       t.ok(service.kafkaProceed.notCalled)
@@ -351,7 +353,8 @@ Test('FulfilService Tests -->', fulfilTest => {
           headers,
           payload,
           action: Action.COMMIT,
-          validActionsForRouteValidations: [Action.COMMIT]
+          validActionsForRouteValidations: [Action.COMMIT],
+          hubName: Config.HUB_NAME
         })
         t.fail('Should throw error')
       } catch (err) {
@@ -387,7 +390,8 @@ Test('FulfilService Tests -->', fulfilTest => {
           headers,
           payload,
           action: Action.COMMIT,
-          validActionsForRouteValidations: [Action.COMMIT]
+          validActionsForRouteValidations: [Action.COMMIT],
+          hubName: Config.HUB_NAME
         })
         t.fail('Should throw error')
       } catch (err) {
@@ -424,7 +428,8 @@ Test('FulfilService Tests -->', fulfilTest => {
           headers,
           payload,
           action: Action.RESERVE,
-          validActionsForRouteValidations: [Action.RESERVE]
+          validActionsForRouteValidations: [Action.RESERVE],
+          hubName: Config.HUB_NAME
         })
         t.fail('Should throw error')
       } catch (err) {

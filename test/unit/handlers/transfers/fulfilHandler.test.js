@@ -594,7 +594,7 @@ Test('Transfer handler', transferHandlerTest => {
 
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
-      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response')
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp or hub on the Fulfil callback response')
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
@@ -708,7 +708,7 @@ Test('Transfer handler', transferHandlerTest => {
 
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
-      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response')
+      test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp or hub on the Fulfil callback response')
       test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)

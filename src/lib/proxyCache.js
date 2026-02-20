@@ -155,6 +155,17 @@ const getProxyParticipantAccountDetails = async (fspName, currency) => {
   }
 }
 
+/**
+ * Adds a mapping between a DFSP ID and a Proxy ID in the proxy cache.
+ * @param {string} dfspId - The DFSP ID to map.
+ * @param {string} proxyId - The Proxy ID to map to the DFSP ID.
+ * @returns {Promise<boolean>} True if the mapping was added successfully.
+ */
+const addDfspProxyMapping = async (dfspId, proxyId) => {
+  logger.debug('Adding DFSP to Proxy mapping', { dfspId, proxyId })
+  return getCache().addDfspIdToProxyMapping(dfspId, proxyId)
+}
+
 module.exports = {
   reset, // for testing
   connect,
@@ -162,5 +173,6 @@ module.exports = {
   getCache,
   getFSPProxy,
   getProxyParticipantAccountDetails,
-  checkSameCreditorDebtorProxy
+  checkSameCreditorDebtorProxy,
+  addDfspProxyMapping
 }

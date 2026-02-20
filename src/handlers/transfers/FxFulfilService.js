@@ -79,13 +79,17 @@ class FxFulfilService {
     return fxTransfer
   }
 
-  async validateHeaders({ transfer, headers, payload }) {
+  async validateHeaders({ transfer, headers, payload, hubName }) {
     let fspiopError = null
 
     if (!transfer.counterPartyFspIsProxy && (headers[SOURCE]?.toLowerCase() !== transfer.counterPartyFspName.toLowerCase())) {
       fspiopError = fspiopErrorFactory.fxHeaderSourceValidationError()
     }
-    if (!transfer.initiatingFspIsProxy && (headers[DESTINATION]?.toLowerCase() !== transfer.initiatingFspName.toLowerCase())) {
+    if (
+      !transfer.initiatingFspIsProxy &&
+      (headers[DESTINATION]?.toLowerCase() !== transfer.initiatingFspName.toLowerCase()) &&
+      (headers[DESTINATION]?.toLowerCase() !== hubName?.toLowerCase())
+    ) {
       fspiopError = fspiopErrorFactory.fxHeaderDestinationValidationError()
     }
 

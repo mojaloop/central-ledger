@@ -49,6 +49,7 @@ class FxGetService {
     this.externalParticipantCached = deps.externalParticipantCached
     this.FxTransferErrorModel = deps.FxTransferErrorModel
     this.transform = deps.transform || TransferObjectTransform
+    this.proxyCache = deps.ProxyCache
   }
 
   async getFxTransferDetails (commitRequestId, functionality) {
@@ -116,6 +117,7 @@ class FxGetService {
     // If this is a proxied GET, add the source hub as an external participant so we can direct the callback to that hub
     if (isProxiedGet && proxy) {
       await facade.getExternalParticipantIdByNameOrCreate({ name: participantName, proxyId: proxy })
+      await this.proxyCache.addDfspProxyMapping(participantName, proxy)
     }
 
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(

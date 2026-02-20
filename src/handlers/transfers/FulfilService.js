@@ -149,7 +149,7 @@ class FulfilService {
     return true
   }
 
-  async validateHeaders ({ transfer, headers, payload, action, validActionsForRouteValidations }) {
+  async validateHeaders ({ transfer, headers, payload, action, validActionsForRouteValidations, hubName }) {
     if (!validActionsForRouteValidations.includes(action)) {
       return true // Skip validation for actions that don't require it
     }
@@ -166,11 +166,15 @@ class FulfilService {
     }
 
     // Validate destination header matches payer FSP (unless payer is a proxy)
-    if (headers[DESTINATION] && !transfer.payerIsProxy &&
-        (headers[DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase())) {
+    if (
+      headers[DESTINATION] &&
+      !transfer.payerIsProxy &&
+      headers[DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase() &&
+      headers[DESTINATION].toLowerCase() !== hubName.toLowerCase()
+    ) {
       fspiopError = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        `${DESTINATION} does not match payer fsp on the Fulfil callback response`
+      `${DESTINATION} does not match payer fsp or hub on the Fulfil callback response`
       )
     }
 

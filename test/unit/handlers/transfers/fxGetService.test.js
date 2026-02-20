@@ -99,6 +99,9 @@ Test('FxGetService Tests -->', fxGetServiceTest => {
       },
       transform: {
         toFulfil: sandbox.stub()
+      },
+      ProxyCache: {
+        addDfspProxyMapping: sandbox.stub()
       }
     }
 
@@ -267,6 +270,7 @@ Test('FxGetService Tests -->', fxGetServiceTest => {
     methodTest.test('should create external participant for proxied get and throw error', async t => {
       const proxy = { id: 'proxy-id' }
       facade.getExternalParticipantIdByNameOrCreate.resolves()
+      mockDeps.ProxyCache.addDfspProxyMapping.resolves()
       mockDeps.Kafka.proceed.resolves()
 
       try {

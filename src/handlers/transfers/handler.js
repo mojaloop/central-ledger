@@ -59,6 +59,8 @@ const GetService = require('./GetService')
 const FxGetService = require('./FxGetService')
 const TransferErrorModel = require('../../models/transfer/transferError')
 const FxTransferErrorModel = require('../../models/fxTransfer/fxTransferError')
+const ProxyCache = require('../../lib/proxyCache')
+
 // particular handlers
 const { prepare } = require('./prepare')
 
@@ -213,7 +215,8 @@ const processFulfilMessage = async (message, functionality, span) => {
     headers,
     payload,
     action,
-    validActionsForRouteValidations
+    validActionsForRouteValidations,
+    hubName: Config.HUB_NAME
   })
 
   // If execution continues after this point we are sure transfer exists and source matches payee fsp
@@ -428,7 +431,7 @@ const processFxFulfilMessage = async (message, functionality, span) => {
   }
 
   const transfer = await fxFulfilService.getFxTransferDetails(commitRequestId, functionality)
-  await fxFulfilService.validateHeaders({ transfer, headers, payload })
+  await fxFulfilService.validateHeaders({ transfer, headers, payload, hubName: Config.HUB_NAME })
 
   // If execution continues after this point we are sure fxTransfer exists and source matches payee fsp
   const histTimerDuplicateCheckEnd = Metrics.getHistogram(
@@ -485,7 +488,8 @@ const processFxGetMessage = async (message, commitRequestId, headers, destinatio
     Kafka,
     params,
     externalParticipantCached,
-    FxTransferErrorModel
+    FxTransferErrorModel,
+    ProxyCache
   })
 
   const actionLetter = fxGetService.getActionLetter(eventDetail.action)
@@ -579,7 +583,8 @@ const processGetMessage = async (message, transferId, headers, destination, para
     Kafka,
     params,
     externalParticipantCached,
-    TransferErrorModel
+    TransferErrorModel,
+    ProxyCache
   })
 
   const actionLetter = getService.getActionLetter(eventDetail.action)
