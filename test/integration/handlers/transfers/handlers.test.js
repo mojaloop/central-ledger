@@ -575,7 +575,7 @@ Test('Handlers test', async handlersTest => {
       let expectedAbortNotificationPayload = {}
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
-          completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
+          completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
           transferState: 'ABORTED',
           extensionList: {
             extension: [
@@ -695,7 +695,7 @@ Test('Handlers test', async handlersTest => {
       let expectedAbortNotificationPayload = {}
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
-          completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
+          completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
           transferState: 'ABORTED',
           extensionList: {
             extension: [
@@ -813,7 +813,7 @@ Test('Handlers test', async handlersTest => {
       let expectedAbortNotificationPayload = {}
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
-          completedTimestamp: Time.getUTCString(new Date(updatedTransfer.completedTimestamp)),
+          completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
           transferState: 'ABORTED'
         }
       }
