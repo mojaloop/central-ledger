@@ -240,7 +240,7 @@ class FulfilService {
     const reservedAbortedPayload = {
       transferId: transferAbortResult?.id,
       completedTimestamp: transferAbortResult?.completedTimestamp &&
-        Util.Time.getUTCString(new Date(transferAbortResult.completedTimestamp)),
+        (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
       transferState: TransferState.ABORTED,
       extensionList: {
         extension: [
