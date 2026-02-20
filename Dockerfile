@@ -34,6 +34,7 @@ RUN ln -sf /dev/stdout ./logs/combined.log
 
 # Create a non-root user: ml-user
 RUN adduser -D ml-user
+USER ml-user
 
 COPY --chown=ml-user --from=builder /opt/app .
 
@@ -43,14 +44,5 @@ COPY migrations /opt/app/migrations
 COPY seeds /opt/app/seeds
 COPY test /opt/app/test
 
-# Remove npm/npx from runtime image to eliminate npm's vulnerable tar - failing grype scan
-USER root
-RUN rm -rf \
-  /usr/local/lib/node_modules/npm \
-  /usr/local/bin/npm \
-  /usr/local/bin/npx
-
-USER ml-user
-
 EXPOSE 3001
-CMD ["node", "src/api/index.js"]
+CMD ["npm", "run", "start"]
