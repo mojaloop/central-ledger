@@ -138,7 +138,7 @@
     "get-port": "5.1.1",
     "jsdoc": "4.0.5",
     "mock-knex": "0.4.13",
-    "nodemon": "3.1.13",
+    "nodemon": "3.1.14",
     "npm-check-updates": "19.4.1",
     "nyc": "17.1.0",
     "pre-commit": "1.2.2",

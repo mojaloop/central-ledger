@@ -592,6 +592,9 @@ const processGetMessage = async (message, transferId, headers, destination, para
   const isExternalParticipant = await getService.getExternalParticipant(destination)
 
   // Validate participant
+  // When the GET is triggered in a interscheme timeout scenario the source will be
+  // the hub participant. Since they are not considered an external participant, we need to
+  // check the presence of the proxy header to determine if this is a proxied GET from an hub
   if (!await getService.validateParticipant(message.value.from, isProxiedGet)) {
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     return true
@@ -637,14 +640,19 @@ const processGetMessage = async (message, transferId, headers, destination, para
     return true
   }
 
-  // Check if we should reply with error callback
+  // Special scenario for interscheme transfers where we need to reply with the original error callback
+  // in order to resolve RESERVED_FORWARDED transfers in other regional/buffer schemes
   const replyWithErrorCallback = getService.shouldReplyWithErrorCallback(transfer)
   if (isProxiedGet && replyWithErrorCallback) {
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}5`))
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     return await getService.handleErrorCallback(transfer, transferId, eventDetail.functionality)
   }
 
   // Validate participant for transfer
+  // When the GET is triggered in a interscheme timeout scenario the source will be
+  // the hub participant. Since they are not considered an external participant, we need to
+  // check the presence of the proxy header to determine if this is a proxied GET from an hub
   try {
     await getService.validateParticipantTransfer(message.value.from, transferId, isProxiedGet)
   } catch (err) {

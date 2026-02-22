@@ -159,6 +159,7 @@ class GetService {
         }
       }
     } else {
+      this.log.warn(`No transfer error found for transferId ${transferId}. Responding with generic TRANSFER_ID_NOT_FOUND error callback.`)
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND,
         'Provided Transfer ID was not found on the server.'

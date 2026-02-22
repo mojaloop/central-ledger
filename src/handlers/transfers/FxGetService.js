@@ -159,6 +159,7 @@ class FxGetService {
         }
       }
     } else {
+      this.log.warn(`No fxTransfer error found for commitRequestId ${commitRequestId}. Responding with generic TRANSFER_ID_NOT_FOUND error callback.`)
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND,
         'Provided commitRequest ID was not found on the server.'
