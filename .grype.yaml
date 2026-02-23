@@ -1,9 +1,4 @@
 ignore:
-  # Ignore cross-spawn vulnerabilities by CVE ID due to false positive
-  # as grype looks at package-lock.json where it shows versions with
-  # vulnerabilities, npm ls shows only 7.0.6 verion is used
-
-  # Ignore OpenSSL vulnerabilities in Alpine libcrypto3 and libssl3
   - vulnerability: GHSA-3ppc-4f35-3m26
     reason: minimatch upgrade breaks some dev tools so adding this to ignore list
   - vulnerability: CVE-2025-60876
@@ -18,14 +13,81 @@ ignore:
     include-aliases: true
   - vulnerability: GHSA-r6q2-hw4h-h46w
     include-aliases: true
-
-# Set output format defaults
+  - vulnerability: CVE-2025-15467
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (critical severity)"
+  - vulnerability: CVE-2025-69420
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (high severity)"
+  - vulnerability: CVE-2025-59465
+    include-aliases: true
+    reason: "Node.js binary vulnerability: node - requires Node.js runtime update as of 2026-02-23 (high severity)"
+  - vulnerability: CVE-2025-69421
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (high severity)"
+  - vulnerability: CVE-2025-69419
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (high severity)"
+  - vulnerability: CVE-2026-22796
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (moderate severity)"
+  - vulnerability: CVE-2025-66199
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (moderate severity)"
+  - vulnerability: CVE-2025-15468
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (moderate severity)"
+  - vulnerability: CVE-2026-21637
+    include-aliases: true
+    reason: "Node.js binary vulnerability: node - requires Node.js runtime update as of 2026-02-23 (high severity)"
+  - vulnerability: CVE-2025-55131
+    include-aliases: true
+    reason: "Node.js binary vulnerability: node - requires Node.js runtime update as of 2026-02-23 (high severity)"
+  - vulnerability: CVE-2025-59466
+    include-aliases: true
+    reason: "Node.js binary vulnerability: node - requires Node.js runtime update as of 2026-02-23 (high severity)"
+  - vulnerability: CVE-2025-55130
+    include-aliases: true
+    reason: "Node.js binary vulnerability: node - requires Node.js runtime update as of 2026-02-23 (critical severity)"
+  - vulnerability: CVE-2026-22795
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (moderate severity)"
+  - vulnerability: CVE-2025-68160
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (moderate severity)"
+  - vulnerability: CVE-2025-11187
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (moderate severity)"
+  - vulnerability: GHSA-73rr-hh4g-fpgx
+    include-aliases: true
+    reason: >-
+      Base image npm package: diff - bundled in Node.js base image, not fixable via application dependencies as of
+      2026-02-23 (low severity)
+  - vulnerability: CVE-2025-55132
+    include-aliases: true
+    reason: "Node.js binary vulnerability: node - requires Node.js runtime update as of 2026-02-23 (moderate severity)"
+  - vulnerability: CVE-2026-27171
+    include-aliases: true
+    reason: "Alpine base image package (apk): zlib - no npm fix available as of 2026-02-23 (moderate severity)"
+  - vulnerability: CVE-2025-15469
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (moderate severity)"
+  - vulnerability: CVE-2025-69418
+    include-aliases: true
+    reason: "Alpine base image package (apk): libcrypto3 - no npm fix available as of 2026-02-23 (moderate severity)"
+  - vulnerability: GHSA-87r5-mp6g-5w5j
+    include-aliases: true
+    reason: "Unfixable npm transitive vulnerability: jsonpath (high severity) as of 2026-02-23"
+  - vulnerability: GHSA-378v-28hj-76wf
+    include-aliases: true
+    reason: "Unfixable npm transitive vulnerability: bn.js (moderate severity) as of 2026-02-23"
+  - vulnerability: GHSA-2g4f-4pwh-qvx6
+    include-aliases: true
+    reason: "Unfixable npm transitive vulnerability: ajv (moderate severity) as of 2026-02-23"
 output:
-  - "table"
-  - "json"
-
-# Modify your CircleCI job to check critical count
+  - table
+  - json
 search:
-  scope: "squashed"
+  scope: squashed
 quiet: false
 check-for-app-update: false

@@ -94,7 +94,7 @@
     "@mojaloop/central-services-health": "15.2.2",
     "@mojaloop/central-services-logger": "11.10.4",
     "@mojaloop/central-services-metrics": "12.8.5",
-    "@mojaloop/central-services-shared": "18.35.3",
+    "@mojaloop/central-services-shared": "18.35.5",
     "@mojaloop/central-services-stream": "11.9.1",
     "@mojaloop/database-lib": "11.3.7",
     "@mojaloop/event-sdk": "14.8.3",
@@ -138,7 +138,7 @@
     "jsdoc": "4.0.5",
     "jsonpath": "1.2.1",
     "mock-knex": "0.4.13",
-    "nodemon": "3.1.13",
+    "nodemon": "3.1.14",
     "npm-check-updates": "19.4.1",
     "nyc": "17.1.0",
     "pre-commit": "1.2.2",
@@ -164,8 +164,8 @@
       "ajv": "6.12.6"
     },
     "axios": "1.13.5",
-    "brace-expansion": "2.0.2",
-    "form-data": "4.0.4",
+    "brace-expansion": "5.0.3",
+    "form-data": "4.0.5",
     "lodash": "4.17.23",
     "undici": "6.23.0",
     "shins": {
@@ -190,7 +190,8 @@
     "trim": "0.0.3",
     "cross-spawn": "7.0.6",
     "yargs-parser": "21.1.1",
-    "fast-xml-parser": "5.3.6"
+    "fast-xml-parser": "5.3.6",
+    "minimatch": "10.2.1"
   },
   "config": {
     "knex": "--knexfile ./config/knexfile.js",
