@@ -79,13 +79,21 @@ class FxFulfilService {
     return fxTransfer
   }
 
-  async validateHeaders({ transfer, headers, payload }) {
+  async validateHeaders({ transfer, headers, payload, hubName }) {
     let fspiopError = null
 
     if (!transfer.counterPartyFspIsProxy && (headers[SOURCE]?.toLowerCase() !== transfer.counterPartyFspName.toLowerCase())) {
       fspiopError = fspiopErrorFactory.fxHeaderSourceValidationError()
     }
-    if (!transfer.initiatingFspIsProxy && (headers[DESTINATION]?.toLowerCase() !== transfer.initiatingFspName.toLowerCase())) {
+    if (
+      !transfer.initiatingFspIsProxy &&
+      (headers[DESTINATION]?.toLowerCase() !== transfer.initiatingFspName.toLowerCase()) &&
+      // In the case of a proxied self healing fulfil, the destination header may be the hub
+      // and not the initiating FSP. This happens when upstream scheme has no recollection of
+      // the fxTransfer due to data loss, fxTransfer was acknowledged but not processed in upstream scheme.
+      // Exception is made here to rectify positions.
+      (headers[DESTINATION]?.toLowerCase() !== hubName?.toLowerCase())
+    ) {
       fspiopError = fspiopErrorFactory.fxHeaderDestinationValidationError()
     }
 
@@ -283,6 +291,7 @@ class FxFulfilService {
   }
 
   async validateExpirationDate(transfer, functionality) {
+    // For interscheme we ignore expiration for forwarded transfers
     if (
       transfer.transferState !== TransferInternalState.RESERVED_FORWARDED &&
       transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
