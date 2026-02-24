@@ -53,13 +53,6 @@ const { logger } = require('../../shared/logger')
 
 const consumerCommit = true
 
-let isShuttingDown = false
-
-const handleShutdown = () => {
-  logger.info('Batch position handler received shutdown signal')
-  isShuttingDown = true
-}
-
 /**
  * @function positions
  *
@@ -81,12 +74,6 @@ const positions = async (error, messages, meta = {}) => {
   const startTime = Date.now()
   const operation = 'positionsHandlerBatch'
   const log = logger.child({ operation, batchId: meta?.batchId, startTime })
-
-  if (isShuttingDown) {
-    log.info('shutdown in progress, skipping batch — offsets will not be committed')
-    histTimerEnd({ success: true })
-    return
-  }
 
   if (error) {
     histTimerEnd({ success: false })
@@ -170,7 +157,6 @@ const positions = async (error, messages, meta = {}) => {
       await span.error(fspiopError, state)
     })
     histTimerEnd({ success: false })
-    // todo: think if we need to rethrow here (to catch failed span properly)
   } finally {
     // Finish span for each message
     await BinProcessor.iterateThroughBins(bins, async (_accountID, action, item) => {
@@ -212,9 +198,6 @@ const registerPositionHandler = async () => {
     }
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${randomUUID()}`
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
-
-    ;['SIGTERM', 'SIGINT']
-      .forEach(signal => { process.on(signal, handleShutdown) })
 
     return true
   } catch (err) {
