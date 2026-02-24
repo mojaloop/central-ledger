@@ -111,8 +111,6 @@ const positions = async (error, messages, meta = {}) => {
   // Start DB Transaction if there are any bins to process
   const trx = !!Object.keys(bins).length && await BatchPositionModel.startDbTransaction()
 
-  let dbCommitted = false
-
   try {
     if (trx) {
       const result = await BinProcessor.processBins(bins, trx)
@@ -122,7 +120,6 @@ const positions = async (error, messages, meta = {}) => {
       // messages will be re-delivered — safe because domain processors
       // reject duplicates via transfer state guards.
       await trx.commit()
-      dbCommitted = true
       log.verbose('DB transaction committed')
 
       // Now commit Kafka offsets for the last message per partition
@@ -144,9 +141,9 @@ const positions = async (error, messages, meta = {}) => {
     histTimerEnd({ success: true })
   } catch (err) {
     log.error('error in batch processing: ', err)
-    if (!dbCommitted) {
+    if (!trx?.isCompleted()) {
       log.info('rolling DB trx back...')
-      await trx?.rollback()
+      await trx.rollback()
     }
 
     // - Audit Error for each message

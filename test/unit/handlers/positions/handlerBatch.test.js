@@ -223,8 +223,9 @@ Test('Position handler', positionBatchHandlerTest => {
     })
     sandbox.stub(BatchPositionModel)
     trxStub = {
-      commit: sandbox.stub().returns(true),
-      rollback: sandbox.stub().returns(true)
+      commit: sandbox.stub().callsFake(() => { trxStub.isCompleted.returns(true); return true }),
+      rollback: sandbox.stub().returns(true),
+      isCompleted: sandbox.stub().returns(false)
     }
     BatchPositionModel.startDbTransaction.returns(trxStub)
     sandbox.stub(BinProcessor)
