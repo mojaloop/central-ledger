@@ -156,9 +156,9 @@ const positions = async (error, messages, meta = {}) => {
     }
     histTimerEnd({ success: true })
   } catch (err) {
-    log.warn('error in batch processing: ', err)
+    log.error('error in batch processing: ', err)
     if (!dbCommitted) {
-      log.warn('rolling trx back')
+      log.info('rolling DB trx back...')
       await trx?.rollback()
     }
 
@@ -213,7 +213,8 @@ const registerPositionHandler = async () => {
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${randomUUID()}`
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
 
-    ;['SIGTERM', 'SIGINT'].forEach(signal => { process.on(signal, handleShutdown) })
+    ;['SIGTERM', 'SIGINT']
+      .forEach(signal => { process.on(signal, handleShutdown) })
 
     return true
   } catch (err) {

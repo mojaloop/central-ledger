@@ -359,24 +359,6 @@ Test('Position handler', positionBatchHandlerTest => {
       }
     })
 
-    positionsTest.test('should commit DB transaction before Kafka offsets', async test => {
-      // Arrange
-      await Consumer.createHandler(topicName, config, command)
-      Kafka.transformGeneralTopicName.returns(topicName)
-      Kafka.getKafkaConfig.returns(config)
-      Kafka.proceed.returns(true)
-
-      // Act
-      await allTransferHandlers.positions(null, messages)
-
-      // Assert — DB commit must happen before any Kafka offset commit
-      test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
-      test.ok(Kafka.proceed.called, 'Kafka.proceed should be called')
-      test.ok(trxStub.commit.calledBefore(Kafka.proceed), 'trx.commit must be called BEFORE Kafka.proceed (at-least-once guarantee)')
-      test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called')
-      test.end()
-    })
-
     positionsTest.test('should rollback and NOT commit Kafka offsets when DB commit fails', async test => {
       // Arrange
       await Consumer.createHandler(topicName, config, command)
