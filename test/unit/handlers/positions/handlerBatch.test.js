@@ -322,7 +322,7 @@ Test('Position handler', positionBatchHandlerTest => {
   })
 
   positionBatchHandlerTest.test('positions should', positionsTest => {
-    positionsTest.test('process messages and commit Kafka offset and DB transaction', async test => {
+    positionsTest.test('should process messages and commit DB transaction before Kafka offsets', async test => {
       // Arrange
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
@@ -349,6 +349,7 @@ Test('Position handler', positionBatchHandlerTest => {
         test.equal(SpanStub.audit.callCount, 5, 'span.audit should be called five times')
         test.equal(SpanStub.finish.callCount, 5, 'span.finish should be called five times')
         test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
+        test.ok(trxStub.commit.calledBefore(Kafka.proceed), 'trx.commit must be called BEFORE Kafka.proceed')
         test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called')
         test.equal(Kafka.produceGeneralMessage.callCount, 5, 'produceGeneralMessage should be five times to produce kafka notification events')
         test.end()
@@ -356,6 +357,58 @@ Test('Position handler', positionBatchHandlerTest => {
         test.fail('Error should not be thrown')
         test.end()
       }
+    })
+
+    positionsTest.test('should commit DB transaction before Kafka offsets', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+
+      // Act
+      await allTransferHandlers.positions(null, messages)
+
+      // Assert — DB commit must happen before any Kafka offset commit
+      test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
+      test.ok(Kafka.proceed.called, 'Kafka.proceed should be called')
+      test.ok(trxStub.commit.calledBefore(Kafka.proceed), 'trx.commit must be called BEFORE Kafka.proceed (at-least-once guarantee)')
+      test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called')
+      test.end()
+    })
+
+    positionsTest.test('should rollback and NOT commit Kafka offsets when DB commit fails', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+      trxStub.commit.rejects(new Error('DB commit failed'))
+
+      // Act
+      await allTransferHandlers.positions(null, messages)
+
+      // Assert — Kafka offsets must NOT be committed when DB commit fails
+      test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
+      test.ok(Kafka.proceed.notCalled, 'Kafka.proceed should NOT be called when DB commit fails')
+      test.ok(trxStub.rollback.calledOnce, 'trx.rollback should be called once')
+      test.end()
+    })
+
+    positionsTest.test('should preserve DB commit when Kafka offset commit fails (at-least-once)', async test => {
+      // Arrange
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.rejects(new Error('Kafka offset commit failed'))
+
+      // Act
+      await allTransferHandlers.positions(null, messages)
+
+      // Assert — DB commit is preserved; messages will be re-delivered (safe due to state guards)
+      test.ok(trxStub.commit.calledOnce, 'trx.commit should be called once')
+      test.ok(trxStub.rollback.notCalled, 'trx.rollback should NOT be called — DB changes must be preserved')
+      test.end()
     })
 
     positionsTest.test('handle no messages', async test => {

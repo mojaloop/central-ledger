@@ -53,6 +53,13 @@ const { logger } = require('../../shared/logger')
 
 const consumerCommit = true
 
+let isShuttingDown = false
+
+const handleShutdown = () => {
+  logger.info('Batch position handler received shutdown signal')
+  isShuttingDown = true
+}
+
 /**
  * @function positions
  *
@@ -74,6 +81,12 @@ const positions = async (error, messages, meta = {}) => {
   const startTime = Date.now()
   const operation = 'positionsHandlerBatch'
   const log = logger.child({ operation, batchId: meta?.batchId, startTime })
+
+  if (isShuttingDown) {
+    log.info('shutdown in progress, skipping batch — offsets will not be committed')
+    histTimerEnd({ success: true })
+    return
+  }
 
   if (error) {
     histTimerEnd({ success: false })
@@ -111,22 +124,26 @@ const positions = async (error, messages, meta = {}) => {
   // Start DB Transaction if there are any bins to process
   const trx = !!Object.keys(bins).length && await BatchPositionModel.startDbTransaction()
 
+  let dbCommitted = false
+
   try {
     if (trx) {
       const result = await BinProcessor.processBins(bins, trx)
 
-      // If Bin Processor processed bins successfully, commit Kafka offset
-      // Commit the offset of last message in the array
+      // Commit DB transaction BEFORE Kafka offsets (at-least-once guarantee).
+      // If the process crashes after DB commit but before offset commit,
+      // messages will be re-delivered — safe because domain processors
+      // reject duplicates via transfer state guards.
+      await trx.commit()
+      dbCommitted = true
+      log.verbose('DB transaction committed')
+
+      // Now commit Kafka offsets for the last message per partition
       for (const message of Object.values(lastPerPartition)) {
         const params = { message, kafkaTopic: message.topic, consumer: Consumer }
-        // We are using Kafka.proceed() to just commit the offset of the last message in the array
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
       }
-      log.verbose('all kafka messages are committed')
-
-      // Commit DB transaction
-      await trx.commit() // todo: think if we need trx.commit() BEFORE Kafka.proceed() ??
-      log.info('DB transaction committed')
+      log.info('kafka offsets committed')
 
       // Loop through results and produce notification messages and audit messages
       await Promise.all(result.notifyMessages.map(produceNotificationMessage)
@@ -139,8 +156,11 @@ const positions = async (error, messages, meta = {}) => {
     }
     histTimerEnd({ success: true })
   } catch (err) {
-    log.warn('error in bin processing, rolling trx back: ', err)
-    await trx?.rollback()
+    log.warn('error in batch processing: ', err)
+    if (!dbCommitted) {
+      log.warn('rolling trx back')
+      await trx?.rollback()
+    }
 
     // - Audit Error for each message
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -192,6 +212,9 @@ const registerPositionHandler = async () => {
     }
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${randomUUID()}`
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
+
+    ;['SIGTERM', 'SIGINT'].forEach(signal => { process.on(signal, handleShutdown) })
+
     return true
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'registerPositionHandler' })
