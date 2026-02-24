@@ -45,10 +45,10 @@ You can also build it directly from source: [https://github.com/mojaloop/central
 However, take note of the default argument in the [Dockerfile](./Dockerfile) for `NODE_VERSION`:
 
 ```dockerfile
-ARG NODE_VERSION=lts-alpine
+ARG NODE_VERSION=22.21.1-alpine3.23
 ```
 
-It is recommend that you set the `NODE_VERSION` argument against the version set in the local [.nvmrc](./.nvmrc).
+It is recommended that you set the `NODE_VERSION` argument against the version set in the local [.nvmrc](./.nvmrc).
 
 This can be done using the following command: `npm run docker:build`
 
@@ -56,8 +56,8 @@ Or via docker build directly:
 
 ```bash
 docker build \
-  --build-arg NODE_VERSION="$(cat .nvmrc)-alpine3.19" \
-  -t mojaloop/ml-api-adapter:local \
+  --build-arg NODE_VERSION="$(cat .nvmrc)-alpine" \
+  -t mojaloop/central-ledger:local \
   .
 ```
 
@@ -71,22 +71,19 @@ Please follow the instruction in [Onboarding Document](Onboarding.md) to setup a
 
 The Central Ledger has many options that can be configured through environment variables.
 
-| Environment variable | Description | Example values |
-| -------------------- | ----------- | ------ |
-| CLEDG\_DATABASE_URI   | The connection string for the database the central ledger will use. Postgres is currently the only supported database. | postgres://\<username>:\<password>@localhost:5432/central_ledger |
-| CLEDG\_PORT | The port the API server will run on. | 3000 |
-| CLEDG\_ADMIN_PORT | The port the Admin server will run on. | 3001 |
-| CLEDG\_HOSTNAME | The URI that will be used to create and validate links to resources on the central ledger.  | <http://central-ledger> |
-| CLEDG\_ENABLE\_BASIC_AUTH | Flag to enable basic auth protection on endpoints that require authorization. Username and password would be the account name and password. | false |
-| CLEDG\_ENABLE\_TOKEN_AUTH | Flag to enable token protection on endpoints that require authorization. To create a token, reference the [API documentation](API.md). | false |
-| CLEDG\_LEDGER\_ACCOUNT_NAME | Name of the account setup to receive fees owed to the central ledger. If the account doesn't exist, it will be created on start up. | LedgerName |
-| CLEDG\_LEDGER\_ACCOUNT_PASSWORD | Password of the account setup to receive fees owed to the central ledger.  | LedgerPassword |
-| CLEDG\_ADMIN_KEY | Key used for admin access to endpoints that require validation. | AdminKey |
-| CLEDG\_ADMIN_SECRET | Secret used for admin access to endpoints that require validation. Secret also used to sign JWTs used for Admin API. | AdminSecret |
-| CLEDG\_TOKEN_EXPIRATION | Time in milliseconds for Admin API tokens to expire. | 3600000 |
-| CLEDG\_EXPIRES_TIMEOUT | Time in milliseconds to determine how often transfer expiration process runs. | 5000 |
-| CLEDG\_AMOUNT__PRECISION | Numeric value used to determine precision recorded for transfer amounts on this ledger. | 10 |
-| CLEDG\_AMOUNT__SCALE | Numeric value used to determine scale recorded for transfer amounts on this ledger. | 2 |
+| Environment variable | Description | Example / Default |
+| -------------------- | ----------- | ----------------- |
+| CLEDG\_PORT | The port the API server will run on. | 3001 |
+| CLEDG\_HOSTNAME | The URI that will be used to create and validate links to resources on the central ledger. | http://central-ledger |
+| CLEDG\_DATABASE\_\_HOST | MySQL database hostname. | localhost |
+| CLEDG\_DATABASE\_\_PORT | MySQL database port. | 3306 |
+| CLEDG\_DATABASE\_\_USER | MySQL database user. | central_ledger |
+| CLEDG\_DATABASE\_\_PASSWORD | MySQL database password. | password |
+| CLEDG\_DATABASE\_\_SCHEMA | MySQL database schema name. | central_ledger |
+| CLEDG\_AMOUNT\_\_PRECISION | Numeric value used to determine precision recorded for transfer amounts on this ledger. | 18 |
+| CLEDG\_AMOUNT\_\_SCALE | Numeric value used to determine scale recorded for transfer amounts on this ledger. | 4 |
+
+The database is **MySQL 8** via the `mysql2` dialect. Connection parameters are configured individually (not as a connection URI). See `config/default.json` for the full set of options. Nested config keys use double underscores (e.g., `CLEDG_DATABASE__HOST`).
 
 ### Kafka Position Event Type Action Topic Map
 
@@ -96,24 +93,35 @@ diverges from the defaults.
 You can configure the customized topic names in the config. Each position action key
 refers to position messages with associated actions.
 
-NOTE: Only POSITION.PREPARE and POSITION.COMMIT is supported at this time, with additional event-type-actions being added later when required.
+The following position actions are supported and can be routed to custom topics. By default, only FX actions are routed to the batch topic; all other actions use the default position topic (indicated by `null`).
 
-```
+```json
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
-        "PREPARE": "topic-transfer-position-batch",
-        "COMMIT": "topic-transfer-position-batch"
+        "PREPARE": null,
+        "FX_PREPARE": "topic-transfer-position-batch",
+        "BULK_PREPARE": null,
+        "COMMIT": null,
+        "BULK_COMMIT": null,
+        "RESERVE": null,
+        "FX_RESERVE": "topic-transfer-position-batch",
+        "TIMEOUT_RESERVED": null,
+        "FX_TIMEOUT_RESERVED": "topic-transfer-position-batch",
+        "ABORT": null,
+        "FX_ABORT": "topic-transfer-position-batch"
       }
     }
   }
 ```
 
+A `null` value means the action uses the default topic (`topic-transfer-position`). Set a value to `"topic-transfer-position-batch"` to route that action to the batch handler instead.
+
 ### Batch Processing Configuration Guide
 
 Batch processing can be enabled in the transfer execution flow. Follow the steps below to enable batch processing for a more efficient transfer execution:
 
-Note: The position messages with action 'FX_PREPARE', 'FX_COMMIT' and 'FX_TIMEOUT_RESERVED' are only supported in batch processing.
+Note: The position messages with action 'FX_PREPARE', 'FX_RESERVE', 'FX_TIMEOUT_RESERVED', 'FX_ABORT', and 'FX_ABORT_VALIDATION' are only supported in batch processing by default. The batch handler supports the following actions: PREPARE, FX_PREPARE, COMMIT, RESERVE, FX_RESERVE, TIMEOUT_RESERVED, FX_TIMEOUT_RESERVED, ABORT, FX_ABORT, ABORT_VALIDATION, and FX_ABORT_VALIDATION.
 
 - **Step 1:** **Create a New Kafka Topic**
 
@@ -121,24 +129,24 @@ Note: The position messages with action 'FX_PREPARE', 'FX_COMMIT' and 'FX_TIMEOU
 - **Step 2:** **Configure Action Type Mapping**
 
   Point the prepare handler to the newly created topic for the action types that are supported in batch processing using the `KAFKA.EVENT_TYPE_ACTION_TOPIC_MAP` configuration as shown below:
-  ```
+  ```json
     "KAFKA": {
       "EVENT_TYPE_ACTION_TOPIC_MAP" : {
         "POSITION":{
           "PREPARE": "topic-transfer-position-batch",
-          "BULK_PREPARE": "topic-transfer-position",
-          "COMMIT": "topic-transfer-position-batch",
-          "FX_COMMIT": "topic-transfer-position-batch",
-          "BULK_COMMIT": "topic-transfer-position",
-          "RESERVE": "topic-transfer-position",
           "FX_PREPARE": "topic-transfer-position-batch",
+          "COMMIT": "topic-transfer-position-batch",
+          "RESERVE": "topic-transfer-position-batch",
+          "FX_RESERVE": "topic-transfer-position-batch",
           "TIMEOUT_RESERVED": "topic-transfer-position-batch",
-          "FX_TIMEOUT_RESERVED": "topic-transfer-position-batch"
+          "FX_TIMEOUT_RESERVED": "topic-transfer-position-batch",
+          "ABORT": "topic-transfer-position-batch",
+          "FX_ABORT": "topic-transfer-position-batch"
         }
       }
     }
   ```
-  _NOTE_: `BULK_PREPARE` configuration property is added to aid routing of `bulk-prepare` events to non-batch handler since the batch handler does not support `bulk-prepare` events.
+  _NOTE_: `BULK_PREPARE` and `BULK_COMMIT` are explicitly not supported by the batch handler and should remain on the default topic (omit or set to `null`).
 
 - **Step 3:** **Run Batch Processing Handlers**
 
@@ -177,10 +185,12 @@ Tests include unit, functional, and integration.
 Running the tests:
 
 ```bash
-    npm run test:all
+    npm test                    # Unit tests
+    npm run test:int            # Integration tests (requires Docker services)
+    npm run test:integration    # Full integration suite (manages Docker automatically)
 ```
 
-Tests include code coverage via istanbul. See the test/ folder for testing scripts.
+Tests include code coverage via NYC. See the test/ folder for testing scripts.
 
 ### Running Integration Tests interactively
 
@@ -262,8 +272,8 @@ npm start
 ```
 nvm use
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_PREPARE=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
+export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_TIMEOUT_RESERVED=topic-transfer-position-batch
 export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__ABORT=topic-transfer-position-batch
@@ -307,10 +317,10 @@ If you want to not have the [ml-core-test-harness](https://github.com/mojaloop/m
 
 By doing so, you are then able access TTK UI using the following URI: <http://localhost:9660>.
 
-Or alternatively, you can monitor the `ttk-func-ttk-tests-1` (See `ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME` in the [test-functional.sh](./test/scripts/test-functional.sh) script) container for test results with the following command:
+Or alternatively, you can monitor the `ttk-func-ttk-fx-tests-1` (See `ML_CORE_TEST_HARNESS_TEST_FUNC_CONT_NAME` in the [test-functional.sh](./test/scripts/test-functional.sh) script) container for test results with the following command:
 
 ```bash
-docker logs -f ttk-func-ttk-tests-1
+docker logs -f ttk-func-ttk-fx-tests-1
 ```
 
 TTK Test files:
