@@ -139,8 +139,11 @@ const positions = async (error, messages, meta = {}) => {
     }
     histTimerEnd({ success: true })
   } catch (err) {
-    log.warn('error in bin processing, rolling trx back: ', err)
-    await trx?.rollback()
+    log.error('error in batch processing: ', err)
+    if (!trx?.isCompleted()) {
+      log.info('rolling DB trx back...')
+      await trx.rollback()
+    }
 
     // - Audit Error for each message
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -150,7 +153,6 @@ const positions = async (error, messages, meta = {}) => {
       await span.error(fspiopError, state)
     })
     histTimerEnd({ success: false })
-    // todo: think if we need to rethrow here (to catch failed span properly)
   } finally {
     // Finish span for each message
     await BinProcessor.iterateThroughBins(bins, async (_accountID, action, item) => {
