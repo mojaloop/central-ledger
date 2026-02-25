@@ -1059,11 +1059,18 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
               .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
               .leftJoin('fxTransferTimeout AS ftt', 'ftt.commitRequestId', 'ft.commitRequestId')
               .leftJoin('fxTransfer AS ft1', 'ft1.determiningTransferId', 'ft.determiningTransferId')
+              .leftJoin('transfer AS dt', 'dt.transferId', 'ft.determiningTransferId')
               .whereNull('ftt.commitRequestId')
-              .whereIn('ftsc.transferStateId', [
-                `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
-                `${Enum.Transfers.TransferState.RESERVED}`
-              ])
+              .where(function () {
+                this.whereIn('ftsc.transferStateId', [
+                  `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
+                  `${Enum.Transfers.TransferState.RESERVED}`
+                ])
+                  .orWhere(function () {
+                    this.where('ftsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`)
+                      .whereNull('dt.transferId') // Only expire if determining transfer does not exist
+                  })
+              })
               .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timed out fxTransfer for all related fxTransfers
           })
 

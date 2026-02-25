@@ -852,6 +852,215 @@ Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
     timeoutTest.end()
   })
 
+  await fxTimeoutTest.test('RECEIVED_FULFIL_DEPENDENT FX transfer should timeout if no dependent transfer is sent', async (test) => {
+    // Arrange: Prepare FX transfer with short expiration
+    const fxExpiration = new Date((new Date()).getTime() + (5 * 1000)) // 5 seconds
+    const newTestFxData = {
+      ...testFxData,
+      expiration: fxExpiration.toISOString()
+    }
+    const td = await prepareFxTestData(newTestFxData)
+
+    // Send FX transfer PREPARE
+    const prepareConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventAction.PREPARE.toUpperCase()
+    )
+    prepareConfig.logger = Logger
+    await Producer.produceMessage(
+      td.messageProtocolPayerInitiatedConversionFxPrepare,
+      td.topicConfFxTransferPrepare,
+      prepareConfig
+    )
+
+    // Send FX transfer FULFIL to move to RECEIVED_FULFIL_DEPENDENT
+    const fulfilConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventAction.FULFIL.toUpperCase()
+    )
+    fulfilConfig.logger = Logger
+    await Producer.produceMessage(
+      td.messageProtocolPayerInitiatedConversionFxFulfil,
+      td.topicConfFxTransferFulfil,
+      fulfilConfig
+    )
+
+    // Wait for timeout to occur
+    await new Promise(resolve => setTimeout(resolve, 7000)) // Wait 7 seconds
+
+    // Inspect FX transfer state
+    const inspectFxTransferState = async () => {
+      const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.fxTransferPayload.commitRequestId) || {}
+      return fxTransfer?.transferState === TransferInternalState.EXPIRED_RESERVED
+    }
+    const wrapWithRetriesConf = {
+      remainingRetries: retryOpts?.retries || 10,
+      timeout: retryOpts?.maxTimeout || 2
+    }
+    const result = await wrapWithRetries(inspectFxTransferState, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+    // Assert
+    test.ok(result, 'FX transfer in RECEIVED_FULFIL_DEPENDENT timed out as expected when no dependent transfer was sent')
+    test.end()
+  })
+
+  await fxTimeoutTest.test('RECEIVED_FULFIL_DEPENDENT FX transfer should not timeout if dependent transfer prepare is received', async (test) => {
+    // Arrange: Prepare FX transfer and dependent transfer with FX expiring before dependent transfer
+    const dependentTransferExpiration = new Date((new Date()).getTime() + (15 * 1000)) // 15 seconds
+    const fxExpiration = new Date((new Date()).getTime() + (5 * 1000)) // 5 seconds
+    const newTestFxData = {
+      ...testFxData,
+      expiration: fxExpiration.toISOString()
+    }
+    const td = await prepareFxTestData(newTestFxData)
+    td.messageProtocolPrepare1.content.payload.expiration = dependentTransferExpiration.toISOString()
+
+    // Send FX transfer PREPARE
+    const fxPrepareConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventAction.PREPARE.toUpperCase()
+    )
+    fxPrepareConfig.logger = Logger
+    await Producer.produceMessage(
+      td.messageProtocolPayerInitiatedConversionFxPrepare,
+      td.topicConfFxTransferPrepare,
+      fxPrepareConfig
+    )
+
+    // Send FX transfer FULFIL to move to RECEIVED_FULFIL_DEPENDENT
+    const fulfilConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventAction.FULFIL.toUpperCase()
+    )
+    fulfilConfig.logger = Logger
+    await Producer.produceMessage(
+      td.messageProtocolPayerInitiatedConversionFxFulfil,
+      td.topicConfFxTransferFulfil,
+      fulfilConfig
+    )
+
+    // Wait a bit for FX transfer to move to RECEIVED_FULFIL_DEPENDENT
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    // Send dependent transfer PREPARE
+    const transferPrepareConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventType.PREPARE.toUpperCase()
+    )
+    transferPrepareConfig.logger = Logger
+    await Producer.produceMessage(
+      td.messageProtocolPrepare1,
+      td.topicConfTransferPrepare,
+      transferPrepareConfig
+    )
+
+    // Wait for FX transfer timeout point to pass
+    await new Promise(resolve => setTimeout(resolve, 7000)) // Wait 7 seconds total
+
+    // Inspect FX transfer state - should NOT be EXPIRED_RESERVED
+    const inspectFxTransferState = async () => {
+      const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.fxTransferPayload.commitRequestId) || {}
+      return fxTransfer?.transferState !== TransferInternalState.EXPIRED_RESERVED ? fxTransfer : false
+    }
+    const result = await wrapWithRetries(inspectFxTransferState, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+    // Assert
+    test.ok(result, 'FX transfer in RECEIVED_FULFIL_DEPENDENT did not timeout when dependent transfer prepare was received')
+    test.end()
+  })
+
+  await fxTimeoutTest.test('error notification should be sent when prepare arrives after fx transfer is expired', async (test) => {
+    // Arrange: Prepare FX transfer with very short expiration
+    const fxExpiration = new Date((new Date()).getTime() + (3 * 1000)) // 3 seconds
+    const transferExpiration = new Date((new Date()).getTime() + (10 * 1000)) // 10 seconds
+    const newTestFxData = {
+      ...testFxData,
+      expiration: fxExpiration.toISOString()
+    }
+    const td = await prepareFxTestData(newTestFxData)
+    td.messageProtocolPrepare1.content.payload.expiration = transferExpiration.toISOString()
+    // Link the dependent transfer to the FX transfer
+    td.messageProtocolPrepare1.content.payload.determiningTransferId = td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId
+
+    // Send FX transfer PREPARE
+    const fxPrepareConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventAction.PREPARE.toUpperCase()
+    )
+    fxPrepareConfig.logger = Logger
+    await Producer.produceMessage(
+      td.messageProtocolPayerInitiatedConversionFxPrepare,
+      td.topicConfFxTransferPrepare,
+      fxPrepareConfig
+    )
+
+    // Wait for FX transfer to expire
+    await new Promise(resolve => setTimeout(resolve, 4000)) // Wait 4 seconds
+
+    // Verify FX transfer is expired
+    const fxTransferExpired = await wrapWithRetries(async () => {
+      const fxTransfer = await FxTransferModels.fxTransfer.getAllDetailsByCommitRequestId(td.messageProtocolPayerInitiatedConversionFxPrepare.content.payload.commitRequestId) || {}
+      return fxTransfer?.transferState === TransferInternalState.EXPIRED_RESERVED ? fxTransfer : null
+    }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+    test.equal(fxTransferExpired?.transferState, TransferInternalState.EXPIRED_RESERVED, 'FX transfer should be expired before sending dependent transfer prepare')
+
+    testConsumer.clearEvents()
+
+    // Act: Send dependent transfer PREPARE after FX transfer has expired
+    const transferPrepareConfig = Utility.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.PRODUCER,
+      TransferEventType.TRANSFER.toUpperCase(),
+      TransferEventType.PREPARE.toUpperCase()
+    )
+    transferPrepareConfig.logger = Logger
+    await Producer.produceMessage(
+      td.messageProtocolPrepare1,
+      td.topicConfTransferPrepare,
+      transferPrepareConfig
+    )
+
+    // Assert: Error notification should be sent
+    try {
+      const notificationEvent = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+        topicFilter: 'topic-notification-event',
+        action: 'prepare'
+      }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+
+      test.ok(notificationEvent[0], 'Error notification event should be published')
+
+      // Verify the dependent transfer was not created
+      const dependentTransfer = await TransferService.getById(td.messageProtocolPrepare1.content.payload.transferId)
+      // The dependent transfer should exist, but be in INVALID/ABORTED state with validation error
+      test.ok(dependentTransfer, 'Dependent transfer should exist')
+      test.equal(dependentTransfer.transferState, 'INVALID', 'Dependent transfer should be INVALID')
+      test.equal(dependentTransfer.transferStateEnumeration, 'ABORTED', 'Dependent transfer should be ABORTED')
+      test.equal(dependentTransfer.errorCode, 3100, 'Dependent transfer should have error code 3100')
+      test.equal(dependentTransfer.errorDescription, 'Related FX Transfer is not fulfilled', 'Dependent transfer should have correct error description')
+      test.ok(
+        Array.isArray(dependentTransfer.extensionList) &&
+        dependentTransfer.extensionList.some(e => e.key === 'cause' && e.value.includes('3100: Related FX Transfer is not fulfilled')),
+        'Dependent transfer should have extension with cause for validation error'
+      )
+    } catch (err) {
+      test.fail(`Error notification was not sent: ${err.message}`)
+    }
+
+    test.end()
+  })
+
   await fxTimeoutTest.test('teardown', async (assert) => {
     try {
       await Handlers.timeouts.stop()

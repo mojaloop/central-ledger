@@ -64,7 +64,7 @@ RESERVED_FORWARDED --> RECEIVED_ERROR : Fulfil callback from Payee fails validat
 RESERVED_FORWARDED --> RECEIVED_FULFIL_DEPENDENT : Recieved FX transfer fulfilment
 
 RECEIVED_FULFIL_DEPENDENT --> COMMITTED : Dependant transfer committed [Position handler] \n <i>(commit funds, assign T. to settlement window)</i>
-RECEIVED_FULFIL_DEPENDENT --> RESERVED_TIMEOUT : Dependant transfer is timed out
+RECEIVED_FULFIL_DEPENDENT --> RESERVED_TIMEOUT : Dependant transfer is timed out or\n FX expiry passes before dependent transfer prepare is received.
 
 RESERVED_TIMEOUT --> EXPIRED_RESERVED : Hub aborts T. due to being EXPIRED
 
