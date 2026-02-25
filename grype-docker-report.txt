@@ -1,0 +1,13 @@
+NAME           INSTALLED   FIXED IN  TYPE  VULNERABILITY        SEVERITY  EPSS           RISK                 
+busybox        1.37.0-r30            apk   CVE-2025-60876       Medium    < 0.1% (16th)  < 0.1  (suppressed)  
+busybox-binsh  1.37.0-r30            apk   CVE-2025-60876       Medium    < 0.1% (16th)  < 0.1  (suppressed)  
+ssl_client     1.37.0-r30            apk   CVE-2025-60876       Medium    < 0.1% (16th)  < 0.1  (suppressed)  
+tar            6.2.1       7.5.7     npm   GHSA-34x7-hfp2-rc4v  High      < 0.1% (6th)   < 0.1  (suppressed)  
+tar            7.4.3       7.5.7     npm   GHSA-34x7-hfp2-rc4v  High      < 0.1% (6th)   < 0.1  (suppressed)  
+npm            10.9.4                npm   GHSA-3966-f6p6-2qr9  High      < 0.1% (1st)   < 0.1  (suppressed)  
+glob           10.4.5      10.5.0    npm   GHSA-5j98-mcp5-4vw2  High      < 0.1% (11th)  < 0.1  (suppressed)  
+diff           5.2.0       5.2.2     npm   GHSA-73rr-hh4g-fpgx  Low       < 0.1% (17th)  < 0.1  (suppressed)  
+tar            6.2.1       7.5.3     npm   GHSA-8qq5-rm4j-mr97  High      < 0.1% (0th)   < 0.1  (suppressed)  
+tar            7.4.3       7.5.3     npm   GHSA-8qq5-rm4j-mr97  High      < 0.1% (0th)   < 0.1  (suppressed)  
+tar            6.2.1       7.5.4     npm   GHSA-r6q2-hw4h-h46w  High      < 0.1% (2nd)   < 0.1  (suppressed)  
+tar            7.4.3       7.5.4     npm   GHSA-r6q2-hw4h-h46w  High      < 0.1% (2nd)   < 0.1  (suppressed)
