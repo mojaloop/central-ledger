@@ -1066,10 +1066,10 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                   `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
                   `${Enum.Transfers.TransferState.RESERVED}`
                 ])
-                .orWhere(function () {
-                  this.where('ftsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`)
-                    .whereNull('dt.transferId') // Only expire if determining transfer does not exist
-                })
+                  .orWhere(function () {
+                    this.where('ftsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`)
+                      .whereNull('dt.transferId') // Only expire if determining transfer does not exist
+                  })
               })
               .select('ft1.commitRequestId', 'ft.expirationDate') // Passing expiration date of the timed out fxTransfer for all related fxTransfers
           })

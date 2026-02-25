@@ -1061,7 +1061,6 @@ Test('fxTimeout Handler Tests -->', async fxTimeoutTest => {
     test.end()
   })
 
-
   await fxTimeoutTest.test('teardown', async (assert) => {
     try {
       await Handlers.timeouts.stop()
