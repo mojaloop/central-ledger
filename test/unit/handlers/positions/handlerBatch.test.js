@@ -642,6 +642,46 @@ Test('Position handler', positionBatchHandlerTest => {
       }
     })
 
+    positionsTest.test('does not rollback DB transaction if trx is completed', async test => {
+      // Arrange
+      BinProcessor.processBins.rejects(new Error('BinProcessor failed'))
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      Kafka.proceed.returns(true)
+
+      // Set trxStub.isCompleted to return true
+      trxStub.isCompleted.returns(true)
+
+      // Act
+      try {
+        await allTransferHandlers.positions(null, messages)
+        test.ok(BatchPositionModel.startDbTransaction.calledOnce, 'startDbTransaction should be called once')
+        // Need an easier way to do partial matching...
+        delete BinProcessor.processBins.getCall(0).args[0][1001].commit[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1001].prepare[1].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1002].commit[0].histTimerMsgEnd
+        delete BinProcessor.processBins.getCall(0).args[0][1002].prepare[0].histTimerMsgEnd
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].commit, expectedBins[1001].commit)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1001].prepare, expectedBins[1001].prepare)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1002].commit, expectedBins[1002].commit)
+        test.deepEqual(BinProcessor.processBins.getCall(0).args[0][1002].prepare, expectedBins[1002].prepare)
+        test.equal(BinProcessor.processBins.getCall(0).args[1], trxStub)
+        test.ok(Kafka.proceed.notCalled, 'kafkaProceed should not be called')
+        test.equal(SpanStub.audit.callCount, 5, 'span.audit should be called five times')
+        test.equal(SpanStub.error.callCount, 5, 'span.error should be called five times')
+        test.equal(SpanStub.finish.callCount, 5, 'span.finish should be called five times')
+        test.ok(Kafka.produceGeneralMessage.notCalled, 'produceGeneralMessage should not be called')
+        test.ok(trxStub.rollback.notCalled, 'trx.rollback should not be called when trx is completed')
+        test.ok(trxStub.commit.notCalled, 'trx.commit should not be called')
+        test.end()
+      } catch (err) {
+        test.fail('Error should not be thrown')
+        test.end()
+      }
+    })
+
     positionsTest.end()
   })
 
