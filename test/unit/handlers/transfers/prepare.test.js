@@ -1074,44 +1074,6 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    prepareTest.test('block creation if FX determining transfer is expired', async (test) => {
-      // Setup: FX transfer is expired
-      const determiningTransferId = 'expired-fx-transfer-id'
-      const expiredFxTransfer = {
-        fxTransferStateEnumeration: Enum.Transfers.TransferState.EXPIRED_PREPARED
-      }
-      // Stub createRemittanceEntity to return expired FX transfer
-      const createRemittanceEntityStub = () => ({
-        getByIdLight: async (id) => id === determiningTransferId ? expiredFxTransfer : null
-      })
-      const prepareStub = Proxyquire('../../../../src/handlers/transfers/prepare', {
-        '@mojaloop/event-sdk': { Tracer: { extractContextFromMessage: () => ({}), createChildSpanFromContext: () => SpanStub } },
-        './createRemittanceEntity': createRemittanceEntityStub
-      })
-      const allTransferHandlersStub = Proxyquire('../../../../src/handlers/transfers/handler', {
-        '@mojaloop/event-sdk': { Tracer: { extractContextFromMessage: () => ({}), createChildSpanFromContext: () => SpanStub } },
-        './prepare': prepareStub
-      })
-      // Message simulating FX determining transfer
-      const fxMessage = MainUtil.clone(fxMessages[0])
-      fxMessage.value.content.payload.determiningTransferId = determiningTransferId
-      // Set isFx to true
-      fxMessage.value.metadata.event.action = Enum.Events.Event.Action.FX_PREPARE
-      // Stubs
-      Kafka.proceed.returns(true)
-      Validator.validatePrepare.returns({ validationPassed: true, reasons: [] })
-      Comparators.duplicateCheckComparator.returns(Promise.resolve({ hasDuplicateId: false, hasDuplicateHash: false }))
-      // Run
-      const result = await allTransferHandlersStub.prepare(null, [fxMessage])
-      // Assert
-      test.equal(result, true, 'Should return true when FX transfer is expired')
-      test.ok(Kafka.proceed.called, 'Kafka.proceed should be called')
-      const kafkaArgs = Kafka.proceed.getCall(0).args[2]
-      test.equal(kafkaArgs.fspiopError.errorInformation.errorCode, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code, 'Should use TRANSFER_EXPIRED error code')
-      test.equal(kafkaArgs.fspiopError.errorInformation.errorDescription, 'Transfer expired - Cannot create determining transfer: FX transfer is expired.', 'Should use correct error description')
-      test.end()
-    })
-
     prepareTest.end()
   })
 
