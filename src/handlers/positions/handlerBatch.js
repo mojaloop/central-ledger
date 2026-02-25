@@ -115,19 +115,18 @@ const positions = async (error, messages, meta = {}) => {
     if (trx) {
       const result = await BinProcessor.processBins(bins, trx)
 
-      // Commit DB transaction BEFORE Kafka offsets (at-least-once guarantee).
-      // If the process crashes after DB commit but before offset commit,
-      // messages will be re-delivered — safe because domain processors
-      // reject duplicates via transfer state guards.
-      await trx.commit()
-      log.verbose('DB transaction committed')
-
-      // Now commit Kafka offsets for the last message per partition
+      // If Bin Processor processed bins successfully, commit Kafka offset
+      // Commit the offset of last message in the array
       for (const message of Object.values(lastPerPartition)) {
         const params = { message, kafkaTopic: message.topic, consumer: Consumer }
+        // We are using Kafka.proceed() to just commit the offset of the last message in the array
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
       }
-      log.info('kafka offsets committed')
+      log.verbose('all kafka messages are committed')
+
+      // Commit DB transaction
+      await trx.commit() // todo: think if we need trx.commit() BEFORE Kafka.proceed() ??
+      log.info('DB transaction committed')
 
       // Loop through results and produce notification messages and audit messages
       await Promise.all(result.notifyMessages.map(produceNotificationMessage)
@@ -140,11 +139,8 @@ const positions = async (error, messages, meta = {}) => {
     }
     histTimerEnd({ success: true })
   } catch (err) {
-    log.error('error in batch processing: ', err)
-    if (!trx?.isCompleted()) {
-      log.info('rolling DB trx back...')
-      await trx.rollback()
-    }
+    log.warn('error in bin processing, rolling trx back: ', err)
+    await trx?.rollback()
 
     // - Audit Error for each message
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -154,6 +150,7 @@ const positions = async (error, messages, meta = {}) => {
       await span.error(fspiopError, state)
     })
     histTimerEnd({ success: false })
+    // todo: think if we need to rethrow here (to catch failed span properly)
   } finally {
     // Finish span for each message
     await BinProcessor.iterateThroughBins(bins, async (_accountID, action, item) => {
@@ -195,7 +192,6 @@ const registerPositionHandler = async () => {
     }
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${randomUUID()}`
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
-
     return true
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'registerPositionHandler' })
