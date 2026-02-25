@@ -479,6 +479,26 @@ const prepare = async (error, messages) => {
       producer: Producer
     }
 
+    // If this is a determining transfer for an FX transfer, block creation if FX is expired
+    if (isFx && payload.determiningTransferId) {
+      const fxTransfer = await createRemittanceEntity(true).getByIdLight(payload.determiningTransferId)
+      if (fxTransfer && fxTransfer.fxTransferStateEnumeration === Enum.Transfers.TransferState.EXPIRED_PREPARED) {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          FSPIOPErrorCodes.TRANSFER_EXPIRED,
+          'Cannot create determining transfer: FX transfer is expired.'
+        ).toApiErrorObject(Config.ERROR_HANDLING)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, {
+          consumerCommit,
+          fspiopError,
+          eventDetail: { functionality, action },
+          fromSwitch,
+          hubName: Config.HUB_NAME
+        })
+        rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'determiningTransferExpiredBlock' })
+        return true
+      }
+    }
+
     if (proxyEnabled && isForwarded) {
       const isOk = await forwardPrepare({ isFx, params, ID })
       logger.info('forwardPrepare message is processed', { isOk, isFx, ID })

@@ -762,6 +762,7 @@ const _processFxTimeoutEntries = async (knex, trx, transactionTimestamp) => {
     })
 
   // Insert `fxTransferStateChange` records for RECEIVED_FULFIL_DEPENDENT
+  // Only expire RECEIVED_FULFIL_DEPENDENT if determining transfer does not exist
   await knex.from(knex.raw('fxTransferStateChange (commitRequestId, transferStateId, reason)')).transacting(trx)
     .insert(function () {
       this.from('fxTransferTimeout AS ftt')
@@ -772,8 +773,11 @@ const _processFxTimeoutEntries = async (knex, trx, transactionTimestamp) => {
           .groupBy('ftsc1.commitRequestId').as('fts'), 'fts.commitRequestId', 'ftt.commitRequestId'
         )
         .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
+        .leftJoin('fxTransfer AS ft', 'ft.commitRequestId', 'ftt.commitRequestId')
+        .leftJoin('transfer AS dt', 'dt.transferId', 'ft.determiningTransferId')
         .where('ftt.expirationDate', '<', transactionTimestamp)
         .andWhere('ftsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`)
+        .whereNull('dt.transferId') // Only expire if determining transfer does not exist
         .select('ftt.commitRequestId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
     })
 }
