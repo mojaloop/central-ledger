@@ -411,7 +411,7 @@ Test('GetService Tests -->', getServiceTest => {
 
   getServiceTest.test('handleProxiedGetSuccess Tests -->', methodTest => {
     methodTest.test('should send success message for proxied get', async t => {
-      const transfer = { payerFsp: 'payer-fsp' }
+      const transfer = { payerFsp: 'payer-fsp', externalPayerName: 'external-payer' }
       mockDeps.Kafka.proceed.resolves()
 
       await getService.handleProxiedGetSuccess(transfer, 'transfer-123')
@@ -430,7 +430,7 @@ Test('GetService Tests -->', getServiceTest => {
         mockDeps.Config.KAFKA_CONFIG,
         mockDeps.params,
         Sinon.match({
-          toDestination: 'payer-fsp'
+          toDestination: 'external-payer'
         })
       ))
       t.end()

@@ -198,7 +198,7 @@ class GetService {
       consumerCommit,
       eventDetail,
       fromSwitch,
-      toDestination: transfer.payerFsp
+      toDestination: transfer.externalPayerName
     })
   }
 
