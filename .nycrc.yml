@@ -1,4 +1,6 @@
 temp-directory: "./.nyc_output"
+# Cache must be disabled for ts-node transpilation to work correctly with nyc.
+cache: false
 check-coverage: true
 per-file: true
 lines: 90
@@ -7,7 +9,12 @@ functions: 90
 branches: 90
 all: true
 include: [
-  "src/**/*.js"
+  "src/**/*.js",
+  "src/**/*.ts"
+]
+extension: [
+  ".js",
+  ".ts"
 ]
 reporter: [
   "lcov",
@@ -32,6 +39,9 @@ exclude: [
   'src/models/transfer/facade.js', ## add more test coverage
   'src/shared/fspiopErrorFactory.js',
   'src/lib/proxyCache.js', # todo: remove this line after adding test coverage
-  'src/seeds/**'
+  'src/seeds/**',
+  'src/**/*.test.ts',
+  'src/testing/**',     # Exclude test runner from coverage.
+  'src/**/*.unit.ts'    # Exclude unit test files from coverage.
 ]
 ## todo: increase test coverage before merging feat/fx-impl to main branch

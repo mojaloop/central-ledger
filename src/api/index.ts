@@ -1,8 +1,8 @@
 'use strict'
 
-process.env.UV_THREADPOOL_SIZE = 12
+process.env.UV_THREADPOOL_SIZE = '12'
 
-const Config = require('../lib/config')
+import Config from '../lib/config/index'
 const Routes = require('./routes')
 const Setup = require('../shared/setup')
 const MetricsPlugin = require('@mojaloop/central-services-metrics').plugin

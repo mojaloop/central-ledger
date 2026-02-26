@@ -20,5 +20,16 @@
     "node_modules",
     "src/**/*.int.ts",
     "src/**/*.unit.ts",
-  ]
+    "src/**/*.d.ts",
+    "src/testing/**"
+  ],
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true,
+    "ignore": [
+      "(?:^|/)node_modules/", 
+      // We ignore .d.ts files as ts-node fails if it tries to execute them.
+      "\\.d\\.ts$"
+    ]
+  }
 }

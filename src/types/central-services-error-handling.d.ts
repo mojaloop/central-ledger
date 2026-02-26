@@ -1,4 +1,4 @@
-// Type definitions for @mojaloop/central-services-error-handling
+// Type definitions for @mojaloop/central-services-error-handling.
 
 declare module '@mojaloop/central-services-error-handling' {
   export interface FSPIOPApiErrorObject {
@@ -14,12 +14,12 @@ declare module '@mojaloop/central-services-error-handling' {
     };
   }
   export class FSPIOPError extends Error {
-    apiErrorCode: any;
-    message: string;
-    cause: any;
-    extensions: any;
-    replyTo: string;
-    useMessageAsDescription: boolean;
+    apiErrorCode: any
+    message: string
+    cause: any
+    extensions: any
+    replyTo: string
+    useMessageAsDescription: boolean
     
     constructor(cause: any, message: string, replyTo: string, apiErrorCode: any, extensions?: any, useMessageAsDescription?: boolean);
     
@@ -61,12 +61,12 @@ declare module '@mojaloop/central-services-error-handling' {
   }
 
   export namespace Enums {
-    export const FSPIOPErrorCodes: any;
+    export const FSPIOPErrorCodes: any
     export function findFSPIOPErrorCode(code: any): any;
     export function findErrorType(code: any): any;
   }
 
   export function validateRoutes(options?: any): any;
-  export const Handler: any;
-  export const plugin: any;
+  export const Handler: any
+  export const plugin: any
 }
