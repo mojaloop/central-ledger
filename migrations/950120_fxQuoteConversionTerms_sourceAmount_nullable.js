@@ -29,18 +29,38 @@
 'use strict'
 
 exports.up = function (knex) {
-  return knex.schema.alterTable('fxQuoteConversionTerms', function (t) {
-    t.decimal('sourceAmount', 18, 4)
-      .nullable()
-      .defaultTo(null)
-      .alter()
-  })
+  return knex.schema.hasTable('fxQuoteConversionTerms')
+    .then(function (exists) {
+      if (!exists) return
+
+      return knex.schema.hasColumn('fxQuoteConversionTerms', 'sourceAmount')
+        .then(function (columnExists) {
+          if (!columnExists) return
+
+          return knex.schema.alterTable('fxQuoteConversionTerms', function (t) {
+            t.decimal('sourceAmount', 18, 4)
+              .nullable()
+              .defaultTo(null)
+              .alter()
+          })
+        })
+    })
 }
 
 exports.down = function (knex) {
-  return knex.schema.alterTable('fxQuoteConversionTerms', function (t) {
-    t.decimal('sourceAmount', 18, 4)
-      .notNullable()
-      .alter()
-  })
+  return knex.schema.hasTable('fxQuoteConversionTerms')
+    .then(function (exists) {
+      if (!exists) return
+
+      return knex.schema.hasColumn('fxQuoteConversionTerms', 'sourceAmount')
+        .then(function (columnExists) {
+          if (!columnExists) return
+
+          return knex.schema.alterTable('fxQuoteConversionTerms', function (t) {
+            t.decimal('sourceAmount', 18, 4)
+              .notNullable()
+              .alter()
+          })
+        })
+    })
 }
