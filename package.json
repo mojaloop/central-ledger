@@ -138,7 +138,7 @@
     "jsonpath": "1.2.1",
     "mock-knex": "0.4.13",
     "nodemon": "3.1.14",
-    "npm-check-updates": "19.5.0",
+    "npm-check-updates": "19.6.0",
     "nyc": "18.0.0",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",
