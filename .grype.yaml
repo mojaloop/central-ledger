@@ -1,3 +1,4 @@
+scan-type: source
 ignore:
   - vulnerability: GHSA-3ppc-4f35-3m26
     reason: minimatch upgrade breaks some dev tools so adding this to ignore list

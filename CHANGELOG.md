@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.13.1](https://github.com/mojaloop/central-ledger/compare/v19.13.0...v19.13.1) (2026-02-26)
+
+
+### Bug Fixes
+
+* make fxQuoteConversionTerms.sourceAmount nullable ([#1267](https://github.com/mojaloop/central-ledger/issues/1267)) ([f770970](https://github.com/mojaloop/central-ledger/commit/f770970159fdf5624c0763562edff89db97beb5c))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([b834732](https://github.com/mojaloop/central-ledger/commit/b834732ce99fd8639a5e35f410294f1fef391c82))
+
+## [19.13.0](https://github.com/mojaloop/central-ledger/compare/v19.12.8...v19.13.0) (2026-02-26)
+
+
+### Features
+
+* change from glob npm module to native glob ([#1265](https://github.com/mojaloop/central-ledger/issues/1265)) ([677b0e6](https://github.com/mojaloop/central-ledger/commit/677b0e6c9dd2c56fd87ab1f4883d8ee35893ab41))
+
+
+### Bug Fixes
+
+* knex migration not null column backfill data ([#1268](https://github.com/mojaloop/central-ledger/issues/1268)) ([a50e989](https://github.com/mojaloop/central-ledger/commit/a50e9891f7f6e08ed0d4cd82c4ea7ed58025eab5))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([bff254f](https://github.com/mojaloop/central-ledger/commit/bff254f5054b854b5a51b1083a025d5dcaddbc3a))
+
 ### [19.12.8](https://github.com/mojaloop/central-ledger/compare/v19.12.7...v19.12.8) (2026-02-20)
 
 
