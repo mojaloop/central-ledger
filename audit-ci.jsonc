@@ -4,9 +4,6 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
-    "GHSA-3ppc-4f35-3m26",
-    "GHSA-87r5-mp6g-5w5j",
-    "GHSA-378v-28hj-76wf",
-    "GHSA-2g4f-4pwh-qvx6"
+    "GHSA-87r5-mp6g-5w5j"
   ]
 }
