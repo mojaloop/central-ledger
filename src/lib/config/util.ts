@@ -498,3 +498,29 @@ export function assertNestedFields(rawConfig: any, path: string): void {
     current = current[part]
   }
 }
+
+/**
+ * @function deepMerge
+ * @description Deep merge source into target, mutating target in place.
+ *   Arrays are replaced, not merged. Only plain objects are recursively merged.
+ */
+export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+  for (const key of Object.keys(source) as Array<keyof T>) {
+    const valSource = source[key]
+    const valTarget = target[key]
+
+    if (
+      valSource !== null &&
+      typeof valSource === 'object' &&
+      !Array.isArray(valSource) &&
+      valTarget !== null &&
+      typeof valTarget === 'object' &&
+      !Array.isArray(valTarget)
+    ) {
+      deepMerge(valTarget, valSource as any)
+    } else {
+      target[key] = valSource as T[keyof T]
+    }
+  }
+  return target
+}

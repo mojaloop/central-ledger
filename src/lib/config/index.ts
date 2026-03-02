@@ -26,11 +26,35 @@
  ******/
 
 import { makeConfig } from "./resolver"
+import { deepMerge } from "./util"
+import type { ApplicationConfig } from './types'
 
 const config = makeConfig()
 
 /**
- * Make config available as a global, useful for backwards compatibility
+ * Override config values for testing. Ideally we wouldn't need to do this, but because config is
+ * typically imported as a global, we need a way to override some config parameters in test.
  */
+export const overrideForTesting = (override: Partial<ApplicationConfig>) => {
+  deepMerge(config, override)
+}
+
+/**
+ * Reset config to fresh values (call in afterEach/teardown).
+ */
+export const resetOverride = () => {
+  const fresh = makeConfig()
+  Object.keys(config).forEach(key => delete (config as any)[key])
+  Object.assign(config, fresh)
+}
+
 export default config
 export * from './types'
+
+/**
+ * Export as CommonJS for backwards compatibility.
+ */
+module.exports = config
+module.exports.default = config
+module.exports.overrideForTesting = overrideForTesting
+module.exports.resetOverride = resetOverride

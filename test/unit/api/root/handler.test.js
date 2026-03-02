@@ -36,7 +36,7 @@ const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Metrics = require('@mojaloop/central-services-metrics')
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 const ProxyCache = require('#src/lib/proxyCache')
-const Config = require('#src/lib/config')
+const Config = require('../../../../src/lib/config')
 const {
   createRequest,
   unwrapResponse

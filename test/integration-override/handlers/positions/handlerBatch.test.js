@@ -31,7 +31,7 @@
 const Test = require('tape')
 const { randomUUID } = require('crypto')
 const Logger = require('@mojaloop/central-services-logger')
-const Config = require('#src/lib/config')
+const Config = require('../../../../src/lib/config')
 const ProxyCache = require('#src/lib/proxyCache')
 const Db = require('../../../../src/lib/db')
 const Cache = require('#src/lib/cache')

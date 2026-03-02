@@ -2,7 +2,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Config = require('../../../src/lib/config/index').default
+const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 const MongoUriBuilder = require('mongo-uri-builder')
 

@@ -28,7 +28,7 @@
 
 const Test = require('tape')
 const externalParticipant = require('#src/models/participant/externalParticipant')
-const config = require('#src/lib/config')
+const config = require('../../../../src/lib/config')
 const db = require('#src/lib/db')
 
 const fixtures = require('#test/fixtures')
