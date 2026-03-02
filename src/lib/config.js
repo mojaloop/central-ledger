@@ -1,5 +1,7 @@
 const RC = require('parse-strings-in-object')(require('rc')('CLEDG', require('../../config/default.json')))
 
+console.warn('using deprecated `src/lib/config.js` please switch to newer `src/lib/config/index.ts`')
+
 module.exports = {
   HOSTNAME: RC.HOSTNAME.replace(/\/$/, ''),
   PORT: RC.PORT,

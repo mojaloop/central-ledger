@@ -33,7 +33,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('../../../src/shared/logger').logger
-const Model = require('../../../seeds/transactionInitiator')
+const Model = require('../../../src/seeds/transactionInitiator')
 
 Test('TransactionInitiator', async (transactionInitiatorTest) => {
   let sandbox
