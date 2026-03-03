@@ -45,6 +45,9 @@ const BulkTransferModels = require('@mojaloop/object-store-lib').Models.BulkTran
 const ilp = require('#src/models/transfer/ilpPacket')
 const ProxyCache = require('#src/lib/proxyCache')
 
+const duplicateError = new Error('Duplicate error')
+duplicateError.errorCode = 'ER_DUP_ENTRY'
+
 require('../../../../../src/lib/config').MONGODB_DISABLED = false
 
 // Sample Bulk Transfer Message received by the Bulk API Adapter
@@ -311,7 +314,7 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
         Kafka.proceed.returns(true)
 
         BulkTransferService.getBulkTransferDuplicateCheck.onCall(0).resolves({ id: bulkTransferPrepareMsg.bulkTransferId, hash: bulkTransferPrepareMsg.hash })
-        BulkTransferService.saveBulkTransferDuplicateCheck.onCall(0).resolves(true)
+        BulkTransferService.saveBulkTransferDuplicateCheck.onCall(0).rejects(duplicateError)
 
         const bulkResponse = {
           bulkTransferId: fspiopBulkTransferMsg.bulkTransferId,
@@ -362,7 +365,7 @@ Test('Bulk Transfer PREPARE handler', handlerTest => {
         Kafka.proceed.returns(true)
 
         BulkTransferService.getBulkTransferDuplicateCheck.onCall(0).resolves({ id: bulkTransferPrepareMsg.bulkTransferId, hash: 'DO-NOT-MATCH-HASH' })
-        BulkTransferService.saveBulkTransferDuplicateCheck.onCall(0).returns(Promise.resolve(true))
+        BulkTransferService.saveBulkTransferDuplicateCheck.onCall(0).returns(Promise.reject(duplicateError))
 
         const bulkResponse = {
           bulkTransferId: fspiopBulkTransferMsg.bulkTransferId,

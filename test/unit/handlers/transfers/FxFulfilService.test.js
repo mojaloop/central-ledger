@@ -51,6 +51,9 @@ const { Kafka, Comparators, Hash } = Util
 const { Action } = Enum.Events.Event
 const { TOPICS } = fixtures
 
+const duplicateError = new Error('Duplicate error')
+duplicateError.errorCode = 'ER_DUP_ENTRY'
+
 const log = logger
 // const functionality = Type.NOTIFICATION
 
@@ -124,7 +127,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
       } = createFxFulfilServiceWithTestData(message)
 
       FxTransferModel.duplicateCheck.getFxTransferFulfilmentDuplicateCheck.resolves({ hash: Hash.generateSha256(payload) })
-      FxTransferModel.duplicateCheck.saveFxTransferFulfilmentDuplicateCheck.resolves()
+      FxTransferModel.duplicateCheck.saveFxTransferFulfilmentDuplicateCheck.rejects(duplicateError)
       FxTransferModel.duplicateCheck.getFxTransferErrorDuplicateCheck.rejects(new Error('Should not be called'))
       FxTransferModel.duplicateCheck.saveFxTransferErrorDuplicateCheck.rejects(new Error('Should not be called'))
 
@@ -146,7 +149,7 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
       FxTransferModel.duplicateCheck.getFxTransferFulfilmentDuplicateCheck.rejects(new Error('Should not be called'))
       FxTransferModel.duplicateCheck.saveFxTransferFulfilmentDuplicateCheck.rejects(new Error('Should not be called'))
       FxTransferModel.duplicateCheck.getFxTransferErrorDuplicateCheck.resolves({ hash: Hash.generateSha256(payload) })
-      FxTransferModel.duplicateCheck.saveFxTransferErrorDuplicateCheck.resolves()
+      FxTransferModel.duplicateCheck.saveFxTransferErrorDuplicateCheck.rejects(duplicateError)
 
       const dupCheckResult = await service.getDuplicateCheckResult({ commitRequestId, payload, action })
       t.ok(dupCheckResult.hasDuplicateId)

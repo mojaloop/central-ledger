@@ -53,6 +53,9 @@ const { SOURCE, DESTINATION } = Enum.Http.Headers.FSPIOP
 const { TransferState, TransferInternalState } = Enum.Transfers
 const decodePayload = Util.StreamingProtocol.decodePayload
 
+const duplicateError = new Error('Duplicate error')
+duplicateError.errorCode = 'ER_DUP_ENTRY'
+
 const log = logger
 
 Test('FulfilService Tests -->', fulfilTest => {
@@ -671,7 +674,7 @@ Test('FulfilService Tests -->', fulfilTest => {
       const { service, transferId, payload } = createFulfilServiceWithTestData(message)
 
       TransferService.getTransferFulfilmentDuplicateCheck.resolves({ hash: Hash.generateSha256(payload) })
-      TransferService.saveTransferFulfilmentDuplicateCheck.resolves()
+      TransferService.saveTransferFulfilmentDuplicateCheck.rejects(duplicateError)
 
       const dupCheckResult = await service.getDuplicateCheckResult({ transferId, payload, action })
       t.ok(dupCheckResult.hasDuplicateId)
@@ -685,7 +688,7 @@ Test('FulfilService Tests -->', fulfilTest => {
       const { service, transferId, payload } = createFulfilServiceWithTestData(message)
 
       TransferService.getTransferErrorDuplicateCheck.resolves({ hash: Hash.generateSha256(payload) })
-      TransferService.saveTransferErrorDuplicateCheck.resolves()
+      TransferService.saveTransferErrorDuplicateCheck.rejects(duplicateError)
 
       const dupCheckResult = await service.getDuplicateCheckResult({ transferId, payload, action })
       t.ok(dupCheckResult.hasDuplicateId)
