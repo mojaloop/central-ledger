@@ -49,7 +49,7 @@ const rethrow = require('../../shared/rethrow')
 const getBulkTransferFulfilmentDuplicateCheck = async (bulkTransferId) => {
   Logger.isDebugEnabled && Logger.debug(`get BulkTransferFulfilmentDuplicateCheck (bulkTransferId=${bulkTransferId})`)
   try {
-    return Db.from('bulkTransferFulfilmentDuplicateCheck').findOne({ bulkTransferId })
+    return await Db.from('bulkTransferFulfilmentDuplicateCheck').findOne({ bulkTransferId })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -70,7 +70,7 @@ const getBulkTransferFulfilmentDuplicateCheck = async (bulkTransferId) => {
 const saveBulkTransferFulfilmentDuplicateCheck = async (bulkTransferId, hash) => {
   Logger.isDebugEnabled && Logger.debug(`save BulkTransferFulfilmentDuplicateCheck (bulkTransferId=${bulkTransferId}, hash=${hash})`)
   try {
-    return Db.from('bulkTransferFulfilmentDuplicateCheck').insert({ bulkTransferId, hash })
+    return await Db.from('bulkTransferFulfilmentDuplicateCheck').insert({ bulkTransferId, hash })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
