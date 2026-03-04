@@ -1,51 +1,59 @@
 'use strict'
 
+const assert = require('node:assert')
 const Test = require('tapes')(require('tape'))
-const Sinon = require('sinon')
-const Conditions = require('../../../src/cryptoConditions')
-const FiveBellsConditions = require('five-bells-condition')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-Test('crypto conditions', conditionsTest => {
-  let sandbox
+const conditions = require('../../../src/cryptoConditions/index.js')
 
-  conditionsTest.beforeEach(test => {
-    sandbox = Sinon.createSandbox()
-    sandbox.stub(FiveBellsConditions, 'validateCondition')
-    sandbox.stub(FiveBellsConditions, 'validateFulfillment')
-    sandbox.stub(FiveBellsConditions, 'fulfillmentToCondition')
+Test('conditions', conditionsTest => {
+  conditionsTest.test('it parses a valid condition correctly', test => {
+    const condition = 'sQaSwqzbjSlSYzllZs1O9Njv9b46yoEHmPqk3d4e46s'
+    conditions.validateCondition(condition)
     test.end()
   })
 
-  conditionsTest.afterEach(test => {
-    sandbox.restore()
-    test.end()
-  })
-
-  conditionsTest.test('validateCondition should', validateConditionTest => {
-    validateConditionTest.test('throw error if five-bell check throws error', test => {
-      const condition = 'some-condition'
-      const error = new Error('message')
-      FiveBellsConditions.validateCondition.withArgs(condition).throws(error)
-      try {
-        Conditions.validateCondition(condition)
-        test.fail('Should have thrown')
-        test.end()
-      } catch (error) {
-        test.assert(error instanceof ErrorHandler.Factory.FSPIOPError)
-        test.equal(error.apiErrorCode.code, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
-        test.equal(error.message, 'message')
-        test.end()
-      }
-    })
-
-    validateConditionTest.test('return true if five-bell condition returns true', test => {
-      const condition = 'some-condition'
-      FiveBellsConditions.validateCondition.withArgs(condition).returns(true)
-      test.equal(Conditions.validateCondition(condition), true)
+  conditionsTest.test('it fails on undefined', test => {
+    try {
+      conditions.validateCondition(undefined)
+      test.fail('Should have thrown.')
+    } catch (err) {
+      assert.equal(err.message, 'Condition not defined.')
+    } finally {
       test.end()
-    })
-    validateConditionTest.end()
+    }
+  })
+
+  conditionsTest.test('it fails on an empty string', test => {
+    try {
+      conditions.validateCondition('')
+      test.fail('Should have thrown.')
+    } catch (err) {
+      assert.equal(err.message, 'Condition not defined.')
+    } finally {
+      test.end()
+    }
+  })
+
+  conditionsTest.test('it fails on a short condition string', test => {
+    try {
+      conditions.validateCondition('test_invalid_condition')
+      test.fail('Should have thrown.')
+    } catch (err) {
+      assert.equal(err.message, 'Expected condition to have length of 32, found: 16.')
+    } finally {
+      test.end()
+    }
+  })
+
+  conditionsTest.test('it fails on a long condition string', test => {
+    try {
+      conditions.validateCondition('7f3a9c2d8e1b4f6a0c5d7e9f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b')
+      test.fail('Should have thrown.')
+    } catch (err) {
+      assert.equal(err.message, 'Expected condition to have length of 32, found: 48.')
+    } finally {
+      test.end()
+    }
   })
 
   conditionsTest.end()
