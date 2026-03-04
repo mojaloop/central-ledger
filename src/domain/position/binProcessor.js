@@ -412,11 +412,10 @@ const processBins = async (bins, trx) => {
  *
  * @param {array} bins - a list of account-bins to iterate
  * @param {async function} cb - callback function to call for each item
- * @param {async function} errCb - callback function to call incase of any error
+ * @param {async function} [errCb] - callback function to call incase of any error
  *
- * @returns {void} - Doesn't return anything
+ * @returns Promise<{void}> - Doesn't return anything
  */
-
 const iterateThroughBins = async (bins, cb, errCb) => {
   for (const accountID in bins) {
     const accountBin = bins[accountID]
