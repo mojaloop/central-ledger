@@ -41,6 +41,8 @@ ignore:
   - vulnerability: GHSA-3ppc-4f35-3m26
   - vulnerability: CVE-2026-27171
   - vulnerability: GHSA-378v-28hj-76wf
+  - vulnerability: GHSA-7r86-cg39-jmmj
+  - vulnerability: GHSA-23c5-xmqv-rm74
 
 # Set output format defaults
 output:

@@ -184,8 +184,7 @@
     "yargs-parser": "21.1.1",
     "fast-xml-parser": "5.3.6",
     "bn.js": "5.2.3",
-    "underscore": "1.13.8",
-    "minimatch": "3.1.4"
+    "underscore": "1.13.8"
   },
   "config": {
     "knex": "--knexfile ./config/knexfile.js",
