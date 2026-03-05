@@ -43,7 +43,6 @@ ignore:
   - vulnerability: GHSA-378v-28hj-76wf
   - vulnerability: GHSA-23c5-xmqv-rm74
   - vulnerability: GHSA-7r86-cg39-jmmj
-  - vulnerability: GHSA-qpx9-hpmf-5gmw
 
 # Set output format defaults
 output:
