@@ -95,8 +95,8 @@
     "@mojaloop/central-services-health": "15.2.2",
     "@mojaloop/central-services-logger": "11.11.0-infitx.0",
     "@mojaloop/central-services-metrics": "12.8.5",
-    "@mojaloop/central-services-shared": "18.36.0-duplicate-check.0",
-    "@mojaloop/central-services-stream": "11.10.0-infitx.2",
+    "@mojaloop/central-services-shared": "18.36.0-infitx.2",
+    "@mojaloop/central-services-stream": "11.10.0-infitx.3",
     "@mojaloop/database-lib": "11.3.7",
     "@mojaloop/event-sdk": "14.8.3",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.9.0",
@@ -183,7 +183,8 @@
     "cross-spawn": "7.0.6",
     "yargs-parser": "21.1.1",
     "fast-xml-parser": "5.3.6",
-    "bn.js": "5.2.3"
+    "bn.js": "5.2.3",
+    "underscore": "1.13.8"
   },
   "config": {
     "knex": "--knexfile ./config/knexfile.js",
