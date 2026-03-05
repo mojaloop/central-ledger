@@ -49,7 +49,7 @@ const rethrow = require('../../shared/rethrow')
 const getTransferFulfilmentDuplicateCheck = async (transferId) => {
   Logger.isDebugEnabled && Logger.debug(`get transferFulfilmentDuplicateCheck (transferId=${transferId})`)
   try {
-    return Db.from('transferFulfilmentDuplicateCheck').findOne({ transferId })
+    return await Db.from('transferFulfilmentDuplicateCheck').findOne({ transferId })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -70,7 +70,7 @@ const getTransferFulfilmentDuplicateCheck = async (transferId) => {
 const saveTransferFulfilmentDuplicateCheck = async (transferId, hash) => {
   Logger.isDebugEnabled && Logger.debug(`save transferFulfilmentDuplicateCheck (transferId=${transferId}, hash=${hash})`)
   try {
-    return Db.from('transferFulfilmentDuplicateCheck').insert({ transferId, hash })
+    return await Db.from('transferFulfilmentDuplicateCheck').insert({ transferId, hash })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
