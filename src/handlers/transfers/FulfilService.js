@@ -305,13 +305,8 @@ class FulfilService {
   }
 
   async validateFulfilment (transfer, payload, action) {
-    if (!payload.fulfilment) {
-      return true // No fulfilment to validate
-    }
-
-    const isValid = this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)
-
-    if (!isValid) {
+    const isInvalid = payload.fulfilment && !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)
+    if (isInvalid) {
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
         'invalid fulfilment'
@@ -372,7 +367,7 @@ class FulfilService {
 
     this.log.debug('Fulfilment validation passed', {
       transferId: transfer.transferId,
-      isValid
+      isInvalid
     })
 
     return true
