@@ -34,7 +34,7 @@ const rethrow = require('../../shared/rethrow')
 const getItemInWatchListByCommitRequestId = async (commitRequestId) => {
   logger.debug(`get item in watch list (commitRequestId=${commitRequestId})`)
   try {
-    return Db.from(TABLE_NAMES.fxWatchList).findOne({ commitRequestId })
+    return await Db.from(TABLE_NAMES.fxWatchList).findOne({ commitRequestId })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -43,7 +43,7 @@ const getItemInWatchListByCommitRequestId = async (commitRequestId) => {
 const getItemsInWatchListByDeterminingTransferId = async (determiningTransferId) => {
   logger.debug(`get item in watch list (determiningTransferId=${determiningTransferId})`)
   try {
-    return Db.from(TABLE_NAMES.fxWatchList).find({ determiningTransferId })
+    return await Db.from(TABLE_NAMES.fxWatchList).find({ determiningTransferId })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -52,7 +52,7 @@ const getItemsInWatchListByDeterminingTransferId = async (determiningTransferId)
 const addToWatchList = async (record) => {
   logger.debug('add to fx watch list', record)
   try {
-    return Db.from(TABLE_NAMES.fxWatchList).insert(record)
+    return await Db.from(TABLE_NAMES.fxWatchList).insert(record)
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }

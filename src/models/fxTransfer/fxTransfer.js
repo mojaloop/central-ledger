@@ -588,7 +588,7 @@ const updateFxPrepareReservedForwarded = async function (commitRequestId) {
 
 const getFxTransferParticipant = async (participantName, commitRequestId) => {
   try {
-    return Db.from('participant').query(async (builder) => {
+    return await Db.from('participant').query(async (builder) => {
       return builder
         .where({
           'ftp.commitRequestId': commitRequestId,

@@ -332,7 +332,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
 
 const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null) => {
   try {
-    return Db.from('participantPosition').query(builder => {
+    return await Db.from('participantPosition').query(builder => {
       return builder.innerJoin('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId')
         .innerJoin('participant AS p', 'pc.participantId', 'p.participantId')
         .where({
@@ -356,7 +356,7 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
 
 const getAllByNameAndCurrency = async (name, currencyId = null) => {
   try {
-    return Db.from('participantPosition').query(builder => {
+    return await Db.from('participantPosition').query(builder => {
       return builder.innerJoin('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId')
         .innerJoin('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'pc.ledgerAccountTypeId')
         .innerJoin('participant AS p', 'pc.participantId', 'p.participantId')
