@@ -305,11 +305,12 @@ class FulfilService {
   }
 
   async validateFulfilment (transfer, payload, action) {
-    const isInvalid = payload.fulfilment && !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)
+    const isInvalid = !payload.fulfilment || !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)
     if (isInvalid) {
+      const errorMessage = !payload.fulfilment ? 'missing fulfilment' : 'invalid fulfilment'
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'invalid fulfilment'
+        errorMessage
       )
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
 
