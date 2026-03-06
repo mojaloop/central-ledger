@@ -567,14 +567,37 @@ Test('FulfilService Tests -->', fulfilTest => {
       t.end()
     })
 
-    methodTest.test('should skip validation when no fulfilment provided', async t => {
+    methodTest.test('should fail validation when no fulfilment provided', async t => {
       const message = fixtures.fulfilKafkaMessageDto()
       const { service } = createFulfilServiceWithTestData(message)
-      const transfer = { transferId: 'test-id' }
+      const transfer = {
+        transferId: 'test-id',
+        condition: fixtures.CONDITION
+      }
       const payload = {}
 
-      const result = await service.validateFulfilment(transfer, payload)
-      t.true(result)
+      sandbox.stub(Validator, 'validateFulfilCondition').returns(false)
+      service.kafkaProceed = sandbox.stub().resolves()
+      TransferService.handlePayeeResponse.resolves({
+        completedTimestamp: new Date().toISOString()
+      })
+      FxService.Cyril.processAbortMessage.resolves({
+        positionChanges: [{ participantCurrencyId: 456 }]
+      })
+
+      try {
+        await service.validateFulfilment(transfer, payload)
+        t.fail('Should throw error')
+      } catch (err) {
+        t.ok(err.message.includes('missing fulfilment'))
+        t.ok(TransferService.handlePayeeResponse.calledWith(
+          'test-id',
+          payload,
+          Action.ABORT_VALIDATION
+        ))
+        t.ok(FxService.Cyril.processAbortMessage.calledWith('test-id'))
+        t.ok(service.kafkaProceed.calledOnce)
+      }
       t.end()
     })
 
@@ -588,9 +611,12 @@ Test('FulfilService Tests -->', fulfilTest => {
       const payload = { fulfilment: 'invalid' }
 
       sandbox.stub(Validator, 'validateFulfilCondition').returns(false)
-      service.kafkaProceed = sandbox.stub()
+      service.kafkaProceed = sandbox.stub().resolves()
       TransferService.handlePayeeResponse.resolves({
         completedTimestamp: new Date().toISOString()
+      })
+      FxService.Cyril.processAbortMessage.resolves({
+        positionChanges: [{ participantCurrencyId: 456 }]
       })
 
       try {
@@ -604,6 +630,10 @@ Test('FulfilService Tests -->', fulfilTest => {
           payload,
           Action.ABORT_VALIDATION
         ))
+        t.ok(FxService.Cyril.processAbortMessage.calledWith('test-id'))
+        const kafkaOpts = service.kafkaProceed.lastCall.args[0]
+        t.equal(kafkaOpts.eventDetail.action, Action.ABORT_VALIDATION)
+        t.equal(kafkaOpts.messageKey, '456')
       }
       t.end()
     })
@@ -630,9 +660,19 @@ Test('FulfilService Tests -->', fulfilTest => {
         await service.validateFulfilment(transfer, payload)
         t.fail('Should throw error')
       } catch (err) {
+        t.ok(err.message.includes('invalid fulfilment'))
         t.ok(service.kafkaProceed.calledOnce)
+        t.ok(FxService.Cyril.processAbortMessage.calledWith('test-id'))
+        t.ok(TransferService.handlePayeeResponse.calledWith(
+          'test-id',
+          payload,
+          Action.ABORT_VALIDATION
+        ))
         const kafkaOpts = service.kafkaProceed.lastCall.args[0]
         t.equal(kafkaOpts.messageKey, '456')
+        t.equal(kafkaOpts.eventDetail.action, Action.ABORT_VALIDATION)
+        t.ok(service.params.message.value.content.context.cyrilResult)
+        t.equal(service.params.message.value.content.context.cyrilResult.positionChanges.length, 1)
       }
       t.end()
     })
@@ -660,6 +700,42 @@ Test('FulfilService Tests -->', fulfilTest => {
         t.fail('Should throw error')
       } catch (err) {
         t.ok(err.message.includes('Invalid cyril result'))
+        t.ok(FxService.Cyril.processAbortMessage.calledWith('test-id'))
+        t.ok(service.kafkaProceed.notCalled)
+      }
+      t.end()
+    })
+
+    methodTest.test('should handle RESERVE action with invalid fulfilment', async t => {
+      const message = fixtures.fulfilKafkaMessageDto()
+      const { service } = createFulfilServiceWithTestData(message)
+      const transfer = {
+        transferId: 'test-id',
+        condition: fixtures.CONDITION,
+        payeeFsp: 'dfsp1'
+      }
+      const payload = { fulfilment: 'invalid' }
+      const action = Action.RESERVE
+
+      sandbox.stub(Validator, 'validateFulfilCondition').returns(false)
+      service.kafkaProceed = sandbox.stub().resolves()
+      service._handleReservedAborted = sandbox.stub().resolves()
+      TransferService.handlePayeeResponse.resolves({
+        completedTimestamp: new Date().toISOString()
+      })
+      TransferService.getById.resolves(transfer)
+      FxService.Cyril.processAbortMessage.resolves({
+        positionChanges: [{ participantCurrencyId: 456 }]
+      })
+
+      try {
+        await service.validateFulfilment(transfer, payload, action)
+        t.fail('Should throw error')
+      } catch (err) {
+        t.ok(err.message.includes('invalid fulfilment'))
+        t.ok(service.kafkaProceed.calledOnce)
+        t.ok(service._handleReservedAborted.calledOnce)
+        t.ok(FxService.Cyril.processAbortMessage.calledWith('test-id'))
       }
       t.end()
     })
