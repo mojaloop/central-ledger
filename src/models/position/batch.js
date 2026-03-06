@@ -267,7 +267,7 @@ const getReservedPositionChangesByCommitRequestIds = async (trx, commitRequestId
  * Executes multiple Knex queries in a single database round-trip.
  * Requires { multipleStatements: true } in Knex connection config.
  */
-async function executeMultiQuery (knex, queryBuilders) {
+async function executeMultiQuery (trx, queryBuilders) {
   // 1. Convert builders to SQL/Bindings
   const sqlObj = queryBuilders.map(qb => qb.toSQL().toNative())
 
@@ -276,7 +276,7 @@ async function executeMultiQuery (knex, queryBuilders) {
   const combinedBindings = sqlObj.flatMap(q => q.bindings)
 
   // 3. Execute
-  const [results] = await knex.raw(combinedSql, combinedBindings)
+  const [results] = await trx.raw(combinedSql, combinedBindings)
 
   // 4. Filter results (MySQL often adds a trailing header if the last query is an DML)
   // This ensures you only get the data sets for your specific queries
@@ -286,7 +286,7 @@ async function executeMultiQuery (knex, queryBuilders) {
 const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, reservedActionTransferIdList) => {
   const knex = Db.getKnex()
   try {
-    const [results, results1, participantPositions, transferInfos, participantPositionChanges, query] = await executeMultiQuery(knex, [
+    const [results, results1, participantPositions, transferInfos, participantPositionChanges, query] = await executeMultiQuery(trx, [
       // Pre fetch latest transferStates for all the transferIds in the account-bin
       knex('transferStateChange')
         .transacting(trx)
