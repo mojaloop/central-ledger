@@ -35,7 +35,7 @@ const BatchPositionModel = require('./batch')
 const rethrow = require('../../shared/rethrow')
 
 let cacheClient
-let participantCurrencyAllCacheKey
+const participantCurrencyAllCacheKey = 'all'
 
 /*
   Private API
