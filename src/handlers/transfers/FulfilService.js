@@ -313,7 +313,7 @@ class FulfilService {
     ]
 
     if (actionsSkippingFulfilmentValidation.includes(action)) {
-      this.log.debug('Skipping fulfilment validation for action', { action, transferId: transfer.transferId })
+      this.log.debug('Skipping fulfilment validation for action', { action })
       return true
     }
 
