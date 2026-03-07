@@ -305,6 +305,18 @@ class FulfilService {
   }
 
   async validateFulfilment (transfer, payload, action) {
+    // Skip fulfilment validation for actions that use errorInformation instead of fulfilment
+    const actionsSkippingFulfilmentValidation = [
+      Action.ABORT,
+      Action.BULK_ABORT,
+      Action.REJECT
+    ]
+    
+    if (actionsSkippingFulfilmentValidation.includes(action)) {
+      this.log.debug('Skipping fulfilment validation for action', { action, transferId: transfer.transferId })
+      return true
+    }
+
     const isInvalid = !payload.fulfilment || !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)
     if (isInvalid) {
       const errorMessage = !payload.fulfilment ? 'missing fulfilment' : 'invalid fulfilment'

@@ -848,5 +848,6 @@ module.exports = {
   registerPrepareHandler,
   registerFulfilHandler,
   registerGetTransferHandler,
-  registerAllHandlers
+  registerAllHandlers,
+  shouldNoopForInterschemeProxiedGetState
 }
