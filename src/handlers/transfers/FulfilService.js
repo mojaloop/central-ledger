@@ -311,7 +311,7 @@ class FulfilService {
       Action.BULK_ABORT,
       Action.REJECT
     ]
-    
+
     if (actionsSkippingFulfilmentValidation.includes(action)) {
       this.log.debug('Skipping fulfilment validation for action', { action, transferId: transfer.transferId })
       return true

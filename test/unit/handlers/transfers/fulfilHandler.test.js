@@ -2094,6 +2094,5 @@ Test('Transfer handler', transferHandlerTest => {
     test.end()
   })
 
-
   transferHandlerTest.end()
 })
