@@ -1707,7 +1707,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
 
 const getTransferParticipant = async (participantName, transferId) => {
   try {
-    return Db.from('participant').query(async (builder) => {
+    return await Db.from('participant').query(async (builder) => {
       return builder
         .where({
           'participant.name': participantName,

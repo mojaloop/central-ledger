@@ -73,7 +73,7 @@ const getAll = async () => {
 
 const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.from('participantLimit').findOne({ participantCurrencyId, isActive: 1 })
+    return await Db.from('participantLimit').findOne({ participantCurrencyId, isActive: 1 })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -93,7 +93,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
 
 const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.from('participantLimit').destroy({ participantCurrencyId })
+    return await Db.from('participantLimit').destroy({ participantCurrencyId })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
