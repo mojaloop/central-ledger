@@ -42,7 +42,7 @@ const getById = async (transferId) => {
 const saveTransfer = async (record) => {
   Logger.isDebugEnabled && Logger.debug('save transfer' + record.toString())
   try {
-    return Db.from('transfer').insert(record)
+    return await Db.from('transfer').insert(record)
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }

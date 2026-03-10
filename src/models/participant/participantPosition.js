@@ -53,7 +53,7 @@ const rethrow = require('../../shared/rethrow')
 
 const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.from('participantPosition').findOne({ participantCurrencyId })
+    return await Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -73,7 +73,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
 
 const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.from('participantPosition').destroy({ participantCurrencyId })
+    return await Db.from('participantPosition').destroy({ participantCurrencyId })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }

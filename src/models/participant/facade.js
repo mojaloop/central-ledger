@@ -215,7 +215,7 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
 
 const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId) => {
   try {
-    return Db.from('participant').query(async (builder) => {
+    return await Db.from('participant').query(async (builder) => {
       return builder
         .where({
           'pc.ledgerAccountTypeId': ledgerAccountTypeId,
@@ -266,7 +266,7 @@ const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId
 
 const getEndpoint = async (participantId, endpointType) => {
   try {
-    return Db.from('participantEndpoint').query(builder => {
+    return await Db.from('participantEndpoint').query(builder => {
       return builder.innerJoin('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId')
         .where({
           'participantEndpoint.participantId': participantId,
@@ -625,7 +625,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
 
 const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => {
   try {
-    return Db.from('participantLimit').query(builder => {
+    return await Db.from('participantLimit').query(builder => {
       return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
         .where({
           'participantLimit.participantCurrencyId': participantCurrencyId,
@@ -661,7 +661,7 @@ const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => 
 
 const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAccountTypeId) => {
   try {
-    return Db.from('participantLimit').query(builder => {
+    return await Db.from('participantLimit').query(builder => {
       return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
         .innerJoin('participantCurrency AS pc', 'participantLimit.participantCurrencyId', 'pc.participantCurrencyId')
         .where({
@@ -721,7 +721,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
 
 const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccountActive = 1) => {
   try {
-    return Db.from('participantCurrency').query(builder => {
+    return await Db.from('participantCurrency').query(builder => {
       return builder
         .innerJoin('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId')
         .innerJoin('participant AS p', 'p.participantId', 'participantCurrency.participantId')

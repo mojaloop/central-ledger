@@ -36,7 +36,7 @@ const rethrow = require('../../shared/rethrow')
 const saveTransferStateChange = async (stateChange) => {
   Logger.isDebugEnabled && Logger.debug('save transferStateChange' + stateChange.toString())
   try {
-    return Db.from('transferStateChange').insert(stateChange)
+    return await Db.from('transferStateChange').insert(stateChange)
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
