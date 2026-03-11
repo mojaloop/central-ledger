@@ -74,6 +74,13 @@ const rethrow = require('../../shared/rethrow')
 const externalParticipantCached = require('../../models/participant/externalParticipantCached')
 const consumerCommit = true
 
+const shouldNoopForInterschemeProxiedGetState = (transferState) => {
+  if (!transferState) return true
+
+  return transferState.startsWith('RESERVED') ||
+    transferState.startsWith('RECEIVED')
+}
+
 const fulfil = async (error, messages) => {
   if (error) {
     rethrow.rethrowAndCountFspiopError(error, { operation: 'fulfil' })
@@ -536,8 +543,11 @@ const processFxGetMessage = async (message, commitRequestId, headers, destinatio
   // The self heal in the regional scheme will resolve the RESERVED_FORWARDED state
   // and then the initiating buffer hub will be able to retrieve the transfer details successfully in the next retry,
   // which will trigger the correct notification callback to resolve the RESERVED_FORWARDED state in the initiating buffer hub's scheme.
-  if (isProxiedGet && isExternalParticipant && fxTransfer && fxTransfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForFxReservedForwarded--${actionLetter}4`))
+  if (isProxiedGet && isExternalParticipant && fxTransfer &&
+      shouldNoopForInterschemeProxiedGetState(fxTransfer.transferState)) {
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetNoopForState--${actionLetter}4`), {
+      transferState: fxTransfer.transferState
+    })
     // Do nothing
     return true
   }
@@ -634,8 +644,11 @@ const processGetMessage = async (message, transferId, headers, destination, para
   // The self heal in the regional scheme will resolve the RESERVED_FORWARDED state
   // and then the initiating buffer hub will be able to retrieve the transfer details successfully in the next retry,
   // which will trigger the correct notification callback to resolve the RESERVED_FORWARDED state in the initiating buffer hub's scheme.
-  if (isProxiedGet && isExternalParticipant && transfer && transfer.transferState === Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetForReservedForwarded--${actionLetter}4`))
+  if (isProxiedGet && isExternalParticipant && transfer &&
+      shouldNoopForInterschemeProxiedGetState(transfer.transferState)) {
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `regionalSchemeGetNoopForState--${actionLetter}4`), {
+      transferState: transfer.transferState
+    })
     // Do nothing
     return true
   }
@@ -835,5 +848,6 @@ module.exports = {
   registerPrepareHandler,
   registerFulfilHandler,
   registerGetTransferHandler,
-  registerAllHandlers
+  registerAllHandlers,
+  shouldNoopForInterschemeProxiedGetState
 }
