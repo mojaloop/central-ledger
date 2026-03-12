@@ -286,7 +286,7 @@ async function executeMultiQuery (trx, queryBuilders) {
 const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, reservedActionTransferIdList) => {
   const knex = Db.getKnex()
   try {
-    const [results, results1, participantPositions, transferInfos, participantPositionChanges, query] = await executeMultiQuery(trx, [
+    const [results, results1, participantPositions, transferInfos, participantPositionChanges, query, extensions] = await executeMultiQuery(trx, [
       // Pre fetch latest transferStates for all the transferIds in the account-bin
       knex('transferStateChange')
         .transacting(trx)
@@ -344,7 +344,17 @@ const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, r
           'tf.ilpFulfilment AS fulfilment',
           'te.errorCode',
           'te.errorDescription'
-        )
+        ),
+      // Pre fetch transfer extensions for all reserve action fulfils
+      reservedActionTransferIdList &&
+      reservedActionTransferIdList.length > 0 &&
+      knex('transfer')
+        .transacting(trx)
+        .from('transferExtension')
+        .whereIn('transferId', reservedActionTransferIdList)
+        .where('isFulfilment', false)
+        .where('isError', false)
+        .select('*')
     ].filter(Boolean))
     // ** //
     const latestTransferStateChanges = {}
@@ -397,7 +407,7 @@ const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, r
     const transfers = {}
     if (reservedActionTransferIdList && reservedActionTransferIdList.length > 0) {
       for (const transfer of query) {
-        transfer.extensionList = await TransferExtensionModel.getByTransferId(transfer.transferId)
+        transfer.extensionList = extensions.filter(ext => ext.transferId === transfer.transferId)
         if (transfer.errorCode && transfer.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
           if (!transfer.extensionList) transfer.extensionList = []
           transfer.extensionList.push({
