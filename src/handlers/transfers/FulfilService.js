@@ -305,16 +305,24 @@ class FulfilService {
   }
 
   async validateFulfilment (transfer, payload, action) {
-    if (!payload.fulfilment) {
-      return true // No fulfilment to validate
+    // Skip fulfilment validation for actions that use errorInformation instead of fulfilment
+    const actionsSkippingFulfilmentValidation = [
+      Action.ABORT,
+      Action.BULK_ABORT,
+      Action.REJECT
+    ]
+
+    if (actionsSkippingFulfilmentValidation.includes(action)) {
+      this.log.debug('Skipping fulfilment validation for action', { action })
+      return true
     }
 
-    const isValid = this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)
-
-    if (!isValid) {
+    const isInvalid = !payload.fulfilment || !this.Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)
+    if (isInvalid) {
+      const errorMessage = !payload.fulfilment ? 'missing fulfilment' : 'invalid fulfilment'
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'invalid fulfilment'
+        errorMessage
       )
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
 
@@ -372,7 +380,7 @@ class FulfilService {
 
     this.log.debug('Fulfilment validation passed', {
       transferId: transfer.transferId,
-      isValid
+      isInvalid
     })
 
     return true

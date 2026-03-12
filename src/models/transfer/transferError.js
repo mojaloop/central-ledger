@@ -52,7 +52,7 @@ const rethrow = require('../../shared/rethrow')
 const insert = async (transferId, transferStateChangeId, errorCode, errorDescription) => {
   Logger.isDebugEnabled && Logger.debug(`insert transferError - errorCode: ${errorCode}, errorDesc: ${errorDescription}`)
   try {
-    return Db.from('transferError').insert({ transferId, transferStateChangeId, errorCode, errorDescription })
+    return await Db.from('transferError').insert({ transferId, transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -81,7 +81,7 @@ const insert = async (transferId, transferStateChangeId, errorCode, errorDescrip
 
 const getByTransferStateChangeId = async (transferStateChangeId) => {
   try {
-    return Db.from('transferError').find({ transferStateChangeId })
+    return await Db.from('transferError').find({ transferStateChangeId })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }

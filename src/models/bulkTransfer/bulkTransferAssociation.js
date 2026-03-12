@@ -34,7 +34,7 @@ const rethrow = require('../../shared/rethrow')
 
 exports.create = async (bulkTransferAssociation) => {
   try {
-    return Db.from('bulkTransferAssociation').insert(bulkTransferAssociation)
+    return await Db.from('bulkTransferAssociation').insert(bulkTransferAssociation)
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -48,7 +48,7 @@ exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => 
       errorCode: bulkTransferAssociation.errorCode,
       errorDescription: bulkTransferAssociation.errorDescription
     })
-    return Db.from('bulkTransferAssociation').update({ transferId, bulkTransferId }, record)
+    return await Db.from('bulkTransferAssociation').update({ transferId, bulkTransferId }, record)
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
@@ -56,7 +56,7 @@ exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => 
 
 exports.exists = async (bulkTransferId, bulkProcessingStateId) => {
   try {
-    return Db.from('bulkTransferAssociation').findOne({
+    return await Db.from('bulkTransferAssociation').findOne({
       bulkTransferId, bulkProcessingStateId
     })
   } catch (err) {

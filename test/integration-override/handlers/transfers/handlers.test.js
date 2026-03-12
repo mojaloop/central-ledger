@@ -1656,8 +1656,200 @@ Test('Handlers test', async handlersTest => {
       testConsumer.clearEvents()
       test.end()
     })
-
     transferFulfil.end()
+  })
+
+  await handlersTest.test('fulfilment validation skipping should', async fulfilValidationTest => {
+    await fulfilValidationTest.test('skip validation for ABORT action', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      // Prepare transfer
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+        test.equal(positionPrepare[0].value.metadata.event.action, 'prepare', 'Message action should be prepare')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+
+      // Create abort message without fulfilment (should be allowed)
+      const messageProtocolAbort = Util.clone(td.messageProtocolError)
+      messageProtocolAbort.content.payload = {
+        errorInformation: ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN
+        ).toApiErrorObject().errorInformation
+      }
+      await Producer.produceMessage(messageProtocolAbort, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionAbort = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'abort',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionAbort[0], 'Position abort message processed without fulfilment validation')
+        test.equal(positionAbort[0].value.metadata.event.action, 'abort', 'Message action should be abort')
+        console.log(positionAbort[0].value.content.payload)
+        test.ok(positionAbort[0].value.content.payload.errorInformation, 'Error information should be present')
+        test.equal(positionAbort[0].value.content.payload.errorInformation.errorCode, '5105', 'Error code should be PAYEE_FSP_REJECTED_TXN')
+      } catch (err) {
+        test.notOk('Error should not be thrown for ABORT without fulfilment')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await fulfilValidationTest.test('skip validation for REJECT action', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      // Prepare transfer
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+        test.equal(positionPrepare[0].value.metadata.event.action, 'prepare', 'Message action should be prepare')
+        test.equal(positionPrepare[0].value.content.payload.transferId, td.messageProtocolPrepare.content.payload.transferId, 'Transfer ID should match')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+
+      // Create reject message without fulfilment
+      const messageProtocolReject = Util.clone(td.messageProtocolReject)
+      messageProtocolReject.content.payload = {
+        errorInformation: ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN
+        ).toApiErrorObject().errorInformation
+      }
+
+      // Note: REJECT action is handled differently in the current handler
+      // It logs an error but doesn't process the message
+      await Producer.produceMessage(messageProtocolReject, td.topicConfTransferFulfil, fulfilConfig)
+
+      // For REJECT action, the handler logs an error and returns true without processing
+      // So we don't expect any position messages
+      try {
+        await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'reject'
+        }), 5, wrapWithRetriesConf.timeout) // Reduce retries since we expect no message
+        test.notOk('Should not produce position message for REJECT action')
+      } catch (err) {
+        test.ok('No position message produced as expected for REJECT action')
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    await fulfilValidationTest.test('require fulfilment validation for COMMIT action', async (test) => {
+      const td = await prepareTestData(testData)
+      const prepareConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      prepareConfig.logger = Logger
+      const fulfilConfig = Utility.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      fulfilConfig.logger = Logger
+
+      // Prepare transfer
+      await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
+
+      try {
+        const positionPrepare = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'prepare',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionPrepare[0], 'Position prepare message with key found')
+        test.equal(positionPrepare[0].value.metadata.event.action, 'prepare', 'Message action should be prepare')
+      } catch (err) {
+        test.notOk('Error should not be thrown')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+
+      // Create commit message without fulfilment (should fail validation)
+      const messageProtocolCommitWithoutFulfilment = Util.clone(td.messageProtocolFulfil)
+      messageProtocolCommitWithoutFulfilment.content.payload = {
+        transferState: TransferStateEnum.COMMITTED,
+        completedTimestamp: testData.now
+      }
+      // Remove fulfilment field to trigger validation failure
+      delete messageProtocolCommitWithoutFulfilment.content.payload.fulfilment
+
+      await Producer.produceMessage(messageProtocolCommitWithoutFulfilment, td.topicConfTransferFulfil, fulfilConfig)
+
+      try {
+        const positionAbortValidation = await wrapWithRetries(() => testConsumer.getEventsForFilter({
+          topicFilter: 'topic-transfer-position-batch',
+          action: 'abort-validation',
+          keyFilter: td.payer.participantCurrencyId.toString()
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        test.ok(positionAbortValidation[0], 'Position abort-validation message produced for missing fulfilment')
+        test.equal(positionAbortValidation[0].value.metadata.event.action, 'abort-validation', 'Message action should be abort-validation')
+        test.equal(positionAbortValidation[0].value.content.uriParams.id, td.transferPayload.transferId, 'Transfer ID should match')
+        test.ok(positionAbortValidation[0].value.content.payload.errorInformation, 'Error information should be present')
+        test.equal(positionAbortValidation[0].value.content.payload.errorInformation.errorCode, '3100', 'Error code should be VALIDATION_ERROR')
+        test.ok(positionAbortValidation[0].value.content.payload.errorInformation.errorDescription.includes('missing fulfilment'), 'Error description should mention missing fulfilment')
+      } catch (err) {
+        test.notOk('Error should not be thrown when fulfilment validation fails')
+        console.error(err)
+      }
+
+      testConsumer.clearEvents()
+      test.end()
+    })
+
+    fulfilValidationTest.end()
   })
 
   await handlersTest.test('transferProxyPrepare should', async transferProxyPrepare => {
