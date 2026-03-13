@@ -53,6 +53,7 @@ const ParticipantCurrencyCached = require('../models/participant/participantCurr
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
 const externalParticipantCached = require('../models/participant/externalParticipantCached')
 const BatchPositionModelCached = require('../models/position/batchCached')
+const SettlementModelCached = require('../models/settlement/settlementModelCached')
 const Plugins = require('./plugins')
 
 const log = logger.child({ serviceName: `${name}:${version}` })
@@ -222,12 +223,15 @@ const initializeInstrumentation = () => {
   }
 }
 
-const initializeCache = async () => {
+const initializeCache = async (handlers) => {
   await EnumCached.initialize()
   await ParticipantCached.initialize()
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
   await BatchPositionModelCached.initialize()
+  if (handlers && (handlers.includes('position') || handlers.includes('positionbatch'))) {
+    await SettlementModelCached.initialize()
+  }
   // all cached models initialize-methods are SYNC!!
   externalParticipantCached.initialize()
   await Cache.initCache()
@@ -258,7 +262,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     await migrate(runMigrations)
     await connectDatabase()
     await connectMongoose()
-    await initializeCache()
+    await initializeCache(runHandlers && handlers)
 
     if (Config.PROXY_CACHE_CONFIG?.enabled) {
       await ProxyCache.connect()
