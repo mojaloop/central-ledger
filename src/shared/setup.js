@@ -229,7 +229,7 @@ const initializeCache = async (handlers) => {
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
   await BatchPositionModelCached.initialize()
-  if (handlers && (handlers.includes('position') || handlers.includes('positionbatch'))) {
+  if (handlers?.some?.(handler => handler.enabled && ['position', 'positionbatch'].includes(handler.type))) {
     await SettlementModelCached.initialize()
   }
   // all cached models initialize-methods are SYNC!!
