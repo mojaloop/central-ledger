@@ -65,12 +65,6 @@ const processBins = async (bins, trx) => {
   // Get transferIdList, reservedActionTransferIdList and commitRequestId for actions PREPARE, FX_PREPARE, FX_RESERVE, COMMIT and RESERVE
   const { transferIdList, reservedActionTransferIdList, commitRequestIdList } = await _getTransferIdList(bins)
 
-  // Pre fetch latest transferStates for all the transferIds in the account-bin
-  const latestTransferStates = await _fetchLatestTransferStates(trx, transferIdList)
-
-  // Pre fetch latest fxTransferStates for all the commitRequestIds in the account-bin
-  const latestFxTransferStates = await _fetchLatestFxTransferStates(trx, commitRequestIdList)
-
   const accountIds = [...Object.keys(bins).filter(accountId => accountId !== '0')]
 
   // Get all participantIdMap for the accountIds
@@ -82,31 +76,18 @@ const processBins = async (bins, trx) => {
   // Construct objects participantIdMap, accountIdMap and currencyIdMap
   const { settlementCurrencyIds, accountIdMap } = await _constructRequiredMaps(participantCurrencyIds, allSettlementModels, trx)
 
-  // Pre fetch all position account balances for the account-bin and acquire lock on position
-  const positions = await BatchPositionModel.getPositionsByAccountIdsForUpdate(trx, [
-    ...accountIds,
-    ...settlementCurrencyIds.map(pc => pc.participantCurrencyId)
-  ])
-
-  const latestTransferInfoByTransferId = await BatchPositionModel.getTransferInfoList(
+  const [
+    latestTransferStates,
+    latestFxTransferStates,
+    positions,
+    latestTransferInfoByTransferId,
+    fetchedReservedPositionChangesByCommitRequestIds,
+    reservedActionTransfers
+  ] = await BatchPositionModel.fetchAll(
     trx,
     transferIdList,
-    Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
-    Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
-  )
-
-  // Fetch all RESERVED participantPositionChanges associated with a commitRequestId
-  // These will contain the value that was reserved for the fxTransfer
-  // We will use these values to revert the position on timeouts
-  const fetchedReservedPositionChangesByCommitRequestIds =
-    await BatchPositionModel.getReservedPositionChangesByCommitRequestIds(
-      trx,
-      commitRequestIdList
-    )
-
-  // Pre fetch transfers for all reserve action fulfils
-  const reservedActionTransfers = await BatchPositionModel.getTransferByIdsForReserve(
-    trx,
+    commitRequestIdList,
+    [...accountIds, ...settlementCurrencyIds.map(pc => pc.participantCurrencyId)],
     reservedActionTransferIdList
   )
 
@@ -481,24 +462,6 @@ const _getTransferIdList = async (bins) => {
     }
   })
   return { transferIdList, reservedActionTransferIdList, commitRequestIdList }
-}
-
-const _fetchLatestTransferStates = async (trx, transferIdList) => {
-  const latestTransferStateChanges = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, transferIdList)
-  const latestTransferStates = {}
-  for (const key in latestTransferStateChanges) {
-    latestTransferStates[key] = latestTransferStateChanges[key].transferStateId
-  }
-  return latestTransferStates
-}
-
-const _fetchLatestFxTransferStates = async (trx, commitRequestIdList) => {
-  const latestFxTransferStateChanges = await BatchPositionModel.getLatestFxTransferStateChangesByCommitRequestIdList(trx, commitRequestIdList)
-  const latestFxTransferStates = {}
-  for (const key in latestFxTransferStateChanges) {
-    latestFxTransferStates[key] = latestFxTransferStateChanges[key].transferStateId
-  }
-  return latestFxTransferStates
 }
 
 const _getParticipantCurrencyIds = async (trx, accountIds) => {

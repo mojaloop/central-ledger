@@ -44,7 +44,6 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const BinProcessor = require('../../domain/position/binProcessor')
-const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const BatchPositionModel = require('../../models/position/batch')
 const Config = require('../../lib/config')
 const rethrow = require('../../shared/rethrow')
@@ -177,7 +176,6 @@ const registerPositionHandler = async () => {
   try {
     const batchConfig = Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.TRANSFER.toUpperCase(), 'POSITION_BATCH')
     validateConfig(batchConfig)
-    await SettlementModelCached.initialize()
     // If there is no mapping, use default transformGeneralTopicName
     const topicName =
       Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE ||
