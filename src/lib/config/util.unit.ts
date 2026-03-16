@@ -42,7 +42,8 @@ import {
   defaultEnvString,
   assertKafkaConfig,
   assertProvisioning,
-  kafkaWithBrokerDefaults
+  kafkaWithBrokerDefaults,
+  deepMerge
 } from './util'
 import { KafkaConfig, KafkaConsumerConfig, KafkaProducerConfig } from './types'
 import PRNG from '../../testing/prng'
@@ -583,6 +584,116 @@ describe('lib/config/util', () => {
       assert.throws(() => defaultEnvString({}, undefined as unknown as string, 'false'))
       assert.throws(() => defaultEnvString({}, 'LOG_ENABLED', undefined as unknown as string))
       assert.throws(() => defaultEnvString({}, 'LOG_ENABLED', {} as unknown as string))
+    })
+  })
+
+  describe('deepMerge', () => {
+    it('merges top-level properties', () => {
+      const target = { a: 1, b: 2 }
+      const source = { b: 3, c: 4 }
+      const result = deepMerge(target, source)
+
+      assert.deepStrictEqual(result, { a: 1, b: 3, c: 4 })
+      assert.strictEqual(result, target)
+    })
+
+    it('deep merges nested objects', () => {
+      const target = {
+        config: {
+          host: 'localhost',
+          port: 3000,
+          options: { timeout: 5000 }
+        }
+      }
+      const source = {
+        config: {
+          port: 8080,
+          options: { retries: 3 }
+        }
+      }
+      const result = deepMerge(target, source)
+
+      assert.deepStrictEqual(result, {
+        config: {
+          host: 'localhost',
+          port: 8080,
+          options: { timeout: 5000, retries: 3 }
+        }
+      })
+    })
+
+    it('replaces arrays instead of merging them', () => {
+      const target = { items: [1, 2, 3], name: 'test' }
+      const source = { items: [4, 5] }
+      const result = deepMerge(target, source)
+
+      assert.deepStrictEqual(result, { items: [4, 5], name: 'test' })
+    })
+
+    it('handles null values in source (replaces target)', () => {
+      const target = { a: { nested: 'value' }, b: 2 }
+      const source = { a: null }
+      const result = deepMerge(target, source as any)
+
+      assert.deepStrictEqual(result, { a: null, b: 2 })
+    })
+
+    it('handles null values in target (replaces with source object)', () => {
+      const target = { a: null, b: 2 }
+      const source = { a: { nested: 'value' } }
+      const result = deepMerge(target as any, source)
+
+      assert.deepStrictEqual(result, { a: { nested: 'value' }, b: 2 })
+    })
+
+    it('works with empty source', () => {
+      const target = { a: 1, b: { c: 2 } }
+      const source = {}
+      const result = deepMerge(target, source)
+
+      assert.deepStrictEqual(result, { a: 1, b: { c: 2 } })
+    })
+
+    it('works with deeply nested structures', () => {
+      const target = {
+        level1: {
+          level2: {
+            level3: {
+              value: 'original',
+              keep: 'this'
+            }
+          }
+        }
+      }
+      const source = {
+        level1: {
+          level2: {
+            level3: {
+              value: 'updated'
+            }
+          }
+        }
+      }
+      const result = deepMerge(target, source)
+
+      assert.deepStrictEqual(result, {
+        level1: {
+          level2: {
+            level3: {
+              value: 'updated',
+              keep: 'this'
+            }
+          }
+        }
+      })
+    })
+
+    it('returns the modified target', () => {
+      const target = { a: 1 }
+      const source = { b: 2 }
+      const result = deepMerge(target, source)
+
+      assert.strictEqual(result, target)
     })
   })
 })

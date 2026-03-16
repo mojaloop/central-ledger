@@ -41,7 +41,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const Migrator = require('../lib/migrator')
-const Config = require('../lib/config/index').default
+const Config = require('../lib/config')
 const Db = require('../lib/db')
 const ProxyCache = require('../lib/proxyCache')
 const Cache = require('../lib/cache')

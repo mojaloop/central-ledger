@@ -5,7 +5,7 @@ const Sinon = require('sinon')
 const { randomUUID } = require('crypto')
 const BulkTransfer = require('#src/domain/bulkTransfer/index')
 const Validator = require('#src/handlers/bulk/shared/validator')
-const Config = require('#src/lib/config')
+const Config = require('../../../../../src/lib/config')
 
 let payload
 let headers

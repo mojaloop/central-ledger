@@ -2,7 +2,7 @@
 
 process.env.UV_THREADPOOL_SIZE = '12'
 
-import Config from '../lib/config/index'
+import Config from '../lib/config'
 const Routes = require('./routes')
 const Setup = require('../shared/setup')
 const MetricsPlugin = require('@mojaloop/central-services-metrics').plugin

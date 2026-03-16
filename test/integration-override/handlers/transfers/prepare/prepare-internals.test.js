@@ -30,7 +30,7 @@ const { randomUUID } = require('node:crypto')
 const Test = require('tapes')(require('tape'))
 
 const prepareHandler = require('#src/handlers/transfers/prepare')
-const config = require('#src/lib/config')
+const config = require('../../../../../src/lib/config')
 const Db = require('#src/lib/db')
 const proxyCache = require('#src/lib/proxyCache')
 const Cache = require('#src/lib/cache')
