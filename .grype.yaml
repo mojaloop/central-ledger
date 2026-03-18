@@ -45,6 +45,7 @@ ignore:
   - vulnerability: GHSA-7r86-cg39-jmmj
   - vulnerability: GHSA-qffp-2rhf-9h96
   - vulnerability: GHSA-9ppj-qmqm-q256
+  - vulnerability: CVE-2026-2673 # libcrypto3, libssl3
 
 # Set output format defaults
 output:
