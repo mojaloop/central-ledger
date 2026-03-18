@@ -18,7 +18,8 @@
     "Shashikant Hirugade <shashikant.hirugade@modusbox.com>",
     "Steven Oderayi <steven.oderayi@modusbox.com>",
     "Valentin Genev <valentin.genev@modusbox.com>",
-    "Aaron Reynoza <aaron.reynoza@infitx.com>"
+    "Aaron Reynoza <aaron.reynoza@infitx.com>",
+    "Eugen Klymniuk <eugen.klymniuk@infitx.com>"
   ],
   "repository": {
     "type": "git",
@@ -95,8 +96,8 @@
     "@mojaloop/central-services-health": "15.3.0-infitx.0",
     "@mojaloop/central-services-logger": "11.11.0-infitx.4",
     "@mojaloop/central-services-metrics": "12.9.0-infitx.0",
-    "@mojaloop/central-services-shared": "18.36.0-infitx.9",
-    "@mojaloop/central-services-stream": "11.10.0-infitx.5",
+    "@mojaloop/central-services-shared": "18.36.0-infitx.10",
+    "@mojaloop/central-services-stream": "11.10.0-iad-786.0",
     "@mojaloop/database-lib": "11.3.7",
     "@mojaloop/event-sdk": "14.9.0-infitx.0",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.9.0",
@@ -159,7 +160,7 @@
     "brace-expansion": "2.0.2",
     "form-data": "4.0.4",
     "lodash": "4.17.23",
-    "undici": "6.23.0",
+    "undici": "6.24.0",
     "shins": {
       "ajv": "6.12.3",
       "ejs": "3.1.10",
@@ -182,9 +183,10 @@
     "trim": "0.0.3",
     "cross-spawn": "7.0.6",
     "yargs-parser": "21.1.1",
-    "fast-xml-parser": "5.3.6",
+    "fast-xml-parser": "5.5.6",
     "bn.js": "5.2.3",
-    "underscore": "1.13.8"
+    "underscore": "1.13.8",
+    "flatted": "3.4.0"
   },
   "config": {
     "knex": "--knexfile ./config/knexfile.js",

@@ -34,7 +34,7 @@
  */
 
 const { randomUUID } = require('node:crypto')
-const { Util: { Producer, Consumer } } = require('@mojaloop/central-services-stream')
+const { Util: { Producer, Consumer }, Kafka: { otel: streamOtel } } = require('@mojaloop/central-services-stream')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -129,10 +129,10 @@ const positions = async (error, messages, meta = {}) => {
       log.info('DB transaction committed')
 
       // Loop through results and produce notification messages and audit messages
-      await Promise.all(result.notifyMessages.map(produceNotificationMessage)
+      await Promise.all(result.notifyMessages.map(item => produceNotificationMessage(item, meta))
         .concat(
           // Loop through followup messages and produce position messages for further processing of the transfer
-          result.followupMessages.map(producePositionMessage)
+          result.followupMessages.map(item => producePositionMessage(item, meta))
         )
       )
       log.verbose('notification, audit and position messages are sent')
@@ -261,27 +261,29 @@ const addToBinSortedByActionDecodedPayload = ({ message, binId, bins, lastPerPar
   return span.audit(message, EventSdk.AuditEventAction.start)
 }
 
-const producePositionMessage = async item => {
+const producePositionMessage = async (item, meta) => {
   // Produce position message and audit message
   const action = item.binItem.message?.value.metadata.event.action
   const eventStatus = item?.message.metadata.event.state.status === Enum.Events.EventStatus.SUCCESS.status
     ? Enum.Events.EventStatus.SUCCESS
     : Enum.Events.EventStatus.FAILURE
 
-  return Kafka.produceGeneralMessage(
-    Config.KAFKA_CONFIG,
-    Producer,
-    Enum.Events.Event.Type.POSITION,
-    action,
-    item.message,
-    eventStatus,
-    item.messageKey,
-    item.binItem.span,
-    Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+  return streamOtel.withMessageContext(meta, item.binItem.message, () =>
+    Kafka.produceGeneralMessage(
+      Config.KAFKA_CONFIG,
+      Producer,
+      Enum.Events.Event.Type.POSITION,
+      action,
+      item.message,
+      eventStatus,
+      item.messageKey,
+      item.binItem.span,
+      Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+    )
   )
 }
 
-const produceNotificationMessage = async item => {
+const produceNotificationMessage = async (item, meta) => {
   // Produce notification message and audit message
   // NOTE: Not sure why we're checking the binItem for the action vs the message
   //       that is being created.
@@ -296,15 +298,17 @@ const produceNotificationMessage = async item => {
     ? Enum.Events.EventStatus.SUCCESS
     : Enum.Events.EventStatus.FAILURE
 
-  return Kafka.produceGeneralMessage(
-    Config.KAFKA_CONFIG,
-    Producer,
-    Enum.Events.Event.Type.NOTIFICATION,
-    action,
-    item.message,
-    eventStatus,
-    null,
-    item.binItem.span
+  return streamOtel.withMessageContext(meta, item.binItem.message, () => // todo: update param ordering after ML Otel update
+    Kafka.produceGeneralMessage(
+      Config.KAFKA_CONFIG,
+      Producer,
+      Enum.Events.Event.Type.NOTIFICATION,
+      action,
+      item.message,
+      eventStatus,
+      null,
+      item.binItem.span
+    )
   )
 }
 
