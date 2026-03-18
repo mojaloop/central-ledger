@@ -268,7 +268,7 @@ const producePositionMessage = async (item, meta) => {
     ? Enum.Events.EventStatus.SUCCESS
     : Enum.Events.EventStatus.FAILURE
 
-  return streamOtel.withMessageContext(meta, item.binItem.message, () =>
+  return streamOtel.withMessageContext(item.binItem.message, meta, () =>
     Kafka.produceGeneralMessage(
       Config.KAFKA_CONFIG,
       Producer,
@@ -298,7 +298,7 @@ const produceNotificationMessage = async (item, meta) => {
     ? Enum.Events.EventStatus.SUCCESS
     : Enum.Events.EventStatus.FAILURE
 
-  return streamOtel.withMessageContext(meta, item.binItem.message, () => // todo: update param ordering after ML Otel update
+  return streamOtel.withMessageContext(item.binItem.message, meta, () =>
     Kafka.produceGeneralMessage(
       Config.KAFKA_CONFIG,
       Producer,

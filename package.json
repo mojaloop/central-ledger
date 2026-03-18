@@ -97,7 +97,7 @@
     "@mojaloop/central-services-logger": "11.11.0-infitx.4",
     "@mojaloop/central-services-metrics": "12.9.0-infitx.0",
     "@mojaloop/central-services-shared": "18.36.0-infitx.10",
-    "@mojaloop/central-services-stream": "11.10.0-iad-786.0",
+    "@mojaloop/central-services-stream": "11.10.0-iad-786.2",
     "@mojaloop/database-lib": "11.3.7",
     "@mojaloop/event-sdk": "14.9.0-infitx.0",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.9.0",
