@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.14.0](https://github.com/mojaloop/central-ledger/compare/v19.13.2...v19.14.0) (2026-03-19)
+
+
+### Features
+
+* vendor the condition check from five-bells-condition into cryptoConditions ([#1264](https://github.com/mojaloop/central-ledger/issues/1264)) ([4d7c4d2](https://github.com/mojaloop/central-ledger/commit/4d7c4d27f5d24fc818c7663a966ca8bf8f855b65))
+
+
+### Bug Fixes
+
+* undefined fulfilment error not thrown ([#1281](https://github.com/mojaloop/central-ledger/issues/1281)) ([a9361d4](https://github.com/mojaloop/central-ledger/commit/a9361d4ee5d3fb44ca0cc0ceca893c0d2ff35b84))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([21ce9d4](https://github.com/mojaloop/central-ledger/commit/21ce9d455e89568af3e6618b1528425afbbb7b2c))
+
 ### [19.13.2](https://github.com/mojaloop/central-ledger/compare/v19.13.1...v19.13.2) (2026-02-27)
 
 
