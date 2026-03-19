@@ -413,7 +413,23 @@ const processFulfilMessage = async (message, functionality, span) => {
   }
 
   Util.breadcrumb(location, { path: 'validationCheck' })
-  if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
+  // Skip fulfilment validation for actions that use errorInformation instead of fulfilment
+  const actionsSkippingFulfilmentValidation = [
+    TransferEventAction.ABORT,
+    TransferEventAction.BULK_ABORT,
+    TransferEventAction.REJECT
+  ]
+  const skipValidation = actionsSkippingFulfilmentValidation.includes(action)
+
+  if (skipValidation) {
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `Skipping fulfilment validation for action--${actionLetter}9`))
+  }
+  const isInvalid =
+    !skipValidation &&
+    (!payload.fulfilment ||
+      !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition))
+
+  if (isInvalid) {
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
     const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
