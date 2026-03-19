@@ -78,7 +78,6 @@ const forwardedPrepare = async (transferId) => {
 }
 
 const handlePayeeResponse = async (transferId, payload, action, fspiopError) => {
-  console.log('----------------handlePayeeResponse---------------------')
   const histTimerTransferServiceHandlePayeeResponseEnd = Metrics.getHistogram(
     'domain_transfer',
     'prepare - Metrics for transfer domain',
@@ -87,9 +86,6 @@ const handlePayeeResponse = async (transferId, payload, action, fspiopError) => 
 
   try {
     const transfer = await TransferFacade.savePayeeTransferResponse(transferId, payload, action, fspiopError)
-    console.log('~~~~~~~~~~~~~~~~~~~~transfer~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    console.log(transfer)
-    console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     const result = TransferObjectTransform.toTransfer(transfer)
     histTimerTransferServiceHandlePayeeResponseEnd({ success: true, funcName: 'handlePayeeResponse' })
     return result
