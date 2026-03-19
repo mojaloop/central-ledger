@@ -1270,6 +1270,93 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    fulfilTest.test('fail validation when fulfilment is undefined and state is COMMITED', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1'
+      }))
+      TransferService.handlePayeeResponse.returns(Promise.resolve({
+        completedTimestamp: '2018-10-24T08:38:08.699-04:00'
+      }))
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.payload.fulfilment = undefined
+      Cyril.processAbortMessage.returns({
+        isFx: false,
+        positionChanges: [{
+          participantCurrencyId: 1
+        }]
+      })
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      const firstCall = SpanStub.finish.getCall(0)
+
+      test.equal(firstCall.args[0], 'invalid fulfilment')
+      test.equal(firstCall.args[1].status, EventSdk.EventStatusType.failed)
+      test.equal(firstCall.args[1].code, '3100')
+      test.equal(firstCall.args[1].description, 'Generic validation error')
+      test.equal(result, true)
+
+      test.end()
+    })
+
+    fulfilTest.test('fail validation when fulfilment is undefined and state is RESERVE', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1',
+        completedTimestamp: '2018-10-24T08:38:08.699-04:00',
+        transferState: TransferInternalState.ABORTED_ERROR,
+        transferStateEnumeration: TransferState.ABORTED
+      }))
+      TransferService.handlePayeeResponse.returns(Promise.resolve({
+        completedTimestamp: '2018-10-24T08:38:08.699-04:00'
+      }))
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.payload.fulfilment = undefined
+      localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
+      localfulfilMessages[0].value.metadata.event.action = Enum.Events.Event.Action.RESERVE
+      Cyril.processAbortMessage.returns({
+        isFx: false,
+        positionChanges: [{
+          participantCurrencyId: 1
+        }]
+      })
+      Kafka.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+      console.log(kafkaCallOne.args[2])
+
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      test.equal(result, true)
+
+      test.end()
+    })
+
     fulfilTest.test('fail validation when condition from fulfilment does not match original condition - autocommit is enabled', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
