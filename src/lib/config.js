@@ -48,7 +48,6 @@ module.exports = {
       database: RC.DATABASE.SCHEMA,
       ...RC.DATABASE.ADDITIONAL_CONNECTION_OPTIONS,
       decimalNumbers: false,
-      multipleStatements: true,
       jsonStrings: true
     },
     pool: {
