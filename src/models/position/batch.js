@@ -358,9 +358,6 @@ const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, r
         .select('*')
     ].filter(Boolean))
 
-    // TODO this query can be removed later, instead of being a separate one
-    const participantPositions = await getPositionsByAccountIdsForUpdate(trx, accountIds)
-
     // ** //
     const latestTransferStateChanges = {}
 
@@ -386,10 +383,12 @@ const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, r
       latestFxTransferStates[key] = latestFxTransferStateChanges[key].transferStateId
     }
     // ** //
-    const positions = {}
-    for (const position of participantPositions) {
-      positions[position.participantCurrencyId] = position
-    }
+    // const positions = {}
+    // for (const position of participantPositions) {
+    //   positions[position.participantCurrencyId] = position
+    // }
+    // TODO this query can be removed later, instead of being a separate one
+    const positions = await getPositionsByAccountIdsForUpdate(trx, accountIds)
     // ** //
     const info = {}
     // This should key the transfer info with the latest transferStateChangeId
