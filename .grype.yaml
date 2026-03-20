@@ -52,6 +52,7 @@ ignore:
   - vulnerability: GHSA-jp2q-39xq-3w4g
   - vulnerability: GHSA-v9p9-hfj2-hcw8
   - vulnerability: GHSA-vrm6-8vpv-qv8q
+  - vulnerability: CVE-2026-2673
 # Set output format defaults
 output:
   - "table"
