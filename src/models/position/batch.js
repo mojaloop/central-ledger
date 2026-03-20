@@ -299,7 +299,7 @@ const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, r
         .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)
         .orderBy('fxTransferStateChangeId', 'desc')
         .select('*'),
-      // TODO the query below can be re-added later, instead of the separate call to getPositionsByAccountIdsForUpdate below
+      // TODO the query below can be re-added later, instead of the separate query to knex('participantPosition') below
       // Pre fetch all position account balances for the account-bin and acquire lock on position
       // knex('participantPosition')
       //   .transacting(trx)
@@ -383,12 +383,16 @@ const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, r
       latestFxTransferStates[key] = latestFxTransferStateChanges[key].transferStateId
     }
     // ** //
-    // const positions = {}
-    // for (const position of participantPositions) {
-    //   positions[position.participantCurrencyId] = position
-    // }
     // TODO this query can be removed later, instead of being a separate one
-    const positions = await getPositionsByAccountIdsForUpdate(trx, accountIds)
+    const participantPositions = await knex('participantPosition')
+      .transacting(trx)
+      .whereIn('participantCurrencyId', accountIds)
+      .forUpdate()
+      .select('*')
+    const positions = {}
+    for (const position of participantPositions) {
+      positions[position.participantCurrencyId] = position
+    }
     // ** //
     const info = {}
     // This should key the transfer info with the latest transferStateChangeId
