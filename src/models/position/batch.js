@@ -286,7 +286,7 @@ async function executeMultiQuery (trx, queryBuilders) {
 const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, reservedActionTransferIdList) => {
   const knex = Db.getKnex()
   try {
-    const [results, results1, participantPositions, transferInfos, participantPositionChanges, query, extensions] = await executeMultiQuery(trx, [
+    const [results, results1, /* participantPositions */, transferInfos, participantPositionChanges, query, extensions] = await executeMultiQuery(trx, [
       // Pre fetch latest transferStates for all the transferIds in the account-bin
       knex('transferStateChange')
         .transacting(trx)
@@ -299,12 +299,13 @@ const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, r
         .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)
         .orderBy('fxTransferStateChangeId', 'desc')
         .select('*'),
+      // TODO the query below can be re-added later, instead of the separate call to getPositionsByAccountIdsForUpdate below
       // Pre fetch all position account balances for the account-bin and acquire lock on position
-      knex('participantPosition')
-        .transacting(trx)
-        .whereIn('participantCurrencyId', accountIds)
-        .forUpdate()
-        .select('*'),
+      // knex('participantPosition')
+      //   .transacting(trx)
+      //   .whereIn('participantCurrencyId', accountIds)
+      //   .forUpdate() // TODO this can be removed if we implement optimistic updates to the position. For now we are using pessimistic locking.
+      //   .select('*'),
       knex('transferParticipant')
         .transacting(trx)
         .where({
@@ -356,6 +357,10 @@ const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, r
         .where('isError', false)
         .select('*')
     ].filter(Boolean))
+
+    // TODO this query can be removed later, instead of being a separate one
+    const participantPositions = await getPositionsByAccountIdsForUpdate(trx, accountIds)
+
     // ** //
     const latestTransferStateChanges = {}
 
