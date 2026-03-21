@@ -40,7 +40,7 @@ const getById = async (transferId) => {
 }
 
 const saveTransfer = async (record) => {
-  Logger.isDebugEnabled && Logger.debug('save transfer' + record.toString())
+  Logger.debug('save transfer' + record.toString())
   try {
     return Db.from('transfer').insert(record)
   } catch (err) {

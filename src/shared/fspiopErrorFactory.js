@@ -27,7 +27,7 @@
  --------------
  **********/
 
-/* eslint-disable no-return-assign */
+ 
 const { Factory, Enums } = require('@mojaloop/central-services-error-handling')
 const { logger } = require('../shared/logger')
 const { ERROR_MESSAGES } = require('./constants')

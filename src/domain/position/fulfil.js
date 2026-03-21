@@ -90,8 +90,8 @@ const processPositionFulfilBin = async (
           const resultMessage = _handleIncorrectTransferState(binItem, payeeFsp, transferId, accumulatedTransferStates)
           resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
         } else {
-          Logger.isDebugEnabled && Logger.debug(`processPositionFulfilBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
-          Logger.isDebugEnabled && Logger.debug(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
+          Logger.debug(`processPositionFulfilBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
+          Logger.debug(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
           const cyrilResult = binItem.message.value.content.context?.cyrilResult
           if (cyrilResult && cyrilResult.isFx) {
             // This is FX transfer

@@ -53,7 +53,7 @@ const registerAllHandlers = async () => {
     await GetBulkTransferHandlers.registerAllHandlers()
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
+    Logger.error(err)
     throw err
   }
 }

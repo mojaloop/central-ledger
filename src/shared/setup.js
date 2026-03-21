@@ -59,17 +59,17 @@ const migrate = (runMigrations) => {
 }
 
 const connectDatabase = async () => {
-  Logger.isDebugEnabled && Logger.debug(`Connecting to DB ${JSON.stringify(Config.DATABASE)}`)
+  Logger.debug(`Connecting to DB ${JSON.stringify(Config.DATABASE)}`)
   await Db.connect(Config.DATABASE)
   const dbLoadedTables = Db._tables ? Db._tables.length : -1
-  Logger.isDebugEnabled && Logger.debug(`DB.connect loaded '${dbLoadedTables}' tables!`)
+  Logger.debug(`DB.connect loaded '${dbLoadedTables}' tables!`)
 }
 
 const connectMongoose = async () => {
   if (!Config.MONGODB_DISABLED) {
     try {
       if (Config.MONGODB_DEBUG) {
-        Logger.isWarnEnabled && Logger.warn('Enabling debug for Mongoose...')
+        Logger.warn('Enabling debug for Mongoose...')
         ObjStoreDb.Mongoose.set('debug', Config.MONGODB_DEBUG) // enable debug
       }
       const connectionString = MongoUriBuilder({
@@ -118,7 +118,7 @@ const createServer = (port, modules) => {
     await Plugins.registerPlugins(server)
     await server.register(modules)
     await server.start()
-    Logger.isInfoEnabled && Logger.info(`Server running at: ${server.info.uri}`)
+    Logger.info(`Server running at: ${server.info.uri}`)
     return server
   })()
 }
@@ -149,7 +149,7 @@ const createHandlers = async (handlers) => {
 
   for (const handler of handlers) {
     if (handler.enabled) {
-      Logger.isInfoEnabled && Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
+      Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
       switch (handler.type) {
         case 'prepare': {
           await RegisterHandlers.transfers.registerPrepareHandler()
@@ -205,7 +205,7 @@ const createHandlers = async (handlers) => {
         }
         default: {
           const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
-          Logger.isErrorEnabled && Logger.error(error)
+          Logger.error(error)
           throw new Error(error)
         }
       }
@@ -276,7 +276,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
         break
       }
       default: {
-        Logger.isErrorEnabled && Logger.error(`No valid service type ${service} found!`)
+        Logger.error(`No valid service type ${service} found!`)
         throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
       }
     }
@@ -296,7 +296,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
 
     return server
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`, err)
+    Logger.error(`Error while initializing ${err}`, err)
 
     await Db.disconnect()
     if (Config.PROXY_CACHE_CONFIG?.enabled) {

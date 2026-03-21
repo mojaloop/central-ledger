@@ -195,7 +195,7 @@ const update = async function (request) {
     if (request.payload.isActive !== undefined) {
       const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
-      logger.isInfoEnabled && logger.info(`Participant has been ${isActiveText} :: ${changeLog}`)
+      logger.info(`Participant has been ${isActiveText} :: ${changeLog}`)
     }
     const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
@@ -368,7 +368,7 @@ const updateAccount = async function (request, h) {
     if (request.payload.isActive !== undefined) {
       const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
-      logger.isInfoEnabled && logger.info(`Participant account has been ${isActiveText} :: ${changeLog}`)
+      logger.info(`Participant account has been ${isActiveText} :: ${changeLog}`)
     }
     return h.response().code(200)
   } catch (err) {

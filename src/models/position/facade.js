@@ -249,7 +249,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         histTimerPersistTransferStateChangeEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_PersistTransferState' })
         histTimerChangeParticipantPositionTransEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(err)
+        Logger.error(err)
         histTimerChangeParticipantPositionTransEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
         rethrow.rethrowDatabaseError(err)
       }
@@ -262,7 +262,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     histTimerChangeParticipantPositionEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction' })
     return { preparedMessagesList, limitAlarms }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
+    Logger.error(err)
     histTimerChangeParticipantPositionEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction' })
     rethrow.rethrowDatabaseError(err)
   }

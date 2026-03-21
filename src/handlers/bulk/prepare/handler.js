@@ -99,12 +99,12 @@ const bulkPrepare = async (error, messages) => {
     const bulkTransferHash = payload.hash
     const kafkaTopic = message.topic
 
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkPrepare' }))
+    Logger.info(Util.breadcrumb(location, { method: 'bulkPrepare' }))
 
     const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare : Enum.Events.ActionLetter.unknown
     let params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
 
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+    Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, bulkTransferHash, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck, {
       hashOverride: true
@@ -120,8 +120,8 @@ const bulkPrepare = async (error, messages) => {
         Enum.Transfers.BulkTransferState.REJECTED,
         Enum.Transfers.BulkTransferState.EXPIRED
       ].includes(transferStateEnum)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'finalized'))
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callback--${actionLetter}2`))
+        Logger.info(Util.breadcrumb(location, 'finalized'))
+        Logger.info(Util.breadcrumb(location, `callback--${actionLetter}2`))
 
         let payload = {
           bulkTransferState: bulkTransfer.bulkTransferState
@@ -151,15 +151,15 @@ const bulkPrepare = async (error, messages) => {
         }
         return true
       } else {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'inProgress'))
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
+        Logger.info(Util.breadcrumb(location, 'inProgress'))
+        Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
         return true
       }
     }
 
     if (hasDuplicateId && !hasDuplicateHash) { // handle modified request and produce error callback to payer
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}4`))
+      Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}4`))
 
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
@@ -171,13 +171,13 @@ const bulkPrepare = async (error, messages) => {
 
     const { isValid, reasons, payerParticipantId, payeeParticipantId } = await Validator.validateBulkTransfer(payload, headers)
     if (isValid) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
+      Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
+        Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
         const participants = { payerParticipantId, payeeParticipantId }
         await BulkTransferService.bulkPrepare(payload, participants)
       } catch (err) { // handle insert error and produce error callback to payer
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
+        Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
 
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
@@ -187,7 +187,7 @@ const bulkPrepare = async (error, messages) => {
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkPrepare' })
       }
       try {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransfers'))
+        Logger.info(Util.breadcrumb(location, 'individualTransfers'))
 
         const IndividualTransferModel = BulkTransferModels.getIndividualTransferModel()
 
@@ -216,7 +216,7 @@ const bulkPrepare = async (error, messages) => {
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
       } catch (err) { // handle individual transfers streaming error
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+        Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
         params.message.value.content.uriParams = { id: bulkTransferId }
@@ -225,7 +225,7 @@ const bulkPrepare = async (error, messages) => {
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkPrepare' })
       }
     } else { // handle validation failure
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
+      Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       const validationFspiopError = reasons.shift()
       if (reasons.length > 0) {
         validationFspiopError.extensions = []
@@ -244,14 +244,14 @@ const bulkPrepare = async (error, messages) => {
       const reasonsMessages = reasons.map(function (reason) {
         return reason.message
       })
-      Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasonsMessages)}`)
+      Logger.error(`validationFailure Reasons - ${JSON.stringify(reasonsMessages)}`)
 
       try { // save invalid request for auditing
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
+        Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasonsMessages.toString(), false)
       } catch (err) { // handle insert error and produce error callback notification to payer
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-        Logger.isErrorEnabled && Logger.error(err)
+        Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+        Logger.error(err)
 
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
@@ -261,7 +261,7 @@ const bulkPrepare = async (error, messages) => {
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkPrepare' })
       }
       // produce validation error callback notification to payer
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
+      Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
 
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       params.message.value.content.uriParams = { id: bulkTransferId }
@@ -270,7 +270,7 @@ const bulkPrepare = async (error, messages) => {
       rethrow.rethrowAndCountFspiopError(validationFspiopError, { operation: 'bulkPrepare' })
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
+    Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     rethrow.rethrowAndCountFspiopError(err, { operation: 'bulkPrepare' })
   }
@@ -317,7 +317,7 @@ const registerAllHandlers = async () => {
     // Lets check if MongoDB is disabled, and print a warning that we are unable to register the handler.
     // This can only happen if you are running all Central-Ledger's services as a single mono-app which is ok for development purposes.
     if (Config.MONGODB_DISABLED) {
-      Logger.isWarnEnabled && Logger.warn('Skipping registration of BulkPrepareHandler as Mongo Database is disabled in configuration')
+      Logger.warn('Skipping registration of BulkPrepareHandler as Mongo Database is disabled in configuration')
     } else {
       await registerBulkPrepareHandler()
     }

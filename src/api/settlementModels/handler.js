@@ -86,7 +86,7 @@ const update = async function (request) {
     if (request.payload.isActive !== undefined) {
       const isActiveText = request.payload.isActive ? Enum.isActiveText.activated : Enum.isActiveText.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
-      Logger.isInfoEnabled && Logger.info(`Settlement Model has been ${isActiveText} :: ${changeLog}`)
+      Logger.info(`Settlement Model has been ${isActiveText} :: ${changeLog}`)
     }
     const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)

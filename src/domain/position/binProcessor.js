@@ -130,7 +130,7 @@ const processBins = async (bins, trx) => {
       Enum.Events.Event.Action.FX_ABORT_VALIDATION
     ]
     if (!isSubset(allowedActions, actions)) {
-      Logger.isErrorEnabled && Logger.error(`Only ${allowedActions.join()} are allowed in a batch`)
+      Logger.error(`Only ${allowedActions.join()} are allowed in a batch`)
     }
 
     let settlementParticipantPosition = 0
@@ -424,7 +424,7 @@ const iterateThroughBins = async (bins, cb, errCb) => {
           await cb(accountID, action, item)
         } catch (err) {
           if (errCb === undefined) {
-            Logger.isErrorEnabled && Logger.error(err)
+            Logger.error(err)
           } else {
             await errCb(accountID, action, item)
           }

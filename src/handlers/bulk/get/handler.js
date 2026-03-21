@@ -80,7 +80,7 @@ const getBulkTransfer = async (error, messages) => {
     const action = metadata.event.action
     const bulkTransferId = message.value.content.uriParams.id
     const kafkaTopic = message.topic
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `getBulkTransfer:${action}` }))
+    Logger.info(Util.breadcrumb(location, { method: `getBulkTransfer:${action}` }))
 
     const actionLetter = Enum.Events.ActionLetter.get
     const params = { message, kafkaTopic, span, consumer: Consumer, producer: Producer }
@@ -89,7 +89,7 @@ const getBulkTransfer = async (error, messages) => {
     Util.breadcrumb(location, { path: 'validationFailed' })
 
     if (!(await Validator.validateParticipantByName(message.value.from)).isValid) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
+      Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, hubName: Config.HUB_NAME })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
@@ -97,7 +97,7 @@ const getBulkTransfer = async (error, messages) => {
     // TODO: Validate this. Is this sufficient for checking existence of bulk transfer?
     const bulkTransferLight = await BulkTransferModel.getById(bulkTransferId)
     if (!bulkTransferLight) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorBulkTransferNotFound--${actionLetter}3`))
+      Logger.info(Util.breadcrumb(location, `callbackErrorBulkTransferNotFound--${actionLetter}3`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.BULK_TRANSFER_ID_NOT_FOUND, 'Provided Bulk Transfer ID was not found on the server.')
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
       rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkGetGetBulkTransfer' })
@@ -106,14 +106,14 @@ const getBulkTransfer = async (error, messages) => {
     // which responds with CLIENT_ERROR instead
     const participants = await BulkTransferService.getParticipantsById(bulkTransferId)
     if (![participants.payeeFsp, participants.payerFsp].includes(message.value.from)) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}2`))
+      Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
       rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkGetGetBulkTransfer' })
     }
     const isPayeeRequest = participants.payeeFsp === message.value.from
     Util.breadcrumb(location, { path: 'validationPassed' })
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
+    Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
     const bulkTransferResult = await BulkTransferService.getBulkTransferById(bulkTransferId)
     const bulkTransfer = isPayeeRequest ? bulkTransferResult.payeeBulkTransfer : bulkTransferResult.payerBulkTransfer
     let payload = {
@@ -140,7 +140,7 @@ const getBulkTransfer = async (error, messages) => {
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--G0`)
+    Logger.error(`${Util.breadcrumb(location)}::${err.message}--G0`)
     const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
     await span.finish(fspiopError.message, state)
@@ -193,7 +193,7 @@ const registerAllHandlers = async () => {
     // Lets check if MongoDB is disabled, and print a warning that we are unable to register the handler.
     // This can only happen if you are running all Central-Ledger's services as a single mono-app which is ok for development purposes.
     if (Config.MONGODB_DISABLED) {
-      Logger.isWarnEnabled && Logger.warn('Skipping registration of BulkGetHandler as Mongo Database is disabled in configuration')
+      Logger.warn('Skipping registration of BulkGetHandler as Mongo Database is disabled in configuration')
     } else {
       await registerGetBulkTransferHandler()
     }

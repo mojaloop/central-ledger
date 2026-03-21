@@ -50,7 +50,7 @@ const rethrow = require('../../shared/rethrow')
  */
 
 const insert = async (transferId, transferStateChangeId, errorCode, errorDescription) => {
-  Logger.isDebugEnabled && Logger.debug(`insert transferError - errorCode: ${errorCode}, errorDesc: ${errorDescription}`)
+  Logger.debug(`insert transferError - errorCode: ${errorCode}, errorDesc: ${errorDescription}`)
   try {
     return Db.from('transferError').insert({ transferId, transferStateChangeId, errorCode, errorDescription })
   } catch (err) {

@@ -85,9 +85,9 @@ const processPositionPrepareBin = async (
     const payerLimit = new MLNumber(participantLimit.value)
     liquidityCover = new MLNumber(settlementParticipantPosition).multiply(-1)
     availablePositionBasedOnLiquidityCover = new MLNumber(liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE))
-    Logger.isInfoEnabled && Logger.info(`processPositionPrepareBin::availablePositionBasedOnLiquidityCover: ${availablePositionBasedOnLiquidityCover}`)
+    Logger.info(`processPositionPrepareBin::availablePositionBasedOnLiquidityCover: ${availablePositionBasedOnLiquidityCover}`)
     availablePositionBasedOnPayerLimit = new MLNumber(payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE))
-    Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::availablePositionBasedOnPayerLimit: ${availablePositionBasedOnPayerLimit}`)
+    Logger.debug(`processPositionPrepareBin::availablePositionBasedOnPayerLimit: ${availablePositionBasedOnPayerLimit}`)
   }
 
   if (binItems && binItems.length > 0) {
@@ -99,11 +99,11 @@ const processPositionPrepareBin = async (
       const cyrilResult = binItem.message.value.content.context?.cyrilResult
       const transferAmount = cyrilResult ? cyrilResult.amount : transfer.amount.amount
 
-      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
+      Logger.debug(`processPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
 
       // Check if transfer is in correct state for processing, produce an internal error message
       if (accumulatedTransferStates[transfer.transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
-        Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferState: ${accumulatedTransferStates[transfer.transferId]} !== ${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
+        Logger.debug(`processPositionPrepareBin::transferState: ${accumulatedTransferStates[transfer.transferId]} !== ${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
 
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = 'Transfer in incorrect state'
@@ -249,7 +249,7 @@ const processPositionPrepareBin = async (
             reservedValue: accumulatedPositionReservedValue
           }
           participantPositionChanges.push(participantPositionChange)
-          Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
+          Logger.debug(`processPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
         }
 
         // forward same headers from the prepare message, except the content-length header
@@ -286,7 +286,7 @@ const processPositionPrepareBin = async (
       resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
 
       if (changePositions) {
-        Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
+        Logger.debug(`processPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
         if (currentPosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
           limitAlarms.push(participantLimit)
         }
@@ -298,10 +298,10 @@ const processPositionPrepareBin = async (
         reason
       }
       transferStateChanges.push(transferStateChange)
-      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferStateChange: ${JSON.stringify(transferStateChange)}`)
+      Logger.debug(`processPositionPrepareBin::transferStateChange: ${JSON.stringify(transferStateChange)}`)
 
       accumulatedTransferStatesCopy[transfer.transferId] = transferStateId
-      Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::accumulatedTransferStatesCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)
+      Logger.debug(`processPositionPrepareBin::accumulatedTransferStatesCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)
     }
   }
 

@@ -143,13 +143,13 @@ const transformTransferToFulfil = (transfer, isFx) => {
 const toTransfer = (t) => {
   // TODO: Validate 't' to confirm if its from the DB transferReadModel or from the saveTransferPrepare
   if (t.isTransferReadModel) {
-    Logger.isDebugEnabled && Logger.debug('In aggregate transfer transform for isTransferReadModel')
+    Logger.debug('In aggregate transfer transform for isTransferReadModel')
     return Util.omitNil(fromTransferReadModel(t)) // TODO: Remove this once the DB validation is done for 't'
   } else if (t.isSaveTransferPrepared) {
-    Logger.isDebugEnabled && Logger.debug('In aggregate transfer transform for isSaveTransferPrepared')
+    Logger.debug('In aggregate transfer transform for isSaveTransferPrepared')
     return Util.omitNil(fromSaveTransferPrepared(t)) // TODO: Remove this once the DB validation is done for 't'
   } else if (t.savePayeeTransferResponseExecuted) {
-    Logger.isDebugEnabled && Logger.debug('In aggregate transfer transform for isSavePayeeTransferResponseExecuted')
+    Logger.debug('In aggregate transfer transform for isSavePayeeTransferResponseExecuted')
     return Util.omitNil(fromSavePayeeTransferResponseExecuted(t)) // TODO: Remove this once the DB validation is done for 't'
   } else throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Unable to transform to transfer: ${t}`)
 }

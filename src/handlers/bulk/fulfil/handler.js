@@ -89,7 +89,7 @@ const bulkFulfil = async (error, messages) => {
     const action = message.value.metadata.event.action
     const bulkTransferId = payload.bulkTransferId
     const kafkaTopic = message.topic
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkFulfil' }))
+    Logger.info(Util.breadcrumb(location, { method: 'bulkFulfil' }))
     const actionLetter = action === Enum.Events.Event.Action.BULK_COMMIT
       ? Enum.Events.ActionLetter.bulkCommit
       : (action === Enum.Events.Event.Action.BULK_ABORT
@@ -97,16 +97,16 @@ const bulkFulfil = async (error, messages) => {
           : Enum.Events.ActionLetter.unknown)
     const params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
 
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+    Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload.hash, BulkTransferService.getBulkTransferFulfilmentDuplicateCheck, BulkTransferService.saveBulkTransferFulfilmentDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
+      Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
+      Logger.error(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
     if (hasDuplicateId && !hasDuplicateHash) {
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
+      Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
@@ -117,17 +117,17 @@ const bulkFulfil = async (error, messages) => {
     const { isValid, reasons } = await Validator.validateBulkTransferFulfilment(payload, headers)
     if (isValid) {
       let state
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
+      Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
+        Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
         if (payload.errorInformation) {
           state = await BulkTransferService.bulkFulfilError(payload, payload.errorInformation.errorDescription)
         } else {
           state = await BulkTransferService.bulkFulfil(payload)
         }
       } catch (err) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
-        Logger.isErrorEnabled && Logger.error(err)
+        Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
+        Logger.error(err)
 
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
@@ -137,7 +137,7 @@ const bulkFulfil = async (error, messages) => {
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkFulfil' })
       }
       try {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
+        Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
         // stream initialization
         if (payload.errorInformation) {
           const bulkTransfers = await BulkTransferService.getBulkTransferById(payload.bulkTransferId)
@@ -176,13 +176,13 @@ const bulkFulfil = async (error, messages) => {
           }
         }
       } catch (err) { // TODO: handle individual transfers streaming error
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
-        Logger.isErrorEnabled && Logger.error(err)
+        Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+        Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.error(err)
         return true
       }
     } else {
-      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
+      Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
 
       const validationFspiopError = reasons.shift()
       if (reasons.length > 0) {
@@ -202,10 +202,10 @@ const bulkFulfil = async (error, messages) => {
         return reason.message
       })
 
-      Logger.isErrorEnabled && Logger.error(`validationFailure Reasons - ${JSON.stringify(reasonsMessages)}`)
+      Logger.error(`validationFailure Reasons - ${JSON.stringify(reasonsMessages)}`)
 
       try {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
+        Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         /**
          * TODO: Following the example for regular transfers, the following should ABORT the
          * entire bulk. CAUTION: As of 20191111 this code would also execute when failure
@@ -232,8 +232,8 @@ const bulkFulfil = async (error, messages) => {
           )
         }
       } catch (err) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.isErrorEnabled && Logger.error(err)
+        Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
+        Logger.error(err)
 
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
@@ -242,7 +242,7 @@ const bulkFulfil = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkFulfil' })
       }
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
+      Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
 
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       params.message.value.content.uriParams = { id: bulkTransferId }
@@ -251,7 +251,7 @@ const bulkFulfil = async (error, messages) => {
       rethrow.rethrowAndCountFspiopError(validationFspiopError, { operation: 'bulkFulfil' })
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
+    Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     rethrow.rethrowAndCountFspiopError(err, { operation: 'bulkFulfil' })
   }
@@ -336,7 +336,7 @@ const registerAllHandlers = async () => {
     // Lets check if MongoDB is disabled, and print a warning that we are unable to register the handler.
     // This can only happen if you are running all Central-Ledger's services as a single mono-app which is ok for development purposes.
     if (Config.MONGODB_DISABLED) {
-      Logger.isWarnEnabled && Logger.warn('Skipping registration of BulkFulfilHandler as Mongo Database is disabled in configuration')
+      Logger.warn('Skipping registration of BulkFulfilHandler as Mongo Database is disabled in configuration')
     } else {
       await registerBulkFulfilHandler()
     }

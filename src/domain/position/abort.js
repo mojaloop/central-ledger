@@ -76,7 +76,7 @@ const processPositionAbortBin = async (
 
   if (abortBins && abortBins.length > 0) {
     for (const binItem of abortBins) {
-      Logger.isDebugEnabled && Logger.debug(`processPositionAbortBin::binItem: ${JSON.stringify(binItem.message.value)}`)
+      Logger.debug(`processPositionAbortBin::binItem: ${JSON.stringify(binItem.message.value)}`)
       if (isFx) {
         // If the transfer is not in `RECEIVED_ERROR`, a position fx-abort message was incorrectly published.
         // i.e Something has gone extremely wrong.

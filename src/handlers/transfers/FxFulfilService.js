@@ -25,7 +25,7 @@
  --------------
  **********/
 
-/* eslint-disable space-before-function-paren */
+ 
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const cyril = require('../../domain/fx/cyril')
 const TransferObjectTransform = require('../../domain/transfer/transform')

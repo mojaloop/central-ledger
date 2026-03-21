@@ -134,9 +134,9 @@ const fulfilmentToCondition = (fulfilment) => {
   }
 
   const calculatedConditionDigest = hashSha256.update(preimage).digest('base64')
-  Logger.isDebugEnabled && Logger.debug(`calculatedConditionDigest=${calculatedConditionDigest}`)
+  Logger.debug(`calculatedConditionDigest=${calculatedConditionDigest}`)
   const calculatedConditionUrlEncoded = base64url.fromBase64(calculatedConditionDigest)
-  Logger.isDebugEnabled && Logger.debug(`calculatedConditionUrlEncoded=${calculatedConditionUrlEncoded}`)
+  Logger.debug(`calculatedConditionUrlEncoded=${calculatedConditionUrlEncoded}`)
   return calculatedConditionUrlEncoded
 }
 
@@ -167,7 +167,7 @@ const validateConditionAndExpiration = async (payload) => {
   try {
     CryptoConditions.validateCondition(payload.condition)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(`${err.message}`)
+    Logger.error(`${err.message}`)
     reasons.push('Condition validation failed')
     histTimerValidateTimer({ success: false, funcName: 'validateConditionAndExpiration' })
     return false

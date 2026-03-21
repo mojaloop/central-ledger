@@ -76,7 +76,7 @@ const processPositionTimeoutReservedBin = async (
   // The payer and payee are notified from the singular NOTIFICATION event RESERVED_TIMEOUT action
   if (timeoutReservedBins && timeoutReservedBins.length > 0) {
     for (const binItem of timeoutReservedBins) {
-      Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::binItem: ${JSON.stringify(binItem.message.value)}`)
+      Logger.debug(`processPositionTimeoutReservedBin::binItem: ${JSON.stringify(binItem.message.value)}`)
       const transferId = binItem.message.value.content.uriParams.id
       const payeeFsp = binItem.message.value.to
       const payerFsp = binItem.message.value.from
@@ -86,7 +86,7 @@ const processPositionTimeoutReservedBin = async (
       if (accumulatedTransferStates[transferId] !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
         throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
       } else {
-        Logger.isDebugEnabled && Logger.debug(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
+        Logger.debug(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
 
         const transferAmount = transferInfoList[transferId].amount
 
@@ -97,12 +97,12 @@ const processPositionTimeoutReservedBin = async (
           payeeFsp,
           payerFsp
         )
-        Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::resultMessage: ${JSON.stringify(resultMessage)}`)
+        Logger.debug(`processPositionTimeoutReservedBin::resultMessage: ${JSON.stringify(resultMessage)}`)
 
         // Revert payer's or fxp's position for the amount of the transfer
         const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
           _handleParticipantPositionChange(runningPosition, transferAmount, transferId, accumulatedPositionReservedValue)
-        Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
+        Logger.debug(`processPositionTimeoutReservedBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
         runningPosition = updatedRunningPosition
         binItem.result = { success: true }
         participantPositionChanges.push(participantPositionChange)
@@ -173,8 +173,8 @@ const _handleParticipantPositionChange = (runningPosition, transferAmount, trans
   const transferStateId = Enum.Transfers.TransferInternalState.EXPIRED_RESERVED
   // Revert payer's or fxp's position for the amount of the transfer
   const updatedRunningPosition = new MLNumber(runningPosition.add(transferAmount).toFixed(Config.AMOUNT.SCALE))
-  Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::_handleParticipantPositionChange::updatedRunningPosition: ${updatedRunningPosition.toString()}`)
-  Logger.isDebugEnabled && Logger.debug(`processPositionTimeoutReservedBin::_handleParticipantPositionChange::transferAmount: ${transferAmount}`)
+  Logger.debug(`processPositionTimeoutReservedBin::_handleParticipantPositionChange::updatedRunningPosition: ${updatedRunningPosition.toString()}`)
+  Logger.debug(`processPositionTimeoutReservedBin::_handleParticipantPositionChange::transferAmount: ${transferAmount}`)
   // Construct participant position change object
   const participantPositionChange = {
     transferId, // Need to delete this in bin processor while updating transferStateChangeId

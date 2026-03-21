@@ -51,7 +51,7 @@ const getBulkTransferById = async (id) => {
     const payeeIndividualTransfers = []
     // TODO: refactor this to move away from Promises and use async-await
     individualTransfers = await Promise.all(individualTransfers.map(async (transfer) => {
-      // eslint-disable-next-line no-async-promise-executor
+       
       return new Promise(async (resolve) => {
         const result = {
           transferId: transfer.transferId
@@ -134,7 +134,7 @@ const getBulkTransferById = async (id) => {
       bulkTransferStateEnumeration: bulkTransfer.bulkTransferStateEnumeration
     }
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
+    Logger.error(err)
     throw err
   }
 }
@@ -162,7 +162,7 @@ const getBulkTransferExtensionListById = async (id, completedTimestamp) => {
     }
     return extensionList
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
+    Logger.error(err)
     throw err
   }
 }
@@ -171,7 +171,7 @@ const bulkFulfilTransitionToAborting = async (bulkFulfilPayload, stateReason = n
   try {
     BulkTransferFacade.saveBulkTransferAborting(bulkFulfilPayload, stateReason)
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
+    Logger.error(err)
     throw err
   }
 }

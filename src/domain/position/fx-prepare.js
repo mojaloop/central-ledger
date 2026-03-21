@@ -84,9 +84,9 @@ const processFxPositionPrepareBin = async (
     const payerLimit = new MLNumber(participantLimit.value)
     liquidityCover = new MLNumber(settlementParticipantPosition).multiply(-1)
     availablePositionBasedOnLiquidityCover = new MLNumber(liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE))
-    Logger.isInfoEnabled && Logger.info(`processFxPositionPrepareBin::availablePositionBasedOnLiquidityCover: ${availablePositionBasedOnLiquidityCover}`)
+    Logger.info(`processFxPositionPrepareBin::availablePositionBasedOnLiquidityCover: ${availablePositionBasedOnLiquidityCover}`)
     availablePositionBasedOnPayerLimit = new MLNumber(payerLimit.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE))
-    Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::availablePositionBasedOnPayerLimit: ${availablePositionBasedOnPayerLimit}`)
+    Logger.debug(`processFxPositionPrepareBin::availablePositionBasedOnPayerLimit: ${availablePositionBasedOnPayerLimit}`)
   }
 
   if (binItems && binItems.length > 0) {
@@ -98,12 +98,12 @@ const processFxPositionPrepareBin = async (
       const cyrilResult = binItem.message.value.content.context.cyrilResult
       const transferAmount = fxTransfer.targetAmount.currency === cyrilResult.currencyId ? fxTransfer.targetAmount.amount : fxTransfer.sourceAmount.amount
 
-      Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(fxTransfer)}`)
+      Logger.debug(`processFxPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(fxTransfer)}`)
 
-      /* eslint-disable brace-style */
+       
       // Check if fxTransfer is in correct state for processing, produce an internal error message
       if (accumulatedFxTransferStates[fxTransfer.commitRequestId] !== Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
-        Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::transferState: ${accumulatedFxTransferStates[fxTransfer.commitRequestId]} !== ${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
+        Logger.debug(`processFxPositionPrepareBin::transferState: ${accumulatedFxTransferStates[fxTransfer.commitRequestId]} !== ${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
 
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = 'FxTransfer in incorrect state'
@@ -248,7 +248,7 @@ const processFxPositionPrepareBin = async (
             reservedValue: accumulatedPositionReservedValue
           }
           participantPositionChanges.push(participantPositionChange)
-          Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
+          Logger.debug(`processFxPositionPrepareBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
         }
 
         // forward same headers from the prepare message, except the content-length header
@@ -285,7 +285,7 @@ const processFxPositionPrepareBin = async (
       resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
 
       if (changePositions) {
-        Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
+        Logger.debug(`processFxPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
         if (currentPosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
           limitAlarms.push(participantLimit)
         }
@@ -297,10 +297,10 @@ const processFxPositionPrepareBin = async (
         reason
       }
       fxTransferStateChanges.push(fxTransferStateChange)
-      Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::fxTransferStateChange: ${JSON.stringify(fxTransferStateChange)}`)
+      Logger.debug(`processFxPositionPrepareBin::fxTransferStateChange: ${JSON.stringify(fxTransferStateChange)}`)
 
       accumulatedFxTransferStatesCopy[fxTransfer.commitRequestId] = transferStateId
-      Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::accumulatedTransferStatesCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)
+      Logger.debug(`processFxPositionPrepareBin::accumulatedTransferStatesCopy:finalizedTransferState ${JSON.stringify(transferStateId)}`)
     }
   }
 

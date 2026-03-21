@@ -147,7 +147,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   const action = message.value.metadata.event.action
   const transferId = message.value.content.uriParams.id
   const kafkaTopic = message.topic
-  Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
+  Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
 
   const actionLetter = (() => {
     switch (action) {
@@ -164,9 +164,9 @@ const processFulfilMessage = async (message, functionality, span) => {
   // We fail early and silently to allow timeout handler abort transfer
   // if 'RESERVED' transfer state is sent in with v1.0 content-type
   if (headers['content-type'].split('=')[1] === '1.0' && payload.transferState === TransferState.RESERVED) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `failSilentlyforReservedStateWith1.0ContentType--${actionLetter}0`))
+    Logger.info(Util.breadcrumb(location, `failSilentlyforReservedStateWith1.0ContentType--${actionLetter}0`))
     const errorMessage = 'action "RESERVE" is not allowed in fulfil handler for v1.0 clients.'
-    Logger.isErrorEnabled && Logger.error(errorMessage)
+    Logger.error(errorMessage)
     !!span && span.error(errorMessage)
     return true
   }
@@ -175,7 +175,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   const isTransferError = action === TransferEventAction.ABORT
   const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
 
-  Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'getById' }))
+  Logger.info(Util.breadcrumb(location, { path: 'getById' }))
 
   const transfer = await TransferService.getById(transferId)
   const transferStateEnum = transfer?.transferStateEnumeration
@@ -189,7 +189,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   ]
 
   if (!transfer) {
-    Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackInternalServerErrorNotFound--${actionLetter}1`))
+    Logger.error(Util.breadcrumb(location, `callbackInternalServerErrorNotFound--${actionLetter}1`))
     const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transfer not found')
     const eventDetail = { functionality, action: TransferEventAction.COMMIT }
     /**
@@ -217,7 +217,7 @@ const processFulfilMessage = async (message, functionality, span) => {
       /**
        * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
        */
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorSourceNotMatchingTransferFSPs--${actionLetter}2`))
+      Logger.info(Util.breadcrumb(location, `callbackErrorSourceNotMatchingTransferFSPs--${actionLetter}2`))
 
       // Lets set a default non-matching error to fallback-on
       let fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'FSP does not match one of the fsp-id\'s associated with a transfer on the Fulfil callback response')
@@ -260,7 +260,7 @@ const processFulfilMessage = async (message, functionality, span) => {
        * Send patch notification callback to original payee fsp if they asked for a patch response.
        */
       if (action === TransferEventAction.RESERVE) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
+        Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
 
         // Set the event details to map to an RESERVE_ABORTED event targeted to the Notification Handler
         const reserveAbortedEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
@@ -297,7 +297,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   /**
    * Duplicate Check
    */
-  Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+  Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
   const histTimerDuplicateCheckEnd = Metrics.getHistogram(
     'handler_transfers',
     'fulfil_duplicateCheckComparator - Metrics for transfer handler',
@@ -313,7 +313,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   const { hasDuplicateId, hasDuplicateHash } = dupCheckResult
   histTimerDuplicateCheckEnd({ success: true, funcName: 'fulfil_duplicateCheckComparator' })
   if (hasDuplicateId && hasDuplicateHash) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'handleResend'))
+    Logger.info(Util.breadcrumb(location, 'handleResend'))
 
     // This is a duplicate message for a transfer that is already in a finalized state
     // respond as if we received a GET /transfers/{ID} from the client
@@ -322,13 +322,13 @@ const processFulfilMessage = async (message, functionality, span) => {
       const eventDetail = { functionality, action }
       if (action !== TransferEventAction.RESERVE) {
         if (!isTransferError) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinalized2--${actionLetter}3`))
+          Logger.info(Util.breadcrumb(location, `callbackFinalized2--${actionLetter}3`))
           eventDetail.action = TransferEventAction.FULFIL_DUPLICATE
           /**
            * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil
            */
         } else {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinalized3--${actionLetter}4`))
+          Logger.info(Util.breadcrumb(location, `callbackFinalized3--${actionLetter}4`))
           eventDetail.action = TransferEventAction.ABORT_DUPLICATE
         }
       }
@@ -338,7 +338,7 @@ const processFulfilMessage = async (message, functionality, span) => {
     }
 
     if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `inProgress2--${actionLetter}5`))
+      Logger.info(Util.breadcrumb(location, `inProgress2--${actionLetter}5`))
       /**
        * HOWTO: Nearly impossible to trigger for bulk - an individual transfer from a bulk needs to be triggered
        * for processing in order to have the fulfil duplicate hash recorded. While it is still in RESERVED state
@@ -352,7 +352,7 @@ const processFulfilMessage = async (message, functionality, span) => {
     }
 
     // Error scenario - transfer.transferStateEnumeration is in some invalid state
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidTransferStateEnum--${actionLetter}6`))
+    Logger.info(Util.breadcrumb(location, `callbackErrorInvalidTransferStateEnum--${actionLetter}6`))
     const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
       `Invalid transferStateEnumeration:(${transferStateEnum}) for event action:(${action}) and type:(${type})`).toApiErrorObject(Config.ERROR_HANDLING)
     const eventDetail = { functionality, action: TransferEventAction.COMMIT }
@@ -368,7 +368,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   // the previous message hash.
   if (hasDuplicateId && !hasDuplicateHash) {
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${actionLetter}7`))
+    Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${actionLetter}7`))
     const action = isTransferError ? TransferEventAction.ABORT_DUPLICATE : TransferEventAction.FULFIL_DUPLICATE
 
     /**
@@ -383,7 +383,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   // Transfer is not a duplicate, or message hasn't been changed.
 
   if (type !== TransferEventType.FULFIL) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventType--${actionLetter}15`))
+    Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventType--${actionLetter}15`))
     const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event type:(${type})`)
     const eventDetail = { functionality, action: TransferEventAction.COMMIT }
     /**
@@ -402,7 +402,7 @@ const processFulfilMessage = async (message, functionality, span) => {
     TransferEventAction.BULK_ABORT
   ]
   if (!validActions.includes(action)) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${actionLetter}15`))
+    Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${actionLetter}15`))
     const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${type})`)
     const eventDetail = { functionality, action: TransferEventAction.COMMIT }
     /**
@@ -422,7 +422,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   const skipValidation = actionsSkippingFulfilmentValidation.includes(action)
 
   if (skipValidation) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `Skipping fulfilment validation for action--${actionLetter}9`))
+    Logger.info(Util.breadcrumb(location, `Skipping fulfilment validation for action--${actionLetter}9`))
   }
   const isInvalid =
     !skipValidation &&
@@ -430,7 +430,7 @@ const processFulfilMessage = async (message, functionality, span) => {
       !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition))
 
   if (isInvalid) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
+    Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
     const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
     const updatedTransfer = await TransferService.handlePayeeResponse(transferId, payload, TransferEventAction.ABORT_VALIDATION, apiFSPIOPError)
@@ -476,7 +476,7 @@ const processFulfilMessage = async (message, functionality, span) => {
     if (action === TransferEventAction.RESERVE) {
       // Get the updated transfer now that completedTimestamp will be different
       const transferAbortResult = await TransferService.getById(transferId)
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
+      Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}1`))
       const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
 
       // Extract error information
@@ -506,7 +506,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
       transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
   ) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
+    Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state')
     const eventDetail = { functionality, action: TransferEventAction.COMMIT }
     /**
@@ -518,7 +518,7 @@ const processFulfilMessage = async (message, functionality, span) => {
     if (action === TransferEventAction.RESERVE) {
       // Get the updated transfer now that completedTimestamp will be different
       const transferAborted = await TransferService.getById(transferId)
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
+      Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
       const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
       const reservedAbortedPayload = {
         transferId: transferAborted.id,
@@ -535,7 +535,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   // For interscheme we ignore expiration for forwarded transfers
   if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
       transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
+    Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
     const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
     const eventDetail = { functionality, action: TransferEventAction.COMMIT }
     /**
@@ -547,7 +547,7 @@ const processFulfilMessage = async (message, functionality, span) => {
     if (action === TransferEventAction.RESERVE) {
       // Get the updated transfer now that completedTimestamp will be different
       const transferAborted = await TransferService.getById(transferId)
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
+      Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
       const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
       const reservedAbortedPayload = {
         transferId: transferAborted.id,
@@ -561,7 +561,7 @@ const processFulfilMessage = async (message, functionality, span) => {
   }
 
   // Validations Succeeded - process the fulfil
-  Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
+  Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
   switch (action) {
     case TransferEventAction.COMMIT:
     case TransferEventAction.RESERVE:
@@ -575,7 +575,7 @@ const processFulfilMessage = async (message, functionality, span) => {
         topicNameOverride = Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.BULK_COMMIT
       }
 
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
+      Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
       await TransferService.handlePayeeResponse(transferId, payload, action)
       const eventDetail = { functionality: TransferEventType.POSITION, action }
       const cyrilResult = await FxService.Cyril.processFulfilMessage(transferId, payload, transfer)
@@ -602,21 +602,21 @@ const processFulfilMessage = async (message, functionality, span) => {
       return true
     }
     case TransferEventAction.REJECT: {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
+      Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
       const errorMessage = 'action REJECT is not allowed into fulfil handler'
-      Logger.isErrorEnabled && Logger.error(errorMessage)
+      Logger.error(errorMessage)
       !!span && span.error(errorMessage)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
     case TransferEventAction.BULK_ABORT: {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
+      Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
       let fspiopError
       const eInfo = payload.errorInformation
       try { // handle only valid errorCodes provided by the payee
         fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(eInfo)
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+        Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
         const eventDetail = { functionality: TransferEventType.POSITION, action }
@@ -634,13 +634,13 @@ const processFulfilMessage = async (message, functionality, span) => {
       break
     }
     case TransferEventAction.ABORT: {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
+      Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
       let fspiopError
       const eInfo = payload.errorInformation
       try { // handle only valid errorCodes provided by the payee
         fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(eInfo)
       } catch (err) {
-        Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+        Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
         await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
         const eventDetail = { functionality: TransferEventType.POSITION, action }
@@ -810,7 +810,7 @@ const getTransfer = async (error, messages) => {
     const action = metadata.event.action
     const transferIdOrCommitRequestId = message.value.content.uriParams.id
     const kafkaTopic = message.topic
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `getTransfer:${action}` }))
+    Logger.info(Util.breadcrumb(location, { method: `getTransfer:${action}` }))
 
     const actionLetter = Enum.Events.ActionLetter.get
     const params = { message, kafkaTopic, span, consumer: Consumer, producer: Producer }
@@ -822,7 +822,7 @@ const getTransfer = async (error, messages) => {
     const isSenderExternal = sender ? await externalParticipantCached.getByName(sender) : null
 
     if (!isSenderExternal && !await Validator.validateParticipantByName(message.value.from)) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
+      Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, hubName: Config.HUB_NAME })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
@@ -833,7 +833,7 @@ const getTransfer = async (error, messages) => {
     const isExternalParticipant = destination ? await externalParticipantCached.getByName(destination) : null
 
     if (isExternalParticipant) {
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `externalParticipantDetected--${actionLetter}5`))
+      Logger.info(Util.breadcrumb(location, `externalParticipantDetected--${actionLetter}5`))
       // Empty payload informs notification handler that this is to be forwarded to an external participant
       message.value.content.payload = {}
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: false, hubName: Config.HUB_NAME })
@@ -844,7 +844,7 @@ const getTransfer = async (error, messages) => {
     if (isFx) {
       const fxTransfer = await FxTransferModel.fxTransfer.getByIdLight(transferIdOrCommitRequestId)
       if (!fxTransfer) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
+        Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided commitRequest ID was not found on the server.')
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
@@ -859,11 +859,11 @@ const getTransfer = async (error, messages) => {
       // Special scenario for interscheme transfers where we need to reply with the original error callback
       // in order to resolve RESERVED_FORWARDED transfers in other regional/buffer schemes
       if (hasProxyHeader && replyWithPutErrorCallback) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}5`))
+        Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}5`))
         // Get the fxTransfer error details
         const fxTransferError = await FxTransferErrorModel.getByCommitRequestId(transferIdOrCommitRequestId)
         if (fxTransferError) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}6`))
+          Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeFxTransfer--${actionLetter}6`))
           // Action choice tells notification handler what to do.
           // In this case inform payer.
           const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FX_TIMEOUT_RECEIVED }
@@ -884,19 +884,19 @@ const getTransfer = async (error, messages) => {
       }
 
       if (!isSenderExternal && !await Validator.validateParticipantForCommitRequestId(message.value.from, transferIdOrCommitRequestId)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
+        Logger.info(Util.breadcrumb(location, `callbackErrorNotFxTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
 
       Util.breadcrumb(location, { path: 'validationPassed' })
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
+      Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
       message.value.content.payload = TransferObjectTransform.toFulfil(fxTransfer, true)
     } else {
       const transfer = await TransferService.getByIdLight(transferIdOrCommitRequestId)
       if (!transfer) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
+        Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.')
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
@@ -911,10 +911,10 @@ const getTransfer = async (error, messages) => {
       // Special scenario for interscheme transfers where we need to reply with the original error callback
       // in order to resolve RESERVED_FORWARDED transfers in other regional/buffer schemes
       if (hasProxyHeader && replyWithPutErrorCallback) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}5`))
+        Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}5`))
         const transferError = await TransferErrorModel.getByTransferId(transferIdOrCommitRequestId)
         if (transferError) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}6`))
+          Logger.info(Util.breadcrumb(location, `getRequestOnFailedInterschemeTransfer--${actionLetter}6`))
           // Action choice tells notification handler what to do.
           // In this case inform payer.
           const errorEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.TIMEOUT_RECEIVED }
@@ -936,14 +936,14 @@ const getTransfer = async (error, messages) => {
       }
 
       if (!isSenderExternal && !await Validator.validateParticipantTransferId(message.value.from, transferIdOrCommitRequestId)) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
+        Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
         rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'getTransfer' })
       }
 
       Util.breadcrumb(location, { path: 'validationPassed' })
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
+      Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
       message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
     }
 
@@ -953,7 +953,7 @@ const getTransfer = async (error, messages) => {
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--G0`)
+    Logger.error(`${Util.breadcrumb(location)}::${err.message}--G0`)
     const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
     await span.finish(fspiopError.message, state)

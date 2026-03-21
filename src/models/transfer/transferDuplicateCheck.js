@@ -53,7 +53,7 @@ const getTransferDuplicateCheck = async (transferId) => {
     'transferDuplicateCheck_getTransferDuplicateCheck - Metrics for transfer duplicate check model',
     ['success', 'queryName']
   ).startTimer()
-  Logger.isDebugEnabled && Logger.debug(`get transferDuplicateCheck (transferId=${transferId})`)
+  Logger.debug(`get transferDuplicateCheck (transferId=${transferId})`)
   try {
     const result = Db.from('transferDuplicateCheck').findOne({ transferId })
     histTimerGetTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_getTransferDuplicateCheck' })
@@ -82,7 +82,7 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
     'transferDuplicateCheck_saveTransferDuplicateCheck - Metrics for transfer duplicate check model',
     ['success', 'queryName']
   ).startTimer()
-  Logger.isDebugEnabled && Logger.debug(`save transferDuplicateCheck (transferId=${transferId}, hash=${hash})`)
+  Logger.debug(`save transferDuplicateCheck (transferId=${transferId}, hash=${hash})`)
   try {
     const result = Db.from('transferDuplicateCheck').insert({ transferId, hash })
     histTimerSaveTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })

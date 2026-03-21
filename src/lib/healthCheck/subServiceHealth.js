@@ -56,11 +56,11 @@ const getSubServiceHealthBroker = async () => {
           const consumer = Consumer.getConsumer(topic)
           const isHealthy = await consumer.isHealthy()
           if (!isHealthy) {
-            Logger.isWarnEnabled && Logger.warn(`Consumer is not healthy for topic ${topic}`)
+            Logger.warn(`Consumer is not healthy for topic ${topic}`)
           }
           return isHealthy
         } catch (err) {
-          Logger.isWarnEnabled && Logger.warn(`isHealthy check failed for topic ${topic}: ${err.message}`)
+          Logger.warn(`isHealthy check failed for topic ${topic}: ${err.message}`)
           return false
         }
       })
@@ -70,7 +70,7 @@ const getSubServiceHealthBroker = async () => {
       status = statusEnum.DOWN
     }
   } catch (err) {
-    Logger.isWarnEnabled && Logger.warn(`getSubServiceHealthBroker failed with error ${err.message}.`)
+    Logger.warn(`getSubServiceHealthBroker failed with error ${err.message}.`)
     status = statusEnum.DOWN
   }
 

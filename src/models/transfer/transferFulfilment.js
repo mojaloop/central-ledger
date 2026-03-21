@@ -32,7 +32,7 @@ const Logger = require('../../shared/logger').logger
 const rethrow = require('../../shared/rethrow')
 
 const getByTransferId = async (transferId) => {
-  Logger.isDebugEnabled && Logger.debug('getByTransferId ' + transferId.toString())
+  Logger.debug('getByTransferId ' + transferId.toString())
   try {
     return await Db.from('transferFulfilment').find({ transferId })
   } catch (err) {
@@ -41,7 +41,7 @@ const getByTransferId = async (transferId) => {
 }
 
 const saveTransferFulfilment = async (record) => {
-  Logger.isDebugEnabled && Logger.debug('save transferFulfilment ' + record.toString())
+  Logger.debug('save transferFulfilment ' + record.toString())
   try {
     return await Db.from('transferFulfilment').insert(record)
   } catch (err) {

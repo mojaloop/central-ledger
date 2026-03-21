@@ -34,7 +34,7 @@ const TS = Enum.Transfers.TransferInternalState
 const rethrow = require('../../shared/rethrow')
 
 const cleanup = async () => {
-  Logger.isDebugEnabled && Logger.debug('cleanup fxTransferTimeout')
+  Logger.debug('cleanup fxTransferTimeout')
   try {
     const knex = Db.getKnex()
 

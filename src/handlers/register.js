@@ -60,21 +60,21 @@ const registerAllHandlers = async () => {
   try {
     const modules = await requireGlob(['./**/handler.js'])
     for (const key in modules) {
-      Logger.isInfoEnabled && Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
+      Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
       if (Object.prototype.hasOwnProperty.call(modules[key], 'handler')) {
         const handlerObject = modules[key]
         await handlerObject.handler.registerAllHandlers()
       } else {
         for (const subKey in modules[key]) {
           const handlerObject = modules[key][subKey]
-          Logger.isInfoEnabled && Logger.info(` ⌙ Registering sub-handler module[${key}-${subKey}]: ${JSON.stringify(handlerObject)}`)
+          Logger.info(` ⌙ Registering sub-handler module[${key}-${subKey}]: ${JSON.stringify(handlerObject)}`)
           await handlerObject.handler.registerAllHandlers()
         }
       }
     }
     return true
   } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
+    Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

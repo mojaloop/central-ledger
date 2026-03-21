@@ -32,7 +32,7 @@ const Logger = require('../../shared/logger').logger
 const rethrow = require('../../shared/rethrow')
 
 const saveTransferParticipant = async (record) => {
-  Logger.isDebugEnabled && Logger.debug('save transferParticipant' + record.toString())
+  Logger.debug('save transferParticipant' + record.toString())
   try {
     return await Db.from('transferParticipant').insert(record)
   } catch (err) {

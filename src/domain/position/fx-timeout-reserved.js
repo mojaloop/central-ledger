@@ -75,7 +75,7 @@ const processPositionFxTimeoutReservedBin = async (
   // We need to notify the payee of the timeout.
   if (fxTimeoutReservedBins && fxTimeoutReservedBins.length > 0) {
     for (const binItem of fxTimeoutReservedBins) {
-      Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::binItem: ${JSON.stringify(binItem.message.value)}`)
+      Logger.debug(`processPositionFxTimeoutReservedBin::binItem: ${JSON.stringify(binItem.message.value)}`)
       const participantAccountId = binItem.message.key.toString()
       const commitRequestId = binItem.message.value.content.uriParams.id
       const counterPartyFsp = binItem.message.value.to
@@ -86,7 +86,7 @@ const processPositionFxTimeoutReservedBin = async (
       if (accumulatedFxTransferStates[commitRequestId] !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
         throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
       } else {
-        Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates: ${JSON.stringify(accumulatedFxTransferStates)}`)
+        Logger.debug(`accumulatedFxTransferStates: ${JSON.stringify(accumulatedFxTransferStates)}`)
 
         const transferAmount = fetchedReservedPositionChangesByCommitRequestIds[commitRequestId][participantAccountId].change
 
@@ -97,12 +97,12 @@ const processPositionFxTimeoutReservedBin = async (
           counterPartyFsp,
           initiatingFsp
         )
-        Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::resultMessage: ${JSON.stringify(resultMessage)}`)
+        Logger.debug(`processPositionFxTimeoutReservedBin::resultMessage: ${JSON.stringify(resultMessage)}`)
 
         // Revert payer's position for the amount of the transfer
         const { participantPositionChange, fxTransferStateChange, transferStateId, updatedRunningPosition } =
           _handleParticipantPositionChange(runningPosition, transferAmount, commitRequestId, accumulatedPositionReservedValue)
-        Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
+        Logger.debug(`processPositionFxTimeoutReservedBin::participantPositionChange: ${JSON.stringify(participantPositionChange)}`)
         runningPosition = updatedRunningPosition
         binItem.result = { success: true }
         participantPositionChanges.push(participantPositionChange)
@@ -170,8 +170,8 @@ const _handleParticipantPositionChange = (runningPosition, transferAmount, commi
   const transferStateId = Enum.Transfers.TransferInternalState.EXPIRED_RESERVED
   // Revert payer's position for the amount of the transfer
   const updatedRunningPosition = new MLNumber(runningPosition.subtract(transferAmount).toFixed(Config.AMOUNT.SCALE))
-  Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::_handleParticipantPositionChange::updatedRunningPosition: ${updatedRunningPosition.toString()}`)
-  Logger.isDebugEnabled && Logger.debug(`processPositionFxTimeoutReservedBin::_handleParticipantPositionChange::transferAmount: ${transferAmount}`)
+  Logger.debug(`processPositionFxTimeoutReservedBin::_handleParticipantPositionChange::updatedRunningPosition: ${updatedRunningPosition.toString()}`)
+  Logger.debug(`processPositionFxTimeoutReservedBin::_handleParticipantPositionChange::transferAmount: ${transferAmount}`)
   // Construct participant position change object
   const participantPositionChange = {
     commitRequestId, // Need to delete this in bin processor while updating transferStateChangeId
