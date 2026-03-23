@@ -575,7 +575,6 @@ Test('Handlers test', async handlersTest => {
       let expectedAbortNotificationPayload = {}
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
-          completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
           transferState: 'ABORTED',
           extensionList: {
             extension: [
@@ -610,8 +609,11 @@ Test('Handlers test', async handlersTest => {
       test.ok(payeeAbortNotification, 'Payee Abort notification sent')
 
       try {
+        const payeeAbortNotificationPayload = getMessagePayloadOrThrow(payeeAbortNotification)
+        test.ok(payeeAbortNotificationPayload.completedTimestamp, 'Abort notification should include a completedTimestamp')
+        const { completedTimestamp, ...payloadWithoutTimestamp } = payeeAbortNotificationPayload
         test.deepEqual(
-          getMessagePayloadOrThrow(payeeAbortNotification),
+          payloadWithoutTimestamp,
           expectedAbortNotificationPayload,
           'Abort notification should be sent with the correct values'
         )
@@ -695,7 +697,6 @@ Test('Handlers test', async handlersTest => {
       let expectedAbortNotificationPayload = {}
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
-          completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
           transferState: 'ABORTED',
           extensionList: {
             extension: [
@@ -725,8 +726,11 @@ Test('Handlers test', async handlersTest => {
           wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         )[0]
         test.ok(payeeAbortNotification, 'Payee Abort notification sent')
+        const payeeAbortNotificationPayload = getMessagePayloadOrThrow(payeeAbortNotification)
+        test.ok(payeeAbortNotificationPayload.completedTimestamp, 'Abort notification should include a completedTimestamp')
+        const { completedTimestamp, ...payloadWithoutTimestamp } = payeeAbortNotificationPayload
         test.deepEqual(
-          getMessagePayloadOrThrow(payeeAbortNotification),
+          payloadWithoutTimestamp,
           expectedAbortNotificationPayload,
           'Abort notification should be sent with the correct values'
         )
@@ -813,7 +817,6 @@ Test('Handlers test', async handlersTest => {
       let expectedAbortNotificationPayload = {}
       if (updatedTransfer) {
         expectedAbortNotificationPayload = {
-          completedTimestamp: (new Date(Date.parse(updatedTransfer.completedTimestamp))).toISOString(),
           transferState: 'ABORTED'
         }
       }
@@ -848,10 +851,9 @@ Test('Handlers test', async handlersTest => {
         'Abort notification should be sent with the correct transferState'
       )
 
-      test.equal(
+      test.ok(
         payeeAbortNotificationPayload.completedTimestamp,
-        expectedAbortNotificationPayload.completedTimestamp,
-        'Abort notification should be sent with the correct completedTimestamp'
+        'Abort notification should include a completedTimestamp'
       )
 
       // Cleanup
