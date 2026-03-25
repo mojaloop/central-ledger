@@ -13,5 +13,5 @@ reject: [
   # glob >= 11 requires node >= 20
   "glob",
   # joi v18.0.1 has dependency issues with other packages
-  "joi"
+  "joi",
 ]
