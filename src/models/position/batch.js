@@ -263,7 +263,174 @@ const getReservedPositionChangesByCommitRequestIds = async (trx, commitRequestId
   }
 }
 
+/**
+ * Executes multiple Knex queries in a single database round-trip.
+ * Requires { multipleStatements: true } in Knex connection config.
+ */
+async function executeMultiQuery (trx, queryBuilders) {
+  // 1. Convert builders to SQL/Bindings
+  const sqlObj = queryBuilders.map(qb => qb.toSQL().toNative())
+
+  // 2. Join SQL with semicolons and flatten bindings
+  const combinedSql = sqlObj.map(q => q.sql).join('; ')
+  const combinedBindings = sqlObj.flatMap(q => q.bindings)
+
+  // 3. Execute
+  const [results] = await trx.raw(combinedSql, combinedBindings)
+
+  // 4. Filter results (MySQL often adds a trailing header if the last query is an DML)
+  // This ensures you only get the data sets for your specific queries
+  return results.slice(0, queryBuilders.length)
+}
+
+const fetchAll = async (trx, transfersIdList, commitRequestIdList, accountIds, reservedActionTransferIdList) => {
+  const knex = Db.getKnex()
+  try {
+    const [results, results1, /* participantPositions , */ transferInfos, participantPositionChanges, query, extensions] = await executeMultiQuery(trx, [
+      // Pre fetch latest transferStates for all the transferIds in the account-bin
+      knex('transferStateChange')
+        .transacting(trx)
+        .whereIn('transferStateChange.transferId', transfersIdList)
+        .orderBy('transferStateChangeId', 'desc')
+        .select('*'),
+      // Pre fetch latest fxTransferStates for all the commitRequestIds in the account-bin
+      knex('fxTransferStateChange')
+        .transacting(trx)
+        .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)
+        .orderBy('fxTransferStateChangeId', 'desc')
+        .select('*'),
+      // TODO the query below can be re-added later, instead of the separate call to getPositionsByAccountIdsForUpdate below
+      // Pre fetch all position account balances for the account-bin and acquire lock on position
+      // knex('participantPosition')
+      //   .transacting(trx)
+      //   .whereIn('participantCurrencyId', accountIds)
+      //   .forUpdate() // TODO this can be removed if we implement optimistic updates to the position. For now we are using pessimistic locking.
+      //   .select('*'),
+      knex('transferParticipant')
+        .transacting(trx)
+        .where({
+          'transferParticipant.transferParticipantRoleTypeId': Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+          'transferParticipant.ledgerEntryTypeId': Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
+        })
+        .whereIn('transferParticipant.transferId', transfersIdList)
+        .select(
+          'transferParticipant.*'
+        ),
+      // Fetch all RESERVED participantPositionChanges associated with a commitRequestId
+      // These will contain the value that was reserved for the fxTransfer
+      // We will use these values to revert the position on timeouts
+      knex('fxTransferStateChange')
+        .transacting(trx)
+        .whereIn('fxTransferStateChange.commitRequestId', commitRequestIdList)
+        .where('fxTransferStateChange.transferStateId', Enum.Transfers.TransferInternalState.RESERVED)
+        .leftJoin('participantPositionChange AS ppc', 'ppc.fxTransferStateChangeId', 'fxTransferStateChange.fxTransferStateChangeId')
+        .select(
+          'ppc.*',
+          'fxTransferStateChange.commitRequestId AS commitRequestId'
+        ),
+      // Pre fetch transfers for all reserve action fulfils
+      reservedActionTransferIdList &&
+      reservedActionTransferIdList.length > 0 &&
+      knex('transfer')
+        .transacting(trx)
+        .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
+        .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
+        .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
+        .leftJoin('transferError as te', 'te.transferId', 'transfer.transferId') // currently transferError.transferId is PK ensuring one error per transferId
+        .whereIn('transfer.transferId', reservedActionTransferIdList)
+        .select(
+          'transfer.*',
+          'tsc.createdDate AS completedTimestamp',
+          'ts.enumeration as transferStateEnumeration',
+          'tf.ilpFulfilment AS fulfilment',
+          'te.errorCode',
+          'te.errorDescription'
+        ),
+      // Pre fetch transfer extensions for all reserve action fulfils
+      reservedActionTransferIdList &&
+      reservedActionTransferIdList.length > 0 &&
+      knex('transfer')
+        .transacting(trx)
+        .from('transferExtension')
+        .whereIn('transferId', reservedActionTransferIdList)
+        .where('isFulfilment', false)
+        .where('isError', false)
+        .select('*')
+    ].filter(Boolean))
+
+    // ** //
+    const latestTransferStateChanges = {}
+
+    for (const result of results) {
+      if (!latestTransferStateChanges[result.transferId]) {
+        latestTransferStateChanges[result.transferId] = result
+      }
+    }
+    const latestTransferStates = {}
+    for (const key in latestTransferStateChanges) {
+      latestTransferStates[key] = latestTransferStateChanges[key].transferStateId
+    }
+    // ** //
+    const latestFxTransferStateChanges = {}
+
+    for (const result of results1) {
+      if (!latestFxTransferStateChanges[result.commitRequestId]) {
+        latestFxTransferStateChanges[result.commitRequestId] = result
+      }
+    }
+    const latestFxTransferStates = {}
+    for (const key in latestFxTransferStateChanges) {
+      latestFxTransferStates[key] = latestFxTransferStateChanges[key].transferStateId
+    }
+    // ** //
+    // const positions = {}
+    // for (const position of participantPositions) {
+    //   positions[position.participantCurrencyId] = position
+    // }
+    // TODO this query can be removed later, instead of being a separate one
+    const positions = await getPositionsByAccountIdsForUpdate(trx, accountIds)
+    // ** //
+    const info = {}
+    // This should key the transfer info with the latest transferStateChangeId
+    for (const transferInfo of transferInfos) {
+      if (!(transferInfo.transferId in info)) {
+        info[transferInfo.transferId] = transferInfo
+      }
+    }
+    // ** //
+    const info1 = {}
+    for (const participantPositionChange of participantPositionChanges) {
+      if (!(participantPositionChange.commitRequestId in info1)) {
+        info1[participantPositionChange.commitRequestId] = {}
+      }
+      if (participantPositionChange.participantCurrencyId) {
+        info1[participantPositionChange.commitRequestId][participantPositionChange.participantCurrencyId] = participantPositionChange
+      }
+    }
+    // ** //
+    const transfers = {}
+    if (reservedActionTransferIdList && reservedActionTransferIdList.length > 0) {
+      for (const transfer of query) {
+        transfer.extensionList = extensions.filter(ext => ext.transferId === transfer.transferId)
+        if (transfer.errorCode && transfer.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+          if (!transfer.extensionList) transfer.extensionList = []
+          transfer.extensionList.push({
+            key: 'cause',
+            value: `${transfer.errorCode}: ${transfer.errorDescription}`.substr(0, 128)
+          })
+        }
+        transfer.isTransferReadModel = true
+        transfers[transfer.transferId] = transfer
+      }
+    }
+    return [latestTransferStates, latestFxTransferStates, positions, info, info1, transfers]
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
 module.exports = {
+  fetchAll,
   startDbTransaction,
   getLatestTransferStateChangesByTransferIdList,
   getLatestFxTransferStateChangesByCommitRequestIdList,

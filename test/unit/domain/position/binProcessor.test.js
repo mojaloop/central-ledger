@@ -329,7 +329,7 @@ Test('BinProcessor', async (binProcessorTest) => {
       }
     ])
 
-    BatchPositionModel.getPositionsByAccountIdsForUpdate.returns({
+    const getPositionsByAccountIdsForUpdate = ({
       7: {
         participantPositionId: 7,
         participantCurrencyId: 7,
@@ -359,10 +359,11 @@ Test('BinProcessor', async (binProcessorTest) => {
         changedDate: '2023-08-17T09:36:43.000Z'
       }
     })
+    BatchPositionModel.getPositionsByAccountIdsForUpdate.returns(getPositionsByAccountIdsForUpdate)
 
     BatchPositionModel.updateParticipantPosition.returns(true)
 
-    BatchPositionModel.getTransferInfoList.returns({
+    const getTransferInfoList = ({
       '4830fa00-0c2a-4de1-9640-5ad4e68f5f62': {
         amount: -2
       },
@@ -385,8 +386,9 @@ Test('BinProcessor', async (binProcessorTest) => {
         amount: -50
       }
     })
+    BatchPositionModel.getTransferInfoList.returns(getTransferInfoList)
 
-    BatchPositionModel.getReservedPositionChangesByCommitRequestIds.returns({
+    const getReservedPositionChangesByCommitRequestIds = ({
       'ed6848e0-e2a8-45b0-9f98-59a2ffba8c10': {
         15: {
           value: 100,
@@ -394,8 +396,9 @@ Test('BinProcessor', async (binProcessorTest) => {
         }
       }
     })
+    BatchPositionModel.getReservedPositionChangesByCommitRequestIds.returns(getReservedPositionChangesByCommitRequestIds)
 
-    BatchPositionModel.getTransferByIdsForReserve.returns({
+    const getTransferByIdsForReserve = ({
       '0a4834e7-7e4c-47e8-8dcb-f3f68031d377': {
         transferId: '0a4834e7-7e4c-47e8-8dcb-f3f68031d377',
         amount: 2.00,
@@ -433,6 +436,20 @@ Test('BinProcessor', async (binProcessorTest) => {
         extensionList: []
       }
     })
+    BatchPositionModel.getTransferByIdsForReserve.returns(getTransferByIdsForReserve)
+
+    BatchPositionModel.fetchAll.returns([
+      Object.fromEntries(
+        Object.entries({ ...prepareTransfersStates, ...fulfilTransfersStates, ...timeoutReservedTransfersStates })
+          .map(([transferId, transferState]) => [transferId, transferState.transferStateId])),
+      Object.fromEntries(
+        Object.entries({ ...fxTimeoutReservedTransfersStates })
+          .map(([transferId, transferState]) => [transferId, transferState.transferStateId])),
+      getPositionsByAccountIdsForUpdate,
+      getTransferInfoList,
+      getReservedPositionChangesByCommitRequestIds,
+      getTransferByIdsForReserve
+    ])
     test.end()
   })
 

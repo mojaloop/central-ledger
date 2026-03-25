@@ -156,6 +156,8 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       handlerList.push(handler)
     }
 
+    if (!handlerList.length || args.positionbatch) Config.DATABASE.connection.multipleStatements = true
+
     module.exports = Setup.initialize({
       service: 'handler',
       port: Config.PORT,
