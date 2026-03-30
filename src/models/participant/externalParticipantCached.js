@@ -67,7 +67,7 @@ const initialize = () => {
 }
 
 const invalidateCache = async () => {
-  cacheClient.drop(epAllCacheKey)
+  await cacheClient.drop(epAllCacheKey)
 }
 
 const getById = async (id) => {
