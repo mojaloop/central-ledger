@@ -79,7 +79,7 @@ exports.initialize = async () => {
 }
 
 exports.invalidateParticipantsCache = async () => {
-  cacheClient.drop(participantsAllCacheKey)
+  await cacheClient.drop(participantsAllCacheKey)
 }
 
 exports.getById = async (id) => {

@@ -76,7 +76,7 @@ exports.initialize = async () => {
 }
 
 exports.invalidateParticipantLimitCache = async () => {
-  cacheClient.drop(participantLimitAllCacheKey)
+  await cacheClient.drop(participantLimitAllCacheKey)
 }
 
 exports.getByParticipantCurrencyId = async (id) => {
