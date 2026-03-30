@@ -68,7 +68,8 @@ const _getNormalizedHeaderValue = (headers, headerName) => {
   if (!key) return undefined
   const value = headers[key]
   if (Array.isArray(value)) return value.join(',')
-  return String(value || '')
+  if (value === null || value === undefined) return undefined
+  return String(value)
 }
 
 /**
