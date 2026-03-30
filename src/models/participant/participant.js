@@ -42,6 +42,24 @@ exports.getAll = async () => {
   }
 }
 
+exports.getById = async (id) => {
+  try {
+    const result = await Db.from('participant').findOne({ participantId: id })
+    return result
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
+exports.getByName = async (name) => {
+  try {
+    const result = await Db.from('participant').findOne({ name })
+    return result
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
 exports.create = async (participant) => {
   try {
     const result = await Db.from('participant').insert({

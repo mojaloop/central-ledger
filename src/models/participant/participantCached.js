@@ -100,6 +100,14 @@ exports.getByName = async (name) => {
   }
 }
 
+exports.getByIdNoCache = async (id) => {
+  return ParticipantModel.getById(id)
+}
+
+exports.getByNameNoCache = async (name) => {
+  return ParticipantModel.getByName(name)
+}
+
 exports.getAll = async () => {
   try {
     const cachedParticipants = await getParticipantsCached()
