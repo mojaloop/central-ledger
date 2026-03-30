@@ -56,16 +56,64 @@ const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
 const reasons = []
 
-const validateParticipantById = async function (participantId) {
-  const participant = await Participant.getById(participantId)
+/**
+ * Retrieves a header value with case-insensitive key lookup and array coercion.
+ * @param {Object} headers - incoming HTTP headers
+ * @param {string} headerName - header name to look up
+ * @returns {string|undefined}
+ */
+const _getNormalizedHeaderValue = (headers, headerName) => {
+  if (!headers || typeof headers !== 'object') return undefined
+  const key = Object.keys(headers).find(k => k.toLowerCase() === headerName.toLowerCase())
+  if (!key) return undefined
+  const value = headers[key]
+  if (Array.isArray(value)) return value.join(',')
+  return String(value || '')
+}
+
+/**
+ * Parses a W3C baggage header value (comma-separated key=value pairs).
+ * @param {string|string[]} baggage - raw baggage header value
+ * @returns {Object} - key/value map
+ */
+const _parseBaggageHeader = (baggage) => {
+  if (!baggage) return {}
+  const baggageStr = Array.isArray(baggage) ? baggage.join(',') : String(baggage)
+  if (!baggageStr) return {}
+  return Object.fromEntries(
+    baggageStr.split(',')
+      .map(entry => entry.trim().split('='))
+      .filter(parts => parts.length >= 2)
+      .map(([key, ...rest]) => [key.trim(), rest.join('=').trim()])
+  )
+}
+
+/**
+ * Returns true when the baggage header carries `test-instruction=skip-participant-cache`.
+ * @param {Object} headers - incoming HTTP headers
+ * @returns {boolean}
+ */
+const _shouldSkipParticipantCache = (headers) => {
+  const baggage = _getNormalizedHeaderValue(headers, 'baggage')
+  if (!baggage) return false
+  const parsed = _parseBaggageHeader(baggage)
+  return parsed['test-instruction'] === 'skip-participant-cache'
+}
+
+const validateParticipantById = async function (participantId, headers) {
+  const participant = _shouldSkipParticipantCache(headers)
+    ? await Participant.getByIdNoCache(participantId)
+    : await Participant.getById(participantId)
   if (!participant) {
     reasons.push(`Participant ${participantId} not found`)
   }
   return !!participant
 }
 
-const validateParticipantByName = async function (participantName) {
-  const participant = await Participant.getByName(participantName)
+const validateParticipantByName = async function (participantName, headers) {
+  const participant = _shouldSkipParticipantCache(headers)
+    ? await Participant.getByNameNoCache(participantName)
+    : await Participant.getByName(participantName)
   let validationPassed = false
   if (!participant) {
     reasons.push(`Participant ${participantName} not found`)
@@ -233,8 +281,8 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
     validationPassed = (
       validateFspiopSourceMatchesPayer(initiatingFsp, headers) &&
       isAmountValid(payload, isFx) &&
-      await validateParticipantByName(initiatingFsp) &&
-      await validateParticipantByName(counterPartyFsp) &&
+      await validateParticipantByName(initiatingFsp, headers) &&
+      await validateParticipantByName(counterPartyFsp, headers) &&
       await validateConditionAndExpiration(payload) &&
       validateDifferentDfsp(initiatingFsp, counterPartyFsp)
     )
@@ -259,7 +307,7 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
   }
 }
 
-const validateById = async (payload) => {
+const validateById = async (payload, headers) => {
   reasons.length = 0
   let validationPassed
   if (!payload) {
@@ -267,8 +315,8 @@ const validateById = async (payload) => {
     validationPassed = false
     return { validationPassed, reasons }
   }
-  validationPassed = (await validateParticipantById(payload.payerFsp) &&
-    await validateParticipantById(payload.payeeFsp) &&
+  validationPassed = (await validateParticipantById(payload.payerFsp, headers) &&
+    await validateParticipantById(payload.payeeFsp, headers) &&
     validateAmount(payload.amount) &&
     await validateConditionAndExpiration(payload))
   return {
@@ -302,5 +350,8 @@ module.exports = {
   validateParticipantByName,
   reasons,
   validateParticipantTransferId,
-  validateParticipantForCommitRequestId
+  validateParticipantForCommitRequestId,
+  _getNormalizedHeaderValue,
+  _parseBaggageHeader,
+  _shouldSkipParticipantCache
 }

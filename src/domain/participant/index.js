@@ -108,6 +108,24 @@ const getByName = async (name) => {
   return participant
 }
 
+const getByIdNoCache = async (id) => {
+  logger.debug('getting participant by id (no cache)', { id })
+  const participant = await ParticipantModel.getByIdNoCache(id)
+  if (participant) {
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+  }
+  return participant
+}
+
+const getByNameNoCache = async (name) => {
+  logger.debug('getting participant by name (no cache)', { name })
+  const participant = await ParticipantModel.getByNameNoCache(name)
+  if (participant) {
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+  }
+  return participant
+}
+
 const participantExists = (participant, checkIsActive = false) => {
   const log = logger.child({ participant, checkIsActive })
   log.debug('checking if participant exists')
@@ -883,6 +901,8 @@ module.exports = {
   getAll,
   getById,
   getByName,
+  getByIdNoCache,
+  getByNameNoCache,
   getLedgerAccountTypeName,
   update,
   createParticipantCurrency,

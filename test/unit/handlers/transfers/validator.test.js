@@ -9,6 +9,8 @@ const Validator = require('../../../../src/handlers/transfers/validator')
 const CryptoConditions = require('../../../../src/cryptoConditions')
 const Enum = require('@mojaloop/central-services-shared').Enum
 
+const SKIP_CACHE_BAGGAGE = 'test-instruction=skip-participant-cache'
+
 let payload
 let headers
 let fxPayload
@@ -365,6 +367,286 @@ Test('transfer validator', validatorTest => {
     })
 
     validateParticipantForCommitRequestIdTest.end()
+  })
+
+  validatorTest.test('_getNormalizedHeaderValue should', headerValueTest => {
+    headerValueTest.test('return value for lowercase header name', (test) => {
+      const headers = { baggage: SKIP_CACHE_BAGGAGE }
+      test.equal(Validator._getNormalizedHeaderValue(headers, 'baggage'), SKIP_CACHE_BAGGAGE)
+      test.end()
+    })
+
+    headerValueTest.test('match header name case-insensitively (Baggage)', (test) => {
+      const headers = { Baggage: SKIP_CACHE_BAGGAGE }
+      test.equal(Validator._getNormalizedHeaderValue(headers, 'baggage'), SKIP_CACHE_BAGGAGE)
+      test.end()
+    })
+
+    headerValueTest.test('match header name case-insensitively (bAgGaGe)', (test) => {
+      const headers = { bAgGaGe: SKIP_CACHE_BAGGAGE }
+      test.equal(Validator._getNormalizedHeaderValue(headers, 'BAGGAGE'), SKIP_CACHE_BAGGAGE)
+      test.end()
+    })
+
+    headerValueTest.test('join array header values with comma', (test) => {
+      const headers = { baggage: ['foo=bar', SKIP_CACHE_BAGGAGE] }
+      test.equal(Validator._getNormalizedHeaderValue(headers, 'baggage'), `foo=bar,${SKIP_CACHE_BAGGAGE}`)
+      test.end()
+    })
+
+    headerValueTest.test('return undefined when header is absent', (test) => {
+      const headers = { 'content-type': 'application/json' }
+      test.equal(Validator._getNormalizedHeaderValue(headers, 'baggage'), undefined)
+      test.end()
+    })
+
+    headerValueTest.test('return undefined for null headers', (test) => {
+      test.equal(Validator._getNormalizedHeaderValue(null, 'baggage'), undefined)
+      test.end()
+    })
+
+    headerValueTest.test('return undefined for undefined headers', (test) => {
+      test.equal(Validator._getNormalizedHeaderValue(undefined, 'baggage'), undefined)
+      test.end()
+    })
+
+    headerValueTest.test('coerce numeric header value to string', (test) => {
+      const headers = { 'x-custom': 12345 }
+      test.equal(Validator._getNormalizedHeaderValue(headers, 'x-custom'), '12345')
+      test.end()
+    })
+
+    headerValueTest.end()
+  })
+
+  validatorTest.test('_parseBaggageHeader should', parseBaggageTest => {
+    parseBaggageTest.test('parse comma-separated key=value entries', (test) => {
+      const result = Validator._parseBaggageHeader('foo=bar,test-instruction=skip-participant-cache,sample=123')
+      test.deepEqual(result, { foo: 'bar', 'test-instruction': 'skip-participant-cache', sample: '123' })
+      test.end()
+    })
+
+    parseBaggageTest.test('tolerate whitespace around entries', (test) => {
+      const result = Validator._parseBaggageHeader(' foo = bar , test-instruction = skip-participant-cache ')
+      test.deepEqual(result, { foo: 'bar', 'test-instruction': 'skip-participant-cache' })
+      test.end()
+    })
+
+    parseBaggageTest.test('join array input before parsing', (test) => {
+      const result = Validator._parseBaggageHeader(['foo=bar', SKIP_CACHE_BAGGAGE])
+      test.deepEqual(result, { foo: 'bar', 'test-instruction': 'skip-participant-cache' })
+      test.end()
+    })
+
+    parseBaggageTest.test('return empty object for null', (test) => {
+      test.deepEqual(Validator._parseBaggageHeader(null), {})
+      test.end()
+    })
+
+    parseBaggageTest.test('return empty object for undefined', (test) => {
+      test.deepEqual(Validator._parseBaggageHeader(undefined), {})
+      test.end()
+    })
+
+    parseBaggageTest.test('return empty object for empty string', (test) => {
+      test.deepEqual(Validator._parseBaggageHeader(''), {})
+      test.end()
+    })
+
+    parseBaggageTest.test('return empty object for empty array', (test) => {
+      test.deepEqual(Validator._parseBaggageHeader([]), {})
+      test.end()
+    })
+
+    parseBaggageTest.end()
+  })
+
+  validatorTest.test('_shouldSkipParticipantCache should', skipCacheTest => {
+    skipCacheTest.test('return true when baggage contains test-instruction=skip-participant-cache', (test) => {
+      test.equal(Validator._shouldSkipParticipantCache({ baggage: SKIP_CACHE_BAGGAGE }), true)
+      test.end()
+    })
+
+    skipCacheTest.test('return true when skip instruction is among other entries', (test) => {
+      test.equal(Validator._shouldSkipParticipantCache({ baggage: `foo=bar,${SKIP_CACHE_BAGGAGE},sample=123` }), true)
+      test.end()
+    })
+
+    skipCacheTest.test('return false when baggage does not contain skip instruction', (test) => {
+      test.equal(Validator._shouldSkipParticipantCache({ baggage: 'foo=bar,sample=123' }), false)
+      test.end()
+    })
+
+    skipCacheTest.test('return true for case-insensitive Baggage header key', (test) => {
+      test.equal(Validator._shouldSkipParticipantCache({ Baggage: SKIP_CACHE_BAGGAGE }), true)
+      test.end()
+    })
+
+    skipCacheTest.test('return true for mixed-case bAgGaGe header key', (test) => {
+      test.equal(Validator._shouldSkipParticipantCache({ bAgGaGe: SKIP_CACHE_BAGGAGE }), true)
+      test.end()
+    })
+
+    skipCacheTest.test('return true for array baggage header value', (test) => {
+      test.equal(Validator._shouldSkipParticipantCache({ baggage: ['foo=bar', SKIP_CACHE_BAGGAGE] }), true)
+      test.end()
+    })
+
+    skipCacheTest.test('return false for empty headers object', (test) => {
+      test.equal(Validator._shouldSkipParticipantCache({}), false)
+      test.end()
+    })
+
+    skipCacheTest.test('return false for null headers', (test) => {
+      test.equal(Validator._shouldSkipParticipantCache(null), false)
+      test.end()
+    })
+
+    skipCacheTest.test('return false for undefined headers', (test) => {
+      test.equal(Validator._shouldSkipParticipantCache(undefined), false)
+      test.end()
+    })
+
+    skipCacheTest.end()
+  })
+
+  validatorTest.test('validateParticipantByName skip-participant-cache should', skipNameTest => {
+    skipNameTest.test('call getByName when baggage header is absent', async (test) => {
+      Participant.getByName.returns(Promise.resolve({ isActive: true }))
+
+      const result = await Validator.validateParticipantByName('dfsp1', headers)
+
+      test.equal(result, true)
+      test.ok(Participant.getByName.calledWith('dfsp1'))
+      test.notOk(Participant.getByNameNoCache.called)
+      test.end()
+    })
+
+    skipNameTest.test('call getByNameNoCache when skip-participant-cache baggage is present', async (test) => {
+      Participant.getByNameNoCache.returns(Promise.resolve({ isActive: true }))
+      const skipHeaders = { ...headers, baggage: SKIP_CACHE_BAGGAGE }
+
+      const result = await Validator.validateParticipantByName('dfsp1', skipHeaders)
+
+      test.equal(result, true)
+      test.ok(Participant.getByNameNoCache.calledWith('dfsp1'))
+      test.notOk(Participant.getByName.called)
+      test.end()
+    })
+
+    skipNameTest.test('return false via getByNameNoCache when participant not found', async (test) => {
+      Participant.getByNameNoCache.returns(Promise.resolve(null))
+      const skipHeaders = { ...headers, baggage: SKIP_CACHE_BAGGAGE }
+
+      const result = await Validator.validateParticipantByName('dfsp1', skipHeaders)
+
+      test.equal(result, false)
+      test.end()
+    })
+
+    skipNameTest.test('return false via getByNameNoCache when participant is inactive', async (test) => {
+      Participant.getByNameNoCache.returns(Promise.resolve({ isActive: false }))
+      const skipHeaders = { ...headers, baggage: SKIP_CACHE_BAGGAGE }
+
+      const result = await Validator.validateParticipantByName('dfsp1', skipHeaders)
+
+      test.equal(result, false)
+      test.end()
+    })
+
+    skipNameTest.end()
+  })
+
+  validatorTest.test('validatePrepare skip-participant-cache should', skipPrepareTest => {
+    skipPrepareTest.test('use getByNameNoCache for both participants when skip baggage is present', async (test) => {
+      Participant.getByNameNoCache.returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+      const skipHeaders = { ...headers, baggage: SKIP_CACHE_BAGGAGE }
+
+      const { validationPassed } = await Validator.validatePrepare(payload, skipHeaders, false, determiningTransferCheckResult)
+
+      test.equal(validationPassed, true)
+      test.ok(Participant.getByNameNoCache.calledWith('dfsp1'))
+      test.ok(Participant.getByNameNoCache.calledWith('dfsp2'))
+      test.notOk(Participant.getByName.called)
+      test.end()
+    })
+
+    skipPrepareTest.test('use getByName (cached) when no skip baggage header', async (test) => {
+      Participant.getByName.returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+
+      const { validationPassed } = await Validator.validatePrepare(payload, headers, false, determiningTransferCheckResult)
+
+      test.equal(validationPassed, true)
+      test.ok(Participant.getByName.calledWith('dfsp1'))
+      test.ok(Participant.getByName.calledWith('dfsp2'))
+      test.notOk(Participant.getByNameNoCache.called)
+      test.end()
+    })
+
+    skipPrepareTest.test('use getByNameNoCache for fx participants when skip baggage is present', async (test) => {
+      Participant.getByNameNoCache.returns(Promise.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+      const skipFxHeaders = { ...fxHeaders, baggage: SKIP_CACHE_BAGGAGE }
+
+      const { validationPassed } = await Validator.validatePrepare(fxPayload, skipFxHeaders, true, determiningTransferCheckResult)
+
+      test.equal(validationPassed, true)
+      test.ok(Participant.getByNameNoCache.calledWith('fx_dfsp1'))
+      test.ok(Participant.getByNameNoCache.calledWith('fx_dfsp2'))
+      test.notOk(Participant.getByName.called)
+      test.end()
+    })
+
+    skipPrepareTest.end()
+  })
+
+  validatorTest.test('validateById skip-participant-cache should', skipByIdTest => {
+    skipByIdTest.test('use getByIdNoCache when skip baggage is present', async (test) => {
+      Participant.getByIdNoCache.returns(Promise.resolve({}))
+      CryptoConditions.validateCondition.returns(true)
+      const skipHeaders = { ...headers, baggage: SKIP_CACHE_BAGGAGE }
+
+      const { validationPassed } = await Validator.validateById(payload, skipHeaders)
+
+      test.equal(validationPassed, true)
+      test.ok(Participant.getByIdNoCache.calledWith('dfsp1'))
+      test.ok(Participant.getByIdNoCache.calledWith('dfsp2'))
+      test.notOk(Participant.getById.called)
+      test.end()
+    })
+
+    skipByIdTest.test('use getById (cached) when no skip baggage header', async (test) => {
+      Participant.getById.returns(Promise.resolve({}))
+      CryptoConditions.validateCondition.returns(true)
+
+      const { validationPassed } = await Validator.validateById(payload, headers)
+
+      test.equal(validationPassed, true)
+      test.ok(Participant.getById.calledWith('dfsp1'))
+      test.ok(Participant.getById.calledWith('dfsp2'))
+      test.notOk(Participant.getByIdNoCache.called)
+      test.end()
+    })
+
+    skipByIdTest.test('use getByIdNoCache when skip baggage is present and participant not found', async (test) => {
+      Participant.getByIdNoCache.withArgs('dfsp1').returns(Promise.resolve({}))
+      Participant.getByIdNoCache.withArgs('dfsp2').returns(Promise.resolve(null))
+      CryptoConditions.validateCondition.returns(true)
+      const skipHeaders = { ...headers, baggage: SKIP_CACHE_BAGGAGE }
+
+      const { validationPassed, reasons: failReasons } = await Validator.validateById(payload, skipHeaders)
+
+      test.equal(validationPassed, false)
+      test.deepEqual(failReasons, ['Participant dfsp2 not found'])
+      test.end()
+    })
+
+    skipByIdTest.end()
   })
 
   validatorTest.end()
