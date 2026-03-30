@@ -134,6 +134,44 @@ Test('Participant model', async (participantTest) => {
     }
   })
 
+  await participantTest.test('getById', async (assert) => {
+    try {
+      Db.participant.findOne.withArgs({ participantId: participant.participantId }).returns(participant)
+      const result = await Model.getById(participant.participantId)
+      assert.deepEqual(result, participant)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getById failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getById should throw an error', async (test) => {
+    try {
+      Db.participant.findOne.withArgs({ participantId: participant.participantId }).throws(new Error())
+      await Model.getById(participant.participantId)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
+  await participantTest.test('getByName', async (assert) => {
+    try {
+      Db.participant.findOne.withArgs({ name: participant.name }).returns(participant)
+      const result = await Model.getByName(participant.name)
+      assert.deepEqual(result, participant)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByName failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
   await participantTest.test('get with empty name', async (assert) => {
     Db.participant.findOne.withArgs({ name: '' }).throws(new Error())
     try {

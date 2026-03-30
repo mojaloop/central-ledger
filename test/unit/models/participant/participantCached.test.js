@@ -151,6 +151,52 @@ Test('Participant cached model', async (participantCachedTest) => {
     test.end()
   })
 
+  await participantCachedTest.test('getByIdNoCache() calls ParticipantUncached.getById directly', async (test) => {
+    ParticipantUncached.getById.returns(participantFixtures[0])
+
+    const result = await Model.getByIdNoCache(participantFixtures[0].participantId)
+
+    test.ok(ParticipantUncached.getById.calledOnce, 'ParticipantUncached.getById() called once')
+    test.ok(ParticipantUncached.getById.calledWith(participantFixtures[0].participantId), 'called with correct id')
+    test.equal(JSON.stringify(result), JSON.stringify(participantFixtures[0]), 'returns correct participant')
+    test.end()
+  })
+
+  await participantCachedTest.test('getByIdNoCache() propagates errors', async (test) => {
+    ParticipantUncached.getById.throws(new Error('db error'))
+
+    try {
+      await Model.getByIdNoCache(participantFixtures[0].participantId)
+      test.fail('Error not thrown')
+    } catch (err) {
+      test.pass('Error thrown')
+    }
+    test.end()
+  })
+
+  await participantCachedTest.test('getByNameNoCache() calls ParticipantUncached.getByName directly', async (test) => {
+    ParticipantUncached.getByName.returns(participantFixtures[1])
+
+    const result = await Model.getByNameNoCache(participantFixtures[1].name)
+
+    test.ok(ParticipantUncached.getByName.calledOnce, 'ParticipantUncached.getByName() called once')
+    test.ok(ParticipantUncached.getByName.calledWith(participantFixtures[1].name), 'called with correct name')
+    test.equal(JSON.stringify(result), JSON.stringify(participantFixtures[1]), 'returns correct participant')
+    test.end()
+  })
+
+  await participantCachedTest.test('getByNameNoCache() propagates errors', async (test) => {
+    ParticipantUncached.getByName.throws(new Error('db error'))
+
+    try {
+      await Model.getByNameNoCache(participantFixtures[1].name)
+      test.fail('Error not thrown')
+    } catch (err) {
+      test.pass('Error thrown')
+    }
+    test.end()
+  })
+
   await participantCachedTest.test('create(), update(), destroyByName() and destroyParticipantEndpointByParticipantId() call the participant model and invalidation', async (test) => {
     const cacheClient = {
       get: () => null
