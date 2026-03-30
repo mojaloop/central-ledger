@@ -100,6 +100,22 @@ exports.getByName = async (name) => {
   }
 }
 
+exports.getByIdNoCache = async (id) => {
+  try {
+    return await ParticipantModel.getById(id)
+  } catch (err) {
+    rethrow.rethrowCachedDatabaseError(err)
+  }
+}
+
+exports.getByNameNoCache = async (name) => {
+  try {
+    return await ParticipantModel.getByName(name)
+  } catch (err) {
+    rethrow.rethrowCachedDatabaseError(err)
+  }
+}
+
 exports.getAll = async () => {
   try {
     const cachedParticipants = await getParticipantsCached()
