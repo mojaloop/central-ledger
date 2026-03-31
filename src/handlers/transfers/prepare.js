@@ -42,6 +42,7 @@ const dto = require('./dto')
 const TransferService = require('../../domain/transfer/index')
 const ProxyCache = require('../../lib/proxyCache')
 const FxTransferService = require('../../domain/fx/index')
+const { shouldSkipParticipantCache } = require('../../lib/headerUtils')
 
 const { Kafka, Comparators } = Util
 const { TransferState, TransferInternalState } = Enum.Transfers
@@ -144,7 +145,7 @@ const forwardPrepare = async ({ isFx, params, ID }) => {
  * Calculates proxyObligation.
  * @returns {ProxyObligation} proxyObligation
  */
-const calculateProxyObligation = async ({ payload, isFx, params, functionality, action }) => {
+const calculateProxyObligation = async ({ payload, isFx, params, functionality, action, skipParticipantCache = false }) => {
   const proxyObligation = {
     isFx,
     payloadClone: { ...payload },
@@ -161,8 +162,8 @@ const calculateProxyObligation = async ({ payload, isFx, params, functionality, 
     const payeeFspLookupOptions = isFx ? null : { validateCurrencyAccounts: true, accounts: [{ currency: payload.amount.currency, accountType: Enum.Accounts.LedgerAccountType.POSITION }] }
 
     ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
-      ProxyCache.getFSPProxy(initiatingFsp),
-      ProxyCache.getFSPProxy(counterPartyFsp, payeeFspLookupOptions)
+      ProxyCache.getFSPProxy(initiatingFsp, null, skipParticipantCache),
+      ProxyCache.getFSPProxy(counterPartyFsp, payeeFspLookupOptions, skipParticipantCache)
     ])
     logger.debug('Prepare proxy cache lookup results', {
       initiatingFsp,
@@ -479,6 +480,8 @@ const prepare = async (error, messages) => {
       producer: Producer
     }
 
+    const skipParticipantCache = shouldSkipParticipantCache(headers)
+
     if (proxyEnabled && isForwarded) {
       const isOk = await forwardPrepare({ isFx, params, ID })
       logger.info('forwardPrepare message is processed', { isOk, isFx, ID })
@@ -486,7 +489,7 @@ const prepare = async (error, messages) => {
     }
 
     const proxyObligation = await calculateProxyObligation({
-      payload, isFx, params, functionality, action
+      payload, isFx, params, functionality, action, skipParticipantCache
     })
 
     const duplication = await checkDuplication({ payload, isFx, ID, location })
@@ -501,6 +504,7 @@ const prepare = async (error, messages) => {
     const determiningTransferCheckResult = await createRemittanceEntity(isFx)
       .checkIfDeterminingTransferExists(proxyObligation.payloadClone, proxyObligation)
 
+    // TODO: we can pass skipParticipantCache to the validatePrepare function and avoid multiple baggage header parsing
     const { validationPassed, reasons } = await Validator.validatePrepare(
       payload,
       headers,

@@ -51,87 +51,14 @@ const base64url = require('base64url')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
+const { shouldSkipParticipantCache } = require('../../lib/headerUtils')
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
 const reasons = []
 
-/**
- * Retrieves a header value with case-insensitive key lookup and array coercion.
- * @param {Object} headers - incoming HTTP headers
- * @param {string} headerName - header name to look up
- * @returns {string|undefined}
- */
-const _getNormalizedHeaderValue = (headers, headerName) => {
-  if (!headers || typeof headers !== 'object') {
-    Logger.isDebugEnabled && Logger.debug(`_getNormalizedHeaderValue: headers is invalid, headerName=${headerName}`)
-    return undefined
-  }
-  const key = Object.keys(headers).find(k => k.toLowerCase() === headerName.toLowerCase())
-  if (!key) {
-    Logger.isDebugEnabled && Logger.debug(`_getNormalizedHeaderValue: header not found, headerName=${headerName}`)
-    return undefined
-  }
-  const value = headers[key]
-  if (Array.isArray(value)) {
-    const joinedValue = value.join(',')
-    Logger.isDebugEnabled && Logger.debug(`_getNormalizedHeaderValue: array value joined, key=${key}, result=${joinedValue}`)
-    return joinedValue
-  }
-  if (value === null || value === undefined) {
-    Logger.isDebugEnabled && Logger.debug(`_getNormalizedHeaderValue: value is null/undefined, key=${key}`)
-    return undefined
-  }
-  const strValue = String(value)
-  Logger.isDebugEnabled && Logger.debug(`_getNormalizedHeaderValue: returning value, key=${key}, value=${strValue}`)
-  return strValue
-}
-
-/**
- * Parses a W3C baggage header value (comma-separated key=value pairs).
- * @param {string|string[]} baggage - raw baggage header value
- * @returns {Object} - key/value map
- */
-const _parseBaggageHeader = (baggage) => {
-  if (!baggage) {
-    Logger.isDebugEnabled && Logger.debug('_parseBaggageHeader: baggage is empty')
-    return {}
-  }
-  const baggageStr = Array.isArray(baggage) ? baggage.join(',') : String(baggage)
-  if (!baggageStr) {
-    Logger.isDebugEnabled && Logger.debug('_parseBaggageHeader: baggageStr is empty after conversion')
-    return {}
-  }
-  const result = Object.fromEntries(
-    baggageStr.split(',')
-      .map(entry => entry.trim().split('='))
-      .filter(parts => parts.length >= 2)
-      .map(([key, ...rest]) => [key.trim(), rest.join('=').trim()])
-  )
-  Logger.isDebugEnabled && Logger.debug(`_parseBaggageHeader: parsed result=${JSON.stringify(result)}`)
-  return result
-}
-
-/**
- * Returns true when the baggage header carries `test-instruction=skip-participant-cache`.
- * @param {Object} headers - incoming HTTP headers
- * @returns {boolean}
- */
-const _shouldSkipParticipantCache = (headers) => {
-  const baggage = _getNormalizedHeaderValue(headers, 'baggage')
-  Logger.isDebugEnabled && Logger.debug(`_shouldSkipParticipantCache: baggage=${baggage}`)
-  if (!baggage) {
-    Logger.isDebugEnabled && Logger.debug('_shouldSkipParticipantCache: no baggage header found')
-    return false
-  }
-  const parsed = _parseBaggageHeader(baggage)
-  const shouldSkip = parsed['test-instruction'] === 'skip-participant-cache'
-  Logger.isDebugEnabled && Logger.debug(`_shouldSkipParticipantCache: shouldSkip=${shouldSkip}, test-instruction=${parsed['test-instruction']}`)
-  return shouldSkip
-}
-
-const validateParticipantById = async function (participantId, headers) {
-  const participant = _shouldSkipParticipantCache(headers)
+const validateParticipantById = async function (participantId, shouldSkipCache = false) {
+  const participant = shouldSkipCache
     ? await Participant.getByIdNoCache(participantId)
     : await Participant.getById(participantId)
   if (!participant) {
@@ -140,8 +67,7 @@ const validateParticipantById = async function (participantId, headers) {
   return !!participant
 }
 
-const validateParticipantByName = async function (participantName, headers) {
-  const shouldSkipCache = _shouldSkipParticipantCache(headers)
+const validateParticipantByName = async function (participantName, shouldSkipCache = false) {
   Logger.isDebugEnabled && Logger.debug(`validateParticipantByName: participantName=${participantName}, skipCache=${shouldSkipCache}`)
 
   const participant = shouldSkipCache
@@ -279,6 +205,7 @@ const isAmountValid = (payload, isFx) => isFx
   : validateAmount(payload.amount)
 
 const validatePrepare = async (payload, headers, isFx = false, determiningTransferCheckResult, proxyObligation) => {
+  const skipParticipantCache = shouldSkipParticipantCache(headers)
   const histTimerValidatePrepareEnd = Metrics.getHistogram(
     'handlers_transfer_validator',
     'validatePrepare - Metrics for transfer handler',
@@ -319,8 +246,8 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
     validationPassed = (
       validateFspiopSourceMatchesPayer(initiatingFsp, headers) &&
       isAmountValid(payload, isFx) &&
-      await validateParticipantByName(initiatingFsp, headers) &&
-      await validateParticipantByName(counterPartyFsp, headers) &&
+      await validateParticipantByName(initiatingFsp, skipParticipantCache) &&
+      await validateParticipantByName(counterPartyFsp, skipParticipantCache) &&
       await validateConditionAndExpiration(payload) &&
       validateDifferentDfsp(initiatingFsp, counterPartyFsp)
     )
@@ -353,8 +280,9 @@ const validateById = async (payload, headers) => {
     validationPassed = false
     return { validationPassed, reasons }
   }
-  validationPassed = (await validateParticipantById(payload.payerFsp, headers) &&
-    await validateParticipantById(payload.payeeFsp, headers) &&
+  const skipParticipantCache = shouldSkipParticipantCache(headers)
+  validationPassed = (await validateParticipantById(payload.payerFsp, skipParticipantCache) &&
+    await validateParticipantById(payload.payeeFsp, skipParticipantCache) &&
     validateAmount(payload.amount) &&
     await validateConditionAndExpiration(payload))
   return {
@@ -388,8 +316,5 @@ module.exports = {
   validateParticipantByName,
   reasons,
   validateParticipantTransferId,
-  validateParticipantForCommitRequestId,
-  _getNormalizedHeaderValue,
-  _parseBaggageHeader,
-  _shouldSkipParticipantCache
+  validateParticipantForCommitRequestId
 }
