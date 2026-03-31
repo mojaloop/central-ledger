@@ -51,16 +51,13 @@ const base64url = require('base64url')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
+const {
+  shouldSkipParticipantCache: _shouldSkipParticipantCache
+} = require('../../lib/headerUtils')
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
 const reasons = []
-
-const {
-  getNormalizedHeaderValue: _getNormalizedHeaderValue,
-  parseBaggageHeader: _parseBaggageHeader,
-  shouldSkipParticipantCache: _shouldSkipParticipantCache
-} = require('../../lib/headerUtils')
 
 const validateParticipantById = async function (participantId, headers) {
   const participant = _shouldSkipParticipantCache(headers)
@@ -320,8 +317,5 @@ module.exports = {
   validateParticipantByName,
   reasons,
   validateParticipantTransferId,
-  validateParticipantForCommitRequestId,
-  _getNormalizedHeaderValue,
-  _parseBaggageHeader,
-  _shouldSkipParticipantCache
+  validateParticipantForCommitRequestId
 }
