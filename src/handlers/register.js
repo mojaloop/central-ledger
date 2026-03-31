@@ -84,6 +84,7 @@ module.exports = {
   transfers: {
     registerAllHandlers: TransferHandlers.registerAllHandlers,
     registerPrepareHandler: TransferHandlers.registerPrepareHandler,
+    registerPrepareBatchHandler: TransferHandlers.registerPrepareBatchHandler,
     registerGetHandler: TransferHandlers.registerGetTransferHandler,
     registerFulfilHandler: TransferHandlers.registerFulfilHandler
   },

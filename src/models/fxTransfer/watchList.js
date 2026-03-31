@@ -49,6 +49,31 @@ const getItemsInWatchListByDeterminingTransferId = async (determiningTransferId)
   }
 }
 
+/**
+ * @function GetItemsInWatchListByDeterminingTransferIdBatch
+ *
+ * @async
+ * @description Retrieves fxWatchList records for multiple determining transfer IDs
+ * in a single SELECT … WHERE determiningTransferId IN (…) query.
+ *
+ * @param {string[]} determiningTransferIds
+ * @returns {Object.<string, Array>} - map of determiningTransferId → array of matching records
+ */
+const getItemsInWatchListByDeterminingTransferIdBatch = async (determiningTransferIds) => {
+  logger.debug(`getItemsInWatchListByDeterminingTransferIdBatch (count=${determiningTransferIds.length})`)
+  try {
+    const knex = Db.getKnex()
+    const rows = await knex(TABLE_NAMES.fxWatchList).whereIn('determiningTransferId', determiningTransferIds)
+    return rows.reduce((acc, row) => {
+      if (!acc[row.determiningTransferId]) acc[row.determiningTransferId] = []
+      acc[row.determiningTransferId].push(row)
+      return acc
+    }, {})
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
 const addToWatchList = async (record) => {
   logger.debug('add to fx watch list', record)
   try {
@@ -61,5 +86,6 @@ const addToWatchList = async (record) => {
 module.exports = {
   getItemInWatchListByCommitRequestId,
   getItemsInWatchListByDeterminingTransferId,
+  getItemsInWatchListByDeterminingTransferIdBatch,
   addToWatchList
 }

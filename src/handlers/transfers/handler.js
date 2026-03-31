@@ -63,6 +63,7 @@ const ProxyCache = require('../../lib/proxyCache')
 
 // particular handlers
 const { prepare } = require('./prepare')
+const { prepareBatch } = require('./prepareBatch')
 
 const { Kafka, Comparators } = Util
 const TransferState = Enum.Transfers.TransferState
@@ -777,6 +778,38 @@ const registerPrepareHandler = async () => {
 }
 
 /**
+ * @function registerPrepareBatchHandler
+ *
+ * @async
+ * @description Registers the batch handler for the transfer-prepare topic.
+ * Uses a higher batchSize consumer so that multiple messages are delivered per
+ * callback, enabling the bulk SQL optimisations in prepareBatch.js.
+ *
+ * @returns {boolean} - Returns a boolean: true if successful, or throws an error if failed
+ */
+const registerPrepareBatchHandler = async () => {
+  try {
+    const { TRANSFER } = TransferEventType
+    const topicName = Kafka.transformGeneralTopicName(
+      Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+      TRANSFER,
+      TransferEventAction.PREPARE
+    )
+    const consumeConfig = Kafka.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.CONSUMER,
+      TRANSFER.toUpperCase(),
+      'PREPARE_BATCH'
+    )
+    consumeConfig.rdkafkaConf['client.id'] = `${topicName}-batch`
+    await Consumer.createHandler(topicName, consumeConfig, prepareBatch)
+    return true
+  } catch (err) {
+    rethrow.rethrowAndCountFspiopError(err, { operation: 'registerPrepareBatchHandler' })
+  }
+}
+
+/**
  * @function registerFulfilHandler
  *
  * @async
@@ -843,9 +876,11 @@ const registerAllHandlers = async () => {
 
 module.exports = {
   prepare,
+  prepareBatch,
   fulfil,
   getTransfer,
   registerPrepareHandler,
+  registerPrepareBatchHandler,
   registerFulfilHandler,
   registerGetTransferHandler,
   registerAllHandlers,

@@ -93,7 +93,70 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
   }
 }
 
+/**
+ * @function GetTransferDuplicateCheckBatch
+ *
+ * @async
+ * @description Fetches all existing transferDuplicateCheck records for a list of
+ * transfer IDs in a single SELECT … WHERE transferId IN (…) query.
+ *
+ * @param {string[]} transferIds - array of transfer IDs to look up
+ *
+ * @returns {Object.<string, {transferId:string, hash:string}>} - map keyed by transferId
+ */
+const getTransferDuplicateCheckBatch = async (transferIds) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'model_transfer',
+    'transferDuplicateCheck_getTransferDuplicateCheckBatch - Metrics for transfer duplicate check model',
+    ['success', 'queryName']
+  ).startTimer()
+  Logger.isDebugEnabled && Logger.debug(`getTransferDuplicateCheckBatch (count=${transferIds.length})`)
+  try {
+    const knex = Db.getKnex()
+    const rows = await knex('transferDuplicateCheck').whereIn('transferId', transferIds)
+    const resultMap = rows.reduce((acc, row) => {
+      acc[row.transferId] = row
+      return acc
+    }, {})
+    histTimerEnd({ success: true, queryName: 'transferDuplicateCheck_getTransferDuplicateCheckBatch' })
+    return resultMap
+  } catch (err) {
+    histTimerEnd({ success: false, queryName: 'transferDuplicateCheck_getTransferDuplicateCheckBatch' })
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
+/**
+ * @function SaveTransferDuplicateCheckBatch
+ *
+ * @async
+ * @description Inserts multiple transferDuplicateCheck records in a single batch
+ * INSERT statement.
+ *
+ * @param {Array<{transferId:string, hash:string}>} records - records to insert
+ *
+ * @returns {Promise<void>}
+ */
+const saveTransferDuplicateCheckBatch = async (records) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'model_transfer',
+    'transferDuplicateCheck_saveTransferDuplicateCheckBatch - Metrics for transfer duplicate check model',
+    ['success', 'queryName']
+  ).startTimer()
+  Logger.isDebugEnabled && Logger.debug(`saveTransferDuplicateCheckBatch (count=${records.length})`)
+  try {
+    const knex = Db.getKnex()
+    await knex.batchInsert('transferDuplicateCheck', records)
+    histTimerEnd({ success: true, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheckBatch' })
+  } catch (err) {
+    histTimerEnd({ success: false, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheckBatch' })
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
 module.exports = {
   getTransferDuplicateCheck,
-  saveTransferDuplicateCheck
+  saveTransferDuplicateCheck,
+  getTransferDuplicateCheckBatch,
+  saveTransferDuplicateCheckBatch
 }

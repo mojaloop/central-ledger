@@ -635,6 +635,214 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 }
 
 /**
+ * @function saveTransferPreparedBatch
+ *
+ * @async
+ * @description Saves multiple VALID prepared transfer records to the database in a single
+ * transaction using batch INSERTs.  This reduces the number of DB round-trips from
+ * N × 5 (one transaction per transfer) down to a single transaction containing 5 bulk
+ * INSERT statements, regardless of batch size N.
+ *
+ * Only pass transfers that have already passed validation.  Invalid (non-validated)
+ * transfers must be persisted individually via saveTransferPrepared.
+ *
+ * @param {Array<{payload, stateReason, determiningTransferCheckResult, proxyObligation}>} batchItems
+ *   - payload: the decoded transfer payload
+ *   - stateReason: null for valid transfers (already validated)
+ *   - determiningTransferCheckResult: result from cyril check
+ *   - proxyObligation: result from calculateProxyObligation
+ *
+ * @returns {Promise<void>}
+ */
+const saveTransferPreparedBatch = async (batchItems) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'model_transfer',
+    'facade_saveTransferPreparedBatch - Metrics for transfer model',
+    ['success', 'queryName']
+  ).startTimer()
+
+  try {
+    if (!batchItems || batchItems.length === 0) {
+      histTimerEnd({ success: true, queryName: 'facade_saveTransferPreparedBatch' })
+      return
+    }
+
+    // Phase 1: Resolve all participant data (in-memory cache – no DB round-trips for most cases).
+    // For proxy scenarios getExternalParticipantIdByNameOrCreate may hit the DB; run them in parallel.
+    const resolvedItems = await Promise.all(batchItems.map(async (item) => {
+      const { payload, stateReason, determiningTransferCheckResult, proxyObligation } = item
+
+      const participants = {
+        [payload.payeeFsp]: {},
+        [payload.payerFsp]: {}
+      }
+
+      for (const name of Object.keys(participants)) {
+        const participant = await ParticipantCachedModel.getByName(name)
+        if (participant) {
+          participants[name].id = participant.participantId
+        }
+        const participantCurrency = determiningTransferCheckResult?.participantCurrencyValidationList?.find(
+          (p) => p.participantName === name
+        )
+        if (participantCurrency) {
+          const record = await ParticipantFacade.getByNameAndCurrency(
+            participantCurrency.participantName,
+            participantCurrency.currencyId,
+            Enum.Accounts.LedgerAccountType.POSITION
+          )
+          participants[name].participantCurrencyId = record?.participantCurrencyId
+        }
+      }
+
+      if (proxyObligation?.isInitiatingFspProxy) {
+        const proxyId = proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+        const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
+        participants[proxyId] = { id: proxyParticipant?.participantId }
+        const record = await ParticipantFacade.getByNameAndCurrency(
+          proxyId, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION
+        )
+        participants[proxyId].participantCurrencyId = record?.participantCurrencyId
+      }
+
+      if (proxyObligation?.isCounterPartyFspProxy) {
+        const proxyId = proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+        const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
+        participants[proxyId] = { id: proxyParticipant?.participantId }
+      }
+
+      // Resolve external participant IDs for proxy cases (may hit DB)
+      let payerExternalParticipantId = null
+      let payeeExternalParticipantId = null
+      if (proxyObligation?.isInitiatingFspProxy) {
+        payerExternalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(
+          proxyObligation.initiatingFspProxyOrParticipantId
+        )
+      }
+      if (proxyObligation?.isCounterPartyFspProxy) {
+        payeeExternalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(
+          proxyObligation.counterPartyFspProxyOrParticipantId
+        )
+      }
+
+      return { payload, stateReason, proxyObligation, participants, payerExternalParticipantId, payeeExternalParticipantId }
+    }))
+
+    // Phase 2: Build all record arrays from the resolved data.
+    const transferRecords = []
+    const transferParticipantRecords = []
+    const ilpPacketRecords = []
+    const transferStateChangeRecords = []
+    const transferExtensionRecords = []
+    const now = Time.getUTCString(new Date())
+
+    for (const item of resolvedItems) {
+      const { payload, stateReason, proxyObligation, participants, payerExternalParticipantId, payeeExternalParticipantId } = item
+
+      transferRecords.push({
+        transferId: payload.transferId,
+        amount: payload.amount.amount,
+        currencyId: payload.amount.currency,
+        ilpCondition: payload.condition,
+        expirationDate: Time.getUTCString(new Date(payload.expiration))
+      })
+
+      // Payer transferParticipant record
+      if (proxyObligation?.isInitiatingFspProxy) {
+        const proxyId = proxyObligation.initiatingFspProxyOrParticipantId.proxyId
+        transferParticipantRecords.push({
+          transferId: payload.transferId,
+          participantId: participants[proxyId].id,
+          participantCurrencyId: participants[proxyId].participantCurrencyId,
+          transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
+          ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
+          amount: payload.amount.amount,
+          externalParticipantId: payerExternalParticipantId
+        })
+      } else {
+        transferParticipantRecords.push({
+          transferId: payload.transferId,
+          participantId: participants[payload.payerFsp].id,
+          participantCurrencyId: participants[payload.payerFsp].participantCurrencyId,
+          transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
+          ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
+          amount: payload.amount.amount
+        })
+      }
+
+      // Payee transferParticipant record
+      if (proxyObligation?.isCounterPartyFspProxy) {
+        const proxyId = proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
+        transferParticipantRecords.push({
+          transferId: payload.transferId,
+          participantId: participants[proxyId].id,
+          participantCurrencyId: null,
+          transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+          ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
+          amount: -payload.amount.amount,
+          externalParticipantId: payeeExternalParticipantId
+        })
+      } else {
+        transferParticipantRecords.push({
+          transferId: payload.transferId,
+          participantId: participants[payload.payeeFsp].id,
+          participantCurrencyId: participants[payload.payeeFsp].participantCurrencyId,
+          transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+          ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
+          amount: -payload.amount.amount
+        })
+      }
+
+      ilpPacketRecords.push({
+        transferId: payload.transferId,
+        value: payload.ilpPacket
+      })
+
+      transferStateChangeRecords.push({
+        transferId: payload.transferId,
+        transferStateId: TransferInternalState.RECEIVED_PREPARE,
+        reason: stateReason,
+        createdDate: now
+      })
+
+      if (payload.extensionList?.extension) {
+        for (const ext of payload.extensionList.extension) {
+          transferExtensionRecords.push({
+            transferId: payload.transferId,
+            key: ext.key,
+            value: ext.value
+          })
+        }
+      }
+    }
+
+    // Phase 3: Single DB transaction with batch INSERTs for all valid transfers.
+    const knex = Db.getKnex()
+    await knex.transaction(async (trx) => {
+      try {
+        await knex.batchInsert('transfer', transferRecords).transacting(trx)
+        await knex.batchInsert('transferParticipant', transferParticipantRecords).transacting(trx)
+        if (ilpPacketRecords.length) {
+          await knex.batchInsert('ilpPacket', ilpPacketRecords).transacting(trx)
+        }
+        if (transferExtensionRecords.length) {
+          await knex.batchInsert('transferExtension', transferExtensionRecords).transacting(trx)
+        }
+        await knex.batchInsert('transferStateChange', transferStateChangeRecords).transacting(trx)
+      } catch (err) {
+        rethrow.rethrowDatabaseError(err)
+      }
+    })
+
+    histTimerEnd({ success: true, queryName: 'facade_saveTransferPreparedBatch' })
+  } catch (err) {
+    logger.warn('error in saveTransferPreparedBatch', err)
+    histTimerEnd({ success: false, queryName: 'facade_saveTransferPreparedBatch' })
+    rethrow.rethrowDatabaseError(err)
+  }
+}
+
+/**
  * @function GetTransferStateByTransferId
  *
  * @async
@@ -1746,6 +1954,7 @@ const TransferFacade = {
   getTransferInfoToChangePosition,
   savePayeeTransferResponse,
   saveTransferPrepared,
+  saveTransferPreparedBatch,
   getTransferStateByTransferId,
   timeoutExpireReserved,
   reservedForwardedTransfers,
