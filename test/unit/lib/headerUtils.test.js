@@ -34,7 +34,7 @@ const {
   getNormalizedHeaderValue,
   parseBaggageHeader,
   shouldSkipParticipantCache
-} = require('../../lib/headerUtils')
+} = require('../../../src/lib/headerUtils')
 test('getNormalizedHeaderValue', t => {
   sinon.stub(Logger, 'debug')
   sinon.stub(Logger, 'isDebugEnabled').value(true)
