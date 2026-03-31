@@ -63,13 +63,28 @@ const reasons = []
  * @returns {string|undefined}
  */
 const _getNormalizedHeaderValue = (headers, headerName) => {
-  if (!headers || typeof headers !== 'object') return undefined
+  if (!headers || typeof headers !== 'object') {
+    Logger.isDebugEnabled && Logger.debug(`_getNormalizedHeaderValue: headers is invalid, headerName=${headerName}`)
+    return undefined
+  }
   const key = Object.keys(headers).find(k => k.toLowerCase() === headerName.toLowerCase())
-  if (!key) return undefined
+  if (!key) {
+    Logger.isDebugEnabled && Logger.debug(`_getNormalizedHeaderValue: header not found, headerName=${headerName}`)
+    return undefined
+  }
   const value = headers[key]
-  if (Array.isArray(value)) return value.join(',')
-  if (value === null || value === undefined) return undefined
-  return String(value)
+  if (Array.isArray(value)) {
+    const joinedValue = value.join(',')
+    Logger.isDebugEnabled && Logger.debug(`_getNormalizedHeaderValue: array value joined, key=${key}, result=${joinedValue}`)
+    return joinedValue
+  }
+  if (value === null || value === undefined) {
+    Logger.isDebugEnabled && Logger.debug(`_getNormalizedHeaderValue: value is null/undefined, key=${key}`)
+    return undefined
+  }
+  const strValue = String(value)
+  Logger.isDebugEnabled && Logger.debug(`_getNormalizedHeaderValue: returning value, key=${key}, value=${strValue}`)
+  return strValue
 }
 
 /**
@@ -78,15 +93,23 @@ const _getNormalizedHeaderValue = (headers, headerName) => {
  * @returns {Object} - key/value map
  */
 const _parseBaggageHeader = (baggage) => {
-  if (!baggage) return {}
+  if (!baggage) {
+    Logger.isDebugEnabled && Logger.debug('_parseBaggageHeader: baggage is empty')
+    return {}
+  }
   const baggageStr = Array.isArray(baggage) ? baggage.join(',') : String(baggage)
-  if (!baggageStr) return {}
-  return Object.fromEntries(
+  if (!baggageStr) {
+    Logger.isDebugEnabled && Logger.debug('_parseBaggageHeader: baggageStr is empty after conversion')
+    return {}
+  }
+  const result = Object.fromEntries(
     baggageStr.split(',')
       .map(entry => entry.trim().split('='))
       .filter(parts => parts.length >= 2)
       .map(([key, ...rest]) => [key.trim(), rest.join('=').trim()])
   )
+  Logger.isDebugEnabled && Logger.debug(`_parseBaggageHeader: parsed result=${JSON.stringify(result)}`)
+  return result
 }
 
 /**
@@ -96,9 +119,15 @@ const _parseBaggageHeader = (baggage) => {
  */
 const _shouldSkipParticipantCache = (headers) => {
   const baggage = _getNormalizedHeaderValue(headers, 'baggage')
-  if (!baggage) return false
+  Logger.isDebugEnabled && Logger.debug(`_shouldSkipParticipantCache: baggage=${baggage}`)
+  if (!baggage) {
+    Logger.isDebugEnabled && Logger.debug('_shouldSkipParticipantCache: no baggage header found')
+    return false
+  }
   const parsed = _parseBaggageHeader(baggage)
-  return parsed['test-instruction'] === 'skip-participant-cache'
+  const shouldSkip = parsed['test-instruction'] === 'skip-participant-cache'
+  Logger.isDebugEnabled && Logger.debug(`_shouldSkipParticipantCache: shouldSkip=${shouldSkip}, test-instruction=${parsed['test-instruction']}`)
+  return shouldSkip
 }
 
 const validateParticipantById = async function (participantId, headers) {
@@ -112,9 +141,15 @@ const validateParticipantById = async function (participantId, headers) {
 }
 
 const validateParticipantByName = async function (participantName, headers) {
-  const participant = _shouldSkipParticipantCache(headers)
+  const shouldSkipCache = _shouldSkipParticipantCache(headers)
+  Logger.isDebugEnabled && Logger.debug(`validateParticipantByName: participantName=${participantName}, skipCache=${shouldSkipCache}`)
+
+  const participant = shouldSkipCache
     ? await Participant.getByNameNoCache(participantName)
     : await Participant.getByName(participantName)
+
+  Logger.isDebugEnabled && Logger.debug(`validateParticipantByName: participant found=${!!participant}`)
+
   let validationPassed = false
   if (!participant) {
     reasons.push(`Participant ${participantName} not found`)
@@ -123,6 +158,8 @@ const validateParticipantByName = async function (participantName, headers) {
   } else {
     validationPassed = true
   }
+
+  Logger.isDebugEnabled && Logger.debug(`validateParticipantByName: validationPassed=${validationPassed}`)
   return validationPassed
 }
 
