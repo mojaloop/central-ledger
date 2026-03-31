@@ -51,16 +51,14 @@ const base64url = require('base64url')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
-const {
-  shouldSkipParticipantCache: _shouldSkipParticipantCache
-} = require('../../lib/headerUtils')
+const { shouldSkipParticipantCache } = require('../../lib/headerUtils')
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
 const reasons = []
 
-const validateParticipantById = async function (participantId, headers) {
-  const participant = _shouldSkipParticipantCache(headers)
+const validateParticipantById = async function (participantId, shouldSkipCache = false) {
+  const participant = shouldSkipCache
     ? await Participant.getByIdNoCache(participantId)
     : await Participant.getById(participantId)
   if (!participant) {
@@ -69,8 +67,7 @@ const validateParticipantById = async function (participantId, headers) {
   return !!participant
 }
 
-const validateParticipantByName = async function (participantName, headers) {
-  const shouldSkipCache = _shouldSkipParticipantCache(headers)
+const validateParticipantByName = async function (participantName, shouldSkipCache = false) {
   Logger.isDebugEnabled && Logger.debug(`validateParticipantByName: participantName=${participantName}, skipCache=${shouldSkipCache}`)
 
   const participant = shouldSkipCache
@@ -208,6 +205,7 @@ const isAmountValid = (payload, isFx) => isFx
   : validateAmount(payload.amount)
 
 const validatePrepare = async (payload, headers, isFx = false, determiningTransferCheckResult, proxyObligation) => {
+  const skipParticipantCache = shouldSkipParticipantCache(headers)
   const histTimerValidatePrepareEnd = Metrics.getHistogram(
     'handlers_transfer_validator',
     'validatePrepare - Metrics for transfer handler',
@@ -248,8 +246,8 @@ const validatePrepare = async (payload, headers, isFx = false, determiningTransf
     validationPassed = (
       validateFspiopSourceMatchesPayer(initiatingFsp, headers) &&
       isAmountValid(payload, isFx) &&
-      await validateParticipantByName(initiatingFsp, headers) &&
-      await validateParticipantByName(counterPartyFsp, headers) &&
+      await validateParticipantByName(initiatingFsp, skipParticipantCache) &&
+      await validateParticipantByName(counterPartyFsp, skipParticipantCache) &&
       await validateConditionAndExpiration(payload) &&
       validateDifferentDfsp(initiatingFsp, counterPartyFsp)
     )
@@ -282,8 +280,9 @@ const validateById = async (payload, headers) => {
     validationPassed = false
     return { validationPassed, reasons }
   }
-  validationPassed = (await validateParticipantById(payload.payerFsp, headers) &&
-    await validateParticipantById(payload.payeeFsp, headers) &&
+  const skipParticipantCache = shouldSkipParticipantCache(headers)
+  validationPassed = (await validateParticipantById(payload.payerFsp, skipParticipantCache) &&
+    await validateParticipantById(payload.payeeFsp, skipParticipantCache) &&
     validateAmount(payload.amount) &&
     await validateConditionAndExpiration(payload))
   return {

@@ -370,10 +370,10 @@ Test('transfer validator', validatorTest => {
   })
 
   validatorTest.test('validateParticipantByName skip-participant-cache should', skipNameTest => {
-    skipNameTest.test('call getByName when baggage header is absent', async (test) => {
+    skipNameTest.test('call getByName by default', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
 
-      const result = await Validator.validateParticipantByName('dfsp1', headers)
+      const result = await Validator.validateParticipantByName('dfsp1')
 
       test.equal(result, true)
       test.ok(Participant.getByName.calledWith('dfsp1'))
@@ -381,11 +381,10 @@ Test('transfer validator', validatorTest => {
       test.end()
     })
 
-    skipNameTest.test('call getByNameNoCache when skip-participant-cache baggage is present', async (test) => {
+    skipNameTest.test('call getByNameNoCache when skipParticipantCache is true', async (test) => {
       Participant.getByNameNoCache.returns(Promise.resolve({ isActive: true }))
-      const skipHeaders = { ...headers, baggage: SKIP_CACHE_BAGGAGE }
 
-      const result = await Validator.validateParticipantByName('dfsp1', skipHeaders)
+      const result = await Validator.validateParticipantByName('dfsp1', true)
 
       test.equal(result, true)
       test.ok(Participant.getByNameNoCache.calledWith('dfsp1'))
@@ -395,9 +394,8 @@ Test('transfer validator', validatorTest => {
 
     skipNameTest.test('return false via getByNameNoCache when participant not found', async (test) => {
       Participant.getByNameNoCache.returns(Promise.resolve(null))
-      const skipHeaders = { ...headers, baggage: SKIP_CACHE_BAGGAGE }
 
-      const result = await Validator.validateParticipantByName('dfsp1', skipHeaders)
+      const result = await Validator.validateParticipantByName('dfsp1', true)
 
       test.equal(result, false)
       test.end()
@@ -405,9 +403,8 @@ Test('transfer validator', validatorTest => {
 
     skipNameTest.test('return false via getByNameNoCache when participant is inactive', async (test) => {
       Participant.getByNameNoCache.returns(Promise.resolve({ isActive: false }))
-      const skipHeaders = { ...headers, baggage: SKIP_CACHE_BAGGAGE }
 
-      const result = await Validator.validateParticipantByName('dfsp1', skipHeaders)
+      const result = await Validator.validateParticipantByName('dfsp1', true)
 
       test.equal(result, false)
       test.end()

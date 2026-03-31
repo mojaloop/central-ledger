@@ -83,9 +83,9 @@ const getCache = () => {
  * @param {Object} [options] - { validateCurrencyAccounts: boolean, accounts: [ { currency: string, accountType: Enum.Accounts.LedgerAccountType } ] }
  * @returns {ProxyOrParticipant} proxyOrParticipant details
  */
-const getFSPProxy = async (dfspId, options = null) => {
+const getFSPProxy = async (dfspId, options = null, skipParticipantCache = false) => {
   logger.debug('Checking if dfspId is in scheme or proxy', { dfspId })
-  const participant = await ParticipantService.getByName(dfspId)
+  const participant = skipParticipantCache ? await ParticipantService.getByNameNoCache(dfspId) : await ParticipantService.getByName(dfspId)
   let inScheme = !!participant
 
   if (inScheme && options?.validateCurrencyAccounts) {
