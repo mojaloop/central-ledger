@@ -40,6 +40,7 @@ const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
 
 const ParticipantModel = require('../../models/participant/participantCached')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrencyCached')
+const ParticipantCurrencyModelNoCached = require('../../models/participant/participantCurrency')
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
@@ -112,7 +113,7 @@ const getByIdNoCache = async (id) => {
   logger.debug('getting participant by id (no cache)', { id })
   const participant = await ParticipantModel.getByIdNoCache(id)
   if (participant) {
-    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+    participant.currencyList = await ParticipantCurrencyModelNoCached.getByParticipantId(participant.participantId)
   }
   return participant
 }
@@ -121,7 +122,7 @@ const getByNameNoCache = async (name) => {
   logger.debug('getting participant by name (no cache)', { name })
   const participant = await ParticipantModel.getByNameNoCache(name)
   if (participant) {
-    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+    participant.currencyList = await ParticipantCurrencyModelNoCached.getByParticipantId(participant.participantId)
   }
   return participant
 }
