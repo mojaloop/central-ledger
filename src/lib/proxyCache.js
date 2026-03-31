@@ -81,6 +81,7 @@ const getCache = () => {
  *
  * @param {string} dfspId - The DFSP ID to check.
  * @param {Object} [options] - { validateCurrencyAccounts: boolean, accounts: [ { currency: string, accountType: Enum.Accounts.LedgerAccountType } ] }
+ * @param {boolean} [skipParticipantCache=false] - If true, bypasses the participant cache and fetches fresh data.
  * @returns {ProxyOrParticipant} proxyOrParticipant details
  */
 const getFSPProxy = async (dfspId, options = null, skipParticipantCache = false) => {

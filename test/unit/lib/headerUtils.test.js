@@ -29,7 +29,7 @@
 'use strict'
 const test = require('tape')
 const sinon = require('sinon')
-const Logger = require('../../shared/logger').logger
+const Logger = require('../../../src/shared/logger').logger
 const {
   getNormalizedHeaderValue,
   parseBaggageHeader,
