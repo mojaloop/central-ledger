@@ -45,6 +45,7 @@ const PositionFxFulfilDomain = require('./fx-fulfil')
 const PositionTimeoutReservedDomain = require('./timeout-reserved')
 const PositionFxTimeoutReservedDomain = require('./fx-timeout-reserved')
 const PositionAbortDomain = require('./abort')
+const { shouldSkipParticipantCache } = require('../../lib/headerUtils')
 
 /**
  * @function processBins
@@ -133,12 +134,28 @@ const processBins = async (bins, trx) => {
     if (accountID !== '0') {
       settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
 
+      // Parse baggage header of all transfers and decide on the cache control
+      let skipCache = false
+      for (const action in accountBin) {
+        const messages = accountBin[action]
+        for (const message of messages) {
+          if (message.value && message.value.content && message.value.content.headers) {
+            skipCache = shouldSkipParticipantCache(message.value.content.headers)
+            if (skipCache) {
+              break
+            }
+          }
+        }
+        if (skipCache) break
+      }
+
       // Story #3657: The following SQL query/lookup can be optimized for performance
       participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(
         accountIdMap[accountID].participantId,
         accountIdMap[accountID].currencyId,
         Enum.Accounts.LedgerAccountType.POSITION,
-        Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP
+        Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP,
+        skipCache
       )
 
       accumulatedPositionValue = positions[accountID].value

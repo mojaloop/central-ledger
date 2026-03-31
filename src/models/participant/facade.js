@@ -352,7 +352,7 @@ const addEndpoint = async (participantId, endpoint) => {
   }
 }
 
-const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, ledgerAccountTypeId, participantLimitTypeId) => {
+const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, ledgerAccountTypeId, participantLimitTypeId, skipCache = false) => {
   const histGetParticipantLimitEnd = Metrics.getHistogram(
     'model_participant',
     'facade_getParticipantLimitByParticipantCurrencyLimit - Metrics for participant model',
@@ -361,7 +361,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
 
   try {
     let participantLimit
-    if (Cache.isCacheEnabled()) {
+    if (Cache.isCacheEnabled() && !skipCache) {
       /* Cached version - fetch data from Models (which we trust are cached) */
       const participant = await ParticipantModelCached.getById(participantId)
 
