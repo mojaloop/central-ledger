@@ -137,10 +137,10 @@ const processBins = async (bins, trx) => {
       // Parse baggage header of all transfers and decide on the cache control
       let skipCache = false
       for (const action in accountBin) {
-        const messages = accountBin[action]
-        for (const message of messages) {
-          if (message.value && message.value.content && message.value.content.headers) {
-            skipCache = shouldSkipParticipantCache(message.value.content.headers)
+        const binItems = accountBin[action]
+        for (const binItem of binItems) {
+          if (binItem.message.value && binItem.message.value.content && binItem.message.value.content.headers) {
+            skipCache = shouldSkipParticipantCache(binItem.message.value.content.headers)
             if (skipCache) {
               break
             }
