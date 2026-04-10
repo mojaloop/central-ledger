@@ -42,6 +42,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const Migrator = require('../lib/migrator')
 const Config = require('../lib/config')
+const SettlementEnums = require('../settlement/models/lib/enums')
 const Db = require('../lib/db')
 const ProxyCache = require('../lib/proxyCache')
 const Cache = require('../lib/cache')
@@ -113,6 +114,11 @@ const createServer = (port, modules) => {
           }
         }
       }
+    })
+
+    server.method({
+      name: 'enums',
+      method: (id) => SettlementEnums[id]()
     })
 
     await Plugins.registerPlugins(server)
@@ -203,6 +209,15 @@ const createHandlers = async (handlers) => {
           await RegisterHandlers.bulk.registerBulkGetHandler()
           break
         }
+        case 'deferredSettlement':
+          await RegisterHandlers.deferredSettlement.registerSettlementWindowHandler()
+          break
+        case 'grossSettlement':
+          await RegisterHandlers.grossSettlement.registerTransferSettlementHandler()
+          break
+        case 'rules':
+          await RegisterHandlers.rules.registerRulesHandler()
+          break
         default: {
           const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.isErrorEnabled && Logger.error(error)

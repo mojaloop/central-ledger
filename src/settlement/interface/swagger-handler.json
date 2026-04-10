@@ -1,0 +1,37 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "2.0",
+        "title": "MOJALOOP Central Settlements Handlers service API",
+        "description": "API of Settlements handlers to provide health service"
+    },
+    "basePath": "/v2",
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "paths": {  
+        "/health": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Gets the health of the service and sub-services (i.e. database).",
+                "summary": "getHealth",
+                "operationId": "getHealth",
+                "tags": [
+                    "getHealth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A valid and health service."
+                    },
+                    "502": {
+                        "description": "API is live, but error connecting to required sub-service."
+                    }
+                }
+            }
+        }
+    }
+}

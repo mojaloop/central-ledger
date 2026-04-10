@@ -1,0 +1,160 @@
+{
+  "PORT": 3007,
+  "HOSTNAME": "http://central-settlement",
+  "DATABASE": {
+    "DIALECT": "mysql",
+    "HOST": "localhost",
+    "PORT": 3306,
+    "USER": "central_ledger",
+    "PASSWORD": "password",
+    "SCHEMA": "central_ledger",
+    "POOL_MIN_SIZE": 10,
+    "POOL_MAX_SIZE": 10,
+    "ACQUIRE_TIMEOUT_MILLIS": 30000,
+    "CREATE_TIMEOUT_MILLIS": 30000,
+    "DESTROY_TIMEOUT_MILLIS": 5000,
+    "IDLE_TIMEOUT_MILLIS": 30000,
+    "REAP_INTERVAL_MILLIS": 1000,
+    "CREATE_RETRY_INTERVAL_MILLIS": 200,
+    "DEBUG": false
+  },
+  "WINDOW_AGGREGATION": {
+    "RETRY_COUNT": 3,
+    "RETRY_INTERVAL": 3000
+  },
+  "TRANSFER_VALIDITY_SECONDS": "432000",
+  "HUB_PARTICIPANT": {
+    "ID": 1,
+    "NAME": "Hub"
+  },
+  "HANDLERS": {
+    "DISABLED": false,
+    "API": {
+      "DISABLED": false
+    },
+    "SETTINGS": {
+      "RULES": {
+        "SCRIPTS_FOLDER": "./scripts/transferSettlementTemp",
+        "SCRIPT_TIMEOUT": 100,
+        "CONSUMER_COMMIT": true,
+        "FROM_SWITCH": true
+      }
+    }
+  },
+  "API_DOC_ENDPOINTS_ENABLED": true,
+  "SWITCH_ENDPOINT": "http://localhost:3001",
+  "AMOUNT": {
+    "PRECISION": 18,
+    "SCALE": 4
+  },
+  "KAFKA": {
+    "TOPIC_TEMPLATES": {
+      "GENERAL_TOPIC_TEMPLATE": {
+        "TEMPLATE": "topic-{{functionality}}-{{action}}",
+        "REGEX": "topic-(.*)-(.*)"
+      }
+    },
+    "CONSUMER": {
+      "DEFERREDSETTLEMENT": {
+        "CLOSE": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cs-con-deferredsettlement-close",
+              "group.id": "cs-group-deferredsettlement-close",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        }
+      },
+      "NOTIFICATION": {
+        "EVENT": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cs-con-notification-event",
+              "group.id": "cs-group-notification-event",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        }
+      }
+    },
+    "PRODUCER": {
+      "NOTIFICATION": {
+        "EVENT": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "debug": "all",
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "cs-prod-notification-event",
+              "event_cb": true,
+              "compression.codec": "none",
+              "retry.backoff.ms": 100,
+              "message.send.max.retries": 2,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000,
+              "batch.num.messages": 100,
+              "dr_cb": true,
+              "socket.blocking.max.ms": 1,
+              "queue.buffering.max.ms": 1,
+              "broker.version.fallback": "0.10.1.0",
+              "api.version.request": true
+            }
+          }
+        }
+      },
+      "DEFERREDSETTLEMENT": {
+        "CLOSE": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "cs-prod-deferredsettlement-close",
+              "event_cb": true,
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all"
+            }
+          }
+        }
+      }
+    }
+  }
+}

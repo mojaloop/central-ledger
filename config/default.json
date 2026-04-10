@@ -60,6 +60,14 @@
         "retryJitter": 100,
         "redisConfigs": [{ "type": "redis-cluster", "cluster": [{ "host": "localhost", "port": 6379 }] }]
       }
+    },
+    "SETTINGS": {
+      "RULES": {
+        "SCRIPTS_FOLDER": "./scripts/transferSettlementTemp",
+        "SCRIPT_TIMEOUT": 100,
+        "CONSUMER_COMMIT": true,
+        "FROM_SWITCH": true
+      }
     }
   },
   "INSTRUMENTATION": {
@@ -105,6 +113,10 @@
     }
   },
   "API_DOC_ENDPOINTS_ENABLED": true,
+  "WINDOW_AGGREGATION": {
+    "RETRY_COUNT": 3,
+    "RETRY_INTERVAL": 3000
+  },
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{
@@ -405,6 +417,32 @@
             }
           }
         }
+      },
+      "DEFERREDSETTLEMENT": {
+        "CLOSE": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cs-con-deferredsettlement-close",
+              "group.id": "cs-group-deferredsettlement-close",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        }
       }
     },
     "PRODUCER": {
@@ -526,6 +564,26 @@
             "topicConf": {
               "request.required.acks": "all",
               "partitioner": "murmur2_random"
+            }
+          }
+        }
+      },
+      "DEFERREDSETTLEMENT": {
+        "CLOSE": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "cs-prod-deferredsettlement-close",
+              "event_cb": true,
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         }

@@ -1,0 +1,1280 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "2.0",
+        "title": "MOJALOOP Central Settlements",
+        "description": "Mojaloop API for Settlements."
+    },
+    "basePath": "/v2",
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "paths": {  
+        "/health": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Gets the health of the service and sub-services (i.e. database).",
+                "summary": "getHealth",
+                "operationId": "getHealth",
+                "tags": [
+                    "getHealth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A valid and health service."
+                    },
+                    "502": {
+                        "description": "API is live, but error connecting to required sub-service."
+                    }
+                }
+            }
+        },
+        "/settlementWindows/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Returns a Settlement Window by id.",
+                "summary": "getSettlementWindowById",
+                "operationId": "getSettlementWindowById",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "type": "integer",
+                        "description": "A valid settlement window id to be supplied in the query.\n"
+                    }
+                ],
+                "tags": [
+                    "getSettlementWindowById",
+                    "sampled"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A settlement window's data returned.",
+                        "schema": {
+                            "$ref": "#/definitions/SettlementWindow"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Closes requested window and opens a new one.",
+                "summary": "closeSettlementWindow",
+                "operationId": "closeSettlementWindow",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "in": "body",
+                        "name": "payload",
+                        "description": "A JSON object containing settlement window closure info.",
+                        "schema": {
+                            "$ref": "#/definitions/SettlementWindowClosurePayload"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+  "sampled",
+                    "closeSettlementWindow"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Settlement window closed and new window opened.",
+                        "schema": {
+                            "$ref": "#/definitions/SettlementWindow"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/settlementWindows": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Returns Settlement Windows as per parameter(s).",
+                "summary": "getSettlementWindowsByParams",
+                "operationId": "getSettlementWindowsByParams",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "participantId",
+                        "type": "integer",
+                        "description": "A valid participant Id to filter on.\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "state",
+                        "type": "string",
+                        "enum": [
+                            "OPEN",
+                            "CLOSED",
+                            "PENDING_SETTLEMENT",
+                            "SETTLED",
+                            "ABORTED"
+                        ],
+                        "description": "A settlement window state to filter on.\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "fromDateTime",
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The start date for query (relates to central-ledger.settlementWindow.createdDate). Can be used together with `toDateTime'. eg 2017-07-20T17:32:28Z\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "toDateTime",
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The end date for query (relates to central-ledger.settlementWindow.createdDate). Can be used together with `fromDateTime'. eg 2017-07-21T17:32:28Z\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "currency",
+                        "type": "string",
+                        "description": "A valid currency to filter on.\n",
+                        "required": false
+                    }
+
+                ],
+                "tags": [
+                    "sampled",
+                    "getSettlementWindowsByParams"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Settlement window(s) returned by the filtering parameters.",
+                        "schema": {
+                            "$ref": "#/definitions/SettlementWindows"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/settlements": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Returns Settlements as per parameter(s).",
+                "summary": "getSettlementsByParams",
+                "operationId": "getSettlementsByParams",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "currency",
+                        "type": "string",
+                        "description": "A valid currency to filter on.\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "participantId",
+                        "type": "integer",
+                        "description": "A valid participant Id to filter on.\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "settlementWindowId",
+                        "type": "number",
+                        "description": "A valid Settlement Window Id to filter on.\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "accountId",
+                        "type": "number",
+                        "description": "A valid Account Id to filter on.\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "state",
+                        "type": "string",
+                        "enum": [
+                            "PENDING_SETTLEMENT",
+                            "PS_TRANSFERS_RECORDED",
+                            "PS_TRANSFERS_RESERVED",
+                            "PS_TRANSFERS_COMMITTED",
+                            "SETTLING",
+                            "SETTLED",
+                            "ABORTED"
+                        ],
+                        "description": "A settlement state to filter on.  \n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "fromDateTime",
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The start date for query (relates to central-ledger.settlement.createdDate). Can be used together with `toDateTime'. eg 2017-07-20T17:32:28Z\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "toDateTime",
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The end date for query (relates to central-ledger.settlement.createdDate). Can be used together with `fromDateTime'. eg 2017-07-21T17:32:28Z\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "fromSettlementWindowDateTime",
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The start date for query (relates to central-ledger.settlementWindow.createdDate). Can be used together with `toDateTime'. eg 2017-07-20T17:32:28Z\n",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "toSettlementWindowDateTime",
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The end date for query (relates to central-ledger.settlementWindow.createdDate). Can be used together with `fromDateTime'. eg 2017-07-21T17:32:28Z\n",
+                        "required": false
+                    }
+                ],
+                "tags": [
+                    "sampled",
+                    "getSettlementsByParams"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Settlement window(s) returned by the filtering parameters.",
+                        "schema": {
+                            "$ref": "#/definitions/Settlements"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Triggers settlement creation. Returns settlement report.",
+                "summary": "createSettlement",
+                "operationId": "createSettlement",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "payload",
+                        "description": "A JSON object containing settlement windows to be included.",
+                        "schema": {
+                            "$ref": "#/definitions/SettlementEventPayload"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "sampled",
+                    "createSettlement"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Created settlement with all windows and accounts.",
+                        "schema": {
+                            "$ref": "#/definitions/Settlement"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/settlements/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Returns Settlement(s) as per parameters/filter criteria.",
+                "summary": "getSettlementById",
+                "operationId": "getSettlementById",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "type": "integer",
+                        "description": "A valid Settlement Id.\n"
+                    }
+                ],
+                "tags": [
+                    "sampled",
+                    "getSettlementById"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Settlement successfully returned by the filtering/Query parameters.",
+                        "schema": {
+                            "$ref": "#/definitions/Settlement"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Acknowledgement of settlement by updating with Settlement Id.",
+                "summary": "updateSettlementById",
+                "operationId": "updateSettlementById",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "A valid Settlement Id.",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "in": "body",
+                        "name": "payload",
+                        "description": "A JSON object containing settlement update info.",
+                        "schema": {
+                            "$ref": "#/definitions/SettlementUpdateBySettlementIdPayload"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "sampled",
+                    "updateSettlementById"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Settlements updated.",
+                        "schema": {
+                            "$ref": "#/definitions/Settlement"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/settlements/{sid}/participants/{pid}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Returns Settlement(s) as per filter criteria.",
+                "summary": "getSettlementBySettlementParticipant",
+                "operationId": "getSettlementBySettlementParticipant",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "sid",
+                        "required": true,
+                        "type": "integer",
+                        "description": "A valid Settlement Id.\n"
+                    },
+                    {
+                        "in": "path",
+                        "name": "pid",
+                        "required": true,
+                        "type": "integer",
+                        "description": "A valid Participant Id.\n"
+                    }
+                ],
+                "tags": [
+                    "sampled",
+                    "getSettlementBySettlementParticipant"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Settlement, settlement windows and settlement accounts returned by the filtering parameters.",
+                        "schema": {
+                            "$ref": "#/definitions/Settlement"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Acknowledgement of settlement by updating the reason and state by SP.",
+                "summary": "updateSettlementBySettlementParticipant",
+                "operationId": "updateSettlementBySettlementParticipant",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "sid",
+                        "description": "A valid Settlement Id.",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "in": "path",
+                        "name": "pid",
+                        "description": "A valid Participant Id.",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "in": "body",
+                        "name": "payload",
+                        "description": "A JSON object containing settlement update info.",
+                        "schema": {
+                            "$ref": "#/definitions/SettlementUpdateBySettlementParticipantPayload"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "sampled",
+                    "updateSettlementBySettlementParticipant"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Settlements updated.",
+                        "schema": {
+                            "$ref": "#/definitions/Settlement"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/settlements/{sid}/participants/{pid}/accounts/{aid}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Returns Settlement(s) as per filter criteria.",
+                "summary": "getSettlementBySettlementParticipantAccount",
+                "operationId": "getSettlementBySettlementParticipantAccount",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "sid",
+                        "required": true,
+                        "type": "integer",
+                        "description": "A valid Settlement Id.\n"
+                    },
+                    {
+                        "in": "path",
+                        "name": "pid",
+                        "required": true,
+                        "type": "integer",
+                        "description": "A valid Participant Id.\n"
+                    },
+                    {
+                        "in": "path",
+                        "name": "aid",
+                        "required": true,
+                        "type": "integer",
+                        "description": "A valid Account Id.\n"
+                    }
+                ],
+                "tags": [
+                    "sampled",
+                    "getSettlementBySettlementParticipantAccount"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Settlement, settlement windows and settlement accounts returned by the filtering parameters.",
+                        "schema": {
+                            "$ref": "#/definitions/Settlement"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "deprecated": false,
+                "description": "Acknowledgement of settlement by updating the reason and state by SPA.",
+                "summary": "updateSettlementBySettlementParticipantAccount",
+                "operationId": "updateSettlementBySettlementParticipantAccount",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "sid",
+                        "description": "A valid Settlement Id.",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "in": "path",
+                        "name": "pid",
+                        "description": "A valid Participant Id.",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "in": "path",
+                        "name": "aid",
+                        "description": "A valid Account Id.",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "in": "body",
+                        "name": "payload",
+                        "description": "A JSON object containing settlement update info.",
+                        "schema": {
+                            "$ref": "#/definitions/SettlementUpdateBySettlementParticipantAccount"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "sampled",
+                    "updateSettlementBySettlementParticipantAccount"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Settlements updated.",
+                        "schema": {
+                            "$ref": "#/definitions/Settlement"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorisation information is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No data found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Account": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Account Id"
+                },
+                "reason": {
+                    "description": "TBD",
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "PENDING_SETTLEMENT"
+                },
+                "netSettlementAmount": {
+                    "$ref": "#/definitions/netSettlementAmount"
+                }
+            }
+        },
+        "SettlementUpdateBySettlementIdPayload": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "type": "string",
+                    "enum": [
+                        "ABORTED",
+                        "INVALID"
+                    ]
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "externalReference": {
+                    "type": "string"
+                },
+                "participants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SettlementUpdateBySettlementIDOuterPayload"
+                    }
+                }
+            }
+        },
+        "SettlementUpdateBySettlementIDOuterPayload": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Participant Id"
+                },
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SettlementUpdateBySettlementIdInnerPayload"
+                    }
+                }
+            }
+        },
+        "SettlementUpdateBySettlementIdInnerPayload": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Participant Currency Id"
+                },
+                "reason": {
+                    "type": "string",
+                    "example": "reason"
+                },
+                "state": {
+                    "type": "string",
+                    "enum": [
+                        "PENDING_SETTLEMENT",
+                        "PS_TRANSFERS_RECORDED",
+                        "PS_TRANSFERS_RESERVED",
+                        "PS_TRANSFERS_COMMITTED",
+                        "SETTLED"
+                    ],
+                    "example": "SETTLED"
+                },
+                "externalReference": {
+                    "type": "string",
+                    "example": "external-reference-abc123"
+                }
+            }
+        },
+        "SettlementUpdateBySettlementParticipantPayload": {
+            "type": "object",
+            "properties": {
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SettlementUpdateBySettlementIdInnerPayload"
+                    }
+                }
+            }
+        },
+        "Accounts": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "Participant Currency Id",
+                    "type": "integer"
+                },
+                "reason": {
+                    "description": "TBD",
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "PENDING_SETTLEMENT"
+                },
+                "netSettlementAmount": {
+                    "$ref": "#/definitions/netSettlementAmount"
+                }
+            }
+        },
+        "SettlementWindowClosurePayload": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "type": "string",
+                    "example": "CLOSED",
+                    "enum": [
+                        "CLOSED"
+                    ]
+                },
+                "reason": {
+                    "type": "string",
+                    "example": "string"
+                }
+            },
+            "required": [
+                "state",
+                "reason"
+            ]
+        },
+        "SettlementUpdateBySettlementParticipantAccount": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "type": "string",
+                    "enum": [
+                        "PENDING_SETTLEMENT",
+                        "PS_TRANSFERS_RECORDED",
+                        "PS_TRANSFERS_RESERVED",
+                        "PS_TRANSFERS_COMMITTED",
+                        "SETTLED"
+                    ],
+                    "example": "SETTLED"
+                },
+                "reason": {
+                    "type": "string",
+                    "example": "string"
+                },
+                "externalReference": {
+                    "type": "string",
+                    "example": "external-reference-abc123"
+                }
+            },
+            "required": [
+                "state",
+                "reason"
+            ]
+        },
+        "SettlementEventPayload": {
+            "type": "object",
+            "properties": {
+                "settlementModel": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "settlementWindows": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                        "$ref": "#/definitions/SettlementWindowId"
+                    }
+                }
+            },
+            "required": [
+                "settlementModel",
+                "reason",
+                "settlementWindows"
+            ]
+        },
+        "SettlementWindowId": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "id"
+            ]
+        },
+        "SettlementWindow": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "createdDate": {
+                    "type": "string"
+                },
+                "changedDate": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SettlementWindowContent"
+                    }
+                }
+            },
+            "required": [
+                "id",
+                "state",
+                "createdDate"
+            ]
+        },
+        "SettlementWindowContent": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "ledgerAccountType": {
+                    "type": "string"
+                },
+                "currencyId": {
+                    "type": "string"
+                },
+                "createdDate": {
+                    "type": "string"
+                },
+                "changedDate": {
+                    "type": "string"
+                },
+                "settlementId": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "id",
+                "state",
+                "ledgerAccountType",
+                "currencyId",
+                "createdDate"
+            ]
+        },
+        "SettlementWindows": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/SettlementWindow"
+            }
+        },
+        "netSettlementAmount": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                }
+            }
+        },
+        "Participant": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Accounts"
+                    }
+                }
+            }
+        },
+        "Settlements": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/Settlement"
+            }
+        },
+        "Settlement": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "settlementWindows": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SettlementWindows"
+                    }
+                },
+                "participants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Participant"
+                    }
+                }
+            }
+        },
+        "Error": {
+            "required": [
+                "errorInformation"
+            ],
+            "properties": {
+                "errorInformation": {
+                    "type": "object",
+                    "properties": {
+                        "errorCode": {
+                            "type": "integer"
+                        },
+                        "errorDescription": {
+                            "type": "string"
+                        },
+                        "extensionList": {
+                            "type": "object",
+                            "properties": {
+                                "extension": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Extension"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "Extension": {
+            "required": [
+                "key",
+                "value"
+            ],
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

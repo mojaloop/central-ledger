@@ -3,15 +3,6 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Handlers = require('../../../src/handlers/register')
-const TransferHandlers = require('../../../src/handlers/transfers/handler')
-const PositionHandlers = require('../../../src/handlers/positions/handler')
-const TimeoutHandlers = require('../../../src/handlers/timeouts/handler')
-const AdminHandlers = require('../../../src/handlers/admin/handler')
-const BulkTransferHandlers = require('../../../src/handlers/bulk/prepare/handler')
-const BulkProcessingHandlers = require('../../../src/handlers/bulk/processing/handler')
-const BulkFulfilHandlers = require('../../../src/handlers/bulk/fulfil/handler')
-const BulkGetHandlers = require('../../../src/handlers/bulk/get/handler')
-const Proxyquire = require('proxyquire')
 const ProxyCache = require('#src/lib/proxyCache')
 
 Test('handlers', handlersTest => {
@@ -19,14 +10,14 @@ Test('handlers', handlersTest => {
 
   handlersTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(PositionHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
-    sandbox.stub(TransferHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
-    sandbox.stub(TimeoutHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
-    sandbox.stub(AdminHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
-    sandbox.stub(BulkTransferHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
-    sandbox.stub(BulkProcessingHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
-    sandbox.stub(BulkFulfilHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
-    sandbox.stub(BulkGetHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(Handlers.transfers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(Handlers.positions, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(Handlers.positionsBatch, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(Handlers.timeouts, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(Handlers.admin, 'registerAdminHandlers').returns(Promise.resolve(true))
+    sandbox.stub(Handlers.bulk, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(Handlers.deferredSettlement, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(Handlers.grossSettlement, 'registerAllHandlers').returns(Promise.resolve(true))
     sandbox.stub(ProxyCache, 'getCache').returns({
       connect: sandbox.stub(),
       disconnect: sandbox.stub()
@@ -41,34 +32,24 @@ Test('handlers', handlersTest => {
 
   handlersTest.test('handlers test should', registerAllTest => {
     registerAllTest.test('register all handlers', async (test) => {
+      // Complete the stub.
+      sandbox.stub(Handlers.rules, 'registerAllHandlers').returns(Promise.resolve(true))
+
       const result = await Handlers.registerAllHandlers()
       test.equal(result, true)
       test.end()
     })
 
-    registerAllTest.test('throw error on Handlers.registerAllHandlers', async (test) => {
-      const errorMessage = 'require-glob Stub ERROR'
-      const HandlersStub = Proxyquire('../../../src/handlers/register', {
-        'require-glob': sandbox.stub().throws(new Error(errorMessage))
-      })
-      try {
-        await HandlersStub.registerAllHandlers()
-        test.fail('Error not thrown')
-        test.end()
-      } catch (e) {
-        test.equal(e.message, errorMessage)
-        test.pass('Error thrown')
-        test.end()
-      }
-    })
+    registerAllTest.test('handles error when registering a handler', async (test) => {
+      // Complete the stub.
+      sandbox.stub(Handlers.rules, 'registerAllHandlers').returns(Promise.reject(new Error('Test error')))
 
-    registerAllTest.test('throw error when transfer handler throws error', async (test) => {
       try {
-        sandbox.stub(TransferHandlers, 'registerAllHandlers').throws(new Error())
         await Handlers.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
+        test.equal(e.message, 'Test error')
         test.pass('Error thrown')
         test.end()
       }

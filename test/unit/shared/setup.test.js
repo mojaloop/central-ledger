@@ -124,6 +124,15 @@ Test('setup', setupTest => {
         registerBulkFulfilHandler: sandbox.stub().resolves(),
         registerBulkProcessingHandler: sandbox.stub().resolves(),
         registerBulkGetHandler: sandbox.stub().resolves()
+      },
+      deferredSettlement: {
+        registerSettlementWindowHandler: sandbox.stub().resolves()
+      },
+      grossSettlement: {
+        registerTransferSettlementHandler: sandbox.stub().resolves()
+      },
+      rules: {
+        registerRulesHandler: sandbox.stub().resolves()
       }
     }
     const ConfigStub = Config
@@ -689,12 +698,30 @@ Test('setup', setupTest => {
         enabled: true
       }
 
+      const deferredSettlementHandler = {
+        type: 'deferredSettlement',
+        enabled: true
+      }
+
+      const grossSettlementHandler = {
+        type: 'grossSettlement',
+        enabled: true
+      }
+
+      const rulesHandler = {
+        type: 'rules',
+        enabled: true
+      }
+
       const modulesList = [
         prepareHandler,
         positionHandler,
         fulfilHandler,
         timeoutHandler,
-        getHandler
+        getHandler,
+        deferredSettlementHandler,
+        grossSettlementHandler,
+        rulesHandler
         // rejectHandler
       ]
 
@@ -704,6 +731,10 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.positions.registerPositionHandler.called)
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerGetHandler.called)
+
+        test.ok(RegisterHandlersStub.deferredSettlement.registerSettlementWindowHandler.called)
+        test.ok(RegisterHandlersStub.grossSettlement.registerTransferSettlementHandler.called)
+        test.ok(RegisterHandlersStub.rules.registerRulesHandler.called)
         // test.ok(KafkaCronStub.Cron.start.calledOnce)
         test.end()
       }).catch(err => {

@@ -41,13 +41,11 @@
  * @function RegisterAllHandlers
  *
  * @async
- * @description Registers all handlers by using the require-glob to retrieve all handler exports in sub directories and access the registerAllHandlers()
- * in each of them. Every handler in the sub-folders must have a registerAllHandlers() function
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ * @description Registers all handlers in ./handlers and ../settlement/handlers.
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed.
  */
 
 const Logger = require('../shared/logger').logger
-const requireGlob = require('require-glob')
 const TransferHandlers = require('./transfers/handler')
 const PositionHandlers = require('./positions/handler')
 const PositionHandlersBatch = require('./positions/handlerBatch')
@@ -55,32 +53,11 @@ const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
 const BulkHandlers = require('./bulk')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const DeferredSettlementHandler = require('../settlement/handlers/deferredSettlement/handler')
+const GrossSettlementHandler = require('../settlement/handlers/grossSettlement/handler')
+const RulesHandler = require('../settlement/handlers/rules/handler')
 
-const registerAllHandlers = async () => {
-  try {
-    const modules = await requireGlob(['./**/handler.js'])
-    for (const key in modules) {
-      Logger.isInfoEnabled && Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
-      if (Object.prototype.hasOwnProperty.call(modules[key], 'handler')) {
-        const handlerObject = modules[key]
-        await handlerObject.handler.registerAllHandlers()
-      } else {
-        for (const subKey in modules[key]) {
-          const handlerObject = modules[key][subKey]
-          Logger.isInfoEnabled && Logger.info(` ⌙ Registering sub-handler module[${key}-${subKey}]: ${JSON.stringify(handlerObject)}`)
-          await handlerObject.handler.registerAllHandlers()
-        }
-      }
-    }
-    return true
-  } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
-module.exports = {
-  registerAllHandlers,
+const handlers = {
   transfers: {
     registerAllHandlers: TransferHandlers.registerAllHandlers,
     registerPrepareHandler: TransferHandlers.registerPrepareHandler,
@@ -104,9 +81,47 @@ module.exports = {
     registerAdminHandlers: AdminHandlers.registerAllHandlers
   },
   bulk: {
+    registerAllHandlers: BulkHandlers.registerAllHandlers,
     registerBulkPrepareHandler: BulkHandlers.registerBulkPrepareHandler,
     registerBulkFulfilHandler: BulkHandlers.registerBulkFulfilHandler,
     registerBulkProcessingHandler: BulkHandlers.registerBulkProcessingHandler,
     registerBulkGetHandler: BulkHandlers.registerGetBulkTransferHandler
+  },
+  deferredSettlement: {
+    registerAllHandlers: DeferredSettlementHandler.registerAllHandlers,
+    registerSettlementWindowHandler: DeferredSettlementHandler.registerSettlementWindowHandler
+  },
+  grossSettlement: {
+    registerAllHandlers: GrossSettlementHandler.registerAllHandlers,
+    registerTransferSettlementHandler: GrossSettlementHandler.registerTransferSettlement,
+    registerRulesHandler: RulesHandler.registerRules
+  },
+  rules: {
+    registerAllHandlers: RulesHandler.registerAllHandlers,
+    registerRulesHandler: RulesHandler.registerRules
   }
+}
+
+const registerAllHandlers = async () => {
+  try {
+    Logger.isInfoEnabled && Logger.info('registerAllHandlers() - Registering all handlers.')
+    await handlers.transfers.registerAllHandlers()
+    await handlers.positions.registerAllHandlers()
+    await handlers.timeouts.registerAllHandlers()
+    await handlers.admin.registerAdminHandlers()
+    await handlers.bulk.registerAllHandlers()
+    await handlers.deferredSettlement.registerAllHandlers()
+    await handlers.grossSettlement.registerAllHandlers()
+    await handlers.rules.registerAllHandlers()
+
+    return true
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+module.exports = {
+  registerAllHandlers,
+  ...handlers
 }

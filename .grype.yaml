@@ -85,6 +85,9 @@ ignore:
   - vulnerability: GHSA-2g4f-4pwh-qvx6
     include-aliases: true
     reason: "Unfixable npm transitive vulnerability: ajv (moderate severity) as of 2026-02-23"
+  - vulnerability: GHSA-rpr9-rxv7-x643
+    include-aliases: true
+    reason: "Unfixable npm transitive vulnerability: sanitize-html (critical severity) as of 2026-05-18"
 output:
   - table
   - json

@@ -213,7 +213,7 @@ const addEndpoint = async (name, payload) => {
     log.verbose('getting participant by name...')
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    log.info('adding endpoint for participant', { participant })
+    log.debug('adding endpoint for participant', { participant })
     return ParticipantFacade.addEndpoint(participant.participantId, payload)
   } catch (err) {
     log.error('error adding endpoint', err)

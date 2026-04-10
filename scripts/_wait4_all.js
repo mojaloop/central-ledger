@@ -10,18 +10,18 @@ const { execSync } = require('child_process')
 // Define the docker-compose containers you want to monitor here
 const expectedContainers = [
   'cl_mysql',
-  'cl_kafka'
+  'cl_kafka',
+  'cl_simulator',
+  'cl_ml-api-adapter'
   // ## NOTE: These are not needed for Integration Tests
   // 'cl_central-ledger',
-  // 'cl_ml-api-adapter',
-  // 'cl_simulator',
   // 'mockserver',
   // 'cl_objstore' //,
   // 'kowl'
 ]
 
-let retries = 40
-const waitTimeMs = 30000
+let retries = 60
+const waitTimeMs = 1000
 
 async function main () {
   const waitingMap = {}

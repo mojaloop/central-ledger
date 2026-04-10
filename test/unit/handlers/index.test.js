@@ -71,7 +71,10 @@ Test('cli', async (cliTest) => {
         '--bulkprepare',
         '--bulkfulfil',
         '--bulkprocessing',
-        '--positionbatch'
+        '--positionbatch',
+        '--deferredSettlement',
+        '--grossSettlement',
+        '--rules'
       ]
 
       process.argv = argv
@@ -130,6 +133,21 @@ Test('cli', async (cliTest) => {
         enabled: true
       }
 
+      const deferredSettlementHandler = {
+        type: 'deferredSettlement',
+        enabled: true
+      }
+
+      const grossSettlementHandler = {
+        type: 'grossSettlement',
+        enabled: true
+      }
+
+      const rulesHandler = {
+        type: 'rules',
+        enabled: true
+      }
+
       const modulesList = [
         prepareHandler,
         positionHandler,
@@ -140,7 +158,10 @@ Test('cli', async (cliTest) => {
         adminHandler,
         bulkprepareHandler,
         bulkfulfilHandler,
-        bulkprocessingHandler
+        bulkprocessingHandler,
+        deferredSettlementHandler,
+        grossSettlementHandler,
+        rulesHandler
         // rejectHandler
       ]
 

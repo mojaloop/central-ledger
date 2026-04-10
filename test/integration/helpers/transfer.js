@@ -31,6 +31,7 @@
 
 'use strict'
 
+const assert = require('node:assert')
 // const ParticipantPreparationModule = require('./participant')
 const Model = require('../../../src/models/transfer/transfer')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -39,6 +40,11 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 // const transferFacade = require('../../../src/models/transfer/facade')
 
 exports.prepareData = async (transfer) => {
+  assert(transfer, 'Expected transfer to be defined.')
+  assert(transfer.transferId, 'Expected transfer.transferId to be defined.')
+  assert(transfer.amount, 'Expected transfer.amount to be defined.')
+  assert(transfer.currencyId, 'Expected transfer.currencyId to be defined.')
+
   try {
     // let participantPayerResult = await ParticipantPreparationModule.prepareData('payer')
     // let participantPayeeResult = await ParticipantPreparationModule.prepareData('payee')
