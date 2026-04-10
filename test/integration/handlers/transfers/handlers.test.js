@@ -463,7 +463,6 @@ Test('Handlers test', async handlersTest => {
         transfer = await wrapWithRetries(async () => {
           // lets fetch the transfer
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
-          console.dir(transfer)
           // lets check its status, and if its what we expect return the result
           if (transfer?.transferState === 'RESERVED') return transfer
           // otherwise lets return nothing
@@ -498,7 +497,7 @@ Test('Handlers test', async handlersTest => {
         await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
           action: 'reserved-aborted'
-        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
+        }), 10, wrapWithRetriesConf.timeout)
         test.notOk('Should not be executed')
       } catch (err) {
         console.log(err)

@@ -170,7 +170,7 @@ class TestConsumer {
   }
 
   onEvent (arg1, events) {
-    Logger.warn('TestConsumer.onEvent')
+    Logger.debug('TestConsumer.onEvent')
     Logger.debug(`TestConsumer.onEvent - received event: ${JSON.stringify(events)}`)
     this.eventLog = this.eventLog.concat(events)
   }
