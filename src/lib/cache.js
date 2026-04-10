@@ -2,7 +2,7 @@
 
 const CatboxMemory = require('@hapi/catbox-memory')
 const Catbox = require('@hapi/catbox')
-const Config = require('../lib/config')
+const Config = require('./config')
 
 const expiresIn = parseInt(Config.CACHE_CONFIG.EXPIRES_IN_MS)
 // Init memory client

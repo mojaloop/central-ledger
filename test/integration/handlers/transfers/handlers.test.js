@@ -32,7 +32,7 @@
 const Test = require('tape')
 const { randomUUID } = require('crypto')
 const Logger = require('@mojaloop/central-services-logger')
-const Config = require('#src/lib/config')
+const Config = require('../../../../src/lib/config')
 const ProxyCache = require('#src/lib/proxyCache')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const Db = require('../../../../src/lib/db')

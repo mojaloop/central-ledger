@@ -31,7 +31,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('../../../src/shared/logger').logger
-const Model = require('../../../seeds/bulkProcessingState')
+const Model = require('../../../src/seeds/bulkProcessingState')
 
 Test('BulkProcessingState', async (bulkProcessingStateSeedTest) => {
   let sandbox

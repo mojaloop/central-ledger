@@ -46,7 +46,7 @@ const ParticipantFacade = require('../../../../src/models/participant/facade')
 const ParticipantPositionChangesModel = require('../../../../src/models/position/participantPositionChanges')
 const { fxTransfer, watchList } = require('../../../../src/models/fxTransfer')
 const ProxyCache = require('../../../../src/lib/proxyCache')
-const config = require('#src/lib/config')
+const config = require('../../../../src/lib/config')
 
 const defaultGetProxyParticipantAccountDetailsResponse = { inScheme: true, participantCurrencyId: 1 }
 

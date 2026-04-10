@@ -10,8 +10,8 @@ const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 const SettlementModel = require('../../../../src/domain/settlement')
 const ProxyCache = require('#src/lib/proxyCache')
-const Config = require('#src/lib/config')
 const Metrics = require('@mojaloop/central-services-metrics')
+const { overrideForTesting, resetOverride } = require('../../../../src/lib/config')
 
 const createRequest = ({ payload, params, query }) => {
   Metrics._setupDefaultServiceMetrics()
@@ -167,7 +167,6 @@ Test('Participant', participantHandlerTest => {
     sandbox.stub(Participant)
     sandbox.stub(EnumCached)
     sandbox.stub(SettlementModel, 'getAll')
-    sandbox.stub(Config, 'HOSTNAME').value('https://central-ledger')
     sandbox.stub(ProxyCache, 'getCache').returns({
       connect: sandbox.stub(),
       disconnect: sandbox.stub(),
@@ -175,11 +174,14 @@ Test('Participant', participantHandlerTest => {
     })
     EnumCached.getEnums.returns(Promise.resolve({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 }))
     Logger.isDebugEnabled = true
+
+    overrideForTesting({ HOSTNAME: 'https://central-ledger' })
     test.end()
   })
 
   participantHandlerTest.afterEach(test => {
     sandbox.restore()
+    resetOverride()
     test.end()
   })
 
