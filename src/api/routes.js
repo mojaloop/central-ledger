@@ -1,12 +1,13 @@
 'use strict'
 
-const { globSync } = require('node:fs')
-
-exports.plugin = {
+module.exports = {
   name: 'api routes',
   register: function (server) {
-    globSync('**/routes.js', { cwd: __dirname })
-      .filter(x => x !== 'routes.js')
-      .forEach(x => server.route(require('./' + x)))
+    server.route(require('./root/routes'))
+    server.route(require('./participants/routes'))
+    server.route(require('./transactions/routes'))
+    server.route(require('./settlementModels/routes'))
+    // This can likely be removed, it was being consumed by central-settlements.
+    server.route(require('./ledgerAccountTypes/routes'))
   }
 }

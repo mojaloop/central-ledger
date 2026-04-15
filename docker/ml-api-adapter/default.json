@@ -7,6 +7,34 @@
   "HOSTNAME": "http://ml-api-adapter",
   "ENDPOINT_SOURCE_URL": "http://host.docker.internal:3001",
   "ENDPOINT_HEALTH_URL": "http://host.docker.internal:3001/health",
+  "PROXY_CACHE": {
+    "enabled": false,
+    "type": "redis-cluster",
+    "proxyConfig": {
+      "cluster": [
+        { "host": "redis-node-0", "port": 6379 }
+      ]
+    }
+  },
+  "PROTOCOL_VERSIONS": {
+    "CONTENT": {
+      "DEFAULT": "2.0",
+      "VALIDATELIST": ["1.0", "1.1", "2.0"]
+    },
+    "ACCEPT": {
+      "DEFAULT": "2",
+      "VALIDATELIST": ["1", "1.0", "1.1", "2", "2.0"]
+    }
+  },
+  "PAYLOAD_CACHE": {
+    "enabled": false,
+    "type": "redis-cluster",
+    "connectionConfig": {
+      "cluster": [
+        { "host": "localhost", "port": 6379 }
+      ]
+    }
+  },
   "ENDPOINT_CACHE_CONFIG": {
     "expiresIn": 180000,
     "generateTimeout": 30000

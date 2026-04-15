@@ -73,6 +73,9 @@ services:
       - ./docker/wait-for:/opt/wait-for
     environment:
       - LOG_LEVEL=info
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "simulator:host-gateway"
     networks:
       - cl-mojaloop-net
     depends_on:
@@ -272,6 +275,9 @@ services:
       replicas: 1
     ports:
       - "8444:8444"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "simulator:host-gateway"
     environment:
       - LOG_LEVEL=info
       - TRANSFERS_ENDPOINT=http://host.docker.internal:3000

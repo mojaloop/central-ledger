@@ -6,13 +6,17 @@ echo
 MYSQL_VERSION=${MYSQL_VERSION:-"latest"}
 KAFKA_VERSION=${MYSQL_VERSION:-"latest"}
 INT_TEST_SKIP_SHUTDOWN=${INT_TEST_SKIP_SHUTDOWN:-false}
-WAIT_FOR_REBALANCE=${WAIT_FOR_REBALANCE:-15}
+LOG_LEVEL=${LOG_LEVEL:-"info"}
+# Callback URLs use 'simulator' hostname. ml-api-adapter has extra_hosts mapping
+# 'simulator:host-gateway' so it can reach the simulator container on the host.
+export SIMULATOR_REMOTE_HOST=${SIMULATOR_REMOTE_HOST:-simulator}
 
 echo "==> Variables:"
 echo "====> MYSQL_VERSION=$MYSQL_VERSION"
 echo "====> KAFKA_VERSION=$KAFKA_VERSION"
 echo "====> INT_TEST_SKIP_SHUTDOWN=$INT_TEST_SKIP_SHUTDOWN"
-echo "====> WAIT_FOR_REBALANCE=$WAIT_FOR_REBALANCE"
+echo "====> LOG_LEVEL=$LOG_LEVEL"
+echo "====> SIMULATOR_REMOTE_HOST=$SIMULATOR_REMOTE_HOST"
 
 ## Set initial exit code value to 1 (i.e. assume error!)
 TTK_FUNC_TEST_EXIT_CODE=1
@@ -22,10 +26,14 @@ mkdir ./test/results
 
 ## Start backend services
 echo "==> Starting Docker backend services"
-docker compose pull mysql kafka init-kafka redis-node-0
-docker compose up -d mysql kafka init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
+docker compose up -d --quiet-pull mysql kafka init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 \
+  redis-node-4 redis-node-5 ml-api-adapter simulator
 docker compose ps
 npm run wait-4-docker
+
+## Capture docker container logs in background
+docker logs -f cl_ml-api-adapter > ./test/results/ml-api-adapter.log 2>&1 &
+docker logs -f cl_simulator > ./test/results/simulator.log 2>&1 &
 
 # Migrate
 npm run migrate
@@ -40,12 +48,13 @@ echo "Service started with Process ID=$PID"
 echo "Waiting for Service to be healthy"
 bash .circleci/curl-retry-cl-health.sh
 
-## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
-echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_FOR_REBALANCE
+## Wait for Kafka consumer groups to have partition assignments
+echo "Checking Kafka consumer group status..."
+./test/scripts/wait-for-kafka-consumers.js
 
 ## Start integration tests
 echo "Running Integration Tests"
-npm run test:xint
+LOG_LEVEL=${LOG_LEVEL} npm run test:xint
 INTEGRATION_TEST_EXIT_CODE="$?"
 echo "==> integration tests exited with code: $INTEGRATION_TEST_EXIT_CODE"
 
@@ -60,7 +69,7 @@ fi
 kill -9 $(lsof -t -i:3001) 2>/dev/null || true
 
 ## Give some time before restarting service for override tests
-sleep $WAIT_FOR_REBALANCE
+sleep 5
 
 ## Restart service with topic name override
 echo "Starting Service in the background"
@@ -96,12 +105,13 @@ echo "Service started with Process ID=$PID2"
 echo "Waiting for Service to be healthy"
 bash .circleci/curl-retry-cl-health.sh
 
-## Lets wait a few seconds to ensure that Kafka handlers are rebalanced
-echo "Waiting ${WAIT_FOR_REBALANCE}s for Kafka Re-balancing..." && sleep $WAIT_FOR_REBALANCE
+echo "Checking Kafka consumer group status..."
+./test/scripts/wait-for-kafka-consumers.js
 
 ## Start integration tests
 echo "Running Override Integration Tests"
-npm run test:xint-override
+
+LOG_LEVEL=${LOG_LEVEL} npm run test:xint-override
 OVERRIDE_INTEGRATION_TEST_EXIT_CODE="$?"
 echo "==> override integration tests exited with code: $OVERRIDE_INTEGRATION_TEST_EXIT_CODE"
 
