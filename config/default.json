@@ -96,7 +96,7 @@
     "EXPIRES_IN_MS": 1000
   },
   "PROXY_CACHE": {
-    "enabled": true,
+    "enabled": false,
     "type": "redis-cluster",
     "proxyConfig": {
       "cluster": [

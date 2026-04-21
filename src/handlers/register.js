@@ -55,9 +55,13 @@ const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
 const BulkHandlers = require('./bulk')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const DeferredSettlementHandler = require('../settlement/handlers/deferredSettlement/handler')
+const GrossSettlementHandler = require('../settlement/handlers/grossSettlement/handler')
+const RulesHandler = require('../settlement/handlers/rules/handler')
 
 const registerAllHandlers = async () => {
   try {
+    // TODO(LD): Replace me! We need to also include the other handlers.
     const modules = await requireGlob(['./**/handler.js'])
     for (const key in modules) {
       Logger.isInfoEnabled && Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
@@ -108,5 +112,18 @@ module.exports = {
     registerBulkFulfilHandler: BulkHandlers.registerBulkFulfilHandler,
     registerBulkProcessingHandler: BulkHandlers.registerBulkProcessingHandler,
     registerBulkGetHandler: BulkHandlers.registerGetBulkTransferHandler
+  },
+  deferredSettlement: {
+    registerAllHandlers: DeferredSettlementHandler.registerAllHandlers,
+    registerSettlementWindowHandler: DeferredSettlementHandler.registerSettlementWindowHandler
+  },
+  grossSettlement: {
+    registerAllHandlers: GrossSettlementHandler.registerAllHandlers,
+    registerTransferSettlementHandler: GrossSettlementHandler.registerTransferSettlement,
+    registerRulesHandler: RulesHandler.registerRules
+  },
+  rules: {
+    registerAllHandlers: RulesHandler.registerAllHandlers,
+    registerRulesHandler: RulesHandler.registerRules
   }
 }

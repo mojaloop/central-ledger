@@ -62,6 +62,9 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .option('--bulkfulfil', 'Start the Bulk Fulfil Handler')
   .option('--bulkprocessing', 'Start the Bulk Processing Handler')
   .option('--bulkget', 'Start the Bulk Get Handler')
+  .option('--deferredSettlement', 'Start the Deferred Settlement Handler.')
+  .option('--grossSettlement', 'Start the Gross Settlement Handler.')
+  .option('--rules', 'Start the rules handler.')
   // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
@@ -151,6 +154,33 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       Logger.isDebugEnabled && Logger.debug('CLI: Executing --bulkget')
       const handler = {
         type: 'bulkget',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+
+    if (args.deferredSettlement === true) {
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --deferredSettlement')
+      const handler = {
+        type: 'deferredSettlement',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+
+    if (args.grossSettlement === true) {
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --grossSettlement')
+      const handler = {
+        type: 'grossSettlement',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+
+    if (args.rules === true) {
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --rules')
+      const handler = {
+        type: 'rules',
         enabled: true
       }
       handlerList.push(handler)

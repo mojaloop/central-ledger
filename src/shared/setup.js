@@ -203,6 +203,15 @@ const createHandlers = async (handlers) => {
           await RegisterHandlers.bulk.registerBulkGetHandler()
           break
         }
+        case 'deferredSettlement':
+          await RegisterHandlers.deferredSettlement.registerSettlementWindowHandler()
+          break
+        case 'grossSettlement':
+          await RegisterHandlers.grossSettlement.registerTransferSettlementHandler()
+          break
+        case 'rules':
+          await RegisterHandlers.rules.registerRulesHandler()
+          break
         default: {
           const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.isErrorEnabled && Logger.error(error)
