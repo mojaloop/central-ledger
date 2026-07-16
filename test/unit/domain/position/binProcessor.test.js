@@ -448,13 +448,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
 
@@ -492,13 +494,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
 
@@ -544,13 +548,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
@@ -593,13 +599,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
@@ -642,13 +650,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
@@ -691,13 +701,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
@@ -740,13 +752,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
@@ -770,13 +784,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
@@ -811,13 +827,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
@@ -852,13 +870,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
@@ -893,13 +913,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
@@ -944,13 +966,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())
@@ -973,13 +997,15 @@ Test('BinProcessor', async (binProcessorTest) => {
           participantId: 2,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           participantId: 3,
           currencyId: 'USD',
           participantLimitTypeId: 1,
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       participantFacade.getParticipantLimitByParticipantCurrencyLimit.returns(sampleParticipantLimitReturnValues.shift())

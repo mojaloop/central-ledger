@@ -28,6 +28,7 @@
  ******/
 'use strict'
 
+require('../../shared/legacyUtilShim')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
 

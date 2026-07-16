@@ -1328,7 +1328,8 @@ Test('Participant facade', async (facadeTest) => {
         participantId: 1,
         currencyId: 1,
         participantLimitTypeId: 1,
-        value: 1000000
+        value: 1000000,
+        thresholdAlarmPercentage: 10
       }
       const ledgerAccountTypeId = 1
       const participantLimitTypeId = 1
@@ -1387,7 +1388,8 @@ Test('Participant facade', async (facadeTest) => {
         participantId: 123,
         currencyId: 456,
         participantLimitTypeId: 789,
-        value: 1000000
+        value: 1000000,
+        thresholdAlarmPercentage: 10
       }
       const ledgerAccountTypeId = 1
       const participantLimitTypeId = 2

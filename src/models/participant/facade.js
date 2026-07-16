@@ -389,7 +389,8 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
               participantId,
               currencyId: participantCurrency.currencyId,
               participantLimitTypeId: participantLimitRow.participantLimitTypeId,
-              value: participantLimitRow.value
+              value: participantLimitRow.value,
+              thresholdAlarmPercentage: participantLimitRow.thresholdAlarmPercentage
             }
           }
         }
@@ -413,7 +414,8 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
             'participant.participantId AS participantId',
             'pc.currencyId AS currencyId',
             'pl.participantLimitTypeId as participantLimitTypeId',
-            'pl.value AS value'
+            'pl.value AS value',
+            'pl.thresholdAlarmPercentage AS thresholdAlarmPercentage'
           ).first()
       })
     }

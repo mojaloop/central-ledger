@@ -27,7 +27,7 @@
 'use strict'
 
 const ServerSetup = require('../../src/shared/setup')
-const getPort = require('get-port')
+const getPort = async () => (await import('get-port')).default()
 
 const setupServer = async (ApiRoutes) => {
   const server = await ServerSetup.createServer(await getPort(), [ApiRoutes])
