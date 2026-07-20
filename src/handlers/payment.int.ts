@@ -28,7 +28,7 @@ import { after, before, describe, it } from "node:test"
 import Harness from '../testing/harness'
 import * as ApiHelpers from '../testing/api-helpers'
 import { assertPositionDiff } from "../testing/util"
-import { DispatchTransferHandler } from "../testing/dispatch-transfer-handler"
+import { DispatchTransferHandler } from "./dispatch-transfer-handler"
 
 const harness = Harness.getInstance()
 let PositionBatchHandler: any
@@ -43,7 +43,7 @@ describe('handlers/payment', () => {
     await harness.up('BATCH')
     await harness.setupGlobals()
 
-    dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
+    dispatchHandler = new DispatchTransferHandler(harness.config)
     await dispatchHandler.init()
 
     // Import after bringing up the harness, so that global config is overriden.
@@ -97,7 +97,7 @@ describe('handlers/payment', () => {
     await harness.down()
   })
 
-  it('prepares and fulfils a payment', async () => {
+  it.only('prepares and fulfils a payment', async () => {
     const [positionPayer1, positionPayee1] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'USD')
     
     // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.

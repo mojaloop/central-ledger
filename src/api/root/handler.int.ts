@@ -2,15 +2,17 @@ import { after, before, describe, it } from "node:test"
 import assert from "node:assert"
 import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
-import Handler from './handler'
 import { unwrapResponse, createRequest, sleepSeconds } from "../../testing/util"
 
 const harness = Harness.getInstance()
+let Handler: any
 
 describe('api/root/handler', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
+
+    Handler = require('./handler')
   })
 
   after(async () => {

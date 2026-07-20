@@ -1,8 +1,8 @@
-import { describe, it } from "node:test";
-import { PaymentFulfilHandler } from "./payment-fulfil";
+import { describe, it } from "node:test"
+import assert from "node:assert"
+
+import { TransferHelper } from "./transfer-helper"
 import { generateQuoteILPResponse, MockQuoteILPResponse } from '../testing/api-helpers'
-import { Snapshot } from "../testing/snapshot";
-import assert from "node:assert";
 
 describe('handlers/payment-fulfil', () => {
   it('_fulfilmentToCondition handles valid input', () => {
@@ -21,19 +21,19 @@ describe('handlers/payment-fulfil', () => {
     }
     const quoteResponse = generateQuoteILPResponse(mockQuoteResponse)
 
-    const actual = PaymentFulfilHandler._fulfilmentToCondition(quoteResponse.fulfilment)
+    const actual = TransferHelper.fulfilmentToCondition(quoteResponse.fulfilment)
     assert.equal(actual, quoteResponse.condition)
   })
 
   it('_fulfilmentToCondition handles invalid input', {
     expectFailure: '[FSPIOPError]: Interledger preimages must be exactly 32 bytes'
   }, () => {
-    PaymentFulfilHandler._fulfilmentToCondition("balbalbaI am a bad input")
+    TransferHelper.fulfilmentToCondition("balbalbaI am a bad input")
   })
 
   it('_fulfilmentToCondition handles invalid input', {
     expectFailure: '[FSPIOPError]: Interledger preimages must be exactly 32 bytes'
   }, () => {
-    PaymentFulfilHandler._fulfilmentToCondition(undefined as unknown as string)
+    TransferHelper.fulfilmentToCondition(undefined as unknown as string)
   })
 })

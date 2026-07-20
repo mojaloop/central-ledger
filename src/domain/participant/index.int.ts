@@ -529,8 +529,10 @@ describe('domain/participant/index', () => {
           },
           initialPosition: 0
         }
-        const result = await ParticipantService.addLimitAndInitialPosition(dfsp, payload)
+        const mark = harness.redpandaMark()
+        const result = await ParticipantService.addLimitAndInitialPosition(dfsp, payload)        
         assert.equal(result, true)
+        await harness.redpandaDrain(mark, 1)
       }
     }
 

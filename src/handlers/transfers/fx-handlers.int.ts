@@ -29,10 +29,9 @@ import assert from "node:assert"
 import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
-import { DispatchTransferHandler } from "../../testing/dispatch-transfer-handler"
+import { DispatchTransferHandler } from "../dispatch-transfer-handler"
 
 const harness = Harness.getInstance()
-// let TransferHandler: any
 let FxTransferService: any
 let dispatchHandler: DispatchTransferHandler
 
@@ -40,14 +39,10 @@ describe('handlers/fx', () => {
   before(async () => {
     await harness.up('BATCH')
     await harness.setupGlobals()
-    dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
+    dispatchHandler = new DispatchTransferHandler(harness.config)
     await dispatchHandler.init()
 
-    // Import after bringing up the harness, so that global config is overriden.
-    // TransferHandler = require('./handler')
     FxTransferService = require('../../domain/fx/index')
-    // await TransferHandler.registerPrepareHandler()
-    // await TransferHandler.registerFulfilHandler()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
@@ -190,7 +185,6 @@ describe('handlers/fx', () => {
       "condition": :ignore
       "fulfilment": :ignore
     }`).checkUnwrap(fxTransfer)
-
   })
 
   it(`should check duplicates, and detect modified request`, async () => {

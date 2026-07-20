@@ -31,12 +31,11 @@ import * as ApiHelpers from '../../testing/api-helpers'
 import assert from "node:assert"
 import { assertPositionDiff, sleepSeconds } from "../../testing/util"
 import TimeoutHandler from '../timeouts/handler'
-import { DispatchTransferHandler } from "../../testing/dispatch-transfer-handler"
+import { DispatchTransferHandler } from "../dispatch-transfer-handler"
 
 const harness = Harness.getInstance()
 let dispatchHandler: DispatchTransferHandler
 let PrepareHandler: any
-let PositionBatchHandler: any
 let ExternalParticipantCached: any
 let TransferFacade: any
 let FxTransferService: any
@@ -47,11 +46,9 @@ describe('handlers/prepare', () => {
     await harness.up('BATCH')
     await harness.setupGlobals()
 
-    dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
+    dispatchHandler = new DispatchTransferHandler(harness.config)
     await dispatchHandler.init()
 
-    // Import after bringing up the harness, so the global config is overriden.
-    PositionBatchHandler = require('../positions/handlerBatch')
     TransferFacade = require('../../models/transfer/facade')
     FxTransferService = require('../../domain/fx/index')
     ExternalParticipantCached = require('../../models/participant/externalParticipantCached')
@@ -283,12 +280,51 @@ describe('handlers/prepare', () => {
     await dispatchHandler.prepare(null, forex.buildMessagePrepare())
     await harness.redpandaDrain(mark, 1)
 
-    const lastTopics = harness.spoolLastTopic(3)
     Snapshot.from(`[
       "topic-transfer-position-batch",
       "topic-notification-event",
       "topic-notification-event"
-    ]`).checkUnwrap(lastTopics)
+    ]`).checkUnwrap(harness.spoolLastTopic(3))
+    Snapshot.from(`[
+      {
+        "amountType": "SEND",
+        "commitRequestId": "2000002",
+        "condition": :ignore
+        "counterPartyFsp": "external_dfsp_b",
+        "determiningTransferId": "3000002",
+        "expiration": :ignore
+        "initiatingFsp": "external_dfsp_a",
+        "sourceAmount": {
+          "amount": "100.00",
+          "currency": "BWP"
+        },
+        "targetAmount": {
+          "amount": "1.00",
+          "currency": "USD"
+        }
+      },
+      {
+        "amountType": "SEND",
+        "commitRequestId": "2000002",
+        "condition": :ignore
+        "counterPartyFsp": "external_dfsp_b",
+        "determiningTransferId": "3000002",
+        "expiration": :ignore
+        "initiatingFsp": "external_dfsp_a",
+        "sourceAmount": {
+          "amount": "100.00",
+          "currency": "BWP"
+        },
+        "targetAmount": {
+          "amount": "1.00",
+          "currency": "USD"
+        }
+      },
+      {
+        "completedTimestamp": :ignore
+        "conversionState": "RESERVED"
+      }
+    ]`).checkUnwrap(harness.spoolLastPayload(3))
   })
 
   it('Duplicate fxTransfers callback when in `RECEIVED_FULFIL_DEPENDENT` state.', async () => {
@@ -1181,7 +1217,42 @@ describe('handlers/prepare', () => {
       messageFulfil.value.content.headers['fspiop-source'] = 'wrongfsp'
       const mark = harness.redpandaMark()
       await dispatchHandler.fulfil(null, messageFulfil)
-      await harness.redpandaDrain(mark, 2) // maybe 1?
+      await harness.redpandaDrain(mark, 2)
+
+      Snapshot.from(`[
+        "topic-transfer-position-batch",
+        "topic-notification-event"
+      ]`).checkUnwrap(harness.spoolLastTopic(2))
+      Snapshot.from(`[
+        {
+          "errorInformation": {
+            "errorCode": "3100",
+            "errorDescription": "Generic validation error - fspiop-source header:ignore
+            "extensionList": {
+              "extension": [
+                {
+                  "key": "cause",
+                  "value": "FSPIOPError: fspiop-source header :ignore
+                }
+              ]
+            }
+          }
+        },
+        {
+          "errorInformation": {
+            "errorCode": "3100",
+            "errorDescription": "Generic validation:ignore
+            "extensionList": {
+              "extension": [
+                {
+                  "key": "cause",
+                  "value": :ignore
+                }
+              ]
+            }
+          }
+        }
+      ]`).checkUnwrap(harness.spoolLastPayload(2))
 
       const fxTransfer = await FxTransferService.getByIdLight('2000121')
       assert.equal(fxTransfer.fxTransferState, 'ABORTED_ERROR')

@@ -62,7 +62,7 @@ import PositionBatchHandler from '../handlers/positions/handlerBatch'
 import ParticipantCached from '../models/participant/participantCached'
 import ParticipantCurrencyCached from '../models/participant/participantCurrencyCached'
 import ParticipantLimitCached from '../models/participant/participantLimitCached'
-import ProxyCache from '../lib/proxyCache'
+// import ProxyCache from '../lib/proxyCache'
 const BatchPositionModelCached = require('../models/position/batchCached')
 const ExternalParticipantCached = require('../models/participant/externalParticipantCached')
 
@@ -74,6 +74,8 @@ import { Consumer } from "./kafka"
 import { Message } from "node-rdkafka"
 
 const logger = Logger.child({ scope: 'harness' })
+
+let ProxyCache: any
 
 export interface HarnessOptions {
   /**
@@ -408,6 +410,9 @@ export default class Harness {
     // Override the global config with our testing config.
     overrideForTesting(this.config)
 
+    ProxyCache = require('../lib/proxyCache')
+    await ProxyCache.connect()
+
     await Db.connect(this.config.DATABASE)
     await ParticipantCached.initialize()
     await ParticipantCurrencyCached.initialize()
@@ -522,7 +527,7 @@ environment!\n ${err.message}`)
   /**
    * @description Wait for redpanda to produce and consume _n_ messages.
    */
-  public async redpandaDrain(markLast: number, numMessages: number, attempts: number = 25): Promise<void> {
+  public async redpandaDrain(markLast: number, numMessages: number, attempts: number = 20): Promise<void> {
     const start = performance.now()
     assert(markLast >= 0)
     assert(numMessages >= 0)
@@ -605,14 +610,17 @@ Found only ${markNew - markLast} new messages.`)
    * @description Print the last messages in the messageQueue. If `numMessages` is undefined, prints
    * all messages.
    */
-  public printLast(numMessages?: number): void {
+  public printLast(numMessages: number): void {
     let messages = this.spoolLast(this.messageQueue.length)
-    if (numMessages) {
-      assert(numMessages >= 0)
-      assert(numMessages <= messages.length)
-      messages = messages.slice(numMessages * -1)
+
+    if (numMessages === 0) {
+      numMessages = 5
     }
-    logger.warn('printLast() messages:')
+    assert(numMessages > 0)
+    assert(numMessages <= messages.length)
+    messages = messages.slice(numMessages * -1)
+    
+    logger.warn(`printLast() ${numMessages} messages:`)
     messages.forEach(msg => {
       logger.warn(`\n
       ts:   ${msg.timestamp}

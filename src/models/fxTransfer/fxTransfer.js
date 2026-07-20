@@ -170,6 +170,41 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
 
 // For proxied fxTransfers and transfers in a regional and jurisdictional scenario, proxy participants
 // are not expected to have a target currency account, so we need a slightly altered version of the above function.
+/**
+ * 
+ * @param {*} commitRequestId 
+ * @returns {Promise<{
+ *  commitRequestId: string,
+ *  completedTimestamp: Date, 
+ *  determiningTransferId: string,
+ *  sourceAmount: string,
+ *  targetAmount:  string,
+ *  sourceCurrency:  string,
+ *  targetCurrency:  string,
+ *  ilpCondition: string
+ *  expirationDate: Date,
+ *  createdDate: string,
+ *  initiatingFspParticipantId: number,
+ *  initiatingFspName: string,
+ *  initiatingFspIsProxy: number,
+ *  counterPartyFspSourceParticipantCurrencyId: number,
+ *  counterPartyFspParticipantId: number,
+ *  counterPartyFspName: string
+ *  counterPartyFspIsProxy: number
+ *  fxTransferStateChangeId: number
+ *  transferState: string
+ *  reason: string | null
+ *  completedTimestamp: string
+ *  transferStateEnumeration: string
+ *  transferStateDescription: string,
+ *  fulfilment: string | null
+ *  externalInitiatingFspName: string | null
+ *  externalCounterPartyFspName: string | null
+ *  extensionList: Array<any>,
+ *  isTransferReadModel: boolean,
+ * }>}
+ * 
+ */
 const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestId) => {
   try {
     /** @namespace Db.fxTransfer **/

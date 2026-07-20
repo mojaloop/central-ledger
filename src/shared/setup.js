@@ -57,6 +57,7 @@ const ParticipantLimitCached = require('../models/participant/participantLimitCa
 const externalParticipantCached = require('../models/participant/externalParticipantCached')
 const BatchPositionModelCached = require('../models/position/batchCached')
 const Plugins = require('./plugins')
+const { DispatchTransferHandler } = require('../handlers/dispatch-transfer-handler')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
@@ -294,18 +295,27 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
       }
     }
 
-    if (runHandlers) {
-      if (Array.isArray(handlers) && handlers.length > 0) {
-        await createHandlers(handlers)
-      } else {
-        await RegisterHandlers.registerAllHandlers()
-        // if (!Config.HANDLERS_CRON_DISABLED) {
-        //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
-        //   // await KafkaCron.start('prepare')
-        //   await KafkaCron.start('position')
-        // }
-      }
+    if (!runHandlers) {
+      // Skip running handlers
+      return server
     }
+
+    Logger.warn('Handlers Disabled individual registration for now. Calling registerAllHandlers().')
+
+    const dispatchTransferHandler = new DispatchTransferHandler(Config)
+    await RegisterHandlers.registerAllHandlers(dispatchTransferHandler)
+
+
+    // if (Array.isArray(handlers) && handlers.length > 0) {
+    //   await createHandlers(handlers)
+    // } else {
+    //   await RegisterHandlers.registerAllHandlers()
+    //   // if (!Config.HANDLERS_CRON_DISABLED) {
+    //   //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
+    //   //   // await KafkaCron.start('prepare')
+    //   //   await KafkaCron.start('position')
+    //   // }
+    // }
 
     return server
   } catch (err) {

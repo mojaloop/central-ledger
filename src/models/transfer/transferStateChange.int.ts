@@ -28,7 +28,7 @@ import { after, before, describe, it } from "node:test"
 import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
-import { DispatchTransferHandler } from "../../testing/dispatch-transfer-handler"
+import { DispatchTransferHandler } from "../../handlers/dispatch-transfer-handler"
 
 const harness = Harness.getInstance()
 const TransferStateChange = require('./transferStateChange')
@@ -39,7 +39,7 @@ describe('models/tranfer/transferExtension', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
-    dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
+    dispatchHandler = new DispatchTransferHandler(harness.config)
     await dispatchHandler.init()
 
 

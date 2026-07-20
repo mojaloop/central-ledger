@@ -219,7 +219,7 @@ const createRemittanceEntityPayment = () => {
   }
 }
 
-const createRemittanceEntityForex = (isFx) => {
+const createRemittanceEntityForex = () => {
   return {
     async getDuplicate(id) {
       return fxTransferModel.duplicateCheck.getFxTransferDuplicateCheck(id)
@@ -273,7 +273,7 @@ const createRemittanceEntityForex = (isFx) => {
      *
      * @param {Object} payload - The payload data required for the transfer check.
      * @param {ProxyObligation} proxyObligation - The proxy obligation details.
-     * @returns {DeterminingTransferCheckResult} determiningTransferCheckResult
+     * @returns {Promise<DeterminingTransferCheckResult>} determiningTransferCheckResult
      */
     async checkIfDeterminingTransferExists(payload, proxyObligation) {
       const result = await cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, proxyObligation)

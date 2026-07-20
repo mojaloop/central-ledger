@@ -2,8 +2,10 @@ import assert from "node:assert";
 import { ApplicationConfig } from "../lib/config";
 import { logger } from '../shared/logger';
 import CentralServicesShared, { Enum, TransferStateEnum, Util } from '@mojaloop/central-services-shared';
+import { CreateRemittanceEntity, ProxyCache } from "./transfer-types";
 const { Kafka, Comparators } = Util
-import { createRemittanceEntityPayment } from "./transfers/createRemittanceEntity";
+// TODO: inject this as a dependency
+// import { createRemittanceEntityPayment } from "./transfers/createRemittanceEntity";
 const { decodePayload } = Util.StreamingProtocol
 const Validator = require('./transfers/validator')
 const Participant = require('../domain/participant')
@@ -11,16 +13,20 @@ const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 const { Type, Action } = Enum.Events.Event
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-
-const { FSPIOPErrorCodes } = ErrorHandler.Enums
-const { createFSPIOPError, reformatFSPIOPError } = ErrorHandler.Factory
 const { FSPIOPError } = ErrorHandler
-const ProxyCache = require('../lib/proxyCache')
-const { definePositionParticipant, sendPositionPrepareMessage } = require('./transfers/prepare')
-
+// const { sendPositionPrepareMessage } = require('./transfers/prepare')
 
 interface Dependencies {
-  config: ApplicationConfig
+  config: ApplicationConfig,
+  proxyCache: ProxyCache,
+  createRemittanceEntity: CreateRemittanceEntity,
+  sendPositionPrepareMessage: (options: {
+    isFx: boolean,
+    action: string,
+    params: any,
+    determiningTransferCheckResult: any,
+    proxyObligation: any
+  }) => Promise<true>
 }
 
 interface KafkaParams {
@@ -56,7 +62,7 @@ export interface FusedPrepareHandlerInput {
   actionEnum: string;
 }
 
-export interface ProxyObligation {
+interface ProxyObligation {
   isFx: false,
   payloadClone: CreatePaymentDto,
   isInitiatingFspProxy: boolean,
@@ -149,15 +155,28 @@ export class PaymentPrepareHandler {
     }
 
     logger.debug(`PaymentPrepareHandler.handle() - processing batch of ${messages.length} messages`)
-    const results = await Promise.allSettled(messages.map(message => {
-      return this.handleOne(this.extractMessageData(message))
-    }))
+    const inputs = messages.map(message => ({
+      message,
+      input: this.extractMessageData(message)
+    }));
+
+    const results = await Promise.allSettled(inputs.map(async ({ input }) => this.handleOne(input)))
+    results.forEach(result => {
+      if (result.status === 'fulfilled' && result.value.type !== PaymentPrepareResultType.PASS) {
+        logger.warn(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
+      }
+      if (result.status === 'rejected') {
+        logger.error(`handleOne() failed with error: \n\t${result.reason}`)
+        if (result.reason.stack) logger.error(`stack\n\t${result.reason.stack}`)
+      }
+    })
+
     return results
   }
 
   async handleOne(input: FusedPrepareHandlerInput): Promise<PaymentPrepareResult> {
     // Check Duplication
-    const remittance = createRemittanceEntityPayment()
+    const remittance = this.deps.createRemittanceEntity()
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(
       // TODO: not 100%.
       input.payload.transferId,
@@ -224,9 +243,9 @@ export class PaymentPrepareHandler {
 
     let validationResult
     if (determiningTransferCheckResult.determiningTransferExistsInWatchList) {
-      validationResult = await this.validatePayloadLinkedPayment(proxyObligation.payloadClone)  
+      validationResult = await this.validatePayloadLinkedPayment(proxyObligation.payloadClone)
     } else {
-      validationResult = await this.validatePayloadUnlinkedPayment(proxyObligation.payloadClone)  
+      validationResult = await this.validatePayloadUnlinkedPayment(proxyObligation.payloadClone)
     }
 
     // In case the payee/payer are not "in scheme", the proxyObligation payload clone has rewritten
@@ -273,12 +292,12 @@ export class PaymentPrepareHandler {
       consumer: Consumer,
       producer: Producer
     }
-    
+
     // We're using the original `sendPositionPrepareMessage`, which is not ideal since
     // there is a _ton_ of business logic in this function. I don't know it it's worth refactoring
     // since we're going to be fusing these handlers anyway.
     // await this.sendPositionMessage(proxyObligation.payloadClone, params)
-    await sendPositionPrepareMessage({
+    await this.deps.sendPositionPrepareMessage({
       isFx: false,
       action: Action.PREPARE,
       params,
@@ -303,8 +322,8 @@ export class PaymentPrepareHandler {
   }> {
     const reasons: Array<string> = []
     const [leftStr, rightStr = ''] = payload.amount.amount.split('.')
-    assert(leftStr)
-    assert(rightStr)
+    assert(leftStr !== undefined)
+    assert(rightStr !== undefined)
     if (rightStr.length > this.deps.config.AMOUNT.SCALE) {
       reasons.push(
         `Amount ${payload.amount.amount} exceeds allowed scale of ${this.deps.config.AMOUNT.SCALE}`
@@ -539,8 +558,8 @@ export class PaymentPrepareHandler {
     }
 
     // We need to double check the following validation logic incase of payee side currency conversion
-    const payerResult = await ProxyCache.getFSPProxy(payload.payerFsp)
-    const payeeResult = await ProxyCache.getFSPProxy(payload.payeeFsp, {
+    const payerResult = await this.deps.proxyCache.getFSPProxy(payload.payerFsp)
+    const payeeResult = await this.deps.proxyCache.getFSPProxy(payload.payeeFsp, {
       validateCurrencyAccounts: true,
       accounts: [
         {

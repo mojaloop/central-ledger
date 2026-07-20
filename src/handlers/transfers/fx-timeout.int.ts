@@ -30,7 +30,7 @@ import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
 import { assertPositionDiff, sleepSeconds } from "../../testing/util"
-import { DispatchTransferHandler } from "../../testing/dispatch-transfer-handler"
+import { DispatchTransferHandler } from "../dispatch-transfer-handler"
 import TimeoutHandler from '../timeouts/handler'
 
 const harness = Harness.getInstance()
@@ -45,7 +45,7 @@ describe('handlers/tx-timeout', () => {
     await harness.up('BATCH')
     await harness.setupGlobals()
 
-    dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
+    dispatchHandler = new DispatchTransferHandler(harness.config)
     await dispatchHandler.init()
 
     // Import after bringing up the harness, so the global config is overriden.

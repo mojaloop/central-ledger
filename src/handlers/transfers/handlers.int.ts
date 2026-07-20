@@ -10,7 +10,7 @@ import TransferFacade from "../../models/transfer/facade"
 import handlerAll from './handler'
 import handlerPrepare from './prepare'
 import { assertPositionDiff, sleepSeconds } from "../../testing/util"
-import { DispatchTransferHandler } from "../../testing/dispatch-transfer-handler"
+import { DispatchTransferHandler } from "../dispatch-transfer-handler"
 
 const harness = Harness.getInstance()
 let dispatchHandler: DispatchTransferHandler
@@ -19,7 +19,7 @@ describe('handlers/tranfers/handlers', () => {
     await harness.up()
     await harness.setupGlobals()
 
-    dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
+    dispatchHandler = new DispatchTransferHandler(harness.config)
     await dispatchHandler.init()
 
     // Create the hub accounts + settlement model.

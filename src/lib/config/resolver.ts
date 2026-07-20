@@ -38,6 +38,7 @@ import {
   assertKafkaConfig,
   assertNestedFields,
   assertNumber,
+  assertOneOf,
   assertProvisioning,
   assertProxyCacheConfig,
   assertString,
@@ -118,6 +119,7 @@ const resolveConfig = (rawConfig: any): UnsafeApplicationConfig => {
     HANDLERS_TIMEOUT_DISABLED: rawConfig.HANDLERS.TIMEOUT.DISABLED,
     HANDLERS_TIMEOUT_TIMEXP: rawConfig.HANDLERS.TIMEOUT.TIMEXP,
     HANDLERS_TIMEOUT_TIMEZONE: rawConfig.HANDLERS.TIMEOUT.TIMEZONE,
+    HANDLERS_TRANSFER_DISPATCH_MODE: defaultTo(rawConfig.HANDLERS.TRANSFER_DISPATCH_MODE, 'SPLIT'),
     INSTRUMENTATION_METRICS_DISABLED: rawConfig.INSTRUMENTATION.METRICS.DISABLED,
     INSTRUMENTATION_METRICS_LABELS: rawConfig.INSTRUMENTATION.METRICS.labels,
     INSTRUMENTATION_METRICS_CONFIG: rawConfig.INSTRUMENTATION.METRICS.config,
@@ -174,6 +176,7 @@ const parseAndValidateConfig = (unsafeConfig: UnsafeApplicationConfig): Applicat
   assertBoolean(unsafeConfig.HANDLERS_TIMEOUT_DISABLED)
   assertString(unsafeConfig.HANDLERS_TIMEOUT_TIMEXP)
   assertString(unsafeConfig.HANDLERS_TIMEOUT_TIMEZONE)
+  assertOneOf(unsafeConfig.HANDLERS_TRANSFER_DISPATCH_MODE, ['JOINED', 'SPLIT'])
   assert(unsafeConfig.CACHE_CONFIG)
   assertBoolean(unsafeConfig.CACHE_CONFIG.CACHE_ENABLED)
   assertNumber(unsafeConfig.CACHE_CONFIG.MAX_BYTE_SIZE)

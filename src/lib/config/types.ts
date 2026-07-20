@@ -80,6 +80,15 @@ export interface ApplicationConfig {
   HANDLERS_TIMEOUT_DISABLED: boolean,
   HANDLERS_TIMEOUT_TIMEXP: string,
   HANDLERS_TIMEOUT_TIMEZONE: string,
+
+  /**
+   * @description Passed through to DispatchTransferHandler. When split (default) uses the new
+   * split payment-prepare, payment-fulfil, forex-prepare and forex-fulfil handlers.
+   * 
+   * @default 'SPLIT'
+   */
+  HANDLERS_TRANSFER_DISPATCH_MODE: 'JOINED' | 'SPLIT',
+
   CACHE_CONFIG: {
     CACHE_ENABLED: boolean
     MAX_BYTE_SIZE: number,

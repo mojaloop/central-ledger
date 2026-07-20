@@ -1,30 +1,23 @@
-
-import crypto, { hash } from 'node:crypto'
-import assert, { Assert } from "node:assert";
+import assert from "node:assert";
 import { ApplicationConfig } from "../lib/config";
 import { logger } from '../shared/logger';
-import CentralServicesShared, { Enum, TransferStateEnum, Util, EventActionEnum } from '@mojaloop/central-services-shared';
-const { Kafka, Comparators } = Util
-import { createRemittanceEntityPayment } from "./transfers/createRemittanceEntity";
+import { Enum, Util, EventActionEnum } from '@mojaloop/central-services-shared';
+const { Kafka } = Util
 import TransferService, { getTransferFulfilmentDuplicateCheck, saveTransferErrorDuplicateCheck, saveTransferFulfilmentDuplicateCheck } from "../domain/transfer";
-import { buffer } from 'node:stream/consumers';
-import { getTransferErrorDuplicateCheck } from '#src/models/transfer/transferErrorDuplicateCheck';
+import { getTransferErrorDuplicateCheck } from '../models/transfer/transferErrorDuplicateCheck';
 const { decodePayload } = Util.StreamingProtocol
-const Validator = require('./transfers/validator')
 const Participant = require('../domain/participant')
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
-const { Type, Action } = Enum.Events.Event
-
+const { Action } = Enum.Events.Event
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-
-const { FSPIOPErrorCodes } = ErrorHandler.Enums
-const { createFSPIOPError, reformatFSPIOPError } = ErrorHandler.Factory
 const { FSPIOPError } = ErrorHandler
 
-import FxService from '../domain/fx'
+// import FxService from '../domain/fx'
+import { TransferHelper } from './transfer-helper';
 
 interface Dependencies {
   config: ApplicationConfig
+  fxService: any
 }
 
 export type CommitPaymentDto = {
@@ -138,11 +131,15 @@ export class PaymentFulfilHandler {
     }));
 
     const results = await Promise.allSettled(inputs.map(async ({ input }) => this.handleOne(input)))
-    results.filter(result => result.status === 'rejected')
-      .forEach(result => {
+    results.forEach(result => {
+      if (result.status === 'fulfilled' && result.value.type !== PaymentFulfilResultType.PASS) {
+        logger.warn(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
+      }
+      if (result.status === 'rejected') {
         logger.error(`handleOne() failed with error: \n\t${result.reason}`)
         if (result.reason.stack) logger.error(`stack\n\t${result.reason.stack}`)
-      })
+      }
+    })
 
     return results
   }
@@ -203,7 +200,7 @@ on the Fulfil callback response.`
       }
     }
 
-    const payloadHash = PaymentFulfilHandler._hashPayload(payload)
+    const payloadHash = TransferHelper.hashPayload(payload)
     if (transfer.transferState === 'COMMITTED') {
       // Payment is finalized. Check to see if this is an exact duplicate Fulfil message, or if the
       // fulfil message was modified in some way.
@@ -277,7 +274,7 @@ on the Fulfil callback response.`
       const fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(
         errorPayload.errorInformation
       )
-      
+
       // Payee aborted the transfer, save to DB.
       await saveTransferErrorDuplicateCheck(transferId, payloadHash)
       await TransferService.handlePayeeResponse(
@@ -297,7 +294,7 @@ on the Fulfil callback response.`
     }
 
     assert(
-      payload.transferState === 'COMMITTED' || 
+      payload.transferState === 'COMMITTED' ||
       payload.transferState === 'RESERVED' ||
       payload.transferState === 'RESERVED_FORWARDED'
     )
@@ -311,8 +308,8 @@ on the Fulfil callback response.`
     }
 
     await saveTransferFulfilmentDuplicateCheck(transferId, payloadHash)
-    if (!PaymentFulfilHandler._fulfilmentMatchesCondition(payload.fulfilment, transfer.condition)) {
-      // Payee sent an invalid position. Need to abort the payment.
+    if (!TransferHelper.fulfilmentMatchesCondition(payload.fulfilment, transfer.condition)) {
+      // Payee sent an fulfilment. Need to abort the payment.
       const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
         `fulfilment does not match condition.`
       )
@@ -337,32 +334,7 @@ on the Fulfil callback response.`
     }
   }
 
-  public static _fulfilmentMatchesCondition(fulfilment: string, condition: string): boolean {
-    const derivedCondition = this._fulfilmentToCondition(fulfilment)
-    return derivedCondition === condition
-  }
 
-  public static _fulfilmentToCondition(fulfilment: string) {
-    const hashSha256 = crypto.createHash('sha256')
-    const preimage = Buffer.from(fulfilment, 'base64url')
-
-    if (preimage.length !== 32) {
-      throw ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-        'Interledger preimages must be exactly 32 bytes'
-      )
-    }
-    return hashSha256.update(preimage).digest('base64url').toString()
-  }
-
-  public static _hashPayload(payload: CommitPaymentDto) {
-    const cryptoHash = crypto.createHash('sha256')
-    cryptoHash.update(JSON.stringify(payload))
-    const hash = cryptoHash.digest('base64url')
-    assert(hash.at(-1) !== '=', 'Hash should not have trailing `=`.')
-
-    return hash
-  }
 
   private extractMessageData(message: any): FusedFulfilHandlerInput {
     assert(message);
@@ -389,13 +361,13 @@ on the Fulfil callback response.`
       throw new Error(`action "RESERVE" is not allowed in fulfil handler for v1.0 clients.`)
     }
 
-    assert(message.value.content.uriParams);
-    assert(message.value.content.uriParams.id);
-    const transferId = message.value.content.uriParams.id;
-    assert(transferId, 'could not parse transferId');
+    assert(message.value.content.uriParams)
+    assert(message.value.content.uriParams.id)
+    const transferId = message.value.content.uriParams.id
+    assert(transferId, 'could not parse transferId')
 
     // TODO(LD): what should action be?
-    const actionStr = message.value.metadata.event.action;
+    const actionStr = message.value.metadata.event.action
     assert(actionStr)
     let action: FulfilHandlerAction
     switch (actionStr) {
@@ -446,7 +418,7 @@ on the Fulfil callback response.`
     }
 
     // TODO: better typing.
-    const cyrilResult = await FxService.Cyril.processFulfilMessage(
+    const cyrilResult = await this.deps.fxService.Cyril.processFulfilMessage(
       input.transferId,
       input.payload,
       transfer
@@ -515,13 +487,13 @@ on the Fulfil callback response.`
     assert(error.errorInformation.errorDescription)
 
     // TODO: we shouldn't know anything about the "FXService" here.
-    const cyrilResult = await FxService.Cyril.processAbortMessage(input.transferId)
+    const cyrilResult = await this.deps.fxService.Cyril.processAbortMessage(input.transferId)
 
     // If a payment has a linked forex, we first set their state to RECEIVED_ERROR otherwise the
     // position handler ignores the position reset.
     for (const positionChange of cyrilResult.positionChanges) {
       if (positionChange.isFxTransferStateChange) {
-        await FxService.handleFulfilResponse(
+        await this.deps.fxService.handleFulfilResponse(
           positionChange.commitRequestId,
           error,
           Action.FX_ABORT,

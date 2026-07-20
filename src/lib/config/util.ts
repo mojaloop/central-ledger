@@ -83,6 +83,19 @@ export function assertStringOrNull(input: unknown): void {
   return assertString(input)
 }
 
+export function assertOneOf<T>(input: unknown, options: Array<T>): void {
+  assert(input !== undefined, 'assertOneOf() input must be defined.')
+  assert(input !== null, 'assertOneOf() input must be non null.')
+  assert(options.length > 0, 'assertOneOf() options must have at least one option.')
+
+  const found = options.find(option => option === input)
+  if (!found) {
+    throw new ConfigValidationError(
+      `assertOneOf() expected input: ${input} to be one of [${options.join(',')}].`
+    )
+  }
+}
+
 /**
  * @function assertStringIfDefined
  * @description Assert that the input is a string if it is defined.

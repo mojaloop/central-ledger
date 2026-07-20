@@ -28,7 +28,7 @@ import { after, before, describe, it } from "node:test"
 import assert from "node:assert"
 import Harness from '../../testing/harness'
 import * as ApiHelpers from '../../testing/api-helpers'
-import { DispatchTransferHandler } from "../../testing/dispatch-transfer-handler"
+import { DispatchTransferHandler } from "../dispatch-transfer-handler"
 import { assertPositionDiff } from "../../testing/util"
 
 const harness = Harness.getInstance()
@@ -42,7 +42,7 @@ describe('handlers/fx-abort', () => {
   before(async () => {
     await harness.up('BATCH')
     await harness.setupGlobals()
-    dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
+    dispatchHandler = new DispatchTransferHandler(harness.config)
     await dispatchHandler.init()
 
     // Import after bringing up the harness, so that global config is overriden.
