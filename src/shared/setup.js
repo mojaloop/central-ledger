@@ -33,6 +33,10 @@
 
 'use strict'
 
+// Defensive: apply the legacy util shim at service bootstrap. The hapi-openapi
+// route plugins also require it themselves; keep those requires so the modules
+// stay self-contained when loaded directly (e.g. by tests).
+require('./legacyUtilShim')
 const Hapi = require('@hapi/hapi')
 const MongoUriBuilder = require('mongo-uri-builder')
 const ObjStoreDb = require('@mojaloop/object-store-lib').Db
