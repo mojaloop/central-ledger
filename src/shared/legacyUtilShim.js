@@ -5,7 +5,7 @@
 // Shim: the legacy util.is* type-check helpers were removed in Node.js >= 23,
 // but hapi-openapi@3.0.0 and its enjoi dependency (both unmaintained, latest
 // releases) still call them during plugin registration / schema resolution.
-const util = require('util')
+const util = require('node:util')
 
 /* eslint-disable n/no-deprecated-api */
 if (typeof util.isObject !== 'function') {
