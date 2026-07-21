@@ -16,7 +16,7 @@ FROM node:${NODE_VERSION} AS builder
 WORKDIR /opt/app
 
 RUN apk --no-cache add git
-RUN apk add --no-cache -t build-dependencies autoconf automake bash g++ gcc libtool make openssl-dev py3-setuptools python3
+RUN apk add --no-cache --virtual .build-deps autoconf automake bash g++ gcc libtool make openssl-dev py3-setuptools python3
 
 COPY package.json package-lock.json* /opt/app/
 
