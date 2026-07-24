@@ -13,10 +13,12 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
 
 import { TransferHelper } from './transfer-helper';
+import RefactorHelper from "../shared/refactor-helper";
 
 interface Dependencies {
   config: ApplicationConfig
   fxService: any
+  positionHandler: null | ((error: null, messages: Array<any>) => Promise<any>)
 }
 
 export type CommitPaymentDto = {
@@ -117,6 +119,12 @@ export class PaymentFulfilHandler {
     }
 
     assert(Array.isArray(messages))
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE') {
+      assert(
+        this.deps.positionHandler,
+        'PaymentFulfilHandler.deps.positionHandler not defined, positions are in `FUSE` mode.')
+    }
+
     if (messages.length === 0) {
       logger.debug('PaymentFulfilHandler.handle() - received empty batch, nothing to process');
       return []
@@ -176,7 +184,7 @@ on the Fulfil callback response.`
           error
         )
 
-        await this.sendPositionMessageRollback(input, transfer, error)
+        await this.sendMessagePositionRollback(input, transfer, error)
         return { type: PaymentFulfilResultType.FAIL_VALIDATION, error }
       }
     } else {
@@ -194,7 +202,7 @@ on the Fulfil callback response.`
           error
         )
 
-        await this.sendPositionMessageRollback(input, transfer, error)
+        await this.sendMessagePositionRollback(input, transfer, error)
         return { type: PaymentFulfilResultType.FAIL_VALIDATION, error }
       }
     }
@@ -286,7 +294,7 @@ on the Fulfil callback response.`
 
       // TODO: Rollback the position.
       // TODO: not sure about error formatting.
-      await this.sendPositionMessageRollback(input, transfer, errorPayload)
+      await this.sendMessagePositionRollback(input, transfer, errorPayload)
       return {
         type: PaymentFulfilResultType.PASS
       }
@@ -321,13 +329,13 @@ on the Fulfil callback response.`
         error
       )
 
-      await this.sendPositionMessageRollback(input, transfer, error)
+      await this.sendMessagePositionRollback(input, transfer, error)
       return { type: PaymentFulfilResultType.FAIL_VALIDATION, error }
     }
 
     // Happy path - validation passed.
     await TransferService.handlePayeeResponse(transferId, payload, input.action)
-    await this.sendPositionMessageCommit(input, transfer)
+    await this.sendMessagePositionCommit(input, transfer)
     return {
       type: PaymentFulfilResultType.PASS
     }
@@ -398,10 +406,7 @@ on the Fulfil callback response.`
     };
   }
 
-  /**
-   * TODO: this will eventually be removed when we migrate to the fused handlers.
-   */
-  private async sendPositionMessageCommit(
+  private async sendMessagePositionCommit(
     input: FusedFulfilHandlerInput,
     transfer: any
   ): Promise<void> {
@@ -446,19 +451,35 @@ on the Fulfil callback response.`
       ? config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
       : config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.RESERVE
 
-    await Kafka.proceed(config.KAFKA_CONFIG, params, {
-      consumerCommit: true,
-      eventDetail: {
-        functionality: Enum.Events.Event.Type.POSITION,
-        action: input.action
-      },
-      messageKey,
-      topicNameOverride,
-      hubName: config.HUB_NAME
-    })
+    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case "UNFUSE": {
+        await Kafka.proceed(config.KAFKA_CONFIG, params, {
+          consumerCommit: true,
+          eventDetail: {
+            functionality: Enum.Events.Event.Type.POSITION,
+            action: input.action
+          },
+          messageKey,
+          topicNameOverride,
+          hubName: config.HUB_NAME
+        })
+        return
+      }
+      case "FUSE":
+        assert(this.deps.positionHandler)
+        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
+          eventDetail: {
+            functionality: Enum.Events.Event.Type.POSITION,
+            action: input.action,
+          },
+          messageKey,
+          hubName: config.HUB_NAME
+        })
+        await this.deps.positionHandler(null, [wrapped])
+    }
   }
 
-  private async sendPositionMessageRollback(
+  private async sendMessagePositionRollback(
     input: FusedFulfilHandlerInput,
     transfer: any,
     error: {
@@ -520,16 +541,33 @@ on the Fulfil callback response.`
     }
     assert(messageKey)
 
-    await Kafka.proceed(config.KAFKA_CONFIG, params, {
-      consumerCommit: true,
-      fspiopError: error,
-      eventDetail: {
-        functionality: Enum.Events.Event.Type.POSITION,
-        action: 'abort'
-      },
-      messageKey,
-      topicNameOverride: config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.ABORT,
-      hubName: config.HUB_NAME
-    })
+    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case "UNFUSE": {
+        await Kafka.proceed(config.KAFKA_CONFIG, params, {
+          consumerCommit: true,
+          fspiopError: error,
+          eventDetail: {
+            functionality: Enum.Events.Event.Type.POSITION,
+            action: 'abort'
+          },
+          messageKey,
+          topicNameOverride: config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.ABORT,
+          hubName: config.HUB_NAME
+        })
+        return
+      }
+      case "FUSE":
+        assert(this.deps.positionHandler)
+        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
+          fspiopError: error,
+          eventDetail: {
+            functionality: Enum.Events.Event.Type.POSITION,
+            action: 'abort'
+          },
+          messageKey,
+          hubName: config.HUB_NAME
+        })
+        await this.deps.positionHandler(null, [wrapped])
+    }
   }
 }

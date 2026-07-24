@@ -2,7 +2,8 @@ import assert from "node:assert";
 import { ApplicationConfig } from "../lib/config";
 import { logger } from '../shared/logger';
 import CentralServicesShared, { Enum, TransferStateEnum, Util } from '@mojaloop/central-services-shared';
-import { CreateRemittanceEntity, ProxyCache } from "./transfer-types";
+import { CreateRemittanceEntity, KafkaParams, ProxyCache } from "./transfer-types";
+import RefactorHelper from "../shared/refactor-helper";
 const { Kafka, Comparators } = Util
 const { decodePayload } = Util.StreamingProtocol
 const Participant = require('../domain/participant')
@@ -16,6 +17,9 @@ interface Dependencies {
   config: ApplicationConfig,
   proxyCache: ProxyCache,
   createRemittanceEntity: CreateRemittanceEntity,
+  /**
+   * @deprecated - TODO: remove. We moved this business logic into this class. 
+   */
   sendPositionPrepareMessage: (options: {
     isFx: boolean,
     action: string,
@@ -23,15 +27,13 @@ interface Dependencies {
     determiningTransferCheckResult: any,
     proxyObligation: any
   }) => Promise<true>
-}
-
-interface KafkaParams {
-  message: any
-  kafkaTopic: string
-  decodedPayload: CreatePaymentDto
-  span: any
-  consumer: any
-  producer: any
+  positionHandler: null | ((error: null, messages: Array<any>) => Promise<any>)
+  definePositionParticipant: (options: {
+    isFx: boolean,
+    payload: CreatePaymentDto,
+    determiningTransferCheckResult: any,
+    proxyObligation: any
+  }) => Promise<{ messageKey: string, cyrilResult: any }>
 }
 
 export interface CreatePaymentDto {
@@ -148,6 +150,11 @@ export class PaymentPrepareHandler {
     if (messages.length === 0) {
       logger.debug('PaymentPrepareHandler.handle() - received empty batch, nothing to process');
       return []
+    }
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE') {
+      assert(
+        this.deps.positionHandler,
+        'PaymentPrepareHandler.deps.positionHandler not defined, positions are in `FUSE` mode.')
     }
 
     logger.debug(`PaymentPrepareHandler.handle() - processing batch of ${messages.length} messages`)
@@ -279,28 +286,12 @@ export class PaymentPrepareHandler {
       proxyObligation,
     )
 
-    // Forward the payment to the position handler.
-    const params: KafkaParams = {
-      message: input.message,
-      kafkaTopic: input.message.topic,
-      decodedPayload: input.payload,
-      span: null,
-      consumer: Consumer,
-      producer: Producer
-    }
-
-    // We're using the original `sendPositionPrepareMessage`, which is not ideal since
-    // there is a _ton_ of business logic in this function. I don't know it it's worth refactoring
-    // since we're going to be fusing these handlers anyway.
-    // await this.sendPositionMessage(proxyObligation.payloadClone, params)
-    await this.deps.sendPositionPrepareMessage({
-      isFx: false,
-      action: Action.PREPARE,
-      params,
+    await this.sendMessagePosition(
+      input,
       determiningTransferCheckResult,
       proxyObligation
-    })
-
+    )
+    
     return {
       type: PaymentPrepareResultType.PASS
     }
@@ -381,7 +372,6 @@ export class PaymentPrepareHandler {
     }
   }
 
-
   /**
    * Validate the payment for a simple Payment with 'determiningTransfers'.
    * 
@@ -410,7 +400,6 @@ export class PaymentPrepareHandler {
 
     // TODO: I think there should be a check for determiningTransferCheckResult
     // watch list? But that feels like it doesn't belong here.
-
     const participantPayer = await Participant.getByName(payload.payerFsp)
     if (!participantPayer) {
       reasons.push(`Participant ${payload.payerFsp} not found`)
@@ -451,7 +440,6 @@ export class PaymentPrepareHandler {
   }
 
   private extractMessageData(message: any): FusedPrepareHandlerInput {
-    // TODO: Validate the messages.
     assert(message)
     assert(message.value)
     assert(message.value.content)
@@ -466,7 +454,6 @@ export class PaymentPrepareHandler {
     const transferId = payload.transferId
 
     const action = message.value.metadata.event.action
-    // Note: we currently only support prepare messages
     assert.equal(action, 'prepare')
 
     // TODO: how does this work with the proxy rewrite?
@@ -488,48 +475,62 @@ export class PaymentPrepareHandler {
     return Enum.Events.Event.Action[actionUpper] || actionUpper;
   }
 
-  /**
-   * TODO: this will eventually be removed when we migrate to the fused handlers.
-   * @deprecated - Not sure if this will stay, for now we're calling the original 
-   * `sendPositionMessage`
-   */
-  private sendPositionMessage = async (
-    payload: CreatePaymentDto,
-    params: KafkaParams,
+  private sendMessagePosition = async (
+    input: FusedPrepareHandlerInput,
+    determiningTransferCheckResult: any,
+    proxyObligation: any
   ): Promise<void> => {
     // Shortcut.
     const config = this.deps.config
-    const participantName = payload.payerFsp;
-    const currencyId = payload.amount.currency;
 
-    // TODO: can we remove this?
-    // Get payer's position account ID for message routing
-    const account = await Participant.getAccountByNameAndCurrency(
-      participantName,
-      currencyId,
-      Enum.Accounts.LedgerAccountType.POSITION
-    );
-    const messageKey = account.participantCurrencyId.toString();
+    // Forward the payment to the position handler.
+    const params: KafkaParams<CreatePaymentDto> = {
+      message: input.message,
+      kafkaTopic: input.message.topic,
+      decodedPayload: input.payload,
+      span: null,
+      consumer: Consumer,
+      producer: Producer
+    }
+
+    const { messageKey, cyrilResult } = await this.deps.definePositionParticipant({
+      payload: proxyObligation.payloadClone,
+      isFx: false,
+      determiningTransferCheckResult,
+      proxyObligation
+    })
 
     params.message.value.content.context = {
       ...params.message.value.content.context,
-      cyrilResult: {
-        participantName,
-        currencyId,
-        amount: payload.amount.amount
-      }
+      cyrilResult
     }
 
-    await Kafka.proceed(config.KAFKA_CONFIG, params, {
-      consumerCommit: true,
-      eventDetail: {
-        functionality: Type.POSITION,
-        action: Action.PREPARE
-      },
-      messageKey,
-      topicNameOverride: config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE,
-      hubName: config.HUB_NAME
-    })
+    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case "UNFUSE": {
+        await Kafka.proceed(config.KAFKA_CONFIG, params, {
+          consumerCommit: true,
+          eventDetail: {
+            functionality: Type.POSITION,
+            action: Action.PREPARE
+          },
+          messageKey,
+          topicNameOverride: config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE,
+          hubName: config.HUB_NAME
+        })
+        return
+      }
+      case "FUSE":
+        assert(this.deps.positionHandler)
+        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
+          eventDetail: {
+            functionality: Type.POSITION,
+            action: Action.PREPARE
+          },
+          messageKey,
+          hubName: config.HUB_NAME
+        })
+        await this.deps.positionHandler(null, [wrapped])
+    }
   }
 
   /**
@@ -596,8 +597,90 @@ export class PaymentPrepareHandler {
       },
       isInitiatingFspProxy,
       isCounterPartyFspProxy,
-      initiatingFspProxyOrParticipantId: payerResult,      // Set the lookup result!
-      counterPartyFspProxyOrParticipantId: payeeResult     // Set the lookup result!
+      initiatingFspProxyOrParticipantId: payerResult,
+      counterPartyFspProxyOrParticipantId: payeeResult
     }
   }
 }
+
+
+/**
+ * TODO: when we're ready to add back the non-happy path notifications:
+ */
+// private async sendMessageNotification(
+//     input: FusedPrepareHandlerInput,
+//     opts: {
+//       action: string
+//       fspiopError?: {
+//         errorInformation: {
+//           errorCode: string
+//           errorDescription: string
+//         }
+//       }
+//       payload?: any  // Override payload (e.g. for duplicate with fulfil info)
+//     }
+//   ): Promise<void> {
+//     const config = this.deps.config
+//     const params = {
+//       message: input.message,
+//       kafkaTopic: input.message.topic,
+//       decodedPayload: input.payload,
+//       span: null,
+//       consumer: Consumer,
+//       producer: Producer
+//     }
+
+//     if (opts.payload) {
+//       params.message.value.content.payload = opts.payload
+//       params.message.value.content.uriParams = { id: input.transferId }
+//     }
+
+//     await Kafka.proceed(config.KAFKA_CONFIG, params, {
+//       consumerCommit: true,
+//       fspiopError: opts.fspiopError,
+//       eventDetail: {
+//         functionality: Type.NOTIFICATION,
+//         action: opts.action
+//       },
+//       fromSwitch: true,
+//       hubName: config.HUB_NAME
+//     })
+//   }
+
+//   Usage:
+
+//   // Modified request
+//   await this.sendMessageNotification(input, {
+//     action: Action.PREPARE,
+//     fspiopError: ErrorHandler.Factory.createFSPIOPError(
+//       ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
+//     ).toApiErrorObject(config.ERROR_HANDLING)
+//   })
+
+//   // Duplicate finalized
+//   await this.sendMessageNotification(input, {
+//     action: Action.PREPARE_DUPLICATE,
+//     payload: {
+//       completedTimestamp: payment.completedTimestamp,
+//       transferState: payment.transferStateEnumeration,
+//       fulfilment: payment.fulfilment
+//     }
+//   })
+
+//   // Validation error
+//   await this.sendMessageNotification(input, {
+//     action: Action.PREPARE,
+//     fspiopError: ErrorHandler.Factory.createFSPIOPError(
+//       ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+//       reasons.toString()
+//     ).toApiErrorObject(config.ERROR_HANDLING)
+//   })
+
+//   // ID not found
+//   await this.sendMessageNotification(input, {
+//     action: Action.PREPARE,
+//     fspiopError: ErrorHandler.Factory.createFSPIOPError(
+//       ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+//       errorMessage
+//     ).toApiErrorObject(config.ERROR_HANDLING)
+//   })

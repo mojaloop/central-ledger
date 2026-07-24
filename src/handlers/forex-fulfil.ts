@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import crypto from 'node:crypto';
 
-import { Enum, Util} from '@mojaloop/central-services-shared'
+import { Enum, Util } from '@mojaloop/central-services-shared'
 const { Kafka } = Util
 const { decodePayload } = Util.StreamingProtocol
 
@@ -15,6 +15,7 @@ import FxTransferModel, { saveFxFulfilResponse } from '../models/fxTransfer/fxTr
 import fspiopErrorFactory from "../shared/fspiopErrorFactory";
 import { logger } from '../shared/logger';
 import { TransferHelper } from "./transfer-helper";
+import RefactorHelper from "../shared/refactor-helper";
 
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 
@@ -27,32 +28,7 @@ interface Dependencies {
       transferStateChanges: any,
     }>
   }
-}
-
-interface KafkaParams {
-  message: any
-  kafkaTopic: string
-  decodedPayload: CommitForexDto
-  span: any
-  consumer: any
-  producer: any
-}
-
-interface ProxyObligation {
-  isFx: true,
-  payloadClone: CommitForexDto,
-  isInitiatingFspProxy: boolean,
-  isCounterPartyFspProxy: boolean,
-  initiatingFspProxyOrParticipantId: {
-    inScheme: boolean,
-    proxyId: string | null,
-    name: string
-  } | null,
-  counterPartyFspProxyOrParticipantId: {
-    inScheme: boolean,
-    proxyId: string | null,
-    name: string
-  } | null
+  positionHandler: null | ((error: null, messages: Array<any>) => Promise<any>)
 }
 
 export type CommitForexDto = {
@@ -89,7 +65,6 @@ export interface ForexFulfilHandlerInput {
   actionEnum: string;
 }
 
-// TODO: I don't know what these should be!
 export enum ForexFulfilResultType {
   /**
    * Fulfil step completed validation. Payment was either fulfilled or aborted successfully
@@ -132,9 +107,6 @@ export type ForexFulfilResult = {
   error: typeof FSPIOPError
 }
 
-interface ValidationResult {
-  reasons: Array<string>, result: 'PASS' | 'FAIL'
-}
 
 export class ForexFulfilHandler {
   constructor(private deps: Dependencies) { }
@@ -145,6 +117,12 @@ export class ForexFulfilHandler {
     }
 
     assert(Array.isArray(messages))
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE') {
+      assert(
+        this.deps.positionHandler,
+        'ForexFulfilHandler.deps.positionHandler not defined, positions are in `FUSE` mode.')
+    }
+
     if (messages.length === 0) {
       logger.debug('ForexFulfilHandler.handle() - received empty batch, nothing to process');
       return []
@@ -176,7 +154,7 @@ export class ForexFulfilHandler {
       .getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
     if (!forex) {
       const fspiopError = fspiopErrorFactory.fxTransferNotFound()
-      await this.sendNotificationMessageError(input, fspiopError)
+      await this.sendMessageNotificationError(input, fspiopError)
       const error = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
 
       return {
@@ -195,7 +173,7 @@ export class ForexFulfilHandler {
         error
       )
       const apiFSPIOPError = error.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-      await this.sendPositionMessageRollback(input, forex, apiFSPIOPError, {
+      await this.sendMessagePositionRollback(input, forex, apiFSPIOPError, {
         functionality: 'position',
         action: 'fx-abort'
       })
@@ -280,12 +258,12 @@ export class ForexFulfilHandler {
         input.action,
         apiFSPIOPError
       )
-      
-      await this.sendPositionMessageRollback(input, forex, apiFSPIOPError, {
+
+      await this.sendMessagePositionRollback(input, forex, apiFSPIOPError, {
         functionality: 'position',
         action: 'fx-abort'
       })
-      
+
       return {
         type: ForexFulfilResultType.PASS
       }
@@ -305,7 +283,7 @@ export class ForexFulfilHandler {
         commitRequestId, input.payload, 'fx-abort-validation', apiFSPIOPError
       )
 
-      await this.sendPositionMessageRollback(input, forex, apiFSPIOPError, {
+      await this.sendMessagePositionRollback(input, forex, apiFSPIOPError, {
         functionality: 'position',
         action: 'fx-abort-validation'
       })
@@ -325,7 +303,7 @@ export class ForexFulfilHandler {
       await saveFxFulfilResponse(
         commitRequestId, input.payload, 'fx-abort-validation', apiFSPIOPError
       )
-      await this.sendPositionMessageRollback(input, forex, apiFSPIOPError, {
+      await this.sendMessagePositionRollback(input, forex, apiFSPIOPError, {
         functionality: 'position',
         action: 'fx-abort-validation'
       })
@@ -344,7 +322,7 @@ export class ForexFulfilHandler {
       await saveFxFulfilResponse(
         commitRequestId, input.payload, 'fx-abort-validation', apiFSPIOPError
       )
-      await this.sendPositionMessageRollback(input, forex, apiFSPIOPError, {
+      await this.sendMessagePositionRollback(input, forex, apiFSPIOPError, {
         functionality: 'position',
         action: 'fx-abort-validation'
       })
@@ -358,26 +336,7 @@ export class ForexFulfilHandler {
     // Validations passed.    
     await saveFxFulfilResponse(commitRequestId, input.payload, action)
     await this.deps.cyril.processFxFulfilMessage(commitRequestId)
-    const eventDetail = {
-      functionality: 'position',
-      action
-    }
-    const params = {
-      message: input.message,
-      kafkaTopic: input.message.topic,
-      decodedPayload: input.payload,
-      span: null,
-      consumer: Consumer,
-      producer: Producer
-    }
-    await Kafka.proceed(this.deps.config.KAFKA_CONFIG, params,
-      {
-        consumerCommit: true,
-        eventDetail,
-        messageKey: forex.counterPartyFspSourceParticipantCurrencyId.toString(),
-        topicNameOverride: this.deps.config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
-      }
-    )
+    await this.sendMessagePositionCommit(input, forex, action)
     return {
       type: ForexFulfilResultType.PASS
     }
@@ -459,7 +418,7 @@ export class ForexFulfilHandler {
     return Enum.Events.Event.Action[actionUpper] || actionUpper;
   }
 
-  private async sendNotificationMessageError(
+  private async sendMessageNotificationError(
     input: ForexFulfilHandlerInput,
     error: typeof FSPIOPError
   ): Promise<void> {
@@ -488,7 +447,46 @@ export class ForexFulfilHandler {
     )
   }
 
-  private async sendPositionMessageRollback(
+  private async sendMessagePositionCommit(
+    input: ForexFulfilHandlerInput,
+    forex: any,
+    action: string,
+  ): Promise<void> {
+    const eventDetail = {
+      functionality: 'position',
+      action
+    }
+    const params = {
+      message: input.message,
+      kafkaTopic: input.message.topic,
+      decodedPayload: input.payload,
+      span: null,
+      consumer: Consumer,
+      producer: Producer
+    }
+    const messageKey = forex.counterPartyFspSourceParticipantCurrencyId.toString()
+    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case "UNFUSE": {
+        await Kafka.proceed(this.deps.config.KAFKA_CONFIG, params, {
+          consumerCommit: true,
+          eventDetail,
+          messageKey,
+          topicNameOverride: this.deps.config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+        })
+        return
+      }
+      case "FUSE":
+        assert(this.deps.positionHandler)
+        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
+          eventDetail,
+          messageKey,
+        })
+        
+        await this.deps.positionHandler(null, [wrapped])
+    }
+  }
+
+  private async sendMessagePositionRollback(
     input: ForexFulfilHandlerInput,
     forex: any,
     error: {
@@ -518,15 +516,33 @@ export class ForexFulfilHandler {
       cyrilResult
     }
     const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
-    await Kafka.proceed(this.deps.config.KAFKA_CONFIG, params, {
-      consumerCommit: true,
-      fspiopError: error,
-      eventDetail,
-      fromSwitch: true,
-      toDestination: forex.externalInitiatingFspName || forex.initiatingFspName,
-      messageKey: participantCurrencyId.toString(),
-      topicNameOverride: this.deps.config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_ABORT,
-      hubName: this.deps.config.HUB_NAME,
-    })
+    const messageKey = participantCurrencyId.toString()
+
+    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case "UNFUSE": {
+        await Kafka.proceed(this.deps.config.KAFKA_CONFIG, params, {
+          consumerCommit: true,
+          fspiopError: error,
+          eventDetail,
+          fromSwitch: true,
+          toDestination: forex.externalInitiatingFspName || forex.initiatingFspName,
+          messageKey,
+          topicNameOverride: this.deps.config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_ABORT,
+          hubName: this.deps.config.HUB_NAME,
+        })
+        return
+      }
+      case "FUSE":
+        assert(this.deps.positionHandler)
+        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
+          fspiopError: error,
+          eventDetail,
+          fromSwitch: true,
+          toDestination: forex.externalInitiatingFspName || forex.initiatingFspName,
+          messageKey,
+          hubName: this.deps.config.HUB_NAME,
+        })
+        await this.deps.positionHandler(null, [wrapped])
+    }
   }
 }

@@ -29,3 +29,12 @@ export type CreateRemittanceEntity = () => {
     proxyObligation: any
   ) => Promise<any>
 }
+
+export type KafkaParams<T> = {
+  message: any
+  kafkaTopic: string
+  decodedPayload: T
+  span: any
+  consumer: any
+  producer: any
+}

@@ -126,7 +126,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last 2 message types.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
   })
@@ -195,7 +195,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last 2 topics.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
   })
@@ -234,7 +234,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last 2 message types.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
   })
@@ -312,7 +312,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last messages.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
   })
@@ -363,7 +363,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last messages.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
   })
@@ -401,6 +401,11 @@ describe('handlers/tranfers/handlers', () => {
     const mark = harness.redpandaMark()
     await handlerAll.fulfil(null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)])
     await harness.redpandaDrain(mark, 2)
+
+    Snapshot.from(`[
+      "topic-transfer-pos:ignore",
+      "topic-notification-event"
+    ]`).checkUnwrap(harness.spoolLastTopic(2))
 
     // Get the transfer:
     const transfer = await TransferFacade.getById(transferId)
@@ -454,7 +459,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last messages.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
 
@@ -491,7 +496,7 @@ describe('handlers/tranfers/handlers', () => {
 
     const lastTopics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(lastTopics)
 

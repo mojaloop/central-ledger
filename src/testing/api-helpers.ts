@@ -242,7 +242,7 @@ export class Payment {
   public async prepare(): Promise<this> {
     const mark = this.options.harness.redpandaMark()
     this.options.transferHandler.prepare(null, this.buildMessagePrepare())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.redpandaDrain(mark, this.expectedMessagesPrepare())
 
     return this
   }
@@ -308,13 +308,7 @@ export class Payment {
   public async fulfil(state: 'COMMITTED' | 'RESERVED' = 'COMMITTED'): Promise<this> {
     const mark = this.options.harness.redpandaMark()
     await this.options.transferHandler.fulfil(null, this.buildMessageFulfil(state))
-    if (this.options.fx) {
-      // If this is a properly build fx transfer, we want to consume 4 messages.
-      await this.options.harness.redpandaDrain(mark, 4)
-      return this
-    }
-
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.redpandaDrain(mark, this.expectedMessagesFulfil())
 
     return this
   }
@@ -329,12 +323,43 @@ export class Payment {
   public async abort(): Promise<this> {
     const mark = this.options.harness.redpandaMark()
     await this.options.transferHandler.fulfil(null, this.buildMessageAbort())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.redpandaDrain(mark, this.expectedMessagesAbort())
 
     return this
   }
-}
 
+  public expectedMessagesPrepare(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2 // position-prepare + notification
+      case 'FUSE': return 1  // notification
+    }
+  }
+
+  public expectedMessagesFulfil(): number {
+    // TODO: ideally the harness could figure out if this payment is linked to a forex,
+    // but for now, we rely on the .fx() hint to tell us.
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': {
+        if (this.options.fx) {
+          return 4
+        }
+        return 2
+      }
+      case 'FUSE':
+        if (this.options.fx) {
+          return 2
+        }
+        return 1
+    }
+  }
+
+  public expectedMessagesAbort(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2
+      case 'FUSE': return 1
+    }
+  }
+}
 
 export class PaymentBuilder {
   private harness!: Harness
@@ -446,7 +471,7 @@ export class Forex {
   public async prepare(): Promise<this> {
     const mark = this.options.harness.redpandaMark()
     await this.options.transferHandler.prepare(null, this.buildMessagePrepare())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.redpandaDrain(mark, this.expectedMessagesPrepare())
 
     return this
   }
@@ -486,7 +511,7 @@ export class Forex {
   public async fulfil(): Promise<this> {
     const mark = this.options.harness.redpandaMark()
     await this.options.transferHandler.fulfil(null, this.buildMessageFulfil())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.redpandaDrain(mark, this.expectedMessagesFulfil())
 
     return this
   }
@@ -530,9 +555,30 @@ export class Forex {
     )
     const mark = this.options.harness.redpandaMark()
     await this.options.transferHandler.fulfil(null, messageKafka)
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.redpandaDrain(mark, this.expectedMessagesAbort())
 
     return this
+  }
+
+  private expectedMessagesPrepare(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2 // position-prepare + notification
+      case 'FUSE': return 1  // notification
+    }
+  }
+
+  private expectedMessagesFulfil(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2 // position-prepare + notification
+      case 'FUSE': return 1  // notification
+    }
+  }
+
+  private expectedMessagesAbort(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2
+      case 'FUSE': return 1
+    }
   }
 }
 

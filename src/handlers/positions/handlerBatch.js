@@ -193,6 +193,7 @@ const positions = batchConfig => async (error, messages) => {
     histTimerEnd({ success: true })
   } catch (err) {
     Logger.error(`handlerBatch failed with error: ${err.message}`)
+    Logger.error(`stack: ${err.stack}`)
     // If Bin Processor returns failure
     // -  Rollback DB transaction
     await trx?.rollback()

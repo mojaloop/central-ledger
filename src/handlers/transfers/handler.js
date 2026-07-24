@@ -252,9 +252,26 @@ const processFulfilMessage = async (message, functionality, span) => {
 
       // Key position abort with payer account id
       const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
+      const cyrilResult = await FxService.Cyril.processAbortMessage(transferId)
+      params.message.value.content.context = {
+        ...params.message.value.content.context,
+        cyrilResult
+      }
 
       // Publish message to Position Handler
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, toDestination: transfer.payerFsp, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
+      await Kafka.proceed(
+        Config.KAFKA_CONFIG, 
+        params, 
+        { 
+          consumerCommit, 
+          fspiopError: apiFSPIOPError, 
+          eventDetail, 
+          fromSwitch, 
+          toDestination: transfer.payerFsp, 
+          messageKey: payerAccount.participantCurrencyId.toString(), 
+          topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.ABORT,
+          hubName: Config.HUB_NAME 
+        })
 
       /**
        * Send patch notification callback to original payee fsp if they asked for a patch response.

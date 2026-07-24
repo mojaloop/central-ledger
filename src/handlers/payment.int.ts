@@ -97,7 +97,7 @@ describe('handlers/payment', () => {
     await harness.down()
   })
 
-  it.only('prepares and fulfils a payment', async () => {
+  it('prepares and fulfils a payment', async () => {
     const [positionPayer1, positionPayee1] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'USD')
     
     // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.

@@ -180,6 +180,8 @@ export default class Harness {
   }
 
   /**
+   * @default NON_BATCH
+   * 
    * The BATCH position handler contains a bug which makes it unable to properly process 
    * aborted transfers. Since we will be soon removing the position handlers, we work around
    * this bug by allowing the harness to specify whether or not to use the NON_BATCH or BATCH
@@ -189,6 +191,9 @@ export default class Harness {
    * position rest message to not be fired.
    */
   public async up(positionHandlerType: 'NON_BATCH' | 'BATCH' = 'NON_BATCH') {
+    logger.warn(`harness.up() - NON_BATCH is disabled. Always using BATCH.`)
+    positionHandlerType = 'BATCH'
+
     const timerStart = performance.now()
     await this.checkEnvironment()
 

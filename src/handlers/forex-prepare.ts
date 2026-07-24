@@ -14,24 +14,16 @@ const { Type, Action } = Enum.Events.Event
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const { FSPIOPErrorCodes } = ErrorHandler.Enums
-const { createFSPIOPError, reformatFSPIOPError } = ErrorHandler.Factory
 const { FSPIOPError } = ErrorHandler
 import { CreateRemittanceEntity, ProxyCache } from "./transfer-types";
-
+import RefactorHelper from "../shared/refactor-helper";
 
 interface Dependencies {
   config: ApplicationConfig
   proxyCache: ProxyCache,
-  createRemittanceEntity: CreateRemittanceEntity, 
-}
+  createRemittanceEntity: CreateRemittanceEntity,
+  positionHandler: null | ((error: null, messages: Array<any>) => Promise<any>)
 
-interface KafkaParams {
-  message: any
-  kafkaTopic: string
-  decodedPayload: CreateForexDto
-  span: any
-  consumer: any
-  producer: any
 }
 
 interface ProxyObligation {
@@ -158,6 +150,11 @@ export class ForexPrepareHandler {
     }
 
     assert(Array.isArray(messages))
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE') {
+      assert(
+        this.deps.positionHandler,
+        'ForexPrepareHandler.deps.positionHandler not defined, positions are in `FUSE` mode.')
+    }
     if (messages.length === 0) {
       logger.debug('ForexPrepareHandler.handle() - received empty batch, nothing to process');
       return []
@@ -208,7 +205,7 @@ export class ForexPrepareHandler {
 
     if (hasDuplicateId && !hasDuplicateHash) {
       // Id was reused for a different request.
-      await this.sendErrorNotification(
+      await this.sendMessageNotificationError(
         input,
         FSPIOPErrorCodes.MODIFIED_REQUEST.code,
         FSPIOPErrorCodes.MODIFIED_REQUEST.message
@@ -224,7 +221,7 @@ export class ForexPrepareHandler {
     if (forex && forex.fxTransferStateEnumeration) {
       switch (forex.fxTransferStateEnumeration) {
         case 'ABORTED': {
-          await this.sendDuplicateNotification(input, toFulfil(forex, true))
+          await this.sendMessageNotificationDuplicate(input, toFulfil(forex, true))
           return {
             type: ForexPrepareResultType.DUPLICATE_FINAL,
             finalizedTransfer: {
@@ -235,7 +232,7 @@ export class ForexPrepareHandler {
         }
         case 'COMMITTED':
         case 'RESERVED': {
-          await this.sendDuplicateNotification(input, toFulfil(forex, true))
+          await this.sendMessageNotificationDuplicate(input, toFulfil(forex, true))
           return {
             type: ForexPrepareResultType.DUPLICATE_FINAL,
             finalizedTransfer: {
@@ -307,7 +304,7 @@ export class ForexPrepareHandler {
       proxyObligation
     )
 
-    await this.sendPositionPrepareMessage(input, determiningTransferCheckResult, proxyObligation)
+    await this.sendMessagePosition(input, determiningTransferCheckResult, proxyObligation)
     return {
       type: ForexPrepareResultType.PASS
     }
@@ -509,7 +506,7 @@ should match initiatingFsp (${payload.initiatingFsp})`)
     }
   }
 
-  private async sendPositionPrepareMessage(
+  private async sendMessagePosition(
     input: ForexPrepareHandlerInput,
     determiningTransferCheckResult: any,
     proxyObligation: ProxyObligation
@@ -544,19 +541,36 @@ should match initiatingFsp (${payload.initiatingFsp})`)
       cyrilResult
     }
 
-    await Kafka.proceed(config.KAFKA_CONFIG, params, {
-      consumerCommit: true,
-      eventDetail: {
-        functionality: Type.POSITION,
-        action: Action.FX_PREPARE
-      },
-      messageKey,
-      topicNameOverride: config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_PREPARE,
-      hubName: config.HUB_NAME
-    })
+    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case "UNFUSE": {
+        await Kafka.proceed(config.KAFKA_CONFIG, params, {
+          consumerCommit: true,
+          eventDetail: {
+            functionality: Type.POSITION,
+            action: Action.FX_PREPARE
+          },
+          messageKey,
+          topicNameOverride: config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_PREPARE,
+          hubName: config.HUB_NAME
+        })
+        return
+      }
+      case "FUSE": {
+        assert(this.deps.positionHandler)
+        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
+          eventDetail: {
+            functionality: Type.POSITION,
+            action: Action.FX_PREPARE
+          },
+          messageKey,
+          hubName: config.HUB_NAME
+        })
+        await this.deps.positionHandler(null, [wrapped])
+      }
+    }
   }
 
-  private async sendDuplicateNotification(input: ForexPrepareHandlerInput, payload: any): Promise<void> {
+  private async sendMessageNotificationDuplicate(input: ForexPrepareHandlerInput, payload: any): Promise<void> {
     // Emit a notification message.
     const params = {
       message: input.message,
@@ -583,7 +597,7 @@ should match initiatingFsp (${payload.initiatingFsp})`)
       })
   }
 
-  private async sendErrorNotification(
+  private async sendMessageNotificationError(
     input: ForexPrepareHandlerInput,
     errorCode: string,
     errorDescription: string
@@ -614,4 +628,5 @@ should match initiatingFsp (${payload.initiatingFsp})`)
       hubName: config.HUB_NAME
     })
   }
+
 }

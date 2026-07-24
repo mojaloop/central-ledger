@@ -56,7 +56,44 @@ export default class LedgerFuzzer {
 
   // Eventually we can introduce a strategy into this to make it smarter!
   // For now, random is fine.
+  // It would be really cool to start from scratch, e.g. no dfsps not even 
+  // the hub registered at first, and do this completely at random, but we need
+  // to provide a strategy that is likely to succeed.
   private pickAction(): Action {
     return this.prng.randomElementFrom(this.choiceTable)
   }
+}
+
+
+/**
+ * 
+ */
+class SwitchStateMachine {
+  // State properties we want to keep track of, such as positions, dfsps, 
+  // payments, forexes and their progress.
+  private _state: any
+  // dfsps
+  // positions
+  // currencies
+  //
+
+  constructor () {
+    this._state = {}
+  }
+
+  
+  public apply(action: Action, payload: any): void {
+    // TODO: mutate the internal state based on the action and payload.
+    // e.g. if the action is create dfsp and the payload is the dfsp id, then
+    // we should add to our internal dfsp list.
+  }
+
+
+  /**
+   * Get the state of the switch, and assert that it's the same as our State Machine.
+   */
+  public async checkWithSwitch(): Promise<unknown> {
+    return true
+  }
+
 }

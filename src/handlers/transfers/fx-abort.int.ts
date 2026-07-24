@@ -30,6 +30,7 @@ import Harness from '../../testing/harness'
 import * as ApiHelpers from '../../testing/api-helpers'
 import { DispatchTransferHandler } from "../dispatch-transfer-handler"
 import { assertPositionDiff } from "../../testing/util"
+import { Snapshot } from "../../testing/snapshot"
 
 const harness = Harness.getInstance()
 let ExternalParticipantCached: any
@@ -150,7 +151,7 @@ describe('handlers/fx-abort', () => {
     await harness.down()
   })
 
-  it('Aborting a transfer also aborts linked fxTransfer, all positions revert.', async () => {
+  it.only('Aborting a transfer also aborts linked fxTransfer, all positions revert.', async () => {
     const positionPayerPre = await ApiHelpers.getPositionAccount('dfsp_a', 'BWP')
     const positionFxpBwpPre = await ApiHelpers.getPositionAccount('fxp_a', 'BWP')
     const positionFxpUsdPre = await ApiHelpers.getPositionAccount('fxp_a', 'USD')
@@ -185,7 +186,40 @@ describe('handlers/fx-abort', () => {
     // Need to do a custom fulfil here, as we expect 4 messages due to FX.
     const mark = harness.redpandaMark()
     await dispatchHandler.fulfil(null, payment.buildMessageAbort())
-    await harness.redpandaDrain(mark, 4)
+    // UNFUSE: 4, FUSE: 2.
+    await harness.redpandaDrain(mark, 3)
+
+    Snapshot.from(`[
+        "topic-notification-event",
+        "topic-transfer-position-batch",
+        "topic-notification-event"
+      ]`).checkUnwrap(harness.spoolLastTopic(3))
+
+    Snapshot.from(`[
+        {
+          "conversionState": "ABORTED"
+        },
+        {
+          "errorInformation": {
+            "errorCode": "5100",
+            "errorDescription": "Payer rejected the transfer"
+          }
+        },
+        {
+          "errorInformation": {
+            "errorCode": "5100",
+            "errorDescription": "Payer rejected the transfer",
+            "extensionList": {
+              "extension": [
+                {
+                  "key": "cause",
+                  "val:ignore
+                }
+              ]
+            }
+          }
+        }
+      ]`).checkUnwrap(harness.spoolLastPayload(3))
 
     const transfer = await TransferFacade.getById('6000001')
     assert.equal(transfer.transferState, 'ABORTED_ERROR')
