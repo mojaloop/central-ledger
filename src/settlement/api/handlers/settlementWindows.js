@@ -49,7 +49,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-  get: async function getSettlementWindowsByParams (request, h) {
+  get: async function getSettlementWindowsByParams (context, request, h) {
     try {
       const { span, headers } = request
       const spanTags = Utility.EventFramework.getSpanTags(

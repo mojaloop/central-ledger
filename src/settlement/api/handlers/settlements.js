@@ -49,7 +49,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-  get: async function getSettlementsByParams (request, h) {
+  get: async function getSettlementsByParams (context, request, h) {
     try {
       const { span, headers } = request
       const spanTags = Utility.EventFramework.getSpanTags(
@@ -81,7 +81,7 @@ module.exports = {
      * responses: 200, 400, 401, 404, 415, default
      */
 
-  post: async function createSettlementEvent (request, h) {
+  post: async function createSettlementEvent (context, request, h) {
     try {
       const { span, payload, headers } = request
       const spanTags = Utility.EventFramework.getSpanTags(

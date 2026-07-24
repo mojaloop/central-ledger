@@ -50,7 +50,7 @@ module.exports = {
      * responses: 200, 400, 401, 404, 415, default
      */
 
-  get: async function getSettlementBySettlementParticipantAccount (request, h) {
+  get: async function getSettlementBySettlementParticipantAccount (context, request, h) {
     try {
       const settlementId = request.params.sid
       const participantId = request.params.pid
@@ -86,7 +86,7 @@ module.exports = {
    * produces: application/json
    * responses: 200, 400, 401, 404, 415, default
    */
-  put: async function updateSettlementById (request) {
+  put: async function updateSettlementById (context, request) {
     const settlementId = request.params.sid
     const participantId = request.params.pid
     try {

@@ -35,6 +35,10 @@ const Enums = require('../../../../../src/settlement/models/lib/enums')
 const { logger } = require('../../../../../src/settlement/shared/logger')
 const settlementWindows = require('../../../../../src/settlement/domain/settlementWindow/index')
 const Db = require('../../../../../src/settlement/lib/db')
+const ProxyCache = require('../../../../../src/lib/proxyCache')
+const ServerSetup = require('../../../../../src/settlement/shared/setup')
+const HandlerRoutes = require('../../../../../src/settlement/api/handlerRoutes')
+const getPort = async () => (await import('get-port')).default()
 
 /**
  * Test for /settlementWindows
@@ -161,5 +165,51 @@ Test('/settlementWindows', async (settlementWindowTest) => {
       t.end()
     }
   })
+  await settlementWindowTest.test('test getHealth operation', async (t) => {
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub(),
+      healthCheck: sandbox.stub().resolves()
+    })
+    try {
+      const response = await server.inject({
+        method: 'get',
+        url: '/v2/health'
+      })
+      t.ok(response, 'health response returned')
+      t.ok([200, 502].includes(response.statusCode), 'health status returned')
+      t.end()
+    } catch (e) {
+      logger.error(`testing error ${e}`)
+      t.fail()
+      t.end()
+    }
+  })
+
+  await settlementWindowTest.test('test getHealth operation of the handlers monitoring API', async (t) => {
+    sandbox.stub(ProxyCache, 'getCache').returns({
+      connect: sandbox.stub(),
+      disconnect: sandbox.stub(),
+      healthCheck: sandbox.stub().resolves()
+    })
+    let handlerServer
+    try {
+      handlerServer = await ServerSetup.createServer(await getPort(), [HandlerRoutes])
+      const response = await handlerServer.inject({
+        method: 'get',
+        url: '/v2/health'
+      })
+      t.ok(response, 'health response returned')
+      t.ok([200, 502].includes(response.statusCode), 'health status returned')
+    } catch (e) {
+      logger.error(`testing error ${e}`)
+      t.fail()
+    }
+    if (handlerServer) {
+      await handlerServer.stop()
+    }
+    t.end()
+  })
+
   await settlementWindowTest.end()
 })

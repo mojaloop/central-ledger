@@ -48,7 +48,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-  get: async function getSettlementWindowById (request, h) {
+  get: async function getSettlementWindowById (context, request, h) {
     const settlementWindowId = request.params.id
     try {
       const { span, headers } = request
@@ -79,7 +79,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-  post: async function closeSettlementWindow (request) {
+  post: async function closeSettlementWindow (context, request) {
     const { reason } = request.payload
     const settlementWindowId = request.params.id
     try {

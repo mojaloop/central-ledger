@@ -50,7 +50,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-  get: async function getSettlementById (request, h) {
+  get: async function getSettlementById (context, request, h) {
     const settlementId = request.params.id
     try {
       const { span, headers } = request
@@ -84,7 +84,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-  put: async function updateSettlementById (request) {
+  put: async function updateSettlementById (context, request) {
     const settlementId = request.params.id
     try {
       const { span, headers } = request
