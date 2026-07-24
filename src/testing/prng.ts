@@ -67,6 +67,22 @@ export default class PRNG {
       hex.substring(20, 32),
     ].join("-")
   }
+
+  public static generateWeightedChoiceTable<T extends string | number | symbol>
+  (weights: any): Array<T> {
+    const weightedChoiceTable: Array<T> = []
+    Object.keys(weights).map(action => {
+      const weight = weights[action]
+      assert.equal(typeof weight, 'number')
+      assert.ok(weight >= 0)
+
+      for (let count = 0; count < weight; count++) {
+        weightedChoiceTable.push(action as T)
+      }
+    })
+
+    return weightedChoiceTable
+  }
 }
 
 function splitmix32(a: number) {
