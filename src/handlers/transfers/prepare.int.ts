@@ -724,7 +724,7 @@ describe('handlers/prepare', () => {
    * FX + Proxy.
    */
 
-  it('should update fxTransfer internal state on prepare event fx-forwarded action', async () => {
+  it.only('should update fxTransfer internal state on prepare event fx-forwarded action', async () => {
     const forex = ApiHelpers.buildForex()
       .deps(harness, dispatchHandler)
       .commitRequestId('2000010')

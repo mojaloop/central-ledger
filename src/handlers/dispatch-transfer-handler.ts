@@ -127,7 +127,7 @@ export class DispatchTransferHandler {
       resultsForwarded = await this.legacyTransferHandler.prepare(error, messagesForwared)
     }
     let resultsFxForwarded = []
-    if (messagesForwared.length > 0) {
+    if (messagesFxForwared.length > 0) {
       resultsFxForwarded = await this.legacyTransferHandler.prepare(error, messagesFxForwared)
     }
 
@@ -139,7 +139,8 @@ export class DispatchTransferHandler {
     ]
   }
 
-  // TODO: I feel like we are missing fx-forwarded on the fulfil path somehow.
+  // TODO: I feel like we are missing fx-forwarded on the fulfil path somehow. Probably don't have
+  // tests for this.
   public async fulfil(error: any, messageOrMessages: any | Array<any>): Promise<any> {
     if (this.mode === 'JOINED') {
       // Route everything to old handler. This way we can keep the tests 

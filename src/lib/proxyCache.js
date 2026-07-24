@@ -34,6 +34,7 @@
  ******/
 
 'use strict'
+// TODO: LD consider vendoring this.
 const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 const { Enum } = require('@mojaloop/central-services-shared')
 const ParticipantService = require('../domain/participant')

@@ -758,6 +758,8 @@ const processFxFulfilMessage = async (message, functionality, span) => {
 
   log.info('Validations Succeeded - process the fxFulfil...')
 
+
+  // LD: we don't do anything for the `FX_FORWARDED` case.
   switch (action) {
     case TransferEventAction.FX_RESERVE:
     case TransferEventAction.FX_COMMIT: {

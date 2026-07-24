@@ -1,3 +1,8 @@
+
+/**
+ * Types over javascript domain/model functions we need to inject into the new handlers.
+ */
+
 export type ProxyCache = {
   getFSPProxy: (dfspId: string, options?: unknown) => Promise<{
     inScheme: boolean,

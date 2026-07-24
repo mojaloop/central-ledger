@@ -33,6 +33,8 @@
 
  ******/
 
+// TODO: LD this belongs in domain.
+
 const fxTransferModel = require('../../models/fxTransfer')
 const TransferService = require('../../domain/transfer')
 const cyril = require('../../domain/fx/cyril')

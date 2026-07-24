@@ -12,7 +12,6 @@ const { Action } = Enum.Events.Event
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
 
-// import FxService from '../domain/fx'
 import { TransferHelper } from './transfer-helper';
 
 interface Dependencies {

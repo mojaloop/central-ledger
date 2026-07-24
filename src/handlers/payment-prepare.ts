@@ -4,17 +4,13 @@ import { logger } from '../shared/logger';
 import CentralServicesShared, { Enum, TransferStateEnum, Util } from '@mojaloop/central-services-shared';
 import { CreateRemittanceEntity, ProxyCache } from "./transfer-types";
 const { Kafka, Comparators } = Util
-// TODO: inject this as a dependency
-// import { createRemittanceEntityPayment } from "./transfers/createRemittanceEntity";
 const { decodePayload } = Util.StreamingProtocol
-const Validator = require('./transfers/validator')
 const Participant = require('../domain/participant')
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 const { Type, Action } = Enum.Events.Event
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
-// const { sendPositionPrepareMessage } = require('./transfers/prepare')
 
 interface Dependencies {
   config: ApplicationConfig,
