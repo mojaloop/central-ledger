@@ -980,6 +980,9 @@ const registerPrepareHandler = async () => {
     const consumeConfig = Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
     consumeConfig.rdkafkaConf['client.id'] = topicName
 
+    // TODO
+    // Dispatch here between payment-prepare and forex-prepare.
+
     await Consumer.createHandler(topicName, consumeConfig, prepare)
     return true
   } catch (err) {
@@ -1003,6 +1006,8 @@ const registerFulfilHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
     }
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
+    // TODO
+    // Dispatch here between payment-fulfil and forex-fulfil.
     await Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
     return true
   } catch (err) {

@@ -36,7 +36,7 @@ const Config = require('../../lib/config')
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Participant = require('../../domain/participant')
 
-const createRemittanceEntity = require('./createRemittanceEntity')
+const { deprecated_createRemittanceEntity } = require('./createRemittanceEntity')
 const Validator = require('./validator')
 const dto = require('./dto')
 const TransferService = require('../../domain/transfer/index')
@@ -160,10 +160,10 @@ const calculateProxyObligation = async ({ payload, isFx, params, functionality, 
     // We need to double check the following validation logic incase of payee side currency conversion
     const payeeFspLookupOptions = isFx ? null : { validateCurrencyAccounts: true, accounts: [{ currency: payload.amount.currency, accountType: Enum.Accounts.LedgerAccountType.POSITION }] }
 
-    ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
-      ProxyCache.getFSPProxy(initiatingFsp),
-      ProxyCache.getFSPProxy(counterPartyFsp, payeeFspLookupOptions)
-    ])
+      ;[proxyObligation.initiatingFspProxyOrParticipantId, proxyObligation.counterPartyFspProxyOrParticipantId] = await Promise.all([
+        ProxyCache.getFSPProxy(initiatingFsp),
+        ProxyCache.getFSPProxy(counterPartyFsp, payeeFspLookupOptions)
+      ])
     logger.debug('Prepare proxy cache lookup results', {
       initiatingFsp,
       counterPartyFsp,
@@ -178,20 +178,20 @@ const calculateProxyObligation = async ({ payload, isFx, params, functionality, 
 
     if (isFx) {
       proxyObligation.payloadClone.initiatingFsp = !proxyObligation.initiatingFspProxyOrParticipantId?.inScheme &&
-      proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
+        proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
         ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
         : payload.initiatingFsp
       proxyObligation.payloadClone.counterPartyFsp = !proxyObligation.counterPartyFspProxyOrParticipantId?.inScheme &&
-      proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
+        proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
         ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
         : payload.counterPartyFsp
     } else {
       proxyObligation.payloadClone.payerFsp = !proxyObligation.initiatingFspProxyOrParticipantId?.inScheme &&
-      proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
+        proxyObligation.initiatingFspProxyOrParticipantId?.proxyId
         ? proxyObligation.initiatingFspProxyOrParticipantId.proxyId
         : payload.payerFsp
       proxyObligation.payloadClone.payeeFsp = !proxyObligation.counterPartyFspProxyOrParticipantId?.inScheme &&
-      proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
+        proxyObligation.counterPartyFspProxyOrParticipantId?.proxyId
         ? proxyObligation.counterPartyFspProxyOrParticipantId.proxyId
         : payload.payeeFsp
     }
@@ -221,11 +221,11 @@ const checkDuplication = async ({ payload, isFx, ID, location }) => {
   const funcName = 'prepare_duplicateCheckComparator'
   const histTimerDuplicateCheckEnd = Metrics.getHistogram(
     'handler_transfers',
-      `${funcName} - Metrics for transfer handler`,
-      ['success', 'funcName']
+    `${funcName} - Metrics for transfer handler`,
+    ['success', 'funcName']
   ).startTimer()
 
-  const remittance = createRemittanceEntity(isFx)
+  const remittance = deprecated_createRemittanceEntity(isFx)
   const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(
     ID,
     payload,
@@ -265,7 +265,7 @@ const processDuplication = async ({
   }
   logger.info(Util.breadcrumb(location, 'handleResend'))
 
-  const transfer = await createRemittanceEntity(isFx)
+  const transfer = await deprecated_createRemittanceEntity(isFx)
     .getByIdLight(ID)
 
   const finalizedState = [TransferState.COMMITTED, TransferState.ABORTED, TransferState.RESERVED]
@@ -321,7 +321,7 @@ const savePreparedRequest = async ({
   try {
     logger.info(logMessage, { validationPassed, reasons })
     const reason = validationPassed ? null : reasons.toString()
-    await createRemittanceEntity(isFx)
+    await deprecated_createRemittanceEntity(isFx)
       .savePreparedRequest(
         payload,
         reason,
@@ -344,7 +344,7 @@ const savePreparedRequest = async ({
 }
 
 const definePositionParticipant = async ({ isFx, payload, determiningTransferCheckResult, proxyObligation }) => {
-  const cyrilResult = await createRemittanceEntity(isFx)
+  const cyrilResult = await deprecated_createRemittanceEntity(isFx)
     .getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation)
 
   let messageKey
@@ -498,7 +498,7 @@ const prepare = async (error, messages) => {
       return success
     }
 
-    const determiningTransferCheckResult = await createRemittanceEntity(isFx)
+    const determiningTransferCheckResult = await deprecated_createRemittanceEntity(isFx)
       .checkIfDeterminingTransferExists(proxyObligation.payloadClone, proxyObligation)
 
     const { validationPassed, reasons } = await Validator.validatePrepare(
@@ -524,7 +524,7 @@ const prepare = async (error, messages) => {
     if (!validationPassed) {
       logger.warn(Util.breadcrumb(location, { path: 'validationFailed' }))
       const fspiopError = createFSPIOPError(FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
-      await createRemittanceEntity(isFx)
+      await deprecated_createRemittanceEntity(isFx)
         .logTransferError(ID, FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
       /**
        * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)

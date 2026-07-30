@@ -22,39 +22,54 @@
  * TigerBeetle
  - Lewis Daly <lewis@tigerbeetle.com>
  --------------
-
  ******/
+
 import { after, before, describe, it } from "node:test"
-import Harness from '../../testing/harness'
-import { Snapshot } from "../../testing/snapshot"
-import * as ApiHelpers from '../../testing/api-helpers'
-import { DispatchTransferHandler } from "../../testing/dispatch-transfer-handler"
+import Harness from '../testing/harness'
+import * as ApiHelpers from '../testing/api-helpers'
+import { assertPositionDiff } from "../testing/util"
+import { DispatchTransferHandler } from "../testing/dispatch-transfer-handler"
 
 const harness = Harness.getInstance()
-const TransferError = require('./transferError')
+let PositionBatchHandler: any
+let ExternalParticipantCached: any
+let TransferFacade: any
+let FxTransferService: any
+let proxyCache: any
 let dispatchHandler: DispatchTransferHandler
 
-describe('models/tranfer/transferError', () => {
+describe('handlers/payment', () => {
   before(async () => {
-    await harness.up()
+    await harness.up('BATCH')
     await harness.setupGlobals()
+
     dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
     await dispatchHandler.init()
+
+    // Import after bringing up the harness, so that global config is overriden.
+    PositionBatchHandler = require('./positions/handlerBatch')
+    TransferFacade = require('../models/transfer/facade')
+    FxTransferService = require('../domain/fx/index')
+    ExternalParticipantCached = require('../models/participant/externalParticipantCached')
+    proxyCache = require('../lib/proxyCache')
+    await proxyCache.connect()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
       currencies: ['USD'],
-      settlementModels: [{
-        name: `DEFERRED_MULTILATERAL_NET_USD`,
-        settlementGranularity: "NET",
-        settlementInterchange: "MULTILATERAL",
-        settlementDelay: "DEFERRED",
-        currency: 'USD',
-        requireLiquidityCheck: true,
-        ledgerAccountType: "POSITION",
-        settlementAccountType: "SETTLEMENT",
-        autoPositionReset: true
-      }]
+      settlementModels: [
+        {
+          name: `DEFERRED_MULTILATERAL_NET_USD`,
+          settlementGranularity: "NET",
+          settlementInterchange: "MULTILATERAL",
+          settlementDelay: "DEFERRED",
+          currency: 'USD',
+          requireLiquidityCheck: true,
+          ledgerAccountType: "POSITION",
+          settlementAccountType: "SETTLEMENT",
+          autoPositionReset: true
+        }
+      ]
     }
     await ApiHelpers.createHub(harness, createHubPayload)
     // Create 2 test dfsps to transfer between.
@@ -62,12 +77,7 @@ describe('models/tranfer/transferError', () => {
       name: 'dfsp_a',
       currencies: ['USD'],
       isProxy: false,
-      initialPostionsAndLimits: [
-        {
-          initialPosition: 0,
-          value: 100000
-        }
-      ],
+      initialPostionsAndLimits: [{ initialPosition: 0, value: 100000 }],
       deposits: [10000]
     })
     await ApiHelpers.createDfsp(harness, {
@@ -75,38 +85,47 @@ describe('models/tranfer/transferError', () => {
       currencies: ['USD'],
       isProxy: false,
       initialPostionsAndLimits: [
-        {
-          initialPosition: 0,
-          value: 100000
-        }
+        { initialPosition: 0, value: 100000 }
       ],
       deposits: [10000]
     })
   })
 
   after(async () => {
+    await proxyCache.disconnect()
     await harness.teardownGlobals()
     await harness.down()
   })
 
-  it('insert() is called on a failed payment.', async () => {
-    // Create payment which will liquidity check.
-    await ApiHelpers.buildPayment()
+  it('prepares and fulfils a payment', async () => {
+    const [positionPayer1, positionPayee1] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'USD')
+    
+    // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.
+    const payment = await ApiHelpers.buildPayment()
       .deps(harness, dispatchHandler)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
-      .amount('10001.00')
+      .expiry(100)
       .build()
       .prepare()
 
-    // Look up the transferErrors table.
-    const transferError = await TransferError.getByTransferId('1000001')
-    Snapshot.from(`{
-      "transferId": "1000001",
-      "transferStateChangeId": 10,
-      "errorCode": "4001",
-      "errorDescription": "Payer FSP insufficient liquidity",
-      "createdDate": :ignore
-    }`).checkUnwrap(transferError)
+    const [positionPayer2, positionPayee2] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'USD')
+    assertPositionDiff('payer', positionPayer1, positionPayer2, {
+      pending: 0,
+      posted: 100
+    })
+    assertPositionDiff('payee', positionPayee1, positionPayee2, {
+      pending: 0,
+      posted: 0
+    })
+
+    await payment.fulfil()
+    const [positionPayer3, positionPayee3] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'USD')
+    assertPositionDiff('payer', positionPayer2, positionPayer3, {
+      posted: 0
+    })
+    assertPositionDiff('payee', positionPayee2, positionPayee3, {
+      posted: -100
+    })
   })
 })

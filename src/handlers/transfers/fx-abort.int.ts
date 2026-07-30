@@ -25,36 +25,32 @@
  ******/
 
 import { after, before, describe, it } from "node:test"
+import assert from "node:assert"
 import Harness from '../../testing/harness'
 import * as ApiHelpers from '../../testing/api-helpers'
-import assert from "node:assert"
+import { DispatchTransferHandler } from "../../testing/dispatch-transfer-handler"
 import { assertPositionDiff } from "../../testing/util"
 
 const harness = Harness.getInstance()
-let PrepareHandler: any
-let TransferHandler: any
-let PositionBatchHandler: any
 let ExternalParticipantCached: any
 let TransferFacade: any
 let FxTransferService: any
 let proxyCache: any
+let dispatchHandler: DispatchTransferHandler
 
 describe('handlers/fx-abort', () => {
   before(async () => {
     await harness.up('BATCH')
     await harness.setupGlobals()
+    dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
+    await dispatchHandler.init()
 
     // Import after bringing up the harness, so that global config is overriden.
-    TransferHandler = require('./handler')
-    PrepareHandler = require('./prepare')
-    PositionBatchHandler = require('../positions/handlerBatch')
     TransferFacade = require('../../models/transfer/facade')
     FxTransferService = require('../../domain/fx/index')
     ExternalParticipantCached = require('../../models/participant/externalParticipantCached')
     proxyCache = require('../../lib/proxyCache')
     await proxyCache.connect()
-    await TransferHandler.registerPrepareHandler()
-    await TransferHandler.registerFulfilHandler()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
@@ -140,7 +136,7 @@ describe('handlers/fx-abort', () => {
 
     // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.
     await ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, dispatchHandler)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
       .amount('1.00', 'BWP')
@@ -161,7 +157,7 @@ describe('handlers/fx-abort', () => {
     const positionPayeePre = await ApiHelpers.getPositionAccount('dfsp_b', 'USD')
 
     const forex = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, dispatchHandler)
       .commitRequestId('5000001')
       .determiningTransferId('6000001')
       .parties('dfsp_a', 'fxp_a')
@@ -178,7 +174,7 @@ describe('handlers/fx-abort', () => {
     assert.equal(fxTransferAfterFulfil.fxTransferState, 'RECEIVED_FULFIL_DEPENDENT')
 
     const payment = ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, dispatchHandler)
       .parties('fxp_a', 'dfsp_b')
       .transferId('6000001')
       .amount('10.00', 'USD')
@@ -188,7 +184,7 @@ describe('handlers/fx-abort', () => {
     await payment.prepare()
     // Need to do a custom fulfil here, as we expect 4 messages due to FX.
     const mark = harness.redpandaMark()
-    await TransferHandler.fulfil(null, payment.buildMessageAbort())
+    await dispatchHandler.fulfil(null, payment.buildMessageAbort())
     await harness.redpandaDrain(mark, 4)
 
     const transfer = await TransferFacade.getById('6000001')

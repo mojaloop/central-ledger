@@ -28,18 +28,20 @@ import { after, before, describe, it } from "node:test"
 import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
+import { DispatchTransferHandler } from "../../testing/dispatch-transfer-handler"
 
-import TransferHandler from '../../handlers/transfers/handler'
 const harness = Harness.getInstance()
 const TransferStateChange = require('./transferStateChange')
+let dispatchHandler: DispatchTransferHandler
+
 
 describe('models/tranfer/transferExtension', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
+    dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
+    await dispatchHandler.init()
 
-    await TransferHandler.registerPrepareHandler()
-    await TransferHandler.registerFulfilHandler()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
@@ -84,7 +86,7 @@ describe('models/tranfer/transferExtension', () => {
     })
 
     await ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, dispatchHandler)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('5000001')
       .amount('1.50')

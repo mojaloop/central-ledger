@@ -801,7 +801,7 @@ export type QuoteIlpResponse = {
   condition: string;
 }
 
-function generateQuoteILPResponse(params: MockQuoteILPResponse): QuoteIlpResponse {
+export function generateQuoteILPResponse(params: MockQuoteILPResponse): QuoteIlpResponse {
   // Build an imaginary Quote Request/Response to generate the ILP packet, fulfilment and condition.
   const quoteRequest = {
     quoteId: params.quoteId,

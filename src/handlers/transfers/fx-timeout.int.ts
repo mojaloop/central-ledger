@@ -25,38 +25,35 @@
  ******/
 
 import { after, before, describe, it } from "node:test"
+import assert from "node:assert"
 import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
-import assert from "node:assert"
 import { assertPositionDiff, sleepSeconds } from "../../testing/util"
+import { DispatchTransferHandler } from "../../testing/dispatch-transfer-handler"
 import TimeoutHandler from '../timeouts/handler'
 
 const harness = Harness.getInstance()
-let PrepareHandler: any
-let TransferHandler: any
-let PositionBatchHandler: any
 let ExternalParticipantCached: any
 let TransferFacade: any
 let FxTransferService: any
 let proxyCache: any
+let dispatchHandler: DispatchTransferHandler
 
 describe('handlers/tx-timeout', () => {
   before(async () => {
     await harness.up('BATCH')
     await harness.setupGlobals()
 
-    // Import after bringing up the harness, so that global config is overriden.
-    TransferHandler = require('./handler')
-    PrepareHandler = require('./prepare')
-    PositionBatchHandler = require('../positions/handlerBatch')
+    dispatchHandler = new DispatchTransferHandler(harness.config, 'SPLIT')
+    await dispatchHandler.init()
+
+    // Import after bringing up the harness, so the global config is overriden.
     TransferFacade = require('../../models/transfer/facade')
     FxTransferService = require('../../domain/fx/index')
     ExternalParticipantCached = require('../../models/participant/externalParticipantCached')
     proxyCache = require('../../lib/proxyCache')
     await proxyCache.connect()
-    await TransferHandler.registerPrepareHandler()
-    await TransferHandler.registerFulfilHandler()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
@@ -142,7 +139,7 @@ describe('handlers/tx-timeout', () => {
 
     // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.
     await ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, dispatchHandler)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
       .amount('1.00', 'BWP')
@@ -159,7 +156,7 @@ describe('handlers/tx-timeout', () => {
   it('FX Transfer expires without dependent transfer, then resets the position', async () => {
     const positionPayerPre = await ApiHelpers.getPositionAccount('dfsp_a', 'BWP')
     const forex = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, dispatchHandler)
       .commitRequestId('8000001')
       .determiningTransferId('9000001')
       .parties('dfsp_a', 'fxp_a')
@@ -214,7 +211,7 @@ describe('handlers/tx-timeout', () => {
     const positionFxpUsdPre = await ApiHelpers.getPositionAccount('fxp_a', 'USD')
 
     const forex = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, dispatchHandler)
       .commitRequestId('8000002')
       .determiningTransferId('9000002')
       .parties('dfsp_a', 'fxp_a')
@@ -234,7 +231,7 @@ describe('handlers/tx-timeout', () => {
     assert.equal(fxTransfer.fxTransferState, 'RECEIVED_FULFIL_DEPENDENT')
 
     const payment = ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, dispatchHandler)
       .parties('fxp_a', 'dfsp_b')
       .transferId('9000002')
       .amount('10.00', 'USD')
