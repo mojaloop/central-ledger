@@ -970,8 +970,6 @@ const getTransfer = async (error, messages) => {
  *
  * @async
  * @description Registers the handler for prepare topic. Gets Kafka config from default.json
- *
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerPrepareHandler = async () => {
   try {
@@ -995,7 +993,7 @@ const registerPrepareHandler = async () => {
  * @async
  * @description Registers the one handler for fulfil transfer. Gets Kafka config from default.json
  * Calls createHandler to register the handler against the Stream Processing API
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ * @returns {Promise<boolean>} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerFulfilHandler = async () => {
   try {

@@ -33,7 +33,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('../../../src/shared/logger').logger
-const Model = require('../../../seeds/amountType')
+const Model = require('../../../src/seeds/amountType')
 
 Test('AmountType', async (amountTypeSeedTest) => {
   let sandbox

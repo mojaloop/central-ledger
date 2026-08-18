@@ -36,9 +36,9 @@
 'use strict'
 const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 const { Enum } = require('@mojaloop/central-services-shared')
-const ParticipantService = require('../../src/domain/participant')
-const Config = require('./config.js')
-const { logger } = require('../../src/shared/logger')
+const ParticipantService = require('../domain/participant')
+const Config = require('./config')
+const { logger } = require('../shared/logger')
 
 let proxyCache
 

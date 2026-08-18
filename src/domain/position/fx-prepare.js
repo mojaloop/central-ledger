@@ -284,7 +284,7 @@ const processFxPositionPrepareBin = async (
 
       resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
 
-      if (changePositions) {
+      if (changePositions && participantLimit.thresholdAlarmPercentage) {
         Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::limitAlarm: ${currentPosition.toNumber()} > ${liquidityCover.multiply(participantLimit.thresholdAlarmPercentage)}`)
         if (currentPosition.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
           limitAlarms.push(participantLimit)

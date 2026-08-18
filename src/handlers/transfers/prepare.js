@@ -142,7 +142,7 @@ const forwardPrepare = async ({ isFx, params, ID }) => {
 
 /**
  * Calculates proxyObligation.
- * @returns {ProxyObligation} proxyObligation
+ * @returns {Promise<ProxyObligation>} proxyObligation
  */
 const calculateProxyObligation = async ({ payload, isFx, params, functionality, action }) => {
   const proxyObligation = {
@@ -442,7 +442,7 @@ const sendPositionPrepareMessage = async ({
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
  *
- * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+//  * @returns {Promise<object>} - Returns a boolean: true if successful, or throws and error if failed
  */
 const prepare = async (error, messages) => {
   const location = { module: 'PrepareHandler', method: '', path: '' }

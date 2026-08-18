@@ -191,7 +191,7 @@ const registerTransferHandler = async () => {
  * @async
  * @description Registers all handlers in transfers
  *
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ * @returns Promise<boolean> - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerAllHandlers = async () => {
   try {

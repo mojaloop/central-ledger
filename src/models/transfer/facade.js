@@ -188,6 +188,7 @@ const getByIdLight = async (id) => {
 }
 
 const getAll = async () => {
+  logger.error('TransferFacade.getAll() has been broken for some time. Are we even using it?')
   try {
     return await Db.from('transfer').query(async (builder) => {
       const transferResultList = await builder
@@ -938,8 +939,8 @@ const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transac
  *  Returns the list of transfers/fxTransfers that have timed out
  *
  * @returns {Promise<{
- *    transferTimeoutList: TimedOutTransfer,
- *    fxTransferTimeoutList: TimedOutFxTransfer
+ *    transferTimeoutList: Array<TimedOutTransfer>
+ *    fxTransferTimeoutList: Array<TimedOutFxTransfer>
  * }>}
  */
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { promisify } from 'node:util'
-import childProcess from 'node:child_process'
+const { promisify } = require('node:util')
+const childProcess = require('node:child_process')
 const exec = promisify(childProcess.exec)
 
 // Consumer groups to check (central-ledger and ml-api-adapter).

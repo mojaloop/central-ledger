@@ -31,7 +31,7 @@ const Db = require('../../../../src/lib/db')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { Producer } = require('@mojaloop/central-services-stream').Kafka
 
-const Config = require('#src/lib/config')
+const Config = require('../../../../src/lib/config')
 const Cache = require('#src/lib/cache')
 const ProxyCache = require('#src/lib/proxyCache')
 const fspiopErrorFactory = require('#src/shared/fspiopErrorFactory')

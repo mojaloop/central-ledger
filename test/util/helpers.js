@@ -30,8 +30,8 @@
 
 const { FSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 const Logger = require('@mojaloop/central-services-logger')
-const Config = require('#src/lib/config')
-const { logger } = require('#src/shared/logger/index')
+const Config = require('../../src/lib/config')
+const { logger } = require('../../src/shared/logger/index')
 
 /* Helper Functions */
 

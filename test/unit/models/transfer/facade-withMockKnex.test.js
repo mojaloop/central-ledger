@@ -33,7 +33,7 @@ const knex = require('knex')
 const mockKnex = require('mock-knex')
 const Proxyquire = require('proxyquire')
 
-const config = require('#src/lib/config')
+const config = require('../../../../src/lib/config')
 const { tryCatchEndTest } = require('#test/util/helpers')
 
 let transferFacade

@@ -193,7 +193,7 @@ module.exports = {
   plugin: {
     name: 'settlement api routes',
     register: async function (server) {
-      const api = await OpenapiBackend.initialise(Path.resolve(__dirname, '../interface/swagger.json'), Handlers)
+      const api = await OpenapiBackend.initialise(Path.resolve(process.cwd(), 'src/settlement/interface/swagger.json'), Handlers)
       server.route(APIRoutes(api))
     }
   }

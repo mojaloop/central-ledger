@@ -305,7 +305,7 @@ Test('Participant service', async (participantTest) => {
         assert.equal(result.currency, participant.currency, 'currencies match')
         assert.equal(result.isActive, participant.isActive, 'isActive flag match')
         assert.equal(result.currencyList, participantMap.get(participant.participantId + 1).currencyList, 'currencyList match')
-        assert.ok(Sinon.match(result.createdDate, participant.createdDate), 'created date matches')
+        assert.deepEqual(result.createdDate, participant.createdDate, 'created date matches')
       })
       assert.end()
     } catch (err) {

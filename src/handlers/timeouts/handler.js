@@ -292,7 +292,6 @@ const _processFxForwardedTransfers = async (fxTransferForwardedList) => {
  * Processes timedOut fxTransfers
  *
  * @param {TimedOutFxTransfer[]} fxTransferTimeoutList
- * @returns {Promise<void>}
  */
 const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   const fspiopError = createFSPIOPTimeoutError()
@@ -380,8 +379,6 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   * ... called to validate/insert ...
   *
   * @param {error} error - error thrown if something fails within Cron
-  *
-  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
   */
 const timeout = async () => {
   if (running) return
@@ -544,7 +541,7 @@ const initializeMetrics = () => {
   *
   * @async
   * @description Registers the timeout handler by starting the timeoutJob cron
-  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+  * @returns {Promise<boolean>} - Returns a boolean: true if successful, or throws and error if failed
   */
 const registerTimeoutHandler = async () => {
   try {

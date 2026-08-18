@@ -276,8 +276,6 @@ const positions = async (error, messages) => {
  *
  * @async
  * @description Registers the handler for position topic. Gets Kafka config from default.json
- *
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerPositionHandler = async () => {
   try {

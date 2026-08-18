@@ -25,7 +25,6 @@ The following documentation represents the services, APIs and endpoints responsi
   - [API](#api)
   - [Logging](#logging)
   - [Tests](#tests)
-    - [Running Integration Tests interactively](#running-integration-tests-interactively)
   - [Development environment](#development-environment)
   - [Auditing Dependencies](#auditing-dependencies)
   - [Container Scans](#container-scans)
@@ -182,104 +181,30 @@ Running the tests:
 
 Tests include code coverage via istanbul. See the test/ folder for testing scripts.
 
-### Running Integration Tests interactively
+### Integration Tests
 
-If you want to run integration tests in a repetitive manner, you can startup the test containers using `docker-compose` via one of the following methods:
+Integration tests end with `.int.ts`. Each test has a [harness](./src/testing//harness.ts) which
+brings up a file in an isolated testing environment.
 
-- Running locally
+#### Running using `run.ts`:
 
-    Start containers required for Integration Tests
-
-    ```bash
-    docker compose up -d mysql kafka init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
-    ```
-
-    Run wait script which will report once all required containers are up and running
-
-    ```bash
-    npm run wait-4-docker
-    ```
-
-    Start the Central-Ledger Service in the background, capturing the Process ID, so we can kill it when we are done. Alternatively you could also start the process in a separate terminal. This is a temporary work-around until the following issue can be addressed: https://github.com/mojaloop/project/issues/3112.
-
-    ```bash
-    npm start > cl-service.log &
-    echo $! > /tmp/int-test-service.pid
-    ```
-
-    You can access the Central-Ledger Service log in another terminal with `tail -f cl-service.log`.
-
-    Run the Integration Tests
-
-    ```bash
-    npm run test:int
-    ```
-
-    Kill the background Central-Ledger Service
-
-    ```bash
-    kill $(cat /tmp/int-test-service.pid)
-    ```
-
-- Running inside docker
-
-    Start containers required for Integration Tests, including a `central-ledger` container which will be used as a proxy shell.
-
-    ```bash
-    docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql central-ledger init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
-    ```
-
-    Run the Integration Tests from the `central-ledger` container
-
-    ```bash
-    docker exec -it cl_central-ledger sh
-    export CL_DATABASE_HOST=mysql
-    npm run test:int
-  ```
-
-If you want to run override position topic tests you can repeat the above and use `npm run test:int-override` after configuring settings found [here](#kafka-position-event-type-action-topic-map)
-
-#### For running integration tests for batch processing interactively
-- Run dependecies
 ```bash
-docker compose up -d mysql kafka init-kafka redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
-npm run wait-4-docker
-```
-- Run central-ledger services
-```
-nvm use
-npm run migrate
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__RESERVE=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_TIMEOUT_RESERVED=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__ABORT=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_ABORT=topic-transfer-position-batch
-npm start
-```
-- Additionally, run position batch handler in a new terminal
-```
-nvm use
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_PREPARE=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__COMMIT=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__TIMEOUT_RESERVED=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_TIMEOUT_RESERVED=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__ABORT=topic-transfer-position-batch
-export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_ABORT=topic-transfer-position-batch
-export CLEDG_HANDLERS__API__DISABLED=true
-node src/handlers/index.js handler --positionbatch
-```
-- Run tests using the following commands in a new terminal
-```
-nvm use
-npm run test:int-override
+npm run test:integration
 ```
 
+#### Run a single test
 
-If you want to just run all of the integration suite non-interactively then use npm run `test:integration`.
-It will handle docker start up, migration, service starting and testing. Be sure to exit any previously ran handlers or docker commands.
+To run a single integration test file, you can simply pass in the file to `node --test` like so:
+
+```bash
+node --test --require ts-node/register <path to file>
+```
+
+For example, to run `src/domain/participant/index.int.ts`:
+```bash
+node --test --require ts-node/register src/domain/participant/index.int.ts
+```
+
 
 ### Running Functional Tests
 

@@ -28,7 +28,7 @@
 'use strict'
 
 const Cache = require('../../lib/cache')
-const Config = require('../../../src/lib/config')
+const Config = require('../../lib/config')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const rethrow = require('../../shared/rethrow')
 

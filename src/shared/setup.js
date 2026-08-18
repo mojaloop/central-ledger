@@ -46,7 +46,6 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const Migrator = require('../lib/migrator')
 const Config = require('../lib/config')
-const SettlementEnums = require('../settlement/models/lib/enums')
 const Db = require('../lib/db')
 const ProxyCache = require('../lib/proxyCache')
 const Cache = require('../lib/cache')
@@ -118,11 +117,6 @@ const createServer = (port, modules) => {
           }
         }
       }
-    })
-
-    server.method({
-      name: 'enums',
-      method: (id) => SettlementEnums[id]()
     })
 
     await Plugins.registerPlugins(server)
@@ -321,7 +315,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     if (Config.PROXY_CACHE_CONFIG?.enabled) {
       await ProxyCache.disconnect()
     }
-    process.exit(1)
+    throw err
   }
 }
 

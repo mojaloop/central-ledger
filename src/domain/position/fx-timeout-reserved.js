@@ -39,6 +39,7 @@ const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('../../shared/logger').logger
+const assert = require('node:assert')
 
 /**
  * @function processPositionFxTimeoutReservedBin
@@ -89,6 +90,9 @@ const processPositionFxTimeoutReservedBin = async (
         Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates: ${JSON.stringify(accumulatedFxTransferStates)}`)
 
         const transferAmount = fetchedReservedPositionChangesByCommitRequestIds[commitRequestId][participantAccountId].change
+        if (transferAmount === undefined) {
+          throw new Error(`transferAmount is undefined for commitRequestId: ${commitRequestId} and ${participantAccountId}`)
+        }
 
         // Construct payee notification message
         const resultMessage = _constructFxTimeoutReservedResultMessage(
@@ -167,6 +171,8 @@ const _constructFxTimeoutReservedResultMessage = (binItem, commitRequestId, coun
 }
 
 const _handleParticipantPositionChange = (runningPosition, transferAmount, commitRequestId, accumulatedPositionReservedValue) => {
+  assert(runningPosition !== undefined)
+  assert(transferAmount !== undefined)
   const transferStateId = Enum.Transfers.TransferInternalState.EXPIRED_RESERVED
   // Revert payer's position for the amount of the transfer
   const updatedRunningPosition = new MLNumber(runningPosition.subtract(transferAmount).toFixed(Config.AMOUNT.SCALE))

@@ -37,8 +37,9 @@ const EventSdk = require('@mojaloop/event-sdk')
 const BinProcessor = require('../../domain/position/binProcessor')
 const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Utility = require('@mojaloop/central-services-shared').Util
-const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const { Kafka: { otel }, Util: { Producer, Consumer } } = require('@mojaloop/central-services-stream')
+const { Kafka } = Utility
+const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
+const otel = require('@mojaloop/central-services-stream').Kafka.otel
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
@@ -47,7 +48,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const BatchPositionModel = require('../../models/position/batch')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 const { BATCHING } = require('../../shared/constants')
-
+const Logger = require('../../shared/logger').logger
 const consumerCommit = true
 const rethrow = require('../../shared/rethrow')
 
@@ -191,6 +192,7 @@ const positions = batchConfig => async (error, messages) => {
     }
     histTimerEnd({ success: true })
   } catch (err) {
+    Logger.error(`handlerBatch failed with error: ${err.message}`)
     // If Bin Processor returns failure
     // -  Rollback DB transaction
     await trx?.rollback()
@@ -220,8 +222,6 @@ const positions = batchConfig => async (error, messages) => {
  *
  * @async
  * @description Registers the handler for position topic. Gets Kafka config from default.json
- *
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerPositionHandler = async () => {
   try {

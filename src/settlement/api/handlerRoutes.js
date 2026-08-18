@@ -83,7 +83,7 @@ module.exports = {
   plugin: {
     name: 'settlement handler api routes',
     register: async function (server) {
-      const api = await OpenapiBackend.initialise(Path.resolve(__dirname, '../interface/swagger-handler.json'), {
+      const api = await OpenapiBackend.initialise(Path.resolve(process.cwd(), 'src/settlement/interface/swagger-handler.json'), {
         getHealth: Handlers.getHealth,
         validationFail: Handlers.validationFail,
         notFound: Handlers.notFound,

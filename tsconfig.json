@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "lib": [
+      "es2020",
+      "esnext",
+    ],
+    "types": [
+      "node"
+    ],
+    "module": "commonjs",
+    "target": "es2020",
+    "allowJs": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+  ],
+  "exclude": [
+    "node_modules",
+    "src/**/*.d.ts"
+  ],
+  "ts-node": {
+    "compilerOptions": {
+      "sourceMap": true
+    },
+    "transpileOnly": true,
+    "experimentalResolver": false,
+    "files": true,
+    "ignore": [
+      "(?:^|/)node_modules/",
+      // We ignore .d.ts files as ts-node fails if it tries to execute them.
+      "\\.d\\.ts$"
+    ]
+  }
+}

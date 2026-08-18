@@ -27,12 +27,12 @@
  **********/
 
 const Test = require('tape')
-const externalParticipant = require('#src/models/participant/externalParticipant')
-const config = require('#src/lib/config')
-const db = require('#src/lib/db')
+const externalParticipant = require('../../../../src/models/participant/externalParticipant')
+const config = require('../../../../src/lib/config')
+const db = require('../../../../src/lib/db')
 
-const fixtures = require('#test/fixtures')
-const { tryCatchEndTest } = require('#test/util/helpers')
+const fixtures = require('../../../fixtures')
+const { tryCatchEndTest } = require('../../../util/helpers')
 
 Test('externalParticipant Model Tests -->', (epModelTest) => {
   epModelTest.test('setup', tryCatchEndTest(async (t) => {

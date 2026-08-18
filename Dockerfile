@@ -18,12 +18,18 @@ WORKDIR /opt/app
 RUN apk --no-cache add git
 RUN apk add --no-cache --virtual .build-deps autoconf automake bash g++ gcc libtool make openssl-dev py3-setuptools python3
 
-COPY package.json package-lock.json* /opt/app/
+COPY package.json package-lock.json* tsconfig.json /opt/app/
+
+RUN stat package.json
+RUN stat package-lock.json
 
 # Lifecycle scripts are skipped for supply-chain safety (docker:S6505); node-rdkafka
 # is the only production dependency that needs its native build, so run it explicitly.
 RUN npm ci --ignore-scripts
 RUN npm rebuild node-rdkafka
+
+COPY src /opt/app/src
+RUN npm run build
 RUN npm prune --omit=dev
 
 FROM node:${NODE_VERSION}
@@ -39,11 +45,7 @@ USER ml-user
 
 COPY --chown=ml-user --from=builder /opt/app .
 
-COPY src /opt/app/src
 COPY config /opt/app/config
-COPY migrations /opt/app/migrations
-COPY seeds /opt/app/seeds
-COPY test /opt/app/test
 
 EXPOSE 3001
 CMD ["npm", "run", "start"]

@@ -54,7 +54,8 @@ echo "Checking Kafka consumer group status..."
 
 ## Start integration tests
 echo "Running Integration Tests"
-LOG_LEVEL=${LOG_LEVEL} npm run test:xint
+# LOG_LEVEL=${LOG_LEVEL} npm run test:xint
+LOG_LEVEL=${LOG_LEVEL} npx tape 'test/integration/**/*.test.js'
 INTEGRATION_TEST_EXIT_CODE="$?"
 echo "==> integration tests exited with code: $INTEGRATION_TEST_EXIT_CODE"
 
@@ -84,7 +85,7 @@ export CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__FX_ABORT='topic-trans
 npm start > ./test/results/cl-service-override.log &
 ## Store PID for cleanup
 echo $! > /tmp/int-test-service.pid
-env "CLEDG_HANDLERS__API__DISABLED=true" node src/handlers/index.js handler --positionbatch > ./test/results/cl-batch-handler.log &
+env "CLEDG_HANDLERS__API__DISABLED=true" node dist/handlers/index.js handler --positionbatch > ./test/results/cl-batch-handler.log &
 ## Store PID for cleanup
 echo $! > /tmp/int-test-handler.pid
 unset CLEDG_KAFKA__EVENT_TYPE_ACTION_TOPIC_MAP__POSITION__PREPARE

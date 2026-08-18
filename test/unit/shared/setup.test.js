@@ -30,12 +30,10 @@ Test('setup', setupTest => {
   let HapiStub
   let UrlParserStub
   let serverStub
-  let processExitStub
   // let KafkaCronStub
 
   setupTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    processExitStub = sandbox.stub(process, 'exit')
     PluginsStub = {
       registerPlugins: sandbox.stub().resolves()
     }
@@ -331,19 +329,19 @@ Test('setup', setupTest => {
       })
     })
 
-    initializeTest.test('exit the process when service is "undefined"', async (test) => {
+    initializeTest.test('throw when the service is "undefined"', async (test) => {
       const service = 'undefined'
 
-      Setup.initialize({ service }).then(s => {
+      try {
+        await Setup.initialize({ service })
+        test.fail('Setup.initialize() should have thrown.')
+        test.end()
+      } catch (err) {
         test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.notOk(MigratorStub.migrate.called)
-        test.ok(processExitStub.called)
         test.end()
-      }).catch(err => {
-        test.fail(`Should have exited the process: ${err.message}`)
-        test.end()
-      })
+      }
     })
 
     initializeTest.test('run migrations if runMigrations flag enabled', async (test) => {
@@ -592,7 +590,11 @@ Test('setup', setupTest => {
         // rejectHandler
       ]
 
-      Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
+      try {
+        await Setup.initialize({ service, runHandlers: true, handlers: modulesList })
+        test.fail('Setup.initialize() should have thrown.')
+        test.end()
+      } catch (err) {
         test.ok(RegisterHandlersStub.transfers.registerPrepareHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandler.called)
@@ -604,12 +606,8 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.bulk.registerBulkFulfilHandler.called)
         test.ok(RegisterHandlersStub.bulk.registerBulkProcessingHandler.called)
         test.ok(RegisterHandlersStub.bulk.registerBulkGetHandler.called)
-        test.ok(processExitStub.called)
         test.end()
-      }).catch(err => {
-        test.fail(`should have exited the process ${err}`)
-        test.end()
-      })
+      }
     })
 
     initializeTest.test('run disabled Handler if runHandlers flag enabled with handlers[] populated', async (test) => {

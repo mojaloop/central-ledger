@@ -1,0 +1,16 @@
+{
+  "exceptions": {
+    "markdown-it-attrs@1.2.1": {
+      "reason": "MIT per https://www.npmjs.com/package/markdown-it-attrs#license; empty license field in package.json.",
+      "expires": "2027-01-01"
+    },
+    "pause-stream@0.0.11": {
+      "reason": "MIT/Apache 2.0 per https://github.com/dominictarr/pause-stream/blob/master/LICENSE.",
+      "expires": "2027-01-01"
+    },
+    "fsevents@2.3.3": {
+      "reason": "MIT per https://github.com/fsevents/fsevents/blob/master/LICENSE.",
+      "expires": "2027-01-01"
+    }
+  }
+}

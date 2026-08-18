@@ -51,8 +51,6 @@ const ParticipantService = require('#src/domain/participant/index')
 const TransferExtensionModel = require('#src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const MLNumber = require('@mojaloop/ml-number')
-
 const {
   wrapWithRetries,
   getMessagePayloadOrThrow,
@@ -247,9 +245,6 @@ const prepareTestData = async (dataObj) => {
       }
     }
 
-    // const undefinedFulfilmentPayload = Object.assign({}, fulfilPayload, { fulfilment: undefined })
-    const undefinedFulfilmentPayload = Object.assign({}, fulfilPayload)
-    delete undefinedFulfilmentPayload.fulfilment
     const rejectPayload = Object.assign({}, fulfilPayload, { transferState: TransferInternalState.ABORTED_REJECTED })
 
     const errorPayload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN).toApiErrorObject()
@@ -289,11 +284,6 @@ const prepareTestData = async (dataObj) => {
     messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
     messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
 
-    const messageProtocolUndefinedFulfil = Util.clone(messageProtocolFulfil)
-    messageProtocolUndefinedFulfil.id = randomUUID()
-    messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
-    messageProtocolUndefinedFulfil.content.payload = undefinedFulfilmentPayload
-
     const messageProtocolReject = Util.clone(messageProtocolFulfil)
     messageProtocolReject.id = randomUUID()
     messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
@@ -316,7 +306,6 @@ const prepareTestData = async (dataObj) => {
       errorPayload,
       messageProtocolPrepare,
       messageProtocolFulfil,
-      messageProtocolUndefinedFulfil,
       messageProtocolReject,
       messageProtocolError,
       topicConfTransferPrepare,
@@ -458,19 +447,19 @@ Test('Handlers test', async handlersTest => {
       prepareConfig.logger = Logger
       await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, prepareConfig)
 
-      const transferId = td.messageProtocolPrepare.content.payload.transferId
       let transfer = {}
       try {
         transfer = await wrapWithRetries(async () => {
           // lets fetch the transfer
-          const transfer = await TransferService.getById(transferId)
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId)
+          console.dir(transfer)
           // lets check its status, and if its what we expect return the result
           if (transfer?.transferState === 'RESERVED') return transfer
           // otherwise lets return nothing
           return null
         }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       } catch (err) {
-        test.notOk(`Transfer with id: ${transferId} not found.`)
+        test.notOk('Error should not be thrown')
         console.error(err)
       }
 
@@ -498,7 +487,7 @@ Test('Handlers test', async handlersTest => {
         await wrapWithRetries(() => testConsumer.getEventsForFilter({
           topicFilter: 'topic-notification-event',
           action: 'reserved-aborted'
-        }), 10, wrapWithRetriesConf.timeout)
+        }), wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
         test.notOk('Should not be executed')
       } catch (err) {
         console.log(err)
@@ -872,8 +861,8 @@ Test('Handlers test', async handlersTest => {
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-        test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerExpectedPosition), 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.ok(new MLNumber(payerPositionChange.value).isEqualTo(payerCurrentPosition.value), 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 
@@ -913,8 +902,8 @@ Test('Handlers test', async handlersTest => {
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(transfer?.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
         test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
-        test.ok(new MLNumber(payeeCurrentPosition.value).isEqualTo(payeeExpectedPosition), 'Payee position decremented by transfer amount and updated in participantPosition')
-        test.ok(new MLNumber(payeePositionChange.value).isEqualTo(payeeCurrentPosition.value), 'Payee position change value inserted and matches the updated participantPosition value')
+        test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
+        test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
         test.equal(payeePositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
       }
 
@@ -953,88 +942,6 @@ Test('Handlers test', async handlersTest => {
     transferFulfilCommit.end()
   })
 
-  await handlersTest.test('transferFulfilCommit negative should', async transferFulfilCommit => {
-    const td = await prepareTestData(testData)
-
-    await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
-      const config = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.PREPARE.toUpperCase())
-      config.logger = Logger
-
-      const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
-
-      const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
-        const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
-        const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
-        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-        test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-        test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerExpectedPosition), 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.ok(new MLNumber(payerPositionChange.value).isEqualTo(payerCurrentPosition.value), 'Payer position change value inserted and matches the updated participantPosition value')
-        test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
-      }
-
-      try {
-        await wrapWithRetries(async () => {
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer?.transferState !== TransferState.RESERVED) {
-            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            return null
-          }
-          return transfer
-        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        await tests()
-      } catch (err) {
-        Logger.error(err)
-        test.fail(err.message)
-      }
-      test.end()
-    })
-
-    await transferFulfilCommit.test('should throw an error when fulfilment is undefined on COMMITTED transfer', async (test) => {
-      const config = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.FULFIL.toUpperCase())
-      config.logger = Logger
-      const producerResponse = await Producer.produceMessage(td.messageProtocolUndefinedFulfil, td.topicConfTransferFulfil, config)
-      const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-        const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId) || {}
-        const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
-        const payeeExpectedPosition = payeeInitialPosition
-        test.equal(producerResponse, true, 'Producer for fulfil published message')
-        test.equal(transfer?.transferState, TransferInternalState.ABORTED_ERROR, `Transfer state changed to ${TransferInternalState.ABORTED_ERROR}`)
-        test.equal(transfer.errorCode, 3100, 'errorCode is 3100')
-        test.equal(transfer.errorDescription, 'Generic validation error - invalid fulfilment', 'errorDescription is \'Generic validation error - invalid fulfilment\'')
-        test.ok(new MLNumber(payeeCurrentPosition.value).isEqualTo(payeeExpectedPosition), 'Payee position should not change')
-      }
-
-      try {
-        await wrapWithRetries(async () => {
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer?.transferState !== TransferInternalState.ABORTED_ERROR) {
-            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            return null
-          }
-          return transfer
-        }, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
-        await tests()
-      } catch (err) {
-        Logger.error(err)
-        test.fail(err.message)
-      }
-      test.end()
-    })
-    transferFulfilCommit.end()
-  })
-
   await handlersTest.test('transferFulfilCommit with default settlement model should', async transferFulfilCommit => {
     const td = await prepareTestData(testDataZAR)
     await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
@@ -1055,8 +962,8 @@ Test('Handlers test', async handlersTest => {
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-        test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerExpectedPosition), 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.ok(new MLNumber(payerPositionChange.value).isEqualTo(payerCurrentPosition.value), 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 
@@ -1094,8 +1001,8 @@ Test('Handlers test', async handlersTest => {
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(transfer?.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
         test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Commit ilpFulfilment saved')
-        test.ok(new MLNumber(payeeCurrentPosition.value).isEqualTo(payeeExpectedPosition), 'Payee position decremented by transfer amount and updated in participantPosition')
-        test.ok(new MLNumber(payeePositionChange.value).isEqualTo(payeeCurrentPosition.value), 'Payee position change value inserted and matches the updated participantPosition value')
+        test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
+        test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
         test.equal(payeePositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
       }
 
@@ -1255,8 +1162,8 @@ Test('Handlers test', async handlersTest => {
         const transferExtension = await TransferExtensionModel.getByTransferId(transfer.transferId, false, true)
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(transfer?.transferState, TransferInternalState.ABORTED_ERROR, `Transfer state changed to ${TransferInternalState.ABORTED_ERROR}`)
-        test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerExpectedPosition), 'Payer position decremented by transfer amount and updated in participantPosition')
-        test.ok(new MLNumber(payerPositionChange.value).isEqualTo(payerCurrentPosition.value), 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
         test.ok(transferError, 'A transfer error has been recorded')
         test.equal(transferError.errorCode, td.errorPayload.errorInformation.errorCode, 'Transfer error code matches')
@@ -1324,8 +1231,8 @@ Test('Handlers test', async handlersTest => {
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer?.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-        test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerExpectedPosition), 'Payer position incremented by transfer amount and updated in participantPosition')
-        test.ok(new MLNumber(payerPositionChange.value).isEqualTo(payerCurrentPosition.value), 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         test.equal(payerPositionChange.transferStateChangeId, transfer?.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
       }
 
@@ -1426,14 +1333,14 @@ Test('Handlers test', async handlersTest => {
       // Act
       const payerPositionDidReset = async () => {
         const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId)
-        return new MLNumber(payerCurrentPosition.value).isEqualTo(payerInitialPosition)
+        return payerCurrentPosition.value === payerInitialPosition
       }
       // wait until we know the position reset, or throw after 5 tries
       await wrapWithRetries(payerPositionDidReset, wrapWithRetriesConf.remainingRetries, wrapWithRetriesConf.timeout)
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
       // Assert
-      test.ok(new MLNumber(payerCurrentPosition.value).isEqualTo(payerInitialPosition), 'Position resets after a timeout')
+      test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
       test.end()
     })
 

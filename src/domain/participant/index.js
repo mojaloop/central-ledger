@@ -62,8 +62,6 @@ const ActionNotSupportedText = 'The action is not supported'
 const ParticipantAccountCurrencyMismatchText = 'The account does not match participant or currency specified'
 const ParticipantAccountMismatchText = 'Participant/account mismatch'
 const ParticipantInactiveText = 'Participant is currently set inactive'
-const ParticipantInitialPositionExistsText = 'Participant Limit or Initial Position already set'
-// const ParticipantNotFoundText = 'Participant does not exist'
 
 const create = async (payload) => {
   const log = logger.child({ payload })
@@ -339,8 +337,9 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingSettlementPosition = await ParticipantPositionModel.getByParticipantCurrencyId(settlementAccount.participantCurrencyId)
     if (existingLimit || existingPosition || existingSettlementPosition) {
-      log.warn('participant limit or initial position already set')
-      throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantInitialPositionExistsText)
+      const errorMessage = `Participant Limit or Initial Position already set for participant: ${participantName}.`
+      log.warn(errorMessage)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(errorMessage)
     }
     const limitAndInitialPosition = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
     if (!limitAndInitialPosition.initialPosition) {

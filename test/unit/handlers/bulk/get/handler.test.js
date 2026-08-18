@@ -46,7 +46,7 @@ const ilp = require('../../../../../src/models/transfer/ilpPacket')
 // const TransferState = Enum.Transfers.TransferState
 // const TransferInternalState = Enum.Transfers.TransferInternalState
 
-require('../../../../../src/lib/config').MONGODB_DISABLED = false
+const { overrideForTesting, resetOverride } = require('../../../../../src/lib/config')
 
 const bulkTransfer = {
   bulkTransferId: 'fake-bulk-transfer-id',
@@ -155,6 +155,7 @@ Test('Bulk Transfer GET handler', getHandlerTest => {
 
   getHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    overrideForTesting({ MONGODB_DISABLED: false })
     sandbox.stub(ProxyCache, 'getCache').returns({
       connect: sandbox.stub(),
       disconnect: sandbox.stub()
@@ -209,6 +210,7 @@ Test('Bulk Transfer GET handler', getHandlerTest => {
 
   getHandlerTest.afterEach(test => {
     sandbox.restore()
+    resetOverride()
     test.end()
   })
 

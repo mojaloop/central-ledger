@@ -213,9 +213,15 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           reservedValue: new MLNumber(initialParticipantPosition.reservedValue).subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE),
           changedDate: transactionTimestamp
         })
+
         // TODO this limit needs to be clarified
-        if (processedPositionValue.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
-          limitAlarms.push(participantLimit)
+        // It appears that participantLimit.thresholdAlarmPercentage is always undefined.
+        // @mojaloop/ml-number@11.1.5 broke this line since it throws when an undefined value is
+        // passed in. For now, I'm putting in a placeholder of 1.
+        if (participantLimit.thresholdAlarmPercentage) {
+          if (processedPositionValue.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
+            limitAlarms.push(participantLimit)
+          }
         }
         histTimerUpdateParticipantPositionEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateParticipantPosition' })
         /*
