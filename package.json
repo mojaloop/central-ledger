@@ -168,9 +168,6 @@
     "@now-ims/hapi-now-auth": {
       "joi": "17.13.4"
     },
-    "hapi-openapi": {
-      "joi": "17.13.4"
-    },
     "blipp": {
       "joi": "17.13.4"
     },
@@ -205,10 +202,10 @@
       "markdown-it": "14.3.0"
     },
     "hapi-auth-bearer-token": {
-      "joi": "18.2.3"
+      "joi": "18.2.5"
     },
     "hapi-swagger": {
-      "joi": "18.2.3"
+      "joi": "18.2.5"
     },
     "immutable": "5.1.8",
     "fast-uri": "3.1.5",
