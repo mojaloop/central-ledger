@@ -31,32 +31,7 @@
 const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
 const Path = require('path')
 const Handlers = require('./handlers')
-
-/**
- * Base path the settlement API is served under. It mirrors the `servers` url
- * of the OpenAPI document (formerly the Swagger 2.0 `basePath`).
- *
- * @param {object} api OpenAPIBackend instance
- * @returns {string} base path, e.g. '/v2'
- */
-const getBasePath = (api) => api.definition.servers[0].url.replace(/\/$/, '')
-
-/**
- * Request handler. The base path is stripped from the request path, as the
- * paths of the OpenAPI document are relative to its `servers` url.
- *
- * @param {object} api OpenAPIBackend instance
- * @param {object} req Request
- * @param {object} h   Response handle
- */
-const handleRequest = (api, req, h) => api.handleRequest(
-  {
-    method: req.method,
-    path: req.path.slice(getBasePath(api).length),
-    body: req.payload,
-    query: req.query,
-    headers: req.headers
-  }, req, h)
+const { getBasePath, handleRequest } = require('./openapiRouting')
 
 /**
  * Core API Routes

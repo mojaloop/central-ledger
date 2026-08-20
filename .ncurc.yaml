@@ -1,5 +1,13 @@
 ## Add a comment indicating the reason for each rejected dependency upgrade added to this list.
 reject: [
+  # central-services-shared 18.38.x ships two behavioural regressions in a minor release, both
+  # reproduced here on 2026-08-19: (1) Util.omitNil/mergeAndOmitNil were de-lodashed and the
+  # replacement filters only null, so undefined-valued keys survive - TransformService.toTransfer
+  # gains an "expiration: undefined" key and 3 unit tests fail (test/unit/domain/transfer/
+  # transform.test.js); (2) the APIDocumentation plugin option was renamed documentPath ->
+  # pathToSwaggerFile, breaking plugin registration. Hold at 18.37.0 (same as main) until a
+  # shared release restores omitNil nil-semantics; then re-apply the option rename with the bump.
+  "@mojaloop/central-services-shared",
   # tape 5.x enforces strict .end()/plan semantics that break this repo's stream-style event tests
   # (verified against the tape 5.10.x line); the suite also runs under the tapes wrapper, which is bound to tape 4.
   "tape",
