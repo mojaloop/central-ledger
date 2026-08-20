@@ -1,5 +1,5 @@
 {
-    "openapi": "3.0.3",
+    "openapi": "3.2.0",
     "info": {
         "version": "2.0",
         "title": "MOJALOOP Central Settlements Handlers service API",
