@@ -920,6 +920,12 @@ class MySql {
 
   /**
    * Call exec on the container to make sure mysql is ready for connections.
+   *
+   * The probe goes over TCP rather than the unix socket on purpose. The mariadb entrypoint
+   * bootstraps the database on a temporary server started with `--skip-networking`, then stops
+   * it and starts the real one. A socket probe passes against that temporary server and then
+   * migrate() races its shutdown - `ERROR 2002 ... Can't connect to local server through socket`.
+   * Only the real server listens on 3306, so a TCP probe cannot succeed too early.
    */
   private async waitForMySqlReady(): Promise<void> {
     assert(this._connectionOptions)
@@ -930,7 +936,7 @@ class MySql {
     for (let attempt = 1; attempt <= attemptsMax; attempt++) {
       try {
         const command = `docker exec ${this.containerName} sh -c \
-          'mariadb -u root -ppassword -e "select 1" ${this.options.databaseName}'
+          'mariadb --protocol=TCP -h 127.0.0.1 -P 3306 -u root -ppassword -e "select 1" ${this.options.databaseName}'
         `
         await execAsync(command)
         logger.warn(`MySql started after ${attempt} attempts (${attempt * delayMs}ms).`)
@@ -966,6 +972,7 @@ class MySql {
           default: 
             throw new Error(`Unexpected migration type: ${type}`)
         }
+        return
       } catch (err: any) {
         if (attempt === attemptsMax) {
           throw new Error(`migrate failed after ${attemptsMax}.\n${err.message}`)
