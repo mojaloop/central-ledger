@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2025 Mojaloop Foundation
+ Copyright © 2020-2026 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -59,7 +59,29 @@ const handleRequest = (api, req, h) => api.handleRequest(
     headers: req.headers
   }, req, h)
 
+/**
+ * Fail fast when the API definition declares an operation with no handler.
+ *
+ * `OpenapiBackend.initialise` runs openapi-backend non-strict, so an operation it has no
+ * handler for is dispatched to `notFound`. An operationId added to the definition but never
+ * wired into the handlers map would therefore answer 404 at runtime rather than failing at
+ * startup - the filesystem-based routing this replaced could not drift that way.
+ *
+ * @param {object} api Initialised OpenAPIBackend instance
+ * @throws {Error} If the definition declares an operation with no registered handler
+ */
+const assertHandlersRegistered = (api) => {
+  const unhandled = api.getOperations()
+    .filter(({ operationId }) => typeof api.handlers[operationId] !== 'function')
+    .map(({ method, path, operationId }) => `${method.toUpperCase()} ${path} (operationId: ${operationId})`)
+
+  if (unhandled.length > 0) {
+    throw new Error(`OpenAPI definition declares operations with no registered handler: ${unhandled.join(', ')}`)
+  }
+}
+
 module.exports = {
   getBasePath,
-  handleRequest
+  handleRequest,
+  assertHandlersRegistered
 }

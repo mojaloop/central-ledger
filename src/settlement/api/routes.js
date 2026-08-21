@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2025 Mojaloop Foundation
+ Copyright © 2020-2026 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -31,7 +31,7 @@
 const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
 const Path = require('path')
 const Handlers = require('./handlers')
-const { getBasePath, handleRequest } = require('./openapiRouting')
+const { getBasePath, handleRequest, assertHandlersRegistered } = require('./openapiRouting')
 
 /**
  * Core API Routes
@@ -169,6 +169,7 @@ module.exports = {
     name: 'settlement api routes',
     register: async function (server) {
       const api = await OpenapiBackend.initialise(Path.resolve(process.cwd(), 'src/settlement/interface/swagger.json'), Handlers)
+      assertHandlersRegistered(api)
       server.route(APIRoutes(api))
     }
   }
