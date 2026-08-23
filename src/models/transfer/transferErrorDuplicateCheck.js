@@ -43,7 +43,7 @@ const rethrow = require('../../shared/rethrow')
  *
  * @param {string} transferId - the transfer id
  *
- * @returns {Promise<{transferId: string, hash: string, createdDate: Date}>} 
+ * @returns {Promise<{transferId: string, hash: string, createdDate: Date}>}
  * Returns the record from transferErrorDuplicateCheck table, or throws an error if failed
  */
 

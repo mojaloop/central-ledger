@@ -189,38 +189,6 @@ describe('handlers/fx-abort', () => {
     // UNFUSE: 4, FUSE: 2.
     await harness.redpandaDrain(mark, 4)
 
-    // Snapshot.from(`[
-    //     "topic-notification-event",
-    //     "topic-transfer-position-batch",
-    //     "topic-notification-event"
-    //   ]`).checkUnwrap(harness.spoolLastTopic(3))
-
-    // Snapshot.from(`[
-    //     {
-    //       "conversionState": "ABORTED"
-    //     },
-    //     {
-    //       "errorInformation": {
-    //         "errorCode": "5100",
-    //         "errorDescription": "Payer rejected the transfer"
-    //       }
-    //     },
-    //     {
-    //       "errorInformation": {
-    //         "errorCode": "5100",
-    //         "errorDescription": "Payer rejected the transfer",
-    //         "extensionList": {
-    //           "extension": [
-    //             {
-    //               "key": "cause",
-    //               "val:ignore
-    //             }
-    //           ]
-    //         }
-    //       }
-    //     }
-    //   ]`).checkUnwrap(harness.spoolLastPayload(3))
-
     const transfer = await TransferFacade.getById('6000001')
     assert.equal(transfer.transferState, 'ABORTED_ERROR')
     const fxTransferAfterAbort = await FxTransferService.getByIdLight('5000001')

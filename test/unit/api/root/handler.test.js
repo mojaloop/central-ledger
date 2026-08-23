@@ -71,6 +71,7 @@ Test('Root', rootHandlerTest => {
   rootHandlerTest.test('Handler Test', async handlerTest => {
     handlerTest.test('getHealth returns the detailed health check', async function (test) {
       // Arrange
+      Config.PROXY_CACHE_CONFIG.enabled = true
       const Handler = requireUncached('../../../../src/api/root/handler')
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
       sandbox.stub(Consumer, 'getListOfTopics').returns(['admin'])

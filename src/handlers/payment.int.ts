@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2026 Mojaloop Foundation
+ Copyright © 2020-2024 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -19,16 +19,20 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
  * TigerBeetle
  - Lewis Daly <lewis@tigerbeetle.com>
  --------------
  ******/
 
-import { after, before, describe, it } from "node:test"
+
+import { after, before, describe, it } from 'node:test'
 import Harness from '../testing/harness'
 import * as ApiHelpers from '../testing/api-helpers'
-import { assertPositionDiff } from "../testing/util"
-import { DispatchTransferHandler } from "./dispatch-transfer-handler"
+import { assertPositionDiff } from '../testing/util'
+import { DispatchTransferHandler } from './dispatch-transfer-handler'
 
 const harness = Harness.getInstance()
 let PositionBatchHandler: any
@@ -60,13 +64,13 @@ describe('handlers/payment', () => {
       settlementModels: [
         {
           name: `DEFERRED_MULTILATERAL_NET_USD`,
-          settlementGranularity: "NET",
-          settlementInterchange: "MULTILATERAL",
-          settlementDelay: "DEFERRED",
+          settlementGranularity: 'NET',
+          settlementInterchange: 'MULTILATERAL',
+          settlementDelay: 'DEFERRED',
           currency: 'USD',
           requireLiquidityCheck: true,
-          ledgerAccountType: "POSITION",
-          settlementAccountType: "SETTLEMENT",
+          ledgerAccountType: 'POSITION',
+          settlementAccountType: 'SETTLEMENT',
           autoPositionReset: true
         }
       ]

@@ -260,17 +260,17 @@ const processFulfilMessage = async (message, functionality, span) => {
 
       // Publish message to Position Handler
       await Kafka.proceed(
-        Config.KAFKA_CONFIG, 
-        params, 
-        { 
-          consumerCommit, 
-          fspiopError: apiFSPIOPError, 
-          eventDetail, 
-          fromSwitch, 
-          toDestination: transfer.payerFsp, 
-          messageKey: payerAccount.participantCurrencyId.toString(), 
+        Config.KAFKA_CONFIG,
+        params,
+        {
+          consumerCommit,
+          fspiopError: apiFSPIOPError,
+          eventDetail,
+          fromSwitch,
+          toDestination: transfer.payerFsp,
+          messageKey: payerAccount.participantCurrencyId.toString(),
           topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.ABORT,
-          hubName: Config.HUB_NAME 
+          hubName: Config.HUB_NAME
         })
 
       /**
@@ -775,8 +775,6 @@ const processFxFulfilMessage = async (message, functionality, span) => {
 
   log.info('Validations Succeeded - process the fxFulfil...')
 
-
-  // LD: we don't do anything for the `FX_FORWARDED` case.
   switch (action) {
     case TransferEventAction.FX_RESERVE:
     case TransferEventAction.FX_COMMIT: {
@@ -1010,11 +1008,11 @@ const registerPrepareHandler = async (dispatchTransferHandler) => {
     consumeConfig.rdkafkaConf['client.id'] = topicName
 
     await Consumer.createHandler(
-      topicName, 
-      consumeConfig, 
+      topicName,
+      consumeConfig,
+      /* istanbul ignore next */
       (err, msg) => dispatchTransferHandler.prepare(err, msg)
     )
-    // await Consumer.createHandler(topicName, consumeConfig, prepare)
     return true
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'registerPrepareHandler' })
@@ -1030,7 +1028,7 @@ const registerPrepareHandler = async (dispatchTransferHandler) => {
  * @returns {Promise<boolean>} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerFulfilHandler = async (dispatchTransferHandler) => {
-  // assert(dispatchTransferHandler)
+  assert(dispatchTransferHandler, 'expected dispatchTransferHandler to be defined.')
 
   try {
     const fulfillHandler = {
@@ -1042,7 +1040,7 @@ const registerFulfilHandler = async (dispatchTransferHandler) => {
       config: Kafka.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.CONSUMER,
-        TransferEventType.TRANSFER.toUpperCase(), 
+        TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.FULFIL.toUpperCase()
       )
     }
@@ -1050,8 +1048,8 @@ const registerFulfilHandler = async (dispatchTransferHandler) => {
     await Consumer.createHandler(
       fulfillHandler.topicName,
       fulfillHandler.config,
-      // dispatchTransferHandler.fulfil
-      fulfil
+      /* istanbul ignore next */
+      (err, msg) => dispatchTransferHandler.fulfil(err, msg)
     )
     return true
   } catch (err) {

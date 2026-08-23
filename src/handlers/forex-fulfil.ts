@@ -1,4 +1,33 @@
-import assert from "node:assert";
+/*****
+ License
+ --------------
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
+ --------------
+ ******/
+
+import assert from 'node:assert';
 import crypto from 'node:crypto';
 
 import { Enum, Util } from '@mojaloop/central-services-shared'
@@ -8,14 +37,14 @@ const { decodePayload } = Util.StreamingProtocol
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
 
-import { ApplicationConfig } from "../lib/config";
-import { assertNestedFields } from "../lib/config/util";
-import { getFxTransferDuplicateCheck, getFxTransferErrorDuplicateCheck } from "../models/fxTransfer/duplicateCheck";
+import { ApplicationConfig } from '../lib/config';
+import { assertNestedFields, assertOneOf } from '../lib/config/util';
+import { getFxTransferDuplicateCheck, getFxTransferErrorDuplicateCheck } from '../models/fxTransfer/duplicateCheck';
 import FxTransferModel, { saveFxFulfilResponse } from '../models/fxTransfer/fxTransfer';
-import fspiopErrorFactory from "../shared/fspiopErrorFactory";
+import fspiopErrorFactory from '../shared/fspiopErrorFactory';
 import { logger } from '../shared/logger';
-import { TransferHelper } from "./transfer-helper";
-import RefactorHelper from "../shared/refactor-helper";
+import { TransferHelper } from './transfer-helper';
+import RefactorHelper from '../shared/refactor-helper';
 
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 
@@ -395,9 +424,7 @@ export class ForexFulfilHandler {
     const type = message.value.metadata.event.type
     assert(type === 'fulfil', 'message.value.metadata.event.type must be `fulfil`.')
     const action = message.value.metadata.event.action
-    assert(action === 'fx-commit' || 'fx-reserve' || 'fx-abort',
-      'message.value.metadata.action must be either `fx-fulfil` or `fx-abort`.'
-    )
+    assertOneOf(action, ['fx-commit', 'fx-reserve', 'fx-abort'])
 
     return {
       message,
@@ -408,7 +435,6 @@ export class ForexFulfilHandler {
       action,
       metric: `handler_fx_transfers_${action.toLowerCase()}`,
       functionality: Enum.Events.Event.Type.TRANSFER,
-      // TODO: simplify.
       actionEnum: this.getActionEnum(action),
     };
   }
@@ -466,7 +492,7 @@ export class ForexFulfilHandler {
     }
     const messageKey = forex.counterPartyFspSourceParticipantCurrencyId.toString()
     switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
-      case "UNFUSE": {
+      case 'UNFUSE': {
         await Kafka.proceed(this.deps.config.KAFKA_CONFIG, params, {
           consumerCommit: true,
           eventDetail,
@@ -475,7 +501,7 @@ export class ForexFulfilHandler {
         })
         return
       }
-      case "FUSE":
+      case 'FUSE':
         assert(this.deps.positionHandler)
         const wrapped = RefactorHelper.wrapForPositionHandler(params, {
           eventDetail,
@@ -519,7 +545,7 @@ export class ForexFulfilHandler {
     const messageKey = participantCurrencyId.toString()
 
     switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
-      case "UNFUSE": {
+      case 'UNFUSE': {
         await Kafka.proceed(this.deps.config.KAFKA_CONFIG, params, {
           consumerCommit: true,
           fspiopError: error,
@@ -532,7 +558,7 @@ export class ForexFulfilHandler {
         })
         return
       }
-      case "FUSE":
+      case 'FUSE':
         assert(this.deps.positionHandler)
         const wrapped = RefactorHelper.wrapForPositionHandler(params, {
           fspiopError: error,

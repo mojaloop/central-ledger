@@ -46,6 +46,9 @@ const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consume
 const { Consumer } = require('@mojaloop/central-services-stream').Util
 const EventSdk = require('@mojaloop/event-sdk')
 
+const { DispatchTransferHandler } = require('../../../../src/handlers/dispatch-transfer-handler')
+const Config = require('../../../../src/lib/config')
+
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
 const Participant = require('../../../../src/domain/participant')
@@ -2466,7 +2469,9 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.proceed.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
-      const result = await allTransferHandlers.registerAllHandlers()
+
+      const dispatchTransferHandler = new DispatchTransferHandler(Config)
+      const result = await allTransferHandlers.registerAllHandlers(dispatchTransferHandler)
       test.equal(result, true)
       test.end()
     })
@@ -2477,7 +2482,9 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.proceed.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
-      const result = await allTransferHandlers.registerAllHandlers()
+
+      const dispatchTransferHandler = new DispatchTransferHandler(Config)
+      const result = await allTransferHandlers.registerAllHandlers(dispatchTransferHandler)
       test.equal(result, true)
       test.end()
     })
@@ -2490,7 +2497,8 @@ Test('Transfer handler', transferHandlerTest => {
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.throws(new Error())
 
-        await allTransferHandlers.registerAllHandlers()
+        const dispatchTransferHandler = new DispatchTransferHandler(Config)
+        await allTransferHandlers.registerAllHandlers(dispatchTransferHandler)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -2507,7 +2515,8 @@ Test('Transfer handler', transferHandlerTest => {
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.throws(new Error())
 
-        await allTransferHandlers.registerAllHandlers()
+        const dispatchTransferHandler = new DispatchTransferHandler(Config)
+        await allTransferHandlers.registerAllHandlers(dispatchTransferHandler)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -2522,7 +2531,8 @@ Test('Transfer handler', transferHandlerTest => {
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.throws(new Error())
 
-        await allTransferHandlers.registerFulfilHandler()
+        const dispatchTransferHandler = new DispatchTransferHandler(Config)
+        await allTransferHandlers.registerFulfilHandler(dispatchTransferHandler)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {

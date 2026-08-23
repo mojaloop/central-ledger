@@ -43,6 +43,15 @@ exclude: [
   'src/**/*.test.ts',
   'src/testing/**',     # Test runner.
   'src/**/*.unit.ts',   # Unit test files.
-  'src/**/*.int.ts'    # Integration test tests.
+  'src/**/*.int.ts',    # Integration test tests.
+  'src/shared/refactor-helper.ts', # Will be deleted.
+  # The following are works in progress, not tested in unit tests but integration tests.
+  'src/handlers/dispatch-transfer-handler.ts',
+  'src/handlers/forex-fulfil.ts',
+  'src/handlers/forex-prepare.ts',
+  'src/handlers/payment-fulfil.ts',
+  'src/handlers/payment-prepare.ts',
+  'src/handlers/transfer-helper.ts',
+  
 ]
 ## todo: increase test coverage before merging feat/fx-impl to main branch

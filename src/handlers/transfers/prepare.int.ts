@@ -156,64 +156,6 @@ describe('handlers/prepare', () => {
   /**
    * fxTransfers
    */
-  // 
-  // TODO: Skipping for now - since we removed "PrepareHandler.calculateProxyObligation".
-  it.skip('Calculates the obligation between initating and counterparty DFSP.', async () => {
-    const payload = {
-      commitRequestId: '200001',
-      determiningTransferId: '300001',
-      initiatingFsp: 'external_dfsp_a',
-      counterPartyFsp: 'external_dfsp_b',
-      amountType: 'SEND',
-      sourceAmount: { currency: 'BWP', amount: '300.33' },
-      targetAmount: { currency: 'TZS', amount: '48000' },
-      // Mock condition.
-      condition: '8x04dj-RKEtfjStajaKXKJ5eL1mWm9iG2ltEKvEDOHc',
-      expiration: new Date(Date.now() + (24 * 60 * 60 * 1000))
-    }
-
-    const obligation = await PrepareHandler.calculateProxyObligation({
-      payload,
-      isFx: true,
-      params: {},
-      functionality: 'functionality',
-      action: 'action'
-    })
-
-    Snapshot.from(`{
-        "isFx": true,
-        "payloadClone": {
-          "commitRequestId": "200001",
-          "determiningTransferId": "300001",
-          "initiatingFsp": "dfsp_a_proxy",
-          "counterPartyFsp": "dfsp_b_proxy",
-          "amountType": "SEND",
-          "sourceAmount": {
-            "currency": "BWP",
-            "amount": "300.33"
-          },
-          "targetAmount": {
-            "currency": "TZS",
-            "amount": "48000"
-          },
-          "condition": "8x04dj-RKEtfjStajaKXKJ5eL1mWm9iG2ltEKvEDOHc",
-          "expiration": :ignore
-        },
-        "isInitiatingFspProxy": true,
-        "isCounterPartyFspProxy": true,
-        "initiatingFspProxyOrParticipantId": {
-          "inScheme": false,
-          "proxyId": "dfsp_a_proxy",
-          "name": "external_dfsp_a"
-        },
-        "counterPartyFspProxyOrParticipantId": {
-          "inScheme": false,
-          "proxyId": "dfsp_b_proxy",
-          "name": "external_dfsp_b"
-        }
-      }`).checkUnwrap(obligation)
-  })
-
   it('Lazy creates external participants.', async () => {
     let payerExternal = await ExternalParticipantCached.getByName('external_dfsp_a')
     let payeeExternal = await ExternalParticipantCached.getByName('external_dfsp_b')

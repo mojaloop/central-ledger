@@ -53,9 +53,6 @@ const getSubServiceHealthBroker = async () => {
     Logger.warn(`getSubServiceHealthBroker() - checking topics: [${consumerTopics.join(',')}]`)
     const results = await Promise.all(
       consumerTopics.map(async (topic) => {
-        // TODO: LD ignore this for now, I don't know why this is getting registered!
-        // Ah maybe because of settlement?
-        if (topic === 'topic-notification-event') return true
         try {
           const consumer = Consumer.getConsumer(topic)
           const isHealthy = await consumer.isHealthy()

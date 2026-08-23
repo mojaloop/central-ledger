@@ -1,18 +1,47 @@
-import assert from "node:assert"
-import { ApplicationConfig } from "../lib/config"
-import { assertNestedFields } from "../lib/config/util"
-import { PaymentPrepareHandler } from "./payment-prepare"
-import { PaymentFulfilHandler } from "./payment-fulfil"
-import { ForexPrepareHandler } from "./forex-prepare"
-import { ForexFulfilHandler } from "./forex-fulfil"
+/*****
+ License
+ --------------
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
+ --------------
+ ******/
+
+import assert from 'node:assert'
+import { ApplicationConfig } from '../lib/config'
+import { assertNestedFields } from '../lib/config/util'
+import { PaymentPrepareHandler } from './payment-prepare'
+import { PaymentFulfilHandler } from './payment-fulfil'
+import { ForexPrepareHandler } from './forex-prepare'
+import { ForexFulfilHandler } from './forex-fulfil'
 
 const { Util } = require('@mojaloop/central-services-shared')
 const { Kafka } = Util
 const { Consumer } = require('@mojaloop/central-services-stream').Util
 
 /**
- * A custom TransferHandler that lets us gradually route from the legacy transfer 
- * Handler to the refactored split handlers.
+ * A custom TransferHandler that lets us gradually route from the legacy transfer
+ * handlers to the refactored split handlers.
  */
 export class DispatchTransferHandler {
   // New refactored handlers.
@@ -39,19 +68,17 @@ export class DispatchTransferHandler {
     const proxyCache = require('../lib/proxyCache')
     const {
       createRemittanceEntityPayment,
-      createRemittanceEntityForex
-    } = require("../handlers/transfers/createRemittanceEntity")
-    const { 
-      sendPositionPrepareMessage, 
-      definePositionParticipant 
+      createRemittanceEntityForex,
+    } = require('../handlers/transfers/createRemittanceEntity')
+    const {
+      definePositionParticipant,
     } = require('../handlers/transfers/prepare')
     this.paymentPrepare = new PaymentPrepareHandler({
       config: this.config,
       proxyCache,
       createRemittanceEntity: createRemittanceEntityPayment,
-      sendPositionPrepareMessage,
       definePositionParticipant,
-      positionHandler
+      positionHandler,
     })
 
     const fxService = require('../domain/fx')
@@ -78,7 +105,7 @@ export class DispatchTransferHandler {
 
   /**
    * Do async init stuff.
-   * 
+   *
    * Register the prepare and fulfil kafka consumers. In test we need this to be able to commit the
    * offsets, but when running properly, this registers the handlers. Eventually this will be
    * refactored so that the dispatch handler has no notion of kafka at all, but instead kafka will
@@ -109,8 +136,7 @@ export class DispatchTransferHandler {
 
   public async prepare(error: any, messageOrMessages: any | Array<any>): Promise<any> {
     if (this.mode === 'JOINED') {
-      // Route everything to old handler. This way we can keep the tests 
-      // the same.
+      // Route everything to old handler. This way we can keep the tests the same.
       return this.legacyTransferHandler.prepare(error, messageOrMessages)
     }
 
@@ -149,12 +175,11 @@ export class DispatchTransferHandler {
     ]
   }
 
-  // TODO: I feel like we are missing fx-forwarded on the fulfil path somehow. Probably don't have
-  // tests for this.
+  // TODO: I feel like we are missing fx-forwarded on the fulfil path somehow. We probably don't
+  // have tests for this.
   public async fulfil(error: any, messageOrMessages: any | Array<any>): Promise<any> {
     if (this.mode === 'JOINED') {
-      // Route everything to old handler. This way we can keep the tests 
-      // the same.
+      // Route everything to old handler. This way we can keep the tests the same.
       return this.legacyTransferHandler.fulfil(error, messageOrMessages)
     }
 

@@ -171,11 +171,11 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
 // For proxied fxTransfers and transfers in a regional and jurisdictional scenario, proxy participants
 // are not expected to have a target currency account, so we need a slightly altered version of the above function.
 /**
- * 
- * @param {*} commitRequestId 
+ *
+ * @param {*} commitRequestId
  * @returns {Promise<{
  *  commitRequestId: string,
- *  completedTimestamp: Date, 
+ *  completedTimestamp: Date,
  *  determiningTransferId: string,
  *  sourceAmount: string,
  *  targetAmount:  string,
@@ -203,7 +203,7 @@ const getAllDetailsByCommitRequestId = async (commitRequestId) => {
  *  extensionList: Array<any>,
  *  isTransferReadModel: boolean,
  * }>}
- * 
+ *
  */
 const getAllDetailsByCommitRequestIdForProxiedFxTransfer = async (commitRequestId) => {
   try {

@@ -530,7 +530,7 @@ describe('domain/participant/index', () => {
           initialPosition: 0
         }
         const mark = harness.redpandaMark()
-        const result = await ParticipantService.addLimitAndInitialPosition(dfsp, payload)        
+        const result = await ParticipantService.addLimitAndInitialPosition(dfsp, payload)
         assert.equal(result, true)
         await harness.redpandaDrain(mark, 1)
       }

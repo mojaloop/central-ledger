@@ -6,7 +6,7 @@ describe('LedgerFuzz', () => {
 
   it('fuzz', async () => {
     const fuzzer = new LedgerFuzzer({
-      seed: process.env.SEED ? parseInt(process.env.SEED) : 1111,
+      seed: process.env.SEED ? Number.parseInt(process.env.SEED) : 1111,
       steps: 5
     })
 

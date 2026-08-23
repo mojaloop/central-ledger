@@ -102,7 +102,7 @@ export class Doer {
 
   public async do(action: Action): Promise<void> {
     switch (action) {
-      case ActionDFSP.PREPARE_PAYMENT_VALID: return this.preparePaymentValid()
+      case ActionDFSP.PREPARE_PAYMENT_VALID:
       case ActionDFSP.PREPARE_PAYMENT_INVALID:
       case ActionDFSP.PREPARE_PAYMENT_DUPLICATE:
       case ActionDFSP.PREPARE_PAYMENT_REUSE_ID:
@@ -120,10 +120,5 @@ export class Doer {
       case ActionDFSP.NONE:
         return
     }
-  }
-
-  private async preparePaymentValid(): Promise<void> {
-    // ledger.prepare();
-    
   }
 }

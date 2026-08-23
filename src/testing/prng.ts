@@ -71,7 +71,7 @@ export default class PRNG {
   public static generateWeightedChoiceTable<T extends string | number | symbol>
   (weights: any): Array<T> {
     const weightedChoiceTable: Array<T> = []
-    Object.keys(weights).map(action => {
+    Object.keys(weights).forEach(action => {
       const weight = weights[action]
       assert.equal(typeof weight, 'number')
       assert.ok(weight >= 0)

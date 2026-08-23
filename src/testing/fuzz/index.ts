@@ -63,37 +63,3 @@ export default class LedgerFuzzer {
     return this.prng.randomElementFrom(this.choiceTable)
   }
 }
-
-
-/**
- * 
- */
-class SwitchStateMachine {
-  // State properties we want to keep track of, such as positions, dfsps, 
-  // payments, forexes and their progress.
-  private _state: any
-  // dfsps
-  // positions
-  // currencies
-  //
-
-  constructor () {
-    this._state = {}
-  }
-
-  
-  public apply(action: Action, payload: any): void {
-    // TODO: mutate the internal state based on the action and payload.
-    // e.g. if the action is create dfsp and the payload is the dfsp id, then
-    // we should add to our internal dfsp list.
-  }
-
-
-  /**
-   * Get the state of the switch, and assert that it's the same as our State Machine.
-   */
-  public async checkWithSwitch(): Promise<unknown> {
-    return true
-  }
-
-}

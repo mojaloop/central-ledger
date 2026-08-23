@@ -33,25 +33,22 @@
 
  ******/
 
-// TODO: LD this belongs in domain.
-
 const fxTransferModel = require('../../models/fxTransfer')
 const TransferService = require('../../domain/transfer')
 const cyril = require('../../domain/fx/cyril')
 const { logger } = require('../../shared/logger')
 
-
 // abstraction on transfer and fxTransfer
-const deprecated_createRemittanceEntity = (isFx) => {
+const deprecatedCreateRemittanceEntity = (isFx) => {
   return {
     isFx,
 
-    async getDuplicate(id) {
+    async getDuplicate (id) {
       return isFx
         ? fxTransferModel.duplicateCheck.getFxTransferDuplicateCheck(id)
         : TransferService.getTransferDuplicateCheck(id)
     },
-    async saveDuplicateHash(id, hash) {
+    async saveDuplicateHash (id, hash) {
       return isFx
         ? fxTransferModel.duplicateCheck.saveFxTransferDuplicateCheck(id, hash)
         : TransferService.saveTransferDuplicateCheck(id, hash)
@@ -67,7 +64,7 @@ const deprecated_createRemittanceEntity = (isFx) => {
      * @param {ProxyObligation} proxyObligation - The proxy obligation
      * @returns {Promise<void>}
      */
-    async savePreparedRequest(
+    async savePreparedRequest (
       payload,
       reason,
       isValid,
@@ -91,7 +88,7 @@ const deprecated_createRemittanceEntity = (isFx) => {
         )
     },
 
-    async getByIdLight(id) {
+    async getByIdLight (id) {
       return isFx
         ? fxTransferModel.fxTransfer.getByIdLight(id)
         : TransferService.getByIdLight(id)
@@ -113,7 +110,7 @@ const deprecated_createRemittanceEntity = (isFx) => {
      * @param {ProxyObligation} proxyObligation - The proxy obligation details.
      * @returns {DeterminingTransferCheckResult} determiningTransferCheckResult
      */
-    async checkIfDeterminingTransferExists(payload, proxyObligation) {
+    async checkIfDeterminingTransferExists (payload, proxyObligation) {
       const result = isFx
         ? await cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, proxyObligation)
         : await cyril.checkIfDeterminingTransferExistsForTransferMessage(payload, proxyObligation)
@@ -122,7 +119,7 @@ const deprecated_createRemittanceEntity = (isFx) => {
       return result
     },
 
-    async getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation) {
+    async getPositionParticipant (payload, determiningTransferCheckResult, proxyObligation) {
       const result = isFx
         ? await cyril.getParticipantAndCurrencyForFxTransferMessage(payload, determiningTransferCheckResult)
         : await cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult, proxyObligation)
@@ -131,7 +128,7 @@ const deprecated_createRemittanceEntity = (isFx) => {
       return result
     },
 
-    async logTransferError(id, errorCode, errorDescription) {
+    async logTransferError (id, errorCode, errorDescription) {
       return isFx
         ? fxTransferModel.stateChange.logTransferError(id, errorCode, errorDescription)
         : TransferService.logTransferError(id, errorCode, errorDescription)
@@ -142,10 +139,10 @@ const deprecated_createRemittanceEntity = (isFx) => {
 const createRemittanceEntityPayment = () => {
   return {
 
-    async getDuplicate(id) {
+    async getDuplicate (id) {
       return TransferService.getTransferDuplicateCheck(id)
     },
-    async saveDuplicateHash(id, hash) {
+    async saveDuplicateHash (id, hash) {
       return TransferService.saveTransferDuplicateCheck(id, hash)
     },
 
@@ -159,7 +156,7 @@ const createRemittanceEntityPayment = () => {
      * @param {ProxyObligation} proxyObligation - The proxy obligation
      * @returns {Promise<void>}
      */
-    async savePreparedRequest(
+    async savePreparedRequest (
       payload,
       reason,
       isValid,
@@ -175,7 +172,7 @@ const createRemittanceEntityPayment = () => {
       )
     },
 
-    async getByIdLight(id) {
+    async getByIdLight (id) {
       return TransferService.getByIdLight(id)
     },
 
@@ -201,21 +198,21 @@ const createRemittanceEntityPayment = () => {
      * @param {ProxyObligation} proxyObligation - The proxy obligation details.
      * @returns {Promise<DeterminingTransferCheckResult>} determiningTransferCheckResult
      */
-    async checkIfDeterminingTransferExists(payload, proxyObligation) {
+    async checkIfDeterminingTransferExists (payload, proxyObligation) {
       const result = await cyril.checkIfDeterminingTransferExistsForTransferMessage(payload, proxyObligation)
 
       logger.debug('cyril determiningTransferCheckResult:', { result })
       return result
     },
 
-    async getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation) {
+    async getPositionParticipant (payload, determiningTransferCheckResult, proxyObligation) {
       const result = await cyril.getParticipantAndCurrencyForTransferMessage(payload, determiningTransferCheckResult, proxyObligation)
 
       logger.debug('cyril getPositionParticipant result:', { result })
       return result
     },
 
-    async logTransferError(id, errorCode, errorDescription) {
+    async logTransferError (id, errorCode, errorDescription) {
       return TransferService.logTransferError(id, errorCode, errorDescription)
     }
   }
@@ -223,10 +220,10 @@ const createRemittanceEntityPayment = () => {
 
 const createRemittanceEntityForex = () => {
   return {
-    async getDuplicate(id) {
+    async getDuplicate (id) {
       return fxTransferModel.duplicateCheck.getFxTransferDuplicateCheck(id)
     },
-    async saveDuplicateHash(id, hash) {
+    async saveDuplicateHash (id, hash) {
       return fxTransferModel.duplicateCheck.saveFxTransferDuplicateCheck(id, hash)
     },
 
@@ -240,7 +237,7 @@ const createRemittanceEntityForex = () => {
      * @param {ProxyObligation} proxyObligation - The proxy obligation
      * @returns {Promise<void>}
      */
-    async savePreparedRequest(
+    async savePreparedRequest (
       payload,
       reason,
       isValid,
@@ -248,16 +245,15 @@ const createRemittanceEntityForex = () => {
       proxyObligation
     ) {
       return fxTransferModel.fxTransfer.savePreparedRequest(
-          payload,
-          reason,
-          isValid,
-          determiningTransferCheckResult,
-          proxyObligation
-        )
-    
+        payload,
+        reason,
+        isValid,
+        determiningTransferCheckResult,
+        proxyObligation
+      )
     },
 
-    async getByIdLight(id) {
+    async getByIdLight (id) {
       return fxTransferModel.fxTransfer.getByIdLight(id)
     },
 
@@ -277,28 +273,28 @@ const createRemittanceEntityForex = () => {
      * @param {ProxyObligation} proxyObligation - The proxy obligation details.
      * @returns {Promise<DeterminingTransferCheckResult>} determiningTransferCheckResult
      */
-    async checkIfDeterminingTransferExists(payload, proxyObligation) {
+    async checkIfDeterminingTransferExists (payload, proxyObligation) {
       const result = await cyril.checkIfDeterminingTransferExistsForFxTransferMessage(payload, proxyObligation)
 
       logger.debug('cyril determiningTransferCheckResult:', { result })
       return result
     },
 
-    async getPositionParticipant(payload, determiningTransferCheckResult, proxyObligation) {
+    async getPositionParticipant (payload, determiningTransferCheckResult, proxyObligation) {
       const result = await cyril.getParticipantAndCurrencyForFxTransferMessage(payload, determiningTransferCheckResult)
 
       logger.debug('cyril getPositionParticipant result:', { result })
       return result
     },
 
-    async logTransferError(id, errorCode, errorDescription) {
+    async logTransferError (id, errorCode, errorDescription) {
       return fxTransferModel.stateChange.logTransferError(id, errorCode, errorDescription)
     }
   }
 }
 
 module.exports = {
-  deprecated_createRemittanceEntity,
+  deprecatedCreateRemittanceEntity,
   createRemittanceEntityPayment,
-  createRemittanceEntityForex,
+  createRemittanceEntityForex
 }

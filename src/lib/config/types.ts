@@ -98,7 +98,7 @@ export interface ApplicationConfig {
    * 
    * 'FUSE'  : Uses the new position logic, which handles position changes inside of the handler.
    * 
-   * @default 'FUSE'
+   * @default 'UNFUSE'
    */
   HANDLERS_TRANSFER_POSITION_FUSE: 'UNFUSE' | 'FUSE',
 
