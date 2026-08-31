@@ -43,7 +43,7 @@ let proxyCache: any
 
 describe('handlers/prepare', () => {
   before(async () => {
-    await harness.up('BATCH')
+    await harness.up()
     await harness.setupGlobals()
 
     dispatchHandler = new DispatchTransferHandler(harness.config)

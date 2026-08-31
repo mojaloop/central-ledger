@@ -42,7 +42,7 @@ let dispatchHandler: DispatchTransferHandler
 
 describe('handlers/tx-timeout', () => {
   before(async () => {
-    await harness.up('BATCH')
+    await harness.up()
     await harness.setupGlobals()
 
     dispatchHandler = new DispatchTransferHandler(harness.config)

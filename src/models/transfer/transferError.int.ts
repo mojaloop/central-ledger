@@ -36,7 +36,7 @@ let dispatchHandler: DispatchTransferHandler
 
 describe('models/tranfer/transferError', () => {
   before(async () => {
-    await harness.up('BATCH')
+    await harness.up()
     await harness.setupGlobals()
     dispatchHandler = new DispatchTransferHandler(harness.config)
     await dispatchHandler.init()

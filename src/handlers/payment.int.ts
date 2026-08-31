@@ -44,7 +44,7 @@ let dispatchHandler: DispatchTransferHandler
 
 describe('handlers/payment', () => {
   before(async () => {
-    await harness.up('BATCH')
+    await harness.up()
     await harness.setupGlobals()
 
     dispatchHandler = new DispatchTransferHandler(harness.config)

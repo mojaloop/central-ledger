@@ -37,7 +37,7 @@ let dispatchHandler: DispatchTransferHandler
 
 describe('handlers/fx', () => {
   before(async () => {
-    await harness.up('BATCH')
+    await harness.up()
     await harness.setupGlobals()
     dispatchHandler = new DispatchTransferHandler(harness.config)
     await dispatchHandler.init()

@@ -121,7 +121,7 @@ export default class Harness {
   private applicationConfig: ApplicationConfig | null = null;
   private omniConsumer: Consumer | null = null;
   private messageQueue: Array<MojaloopKafkaMessage> = []
-  private positionHandlerType: 'NON_BATCH' | 'BATCH' = 'NON_BATCH'
+  private readonly positionHandlerType: 'NON_BATCH' | 'BATCH' = 'BATCH'
 
   /**
    * 
@@ -178,21 +178,7 @@ export default class Harness {
     return Harness.instance;
   }
 
-  /**
-   * @default NON_BATCH
-   *
-   * The BATCH position handler contains a bug which makes it unable to properly process 
-   * aborted transfers. Since we will be soon removing the position handlers, we work around
-   * this bug by allowing the harness to specify whether or not to use the NON_BATCH or BATCH
-   * position handler for a specific test.
-   * 
-   * The bug is related to cyrilResult not being set for a non-fx transfer, which causes the 
-   * position rest message to not be fired.
-   */
-  public async up(positionHandlerType: 'NON_BATCH' | 'BATCH' = 'NON_BATCH') {
-    logger.warn(`harness.up() - NON_BATCH is disabled. Always using BATCH.`)
-    positionHandlerType = 'BATCH'
-
+  public async up() {
     const timerStart = performance.now()
     await this.checkEnvironment()
 
@@ -231,27 +217,16 @@ export default class Harness {
       }
     }
 
-    this.positionHandlerType = positionHandlerType
-    let positionHandlerOverrides: Record<string, string> = {
-      PREPARE: 'topic-transfer-position',
-      COMMIT: 'topic-transfer-position',
-      RESERVE: 'topic-transfer-position',
-      TIMEOUT_RESERVED: 'topic-transfer-position',
-      ABORT: 'topic-transfer-position'
-    }
-
-    if (positionHandlerType === 'BATCH') {
-      positionHandlerOverrides = {
-        PREPARE: 'topic-transfer-position-batch',
-        FX_PREPARE: 'topic-transfer-position-batch',
-        COMMIT: 'topic-transfer-position-batch',
-        RESERVE: 'topic-transfer-position-batch',
-        FX_RESERVE: 'topic-transfer-position-batch',
-        TIMEOUT_RESERVED: 'topic-transfer-position-batch',
-        FX_TIMEOUT_RESERVED: 'topic-transfer-position-batch',
-        ABORT: 'topic-transfer-position-batch',
-        FX_ABORT: 'topic-transfer-position-batch',
-      }
+    const positionHandlerOverrides: Record<string, string> = {
+      PREPARE: 'topic-transfer-position-batch',
+      FX_PREPARE: 'topic-transfer-position-batch',
+      COMMIT: 'topic-transfer-position-batch',
+      RESERVE: 'topic-transfer-position-batch',
+      FX_RESERVE: 'topic-transfer-position-batch',
+      TIMEOUT_RESERVED: 'topic-transfer-position-batch',
+      FX_TIMEOUT_RESERVED: 'topic-transfer-position-batch',
+      ABORT: 'topic-transfer-position-batch',
+      FX_ABORT: 'topic-transfer-position-batch',
     }
 
     // Override the config based on the harness variables.
@@ -1032,13 +1007,13 @@ class MySql {
       try {
         const type = this.options.migration.type
         switch (type) {
-          case "knex": 
+          case "knex":
             await this.migrateKnex()
             break;
-          case "sql": 
+          case "sql":
             await this.migrateSql()
             break
-          default: 
+          default:
             throw new Error(`Unexpected migration type: ${type}`)
         }
         return
