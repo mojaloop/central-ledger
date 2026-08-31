@@ -33,6 +33,8 @@ import Harness from '../testing/harness'
 import * as ApiHelpers from '../testing/api-helpers'
 import { assertPositionDiff } from '../testing/util'
 import { DispatchTransferHandler } from './dispatch-transfer-handler'
+import { MessageBus } from '../messaging/message-bus'
+import { PositionHandlerV2 } from './position-v2'
 
 const harness = Harness.getInstance()
 let PositionBatchHandler: any
@@ -41,22 +43,32 @@ let TransferFacade: any
 let FxTransferService: any
 let proxyCache: any
 let dispatchHandler: DispatchTransferHandler
+let messageBus: MessageBus
 
 describe('handlers/payment', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
-
-    dispatchHandler = new DispatchTransferHandler(harness.config)
-    await dispatchHandler.init()
-
     // Import after bringing up the harness, so that global config is overriden.
     PositionBatchHandler = require('./positions/handlerBatch')
     TransferFacade = require('../models/transfer/facade')
     FxTransferService = require('../domain/fx/index')
     ExternalParticipantCached = require('../models/participant/externalParticipantCached')
+    const SettlementModelCached = require('../models/settlement/settlementModelCached')
+    await SettlementModelCached.initialize()
     proxyCache = require('../lib/proxyCache')
     await proxyCache.connect()
+
+    dispatchHandler = new DispatchTransferHandler(harness.config)
+    const positionHandlerV2 = new PositionHandlerV2(harness.config)
+    messageBus = new MessageBus({
+      config: harness.config,
+      handlers: {
+        dispatchTransferHandler: dispatchHandler,
+        positionBatchHandler: positionHandlerV2
+      }
+    })
+    await messageBus.init()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
@@ -96,17 +108,50 @@ describe('handlers/payment', () => {
   })
 
   after(async () => {
+    await messageBus.deinit()
     await proxyCache.disconnect()
     await harness.teardownGlobals()
     await harness.down()
   })
 
-  it('prepares and fulfils a payment', async () => {
+  it('prepares and fulfils a payment (dispatchHandler)', async () => {
     const [positionPayer1, positionPayee1] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'USD')
     
     // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.
     const payment = await ApiHelpers.buildPayment()
       .deps(harness, dispatchHandler)
+      .parties('dfsp_a', 'dfsp_b')
+      .transferId('1000001')
+      .expiry(100)
+      .build()
+      .prepare()
+
+    const [positionPayer2, positionPayee2] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'USD')
+    assertPositionDiff('payer', positionPayer1, positionPayer2, {
+      pending: 0,
+      posted: 100
+    })
+    assertPositionDiff('payee', positionPayee1, positionPayee2, {
+      pending: 0,
+      posted: 0
+    })
+
+    await payment.fulfil()
+    const [positionPayer3, positionPayee3] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'USD')
+    assertPositionDiff('payer', positionPayer2, positionPayer3, {
+      posted: 0
+    })
+    assertPositionDiff('payee', positionPayee2, positionPayee3, {
+      posted: -100
+    })
+  })
+
+  it.only('prepares and fulfils a payment (MessageBus)', async () => {
+    const [positionPayer1, positionPayee1] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'USD')
+    
+    // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.
+    const payment = await ApiHelpers.buildPayment()
+      .deps(harness, messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
       .expiry(100)

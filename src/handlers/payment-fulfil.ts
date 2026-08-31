@@ -37,12 +37,13 @@ import { getTransferErrorDuplicateCheck } from '../models/transfer/transferError
 const { decodePayload } = Util.StreamingProtocol
 const Participant = require('../domain/participant')
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
-const { Action } = Enum.Events.Event
+const { Type, Action } = Enum.Events.Event
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
 
 import { TransferHelper } from './transfer-helper';
 import RefactorHelper from "../shared/refactor-helper";
+import { Effect } from "../messaging/message-bus";
 
 interface Dependencies {
   config: ApplicationConfig
@@ -120,17 +121,22 @@ export enum PaymentFulfilResultType {
 }
 
 export type PaymentFulfilResult = {
-  type: PaymentFulfilResultType.PASS
+  type: PaymentFulfilResultType.PASS,
+  effects: Array<Effect>
 } | {
-  type: PaymentFulfilResultType.DUPLICATE_FINAL
+  type: PaymentFulfilResultType.DUPLICATE_FINAL,
+  effects: Array<Effect>
 } | {
-  type: PaymentFulfilResultType.DUPLICATE_NON_FINAL
+  type: PaymentFulfilResultType.DUPLICATE_NON_FINAL,
+  effects: Array<Effect>
   // TODO: is there a body for this?
 } | {
-  type: PaymentFulfilResultType.FAIL_VALIDATION
+  type: PaymentFulfilResultType.FAIL_VALIDATION,
+  effects: Array<Effect>
   error: typeof FSPIOPError
 } | {
   type: PaymentFulfilResultType.FAIL_OTHER
+  effects: Array<Effect>
   error: typeof FSPIOPError
 }
 
@@ -142,7 +148,7 @@ export class PaymentFulfilHandler {
    */
   async handle(
     error: any, messages: any
-  ): Promise<Array<PromiseSettledResult<PaymentFulfilResult>>> {
+  ): Promise<Array<PaymentFulfilResult>> {
     if (error) {
       throw error
     }
@@ -177,7 +183,16 @@ export class PaymentFulfilHandler {
       }
     })
 
-    return results
+    return results.map(result => {
+      switch (result.status) {
+        case 'rejected': return {
+          type: PaymentFulfilResultType.FAIL_OTHER,
+          error: result.reason,
+          effects: []
+        }
+        case 'fulfilled': return result.value
+      }
+    })
   }
 
   async handleOne(input: FusedFulfilHandlerInput): Promise<PaymentFulfilResult> {
@@ -187,6 +202,7 @@ export class PaymentFulfilHandler {
     if (!transfer) {
       return {
         type: PaymentFulfilResultType.FAIL_OTHER,
+        effects: [],
         error: ErrorHandler.Factory.createInternalServerFSPIOPError(
           `transfer not found for id: ${transferId}.`
         )
@@ -198,7 +214,6 @@ export class PaymentFulfilHandler {
     // out for now.
 
     if (transfer.payeeIsProxy) {
-      // Handle proxied payment case
       if (input.callerDfspId !== transfer.externalPayeeName) {
         const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
           `${input.callerDfspId} does not match externalPayeeName: ${transfer.externalPayeeName} \
@@ -214,7 +229,11 @@ on the Fulfil callback response.`
         )
 
         await this.sendMessagePositionRollback(input, transfer, error)
-        return { type: PaymentFulfilResultType.FAIL_VALIDATION, error }
+        return {
+          type: PaymentFulfilResultType.FAIL_VALIDATION,
+          effects: [],
+          error
+        }
       }
     } else {
       if (input.callerDfspId !== transfer.payeeFsp) {
@@ -232,7 +251,11 @@ on the Fulfil callback response.`
         )
 
         await this.sendMessagePositionRollback(input, transfer, error)
-        return { type: PaymentFulfilResultType.FAIL_VALIDATION, error }
+        return { 
+          type: PaymentFulfilResultType.FAIL_VALIDATION,
+          effects: [],
+          error 
+        }
       }
     }
 
@@ -246,12 +269,14 @@ on the Fulfil callback response.`
         if (savedFulfilHash === payloadHash) {
           // Safe to ignore, we saw the same fulfil message before.
           return {
-            type: PaymentFulfilResultType.DUPLICATE_FINAL
+            type: PaymentFulfilResultType.DUPLICATE_FINAL,
+            effects: [],
           }
         }
         // Modified message.
         return {
           type: PaymentFulfilResultType.FAIL_VALIDATION,
+          effects: [],
           error: ErrorHandler.Factory.createInternalServerFSPIOPError(
             `detected transfer fulfil message modified for transferId: ${transferId}.`
           )
@@ -263,6 +288,7 @@ on the Fulfil callback response.`
         logger.error(error.message)
         return {
           type: PaymentFulfilResultType.FAIL_OTHER,
+          effects: [],
           error,
         }
       }
@@ -278,12 +304,14 @@ on the Fulfil callback response.`
         if (savedHash === payloadHash) {
           // Safe to ignore, we saw the same fulfil message before.
           return {
-            type: PaymentFulfilResultType.DUPLICATE_FINAL
+            type: PaymentFulfilResultType.DUPLICATE_FINAL,
+            effects: [],
           }
         }
         // Modified message.
         return {
           type: PaymentFulfilResultType.FAIL_VALIDATION,
+          effects: [],
           error: ErrorHandler.Factory.createInternalServerFSPIOPError(
             `detected transfer fulfil message modified for transferId: ${transferId}.`
           )
@@ -295,6 +323,7 @@ on the Fulfil callback response.`
         logger.error(error.message)
         return {
           type: PaymentFulfilResultType.FAIL_OTHER,
+          effects: [],
           error,
         }
       }
@@ -325,7 +354,8 @@ on the Fulfil callback response.`
       // TODO: not sure about error formatting.
       await this.sendMessagePositionRollback(input, transfer, errorPayload)
       return {
-        type: PaymentFulfilResultType.PASS
+        type: PaymentFulfilResultType.PASS,
+        effects: [],
       }
     }
 
@@ -337,6 +367,7 @@ on the Fulfil callback response.`
     if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
       return {
         type: PaymentFulfilResultType.FAIL_VALIDATION,
+        effects: [],
         error: ErrorHandler.Factory.createInternalServerFSPIOPError(
           `transfer timed out.`
         )
@@ -359,18 +390,58 @@ on the Fulfil callback response.`
       )
 
       await this.sendMessagePositionRollback(input, transfer, error)
-      return { type: PaymentFulfilResultType.FAIL_VALIDATION, error }
+      return { 
+        type: PaymentFulfilResultType.FAIL_VALIDATION,
+        effects: [],
+        error 
+      }
     }
 
     // Happy path - validation passed.
     await TransferService.handlePayeeResponse(transferId, payload, input.action)
-    await this.sendMessagePositionCommit(input, transfer)
+
+    // await this.sendMessagePositionCommit(input, transfer)
+
+    // Build the position change effect.
+    const messageEffect = input.message
+    const cyrilResult = await this.deps.fxService.Cyril.processFulfilMessage(
+      input.transferId,
+      input.payload,
+      transfer
+    )
+    let messageKey: string
+    if (cyrilResult.isFx && cyrilResult.positionChanges.length > 0) {
+      // Forex + Payment.
+      // @ts-ignore
+      messageKey = cyrilResult.positionChanges[0].participantCurrencyId.toString()
+      messageEffect.value.content.context = {
+        ...messageEffect.value.content.context,
+        cyrilResult
+      }
+    } else {
+      // Standalone Payment.
+      const payeeAccount = await Participant.getAccountByNameAndCurrency(
+        transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION,
+      )
+      messageKey = payeeAccount.participantCurrencyId.toString()
+    }
+
+    assert(messageKey)
+
+    const effectPosition: Effect = {
+      functionality: Type.POSITION,
+      action: Action.COMMIT,
+      message: messageEffect.value,
+      messageKey,
+      topicName: 'topic-transfer-position-batch',
+      status: 'SUCCESS'
+    }
+
     return {
-      type: PaymentFulfilResultType.PASS
+      type: PaymentFulfilResultType.PASS,
+      effects: [effectPosition],
     }
   }
-
-
 
   private extractMessageData(message: any): FusedFulfilHandlerInput {
     assert(message);

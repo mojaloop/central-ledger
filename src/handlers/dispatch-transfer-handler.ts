@@ -30,10 +30,10 @@
 import assert from 'node:assert'
 import { ApplicationConfig } from '../lib/config'
 import { assertNestedFields } from '../lib/config/util'
-import { PaymentPrepareHandler } from './payment-prepare'
-import { PaymentFulfilHandler } from './payment-fulfil'
-import { ForexPrepareHandler } from './forex-prepare'
-import { ForexFulfilHandler } from './forex-fulfil'
+import { PaymentPrepareHandler, PaymentPrepareResult } from './payment-prepare'
+import { PaymentFulfilHandler, PaymentFulfilResult } from './payment-fulfil'
+import { ForexPrepareHandler, ForexPrepareResult } from './forex-prepare'
+import { ForexFulfilHandler, ForexFulfilResult } from './forex-fulfil'
 
 const { Util } = require('@mojaloop/central-services-shared')
 const { Kafka } = Util
@@ -134,7 +134,8 @@ export class DispatchTransferHandler {
     await Consumer.createHandler(topicConsumeFulfil, configConsumeFulfil, this.fulfil.bind(this))
   }
 
-  public async prepare(error: any, messageOrMessages: any | Array<any>): Promise<any> {
+  public async prepare(error: any, messageOrMessages: any | Array<any>):
+    Promise<Array<PaymentPrepareResult | ForexPrepareResult>> {
     if (this.mode === 'JOINED') {
       // Route everything to old handler. This way we can keep the tests the same.
       return this.legacyTransferHandler.prepare(error, messageOrMessages)
@@ -177,7 +178,8 @@ export class DispatchTransferHandler {
 
   // TODO: I feel like we are missing fx-forwarded on the fulfil path somehow. We probably don't
   // have tests for this.
-  public async fulfil(error: any, messageOrMessages: any | Array<any>): Promise<any> {
+  public async fulfil(error: any, messageOrMessages: any | Array<any>): 
+    Promise<Array<PaymentFulfilResult | ForexFulfilResult>> {
     if (this.mode === 'JOINED') {
       // Route everything to old handler. This way we can keep the tests the same.
       return this.legacyTransferHandler.fulfil(error, messageOrMessages)

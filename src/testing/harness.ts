@@ -408,14 +408,17 @@ export default class Harness {
     // Register the `topic-transfer-position` consumer
     // Because the kafka registration uses global scope, we cannot register both the non batch
     // and batch position handlers, in spite of the fact that they have different topics.
-    switch (this.positionHandlerType) {
-      case 'NON_BATCH':
-        await PositionHandler.registerPositionHandler()
-        break;
-      case 'BATCH':
-        await PositionBatchHandler.registerPositionHandler()
-        break;
-    }
+
+    // TODO: eventually we won't need to do any consumer stuff here!
+    
+    // switch (this.positionHandlerType) {
+    //   case 'NON_BATCH':
+    //     await PositionHandler.registerPositionHandler()
+    //     break;
+    //   case 'BATCH':
+    //     await PositionBatchHandler.registerPositionHandler()
+    //     break;
+    // }
 
     await AdminHandler.registerAllHandlers()
   }
@@ -640,6 +643,7 @@ interface RedpandaConnectionOptions {
 
 export type MojaloopKafkaMessage = {
   topic: string,
+  key: string | Buffer;
   valueStr: string,
   timestamp: number,
   partition: number,

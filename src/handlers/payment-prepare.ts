@@ -33,6 +33,7 @@ import { logger } from '../shared/logger';
 import CentralServicesShared, { Enum, TransferStateEnum, Util } from '@mojaloop/central-services-shared';
 import { CreateRemittanceEntity, KafkaParams, ProxyCache } from './transfer-types';
 import RefactorHelper from '../shared/refactor-helper';
+import { Effect } from '../messaging/message-bus';
 const { Kafka, Comparators } = Util
 const { decodePayload } = Util.StreamingProtocol
 const Participant = require('../domain/participant')
@@ -134,9 +135,11 @@ export enum PaymentPrepareResultType {
 }
 
 export type PaymentPrepareResult = {
-  type: PaymentPrepareResultType.PASS
+  type: PaymentPrepareResultType.PASS,
+  effects: Array<Effect>
 } | {
   type: PaymentPrepareResultType.DUPLICATE_FINAL
+  effects: Array<Effect>
   finalizedTransfer: {
     completedTimestamp: string
     transferState: 'COMMITTED' | 'ABORTED'
@@ -144,23 +147,28 @@ export type PaymentPrepareResult = {
   }
 } | {
   type: PaymentPrepareResultType.DUPLICATE_NON_FINAL
+  effects: Array<Effect>
 } | {
   type: PaymentPrepareResultType.MODIFIED
+  effects: Array<Effect>
 } | {
   type: PaymentPrepareResultType.FAIL_VALIDATION
+  effects: Array<Effect>
   failureReasons: Array<string>
 } | {
   type: PaymentPrepareResultType.FAIL_LIQUIDITY
+  effects: Array<Effect>
   error: typeof FSPIOPError
 } | {
   type: PaymentPrepareResultType.FAIL_OTHER
+  effects: Array<Effect>
   error: typeof FSPIOPError
 }
 
 export class PaymentPrepareHandler {
   constructor(private deps: Dependencies) { }
 
-  async handle(error: any, messages: any): Promise<Array<PromiseSettledResult<PaymentPrepareResult>>> {
+  async handle(error: any, messages: any): Promise<Array<PaymentPrepareResult>> {
     if (error) {
       throw error
     }
@@ -193,7 +201,16 @@ export class PaymentPrepareHandler {
       }
     })
 
-    return results
+    return results.map(result => {
+      switch (result.status) {
+        case 'rejected': return {
+          type: PaymentPrepareResultType.FAIL_OTHER,
+          error: result.reason,
+          effects: []
+        }
+        case 'fulfilled': return result.value
+      }
+    })
   }
 
   async handleOne(input: FusedPrepareHandlerInput): Promise<PaymentPrepareResult> {
@@ -210,7 +227,8 @@ export class PaymentPrepareHandler {
     if (hasDuplicateId && !hasDuplicateHash) {
       // Id was reused for a different request.
       return {
-        type: PaymentPrepareResultType.MODIFIED
+        type: PaymentPrepareResultType.MODIFIED,
+        effects: []
       }
       // Original also covers case for BULK_PREPARE, but we don't handle that here.
     }
@@ -222,6 +240,7 @@ export class PaymentPrepareHandler {
         case TransferStateEnum.ABORTED: {
           return {
             type: PaymentPrepareResultType.DUPLICATE_FINAL,
+            effects: [],
             finalizedTransfer: {
               completedTimestamp: payment.completedTimestamp,
               transferState: payment.transferStateEnumeration,
@@ -232,6 +251,7 @@ export class PaymentPrepareHandler {
         case TransferStateEnum.RESERVED: {
           return {
             type: PaymentPrepareResultType.DUPLICATE_FINAL,
+            effects: [],
             finalizedTransfer: {
               completedTimestamp: payment.completedTimestamp,
               transferState: payment.transferStateEnumeration,
@@ -245,6 +265,7 @@ export class PaymentPrepareHandler {
     if (hasDuplicateId) {
       return {
         type: PaymentPrepareResultType.DUPLICATE_NON_FINAL,
+        effects: []
       }
     }
 
@@ -254,6 +275,7 @@ export class PaymentPrepareHandler {
     } catch (err: any) {
       return {
         type: PaymentPrepareResultType.FAIL_VALIDATION,
+        effects: [],
         failureReasons: err.message
       }
     }
@@ -289,6 +311,7 @@ export class PaymentPrepareHandler {
 
       return {
         type: PaymentPrepareResultType.FAIL_VALIDATION,
+        effects: [],
         failureReasons: validationResult.reasons
       }
     }
@@ -305,14 +328,38 @@ export class PaymentPrepareHandler {
       proxyObligation,
     )
 
-    await this.sendMessagePosition(
-      input,
+    // await this.sendMessagePosition(
+    //   input,
+    //   determiningTransferCheckResult,
+    //   proxyObligation
+    // )
+    
+    // Build the position change effect.
+    const { messageKey, cyrilResult } = await this.deps.definePositionParticipant({
+      payload: proxyObligation.payloadClone,
+      isFx: false,
       determiningTransferCheckResult,
       proxyObligation
-    )
+    })
+    const messageEffect = input.message
+    messageEffect.value.content.context = {
+      ...messageEffect.value.content.context,
+      cyrilResult
+    }
+    const effectPosition: Effect = {
+      functionality: Type.POSITION,
+      action: Action.PREPARE,
+      message: messageEffect.value,
+      messageKey,
+      topicName: 'topic-transfer-position-batch',
+      status: 'SUCCESS',
+    }
     
     return {
-      type: PaymentPrepareResultType.PASS
+      type: PaymentPrepareResultType.PASS,
+      effects: [
+        effectPosition
+      ]
     }
   }
 

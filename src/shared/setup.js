@@ -58,6 +58,7 @@ const externalParticipantCached = require('../models/participant/externalPartici
 const BatchPositionModelCached = require('../models/position/batchCached')
 const Plugins = require('./plugins')
 const { DispatchTransferHandler } = require('../handlers/dispatch-transfer-handler')
+const { MessageBus } = require('../messaging/message-bus')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
@@ -293,11 +294,20 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     }
 
     const dispatchTransferHandler = new DispatchTransferHandler(Config)
-    if (Array.isArray(handlers) && handlers.length > 0) {
-      await createHandlers(handlers, dispatchTransferHandler)
-    } else {
-      await RegisterHandlers.registerAllHandlers(dispatchTransferHandler)
-    }
+    const messageBus = new MessageBus({
+      config: Config,
+      handlers: {
+        dispatchTransferHandler
+      }
+    })
+    // We should specify the handlers to register based on the config, not the cli!
+    await messageBus.init()
+    
+    // if (Array.isArray(handlers) && handlers.length > 0) {
+    //   await createHandlers(handlers, dispatchTransferHandler)
+    // } else {
+    //   await RegisterHandlers.registerAllHandlers(dispatchTransferHandler)
+    // }
 
     return server
   } catch (err) {

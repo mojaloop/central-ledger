@@ -241,7 +241,7 @@ export class Payment {
 
   public async prepare(): Promise<this> {
     const mark = this.options.harness.redpandaMark()
-    this.options.transferHandler.prepare(null, this.buildMessagePrepare())
+    this.options.transferHandler.prepare(null, [this.buildMessagePrepare()])
     await this.options.harness.redpandaDrain(mark, this.expectedMessagesPrepare())
 
     return this
@@ -307,7 +307,7 @@ export class Payment {
 
   public async fulfil(state: 'COMMITTED' | 'RESERVED' = 'COMMITTED'): Promise<this> {
     const mark = this.options.harness.redpandaMark()
-    await this.options.transferHandler.fulfil(null, this.buildMessageFulfil(state))
+    await this.options.transferHandler.fulfil(null, [this.buildMessageFulfil(state)])
     await this.options.harness.redpandaDrain(mark, this.expectedMessagesFulfil())
 
     return this
@@ -322,7 +322,7 @@ export class Payment {
 
   public async abort(): Promise<this> {
     const mark = this.options.harness.redpandaMark()
-    await this.options.transferHandler.fulfil(null, this.buildMessageAbort())
+    await this.options.transferHandler.fulfil(null, [this.buildMessageAbort()])
     await this.options.harness.redpandaDrain(mark, this.expectedMessagesAbort())
 
     return this

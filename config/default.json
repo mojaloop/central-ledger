@@ -258,7 +258,8 @@
               "group.id": "cl-group-transfer-prepare",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "enable.auto.commit": false
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -306,7 +307,8 @@
               "group.id": "cl-group-transfer-fulfil",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true,
-              "allow.auto.create.topics": true
+              "allow.auto.create.topics": true,
+              "enable.auto.commit": false
             },
             "topicConf": {
               "auto.offset.reset": "earliest"

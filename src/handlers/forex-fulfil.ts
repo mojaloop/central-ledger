@@ -45,6 +45,7 @@ import fspiopErrorFactory from '../shared/fspiopErrorFactory';
 import { logger } from '../shared/logger';
 import { TransferHelper } from './transfer-helper';
 import RefactorHelper from '../shared/refactor-helper';
+import { Effect } from '../messaging/message-bus';
 
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 
@@ -122,17 +123,22 @@ export enum ForexFulfilResultType {
 }
 
 export type ForexFulfilResult = {
-  type: ForexFulfilResultType.PASS
+  type: ForexFulfilResultType.PASS,
+  effects: Array<Effect>
 } | {
-  type: ForexFulfilResultType.DUPLICATE_FINAL
+  type: ForexFulfilResultType.DUPLICATE_FINAL,
+  effects: Array<Effect>
 } | {
-  type: ForexFulfilResultType.DUPLICATE_NON_FINAL
+  type: ForexFulfilResultType.DUPLICATE_NON_FINAL,
+  effects: Array<Effect>
   // TODO: is there a body for this?
 } | {
-  type: ForexFulfilResultType.FAIL_VALIDATION
+  type: ForexFulfilResultType.FAIL_VALIDATION,
+  effects: Array<Effect>
   error: typeof FSPIOPError
 } | {
-  type: ForexFulfilResultType.FAIL_OTHER
+  type: ForexFulfilResultType.FAIL_OTHER,
+  effects: Array<Effect>
   error: typeof FSPIOPError
 }
 
@@ -140,7 +146,7 @@ export type ForexFulfilResult = {
 export class ForexFulfilHandler {
   constructor(private deps: Dependencies) { }
 
-  async handle(error: any, messages: any): Promise<Array<PromiseSettledResult<ForexFulfilResult>>> {
+  async handle(error: any, messages: any): Promise<Array<ForexFulfilResult>> {
     if (error) {
       throw error
     }
@@ -173,7 +179,16 @@ export class ForexFulfilHandler {
         if (result.reason.stack) logger.error(`stack\n\t${result.reason.stack}`)
       }
     })
-    return results
+    return results.map(result => {
+      switch (result.status) {
+        case 'rejected': return {
+          type: ForexFulfilResultType.FAIL_OTHER,
+          error: result.reason,
+          effects: []
+        }
+        case 'fulfilled': return result.value
+      }
+    })
   }
 
   async handleOne(input: ForexFulfilHandlerInput): Promise<ForexFulfilResult> {
@@ -188,6 +203,7 @@ export class ForexFulfilHandler {
 
       return {
         type: ForexFulfilResultType.FAIL_VALIDATION,
+        effects: [],
         error
       }
     }
@@ -209,6 +225,7 @@ export class ForexFulfilHandler {
 
       return {
         type: ForexFulfilResultType.FAIL_VALIDATION,
+        effects: [],
         error
       }
     }
@@ -222,13 +239,15 @@ export class ForexFulfilHandler {
         if (savedFulfilHash === payloadHash) {
           // Safe to ignore, we saw the same fulfil message before.
           return {
-            type: ForexFulfilResultType.DUPLICATE_FINAL
+            type: ForexFulfilResultType.DUPLICATE_FINAL,
+            effects: [],
           }
         }
 
         // Modified payload.
         return {
           type: ForexFulfilResultType.FAIL_VALIDATION,
+          effects: [],
           error: ErrorHandler.Factory.createInternalServerFSPIOPError(
             `detected transfer fulfil message modified for commitRequestId: ${commitRequestId}.`
           )
@@ -240,6 +259,7 @@ export class ForexFulfilHandler {
         logger.error(error.message)
         return {
           type: ForexFulfilResultType.FAIL_OTHER,
+          effects: [],
           error,
         }
       }
@@ -253,12 +273,14 @@ export class ForexFulfilHandler {
         if (savedHash === payloadHash) {
           // Safe to ignore, we saw the same fulfil message before.
           return {
-            type: ForexFulfilResultType.DUPLICATE_FINAL
+            type: ForexFulfilResultType.DUPLICATE_FINAL,
+            effects: [],
           }
         }
         // Modified message.
         return {
           type: ForexFulfilResultType.FAIL_VALIDATION,
+          effects: [],
           error: ErrorHandler.Factory.createInternalServerFSPIOPError(
             `detected transfer fulfil message modified for commitRequestId: ${commitRequestId}.`
           )
@@ -270,6 +292,7 @@ export class ForexFulfilHandler {
         logger.error(error.message)
         return {
           type: ForexFulfilResultType.FAIL_OTHER,
+          effects: [],
           error,
         }
       }
@@ -294,7 +317,8 @@ export class ForexFulfilHandler {
       })
 
       return {
-        type: ForexFulfilResultType.PASS
+        type: ForexFulfilResultType.PASS,
+        effects: [],
       }
     }
 
@@ -319,6 +343,7 @@ export class ForexFulfilHandler {
 
       return {
         type: ForexFulfilResultType.FAIL_VALIDATION,
+        effects: [],
         error: apiFSPIOPError
       }
     }
@@ -339,6 +364,7 @@ export class ForexFulfilHandler {
 
       return {
         type: ForexFulfilResultType.FAIL_VALIDATION,
+        effects: [],
         error: apiFSPIOPError,
       }
     }
@@ -358,6 +384,7 @@ export class ForexFulfilHandler {
 
       return {
         type: ForexFulfilResultType.FAIL_VALIDATION,
+        effects: [],
         error: apiFSPIOPError,
       }
     }
@@ -367,7 +394,8 @@ export class ForexFulfilHandler {
     await this.deps.cyril.processFxFulfilMessage(commitRequestId)
     await this.sendMessagePositionCommit(input, forex, action)
     return {
-      type: ForexFulfilResultType.PASS
+      type: ForexFulfilResultType.PASS,
+      effects: [],
     }
   }
 
@@ -507,7 +535,7 @@ export class ForexFulfilHandler {
           eventDetail,
           messageKey,
         })
-        
+
         await this.deps.positionHandler(null, [wrapped])
     }
   }

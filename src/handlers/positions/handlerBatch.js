@@ -244,6 +244,8 @@ const registerPositionHandler = async () => {
       config: batchConfig
     }
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${randomUUID()}`
+    console.log('topicName', positionHandler.topicName)
+    console.log('config', positionHandler.config)
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
   } catch (err) {

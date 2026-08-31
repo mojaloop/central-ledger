@@ -46,6 +46,7 @@ const { FSPIOPErrorCodes } = ErrorHandler.Enums
 const { FSPIOPError } = ErrorHandler
 import { CreateRemittanceEntity, ProxyCache } from './transfer-types';
 import RefactorHelper from '../shared/refactor-helper';
+import { Effect } from '../messaging/message-bus';
 
 interface Dependencies {
   config: ApplicationConfig
@@ -143,9 +144,11 @@ export enum ForexPrepareResultType {
 }
 
 export type ForexPrepareResult = {
-  type: ForexPrepareResultType.PASS
+  type: ForexPrepareResultType.PASS,
+  effects: Array<Effect>
 } | {
   type: ForexPrepareResultType.DUPLICATE_FINAL
+  effects: Array<Effect>
   finalizedTransfer: {
     completedTimestamp: string
     transferState: 'COMMITTED' | 'ABORTED'
@@ -153,16 +156,21 @@ export type ForexPrepareResult = {
   }
 } | {
   type: ForexPrepareResultType.DUPLICATE_NON_FINAL
+  effects: Array<Effect>
 } | {
   type: ForexPrepareResultType.MODIFIED
+  effects: Array<Effect>
 } | {
   type: ForexPrepareResultType.FAIL_VALIDATION
+  effects: Array<Effect>
   failureReasons: Array<string>
 } | {
   type: ForexPrepareResultType.FAIL_LIQUIDITY
+  effects: Array<Effect>
   error: typeof FSPIOPError
 } | {
   type: ForexPrepareResultType.FAIL_OTHER
+  effects: Array<Effect>
   error: typeof FSPIOPError
 }
 
@@ -173,7 +181,7 @@ interface ValidationResult {
 export class ForexPrepareHandler {
   constructor(private deps: Dependencies) { }
 
-  async handle(error: any, messages: any): Promise<Array<PromiseSettledResult<ForexPrepareResult>>> {
+  async handle(error: any, messages: any): Promise<Array<ForexPrepareResult>> {
     if (error) {
       throw error
     }
@@ -205,7 +213,16 @@ export class ForexPrepareHandler {
         if (result.reason.stack) logger.error(`stack\n\t${result.reason.stack}`)
       }
     })
-    return results
+    return results.map(result => {
+      switch (result.status) {
+        case 'rejected': return {
+          type: ForexPrepareResultType.FAIL_OTHER,
+          effects: [],
+          error: result.reason,
+        }
+        case 'fulfilled': return result.value
+      }
+    })
   }
 
   async handleOne(input: ForexPrepareHandlerInput): Promise<ForexPrepareResult> {
@@ -220,6 +237,7 @@ export class ForexPrepareHandler {
     } catch (err: any) {
       return {
         type: ForexPrepareResultType.FAIL_VALIDATION,
+        effects: [],
         failureReasons: err.message
       }
     }
@@ -241,7 +259,8 @@ export class ForexPrepareHandler {
       )
 
       return {
-        type: ForexPrepareResultType.MODIFIED
+        type: ForexPrepareResultType.MODIFIED,
+        effects: [],
       }
     }
 
@@ -253,6 +272,7 @@ export class ForexPrepareHandler {
           await this.sendMessageNotificationDuplicate(input, toFulfil(forex, true))
           return {
             type: ForexPrepareResultType.DUPLICATE_FINAL,
+            effects: [],
             finalizedTransfer: {
               completedTimestamp: forex.completedTimestamp,
               transferState: forex.fxTransferStateEnumeration,
@@ -264,6 +284,7 @@ export class ForexPrepareHandler {
           await this.sendMessageNotificationDuplicate(input, toFulfil(forex, true))
           return {
             type: ForexPrepareResultType.DUPLICATE_FINAL,
+            effects: [],
             finalizedTransfer: {
               completedTimestamp: forex.completedTimestamp,
               transferState: forex.fxTransferStateEnumeration,
@@ -278,6 +299,7 @@ export class ForexPrepareHandler {
     if (hasDuplicateId) {
       return {
         type: ForexPrepareResultType.DUPLICATE_NON_FINAL,
+        effects: [],
       }
     }
 
@@ -300,6 +322,7 @@ export class ForexPrepareHandler {
 
       return {
         type: ForexPrepareResultType.FAIL_VALIDATION,
+        effects: [],
         failureReasons: payloadValidation.reasons,
       }
     }
@@ -321,6 +344,7 @@ export class ForexPrepareHandler {
 
       return {
         type: ForexPrepareResultType.FAIL_VALIDATION,
+        effects: [],
         failureReasons: participantValidation.reasons,
       }
     }
@@ -335,7 +359,8 @@ export class ForexPrepareHandler {
 
     await this.sendMessagePosition(input, determiningTransferCheckResult, proxyObligation)
     return {
-      type: ForexPrepareResultType.PASS
+      type: ForexPrepareResultType.PASS,
+      effects: [],
     }
   }
 

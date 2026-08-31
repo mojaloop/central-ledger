@@ -98,7 +98,7 @@
     "@mojaloop/central-services-logger": "11.10.6",
     "@mojaloop/central-services-metrics": "12.8.8",
     "@mojaloop/central-services-shared": "18.39.3",
-    "@mojaloop/central-services-stream": "11.10.0",
+    "@mojaloop/central-services-stream": "file://Users/lewisdaly/tb/central-services-stream",
     "@mojaloop/database-lib": "11.3.10",
     "@mojaloop/event-sdk": "14.8.5",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.10.0",
