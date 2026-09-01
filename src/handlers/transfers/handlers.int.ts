@@ -10,20 +10,17 @@ import TransferFacade from "../../models/transfer/facade"
 import handlerAll from './handler'
 import handlerPrepare from './prepare'
 import { assertPositionDiff, sleepSeconds } from "../../testing/util"
+import { DispatchTransferHandler } from "../dispatch-transfer-handler"
 
 const harness = Harness.getInstance()
-
-
+let dispatchHandler: DispatchTransferHandler
 describe('handlers/tranfers/handlers', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
 
-    // Register `topic-transfer-prepare` and `topic-transfer-fulfil` consumers. In most tests, we
-    // directly consume the prepare/fulfil, but still need to connect the consumer, since inside of 
-    // prepare() and fulfil() we commit the kafka offsets.
-    await handlerAll.registerPrepareHandler()
-    await handlerAll.registerFulfilHandler()
+    dispatchHandler = new DispatchTransferHandler(harness.config)
+    await dispatchHandler.init()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
@@ -77,7 +74,7 @@ describe('handlers/tranfers/handlers', () => {
     const positionPayerStart = await ApiHelpers.getPositionAccount('dfsp_a', 'USD')
     const positionPayeeStart = await ApiHelpers.getPositionAccount('dfsp_b', 'USD')
     await ApiHelpers.buildPayment()
-      .deps(harness, handlerAll)
+      .deps(harness, dispatchHandler)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
       .build()
@@ -129,7 +126,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last 2 message types.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
   })
@@ -198,7 +195,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last 2 topics.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
   })
@@ -237,7 +234,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last 2 message types.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
   })
@@ -315,7 +312,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last messages.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
   })
@@ -366,7 +363,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last messages.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
   })
@@ -404,6 +401,11 @@ describe('handlers/tranfers/handlers', () => {
     const mark = harness.redpandaMark()
     await handlerAll.fulfil(null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)])
     await harness.redpandaDrain(mark, 2)
+
+    Snapshot.from(`[
+      "topic-transfer-pos:ignore",
+      "topic-notification-event"
+    ]`).checkUnwrap(harness.spoolLastTopic(2))
 
     // Get the transfer:
     const transfer = await TransferFacade.getById(transferId)
@@ -457,7 +459,7 @@ describe('handlers/tranfers/handlers', () => {
     // Check the last messages.
     const topics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
 
@@ -494,7 +496,7 @@ describe('handlers/tranfers/handlers', () => {
 
     const lastTopics = harness.spoolLastTopic(2)
     Snapshot.from(`[
-      "topic-transfer-position",
+      "topic-transfer-pos:ignore",
       "topic-notification-event"
     ]`).checkUnwrap(lastTopics)
 

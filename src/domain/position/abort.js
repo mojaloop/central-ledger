@@ -120,6 +120,9 @@ const processPositionAbortBin = async (
           _handleParticipantPositionChange(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.transferId, accumulatedPositionReservedValue)
         runningPosition = updatedRunningPosition
         participantPositionChanges.push(participantPositionChange)
+        // Match the non batch handler logic - we need to pass through the reason otherwise it's
+        // overriden with null.
+        transferStateChange.reason = binItem.decodedPayload?.errorInformation?.errorDescription || null
         transferStateChanges.push(transferStateChange)
         accumulatedTransferStatesCopy[positionChangeToBeProcessed.transferId] = transferStateId
       }

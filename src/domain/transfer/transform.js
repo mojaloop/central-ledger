@@ -68,7 +68,7 @@ const fromTransferReadModel = (t) => fromTransferAggregate({
   ilpPacket: t.ilpPacket,
   fulfilment: t.fulfilment,
   condition: t.condition,
-  expiration: t.expirationDate,
+  expirationDate: t.expirationDate,
   extensionList: t.extensionList
 })
 
@@ -86,7 +86,7 @@ const fromSaveTransferPrepared = (t) => fromTransferAggregate({
   ilpPacket: t.ilpPacketRecord.value,
   fulfilment: null,
   condition: t.transferRecord.ilpCondition,
-  expiration: t.transferRecord.expirationDate,
+  expirationDate: t.transferRecord.expirationDate,
   extensionList: t.transferExtensionsRecordList
 })
 

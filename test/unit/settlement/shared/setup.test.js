@@ -150,7 +150,7 @@ Test('Server Setup', async setupTest => {
           test.ok(server, 'return server object')
           test.ok(HapiStubThrowError.Server.calledOnce, 'Hapi.Server called once')
           test.ok(DbStub.connect.calledOnce, 'Db.connect called once')
-          test.equal(serverStub.register.callCount, 7, 'server.register called 7 times')
+          test.equal(serverStub.register.callCount, 6, 'server.register called 6 times')
           test.ok(serverStub.method.calledOnce, 'server.method called once')
           test.ok(serverStub.start.calledOnce, 'server.start called once')
           test.ok(serverStub.plugins.openapi.setHost.calledOnce, 'server.plugins.openapi.setHost called once')
@@ -189,7 +189,7 @@ Test('Server Setup', async setupTest => {
           test.ok(server, 'return server object')
           test.ok(HapiStubThrowError.Server.calledOnce, 'Hapi.Server called once')
           test.ok(DbStub.connect.calledOnce, 'Db.connect called once')
-          test.equal(serverStub.register.callCount, 7, 'server.register called 7 times')
+          test.equal(serverStub.register.callCount, 6, 'server.register called 6 times')
           test.ok(serverStub.method.calledOnce, 'server.method called once')
           test.ok(serverStub.start.calledOnce, 'server.start called once')
           test.ok(serverStub.plugins.openapi.setHost.calledOnce, 'server.plugins.openapi.setHost called once')
@@ -519,6 +519,7 @@ Test('Server Setup', async setupTest => {
           test.end()
         }
       })
+
       await initTest.end()
     } catch (err) {
       logger.error(`setupTest failed with error - ${err}`)

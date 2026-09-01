@@ -50,6 +50,7 @@ const registerPlugins = async (server) => {
         documentPath: Path.resolve(process.cwd(), 'src/settlement/interface/swagger.json')
       }
     })
+    await server.register(Blipp)
   }
 
   await server.register({
@@ -76,7 +77,6 @@ const registerPlugins = async (server) => {
   await server.register([
     Inert,
     Vision,
-    Blipp,
     ErrorHandling,
     RawPayloadToDataUri,
     HapiEventPlugin

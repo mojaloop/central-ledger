@@ -80,6 +80,28 @@ export interface ApplicationConfig {
   HANDLERS_TIMEOUT_DISABLED: boolean,
   HANDLERS_TIMEOUT_TIMEXP: string,
   HANDLERS_TIMEOUT_TIMEZONE: string,
+
+  /**
+   * @description Passed through to DispatchTransferHandler. When SPLIT (default), uses the new
+   * split payment-prepare, payment-fulfil, forex-prepare and forex-fulfil handlers.
+   * 
+   * @default 'SPLIT'
+   */
+  HANDLERS_TRANSFER_DISPATCH_MODE: 'JOINED' | 'SPLIT',
+
+  /**
+   * @description Passed through to payment-prepare, payment-fulfil, forex-prepare and forex-fulfil
+   * handlers.
+   * 
+   * 'UNFUSE': Uses the legacy position logic, which emits a position message to be picked up by
+   *           the position handlers.
+   * 
+   * 'FUSE'  : Uses the new position logic, which handles position changes inside of the handler.
+   * 
+   * @default 'UNFUSE'
+   */
+  HANDLERS_TRANSFER_POSITION_FUSE: 'UNFUSE' | 'FUSE',
+
   CACHE_CONFIG: {
     CACHE_ENABLED: boolean
     MAX_BYTE_SIZE: number,

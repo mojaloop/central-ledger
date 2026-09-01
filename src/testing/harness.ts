@@ -62,7 +62,6 @@ import PositionBatchHandler from '../handlers/positions/handlerBatch'
 import ParticipantCached from '../models/participant/participantCached'
 import ParticipantCurrencyCached from '../models/participant/participantCurrencyCached'
 import ParticipantLimitCached from '../models/participant/participantLimitCached'
-import ProxyCache from '../lib/proxyCache'
 const BatchPositionModelCached = require('../models/position/batchCached')
 const ExternalParticipantCached = require('../models/participant/externalParticipantCached')
 
@@ -74,6 +73,8 @@ import { Consumer } from "./kafka"
 import { Message } from "node-rdkafka"
 
 const logger = Logger.child({ scope: 'harness' })
+
+let ProxyCache: any
 
 export interface HarnessOptions {
   /**
@@ -178,6 +179,8 @@ export default class Harness {
   }
 
   /**
+   * @default NON_BATCH
+   *
    * The BATCH position handler contains a bug which makes it unable to properly process 
    * aborted transfers. Since we will be soon removing the position handlers, we work around
    * this bug by allowing the harness to specify whether or not to use the NON_BATCH or BATCH
@@ -187,7 +190,10 @@ export default class Harness {
    * position rest message to not be fired.
    */
   public async up(positionHandlerType: 'NON_BATCH' | 'BATCH' = 'NON_BATCH') {
-    const start = performance.now()
+    logger.warn(`harness.up() - NON_BATCH is disabled. Always using BATCH.`)
+    positionHandlerType = 'BATCH'
+
+    const timerStart = performance.now()
     await this.checkEnvironment()
 
     const results = await Promise.allSettled([
@@ -325,8 +331,8 @@ export default class Harness {
       }
     })
 
-    const end = performance.now()
-    logger.warn(`Harness.up() took: ${(end - start).toFixed(0)} ms.`)
+    const timerEnd = performance.now()
+    logger.warn(`Harness.up() took: ${(timerEnd - timerStart).toFixed(0)} ms.`)
   }
 
   get mySqlConnectionOptions(): MySqlConnectionOptions {
@@ -407,6 +413,9 @@ export default class Harness {
     logger.info('setupGlobals()')
     // Override the global config with our testing config.
     overrideForTesting(this.config)
+
+    ProxyCache = require('../lib/proxyCache')
+    await ProxyCache.connect()
 
     await Db.connect(this.config.DATABASE)
     await ParticipantCached.initialize()
@@ -522,7 +531,7 @@ environment!\n ${err.message}`)
   /**
    * @description Wait for redpanda to produce and consume _n_ messages.
    */
-  public async redpandaDrain(markLast: number, numMessages: number, attempts: number = 25): Promise<void> {
+  public async redpandaDrain(markLast: number, numMessages: number, attempts: number = 20): Promise<void> {
     const start = performance.now()
     assert(markLast >= 0)
     assert(numMessages >= 0)
@@ -565,12 +574,12 @@ environment!\n ${err.message}`)
         throw new Error('Not ready')
       } catch (err: any) {
         if (attempt === attempts) {
-          const errorMessage = `redpandaDrain() failed to consume ${numMessages} messages after ${attempts} attempts.\
-Found only ${markNew - markLast} new messages.`
-          logger.error(errorMessage)
+          const error = new Error(`redpandaDrain() failed to consume ${numMessages} messages after ${attempts} attempts.\
+Found only ${markNew - markLast} new messages.`)
+          logger.error(error.message)
+          logger.error(error.stack)
           this.printLast(markNew - markLast)
-
-          throw new Error(errorMessage)
+          throw error
         }
 
         if (err.message !== 'Not ready') {
@@ -605,14 +614,17 @@ Found only ${markNew - markLast} new messages.`
    * @description Print the last messages in the messageQueue. If `numMessages` is undefined, prints
    * all messages.
    */
-  public printLast(numMessages?: number): void {
+  public printLast(numMessages: number): void {
     let messages = this.spoolLast(this.messageQueue.length)
-    if (numMessages) {
-      assert(numMessages >= 0)
-      assert(numMessages <= messages.length)
-      messages = messages.slice(numMessages * -1)
+
+    if (numMessages === 0) {
+      numMessages = 5
     }
-    logger.warn('printLast() messages:')
+    assert(numMessages > 0)
+    assert(numMessages <= messages.length)
+    messages = messages.slice(numMessages * -1)
+
+    logger.warn(`printLast() ${numMessages} messages:`)
     messages.forEach(msg => {
       logger.warn(`\n
       ts:   ${msg.timestamp}
@@ -703,6 +715,7 @@ class Redpanda {
   }
 
   public async up(): Promise<void> {
+    const timerStart = performance.now()
     this.logger.debug(`up()`)
     const portRedpanda = await randomAvailablePort()
     const portConsole = await randomAvailablePort()
@@ -715,12 +728,13 @@ class Redpanda {
       --network harness \
       -p ${portRedpanda}:9092 \
       --health-cmd="rpk cluster info" \
-      --health-interval=1s \
-      --health-timeout=2s \
+      --health-interval=100ms \
+      --health-timeout=500ms \
       --health-retries=100 \
-      --health-start-period=2s \
+      --health-start-period=0s \
       docker.io/redpandadata/redpanda:latest \
       redpanda start \
+      --mode dev-container \
       --smp 1 \
       --memory 400M \
       --reserve-memory 0M \
@@ -754,7 +768,8 @@ class Redpanda {
     this.logger.warn(`Redpanda - go to: http://localhost:${portConsole} to see the Redpanda Console`);
     await this.waitForHealthy()
     await this.createTopics()
-    this.logger.debug(`up() - Complete.`)
+    const timerEnd = performance.now()
+    this.logger.info(`up() - took: ${Math.floor(timerEnd - timerStart)}ms`)
   }
 
   private async waitForHealthy(): Promise<void> {
@@ -772,7 +787,7 @@ class Redpanda {
           throw new Error('Not ready.')
         }
 
-        logger.warn(`Redpanda started after ${attempt} attempts (${attempt * delayMs}ms).`)
+        logger.info(`Redpanda started after ${attempt} attempts (${attempt * delayMs}ms).`)
         return
       } catch (err: any) {
         if (attempt === attemptsMax) {
@@ -874,9 +889,12 @@ class MySql {
   }
 
   public async up(): Promise<void> {
+    const timerStart = performance.now()
     this.logger.debug(`up()`)
     const port = await randomAvailablePort()
 
+    // Highly optimzed `docker run` to try and improve startup time.
+    // takes around 3500 ms on my Mac.
     const command = `
     docker rm -f ${this.containerName} 2>/dev/null;
     docker run -d \
@@ -885,18 +903,39 @@ class MySql {
       -e MARIADB_ROOT_PASSWORD=password \
       -e MARIADB_DATABASE=${this.options.databaseName} \
       -p ${port}:3306 \
-      mariadb:latest
+      --health-cmd="mariadb -u root -ppassword -e 'select 1'" \
+      --health-interval=10ms \
+      --health-timeout=50ms \
+      --health-retries=100 \
+      --health-start-period=0s \
+      mariadb:latest \
+      --skip-name-resolve \
+      --skip-log-bin \
+      --performance-schema=OFF \
+      --innodb-buffer-pool-size=64M \
+      --innodb-log-file-size=16M \
+      --max-connections=50
     `.replace(/\s/g, ' ')
     await execAsync(command)
-
     this.logger.info(`MySql starting at localhost:${port}`);
+    const timerExec = performance.now()
+    this.logger.info(`  docker run        - took: ${Math.floor(timerExec - timerStart)}ms`)
 
     this._connectionOptions = { port }
-    await this.waitForMySqlReady()
-    await this.migrate()
-    await this.seed()
+    await this.waitForMySqlReadyExec()
+    const timerReady = performance.now()
+    this.logger.info(`  waitForMySqlReady - took: ${Math.floor(timerReady - timerExec)}ms`)
 
-    this.logger.debug(`up() - Complete.`)
+    await this.migrate()
+    const timerMigrated = performance.now()
+    this.logger.info(`  migrate()         - took: ${Math.floor(timerMigrated - timerReady)}ms`)
+
+    await this.seed()
+    const timerSeeded = performance.now()
+    this.logger.info(`  seed()            - took: ${Math.floor(timerSeeded - timerMigrated)}ms`)
+
+    const timerEnd = performance.now()
+    this.logger.info(`up()        - took: ${Math.floor(timerEnd - timerStart)}ms`)
   }
 
   get connectionOptions(): MySqlConnectionOptions {
@@ -921,7 +960,7 @@ class MySql {
   /**
    * Call exec on the container to make sure mysql is ready for connections.
    */
-  private async waitForMySqlReady(): Promise<void> {
+  private async waitForMySqlReadyExec(): Promise<void> {
     assert(this._connectionOptions)
 
     let attemptsMax = 150
@@ -933,7 +972,37 @@ class MySql {
           'mariadb -u root -ppassword -e "select 1" ${this.options.databaseName}'
         `
         await execAsync(command)
-        logger.warn(`MySql started after ${attempt} attempts (${attempt * delayMs}ms).`)
+        logger.info(`MySql started after ${attempt} attempts (${attempt * delayMs}ms).`)
+        return
+      } catch (err: any) {
+        if (attempt === attemptsMax) {
+          throw new Error(`MySql failed to start after ${attemptsMax} attempts.\n${err.message}`)
+        }
+        // Extra whitespace for better printing.
+        logger.debug(`Waiting for MySQL:      [attempt ${`${attempt}`.padStart(3)}/${attemptsMax}]`)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+    }
+  }
+
+  /**
+   * Use the internal docker health check, it seems to be slightly faster.
+   */
+  private async waitForMySqlReadyInspect(): Promise<void> {
+    assert(this._connectionOptions)
+
+    let attemptsMax = 100
+    let delayMs = 25
+
+    for (let attempt = 1; attempt <= attemptsMax; attempt++) {
+      try {
+        const command = `docker inspect --format='{{.State.Health.Status}}' ${this.containerName}`
+        const { stdout } = await execAsync(command, { silent: true })
+
+        if (stdout.trim() !== 'healthy') {
+          throw new Error('Not ready.')
+        }
+        logger.info(`MySql started after ${attempt} attempts).`)
         return
       } catch (err: any) {
         if (attempt === attemptsMax) {
@@ -1109,6 +1178,7 @@ class Redis {
   }
 
   public async up(): Promise<void> {
+    const timerStart = performance.now()
     this.logger.debug(`up()`)
     const port = await randomAvailablePort()
 
@@ -1128,8 +1198,8 @@ class Redis {
     this.logger.info(`Redis starting at localhost:${port}`);
 
     this._connectionOptions = { port }
-
-    this.logger.debug(`up() - Complete.`)
+    const timerEnd = performance.now()
+    this.logger.info(`up() - took: ${Math.floor(timerEnd - timerStart)}ms`)
   }
 
   get connectionOptions() {

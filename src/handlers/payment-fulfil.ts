@@ -1,0 +1,602 @@
+/*****
+ License
+ --------------
+ Copyright © 2020-2024 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
+ --------------
+ ******/
+
+import assert from "node:assert";
+import { ApplicationConfig } from "../lib/config";
+import { logger } from '../shared/logger';
+import { Enum, Util, EventActionEnum } from '@mojaloop/central-services-shared';
+const { Kafka } = Util
+import TransferService, { getTransferFulfilmentDuplicateCheck, saveTransferErrorDuplicateCheck, saveTransferFulfilmentDuplicateCheck } from "../domain/transfer";
+import { getTransferErrorDuplicateCheck } from '../models/transfer/transferErrorDuplicateCheck';
+const { decodePayload } = Util.StreamingProtocol
+const Participant = require('../domain/participant')
+const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
+const { Action } = Enum.Events.Event
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { FSPIOPError } = ErrorHandler
+
+import { TransferHelper } from './transfer-helper';
+import RefactorHelper from "../shared/refactor-helper";
+
+interface Dependencies {
+  config: ApplicationConfig
+  fxService: any
+  positionHandler: null | ((error: null, messages: Array<any>) => Promise<any>)
+}
+
+export type CommitPaymentDto = {
+  transferState: 'COMMITTED' | 'RESERVED' | 'RESERVED_FORWARDED',
+  fulfilment: string,
+  completedTimestamp: string,
+} | {
+  transferState: 'ABORTED',
+  // Not sure if this is here.
+  completedTimestamp: string,
+  errorInformation: {
+    errorCode: string,
+    errorDescription: string,
+    extensionList?: {
+      extension: Array<{
+        key: string,
+        value: string
+      }>
+    }
+  }
+}
+type CommitPaymentDtoAborted = Extract<CommitPaymentDto, { transferState: 'ABORTED' }>;
+
+export type FulfilHandlerAction = EventActionEnum.ABORT
+  | EventActionEnum.COMMIT
+  | EventActionEnum.RESERVE;
+
+export interface FusedFulfilHandlerInput {
+  message: any;
+  payload: CommitPaymentDto
+  headers: Record<string, any>;
+  /**
+   * The mojaloop logical transfer id
+   */
+  transferId: string;
+  action: FulfilHandlerAction;
+  eventType: string;
+  kafkaTopic: string;
+  /**
+   * The DFSP ID of the caller, extracted from FSPIOP-Source header
+   */
+  callerDfspId: string;
+}
+
+export enum PaymentFulfilResultType {
+  /**
+   * Fulfil step completed validation. Payment was either fulfilled or aborted successfully
+   */
+  PASS = 'PASS',
+
+  /**
+   * Duplicate payment found in a finalized state
+   */
+  DUPLICATE_FINAL = 'DUPLICATE_FINAL',
+
+  /**
+   * Duplicate payment found that is still being processed
+   */
+  DUPLICATE_NON_FINAL = 'DUPLICATE_NON_FINAL',
+
+  /**
+   * Payment failed validation.
+   */
+  FAIL_VALIDATION = 'FAIL_VALIDATION',
+
+  /**
+   * Catch-all Payment failed for another reason.
+   */
+  FAIL_OTHER = 'FAIL_OTHER',
+}
+
+export type PaymentFulfilResult = {
+  type: PaymentFulfilResultType.PASS
+} | {
+  type: PaymentFulfilResultType.DUPLICATE_FINAL
+} | {
+  type: PaymentFulfilResultType.DUPLICATE_NON_FINAL
+  // TODO: is there a body for this?
+} | {
+  type: PaymentFulfilResultType.FAIL_VALIDATION
+  error: typeof FSPIOPError
+} | {
+  type: PaymentFulfilResultType.FAIL_OTHER
+  error: typeof FSPIOPError
+}
+
+export class PaymentFulfilHandler {
+  constructor(private deps: Dependencies) { }
+
+  /**
+   * Handle a batch of messages coming off of Kafka.
+   */
+  async handle(
+    error: any, messages: any
+  ): Promise<Array<PromiseSettledResult<PaymentFulfilResult>>> {
+    if (error) {
+      throw error
+    }
+
+    assert(Array.isArray(messages))
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE') {
+      assert(
+        this.deps.positionHandler,
+        'PaymentFulfilHandler.deps.positionHandler not defined, positions are in `FUSE` mode.')
+    }
+
+    if (messages.length === 0) {
+      logger.debug('PaymentFulfilHandler.handle() - received empty batch, nothing to process');
+      return []
+    }
+
+    logger.debug(`PaymentFulfilHandler.handle() - processing batch of ${messages.length} messages`)
+
+    const inputs = messages.map(message => ({
+      message,
+      input: this.extractMessageData(message)
+    }));
+
+    const results = await Promise.allSettled(inputs.map(async ({ input }) => this.handleOne(input)))
+    results.forEach(result => {
+      if (result.status === 'fulfilled' && result.value.type !== PaymentFulfilResultType.PASS) {
+        logger.warn(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
+      }
+      if (result.status === 'rejected') {
+        logger.error(`handleOne() failed with error: \n\t${result.reason}`)
+        if (result.reason.stack) logger.error(`stack\n\t${result.reason.stack}`)
+      }
+    })
+
+    return results
+  }
+
+  async handleOne(input: FusedFulfilHandlerInput): Promise<PaymentFulfilResult> {
+    // Shortcut.
+    const { transferId, payload } = input
+    const transfer = await TransferService.getById(transferId)
+    if (!transfer) {
+      return {
+        type: PaymentFulfilResultType.FAIL_OTHER,
+        error: ErrorHandler.Factory.createInternalServerFSPIOPError(
+          `transfer not found for id: ${transferId}.`
+        )
+      }
+    }
+
+    // Ensure that the FSPIOP-Source matches the payee.
+    // TODO: the original has a bunch of proxy stuff, but I don't understand it, so I'm leaving it
+    // out for now.
+
+    if (transfer.payeeIsProxy) {
+      // Handle proxied payment case
+      if (input.callerDfspId !== transfer.externalPayeeName) {
+        const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
+          `${input.callerDfspId} does not match externalPayeeName: ${transfer.externalPayeeName} \
+on the Fulfil callback response.`
+        )
+        // Transfer aborted.
+        await TransferService.handlePayeeResponse(
+          transferId,
+          payload,
+          'abort-validation',
+          // TODO: need to figure out how to format this.
+          error
+        )
+
+        await this.sendMessagePositionRollback(input, transfer, error)
+        return { type: PaymentFulfilResultType.FAIL_VALIDATION, error }
+      }
+    } else {
+      if (input.callerDfspId !== transfer.payeeFsp) {
+        const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
+          `${input.callerDfspId} does not match payer fsp: ${transfer.payeeFsp} \
+on the Fulfil callback response.`
+        )
+        // Transfer aborted.
+        await TransferService.handlePayeeResponse(
+          transferId,
+          payload,
+          'abort-validation',
+          // TODO: need to figure out how to format this.
+          error
+        )
+
+        await this.sendMessagePositionRollback(input, transfer, error)
+        return { type: PaymentFulfilResultType.FAIL_VALIDATION, error }
+      }
+    }
+
+    const payloadHash = TransferHelper.hashPayload(payload)
+    if (transfer.transferState === 'COMMITTED') {
+      // Payment is finalized. Check to see if this is an exact duplicate Fulfil message, or if the
+      // fulfil message was modified in some way.
+      let savedFulfilHash
+      try {
+        savedFulfilHash = (await getTransferFulfilmentDuplicateCheck(transferId)).hash
+        if (savedFulfilHash === payloadHash) {
+          // Safe to ignore, we saw the same fulfil message before.
+          return {
+            type: PaymentFulfilResultType.DUPLICATE_FINAL
+          }
+        }
+        // Modified message.
+        return {
+          type: PaymentFulfilResultType.FAIL_VALIDATION,
+          error: ErrorHandler.Factory.createInternalServerFSPIOPError(
+            `detected transfer fulfil message modified for transferId: ${transferId}.`
+          )
+        }
+      } catch (err) {
+        const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
+          'found finalized transfer, but no `getTransferFulfilmentDuplicateCheck`'
+        )
+        logger.error(error.message)
+        return {
+          type: PaymentFulfilResultType.FAIL_OTHER,
+          error,
+        }
+      }
+    }
+
+    // TODO: in these steps we need to do the transferFulfilmentDuplicateCheck step 
+    if (transfer.transferState === 'ABORTED') {
+      // Payment is finalized. Check to see if this is an exact duplicate Fulfil message, or if the
+      // fulfil message was modified in some way.
+      let savedHash
+      try {
+        savedHash = (await getTransferErrorDuplicateCheck(transferId)).hash
+        if (savedHash === payloadHash) {
+          // Safe to ignore, we saw the same fulfil message before.
+          return {
+            type: PaymentFulfilResultType.DUPLICATE_FINAL
+          }
+        }
+        // Modified message.
+        return {
+          type: PaymentFulfilResultType.FAIL_VALIDATION,
+          error: ErrorHandler.Factory.createInternalServerFSPIOPError(
+            `detected transfer fulfil message modified for transferId: ${transferId}.`
+          )
+        }
+      } catch (err) {
+        const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
+          'found finalized transfer, but no `getTransferFulfilmentDuplicateCheck`'
+        )
+        logger.error(error.message)
+        return {
+          type: PaymentFulfilResultType.FAIL_OTHER,
+          error,
+        }
+      }
+    }
+
+    // According to:
+    // https://docs.mojaloop.io/api/fspiop/v1.1/api-definition.html#put-transfers-id
+    // "For PUT /transfers/{ID} callbacks, the state ABORTED is not a valid enumeration option as 
+    // transferState in Table 32. If a transfer is to be rejected, then the FSP making the callback
+    // should use an error callback, i.e., a callback on the /error endpoint.
+    if (input.action === 'abort') {
+      const errorPayload = payload as CommitPaymentDtoAborted
+      const fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(
+        errorPayload.errorInformation
+      )
+
+      // Payee aborted the transfer, save to DB.
+      await saveTransferErrorDuplicateCheck(transferId, payloadHash)
+      await TransferService.handlePayeeResponse(
+        transferId,
+        errorPayload,
+        input.action,
+        // TODO: need to figure out how to format this.
+        fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+      )
+
+      // TODO: Rollback the position.
+      // TODO: not sure about error formatting.
+      await this.sendMessagePositionRollback(input, transfer, errorPayload)
+      return {
+        type: PaymentFulfilResultType.PASS
+      }
+    }
+
+    assert(
+      payload.transferState === 'COMMITTED' ||
+      payload.transferState === 'RESERVED' ||
+      payload.transferState === 'RESERVED_FORWARDED'
+    )
+    if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
+      return {
+        type: PaymentFulfilResultType.FAIL_VALIDATION,
+        error: ErrorHandler.Factory.createInternalServerFSPIOPError(
+          `transfer timed out.`
+        )
+      }
+    }
+
+    await saveTransferFulfilmentDuplicateCheck(transferId, payloadHash)
+    if (!TransferHelper.fulfilmentMatchesCondition(payload.fulfilment, transfer.condition)) {
+      // Payee sent an fulfilment. Need to abort the payment.
+      const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
+        `fulfilment does not match condition.`
+      )
+      // Transfer aborted.
+      await TransferService.handlePayeeResponse(
+        transferId,
+        payload,
+        'abort-validation',
+        // TODO: need to figure out how to format this.
+        error
+      )
+
+      await this.sendMessagePositionRollback(input, transfer, error)
+      return { type: PaymentFulfilResultType.FAIL_VALIDATION, error }
+    }
+
+    // Happy path - validation passed.
+    await TransferService.handlePayeeResponse(transferId, payload, input.action)
+    await this.sendMessagePositionCommit(input, transfer)
+    return {
+      type: PaymentFulfilResultType.PASS
+    }
+  }
+
+
+
+  private extractMessageData(message: any): FusedFulfilHandlerInput {
+    assert(message);
+    assert(message.value);
+    assert(message.value.content);
+    assert(message.value.metadata);
+    assert(message.value.metadata.event);
+
+    const payloadEncoded = message.value.content.payload;
+    // Fulfil messages always use CommitPaymentDto
+    // TODO: handle AbortPaymentDto
+    const payload = decodePayload(payloadEncoded, {}) as CommitPaymentDto;
+    const eventType = message.value.metadata.event.type;
+    const headers = message.value.content.headers;
+
+    // Validate API Version. TransferState.RESERVED is not allowed in FSPIOP v1.0
+    // TODO: Why isn't this in the ml-api-adapter layer? It feels like it doesn't belong here.
+    const contentTypeStr = headers['content-type']
+    assert(contentTypeStr, 'No `content-type` header found.')
+    assert(typeof contentTypeStr === 'string', '`content-type` header should be a string')
+    const [_, apiVersionStr] = contentTypeStr.split('=')
+    assert(apiVersionStr, 'Malformed `content-type` string.')
+    if (contentTypeStr === '1.0' && payload.transferState === 'RESERVED') {
+      throw new Error(`action "RESERVE" is not allowed in fulfil handler for v1.0 clients.`)
+    }
+
+    assert(message.value.content.uriParams)
+    assert(message.value.content.uriParams.id)
+    const transferId = message.value.content.uriParams.id
+    assert(transferId, 'could not parse transferId')
+
+    // TODO(LD): what should action be?
+    const actionStr = message.value.metadata.event.action
+    assert(actionStr)
+    let action: FulfilHandlerAction
+    switch (actionStr) {
+      case Enum.Events.Event.Action.ABORT:
+      case Enum.Events.Event.Action.COMMIT:
+      case Enum.Events.Event.Action.RESERVE:
+        action = actionStr as FulfilHandlerAction
+        break;
+      case Enum.Events.Event.Action.BULK_ABORT:
+      case Enum.Events.Event.Action.BULK_COMMIT:
+      default:
+        throw new Error(`FusedFulfilHandler.extractMessageData() - unexpected action: ${actionStr}.`)
+    }
+
+    // Extract caller DFSP ID from FSPIOP-Source header.
+    const callerDfspId = headers['fspiop-source'];
+    assert(callerDfspId, '`callerDfspId` (FSPIOP-Source header) is required.');
+    assert(typeof callerDfspId === 'string', '`callerDfspId` must be a string.');
+
+    return {
+      message,
+      payload,
+      headers,
+      transferId,
+      action,
+      eventType,
+      kafkaTopic: message.topic,
+      callerDfspId
+    };
+  }
+
+  private async sendMessagePositionCommit(
+    input: FusedFulfilHandlerInput,
+    transfer: any
+  ): Promise<void> {
+    // Shortcut.
+    const config = this.deps.config
+    const params = {
+      message: input.message,
+      kafkaTopic: input.kafkaTopic,
+      decodedPayload: input.payload,
+      span: null,
+      consumer: Consumer,
+      producer: Producer
+    }
+
+    // TODO: better typing.
+    const cyrilResult = await this.deps.fxService.Cyril.processFulfilMessage(
+      input.transferId,
+      input.payload,
+      transfer
+    )
+    let messageKey: string
+    if (cyrilResult.isFx && cyrilResult.positionChanges.length > 0) {
+      // Forex + Payment.
+      // @ts-ignore
+      messageKey = cyrilResult.positionChanges[0].participantCurrencyId.toString()
+      params.message.value.content.context = {
+        ...params.message.value.content.context,
+        cyrilResult
+      }
+    } else {
+      // Standalone Payment
+      const payeeAccount = await Participant.getAccountByNameAndCurrency(
+        transfer.payeeFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION,
+      )
+      messageKey = payeeAccount.participantCurrencyId.toString()
+    }
+
+    assert(messageKey)
+
+    // TODO: can we remove these?
+    const topicNameOverride = input.action === 'commit'
+      ? config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
+      : config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.RESERVE
+
+    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case "UNFUSE": {
+        await Kafka.proceed(config.KAFKA_CONFIG, params, {
+          consumerCommit: true,
+          eventDetail: {
+            functionality: Enum.Events.Event.Type.POSITION,
+            action: input.action
+          },
+          messageKey,
+          topicNameOverride,
+          hubName: config.HUB_NAME
+        })
+        return
+      }
+      case "FUSE":
+        assert(this.deps.positionHandler)
+        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
+          eventDetail: {
+            functionality: Enum.Events.Event.Type.POSITION,
+            action: input.action,
+          },
+          messageKey,
+          hubName: config.HUB_NAME
+        })
+        await this.deps.positionHandler(null, [wrapped])
+    }
+  }
+
+  private async sendMessagePositionRollback(
+    input: FusedFulfilHandlerInput,
+    transfer: any,
+    error: {
+      errorInformation: {
+        errorCode: string,
+        errorDescription: string,
+      }
+    }
+  ): Promise<void> {
+    // Shortcut.
+    const config = this.deps.config
+    const params = {
+      message: input.message,
+      kafkaTopic: input.kafkaTopic,
+      decodedPayload: input.payload,
+      span: null,
+      consumer: Consumer,
+      producer: Producer
+    }
+
+    // Assertions that should live on the kafka library.
+    assert(error)
+    assert(error.errorInformation)
+    assert(error.errorInformation.errorCode)
+    assert(error.errorInformation.errorDescription)
+
+    // TODO: we shouldn't know anything about the "FXService" here.
+    const cyrilResult = await this.deps.fxService.Cyril.processAbortMessage(input.transferId)
+
+    // If a payment has a linked forex, we first set their state to RECEIVED_ERROR otherwise the
+    // position handler ignores the position reset.
+    for (const positionChange of cyrilResult.positionChanges) {
+      if (positionChange.isFxTransferStateChange) {
+        await this.deps.fxService.handleFulfilResponse(
+          positionChange.commitRequestId,
+          error,
+          Action.FX_ABORT,
+          error
+        )
+      }
+    }
+
+    params.message.value.content.context = {
+      ...params.message.value.content.context,
+      cyrilResult
+    }
+    let messageKey: string
+    if (cyrilResult.positionChanges.length > 0) {
+      // @ts-ignore
+      messageKey = cyrilResult.positionChanges[0].participantCurrencyId.toString()
+    } else {
+      // Fallback to payer account
+      const payerAccount = await Participant.getAccountByNameAndCurrency(
+        transfer.payerFsp,
+        transfer.currency,
+        Enum.Accounts.LedgerAccountType.POSITION
+      )
+      messageKey = payerAccount.participantCurrencyId.toString()
+    }
+    assert(messageKey)
+
+    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case "UNFUSE": {
+        await Kafka.proceed(config.KAFKA_CONFIG, params, {
+          consumerCommit: true,
+          fspiopError: error,
+          eventDetail: {
+            functionality: Enum.Events.Event.Type.POSITION,
+            action: 'abort'
+          },
+          messageKey,
+          topicNameOverride: config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.ABORT,
+          hubName: config.HUB_NAME
+        })
+        return
+      }
+      case "FUSE":
+        assert(this.deps.positionHandler)
+        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
+          fspiopError: error,
+          eventDetail: {
+            functionality: Enum.Events.Event.Type.POSITION,
+            action: 'abort'
+          },
+          messageKey,
+          hubName: config.HUB_NAME
+        })
+        await this.deps.positionHandler(null, [wrapped])
+    }
+  }
+}

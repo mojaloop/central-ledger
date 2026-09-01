@@ -104,7 +104,7 @@
     "EXPIRES_IN_MS": 1000
   },
   "PROXY_CACHE": {
-    "enabled": true,
+    "enabled": false,
     "type": "redis-cluster",
     "proxyConfig": {
       "cluster": [
@@ -112,7 +112,7 @@
       ]
     }
   },
-  "API_DOC_ENDPOINTS_ENABLED": true,
+  "API_DOC_ENDPOINTS_ENABLED": false,
   "WINDOW_AGGREGATION": {
     "RETRY_COUNT": 3,
     "RETRY_INTERVAL": 3000

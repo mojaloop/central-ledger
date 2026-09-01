@@ -50,6 +50,7 @@ const getSubServiceHealthBroker = async () => {
 
   try {
     const consumerTopics = Consumer.getListOfTopics()
+    Logger.warn(`getSubServiceHealthBroker() - checking topics: [${consumerTopics.join(',')}]`)
     const results = await Promise.all(
       consumerTopics.map(async (topic) => {
         try {
