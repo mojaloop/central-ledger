@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2024 Mojaloop Foundation
+ Copyright © 2020-2026 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -33,6 +33,7 @@ import Harness from '../testing/harness'
 import { DispatchTransferHandler } from '../handlers/dispatch-transfer-handler'
 import { MessageBus } from './message-bus'
 import { Snapshot } from '../testing/snapshot'
+import { PositionHandlerV2 } from '../handlers/position-v2'
 
 const harness = Harness.getInstance()
 let dispatchHandler: DispatchTransferHandler
@@ -44,10 +45,12 @@ describe('messaging/message-bus', () => {
     await harness.setupGlobals()
 
     dispatchHandler = new DispatchTransferHandler(harness.config)
+    const positionHandlerV2 = new PositionHandlerV2(harness.config)
     messageBus = new MessageBus({
       config: harness.config,
       handlers: {
-        dispatchTransferHandler: dispatchHandler
+        dispatchTransferHandler: dispatchHandler,
+        positionBatchHandler: positionHandlerV2
       }
     })
   })

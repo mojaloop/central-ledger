@@ -240,9 +240,12 @@ export class Payment {
   }
 
   public async prepare(): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
+    // const mark = this.options.harness.redpandaMark()
     this.options.transferHandler.prepare(null, [this.buildMessagePrepare()])
-    await this.options.harness.redpandaDrain(mark, this.expectedMessagesPrepare())
+    // await this.options.harness.redpandaDrain(mark, this.expectedMessagesPrepare())
+    await this.options.harness.redpandaDrainSmart(
+      this.expectedMessagesPrepare(), this.options.transferId, 100
+    )
 
     return this
   }

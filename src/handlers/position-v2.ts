@@ -181,6 +181,10 @@ export class PositionHandlerV2 {
 
       if (trx) await trx.rollback()
 
+      // It's tricky to know what to do here. If the batch partially failed we don't know which 
+      // things actually failed, so we don't know what to respond with.
+      // For now, we should just assume everything failed atomically.
+
       throw new Error(`PositionHandlerV2 failed with error: ${err.message}\n${err.stack}.`)
     }
   }
@@ -298,6 +302,7 @@ export class PositionHandlerV2 {
       switch (status) {
         case 'success': return 'SUCCESS'
         case 'failure': return 'FAILURE'
+        case 'error': return 'FAILURE'
         default:
           throw new Error(`extractStatus, unexpected status: ${status}.`)
       }

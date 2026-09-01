@@ -18,6 +18,12 @@ export default class PRNG {
     return array[index]
   }
 
+  public randomSampleFrom<T>(array: Array<T>, count: number): Array<T> {
+    assert(array.length >= count)
+    const shuffled = [...array].sort(() => this.prng() - 0.5)
+    return shuffled.slice(0, count)
+  }
+
   public intExclusive(bound: number): number {
     assert(typeof bound === 'number')
     assert(bound > 0)

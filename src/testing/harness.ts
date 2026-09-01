@@ -119,8 +119,10 @@ export default class Harness {
   private dependencyMySql: MySql
   private dependencyRedis: Redis
   private applicationConfig: ApplicationConfig | null = null;
+  private applicationConfigOriginal: ApplicationConfig | null = null;
   private omniConsumer: Consumer | null = null;
   private messageQueue: Array<MojaloopKafkaMessage> = []
+  private messageQueuePerId: Record<string, Array<MojaloopKafkaMessage>> = {}
   private readonly positionHandlerType: 'NON_BATCH' | 'BATCH' = 'BATCH'
 
   /**
@@ -134,7 +136,7 @@ export default class Harness {
    */
   private _enums: any = null;
 
-  private constructor(options: HarnessOptions) {
+  public constructor(options: HarnessOptions) {
     this.options = options
 
     this.dependencyRedpanda = new Redpanda({
@@ -160,9 +162,13 @@ export default class Harness {
     })
   }
 
+  public static randomRunId(): number {
+    return Math.floor(Math.random() * (100000 - 10000) + 10000)
+  }
+
   public static getInstance(): Harness {
     if (!Harness.instance) {
-      let run = Math.floor(Math.random() * (100000 - 10000) + 10000)
+      let run = Harness.randomRunId()
       if (process.env.RUN) {
         try {
           run = Number.parseInt(process.env.RUN)
@@ -344,6 +350,22 @@ export default class Harness {
     )
   }
 
+  /**
+   * Override the Application Config.
+   */
+  public configOverride(override: Partial<ApplicationConfig>): void {
+    this.applicationConfigOriginal = this.applicationConfig
+    this.applicationConfig = deepMerge(this.config, override)
+  }
+
+  /**
+   * Reset the override
+   */
+  public configResetOverride(): void {
+    this.applicationConfigOriginal = null
+    this.applicationConfig = this.applicationConfigOriginal
+  }
+
   private appendMessageQueue(message: Message): void {
     assert(message)
     assert(message.value)
@@ -352,6 +374,10 @@ export default class Harness {
     assert(parsed)
 
     assert(message.timestamp, 'message.timestamp is not defined.')
+
+    // if (parsed.content.payload.transferId) {
+    //   console.log(`appendMessageQueue parsed.content.payload.transferId: ${parsed.content.payload.transferId}`)
+    // }
 
     const mojaloopKafkaMessage = {
       ...message,
@@ -362,12 +388,28 @@ export default class Harness {
     const lastTimestamp = lastMessage ? lastMessage.timestamp : 0
     // Even if the message is outdated, still append to the message queue instead of dropping it.
     // This warning will help us catch tests that have overlapping messages.
+
+    // TODO: remove this altogether? We should switch to the messageQueuePerId.
+
+    // We should move to the messageQueuePerId for everything
     if (mojaloopKafkaMessage.timestamp < lastTimestamp) {
       const message = `appendMessageQueue() inserted a stale message with timestamp:\
         ${mojaloopKafkaMessage.timestamp} after message with timestamp: ${lastTimestamp}.`
-      logger.warn(message)
+      // logger.warn(message)
     }
     this.messageQueue.push(mojaloopKafkaMessage)
+
+    // Keep track of messages per id.
+    if (parsed.content.payload.transferId) {
+      // console.log(`appendMessageQueue parsed.content.payload.transferId: ${parsed.content.payload.transferId}`)
+      const transferId = parsed.content.payload.transferId
+      let messages = this.messageQueuePerId[transferId] 
+      if (!messages) {
+        messages = []
+      }
+      messages.push(mojaloopKafkaMessage)
+      this.messageQueuePerId[transferId] = messages
+    }
   }
 
   /**
@@ -431,7 +473,6 @@ export default class Harness {
       await Db.disconnect()
       await KafkaProducer.disconnect()
       await KafkaConsumer.disconnectAll()
-      resetOverride()
     } catch (err: any) {
       logger.error(`teardownGlobals() failed with error: ${err.message}`)
       throw err
@@ -504,6 +545,72 @@ environment!\n ${err.message}`)
 
   public redpandaMark(): number {
     return this.messageQueue.length
+  }
+
+  /**
+   * @description Like `redpandaDrain()`, but looks only for messages matching a transfer id.
+   */
+  public async redpandaDrainSmart(numMessages: number, transferId: string, attempts: number = 20): Promise<void> {
+    const start = performance.now()
+    let delayMs = 10
+
+    // Init.
+    if (!this.messageQueuePerId[transferId]) {
+      this.messageQueuePerId[transferId] = []
+    }
+
+    let markNew
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        markNew = this.messageQueuePerId[transferId].length
+        if (markNew > numMessages) {
+          const errorMessage = `Redpanda expected to consume: ${numMessages}, but consumed: ${markNew}`
+          logger.error(errorMessage)
+          this.printLast(markNew)
+          throw new Error(errorMessage)
+        }
+
+        if (markNew === numMessages) {
+          const end = performance.now()
+          logger.info(`Redpanda consumed ${numMessages} message${numMessages === 1 ? ' ' : 's'} after ${(end - start).toFixed(0).padStart(4)}ms.`)
+
+          // Cool down for 20ms, check that there are no late messages.
+          await new Promise(resolve => setTimeout(resolve, 20))
+          const checkAgain = this.messageQueuePerId[transferId].length
+          const extraMessages = checkAgain - markNew
+          assert(extraMessages >= 0)
+          if (extraMessages > 0) {
+            const errorMessage = `After cooldown, Redpanda consumed ${extraMessages} extra message${extraMessages === 1 ? ' ' : 's'}.`
+            logger.error(errorMessage)
+
+            this.printLast(numMessages + extraMessages)
+            throw new Error(errorMessage)
+          }
+
+          return
+        }
+
+        throw new Error('Not ready')
+      } catch (err: any) {
+        if (attempt === attempts) {
+          const error = new Error(`redpandaDrainSmart() failed to consume ${numMessages} messages after ${attempts} attempts.\
+Found only ${markNew} new messages.`)
+          logger.error(error.message)
+          logger.error(error.stack)
+          throw error
+        }
+
+        if (err.message !== 'Not ready') {
+          logger.error(err.message)
+          throw err
+        }
+
+        logger.info(`redpandaDrainSmart() waiting for Redpanda: [attempt ${`${attempt}`.padStart(3)}/${attempts}, delayMs: ${delayMs}].`)
+        // Slowly back off.
+        delayMs = Math.floor((delayMs * 1.1) + 10)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+    }
   }
 
   /**

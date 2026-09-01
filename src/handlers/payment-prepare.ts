@@ -541,64 +541,6 @@ export class PaymentPrepareHandler {
     return Enum.Events.Event.Action[actionUpper] || actionUpper;
   }
 
-  private sendMessagePosition = async (
-    input: FusedPrepareHandlerInput,
-    determiningTransferCheckResult: any,
-    proxyObligation: any
-  ): Promise<void> => {
-    // Shortcut.
-    const config = this.deps.config
-
-    // Forward the payment to the position handler.
-    const params: KafkaParams<CreatePaymentDto> = {
-      message: input.message,
-      kafkaTopic: input.message.topic,
-      decodedPayload: input.payload,
-      span: null,
-      consumer: Consumer,
-      producer: Producer
-    }
-
-    const { messageKey, cyrilResult } = await this.deps.definePositionParticipant({
-      payload: proxyObligation.payloadClone,
-      isFx: false,
-      determiningTransferCheckResult,
-      proxyObligation
-    })
-
-    params.message.value.content.context = {
-      ...params.message.value.content.context,
-      cyrilResult
-    }
-
-    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
-      case 'UNFUSE': {
-        await Kafka.proceed(config.KAFKA_CONFIG, params, {
-          consumerCommit: true,
-          eventDetail: {
-            functionality: Type.POSITION,
-            action: Action.PREPARE
-          },
-          messageKey,
-          topicNameOverride: config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.PREPARE,
-          hubName: config.HUB_NAME
-        })
-        return
-      }
-      case 'FUSE':
-        assert(this.deps.positionHandler)
-        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
-          eventDetail: {
-            functionality: Type.POSITION,
-            action: Action.PREPARE
-          },
-          messageKey,
-          hubName: config.HUB_NAME
-        })
-        await this.deps.positionHandler(null, [wrapped])
-    }
-  }
-
   /**
    * @description Figure out if the participants in the Payment message are native to the scheme
    * or are proxies.

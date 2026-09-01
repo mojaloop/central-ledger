@@ -44,9 +44,11 @@ interface Dependencies {
  */
 export class MessageBus {
   private config: ApplicationConfig
+  private positionMutex: Mutex
 
   constructor(private deps: Dependencies) {
     this.config = deps.config
+    this.positionMutex = new Mutex()
   }
 
   /**
@@ -104,7 +106,9 @@ export class MessageBus {
     assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
     // Transform effectsPrepare to something that positionBatchHandler can tolerate.
     const kafkaPrepares = effectsPrepare.map(this.effectToKafkaMessage)
-    const resultsPosition = await this.deps.handlers.positionBatchHandler.handle(error, kafkaPrepares)
+    const resultsPosition = await this.positionMutex.runExclusive(async () => {
+      return await this.deps.handlers.positionBatchHandler.handle(error, kafkaPrepares)
+    })
 
     await this.emit(this.collectEffects(resultsPosition))
     await this.commit('topic-transfer-prepare', messages)
@@ -210,4 +214,23 @@ Disable it to use the new message bus.`)
       value: effect.message
     }
   }
+}
+
+
+class Mutex {
+  private queue: Promise<void> = Promise.resolve()
+
+  async runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    let release: () => void
+    const waitForPrevious = this.queue
+    this.queue = new Promise(resolve => {release = resolve})
+
+    await waitForPrevious
+    try {
+      return await fn()
+    } finally {
+      release!()
+    }
+  }
+
 }
