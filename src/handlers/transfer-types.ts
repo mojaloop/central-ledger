@@ -32,6 +32,87 @@
  * Types over javascript domain/model functions we need to inject into the new handlers.
  */
 
+export interface ParticipantCurrencyValidation {
+  participantName: string
+  currencyId: string
+}
+
+
+export interface TransferDeterminingCheckResult {
+  determiningTransferExistsInWatchList: boolean
+  watchListRecords: unknown[] | null
+  participantCurrencyValidationList: ParticipantCurrencyValidation[]
+}
+
+export interface FxTransferDeterminingCheckResult {
+  determiningTransferExistsInTransferList: boolean
+  transferRecord: unknown | null
+  participantCurrencyValidationList: ParticipantCurrencyValidation[]
+}
+
+export type DeterminingTransferCheckResult =
+  | TransferDeterminingCheckResult
+  | FxTransferDeterminingCheckResult
+
+export interface BaseProxyObligation {
+  isInitiatingFspProxy: boolean
+  isCounterPartyFspProxy: boolean
+  initiatingFspProxyOrParticipantId: {
+    inScheme: boolean
+    proxyId: string | null
+    name: string
+  } | null
+  counterPartyFspProxyOrParticipantId: {
+    inScheme: boolean
+    proxyId: string | null
+    name: string
+  } | null
+}
+
+export interface TransferProxyObligation extends BaseProxyObligation {
+  isFx: false
+  payloadClone: TransferPayload
+}
+
+export interface FxTransferProxyObligation extends BaseProxyObligation {
+  isFx: true
+  payloadClone: FxTransferPayload
+}
+
+export type ProxyObligationType = TransferProxyObligation | FxTransferProxyObligation
+
+export interface TransferPayload {
+  transferId: string
+  payerFsp: string
+  payeeFsp: string
+  amount: {
+    amount: string
+    currency: string
+  }
+  condition: string
+  expiration: string
+  ilpPacket: string
+}
+
+export interface FxTransferPayload {
+  commitRequestId: string
+  determiningTransferId: string
+  initiatingFsp: string
+  counterPartyFsp: string
+  amountType: 'SEND' | 'RECEIVE'
+  sourceAmount: {
+    amount: string
+    currency: string
+  }
+  targetAmount: {
+    amount: string
+    currency: string
+  }
+  condition: string
+  date: Date
+  expiration: string
+}
+
 export type ProxyCache = {
   getFSPProxy: (dfspId: string, options?: unknown) => Promise<{
     inScheme: boolean,
@@ -40,22 +121,47 @@ export type ProxyCache = {
   } | null>
 }
 
-export type CreateRemittanceEntity = () => {
-  checkIfDeterminingTransferExists: (payload: any, proxyObligation: any) => Promise<any>
+export type CreateRemittanceEntityPayment = () => {
+  checkIfDeterminingTransferExists: (
+    payload: TransferPayload,
+    proxyObligation: TransferProxyObligation
+  ) => Promise<TransferDeterminingCheckResult>
   getByIdLight: (id: string) => Promise<any>
   getDuplicate: (id: string) => Promise<{ [key: string]: any; hash?: string } | null>
   saveDuplicateHash: (id: string, hash: string) => Promise<void>,
   savePreparedRequest: (
-    payload: unknown,
+    payload: TransferPayload,
     reason: string | null,
     isValid: boolean,
-    determiningTransferCheckResult: unknown,
-    proxyObligation: unknown
+    determiningTransferCheckResult: TransferDeterminingCheckResult,
+    proxyObligation: TransferProxyObligation
   ) => Promise<void>,
   getPositionParticipant: (
-    payload: any, 
-    determiningTransferCheckResult: any,
-    proxyObligation: any
+    payload: TransferPayload,
+    determiningTransferCheckResult: TransferDeterminingCheckResult,
+    proxyObligation: TransferProxyObligation
+  ) => Promise<any>
+}
+
+export type CreateRemittanceEntityForex = () => {
+  checkIfDeterminingTransferExists: (
+    payload: FxTransferPayload,
+    proxyObligation: FxTransferProxyObligation
+  ) => Promise<FxTransferDeterminingCheckResult>
+  getByIdLight: (id: string) => Promise<any>
+  getDuplicate: (id: string) => Promise<{ [key: string]: any; hash?: string } | null>
+  saveDuplicateHash: (id: string, hash: string) => Promise<void>,
+  savePreparedRequest: (
+    payload: FxTransferPayload,
+    reason: string | null,
+    isValid: boolean,
+    determiningTransferCheckResult: FxTransferDeterminingCheckResult,
+    proxyObligation: FxTransferProxyObligation
+  ) => Promise<void>,
+  getPositionParticipant: (
+    payload: FxTransferPayload,
+    determiningTransferCheckResult: FxTransferDeterminingCheckResult,
+    proxyObligation: FxTransferProxyObligation
   ) => Promise<any>
 }
 

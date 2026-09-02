@@ -42,37 +42,26 @@ let messageBus: MessageBus
 describe('messaging/message-bus', () => {
   before(async () => {
     await harness.up()
-    await harness.setupGlobals()
-
-    dispatchHandler = new DispatchTransferHandler(harness.config)
-    const positionHandlerV2 = new PositionHandlerV2(harness.config)
-    messageBus = new MessageBus({
-      config: harness.config,
-      handlers: {
-        dispatchTransferHandler: dispatchHandler,
-        positionBatchHandler: positionHandlerV2
-      }
-    })
   })
 
   after(async () => {
-    await messageBus.deinit()
-    await harness.teardownGlobals()
     await harness.down()
   })
 
-  it('init() and deinit()', async () => {
-    await messageBus.init()
-    let consumers = messageBus.getConsumerTopics()
+  it('getConsumerTopics() after init()', async () => {
+    await harness.setupGlobals()
+    const consumers = harness.messageBus.getConsumerTopics().sort()
     Snapshot.from(`[
-      "topic-transfer-position-batch",
       "topic-admin-transfer",
-      "topic-transfer-prepare",
-      "topic-transfer-fulfil"
+      "topic-transfer-fulfil",
+      "topic-transfer-position-batch",
+      "topic-transfer-prepare"
     ]`).checkUnwrap(consumers)
+  })
 
-    await messageBus.deinit()
-    consumers = messageBus.getConsumerTopics()
+  it('getConsumerTopics() after deinit()', async () => {
+    await harness.teardownGlobals()
+    const consumers = harness.messageBus.getConsumerTopics().sort()
     Snapshot.from(`[]`).checkUnwrap(consumers)
   })
 })

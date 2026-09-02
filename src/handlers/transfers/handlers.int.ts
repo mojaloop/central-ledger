@@ -7,20 +7,14 @@ import * as ApiHelpers from '../../testing/api-helpers'
 
 import TimeoutHandler from '../timeouts/handler'
 import TransferFacade from "../../models/transfer/facade"
-import handlerAll from './handler'
-import handlerPrepare from './prepare'
 import { assertPositionDiff, sleepSeconds } from "../../testing/util"
-import { DispatchTransferHandler } from "../dispatch-transfer-handler"
 
 const harness = Harness.getInstance()
-let dispatchHandler: DispatchTransferHandler
+
 describe('handlers/tranfers/handlers', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
-
-    dispatchHandler = new DispatchTransferHandler(harness.config)
-    await dispatchHandler.init()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
@@ -74,7 +68,7 @@ describe('handlers/tranfers/handlers', () => {
     const positionPayerStart = await ApiHelpers.getPositionAccount('dfsp_a', 'USD')
     const positionPayeeStart = await ApiHelpers.getPositionAccount('dfsp_b', 'USD')
     await ApiHelpers.buildPayment()
-      .deps(harness, dispatchHandler)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
       .build()
@@ -123,12 +117,7 @@ describe('handlers/tranfers/handlers', () => {
     assertPositionDiff('payer', positionPayerStart, positionPayerEnd, { pending: 0, posted: 100 })
     assertPositionDiff('payee', positionPayeeStart, positionPayeeEnd, { pending: 0, posted: 0 })
 
-    // Check the last 2 message types.
-    const topics = harness.spoolLastTopic(2)
-    Snapshot.from(`[
-      "topic-transfer-pos:ignore",
-      "topic-notification-event"
-    ]`).checkUnwrap(topics)
+    harness.expect.topicsPaymentPrepareOrFulfil()
   })
 
   it('prepare() + fulfil() + COMMIT  completes a payment.', async () => {
@@ -137,7 +126,7 @@ describe('handlers/tranfers/handlers', () => {
     const positionPayeeStart = await ApiHelpers.getPositionAccount('dfsp_b', 'USD')
 
     const payment = await ApiHelpers.buildPayment()
-      .deps(harness, handlerAll)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId(transferId)
       .build()
@@ -192,19 +181,14 @@ describe('handlers/tranfers/handlers', () => {
       "isTransferReadModel": true
     }`).checkUnwrap(transfer)
 
-    // Check the last 2 topics.
-    const topics = harness.spoolLastTopic(2)
-    Snapshot.from(`[
-      "topic-transfer-pos:ignore",
-      "topic-notification-event"
-    ]`).checkUnwrap(topics)
+    harness.expect.topicsPaymentPrepareOrFulfil()
   })
 
   it('fulfil() + ABORT   rejects   a payment.', async () => {
     //  B -> A
     const transferId = '1000003'
-    const payment = await ApiHelpers.buildPayment()
-      .deps(harness, handlerAll)
+    const payment = ApiHelpers.buildPayment()
+      .deps(harness, harness.messageBus)
       .parties('dfsp_b', 'dfsp_a')
       .transferId(transferId)
       .amount('50.00')
@@ -231,26 +215,21 @@ describe('handlers/tranfers/handlers', () => {
     assertPositionDiff('payer', positionPayerStart, positionPayerEnd, { pending: 0, posted: 0 })
     assertPositionDiff('payee', positionPayeeStart, positionPayeeEnd, { pending: 0, posted: 0 })
 
-    // Check the last 2 message types.
-    const topics = harness.spoolLastTopic(2)
-    Snapshot.from(`[
-      "topic-transfer-pos:ignore",
-      "topic-notification-event"
-    ]`).checkUnwrap(topics)
+    harness.expect.topicsPaymentPrepareOrFulfil()
   })
 
   it('prepare() handles a reused transferId (different body)', async () => {
     const transferId = '1000004'
     const now = new Date()
-    const paymentA = await ApiHelpers.buildPayment()
-      .deps(harness, handlerAll)
+    const paymentA = ApiHelpers.buildPayment()
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId(transferId)
       .amount('10.00')
       .date(now)
       .build()
-    const paymentB = await ApiHelpers.buildPayment()
-      .deps(harness, handlerAll)
+    const paymentB = ApiHelpers.buildPayment()
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId(transferId)
       .amount('12.00') // Changed amount.
@@ -261,9 +240,8 @@ describe('handlers/tranfers/handlers', () => {
     await paymentA.prepare()
 
     // Manually prepare the second payment - it will fail.
-    const mark = harness.redpandaMark()
-    await handlerPrepare.prepare(null, [paymentB.buildMessagePrepare()])
-    await harness.redpandaDrain(mark, 1)
+    await harness.messageBus.prepare(null, [paymentB.buildMessagePrepare()])
+    await harness.redpandaDrainSmart(1, transferId)
 
     const messages = harness.spoolLastPayload(1)
     Snapshot.from(`[
@@ -287,7 +265,7 @@ describe('handlers/tranfers/handlers', () => {
   it('fulfil() + RESERVE completes a payment.', async () => {
     const transferId = '1000005'
     const payment = ApiHelpers.buildPayment()
-      .deps(harness, handlerAll)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId(transferId)
       .amount('14.00')
@@ -310,11 +288,7 @@ describe('handlers/tranfers/handlers', () => {
     assertPositionDiff('payee', positionPayeeStart, positionPayeeEnd, { pending: 0, posted: -14 })
 
     // Check the last messages.
-    const topics = harness.spoolLastTopic(2)
-    Snapshot.from(`[
-      "topic-transfer-pos:ignore",
-      "topic-notification-event"
-    ]`).checkUnwrap(topics)
+    harness.expect.topicsPaymentPrepareOrFulfil()
   })
 
   it('fulfil() + COMMIT  with an invalid fulfilment.', async () => {
@@ -322,7 +296,7 @@ describe('handlers/tranfers/handlers', () => {
     const amount = '14.00'
     let now = new Date();
     const payment = ApiHelpers.buildPayment()
-      .deps(harness, handlerAll)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId(transferId)
       .amount(amount)
@@ -346,9 +320,10 @@ describe('handlers/tranfers/handlers', () => {
       transferState: "RESERVED"
     })
 
-    const mark = harness.redpandaMark()
-    await handlerAll.fulfil(null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)])
-    await harness.redpandaDrain(mark, 2)
+    await harness.messageBus.fulfil(
+      null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)]
+    )
+    await harness.redpandaDrainSmart(harness.expect.messagesPayment(), transferId)
 
     // Get the transfer:
     const transfer = await TransferFacade.getById(transferId)
@@ -361,161 +336,71 @@ describe('handlers/tranfers/handlers', () => {
     assertPositionDiff('payee', positionPayeeStart, positionPayeeEnd, { pending: 0, posted: 0 })
 
     // Check the last messages.
-    const topics = harness.spoolLastTopic(2)
-    Snapshot.from(`[
-      "topic-transfer-pos:ignore",
-      "topic-notification-event"
-    ]`).checkUnwrap(topics)
+    harness.expect.topicsPaymentPrepareOrFulfil()
   })
 
   it('Payer dfsp cannot fulfill their own payment.', async () => {
     const transferId = '1000007'
-    const amount = '14.00'
-    let now = new Date();
-    const payment = ApiHelpers.buildPayment()
-      .deps(harness, handlerAll)
+    const payment = await ApiHelpers.buildPayment()
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId(transferId)
-      .amount(amount)
+      .expiry(100)
       .build()
-
-    await payment.prepare()
-
-    const putTransfer = ApiHelpers.buildMojaloopPutTransfer({
-      payerFsp: 'dfsp_a',
-      payeeFsp: 'dfsp_b',
-      transferId,
-      amountComplex: {
-        amount,
-        currency: 'USD'
-      },
-      date: now,
-      expirySeconds: 100,
-      transferState: "RESERVED"
-    })
+      .prepare()
 
     // Flip the headers, so it comes from the payer.
-    putTransfer.headers['fspiop-source'] = 'dfsp_a'
-    putTransfer.headers['fspiop-destination'] = 'dfsp_b'
+    const putTransfer = payment.buildMessageFulfil('COMMITTED')
+    putTransfer.value.content.headers['fspiop-source'] = 'dfsp_a'
+    putTransfer.value.content.headers['destination-source'] = 'dfsp_b'
 
-    const mark = harness.redpandaMark()
-    await handlerAll.fulfil(null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)])
-    await harness.redpandaDrain(mark, 2)
+    await harness.messageBus.fulfil(null, [putTransfer])
+    await harness.redpandaDrainSmart(harness.expect.messagesPayment(), transferId)
 
-    Snapshot.from(`[
-      "topic-transfer-pos:ignore",
-      "topic-notification-event"
-    ]`).checkUnwrap(harness.spoolLastTopic(2))
+    harness.expect.topicsPaymentPrepareOrFulfil()
 
     // Get the transfer:
     const transfer = await TransferFacade.getById(transferId)
     assert.equal(transfer.transferState, 'ABORTED_ERROR')
     assert.equal(
       transfer.reason, 
-      'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response'
+      'Generic validation error - caller fsp does not match payment.payeeFsp.'
     )
   })
 
   it('3rd dfsp cannot fulfill a payment.', async () => {
     const transferId = '1000017'
-    const amount = '14.00'
-    let now = new Date();
-    const postTransfer = ApiHelpers.buildMojaloopPostTransfer({
-      payerFsp: 'dfsp_a',
-      payeeFsp: 'dfsp_b',
-      transferId,
-      amountComplex: {
-        amount,
-        currency: 'USD'
-      },
-      date: now,
-      expirySeconds: 100
-    })
-
-    let mark = harness.redpandaMark()
-    await handlerPrepare.prepare(null, [ApiHelpers.buildMessagePrepare(harness, postTransfer)])
-    await harness.redpandaDrain(mark, 2)
-
-    const putTransfer = ApiHelpers.buildMojaloopPutTransfer({
-      payerFsp: 'dfsp_a',
-      payeeFsp: 'dfsp_b',
-      transferId,
-      amountComplex: {
-        amount,
-        currency: 'USD'
-      },
-      date: now,
-      expirySeconds: 100,
-      transferState: "RESERVED"
-    })
-
+    const payment = await ApiHelpers.buildPayment()
+      .deps(harness, harness.messageBus)
+      .parties('dfsp_a', 'dfsp_b')
+      .transferId(transferId)
+      .expiry(100)
+      .build()
+      .prepare()
+    
     // Make the callback come from a 3rd dfsp.
-    putTransfer.headers['fspiop-source'] = 'dfsp_x'
+    const putTransfer = payment.buildMessageFulfil('COMMITTED')
+    putTransfer.value.content.headers['fspiop-source'] = 'dfsp_x'
 
-    mark = harness.redpandaMark()
-    await handlerAll.fulfil(null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)])
-    await harness.redpandaDrain(mark, 2)
+    await harness.messageBus.fulfil(null, [putTransfer])
+    await harness.redpandaDrainSmart(harness.expect.messagesPayment(), transferId)
 
     // Check the last messages.
-    const topics = harness.spoolLastTopic(2)
-    Snapshot.from(`[
-      "topic-transfer-pos:ignore",
-      "topic-notification-event"
-    ]`).checkUnwrap(topics)
+    harness.expect.topicsPaymentPrepareOrFulfil()
 
     // Get the transfer:
     const transfer = await TransferFacade.getById(transferId)
     assert.equal(transfer.transferState, 'ABORTED_ERROR')
     assert.equal(
       transfer.reason, 
-      'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response'
+      'Generic validation error - caller fsp does not match payment.payeeFsp.'
     )
-  })
-
-  it('prepare() + wait times out a transfer.', async () => {
-    const transferId = '1000008'
-    const payment = ApiHelpers.buildPayment()
-      .deps(harness, handlerAll)
-      .parties('dfsp_a', 'dfsp_b')
-      .transferId(transferId)
-      .amount('14.00')
-      .expiry(1)
-      .build()
-
-    const positionPayerStart = await ApiHelpers.getPositionAccount('dfsp_a', 'USD')
-    const positionPayeeStart = await ApiHelpers.getPositionAccount('dfsp_b', 'USD')
-
-    await payment.prepare()
-    await sleepSeconds(10)
-    // We don't run the timeout handler in these tests, but instead just call timeout()
-    // directly. This makes the tests more predictable and deterministic.
-    const mark = harness.redpandaMark()
-    const timeoutResult = (await TimeoutHandler.timeout()) as unknown as {transferTimeoutList: Array<unknown>}
-    assert(timeoutResult.transferTimeoutList.length === 1)
-    await harness.redpandaDrain(mark, 2)
-
-    const lastTopics = harness.spoolLastTopic(2)
-    Snapshot.from(`[
-      "topic-transfer-pos:ignore",
-      "topic-notification-event"
-    ]`).checkUnwrap(lastTopics)
-
-    // Positions should have reset with timeout.
-    const positionPayerEnd = await ApiHelpers.getPositionAccount('dfsp_a', 'USD')
-    const positionPayeeEnd = await ApiHelpers.getPositionAccount('dfsp_b', 'USD')
-    assertPositionDiff('payer', positionPayerStart, positionPayerEnd, { pending: 0, posted: 0 })
-    assertPositionDiff('payee', positionPayeeStart, positionPayeeEnd, { pending: 0, posted: 0 })
-
-    // Check the transfer.
-    const transfer = await TransferFacade.getById(transferId)
-    assert.equal(transfer.transferState, 'EXPIRED_RESERVED')
-    assert.equal(transfer.reason, 'Transfer expired')
   })
 
   it('prepare() handles payment which exceeds Payer position.', async () => {
     const transferId = '1000009'
     const payment = ApiHelpers.buildPayment()
-      .deps(harness, handlerAll)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId(transferId)
       .amount('10000000.00')

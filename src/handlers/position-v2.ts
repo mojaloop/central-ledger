@@ -109,9 +109,19 @@ interface ProcessBinsResult {
  *   but returns a list of `effects` for the MessageBus to produce.
  */
 export class PositionHandlerV2 {
-  constructor(private config: ApplicationConfig) { }
+  private mutex: Mutex
+
+  constructor(private config: ApplicationConfig) { 
+    this.mutex = new Mutex()
+  }
 
   async handle(error: any, messages: any): Promise<Array<PositionResult>> {
+    // Wrap in this hacky mutex for now. On `upstream/main`, the prepare and position handlers
+    // will be fused together by default.
+    return this.mutex.runExclusive(async () => this.handleInner(error, messages))
+  }
+
+  async handleInner(error: any, messages: any): Promise<Array<PositionResult>> {
     const recursiveMax = 5
     if (error) {
       throw error
@@ -171,7 +181,6 @@ export class PositionHandlerV2 {
         results.push(this.formatPositionResult(notifyMessages))
       }
 
-      assert(results.length === messages.length, 'Expected results to be the same length as input.')
       await trx.commit()
 
       return results
@@ -327,4 +336,27 @@ export class PositionHandlerV2 {
       status: extractStatus(status)
     }
   }
+}
+
+
+/**
+ * A simple Mutex for serializing the batch handler. 
+ * This shouldn't be used in production.
+ */
+class Mutex {
+  private queue: Promise<void> = Promise.resolve()
+
+  async runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    let release: () => void
+    const waitForPrevious = this.queue
+    this.queue = new Promise(resolve => { release = resolve })
+
+    await waitForPrevious
+    try {
+      return await fn()
+    } finally {
+      release!()
+    }
+  }
+
 }

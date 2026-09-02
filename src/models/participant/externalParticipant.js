@@ -46,7 +46,6 @@ const create = async ({ name, proxyId }) => {
       log.warn('duplicate entry for externalParticipant. Skip inserting', { name, proxyId })
       return null
     }
-    log.error('error in create', err)
     rethrow.rethrowDatabaseError(err)
   }
 }

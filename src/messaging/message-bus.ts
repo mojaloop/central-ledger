@@ -3,13 +3,14 @@ import { ApplicationConfig } from "../lib/config";
 import { logger } from '../shared/logger';
 import { DispatchTransferHandler } from "../handlers/dispatch-transfer-handler";
 import { PositionHandlerV2 } from "../handlers/position-v2";
+import { TimeoutHandlerV2 } from "../handlers/timeout-v2";
 
 const { Enum, Util } = require('@mojaloop/central-services-shared')
-const { Kafka, StreamingProtocol } = Util
+const { StreamingProtocol } = Util
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 
 /**
- * Handlers emit `Effects`: messages that should be emitted by the messaging layer to continue
+ * Handlers emit `Effects`: messages emitted by the messaging layer to continue
  * processing.
  */
 export type Effect = {
@@ -18,7 +19,6 @@ export type Effect = {
   message: any,
   status: 'SUCCESS' | 'FAILURE'
   topicName: string,
-
   messageKey?: string,
   topicNameOverride?: string,
   fspiopError?: {
@@ -34,6 +34,7 @@ interface Dependencies {
   handlers: {
     dispatchTransferHandler: DispatchTransferHandler
     positionBatchHandler: PositionHandlerV2
+    timeoutHandler: TimeoutHandlerV2
   }
 }
 
@@ -44,11 +45,9 @@ interface Dependencies {
  */
 export class MessageBus {
   private config: ApplicationConfig
-  private positionMutex: Mutex
-
+  
   constructor(private deps: Dependencies) {
     this.config = deps.config
-    this.positionMutex = new Mutex()
   }
 
   /**
@@ -74,6 +73,9 @@ export class MessageBus {
     await Consumer.createHandler(topicConsumeFulfil, configConsumeFulfil, this.fulfil.bind(this))
     // await Consumer.createHandler(topicConsumePosition, configConsumePositon, this.position.bind(this))
     await Consumer.createHandler(topicConsumePositionBatch, configConsumePositonBatch, this.position.bind(this))
+
+    // TODO: Timeout handler on cron.
+
   }
 
   public async deinit(): Promise<void> {
@@ -86,62 +88,82 @@ export class MessageBus {
     return Consumer.getListOfTopics()
   }
 
-  private collectEffects<T extends { effects: Array<Effect> }>(results: Array<T>): Array<Effect> {
-    return results.reduce((acc: Array<Effect>, curr) => acc.concat(curr.effects), [])
-  }
+  // public async prepareOld(error: any, messages: Array<any>): Promise<void> {
+  //   const results = await this.deps.handlers.dispatchTransferHandler.prepare(error, messages)
+  //   const effects = this.collectEffects(results)
+
+  //   if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
+  //     // Collect all messages to be emitted.
+  //     await this.emit(effects)
+  //     await this.commit('topic-transfer-prepare', messages)
+
+  //     return
+  //   }
+
+  //   assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
+
+  //   // First emit any notifications from the prepare step.
+  //   const effectsNotification = effects.filter(effect => effect.functionality === 'notification')
+  //   await this.emit(effectsNotification)
+
+  //   const effectsPosition = effects.filter(effect => effect.functionality === 'position')
+  //   // Transform effectsPrepare to something that positionBatchHandler can tolerate.
+  //   const kafkaPrepares = effectsPosition.map(MessageBus.effectToKafkaMessage)
+  //   const resultsPosition = await this.positionMutex.runExclusive(async () => {
+  //     return await this.deps.handlers.positionBatchHandler.handle(error, kafkaPrepares)
+  //   })
+
+  //   await this.emit(this.collectEffects(resultsPosition))
+  //   await this.commit('topic-transfer-prepare', messages)
+  // }
 
   public async prepare(error: any, messages: Array<any>): Promise<void> {
-    // TODO: add output messages, offset and result.
     const results = await this.deps.handlers.dispatchTransferHandler.prepare(error, messages)
-    const effectsPrepare = this.collectEffects(results)
-
-    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
-      // Collect all messages to be emitted.
-      await this.emit(effectsPrepare)
-      await this.commit('topic-transfer-prepare', messages)
-
-      return
-    }
-
-    assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
-    // Transform effectsPrepare to something that positionBatchHandler can tolerate.
-    const kafkaPrepares = effectsPrepare.map(this.effectToKafkaMessage)
-    const resultsPosition = await this.positionMutex.runExclusive(async () => {
-      return await this.deps.handlers.positionBatchHandler.handle(error, kafkaPrepares)
-    })
-
-    await this.emit(this.collectEffects(resultsPosition))
+    await this.emit(this.collectEffects(results))
     await this.commit('topic-transfer-prepare', messages)
   }
 
   public async fulfil(error: any, messages: Array<any>): Promise<void> {
     const results = await this.deps.handlers.dispatchTransferHandler.fulfil(error, messages)
-    const effectsFulfil = this.collectEffects(results)
-    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
-      // Collect all messages to be emitted.
-      await this.emit(effectsFulfil)
-      await this.commit('topic-transfer-fulfil', messages)
-
-      return
-    }
-
-    // Skip going back around, go directly to paymentPosition.
-    assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
-    // Transform effectsPrepare to something that positionBatchHandler can tolerate.
-    const kafkaPrepares = effectsFulfil.map(this.effectToKafkaMessage)
-    const resultsPosition = await this.deps.handlers.positionBatchHandler.handle(error, kafkaPrepares)
-    await this.emit(this.collectEffects(resultsPosition))
+    await this.emit(this.collectEffects(results))
     await this.commit('topic-transfer-fulfil', messages)
   }
 
   public async position(error: any, messages: Array<any>): Promise<void> {
     // This code path should only be called from an external handler, therefore it must be UNFUSE.
-    assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE')
+
+    // TODO: reenable this assertion once we handle positions directly when doing timeouts.
+    // assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE')
 
     const results = await this.deps.handlers.positionBatchHandler.handle(error, messages)
     const effects = results.reduce((acc: Array<Effect>, curr) => acc.concat(curr.effects), [])
     await this.emit(effects)
     await this.commit('topic-transfer-position-batch', messages)
+  }
+
+  public async timeout(now: Date): Promise<void> {
+    const result = await this.deps.handlers.timeoutHandler.run(now)
+    // TODO: then commit these events
+    const effects = result.results.map(result => result.effect)
+
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
+      await this.emit(effects)
+      return
+    }
+
+    assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
+
+    // First emit the notifications.
+    const effectsNotification = effects.filter(effect => effect.functionality === 'notification')
+    await this.emit(effectsNotification)
+
+    // Directly apply the position resets.
+    const effectsPosition = effects.filter(effect => effect.functionality === 'position')
+    const kafkaPrepares = effectsPosition.map(MessageBus.effectToKafkaMessage)
+    const resultsPosition = await this.deps.handlers.positionBatchHandler.handle(null, kafkaPrepares)
+    await this.emit(this.collectEffects(resultsPosition))
+  
+    return
   }
 
   /**
@@ -157,19 +179,26 @@ export class MessageBus {
     })
   }
 
-  private async emitOne(effect: Effect): Promise<void> {
-    const resolveKafkaConfig = (topicName: string) => {
-      switch (topicName) {
-        case 'topic-transfer-position':
-        case 'topic-transfer-position-batch':
-          return this.deps.config.KAFKA_CONFIG.PRODUCER.TRANSFER.POSITION.config
-        case 'topic-notification-event':
-          return this.deps.config.KAFKA_CONFIG.PRODUCER.NOTIFICATION.EVENT.config
-        default:
-          throw new Error(`resolveKafkaConfig: unhandled topicName: ${topicName}.`)
-      }
+  /**
+   * Helper function to easily resolve the kafka config based on the topic name. 
+   */
+  private resolveKafkaConfig(topicName: string) {
+    switch (topicName) {
+      case 'topic-transfer-position':
+      case 'topic-transfer-position-batch':
+        return this.deps.config.KAFKA_CONFIG.PRODUCER.TRANSFER.POSITION.config
+      case 'topic-notification-event':
+        return this.deps.config.KAFKA_CONFIG.PRODUCER.NOTIFICATION.EVENT.config
+      default:
+        throw new Error(`resolveKafkaConfig: unhandled topicName: ${topicName}.`)
     }
+  }
 
+  private collectEffects<T extends { effects: Array<Effect> }>(results: Array<T>): Array<Effect> {
+    return results.reduce((acc: Array<Effect>, curr) => acc.concat(curr.effects), [])
+  }
+
+  private async emitOne(effect: Effect): Promise<void> {
     const { functionality, action, message, messageKey, topicName, status } = effect
     const eventStatus = Enum.Events.EventStatus[status]
     assert(eventStatus)
@@ -184,7 +213,7 @@ export class MessageBus {
       opaqueKey: null
     }
 
-    await Producer.produceMessage(messageProtocol, topicConf, resolveKafkaConfig(topicName))
+    await Producer.produceMessage(messageProtocol, topicConf, this.resolveKafkaConfig(topicName))
   }
 
   /**
@@ -208,29 +237,20 @@ Disable it to use the new message bus.`)
     await consumer.commitMessageSync(lastMessage)
   }
 
-  private effectToKafkaMessage(effect: Effect) {
+  public static effectToKafkaMessage(effect: Effect) {
+    const { functionality, action, message, messageKey, status, fspiopError } = effect
+    const eventStatus = Enum.Events.EventStatus[status]
+    const messageProtocol = StreamingProtocol.updateMessageProtocolMetadata(
+      message, functionality, action, eventStatus
+    )
+
+    if (fspiopError) {
+      messageProtocol.content.payload = fspiopError
+    }
+
     return {
-      key: effect.messageKey,
-      value: effect.message
+      key: messageKey,
+      value: messageProtocol
     }
   }
-}
-
-
-class Mutex {
-  private queue: Promise<void> = Promise.resolve()
-
-  async runExclusive<T>(fn: () => Promise<T>): Promise<T> {
-    let release: () => void
-    const waitForPrevious = this.queue
-    this.queue = new Promise(resolve => {release = resolve})
-
-    await waitForPrevious
-    try {
-      return await fn()
-    } finally {
-      release!()
-    }
-  }
-
 }

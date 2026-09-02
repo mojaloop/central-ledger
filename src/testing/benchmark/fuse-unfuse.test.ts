@@ -7,6 +7,7 @@ import * as ApiHelpers from '../../testing/api-helpers'
 import { logger } from "../../shared/logger";
 import { sleepSeconds } from "../util";
 import PRNG from "../prng";
+import { TimeoutHandlerV2 } from "../../handlers/timeout-v2";
 
 /**
  * Microbenchmark to test difference between FUSE and UNFUSE prepare handling.
@@ -43,12 +44,14 @@ describe('FUSE vs UNFUSE prepares', () => {
     await proxyCache.connect()
 
     const dispatchHandler = new DispatchTransferHandler(harness.config)
-    const positionHandlerV2 = new PositionHandlerV2(harness.config)
+    const positionHandler = new PositionHandlerV2(harness.config)
+    const timeoutHandler = new TimeoutHandlerV2(harness.config)
     const messageBus = new MessageBus({
       config: harness.config,
       handlers: {
         dispatchTransferHandler: dispatchHandler,
-        positionBatchHandler: positionHandlerV2
+        positionBatchHandler: positionHandler,
+        timeoutHandler
       }
     })
     await messageBus.init()
@@ -126,9 +129,7 @@ describe('FUSE vs UNFUSE prepares', () => {
 
     const logProgress = () => {
       const now = performance.now()
-      logger.warn(`${countSuccess + countFail}/${prepares} after ${(now - start).toFixed(0).padStart(5)}ms.`)
-      logger.warn(`  success ${countSuccess}`)
-      logger.warn(`  fail    ${countFail}`)
+      logger.info(`${countSuccess + countFail}/${prepares} after ${(now - start).toFixed(0).padStart(5)}ms.`)
     }
 
     // Submit the prepares async, rate limiting on input.
@@ -154,17 +155,11 @@ describe('FUSE vs UNFUSE prepares', () => {
           countFail += 1
           latencies.push(performance.now() - submitTime)
         })
-
-      // // Log progress every 10% submitted.
-      // if (idx % (prepares / 10) === 0) {
-      //   logProgress()
-      // }
-
       idx += 1
     }
 
     while ((countSuccess + countFail) < prepares) {
-      // logProgress()
+      logProgress()
       await sleepSeconds(5)
     }
 

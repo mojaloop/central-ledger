@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2024 Mojaloop Foundation
+ Copyright © 2020-2026 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -27,28 +27,31 @@
  --------------
  ******/
 
-import assert from "node:assert";
-import { ApplicationConfig } from "../lib/config";
-import { logger } from '../shared/logger';
-import { Enum, Util, EventActionEnum } from '@mojaloop/central-services-shared';
-const { Kafka } = Util
-import TransferService, { getTransferFulfilmentDuplicateCheck, saveTransferErrorDuplicateCheck, saveTransferFulfilmentDuplicateCheck } from "../domain/transfer";
-import { getTransferErrorDuplicateCheck } from '../models/transfer/transferErrorDuplicateCheck';
+import assert from 'node:assert'
+import { ApplicationConfig } from '../lib/config'
+import { logger } from '../shared/logger'
+import { Enum, Util, EventActionEnum } from '@mojaloop/central-services-shared'
+import TransferService, {
+  getTransferFulfilmentDuplicateCheck,
+  saveTransferErrorDuplicateCheck,
+  saveTransferFulfilmentDuplicateCheck
+} from "../domain/transfer"
+import { getTransferErrorDuplicateCheck } from '../models/transfer/transferErrorDuplicateCheck'
 const { decodePayload } = Util.StreamingProtocol
 const Participant = require('../domain/participant')
-const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 const { Type, Action } = Enum.Events.Event
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
 
 import { TransferHelper } from './transfer-helper';
-import RefactorHelper from "../shared/refactor-helper";
-import { Effect } from "../messaging/message-bus";
+import { Effect, MessageBus } from "../messaging/message-bus";
+import { PositionHandlerV2, PositionResultType } from "./position-v2";
+import { assertNestedFields } from "../lib/config/util";
 
 interface Dependencies {
   config: ApplicationConfig
   fxService: any
-  positionHandler: null | ((error: null, messages: Array<any>) => Promise<any>)
+  positionHandler: PositionHandlerV2
 }
 
 export type CommitPaymentDto = {
@@ -81,14 +84,14 @@ export interface FusedFulfilHandlerInput {
   payload: CommitPaymentDto
   headers: Record<string, any>;
   /**
-   * The mojaloop logical transfer id
+   * The Mojaloop logical transfer id.
    */
   transferId: string;
   action: FulfilHandlerAction;
   eventType: string;
   kafkaTopic: string;
   /**
-   * The DFSP ID of the caller, extracted from FSPIOP-Source header
+   * The DFSP ID of the caller, extracted from FSPIOP-Source header.
    */
   callerDfspId: string;
 }
@@ -172,10 +175,12 @@ export class PaymentFulfilHandler {
       input: this.extractMessageData(message)
     }));
 
+    // TODO: call Ledger.fulfil(inputs)
+
     const results = await Promise.allSettled(inputs.map(async ({ input }) => this.handleOne(input)))
     results.forEach(result => {
       if (result.status === 'fulfilled' && result.value.type !== PaymentFulfilResultType.PASS) {
-        logger.warn(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
+        logger.info(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
       }
       if (result.status === 'rejected') {
         logger.error(`handleOne() failed with error: \n\t${result.reason}`)
@@ -212,50 +217,50 @@ export class PaymentFulfilHandler {
     // Ensure that the FSPIOP-Source matches the payee.
     // TODO: the original has a bunch of proxy stuff, but I don't understand it, so I'm leaving it
     // out for now.
-
     if (transfer.payeeIsProxy) {
       if (input.callerDfspId !== transfer.externalPayeeName) {
-        const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
+        const errorFspiop = ErrorHandler.Factory.createInternalServerFSPIOPError(
           `${input.callerDfspId} does not match externalPayeeName: ${transfer.externalPayeeName} \
 on the Fulfil callback response.`
         )
+        const error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
         // Transfer aborted.
         await TransferService.handlePayeeResponse(
           transferId,
           payload,
           'abort-validation',
-          // TODO: need to figure out how to format this.
           error
         )
 
-        await this.sendMessagePositionRollback(input, transfer, error)
-        return {
+        const effect = await this.buildEffectPositionRollback(input, transfer, error)
+        return this.handleNext({
           type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [],
+          effects: [effect],
           error
-        }
+        })
       }
     } else {
       if (input.callerDfspId !== transfer.payeeFsp) {
-        const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
-          `${input.callerDfspId} does not match payer fsp: ${transfer.payeeFsp} \
-on the Fulfil callback response.`
+        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          `caller fsp does not match payment.payeeFsp.`
         )
+        const error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+
         // Transfer aborted.
         await TransferService.handlePayeeResponse(
           transferId,
           payload,
           'abort-validation',
-          // TODO: need to figure out how to format this.
           error
         )
 
-        await this.sendMessagePositionRollback(input, transfer, error)
-        return { 
+        const effect = await this.buildEffectPositionRollback(input, transfer, error)
+        return this.handleNext({
           type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [],
-          error 
-        }
+          effects: [effect],
+          error
+        })
       }
     }
 
@@ -336,9 +341,10 @@ on the Fulfil callback response.`
     // should use an error callback, i.e., a callback on the /error endpoint.
     if (input.action === 'abort') {
       const errorPayload = payload as CommitPaymentDtoAborted
-      const fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(
+      const errorFspiop = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(
         errorPayload.errorInformation
       )
+      const errorApi = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
 
       // Payee aborted the transfer, save to DB.
       await saveTransferErrorDuplicateCheck(transferId, payloadHash)
@@ -346,17 +352,14 @@ on the Fulfil callback response.`
         transferId,
         errorPayload,
         input.action,
-        // TODO: need to figure out how to format this.
-        fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+        errorApi
       )
 
-      // TODO: Rollback the position.
-      // TODO: not sure about error formatting.
-      await this.sendMessagePositionRollback(input, transfer, errorPayload)
-      return {
+      const effect = await this.buildEffectPositionRollback(input, transfer, errorApi)
+      return this.handleNext({
         type: PaymentFulfilResultType.PASS,
-        effects: [],
-      }
+        effects: [effect],
+      })
     }
 
     assert(
@@ -377,30 +380,28 @@ on the Fulfil callback response.`
     await saveTransferFulfilmentDuplicateCheck(transferId, payloadHash)
     if (!TransferHelper.fulfilmentMatchesCondition(payload.fulfilment, transfer.condition)) {
       // Payee sent an fulfilment. Need to abort the payment.
-      const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
+      const errorFspiop = ErrorHandler.Factory.createInternalServerFSPIOPError(
         `fulfilment does not match condition.`
       )
+      const error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
       // Transfer aborted.
       await TransferService.handlePayeeResponse(
         transferId,
         payload,
         'abort-validation',
-        // TODO: need to figure out how to format this.
         error
       )
 
-      await this.sendMessagePositionRollback(input, transfer, error)
-      return { 
+      const effect = await this.buildEffectPositionRollback(input, transfer, error)
+      return this.handleNext({
         type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects: [],
-        error 
-      }
+        effects: [effect],
+        error
+      })
     }
 
     // Happy path - validation passed.
     await TransferService.handlePayeeResponse(transferId, payload, input.action)
-
-    // await this.sendMessagePositionCommit(input, transfer)
 
     // Build the position change effect.
     const messageEffect = input.message
@@ -437,23 +438,62 @@ on the Fulfil callback response.`
       status: 'SUCCESS'
     }
 
-    return {
+    return this.handleNext({
       type: PaymentFulfilResultType.PASS,
       effects: [effectPosition],
+    })
+  }
+
+  /**
+   * In UNFUSE mode, returns the result.
+   * In FUSE   mode, applies the position change then returns that result.`
+   */
+  private async handleNext(result: PaymentFulfilResult): Promise<PaymentFulfilResult> {
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
+      return result
+    }
+
+    assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
+    const notifications = result.effects
+      .filter(effect => effect.functionality === 'notifications')
+    const positions = result.effects
+      .filter(effect => effect.functionality === 'position')
+      .map(MessageBus.effectToKafkaMessage)
+    const resultsPosition = await this.deps.positionHandler.handle(null, positions)
+    assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
+    // Look just at the first one to map the result type.
+    const resultPosition = resultsPosition[0]
+    const positionEffects = resultsPosition
+      .reduce((acc: Array<Effect>, curr) => acc.concat(...curr.effects), [])
+
+    let type: PaymentFulfilResultType
+    let error
+    switch (resultPosition.type) {
+      case PositionResultType.PASS:
+        type = PaymentFulfilResultType.PASS
+        break
+      case PositionResultType.FAIL_LIQUIDITY:
+        type = PaymentFulfilResultType.FAIL_OTHER
+        error = resultPosition.error
+        break
+      case PositionResultType.FAIL_OTHER:
+        type = PaymentFulfilResultType.FAIL_OTHER
+        error = resultPosition.error
+        break
+    }
+
+    return {
+      type,
+      effects: [...notifications, ...positionEffects],
+      error,
     }
   }
 
   private extractMessageData(message: any): FusedFulfilHandlerInput {
-    assert(message);
-    assert(message.value);
-    assert(message.value.content);
-    assert(message.value.metadata);
-    assert(message.value.metadata.event);
+    assertNestedFields(message, 'value.metadata.event')
 
-    const payloadEncoded = message.value.content.payload;
-    // Fulfil messages always use CommitPaymentDto
-    // TODO: handle AbortPaymentDto
-    const payload = decodePayload(payloadEncoded, {}) as CommitPaymentDto;
+    const payloadEncoded = message.value.content.payload
+    const payload = decodePayload(payloadEncoded, {}) as CommitPaymentDto
     const eventType = message.value.metadata.event.type;
     const headers = message.value.content.headers;
 
@@ -473,7 +513,6 @@ on the Fulfil callback response.`
     const transferId = message.value.content.uriParams.id
     assert(transferId, 'could not parse transferId')
 
-    // TODO(LD): what should action be?
     const actionStr = message.value.metadata.event.action
     assert(actionStr)
     let action: FulfilHandlerAction
@@ -506,7 +545,7 @@ on the Fulfil callback response.`
     };
   }
 
-  private async sendMessagePositionRollback(
+  private async buildEffectPositionRollback(
     input: FusedFulfilHandlerInput,
     transfer: any,
     error: {
@@ -515,28 +554,9 @@ on the Fulfil callback response.`
         errorDescription: string,
       }
     }
-  ): Promise<void> {
-    // Shortcut.
-    const config = this.deps.config
-    const params = {
-      message: input.message,
-      kafkaTopic: input.kafkaTopic,
-      decodedPayload: input.payload,
-      span: null,
-      consumer: Consumer,
-      producer: Producer
-    }
-
-    // Assertions that should live on the kafka library.
-    assert(error)
-    assert(error.errorInformation)
-    assert(error.errorInformation.errorCode)
-    assert(error.errorInformation.errorDescription)
-
-    // TODO: we shouldn't know anything about the "FXService" here.
+  ): Promise<Effect> {
     const cyrilResult = await this.deps.fxService.Cyril.processAbortMessage(input.transferId)
-
-    // If a payment has a linked forex, we first set their state to RECEIVED_ERROR otherwise the
+    // If a payment has a linked forex, we first set its state to RECEIVED_ERROR otherwise the
     // position handler ignores the position reset.
     for (const positionChange of cyrilResult.positionChanges) {
       if (positionChange.isFxTransferStateChange) {
@@ -549,13 +569,15 @@ on the Fulfil callback response.`
       }
     }
 
-    params.message.value.content.context = {
-      ...params.message.value.content.context,
+    const message = structuredClone(input.message.value)
+    message.content.payload = error
+    message.content.context = {
+      ...message.content.context,
       cyrilResult
     }
+
     let messageKey: string
     if (cyrilResult.positionChanges.length > 0) {
-      // @ts-ignore
       messageKey = cyrilResult.positionChanges[0].participantCurrencyId.toString()
     } else {
       // Fallback to payer account
@@ -567,34 +589,14 @@ on the Fulfil callback response.`
       messageKey = payerAccount.participantCurrencyId.toString()
     }
     assert(messageKey)
-
-    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
-      case "UNFUSE": {
-        await Kafka.proceed(config.KAFKA_CONFIG, params, {
-          consumerCommit: true,
-          fspiopError: error,
-          eventDetail: {
-            functionality: Enum.Events.Event.Type.POSITION,
-            action: 'abort'
-          },
-          messageKey,
-          topicNameOverride: config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.ABORT,
-          hubName: config.HUB_NAME
-        })
-        return
-      }
-      case "FUSE":
-        assert(this.deps.positionHandler)
-        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
-          fspiopError: error,
-          eventDetail: {
-            functionality: Enum.Events.Event.Type.POSITION,
-            action: 'abort'
-          },
-          messageKey,
-          hubName: config.HUB_NAME
-        })
-        await this.deps.positionHandler(null, [wrapped])
+    return {
+      functionality: Type.POSITION,
+      action: Action.ABORT,
+      message,
+      messageKey,
+      topicName: 'topic-transfer-position-batch',
+      status: 'FAILURE',
+      fspiopError: error
     }
   }
 }

@@ -44,10 +44,11 @@ import FxTransferModel, { saveFxFulfilResponse } from '../models/fxTransfer/fxTr
 import fspiopErrorFactory from '../shared/fspiopErrorFactory';
 import { logger } from '../shared/logger';
 import { TransferHelper } from './transfer-helper';
-import RefactorHelper from '../shared/refactor-helper';
-import { Effect } from '../messaging/message-bus';
+import { Effect, MessageBus } from '../messaging/message-bus';
+import { PositionHandlerV2, PositionResultType } from './position-v2';
 
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
+const { Type, Action } = Enum.Events.Event
 
 interface Dependencies {
   config: ApplicationConfig
@@ -58,7 +59,7 @@ interface Dependencies {
       transferStateChanges: any,
     }>
   }
-  positionHandler: null | ((error: null, messages: Array<any>) => Promise<any>)
+  positionHandler: PositionHandlerV2
 }
 
 export type CommitForexDto = {
@@ -172,7 +173,7 @@ export class ForexFulfilHandler {
     const results = await Promise.allSettled(inputs.map(async ({ input }) => this.handleOne(input)))
     results.forEach(result => {
       if (result.status === 'fulfilled' && result.value.type !== ForexFulfilResultType.PASS) {
-        logger.warn(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
+        logger.info(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
       }
       if (result.status === 'rejected') {
         logger.error(`handleOne() failed with error: \n\t${result.reason}`)
@@ -198,12 +199,12 @@ export class ForexFulfilHandler {
       .getAllDetailsByCommitRequestIdForProxiedFxTransfer(commitRequestId)
     if (!forex) {
       const fspiopError = fspiopErrorFactory.fxTransferNotFound()
-      await this.sendMessageNotificationError(input, fspiopError)
       const error = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+      const effect = this.buildEffectNotificationError(input, error)
 
       return {
         type: ForexFulfilResultType.FAIL_VALIDATION,
-        effects: [],
+        effects: [effect],
         error
       }
     }
@@ -218,16 +219,25 @@ export class ForexFulfilHandler {
         error
       )
       const apiFSPIOPError = error.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-      await this.sendMessagePositionRollback(input, forex, apiFSPIOPError, {
-        functionality: 'position',
-        action: 'fx-abort'
-      })
 
-      return {
-        type: ForexFulfilResultType.FAIL_VALIDATION,
-        effects: [],
-        error
+      // Rollback position if not finalized.
+      if (forex.transferState !== 'COMMITTED' && forex.transferState !== 'ABORTED') {
+        const effect = await this.buildEffectPositionRollback(
+          input, forex, apiFSPIOPError, 'fx-abort-validation'
+        )
+        return this.handleNext({
+          type: ForexFulfilResultType.FAIL_VALIDATION,
+          effects: [effect],
+          error
+        })
       }
+
+      const effect = this.buildEffectNotificationError(input, apiFSPIOPError)
+      return this.handleNext({
+        type: ForexFulfilResultType.FAIL_VALIDATION,
+        effects: [effect],
+        error
+      })
     }
     assert(validateHeaders.result === 'PASS')
 
@@ -265,7 +275,7 @@ export class ForexFulfilHandler {
       }
     }
     if (forex.transferState === 'ABORTED') {
-      // Payment is finalized. Check to see if this is an exact duplicate Fulfil message, or if the
+      // Forex is finalized. Check to see if this is an exact duplicate Fulfil message, or if the
       // fulfil message was modified in some way.
       let savedHash
       try {
@@ -311,20 +321,17 @@ export class ForexFulfilHandler {
         apiFSPIOPError
       )
 
-      await this.sendMessagePositionRollback(input, forex, apiFSPIOPError, {
-        functionality: 'position',
-        action: 'fx-abort'
-      })
-
-      return {
+      const effect = await this.buildEffectPositionRollback(
+        input, forex, apiFSPIOPError, 'fx-abort'
+      )
+      return this.handleNext({
         type: ForexFulfilResultType.PASS,
-        effects: [],
-      }
+        effects: [effect],
+      })
     }
 
-    assert(input.payload.conversionState === 'COMMITTED' ||
-      input.payload.conversionState === 'RESERVED'
-    )
+    assertOneOf(input.payload.conversionState, ['COMMITTED', 'RESERVED'])
+    assert(input.payload.conversionState !== 'ABORTED') // Typescript needs some help.
     assert(input.payload.fulfilment)
 
     // Validate the fulfilment.
@@ -336,16 +343,14 @@ export class ForexFulfilHandler {
         commitRequestId, input.payload, 'fx-abort-validation', apiFSPIOPError
       )
 
-      await this.sendMessagePositionRollback(input, forex, apiFSPIOPError, {
-        functionality: 'position',
-        action: 'fx-abort-validation'
-      })
-
-      return {
+      const effect = await this.buildEffectPositionRollback(
+        input, forex, apiFSPIOPError, 'fx-abort-validation'
+      )
+      return this.handleNext({
         type: ForexFulfilResultType.FAIL_VALIDATION,
-        effects: [],
+        effects: [effect],
         error: apiFSPIOPError
-      }
+      })
     }
 
     if (forex.transferState !== 'RESERVED' &&
@@ -357,16 +362,16 @@ export class ForexFulfilHandler {
       await saveFxFulfilResponse(
         commitRequestId, input.payload, 'fx-abort-validation', apiFSPIOPError
       )
-      await this.sendMessagePositionRollback(input, forex, apiFSPIOPError, {
-        functionality: 'position',
-        action: 'fx-abort-validation'
-      })
 
-      return {
+      const effect = await this.buildEffectPositionRollback(
+        input, forex, apiFSPIOPError, 'fx-abort-validation'
+      )
+
+      return this.handleNext({
         type: ForexFulfilResultType.FAIL_VALIDATION,
-        effects: [],
+        effects: [effect],
         error: apiFSPIOPError,
-      }
+      })
     }
 
     if (forex.transferState === 'RESERVED_FORWARDED') {
@@ -377,25 +382,74 @@ export class ForexFulfilHandler {
       await saveFxFulfilResponse(
         commitRequestId, input.payload, 'fx-abort-validation', apiFSPIOPError
       )
-      await this.sendMessagePositionRollback(input, forex, apiFSPIOPError, {
-        functionality: 'position',
-        action: 'fx-abort-validation'
-      })
 
-      return {
+      const effect = await this.buildEffectPositionRollback(
+        input, forex, apiFSPIOPError, 'fx-abort-validation'
+      )
+      return this.handleNext({
         type: ForexFulfilResultType.FAIL_VALIDATION,
-        effects: [],
+        effects: [effect],
         error: apiFSPIOPError,
-      }
+      })
     }
 
     // Validations passed.    
     await saveFxFulfilResponse(commitRequestId, input.payload, action)
     await this.deps.cyril.processFxFulfilMessage(commitRequestId)
-    await this.sendMessagePositionCommit(input, forex, action)
-    return {
+
+    return this.handleNext({
       type: ForexFulfilResultType.PASS,
-      effects: [],
+      effects: [
+        this.buildEffectPositionCommit(input, forex, action)
+      ],
+    })
+  }
+
+  /**
+   * In UNFUSE mode, returns the result.
+   * In FUSE   mode, applies the position change then returns that result.`
+   */
+  private async handleNext(result: ForexFulfilResult): Promise<ForexFulfilResult> {
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
+      return result
+    }
+
+    assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
+    const notifications = result.effects
+      .filter(effect => effect.functionality === 'notifications')
+    const positions = result.effects
+      .filter(effect => effect.functionality === 'position')
+      .map(MessageBus.effectToKafkaMessage)
+    const resultsPosition = await this.deps.positionHandler.handle(null, positions)
+    assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
+    // Look just at the first one to map the result type.
+    const resultPosition = resultsPosition[0]
+    const positionEffects = resultsPosition
+      .reduce((acc: Array<Effect>, curr) => acc.concat(...curr.effects), [])
+
+    let type: ForexFulfilResultType
+    let error
+    switch (resultPosition.type) {
+      case PositionResultType.PASS:
+        type = ForexFulfilResultType.PASS
+        break
+      case PositionResultType.FAIL_LIQUIDITY:
+        type = ForexFulfilResultType.FAIL_OTHER
+        error = resultPosition.error
+        break
+      case PositionResultType.FAIL_OTHER:
+        type = ForexFulfilResultType.FAIL_OTHER
+        error = resultPosition.error
+        break
+    }
+
+    return {
+      type,
+      effects: [
+        ...notifications,
+        ...positionEffects,
+      ],
+      error,
     }
   }
 
@@ -442,12 +496,12 @@ export class ForexFulfilHandler {
     assertNestedFields(message, 'value.metadata.event.type')
     assertNestedFields(message, 'value.metadata.event.action')
     assertNestedFields(message, 'value.content.payload')
+    assertNestedFields(message, 'value.content.uriParams.id')
 
     const payloadEncoded = message.value.content.payload
     const payload = decodePayload(payloadEncoded, {}) as unknown as CommitForexDto
     const headers = message.value.content.headers
 
-    assertNestedFields(message, 'value.content.uriParams.id')
     const commitRequestId = message.value.content.uriParams.id
     const type = message.value.metadata.event.type
     assert(type === 'fulfil', 'message.value.metadata.event.type must be `fulfil`.')
@@ -472,75 +526,25 @@ export class ForexFulfilHandler {
     return Enum.Events.Event.Action[actionUpper] || actionUpper;
   }
 
-  private async sendMessageNotificationError(
-    input: ForexFulfilHandlerInput,
-    error: typeof FSPIOPError
-  ): Promise<void> {
-    const params = {
-      message: input.message,
-      kafkaTopic: input.message.topic,
-      decodedPayload: input.payload,
-      span: null,
-      consumer: Consumer,
-      producer: Producer
-    }
-    const eventDetail = {
-      functionality: 'notification',
-      action: 'fx-reserve'
-    }
-    await Kafka.proceed(
-      this.deps.config.KAFKA_CONFIG,
-      params,
-      {
-        consumerCommit: true,
-        fspiopError: error.toApiErrorObject(this.deps.config.ERROR_HANDLING),
-        eventDetail,
-        fromSwitch: true,
-        hubName: this.deps.config.HUB_NAME
-      }
-    )
-  }
-
-  private async sendMessagePositionCommit(
+  private buildEffectPositionCommit(
     input: ForexFulfilHandlerInput,
     forex: any,
     action: string,
-  ): Promise<void> {
-    const eventDetail = {
-      functionality: 'position',
-      action
-    }
-    const params = {
-      message: input.message,
-      kafkaTopic: input.message.topic,
-      decodedPayload: input.payload,
-      span: null,
-      consumer: Consumer,
-      producer: Producer
-    }
-    const messageKey = forex.counterPartyFspSourceParticipantCurrencyId.toString()
-    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
-      case 'UNFUSE': {
-        await Kafka.proceed(this.deps.config.KAFKA_CONFIG, params, {
-          consumerCommit: true,
-          eventDetail,
-          messageKey,
-          topicNameOverride: this.deps.config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.COMMIT
-        })
-        return
-      }
-      case 'FUSE':
-        assert(this.deps.positionHandler)
-        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
-          eventDetail,
-          messageKey,
-        })
+  ): Effect {
 
-        await this.deps.positionHandler(null, [wrapped])
+    const effect: Effect = {
+      functionality: Type.POSITION,
+      action,
+      message: input.message.value,
+      messageKey: forex.counterPartyFspSourceParticipantCurrencyId.toString(),
+      topicName: 'topic-transfer-position-batch',
+      status: 'SUCCESS'
     }
+
+    return effect
   }
 
-  private async sendMessagePositionRollback(
+  private async buildEffectPositionRollback(
     input: ForexFulfilHandlerInput,
     forex: any,
     error: {
@@ -549,54 +553,51 @@ export class ForexFulfilHandler {
         errorDescription: string,
       }
     },
-    eventDetail: {
-      functionality: string,
-      action: string
-    }
-  ): Promise<void> {
+    action: 'fx-abort' | 'fx-abort-validation'
+  ): Promise<Effect> {
     const cyrilResult = await this.deps.cyril.processFxAbortMessage(input.commitRequestId)
     assert(cyrilResult.positionChanges.length > 0, 'Invalid cyril result.')
-
-    const params = {
-      message: input.message,
-      kafkaTopic: input.message.topic,
-      decodedPayload: input.payload,
-      span: null,
-      consumer: Consumer,
-      producer: Producer
-    }
-    params.message.value.content.context = {
-      ...params.message.value.content.context,
+    const message = structuredClone(input.message.value)
+    message.content.payload = error
+    message.content.context = {
+      ...message.content.context,
       cyrilResult
     }
+    const toDestination = forex.externalInitiatingFspName || forex.initiatingFspName
+    assert(toDestination)
+    message.content.headers['fspiop-destination'] = toDestination
+    message.content.headers['fspiop-source'] = this.deps.config.HUB_NAME
+
     const participantCurrencyId = cyrilResult.positionChanges[0].participantCurrencyId
+    assert(participantCurrencyId)
     const messageKey = participantCurrencyId.toString()
 
-    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
-      case 'UNFUSE': {
-        await Kafka.proceed(this.deps.config.KAFKA_CONFIG, params, {
-          consumerCommit: true,
-          fspiopError: error,
-          eventDetail,
-          fromSwitch: true,
-          toDestination: forex.externalInitiatingFspName || forex.initiatingFspName,
-          messageKey,
-          topicNameOverride: this.deps.config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_ABORT,
-          hubName: this.deps.config.HUB_NAME,
-        })
-        return
-      }
-      case 'FUSE':
-        assert(this.deps.positionHandler)
-        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
-          fspiopError: error,
-          eventDetail,
-          fromSwitch: true,
-          toDestination: forex.externalInitiatingFspName || forex.initiatingFspName,
-          messageKey,
-          hubName: this.deps.config.HUB_NAME,
-        })
-        await this.deps.positionHandler(null, [wrapped])
+    return {
+      functionality: 'position',
+      action,
+      message,
+      messageKey,
+      topicName: 'topic-transfer-position-batch',
+      status: 'FAILURE',
+      fspiopError: error
+    }
+  }
+
+  private buildEffectNotificationError(
+    input: ForexFulfilHandlerInput,
+    apiFSPIOPError: any
+  ): Effect {
+    const message = structuredClone(input.message.value)
+    message.content.payload = apiFSPIOPError
+    message.content.uriParams = { id: input.commitRequestId }
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: Action.FX_FULFIL,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+      fspiopError: apiFSPIOPError,
     }
   }
 }

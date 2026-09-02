@@ -38,6 +38,7 @@ const FxTransferTimeoutModel = require('../../models/fxTransfer/fxTransferTimeou
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
 const FxTransferStateChangeModel = require('../../models/fxTransfer/stateChange')
 const TransferFacade = require('../../models/transfer/facade')
+const assert = require('node:assert')
 
 const getTimeoutSegment = async () => {
   const params = {
@@ -46,6 +47,29 @@ const getTimeoutSegment = async () => {
     tableName: 'transferStateChange'
   }
   const result = await SegmentModel.getByParams(params)
+  return result
+}
+
+/**
+ * @returns {Promise<{
+ *   value: number,
+ *   segmentId: number,
+ * }}
+ */
+const getTimeoutSegmentV2 = async () => {
+  const params = {
+    segmentType: 'timeout',
+    enumeration: 0,
+    tableName: 'transferStateChange'
+  }
+  const result = await SegmentModel.getByParams(params)
+  if (!result) {
+    // First time.
+    return {
+      value: 0,
+      segmentId: 0
+    }
+  }
   return result
 }
 
@@ -59,6 +83,32 @@ const getFxTimeoutSegment = async () => {
   return result
 }
 
+/**
+ * @returns {Promise<{
+ *   value: number,
+ *   segmentId: number,
+ * }}
+ */
+const getFxTimeoutSegmentV2 = async () => {
+  const params = {
+    segmentType: 'timeout',
+    enumeration: 0,
+    tableName: 'fxTransferStateChange'
+  }
+  const result = await SegmentModel.getByParams(params)
+  if (!result) {
+    // First time.
+    return {
+      value: 0,
+      segmentId: 0
+    }
+  }
+  return result
+}
+
+/**
+ * @returns {Promise<Array<{ transferTimeoutId: number }> | undefined>}
+ */
 const cleanupTransferTimeout = async () => {
   const result = await TransferTimeoutModel.cleanup()
   return result
@@ -74,17 +124,43 @@ const getLatestTransferStateChange = async () => {
   return result
 }
 
+/**
+ * @description Gets the latest transfer state change id or 0.
+ * @returns {Promise<number>}
+ */
+const getLatestTransferStateChangeV2 = async () => {
+  const result = await TransferStateChangeModel.getLatest()
+  if (!result) {
+    return 0
+  }
+  assert(result.transferStateChangeId)
+  return Number.parseInt(result.transferStateChangeId)
+}
+
 const getLatestFxTransferStateChange = async () => {
   const result = await FxTransferStateChangeModel.getLatest()
   return result
 }
 
-const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
-  return TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
+/**
+ * @description Gets the latest fx transfer state change id or 0.
+ * @returns {Promise<number>}
+ */
+const getLatestFxTransferStateChangeV2 = async () => {
+  const result = await FxTransferStateChangeModel.getLatest()
+   if (!result) {
+    return 0
+  }
+  assert(result.fxTransferStateChangeId)
+  return Number.parseInt(result.fxTransferStateChangeId)
 }
 
-const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount) => {
-  return TransferFacade.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount)
+const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax, now) => {
+  return TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax, now)
+}
+
+const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount, now) => {
+  return TransferFacade.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount, now)
 }
 
 const incrementForwardedAttemptCount = async (transferId, isFxTransfer) => {
@@ -97,11 +173,15 @@ const removeForwardedRecord = async (transferId, isFxTransfer) => {
 
 module.exports = {
   getTimeoutSegment,
+  getTimeoutSegmentV2,
   getFxTimeoutSegment,
+  getFxTimeoutSegmentV2,
   cleanupTransferTimeout,
   cleanupFxTransferTimeout,
   getLatestTransferStateChange,
+  getLatestTransferStateChangeV2,
   getLatestFxTransferStateChange,
+  getLatestFxTransferStateChangeV2,
   timeoutExpireReserved,
   reservedForwardedTransfers,
   incrementForwardedAttemptCount,

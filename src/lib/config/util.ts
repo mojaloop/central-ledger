@@ -497,14 +497,14 @@ export function assertRange(input: any, minInclusive: number, maxInclusive: numb
  * @function assertNestedFields
  * @description Assert that a nested field is defined in the raw config.
  */
-export function assertNestedFields(object: any, path: string): void {
+export function assertNestedFields(object: any, path: string, message: string = ''): void {
   const parts = path.split('.')
   let current = object
   let traversed = ''
 
   for (const part of parts) {
     traversed = traversed ? `${traversed}.${part}` : part
-    assert(current[part] !== undefined, `expected \`${traversed}\` to be defined`)
+    assert(current[part] !== undefined, `expected \`${traversed}\` to be defined ${message}`)
     current = current[part]
   }
 }

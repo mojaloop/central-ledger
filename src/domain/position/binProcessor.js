@@ -50,7 +50,7 @@ const participantFacade = require('../../models/participant/facade')
  * @async
  * @description This is the domain function to process a list bins containing position messages grouped by participant account.
  *
- * @param {array} bins - a list of account-bins to process
+ * @param {Record<AccountId, Record<Action, Array<BinItem>>>} bins - a list of account-bins to process
  * @param {object} trx - Database transaction object
  *
  * @returns {results} - Returns a list of bins with results or throws an error if failed

@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2024 Mojaloop Foundation
+ Copyright © 2020-2026 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -27,50 +27,29 @@
  --------------
  ******/
 
-import assert from 'node:assert';
-import { ApplicationConfig } from '../lib/config';
-import { logger } from '../shared/logger';
-import CentralServicesShared, { Enum, Util } from '@mojaloop/central-services-shared';
-const { Kafka, Comparators } = Util
+import CentralServicesShared, { Enum, Util } from '@mojaloop/central-services-shared'
+import assert from 'node:assert'
+import { ApplicationConfig } from '../lib/config'
+import { logger } from '../shared/logger'
+const { Comparators } = Util
 
-import { assertNestedFields } from '../lib/config/util';
-import { toFulfil } from '../domain/transfer/transform';
+import { toFulfil } from '../domain/transfer/transform'
+import { assertNestedFields } from '../lib/config/util'
+import { Effect, MessageBus } from '../messaging/message-bus'
+import { PositionHandlerV2, PositionResultType } from './position-v2'
+import { CreateRemittanceEntityForex, FxTransferProxyObligation, ProxyCache } from './transfer-types'
 const { decodePayload } = Util.StreamingProtocol
 const Participant = require('../domain/participant')
-const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 const { Type, Action } = Enum.Events.Event
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-
-const { FSPIOPErrorCodes } = ErrorHandler.Enums
 const { FSPIOPError } = ErrorHandler
-import { CreateRemittanceEntity, ProxyCache } from './transfer-types';
-import RefactorHelper from '../shared/refactor-helper';
-import { Effect } from '../messaging/message-bus';
 
 interface Dependencies {
   config: ApplicationConfig
   proxyCache: ProxyCache,
-  createRemittanceEntity: CreateRemittanceEntity,
-  positionHandler: null | ((error: null, messages: Array<any>) => Promise<any>)
-
-}
-
-interface ProxyObligation {
-  isFx: true,
-  payloadClone: CreateForexDto,
-  isInitiatingFspProxy: boolean,
-  isCounterPartyFspProxy: boolean,
-  initiatingFspProxyOrParticipantId: {
-    inScheme: boolean,
-    proxyId: string | null,
-    name: string
-  } | null,
-  counterPartyFspProxyOrParticipantId: {
-    inScheme: boolean,
-    proxyId: string | null,
-    name: string
-  } | null
+  createRemittanceEntity: CreateRemittanceEntityForex,
+  positionHandler: PositionHandlerV2
 }
 
 export interface CreateForexDto {
@@ -187,11 +166,6 @@ export class ForexPrepareHandler {
     }
 
     assert(Array.isArray(messages))
-    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE') {
-      assert(
-        this.deps.positionHandler,
-        'ForexPrepareHandler.deps.positionHandler not defined, positions are in `FUSE` mode.')
-    }
     if (messages.length === 0) {
       logger.debug('ForexPrepareHandler.handle() - received empty batch, nothing to process');
       return []
@@ -206,7 +180,7 @@ export class ForexPrepareHandler {
     const results = await Promise.allSettled(inputs.map(async ({ input }) => this.handleOne(input)))
     results.forEach(result => {
       if (result.status === 'fulfilled' && result.value.type !== ForexPrepareResultType.PASS) {
-        logger.warn(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
+        logger.info(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
       }
       if (result.status === 'rejected') {
         logger.error(`handleOne() failed with error: \n\t${result.reason}`)
@@ -252,27 +226,26 @@ export class ForexPrepareHandler {
 
     if (hasDuplicateId && !hasDuplicateHash) {
       // Id was reused for a different request.
-      await this.sendMessageNotificationError(
-        input,
-        FSPIOPErrorCodes.MODIFIED_REQUEST.code,
-        FSPIOPErrorCodes.MODIFIED_REQUEST.message
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
       )
-
+      const error = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+      const effect = this.buildEffectNotificationError(input, error)
       return {
         type: ForexPrepareResultType.MODIFIED,
-        effects: [],
+        effects: [effect],
       }
     }
 
-    // If we found the payment, we can assume it was a duplicate!
+    // If we found the forex, we can assume it was a duplicate!
     const forex = await remittance.getByIdLight(input.payload.commitRequestId)
     if (forex && forex.fxTransferStateEnumeration) {
       switch (forex.fxTransferStateEnumeration) {
         case 'ABORTED': {
-          await this.sendMessageNotificationDuplicate(input, toFulfil(forex, true))
+          const effect = this.buildEffectNotificationDuplicate(input, toFulfil(forex, true))
           return {
             type: ForexPrepareResultType.DUPLICATE_FINAL,
-            effects: [],
+            effects: [effect],
             finalizedTransfer: {
               completedTimestamp: forex.completedTimestamp,
               transferState: forex.fxTransferStateEnumeration,
@@ -281,10 +254,10 @@ export class ForexPrepareHandler {
         }
         case 'COMMITTED':
         case 'RESERVED': {
-          await this.sendMessageNotificationDuplicate(input, toFulfil(forex, true))
+          const effect = this.buildEffectNotificationDuplicate(input, toFulfil(forex, true))
           return {
             type: ForexPrepareResultType.DUPLICATE_FINAL,
-            effects: [],
+            effects: [effect],
             finalizedTransfer: {
               completedTimestamp: forex.completedTimestamp,
               transferState: forex.fxTransferStateEnumeration,
@@ -333,7 +306,6 @@ export class ForexPrepareHandler {
     )
     if (participantValidation.result === 'FAIL') {
       assert(participantValidation.reasons.length > 0)
-
       await remittance.savePreparedRequest(
         input.payload,
         participantValidation.reasons.toString(),
@@ -356,11 +328,55 @@ export class ForexPrepareHandler {
       determiningTransferCheckResult,
       proxyObligation
     )
-
-    await this.sendMessagePosition(input, determiningTransferCheckResult, proxyObligation)
-    return {
+    const effectPosition = await this.buildEffectPosition(
+      input, determiningTransferCheckResult, proxyObligation
+    )
+    return this.handleNext({
       type: ForexPrepareResultType.PASS,
-      effects: [],
+      effects: [effectPosition],
+    })
+  }
+
+  private async handleNext(result: ForexPrepareResult): Promise<ForexPrepareResult> {
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
+      return result
+    }
+
+    assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
+    const notifications = result.effects.filter(effect => effect.functionality === 'notification')
+    const positions = result.effects
+      .filter(effect => effect.functionality === 'position')
+      .map(MessageBus.effectToKafkaMessage)
+    const resultsPosition = await this.deps.positionHandler.handle(null, positions)
+    assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
+    // Look just at the first one to map the result type.
+    const resultPosition = resultsPosition[0]
+    const positionEffects = resultsPosition
+      .reduce((acc: Array<Effect>, curr) => acc.concat(...curr.effects), [])
+
+    let type: ForexPrepareResultType
+    let error
+    switch (resultPosition.type) {
+      case PositionResultType.PASS:
+        type = ForexPrepareResultType.PASS
+        break
+      case PositionResultType.FAIL_LIQUIDITY:
+        type = ForexPrepareResultType.FAIL_LIQUIDITY
+        error = resultPosition.error
+        break
+      case PositionResultType.FAIL_OTHER:
+        type = ForexPrepareResultType.FAIL_OTHER
+        error = resultPosition.error
+        break
+    }
+
+    return {
+      type,
+      effects: [
+        ...notifications, 
+        ...positionEffects
+      ],
+      error,
     }
   }
 
@@ -503,7 +519,7 @@ should match initiatingFsp (${payload.initiatingFsp})`)
    * @description Figure out if the participants in the Payment message are native to the scheme
    * or are proxies.
    */
-  private async calculateProxyObligation(payload: CreateForexDto): Promise<ProxyObligation> {
+  private async calculateProxyObligation(payload: CreateForexDto): Promise<FxTransferProxyObligation> {
     // If the proxy isn't enabled, just return the default.
     if (!this.deps.config.PROXY_CACHE_CONFIG.enabled) {
       return {
@@ -560,11 +576,11 @@ should match initiatingFsp (${payload.initiatingFsp})`)
     }
   }
 
-  private async sendMessagePosition(
+  private async buildEffectPosition(
     input: ForexPrepareHandlerInput,
     determiningTransferCheckResult: any,
-    proxyObligation: ProxyObligation
-  ): Promise<void> {
+    proxyObligation: FxTransferProxyObligation
+  ): Promise<Effect> {
     const config = this.deps.config
     const remittance = this.deps.createRemittanceEntity()
 
@@ -581,106 +597,60 @@ should match initiatingFsp (${payload.initiatingFsp})`)
     )
     const messageKey = account.participantCurrencyId.toString()
 
-    const params = {
-      message: input.message,
-      kafkaTopic: input.message.topic,
-      decodedPayload: input.payload,
-      span: null,
-      consumer: Consumer,
-      producer: Producer
-    }
-
-    params.message.value.content.context = {
-      ...params.message.value.content.context,
+    const messageEffect = input.message
+    messageEffect.value.content.context = {
+      ...messageEffect.value.content.context,
       cyrilResult
     }
 
-    switch (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE) {
-      case 'UNFUSE': {
-        await Kafka.proceed(config.KAFKA_CONFIG, params, {
-          consumerCommit: true,
-          eventDetail: {
-            functionality: Type.POSITION,
-            action: Action.FX_PREPARE
-          },
-          messageKey,
-          topicNameOverride: config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.FX_PREPARE,
-          hubName: config.HUB_NAME
-        })
-        return
-      }
-      case 'FUSE': {
-        assert(this.deps.positionHandler)
-        const wrapped = RefactorHelper.wrapForPositionHandler(params, {
-          eventDetail: {
-            functionality: Type.POSITION,
-            action: Action.FX_PREPARE
-          },
-          messageKey,
-          hubName: config.HUB_NAME
-        })
-        await this.deps.positionHandler(null, [wrapped])
-      }
-    }
-  }
-
-  private async sendMessageNotificationDuplicate(input: ForexPrepareHandlerInput, payload: any): Promise<void> {
-    // Emit a notification message.
-    const params = {
-      message: input.message,
-      kafkaTopic: input.message.topic,
-      decodedPayload: input.payload,
-      span: null,
-      consumer: Consumer,
-      producer: Producer
+    const effectPosition: Effect = {
+      functionality: Type.POSITION,
+      action: Action.FX_PREPARE,
+      message: messageEffect.value,
+      messageKey,
+      topicName: 'topic-transfer-position-batch',
+      status: 'SUCCESS'
     }
 
-    params.message.value.content.payload = payload
-    params.message.value.content.uriParams = { id: input.payload.commitRequestId }
-    await Kafka.proceed(
-      this.deps.config.KAFKA_CONFIG,
-      params,
-      {
-        consumerCommit: true,
-        eventDetail: {
-          action: 'fx-prepare-duplicate',
-          functionality: 'notification',
-        },
-        fromSwitch: true,
-        hubName: this.deps.config.HUB_NAME
-      })
+    return effectPosition
   }
 
-  private async sendMessageNotificationError(
+  private buildEffectNotificationDuplicate(
     input: ForexPrepareHandlerInput,
-    errorCode: string,
-    errorDescription: string
-  ): Promise<void> {
-    const config = this.deps.config
+    payload: any
+  ): Effect {
+    const message = structuredClone(input.message.value)
 
-    const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-      { code: errorCode, message: errorDescription }
-    ).toApiErrorObject(config.ERROR_HANDLING)
+    message.content.payload = payload
+    message.content.uriParams = { id: input.payload.commitRequestId }
+    message.content.headers['fspiop-destination'] = message.content.headers['fspiop-source']
+    message.content.headers['fspiop-source'] = this.deps.config.HUB_NAME
 
-    const params = {
-      message: input.message,
-      kafkaTopic: input.message.topic,
-      decodedPayload: input.payload,
-      span: null,
-      consumer: Consumer,
-      producer: Producer
+    return {
+      functionality: 'notification',
+      action: 'fx-prepare-duplicate',
+      message,
+      topicName: 'topic-notification-event',
+      status: 'SUCCESS'
     }
-
-    await Kafka.proceed(config.KAFKA_CONFIG, params, {
-      consumerCommit: true,
-      fspiopError,
-      eventDetail: {
-        functionality: Type.NOTIFICATION,
-        action: Action.FX_PREPARE
-      },
-      fromSwitch: true,
-      hubName: config.HUB_NAME
-    })
   }
 
+  private buildEffectNotificationError(
+    input: ForexPrepareHandlerInput,
+    error: any
+  ): Effect {
+    const message = structuredClone(input.message.value)
+
+    message.content.payload = error
+    message.content.uriParams = { id: input.commitRequestId }
+
+    return {
+      functionality: 'notification',
+      action: 'fx-prepare',
+      message,
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+      fspiopError: error
+    }
+  }
 }

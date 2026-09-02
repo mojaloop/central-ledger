@@ -42,7 +42,7 @@ import { execAsync } from "./exec-async"
 
 import Cache from '../lib/cache'
 import { makeConfig } from "../lib/config/resolver"
-import { deepMerge } from "../lib/config/util"
+import { assertNestedFields, deepMerge } from "../lib/config/util"
 import Db from '../lib/db'
 import Enums from '../lib/enumCached'
 import { Enum } from '@mojaloop/central-services-shared'
@@ -71,6 +71,11 @@ import { ApplicationConfig, overrideForTesting, RecursivePartial, resetOverride 
 import { randomAvailablePort } from "./util"
 import { Consumer } from "./kafka"
 import { Message } from "node-rdkafka"
+import { DispatchTransferHandler } from "../handlers/dispatch-transfer-handler"
+import { MessageBus } from "../messaging/message-bus"
+import { PositionHandlerV2 } from "../handlers/position-v2"
+import Expect from "./expect"
+import { TimeoutHandlerV2 } from "../handlers/timeout-v2"
 
 const logger = Logger.child({ scope: 'harness' })
 
@@ -123,7 +128,10 @@ export default class Harness {
   private omniConsumer: Consumer | null = null;
   private messageQueue: Array<MojaloopKafkaMessage> = []
   private messageQueuePerId: Record<string, Array<MojaloopKafkaMessage>> = {}
-  private readonly positionHandlerType: 'NON_BATCH' | 'BATCH' = 'BATCH'
+  private _dispatchHandler: DispatchTransferHandler | null = null
+  private _messageBus: MessageBus | null = null
+  private _expect: Expect | null = null
+  private _timeoutHandlerV2: TimeoutHandlerV2 | null = null
 
   /**
    * 
@@ -160,6 +168,7 @@ export default class Harness {
     this.dependencyRedis = new Redis({
       harnessId: this.options.id
     })
+
   }
 
   public static randomRunId(): number {
@@ -309,8 +318,11 @@ export default class Harness {
       } catch (err: any) {
         console.error('Failed to append message to queue:\n')
         console.error(err.message)
+        console.error(err.stack)
       }
     })
+
+    this._expect = new Expect(this.applicationConfig, this)
 
     const timerEnd = performance.now()
     logger.warn(`Harness.up() took: ${(timerEnd - timerStart).toFixed(0)} ms.`)
@@ -334,6 +346,16 @@ export default class Harness {
     return this._enums
   }
 
+  get messageBus(): MessageBus {
+    assert(this._messageBus, 'MessageBus not initialized. Did you forget to call setupGlobals()?')
+    return this._messageBus
+  }
+
+  get timeoutHandler(): TimeoutHandlerV2 {
+    assert(this._timeoutHandlerV2, 'TimeoutHandler not initialized. Did you forget to call setupGlobals()?')
+    return this._timeoutHandlerV2
+  }
+
   get topicTransferPrepare(): { topicName: string } {
     return Utility.createGeneralTopicConf(
       this.config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
@@ -348,6 +370,11 @@ export default class Harness {
       Enum.Events.Event.Type.TRANSFER,
       Enum.Events.Event.Type.FULFIL,
     )
+  }
+
+  get expect(): Expect {
+    assert(this._expect, 'Enums not initalized. Did you forget to call up()?')
+    return this._expect
   }
 
   /**
@@ -373,53 +400,108 @@ export default class Harness {
     const parsed = JSON.parse(messageValueStr)
     assert(parsed)
 
-    assert(message.timestamp, 'message.timestamp is not defined.')
-
-    // if (parsed.content.payload.transferId) {
-    //   console.log(`appendMessageQueue parsed.content.payload.transferId: ${parsed.content.payload.transferId}`)
-    // }
-
     const mojaloopKafkaMessage = {
       ...message,
       valueStr: messageValueStr,
       valueParsed: parsed
     } as MojaloopKafkaMessage
-    const lastMessage = this.peekMessageQueue()
-    const lastTimestamp = lastMessage ? lastMessage.timestamp : 0
-    // Even if the message is outdated, still append to the message queue instead of dropping it.
-    // This warning will help us catch tests that have overlapping messages.
 
-    // TODO: remove this altogether? We should switch to the messageQueuePerId.
-
-    // We should move to the messageQueuePerId for everything
-    if (mojaloopKafkaMessage.timestamp < lastTimestamp) {
-      const message = `appendMessageQueue() inserted a stale message with timestamp:\
-        ${mojaloopKafkaMessage.timestamp} after message with timestamp: ${lastTimestamp}.`
-      // logger.warn(message)
-    }
+    // Still push to the general queue. Unfortunately for some commands, they don't have 
+    // correlationIds we can pipe through, so we need to rely on the total messages.
     this.messageQueue.push(mojaloopKafkaMessage)
 
-    // Keep track of messages per id.
-    if (parsed.content.payload.transferId) {
-      // console.log(`appendMessageQueue parsed.content.payload.transferId: ${parsed.content.payload.transferId}`)
-      const transferId = parsed.content.payload.transferId
-      let messages = this.messageQueuePerId[transferId] 
+    // Pull out a correlation id from the message, based on the topic.
+    // Could be a transferId (in multiple places, or some other id)
+    let correlationId
+    switch (mojaloopKafkaMessage.topic) {
+      case 'topic-notification-event': {
+        assertNestedFields(parsed, 'metadata.event.action')
+        switch (parsed.metadata.event.action) {
+          case 'fx-prepare-duplicate': 
+          case 'forwarded':
+          case 'fx-forwarded': 
+          case 'fx-fulfil': 
+          {
+            assertNestedFields(parsed, 'content.uriParams.id')
+            correlationId = parsed.content.uriParams.id
+            break;
+          }
+           case 'fx-prepare': {
+            if (parsed.id) {
+              correlationId = parsed.id
+            } else {
+              assertNestedFields(parsed, 'content.uriParams.id')
+              correlationId = parsed.content.uriParams.id
+            }
+            break;
+          }
+          case 'prepare': {
+            // It can either be at parsed.id, or at parsed.content.uriParams.id.
+            if (parsed.id) {
+              correlationId = parsed.id
+            } else {
+              assertNestedFields(parsed, 'content.uriParams.id')
+              correlationId = parsed.content.uriParams.id
+            }
+            break;
+          }
+          default: {
+            if (parsed.id) {
+              correlationId = parsed.id
+            }
+          }
+        }
+        break
+      }
+      case 'topic-admin-transfer': {
+        if (parsed.id) {
+          correlationId = parsed.id
+        }
+        break;
+      }
+      case 'topic-transfer-position': 
+      case 'topic-transfer-position-batch': {
+        assertNestedFields(parsed, 'metadata.event.action')
+        switch (parsed.metadata.event.action) {
+          case 'commit': 
+          case 'fx-reserve': 
+          case 'fx-abort':
+          case 'abort': 
+          case 'timeout-reserved': 
+          case 'fx-abort-validation': 
+          case 'fx-timeout-reserved': 
+          {
+            assertNestedFields(parsed, 'content.uriParams.id')
+            correlationId = parsed.content.uriParams.id
+            break;
+          }
+          case 'fx-prepare':  { 
+            assertNestedFields(parsed, 'content.payload.commitRequestId')
+            correlationId = parsed.content.payload.commitRequestId
+            break;
+          }
+          default: {
+            assertNestedFields(parsed, 'content.payload.transferId', `for action: ${parsed.metadata.event.action}`)
+            correlationId = parsed.content.payload.transferId
+          }
+        }   
+        break;
+      }
+      default: {
+        throw new Error(`Unhandled topic: ${mojaloopKafkaMessage.topic}.`)
+      }
+    }
+
+    if (correlationId) {
+      let messages = this.messageQueuePerId[correlationId]
       if (!messages) {
         messages = []
       }
       messages.push(mojaloopKafkaMessage)
-      this.messageQueuePerId[transferId] = messages
+      this.messageQueuePerId[correlationId] = messages
+    } else {
+      logger.warn(`No correlationId for topic: ${mojaloopKafkaMessage.topic} action: ${parsed.metadata.event.action}. `)
     }
-  }
-
-  /**
-   * Get the last message from the queue.
-   */
-  private peekMessageQueue(): MojaloopKafkaMessage | undefined {
-    if (this.messageQueue.length === 0) {
-      return
-    }
-    return this.messageQueue.at(-1)
   }
 
   /**
@@ -434,6 +516,9 @@ export default class Harness {
     ProxyCache = require('../lib/proxyCache')
     await ProxyCache.connect()
 
+    const SettlementModelCached = require('../models/settlement/settlementModelCached')
+    await SettlementModelCached.initialize()
+
     await Db.connect(this.config.DATABASE)
     await ParticipantCached.initialize()
     await ParticipantCurrencyCached.initialize()
@@ -447,20 +532,19 @@ export default class Harness {
     Enums.initialize()
     this._enums = await Enums.getEnums('all')
 
-    // Register the `topic-transfer-position` consumer
-    // Because the kafka registration uses global scope, we cannot register both the non batch
-    // and batch position handlers, in spite of the fact that they have different topics.
-
-    // TODO: eventually we won't need to do any consumer stuff here!
-    
-    // switch (this.positionHandlerType) {
-    //   case 'NON_BATCH':
-    //     await PositionHandler.registerPositionHandler()
-    //     break;
-    //   case 'BATCH':
-    //     await PositionBatchHandler.registerPositionHandler()
-    //     break;
-    // }
+    // Set up the MessageBus.
+    this._dispatchHandler = new DispatchTransferHandler(this.config)
+    const positionHandlerV2 = new PositionHandlerV2(this.config)
+    this._timeoutHandlerV2 = new TimeoutHandlerV2(this.config)
+    this._messageBus = new MessageBus({
+      config: this.config,
+      handlers: {
+        dispatchTransferHandler: this._dispatchHandler,
+        positionBatchHandler: positionHandlerV2,
+        timeoutHandler: this._timeoutHandlerV2,
+      }
+    })
+    await this.messageBus.init()
 
     await AdminHandler.registerAllHandlers()
   }
@@ -468,6 +552,8 @@ export default class Harness {
   public async teardownGlobals(): Promise<void> {
     try {
       logger.info('teardownGlobals()')
+      assert(this.messageBus)
+      await this.messageBus?.deinit()
       await ProxyCache.disconnect()
       await Cache.destroyCache()
       await Db.disconnect()
@@ -550,33 +636,33 @@ environment!\n ${err.message}`)
   /**
    * @description Like `redpandaDrain()`, but looks only for messages matching a transfer id.
    */
-  public async redpandaDrainSmart(numMessages: number, transferId: string, attempts: number = 20): Promise<void> {
+  public async redpandaDrainSmart(numMessages: number, id: string, attempts: number = 20): 
+    Promise<Array<MojaloopKafkaMessage>> {
     const start = performance.now()
     let delayMs = 10
 
     // Init.
-    if (!this.messageQueuePerId[transferId]) {
-      this.messageQueuePerId[transferId] = []
+    if (!this.messageQueuePerId[id]) {
+      this.messageQueuePerId[id] = []
     }
 
     let markNew
     for (let attempt = 1; attempt <= attempts; attempt++) {
       try {
-        markNew = this.messageQueuePerId[transferId].length
+        markNew = this.messageQueuePerId[id].length
         if (markNew > numMessages) {
-          const errorMessage = `Redpanda expected to consume: ${numMessages}, but consumed: ${markNew}`
+          const errorMessage = `Redpanda expected to consume: ${numMessages} for id: ${id}, but consumed: ${markNew}.`
           logger.error(errorMessage)
-          this.printLast(markNew)
+          this.print(this.messageQueuePerId[id])
           throw new Error(errorMessage)
         }
 
         if (markNew === numMessages) {
           const end = performance.now()
-          logger.info(`Redpanda consumed ${numMessages} message${numMessages === 1 ? ' ' : 's'} after ${(end - start).toFixed(0).padStart(4)}ms.`)
-
+          
           // Cool down for 20ms, check that there are no late messages.
           await new Promise(resolve => setTimeout(resolve, 20))
-          const checkAgain = this.messageQueuePerId[transferId].length
+          const checkAgain = this.messageQueuePerId[id].length
           const extraMessages = checkAgain - markNew
           assert(extraMessages >= 0)
           if (extraMessages > 0) {
@@ -587,16 +673,20 @@ environment!\n ${err.message}`)
             throw new Error(errorMessage)
           }
 
-          return
+          const messages = structuredClone(this.messageQueuePerId[id])
+          // Clear the queue.
+          this.messageQueuePerId[id] = []
+          return messages
         }
 
         throw new Error('Not ready')
       } catch (err: any) {
         if (attempt === attempts) {
-          const error = new Error(`redpandaDrainSmart() failed to consume ${numMessages} messages after ${attempts} attempts.\
+          const error = new Error(`redpandaDrainSmart() failed to consume ${numMessages} for id: ${id} after ${attempts} attempts.\
 Found only ${markNew} new messages.`)
           logger.error(error.message)
           logger.error(error.stack)
+          this.print(this.messageQueuePerId[id])
           throw error
         }
 
@@ -605,12 +695,13 @@ Found only ${markNew} new messages.`)
           throw err
         }
 
-        logger.info(`redpandaDrainSmart() waiting for Redpanda: [attempt ${`${attempt}`.padStart(3)}/${attempts}, delayMs: ${delayMs}].`)
         // Slowly back off.
         delayMs = Math.floor((delayMs * 1.1) + 10)
         await new Promise(resolve => setTimeout(resolve, delayMs))
       }
     }
+
+    return []
   }
 
   /**
@@ -672,7 +763,6 @@ Found only ${markNew - markLast} new messages.`)
           throw err
         }
 
-        logger.info(`redpandaDrain() waiting for Redpanda: [attempt ${`${attempt}`.padStart(3)}/${attempts}, delayMs: ${delayMs}].`)
         // Slowly back off.
         delayMs = Math.floor((delayMs * 1.1) + 10)
         await new Promise(resolve => setTimeout(resolve, delayMs))
@@ -723,20 +813,42 @@ Found only ${markNew - markLast} new messages.`)
     })
   }
 
+  public print(messages: Array<MojaloopKafkaMessage>): void {
+    messages.forEach(msg => {
+      logger.warn(`\n
+      ts:   ${msg.timestamp}
+      topic: ${msg.topic}
+      uriParams: ${msg.valueParsed.content.uriParams ?
+          JSON.stringify(msg.valueParsed.content.uriParams) : ''
+        }
+      fspiop-source:      ${msg.valueParsed.content.headers['fspiop-source']}
+      fspiop-destination: ${msg.valueParsed.content.headers['fspiop-destination']}
+      valueParsed:
+      ${JSON.stringify(msg.valueParsed.content.payload, null, 2)}
+      `.replaceAll(/^\s{6}/gm, ''))
+    })
+  }
+
   /**
    * Sometimes we just want to check the last topics that were published to.
    */
   public spoolLastTopic(numMessages: number): Array<string> {
-    const last = this.spoolLast(numMessages)
-    return last.map(message => message.topic)
+    return Harness.topicsOf(this.spoolLast(numMessages))
   }
 
   /**
    * Get the payload of the last _n_ messages produced across all topics.
    */
   public spoolLastPayload(numMessages: number): Array<any> {
-    const last = this.spoolLast(numMessages)
-    return last.map(message => message.valueParsed.content.payload)
+    return Harness.payloadsOf(this.spoolLast(numMessages))
+  }
+
+  public static topicsOf(messages: Array<MojaloopKafkaMessage>): Array<any> {
+    return messages.map(message => message.topic)
+  }
+
+  public static payloadsOf(messages: Array<MojaloopKafkaMessage>): Array<any> {
+    return messages.map(message => message.valueParsed.content.payload)
   }
 }
 

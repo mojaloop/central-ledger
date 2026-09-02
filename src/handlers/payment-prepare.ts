@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2024 Mojaloop Foundation
+ Copyright © 2020-2026 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -31,13 +31,13 @@ import assert from 'node:assert';
 import { ApplicationConfig } from '../lib/config';
 import { logger } from '../shared/logger';
 import CentralServicesShared, { Enum, TransferStateEnum, Util } from '@mojaloop/central-services-shared';
-import { CreateRemittanceEntity, KafkaParams, ProxyCache } from './transfer-types';
-import RefactorHelper from '../shared/refactor-helper';
-import { Effect } from '../messaging/message-bus';
-const { Kafka, Comparators } = Util
+import { CreateRemittanceEntityPayment, ProxyCache, TransferDeterminingCheckResult, TransferProxyObligation } from './transfer-types';
+import { Effect, MessageBus } from '../messaging/message-bus';
+import { assertNestedFields } from '../lib/config/util';
+import { PositionHandlerV2, PositionResultType } from './position-v2';
+const { Comparators } = Util
 const { decodePayload } = Util.StreamingProtocol
 const Participant = require('../domain/participant')
-const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 const { Type, Action } = Enum.Events.Event
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -46,13 +46,13 @@ const { FSPIOPError } = ErrorHandler
 interface Dependencies {
   config: ApplicationConfig,
   proxyCache: ProxyCache,
-  createRemittanceEntity: CreateRemittanceEntity,
-  positionHandler: null | ((error: null, messages: Array<any>) => Promise<any>)
+  positionHandler: PositionHandlerV2
+  createRemittanceEntity: CreateRemittanceEntityPayment,
   definePositionParticipant: (options: {
     isFx: boolean,
     payload: CreatePaymentDto,
-    determiningTransferCheckResult: any,
-    proxyObligation: any
+    determiningTransferCheckResult: TransferDeterminingCheckResult,
+    proxyObligation: TransferProxyObligation
   }) => Promise<{ messageKey: string, cyrilResult: any }>
 }
 
@@ -80,56 +80,39 @@ export interface FusedPrepareHandlerInput {
   actionEnum: string;
 }
 
-interface ProxyObligation {
-  isFx: false,
-  payloadClone: CreatePaymentDto,
-  isInitiatingFspProxy: boolean,
-  isCounterPartyFspProxy: boolean,
-  initiatingFspProxyOrParticipantId: {
-    inScheme: boolean,
-    proxyId: string | null,
-    name: string
-  } | null,
-  counterPartyFspProxyOrParticipantId: {
-    inScheme: boolean,
-    proxyId: string | null,
-    name: string
-  } | null
-}
-
 export enum PaymentPrepareResultType {
   /**
-   * Prepare step completed validation
+   * Prepare step completed validation.
    */
   PASS = 'PASS',
 
   /**
-   * Duplicate transfer found in a finalized state
+   * Duplicate transfer found in a finalized state.
    */
   DUPLICATE_FINAL = 'DUPLICATE_FINAL',
 
   /**
-   * Duplicate transfer found that is still being processed
+   * Duplicate transfer found that is still being processed.
    */
   DUPLICATE_NON_FINAL = 'DUPLICATE_NON_FINAL',
 
   /**
-   * An existing transfer exists with this id but different parameters
+   * An existing transfer exists with this id but different parameters.
    */
   MODIFIED = 'MODIFIED',
 
   /**
-   * Transfer failed validation
+   * Transfer failed validation.
    */
   FAIL_VALIDATION = 'FAIL_VALIDATION',
 
   /**
-   * Transfer failed as payee didn't have sufficent liquidity
+   * Transfer failed as payee didn't have sufficent liquidity.
    */
   FAIL_LIQUIDITY = 'FAIL_LIQUIDITY',
 
   /**
-   * Catch-all Transfer failed for another reason
+   * Catch-all Transfer failed for another reason.
    */
   FAIL_OTHER = 'FAIL_OTHER',
 }
@@ -178,11 +161,6 @@ export class PaymentPrepareHandler {
       logger.debug('PaymentPrepareHandler.handle() - received empty batch, nothing to process');
       return []
     }
-    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE') {
-      assert(
-        this.deps.positionHandler,
-        'PaymentPrepareHandler.deps.positionHandler not defined, positions are in `FUSE` mode.')
-    }
 
     logger.debug(`PaymentPrepareHandler.handle() - processing batch of ${messages.length} messages`)
     const inputs = messages.map(message => ({
@@ -190,10 +168,12 @@ export class PaymentPrepareHandler {
       input: this.extractMessageData(message)
     }));
 
+    // TODO: call Ledger.prepare(inputs)
+
     const results = await Promise.allSettled(inputs.map(async ({ input }) => this.handleOne(input)))
     results.forEach(result => {
       if (result.status === 'fulfilled' && result.value.type !== PaymentPrepareResultType.PASS) {
-        logger.warn(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
+        logger.info(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
       }
       if (result.status === 'rejected') {
         logger.error(`handleOne() failed with error: \n\t${result.reason}`)
@@ -217,7 +197,6 @@ export class PaymentPrepareHandler {
     // Check Duplication
     const remittance = this.deps.createRemittanceEntity()
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(
-      // TODO: not 100%.
       input.payload.transferId,
       input.payload,
       remittance.getDuplicate,
@@ -226,9 +205,13 @@ export class PaymentPrepareHandler {
 
     if (hasDuplicateId && !hasDuplicateHash) {
       // Id was reused for a different request.
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
+      )
+      const effect = this.buildEffectNotificationError(input, fspiopError)
       return {
         type: PaymentPrepareResultType.MODIFIED,
-        effects: []
+        effects: [effect]
       }
       // Original also covers case for BULK_PREPARE, but we don't handle that here.
     }
@@ -269,7 +252,7 @@ export class PaymentPrepareHandler {
       }
     }
 
-    let proxyObligation
+    let proxyObligation: TransferProxyObligation
     try {
       proxyObligation = await this.calculateProxyObligation(input.payload)
     } catch (err: any) {
@@ -280,12 +263,13 @@ export class PaymentPrepareHandler {
       }
     }
 
+    assert(proxyObligation)
     const determiningTransferCheckResult = await remittance.checkIfDeterminingTransferExists(
       proxyObligation.payloadClone,
       proxyObligation
     )
 
-    let validationResult
+    let validationResult: Awaited<ReturnType<typeof this.validatePayloadLinkedPayment>>
     if (determiningTransferCheckResult.determiningTransferExistsInWatchList) {
       validationResult = await this.validatePayloadLinkedPayment(proxyObligation.payloadClone)
     } else {
@@ -304,8 +288,7 @@ export class PaymentPrepareHandler {
         input.payload,
         validationResult.reasons.toString(),
         false,
-        // The types in cyril.js are incorrect.
-        determiningTransferCheckResult as any,
+        determiningTransferCheckResult,
         proxyObligation,
       )
 
@@ -323,18 +306,67 @@ export class PaymentPrepareHandler {
       input.payload,
       null,
       true,
-      // The types in cyril.js are incorrect.
-      determiningTransferCheckResult as any,
+      determiningTransferCheckResult,
       proxyObligation,
     )
 
-    // await this.sendMessagePosition(
-    //   input,
-    //   determiningTransferCheckResult,
-    //   proxyObligation
-    // )
-    
-    // Build the position change effect.
+    const effectPosition = await this.buildEffectPosition(
+      input, determiningTransferCheckResult, proxyObligation
+    )
+
+    return this.handleNext({
+      type: PaymentPrepareResultType.PASS,
+      effects: [
+        effectPosition
+      ]
+    })
+  }
+
+  private async handleNext(result: PaymentPrepareResult): Promise<PaymentPrepareResult> {
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
+      return result
+    }
+
+    assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
+    const notifications = result.effects.filter(effect => effect.functionality === 'notification')
+    const positions = result.effects
+      .filter(effect => effect.functionality === 'position')
+      .map(MessageBus.effectToKafkaMessage)
+    const resultsPosition = await this.deps.positionHandler.handle(null, positions)
+    assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
+    // Look just at the first one to map the result type.
+    const resultPosition = resultsPosition[0]
+    const positionEffects = resultsPosition
+      .reduce((acc: Array<Effect>, curr) => acc.concat(...curr.effects), [])
+
+    let type: PaymentPrepareResultType
+    let error
+    switch (resultPosition.type) {
+      case PositionResultType.PASS:
+        type = PaymentPrepareResultType.PASS
+        break
+      case PositionResultType.FAIL_LIQUIDITY:
+        type = PaymentPrepareResultType.FAIL_LIQUIDITY
+        error = resultPosition.error
+        break
+      case PositionResultType.FAIL_OTHER:
+        type = PaymentPrepareResultType.FAIL_OTHER
+        error = resultPosition.error
+        break
+    }
+
+    return {
+      type,
+      effects: [ ...notifications, ...positionEffects ],
+      error,
+    }
+  }
+
+  private async buildEffectPosition(
+    input: FusedPrepareHandlerInput,
+    determiningTransferCheckResult: TransferDeterminingCheckResult,
+    proxyObligation: TransferProxyObligation,
+  ): Promise<Effect> {
     const { messageKey, cyrilResult } = await this.deps.definePositionParticipant({
       payload: proxyObligation.payloadClone,
       isFx: false,
@@ -354,13 +386,28 @@ export class PaymentPrepareHandler {
       topicName: 'topic-transfer-position-batch',
       status: 'SUCCESS',
     }
-    
-    return {
-      type: PaymentPrepareResultType.PASS,
-      effects: [
-        effectPosition
-      ]
+    return effectPosition
+  }
+
+  private buildEffectNotificationError(
+    input: FusedPrepareHandlerInput,
+    fspiopError: any
+  ): Effect {
+    const message = structuredClone(input.message.value)
+    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+
+    message.content.payload = apiFSPIOPError
+    message.content.uriParams = { id: input.payload.transferId }
+
+    const effect: Effect = {
+      functionality: Type.NOTIFICATION,
+      action: Action.PREPARE,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+      fspiopError: apiFSPIOPError
     }
+    return effect
   }
 
   /**
@@ -506,13 +553,10 @@ export class PaymentPrepareHandler {
   }
 
   private extractMessageData(message: any): FusedPrepareHandlerInput {
-    assert(message)
-    assert(message.value)
-    assert(message.value.content)
-    assert(message.value.content.headers)
-    assert(message.value.metadata)
-    assert(message.value.metadata.event)
-    assert(message.value.metadata.event.action)
+    assertNestedFields(message, 'value.content.headers')
+    assertNestedFields(message, 'value.metadata.event.action')
+    assertNestedFields(message, 'value.content.payload')
+
     const payloadEncoded = message.value.content.payload
     const payload = decodePayload(payloadEncoded, {}) as unknown as CreatePaymentDto
     const headers = message.value.content.headers
@@ -545,7 +589,8 @@ export class PaymentPrepareHandler {
    * @description Figure out if the participants in the Payment message are native to the scheme
    * or are proxies.
    */
-  private async calculateProxyObligation(payload: CreatePaymentDto): Promise<ProxyObligation> {
+  private async calculateProxyObligation(payload: CreatePaymentDto):
+    Promise<TransferProxyObligation> {
     // If the proxy isn't enabled, just return the default.
     if (!this.deps.config.PROXY_CACHE_CONFIG.enabled) {
       return {
@@ -610,85 +655,3 @@ export class PaymentPrepareHandler {
     }
   }
 }
-
-
-/**
- * TODO: when we're ready to add back the non-happy path notifications:
- */
-// private async sendMessageNotification(
-//     input: FusedPrepareHandlerInput,
-//     opts: {
-//       action: string
-//       fspiopError?: {
-//         errorInformation: {
-//           errorCode: string
-//           errorDescription: string
-//         }
-//       }
-//       payload?: any  // Override payload (e.g. for duplicate with fulfil info)
-//     }
-//   ): Promise<void> {
-//     const config = this.deps.config
-//     const params = {
-//       message: input.message,
-//       kafkaTopic: input.message.topic,
-//       decodedPayload: input.payload,
-//       span: null,
-//       consumer: Consumer,
-//       producer: Producer
-//     }
-
-//     if (opts.payload) {
-//       params.message.value.content.payload = opts.payload
-//       params.message.value.content.uriParams = { id: input.transferId }
-//     }
-
-//     await Kafka.proceed(config.KAFKA_CONFIG, params, {
-//       consumerCommit: true,
-//       fspiopError: opts.fspiopError,
-//       eventDetail: {
-//         functionality: Type.NOTIFICATION,
-//         action: opts.action
-//       },
-//       fromSwitch: true,
-//       hubName: config.HUB_NAME
-//     })
-//   }
-
-//   Usage:
-
-//   // Modified request
-//   await this.sendMessageNotification(input, {
-//     action: Action.PREPARE,
-//     fspiopError: ErrorHandler.Factory.createFSPIOPError(
-//       ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
-//     ).toApiErrorObject(config.ERROR_HANDLING)
-//   })
-
-//   // Duplicate finalized
-//   await this.sendMessageNotification(input, {
-//     action: Action.PREPARE_DUPLICATE,
-//     payload: {
-//       completedTimestamp: payment.completedTimestamp,
-//       transferState: payment.transferStateEnumeration,
-//       fulfilment: payment.fulfilment
-//     }
-//   })
-
-//   // Validation error
-//   await this.sendMessageNotification(input, {
-//     action: Action.PREPARE,
-//     fspiopError: ErrorHandler.Factory.createFSPIOPError(
-//       ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-//       reasons.toString()
-//     ).toApiErrorObject(config.ERROR_HANDLING)
-//   })
-
-//   // ID not found
-//   await this.sendMessageNotification(input, {
-//     action: Action.PREPARE,
-//     fspiopError: ErrorHandler.Factory.createFSPIOPError(
-//       ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-//       errorMessage
-//     ).toApiErrorObject(config.ERROR_HANDLING)
-//   })
