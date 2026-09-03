@@ -29,6 +29,7 @@ import assert from "node:assert"
 import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
+import { assertPositionDiff } from "../../testing/util"
 
 const harness = Harness.getInstance()
 let FxTransferService: any
@@ -36,40 +37,22 @@ let FxTransferService: any
 describe('handlers/fx', () => {
   before(async () => {
     await harness.up()
+    harness.configOverride({
+      HANDLERS_TRANSFER_DISPATCH_MODE: 'SPLIT',
+    })
     await harness.setupGlobals()
 
     FxTransferService = require('../../domain/fx/index')
 
     // Create the hub accounts + settlement model.
-    const createHubPayload: ApiHelpers.CreateHubPayload = {
-      currencies: ['BWP', 'USD'],
-      settlementModels: [
-        {
-          name: `DEFERRED_MULTILATERAL_NET_BWP`,
-          settlementGranularity: "NET",
-          settlementInterchange: "MULTILATERAL",
-          settlementDelay: "DEFERRED",
-          currency: 'BWP',
-          requireLiquidityCheck: true,
-          ledgerAccountType: "POSITION",
-          settlementAccountType: "SETTLEMENT",
-          autoPositionReset: true
-        },
-        {
-          name: `DEFERRED_MULTILATERAL_NET_USD`,
-          settlementGranularity: "NET",
-          settlementInterchange: "MULTILATERAL",
-          settlementDelay: "DEFERRED",
-          currency: 'USD',
-          requireLiquidityCheck: true,
-          ledgerAccountType: "POSITION",
-          settlementAccountType: "SETTLEMENT",
-          autoPositionReset: true
-        }
-      ]
-    }
-    await ApiHelpers.createHub(harness, createHubPayload)
-    // Create 2 test dfsps to transfer between.
+    await ApiHelpers.buildHub()
+          .deps(harness)
+          .currency('BWP')
+          .currency('USD')
+          .build()
+          .create()
+  
+    // Create test dfsps to transfer between.
     await ApiHelpers.createDfsp(harness, {
       name: 'dfsp_a',
       currencies: ['BWP'],
@@ -86,6 +69,15 @@ describe('handlers/fx', () => {
         { initialPosition: 0, value: 100000 }
       ],
       deposits: [10000, 10000]
+    })
+    await ApiHelpers.createDfsp(harness, {
+      name: 'dfsp_c',
+      currencies: ['USD'],
+      isProxy: false,
+      initialPostionsAndLimits: [
+        { initialPosition: 0, value: 100000 },
+      ],
+      deposits: [10000]
     })
   })
 
@@ -246,6 +238,120 @@ describe('handlers/fx', () => {
     await harness.messageBus.fulfil(null, [messageFulfil])
     await harness.redpandaDrainSmart(1, '4000004')
 
+    Snapshot.from(`[
+      {
+        "errorInformation": {
+          "errorCode": "3100",
+          "errorDescription": "Generic validation:ignore",
+          "extensionList": {
+            "extension": [
+              {
+                "key": "cause",
+                "value": "FSPIOPError:ignore
+              }
+            ]
+          }
+        }
+      }
+    ]`).checkUnwrap(harness.spoolLastPayload(1))
+  })
+
+  it(`reserves funds and releases them on an invalid fulfilment`, async () => {
+    const forex = ApiHelpers.buildForex()
+      .deps(harness, harness.messageBus)
+      .commitRequestId('4000005')
+      .determiningTransferId('5000005')
+      .parties('dfsp_a', 'dfsp_b')
+      .amountSource('100.00', 'BWP')
+      .amountTarget('10.00', 'USD')
+      .build()
+
+    const [positionABWP1] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'BWP')
+    await forex.prepare()
+    const [positionABWP2,] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'BWP')
+
+    assertPositionDiff('payer', positionABWP1, positionABWP2, {
+      pending: 0,
+      posted: 100
+    })
+
+    // Manually override the fulfilment.
+    const messageFulfil = forex.buildMessageFulfil()
+    assert(messageFulfil.value.content.payload)
+    messageFulfil.value.content.payload.fulfilment = 'invalid-fulfilment'
+    await harness.messageBus.fulfil(null, [messageFulfil])
+    await harness.redpandaDrainSmart(1, '4000005')
+
+    Snapshot.from(`[
+      {
+        "errorInformation": {
+          "errorCode": "3100",
+          "errorDescription": "Generic validation:ignore",
+          "extensionList": {
+            "extension": [
+              {
+                "key": "cause",
+                "value": "FSPIOPError:ignore
+              }
+            ]
+          }
+        }
+      }
+    ]`).checkUnwrap(harness.spoolLastPayload(1))
+
+    const [positionABWP3] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'BWP')
+    assertPositionDiff('payer', positionABWP2, positionABWP3, {
+      pending: 0,
+      posted: -100
+    })
+  })
+
+  it(`subsequent payment for a failed forex should also fail`, async () => {
+    const commitRequestId = `4000006`
+    const transferId = `5000006`
+    const forex = ApiHelpers.buildForex()
+      .deps(harness, harness.messageBus)
+      .commitRequestId(commitRequestId)
+      .determiningTransferId(transferId)
+      .parties('dfsp_a', 'dfsp_b')
+      .amountSource('100.00', 'BWP')
+      .amountTarget('10.00', 'USD')
+      .build()
+    const payment = ApiHelpers.buildPayment()
+      .deps(harness)
+      .transferId(transferId)
+      .amount('10.00', 'USD')
+      .parties('dfsp_a', 'dfsp_c')
+      .fx(commitRequestId)
+      .build()
+
+    await forex.prepare()
+
+    // Manually override the fulfilment.
+    const messageFulfil = forex.buildMessageFulfil()
+    assert(messageFulfil.value.content.payload)
+    messageFulfil.value.content.payload.fulfilment = 'invalid-fulfilment'
+    await harness.messageBus.fulfil(null, [messageFulfil])
+    await harness.redpandaDrainSmart(1, commitRequestId)
+    Snapshot.from(`[
+      {
+        "errorInformation": {
+          "errorCode": "3100",
+          "errorDescription": "Generic validation:ignore",
+          "extensionList": {
+            "extension": [
+              {
+                "key": "cause",
+                "value": "FSPIOPError:ignore
+              }
+            ]
+          }
+        }
+      }
+    ]`).checkUnwrap(harness.spoolLastPayload(1))
+
+    // Now try and make the payment.
+    await payment.prepare()
     Snapshot.from(`[
       {
         "errorInformation": {

@@ -1571,16 +1571,21 @@ Test('Participant facade', async (facadeTest) => {
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
       const transactingStub = sandbox.stub()
+      const mockCreatedDate = new Date()
       knexStub.returns({
         transacting: transactingStub.returns({
-          insert: sandbox.stub().returns([1])
+          insert: sandbox.stub().returns([1]),
+          where: sandbox.stub().returns({
+            first: sandbox.stub().returns({ createdDate: mockCreatedDate })
+          })
         })
       })
       const result = await Model.addHubAccountAndInitPosition(participant.participantId, participant.currencyId, participant.ledgerAccountTypeId)
       assert.pass('completed successfully')
-      assert.ok(knexStub.withArgs('participantCurrency').calledOnce, 'knex called with participantCurrency once')
+      assert.ok(knexStub.withArgs('participantCurrency').calledTwice, 'knex called with participantCurrency twice')
       assert.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with participantPosition once')
       delete result.participantCurrency.createdDate
+      delete result.participantPosition.changedDate
       assert.deepEqual(result, { participantCurrency, participantPosition })
 
       knexStub.returns({

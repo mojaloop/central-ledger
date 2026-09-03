@@ -288,7 +288,8 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         isActive: 1,
         createdDate: '2018-07-17T16:04:24.185Z',
-        isProxy: 0
+        isProxy: 0,
+        currencyList: []
       }
 
       const participantCurrencyId1 = 1
@@ -735,7 +736,7 @@ Test('Participant', participantHandlerTest => {
           limit: {
             type: 'NET_DEBIT_CAP',
             value: 1000000,
-            alarmPercentage: undefined
+            alarmPercentage: 10
           }
         }
       ]
@@ -743,7 +744,8 @@ Test('Participant', participantHandlerTest => {
         {
           currencyId: 'USD',
           name: 'NET_DEBIT_CAP',
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       Participant.getLimits.withArgs(params.name, query).returns(Promise.resolve(limitReturn))
@@ -779,24 +781,26 @@ Test('Participant', participantHandlerTest => {
         limit: {
           type: 'NET_DEBIT_CAP',
           value: 1000000,
-          alarmPercentage: undefined
+          alarmPercentage: 10
         }
       }, {
         currency: 'EUR',
         limit: {
           type: 'NET_DEBIT_CAP',
           value: 5000000,
-          alarmPercentage: undefined
+          alarmPercentage: 10
         }
       }]
       const limitReturn = [{
         currencyId: 'USD',
         name: 'NET_DEBIT_CAP',
-        value: 1000000
+        value: 1000000,
+        thresholdAlarmPercentage: 10
       }, {
         currencyId: 'EUR',
         name: 'NET_DEBIT_CAP',
-        value: 5000000
+        value: 5000000,
+        thresholdAlarmPercentage: 10
       }]
       Participant.getLimits.withArgs(params.name, query).returns(Promise.resolve(limitReturn))
       const result = await Handler.getLimits(createRequest({ params, query }))
@@ -817,12 +821,13 @@ Test('Participant', participantHandlerTest => {
         limit: {
           type: 'NET_DEBIT_CAP',
           value: 1000000,
-          alarmPercentage: undefined
+          alarmPercentage: 10
         }
       }]
       const limitReturn = [{
         name: 'NET_DEBIT_CAP',
-        value: 1000000
+        value: 1000000,
+        thresholdAlarmPercentage: 10
       }]
       Participant.getLimits.withArgs(params.name, query).returns(Promise.resolve(limitReturn))
       const result = await Handler.getLimits(createRequest({ params, query }))
@@ -843,14 +848,15 @@ Test('Participant', participantHandlerTest => {
           limit: {
             type: 'NET_DEBIT_CAP',
             value: 1000000,
-            alarmPercentage: undefined
+            alarmPercentage: 10
           }
         }
       ]
       const limitReturn = [{
         currencyId: 'USD',
         name: 'NET_DEBIT_CAP',
-        value: 1000000
+        value: 1000000,
+        thresholdAlarmPercentage: 10
       }]
       Participant.getLimits.withArgs(params.name, query).returns(Promise.resolve(limitReturn))
       const result = await Handler.getLimits(createRequest({ params, query }))
@@ -889,7 +895,7 @@ Test('Participant', participantHandlerTest => {
           limit: {
             type: 'NET_DEBIT_CAP',
             value: 1000000,
-            alarmPercentage: undefined
+            alarmPercentage: 10
           }
         },
         {
@@ -898,7 +904,7 @@ Test('Participant', participantHandlerTest => {
           limit: {
             type: 'NET_DEBIT_CAP',
             value: 2000000,
-            alarmPercentage: undefined
+            alarmPercentage: 10
           }
         }
       ]
@@ -907,13 +913,15 @@ Test('Participant', participantHandlerTest => {
           name: 'fsp1',
           currencyId: 'USD',
           limitType: 'NET_DEBIT_CAP',
-          value: 1000000
+          value: 1000000,
+          thresholdAlarmPercentage: 10
         },
         {
           name: 'fsp2',
           currencyId: 'USD',
           limitType: 'NET_DEBIT_CAP',
-          value: 2000000
+          value: 2000000,
+          thresholdAlarmPercentage: 10
         }
       ]
       Participant.getLimitsForAllParticipants.withArgs(query).returns(Promise.resolve(limitReturn))
@@ -981,7 +989,7 @@ Test('Participant', participantHandlerTest => {
         }
       }
 
-      Participant.adjustLimits.withArgs(params.name, payload).returns(Promise.resolve({ participantLimit }))
+      Participant.adjustLimitsV2.withArgs(params.name, payload).returns(Promise.resolve({ participantLimit }))
       const reply = {
         response: (response) => {
           return {
@@ -1008,7 +1016,7 @@ Test('Participant', participantHandlerTest => {
         }
       }
 
-      Participant.adjustLimits.withArgs(params.name, payload).throws(new Error('Test error'))
+      Participant.adjustLimitsV2.withArgs(params.name, payload).throws(new Error('Test error'))
 
       try {
         await Handler.adjustLimits(createRequest({ params, payload }))
@@ -1126,7 +1134,7 @@ Test('Participant', participantHandlerTest => {
       const query = {
         currency: 'USD'
       }
-      Participant.getAccounts.withArgs(params.name, query).returns(Promise.resolve(true))
+      Participant.getAccounts.withArgs(params.name, query).returns(Promise.resolve([]))
       const result = await Handler.getAccounts(createRequest({ params, query }))
       test.ok(result, 'Result returned')
       test.ok(Participant.getAccounts.calledOnce, 'Participant.getAccounts called once')
@@ -1179,7 +1187,7 @@ Test('Participant', participantHandlerTest => {
       test.end()
     })
 
-    handlerTest.test('getPositions should preserve undefined values', async function (test) {
+    handlerTest.test('getPositions should throw if the position is undefined', async function (test) {
       const params = {
         name: 'fsp1'
       }
@@ -1193,15 +1201,19 @@ Test('Participant', participantHandlerTest => {
       const positionReturn = [
         {
           currency: 'USD',
-          value: undefined, // Undefined value should remain undefined
+          value: undefined,
           updatedTime: '2018-08-14T04:01:55.000Z'
         }
       ]
       Participant.getPositions.withArgs(params.name, {}).returns(Promise.resolve(positionReturn))
-      const result = await Handler.getPositions(createRequest({ params }))
-      test.deepEqual(result, expected, 'Undefined value preserved')
-      test.equal(result[0].value, undefined, 'Value remains undefined')
-      test.end()
+      try {
+        await Handler.getPositions(createRequest({ params }))
+        test.fail('Error not thrown')
+      } catch (err) {
+        test.ok(err instanceof FSPIOPError)
+      } finally {
+        test.end()
+      }
     })
 
     handlerTest.test('getAccounts should convert string values to numbers for array result', async function (test) {

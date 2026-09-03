@@ -59,6 +59,24 @@ const getByName = async (name, trx = null) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+/**
+ * @typedef {Object} SettlementModel
+ * @property {number} settlementModelId
+ * @property {string} name
+ * @property {number} isActive
+ * @property {number} settlementGranularityId
+ * @property {number} settlementInterchangeId
+ * @property {number} settlementDelayId
+ * @property {string|null} currencyId
+ * @property {number} requireLiquidityCheck
+ * @property {number} ledgerAccountTypeId
+ * @property {number} settlementAccountTypeId
+ * @property {number} autoPositionReset
+ */
+
+/**
+ * @returns {Promise<SettlementModel[]>}
+ */
 const getAll = async () => {
   try {
     return await SettlementModelModel.getAll()

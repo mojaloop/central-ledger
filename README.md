@@ -171,7 +171,7 @@ Logs are sent to standard output by default.
 
 ## Tests
 
-Tests include unit, functional, and integration.
+Tests include unit, functional, and integration, fuzz.
 
 Running the tests:
 
@@ -246,6 +246,47 @@ TTK Test files:
 Configuration modifiers:
 
 - **central-ledger**: [./docker/config-modifier/configs/central-ledger.js](./docker/config-modifier/configs/central-ledger.js)
+
+### Fuzz Testing
+
+Files matching `*.fuzz.ts` are fuzz tests, which generate pseudorandom inputs to the API and
+handlers and attempt to find bugs or crashes.
+
+```bash
+# Run all fuzz tests.
+npm run test:fuzz
+
+# Example output:
+Redpanda - go to: http://localhost:59617 to see the Redpanda Console - {"scope":"Redpanda"}
+Harness.up() took: 5082 ms. -  {"scope":"harness"}
+HandlerApiFuzzer.run() running:
+       SEED = 12345
+       STEPS_MAX = 250 
+harness.down() -       {"scope":"harness"}
+Harness.down() took: 1400 ms. -        {"scope":"harness"}
+Redpanda - go to: http://localhost:60525 to see the Redpanda Console - {"scope":"Redpanda"}
+Harness.up() took: 5706 ms. -  {"scope":"harness"}
+HandlerApiFuzzer.run() running:
+       SEED = 12345
+       STEPS_MAX = 250 
+harness.down() -       {"scope":"harness"}
+Harness.down() took: 1468 ms. -        {"scope":"harness"}
+Fuzz trace written to .fuzz_output/handler.fuzz.ts/is_fully_deterministic.
+Compare the two files with:
+        git diff --no-index .fuzz_output/handler.fuzz.ts/is_fully_deterministic/traceA.txt .fuzz_output/handler.fuzz.ts/is_fully_deterministic/traceB.txt
+▶ api/participants/handler
+  ✔ is fully deterministic (18052.015875ms)
+
+# Run a single fuzz test, checking for coverage:
+npx nyc -- node --test --require ts-node/register src/api/participants/handler.fuzz.ts 
+```
+
+If a fuzz test encounters a failure, we can rerun with the same seed to deterministically
+reproduce that failure.
+```bash
+SEED=12345 node --test --require ts-node/register src/api/participants/handler.fuzz.ts 
+```
+
 
 ## Development environment
 

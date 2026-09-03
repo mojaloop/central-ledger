@@ -74,8 +74,6 @@ Test('Api index', indexTest => {
         service: 'api',
         port: Config.PORT,
         modules: [
-          RoutesAdmin,
-          RoutesSettlement,
           MetricsPlugin
         ],
         runMigrations: true,

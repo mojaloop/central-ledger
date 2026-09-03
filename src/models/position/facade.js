@@ -352,6 +352,7 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
             return q.where('pc.currencyId', currencyId)
           }
         })
+        .orderBy('pc.currencyId')
         .select('participantPosition.*',
           'pc.currencyId')
     })
@@ -377,7 +378,8 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
         .select('participantPosition.*',
           'lap.name AS ledgerAccountType',
           'pc.currencyId',
-          'pc.isActive'
+          'pc.isActive',
+          'pc.createdDate',
         )
     })
   } catch (err) {

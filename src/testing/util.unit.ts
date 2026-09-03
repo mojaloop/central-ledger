@@ -6,7 +6,6 @@ describe('futureDate', () => {
   it('happy path', () => {
     const now = new Date()
     testPass([1, 'ms', now], new Date(now.getTime() + 1))
-    testPass([1, undefined, now], new Date(now.getTime() + 1))
     testPass([1, 'm', now], new Date(now.getTime() + 1000 * 60))
     testPass([10, 'm', now], new Date(now.getTime() + 10 * 1000 * 60))
     testPass([10, 's', now], new Date(now.getTime() + 10 * 1000))
@@ -14,15 +13,16 @@ describe('futureDate', () => {
     testPass([10, 'd', now], new Date(now.getTime() + 10 * 1000 * 60 * 60 * 24))
     testPass([0.4, 'ms', now], new Date(now.getTime()))
     testPass([0.5, 'ms', now], new Date(now.getTime()))
+    testPass([1, undefined, now], new Date(now.getTime() + 1))
   })
 
-   it('unhappy path', () => {
+  it('unhappy path', () => {
     const now = new Date()
-    testFail([], 'Invalid amount.')
-    testFail([-1], 'Invalid amount.')
-    testFail([NaN], 'Invalid amount.')
-    testFail([1, null], `increment must be one of: 'ms' | 's' | 'm' | 'h' | 'd'`)
-    testFail([1, 'YEAR'], `increment must be one of: 'ms' | 's' | 'm' | 'h' | 'd'`)
+    testFail([], 'Invalid amount: undefined.')
+    testFail([-1], 'Invalid amount: -1.')
+    testFail([NaN], 'Invalid amount: NaN.')
+    testFail([1, null], `unit must be one of: 'ms' | 's' | 'm' | 'h' | 'd'`)
+    testFail([1, 'YEAR'], `unit must be one of: 'ms' | 's' | 'm' | 'h' | 'd'`)
     testFail([1, undefined, new Date(NaN)], `now must be a valid date.`)
   })
 

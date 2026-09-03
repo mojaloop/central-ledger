@@ -50,15 +50,23 @@ const Db = require('../lib/db')
 const ProxyCache = require('../lib/proxyCache')
 const Cache = require('../lib/cache')
 const EnumCached = require('../lib/enumCached')
+const SettlementEnums = require('../settlement/models/lib/enums')
 const RegisterHandlers = require('../handlers/register')
 const ParticipantCached = require('../models/participant/participantCached')
 const ParticipantCurrencyCached = require('../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
 const externalParticipantCached = require('../models/participant/externalParticipantCached')
 const BatchPositionModelCached = require('../models/position/batchCached')
+const SettlementModelCached = require('../models/settlement/settlementModelCached')
 const Plugins = require('./plugins')
 const { DispatchTransferHandler } = require('../handlers/dispatch-transfer-handler')
 const { MessageBus } = require('../messaging/message-bus')
+const { PositionHandlerV2 } = require('../handlers/position-v2')
+const { LedgerSql } = require('../domain/ledger/ledger-sql')
+const { TimeoutHandlerV2 } = require('../handlers/timeout-v2')
+const { default: HandlerV2 } = require('../api/participants/handler-v2')
+const routesAdminBuilder = require('../api/routes-v2').default
+const routesSettlement = require('../settlement/api/routes')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
@@ -98,6 +106,10 @@ const connectMongoose = async () => {
   }
 }
 
+const getSettlementEnums = (id) => {
+  return SettlementEnums[id]()
+}
+
 /**
  * @function createServer
  *
@@ -118,108 +130,39 @@ const createServer = (port, modules) => {
             throw ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.MALFORMED_SYNTAX)
           }
         }
+      },
+      cache: [
+        {
+          provider: {
+            constructor: require('@hapi/catbox-memory').Engine,
+            options: {
+              partition: 'cache'
+            }
+          },
+          name: 'memCache'
+        }
+      ]
+    })
+
+    // Merged from settlement api - isuses the memCache to provide `request.server.methods.enums`.
+    server.method({
+      name: 'enums',
+      method: getSettlementEnums,
+      options: {
+        cache: {
+          cache: 'memCache',
+          expiresIn: 20 * 1000,
+          generateTimeout: 30 * 1000
+        }
       }
     })
 
     await Plugins.registerPlugins(server)
     await server.register(modules)
     await server.start()
-    Logger.isInfoEnabled && Logger.info(`Server running at: ${server.info.uri}`)
+    Logger.warn(`Server running at: ${server.info.uri}`)
     return server
   })()
-}
-
-/**
- * @function createHandlers
- *
- * @description Create method to register specific Handlers specified by the Module list as part of the Setup process
- *
- * @typedef handler
- * @type {Object}
- * @property {string} type The type of Handler to be registered
- * @property {boolean} enabled True|False to indicate if the Handler should be registered
- * @property {string[]} [fspList] List of FSPs to be registered
- *
- * @param {handler[]} handlers List of Handlers to be registered
- * @returns {Promise<boolean>} Returns true if Handlers were registered
- */
-const createHandlers = async (handlers, dispatchTransferHandler) => {
-  const registeredHandlers = {
-    connection: {},
-    register: {},
-    ext: {},
-    start: new Date(),
-    info: {},
-    handlers
-  }
-
-  for (const handler of handlers) {
-    if (handler.enabled) {
-      Logger.isInfoEnabled && Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
-      switch (handler.type) {
-        case 'prepare': {
-          await RegisterHandlers.transfers.registerPrepareHandler(dispatchTransferHandler)
-          break
-        }
-        case 'position': {
-          await RegisterHandlers.positions.registerPositionHandler()
-          break
-        }
-        case 'positionbatch': {
-          await RegisterHandlers.positionsBatch.registerPositionHandler()
-          break
-        }
-        case 'fulfil': {
-          await RegisterHandlers.transfers.registerFulfilHandler(dispatchTransferHandler)
-          break
-        }
-        case 'timeout': {
-          await RegisterHandlers.timeouts.registerTimeoutHandler()
-          break
-        }
-        case 'admin': {
-          await RegisterHandlers.admin.registerAdminHandlers()
-          break
-        }
-        case 'get': {
-          await RegisterHandlers.transfers.registerGetHandler()
-          break
-        }
-        case 'bulkprepare': {
-          await RegisterHandlers.bulk.registerBulkPrepareHandler()
-          break
-        }
-        case 'bulkfulfil': {
-          await RegisterHandlers.bulk.registerBulkFulfilHandler()
-          break
-        }
-        case 'bulkprocessing': {
-          await RegisterHandlers.bulk.registerBulkProcessingHandler()
-          break
-        }
-        case 'bulkget': {
-          await RegisterHandlers.bulk.registerBulkGetHandler()
-          break
-        }
-        case 'deferredSettlement':
-          await RegisterHandlers.deferredSettlement.registerSettlementWindowHandler()
-          break
-        case 'grossSettlement':
-          await RegisterHandlers.grossSettlement.registerTransferSettlementHandler()
-          break
-        case 'rules':
-          await RegisterHandlers.rules.registerRulesHandler()
-          break
-        default: {
-          const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
-          Logger.isErrorEnabled && Logger.error(error)
-          throw new Error(error)
-        }
-      }
-    }
-  }
-
-  return registeredHandlers
 }
 
 const initializeInstrumentation = () => {
@@ -234,6 +177,7 @@ const initializeCache = async () => {
   await ParticipantCurrencyCached.initialize()
   await ParticipantLimitCached.initialize()
   await BatchPositionModelCached.initialize()
+  await SettlementModelCached.initialize()
   // all cached models initialize-methods are SYNC!!
   externalParticipantCached.initialize()
   await Cache.initCache()
@@ -268,18 +212,52 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     if (Config.PROXY_CACHE_CONFIG?.enabled) {
       await ProxyCache.connect()
     }
+    const enums = await EnumCached.getEnums('all')
 
+    // Set up the MessageBus.
+    const {
+      createRemittanceEntityPayment,
+      createRemittanceEntityForex,
+    } = require('../handlers/transfers/createRemittanceEntity')
+    const { definePositionParticipant } = require('../handlers/transfers/prepare')
+    const positionHandlerV2 = new PositionHandlerV2(Config)
+    const ledger = new LedgerSql({
+      config: Config,
+      enums: enums,
+      proxyCache: ProxyCache,
+      positionHandler: positionHandlerV2,
+      createRemittanceEntity: createRemittanceEntityPayment,
+      definePositionParticipant
+    })
+    const dispatchHandler = new DispatchTransferHandler(Config, ledger)
+    const timeoutHandlerV2 = new TimeoutHandlerV2(Config, ledger)
+    const messageBus = new MessageBus({
+      config: Config,
+      handlers: {
+        dispatchTransferHandler: dispatchHandler,
+        positionBatchHandler: positionHandlerV2,
+        timeoutHandler: timeoutHandlerV2,
+      }
+    })
+
+    // Build the routes.
+    const handlerParticipant = new HandlerV2({
+      config: Config,
+      ledger,
+    })
+    const routesAdmin = routesAdminBuilder(handlerParticipant)
+    
     let server
     switch (service) {
       case 'api':
       case 'admin': {
-        server = await createServer(port, modules)
+        server = await createServer(port, [...modules, routesAdmin, routesSettlement])
         break
       }
       case 'handler': {
+        server = await createServer(port, [...modules])
         if (!Config.HANDLERS_API_DISABLED) {
-          server = await createServer(port, modules)
-        }
+          Logger.warn(`initialize() - service=hander, and HANDLERS_API_DISABLED=${Config.HANDLERS_API_DISABLED}, skipping creating server`)        }
         break
       }
       default: {
@@ -289,27 +267,19 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     }
 
     if (!runHandlers) {
+      Logger.warn(`initialize() - runHandlers is false, not calling messageBus.init().`)
       // Skip running handlers.
       return server
+    } else {
+      Logger.warn(`initialize() - runHandlers is true, calling messageBus.init().`)
     }
 
-    const dispatchTransferHandler = new DispatchTransferHandler(Config)
-    const messageBus = new MessageBus({
-      config: Config,
-      handlers: {
-        dispatchTransferHandler
-      }
-    })
-    // We should specify the handlers to register based on the config, not the cli!
-    await messageBus.init()
-    
-    // if (Array.isArray(handlers) && handlers.length > 0) {
-    //   await createHandlers(handlers, dispatchTransferHandler)
-    // } else {
-    //   await RegisterHandlers.registerAllHandlers(dispatchTransferHandler)
-    // }
-
-    return server
+    const handlerNames = handlers.map(handler => handler.type)
+    await messageBus.init(handlerNames)
+    return {
+      server,
+      messageBus
+    }
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`, err)
 

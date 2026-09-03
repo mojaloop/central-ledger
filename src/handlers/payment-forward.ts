@@ -35,6 +35,7 @@ import { logger } from '../shared/logger';
 import { Enum } from '@mojaloop/central-services-shared';
 import { assertNestedFields } from '../lib/config/util';
 import { Effect } from '../messaging/message-bus';
+import { LedgerSql } from '../domain/ledger/ledger-sql';
 
 const { Type, Action } = Enum.Events.Event
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -42,6 +43,7 @@ const { FSPIOPErrorCodes } = ErrorHandler.Enums
 
 interface Dependencies {
   config: ApplicationConfig,
+  ledger: LedgerSql
 }
 
 export interface PaymentForwardInput {
@@ -109,10 +111,10 @@ export class PaymentForwardHandler {
     const results = await Promise.allSettled(inputs.map(async ({ input }) => this.handleOne(input)))
     results.forEach(result => {
       if (result.status === 'fulfilled' && result.value.type !== PaymentForwardResultType.PASS) {
-        logger.info(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
+        logger.info(`PaymentForwardHandler.handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
       }
       if (result.status === 'rejected') {
-        logger.error(`handleOne() failed with error: \n\t${result.reason}`)
+        logger.error(`PaymentForwardHandler.handleOne() failed with error: \n\t${result.reason}`)
         if (result.reason.stack) logger.error(`stack\n\t${result.reason.stack}`)
       }
     })

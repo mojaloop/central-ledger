@@ -27,6 +27,7 @@
 
 'use strict'
 
+const assert = require('node:assert')
 const Cache = require('../../lib/cache')
 const Config = require('../../lib/config')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
@@ -44,9 +45,11 @@ const buildUnifiedParticipantsCurrencyData = (allCurrencyParticipants) => {
 
   allCurrencyParticipants.forEach((oneCurrencyParticipant) => {
     // CurrencyParticipant API returns Date type, but cache internals will serialize it to String
-    // by calling JSON.stringify(), which calls .toISOString() on a Date object.
-    // Let's ensure all places return same kind of String.
-    oneCurrencyParticipant.createdDate = JSON.stringify(oneCurrencyParticipant.createdDate)
+    // by calling .toISOString().
+    // Participant API returns Date type, but cache internals will serialize it to String.
+    if (oneCurrencyParticipant.createdDate instanceof Date) {
+      oneCurrencyParticipant.createdDate = oneCurrencyParticipant.createdDate.toISOString()
+    }
 
     // Add to indexes
     indexByParticipantCurrencyId[oneCurrencyParticipant.participantCurrencyId] = oneCurrencyParticipant

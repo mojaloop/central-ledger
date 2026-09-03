@@ -284,6 +284,9 @@ module.exports = [
       validate: {
         params: Joi.object({
           name: nameValidator
+        }),
+        query: Joi.object({
+          currency: currencyValidator.optional()
         })
       }
     }

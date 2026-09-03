@@ -51,7 +51,7 @@ const registerPlugins = async (server) => {
     await server.register({
       plugin: APIDocumentation,
       options: {
-        documentPath: Path.resolve(process.cwd(), 'src/api/interface/swagger.json')
+        pathToSwaggerFile: Path.join(__dirname, '../settlement/interface/swagger.json'),        
       }
     })
     await server.register(Blipp)

@@ -2,7 +2,7 @@ import { after, before, describe, it } from "node:test"
 import assert from "node:assert"
 import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
-import { unwrapResponse, createRequest, sleepSeconds } from "../../testing/util"
+import { unwrapResponse, createRequest } from "../../testing/util"
 
 const harness = Harness.getInstance()
 let Handler: any
@@ -21,9 +21,6 @@ describe('api/root/handler', () => {
   })
 
   it('Connects and reports the service health.', async () => {
-    // Wait for a rebalance.
-    await sleepSeconds(5)
-
     const {
       responseBody,
       responseCode

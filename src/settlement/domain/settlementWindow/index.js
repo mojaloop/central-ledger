@@ -104,6 +104,7 @@ module.exports = {
     const metadata = StreamingProtocol.createMetadata(eventId, event)
     const messageProtocol = StreamingProtocol.createMessage(messageId, Config.HUB_NAME, Config.HUB_NAME, metadata, params.headers, params)
     const topicConfig = KafkaUtil.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.DEFERRED_SETTLEMENT, Enum.Events.Event.Action.CLOSE)
+    // TODO: this config isn't in the validator!
     const kafkaConfig = KafkaUtil.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, Enum.Events.Event.Type.DEFERRED_SETTLEMENT.toUpperCase(), Enum.Events.Event.Action.CLOSE.toUpperCase())
     await Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
 

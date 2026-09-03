@@ -1,13 +1,10 @@
 import { after, before, describe, it } from "node:test"
 import assert from "node:assert"
-
 import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
-
-import TimeoutHandler from '../timeouts/handler'
 import TransferFacade from "../../models/transfer/facade"
-import { assertPositionDiff, sleepSeconds } from "../../testing/util"
+import { assertPositionDiff } from "../../testing/util"
 
 const harness = Harness.getInstance()
 
@@ -17,53 +14,32 @@ describe('handlers/tranfers/handlers', () => {
     await harness.setupGlobals()
 
     // Create the hub accounts + settlement model.
-    const createHubPayload: ApiHelpers.CreateHubPayload = {
-      currencies: ['USD'],
-      settlementModels: [{
-        name: `DEFERRED_MULTILATERAL_NET_USD`,
-        settlementGranularity: "NET",
-        settlementInterchange: "MULTILATERAL",
-        settlementDelay: "DEFERRED",
-        currency: 'USD',
-        requireLiquidityCheck: true,
-        ledgerAccountType: "POSITION",
-        settlementAccountType: "SETTLEMENT",
-        autoPositionReset: true
-      }]
-    }
-    await ApiHelpers.createHub(harness, createHubPayload)
+    await ApiHelpers.buildHub()
+      .deps(harness)
+      .currency('USD')
+      .build()
+      .create()
+
     // Create 2 test dfsps to transfer between.
-    await ApiHelpers.createDfsp(harness, {
-      name: 'dfsp_a',
-      currencies: ['USD'],
-      isProxy: false,
-      initialPostionsAndLimits: [
-        {
-          initialPosition: 0,
-          value: 100000
-        }
-      ],
-      deposits: [10000]
-    })
-    await ApiHelpers.createDfsp(harness, {
-      name: 'dfsp_b',
-      currencies: ['USD'],
-      isProxy: false,
-      initialPostionsAndLimits: [
-        {
-          initialPosition: 0,
-          value: 100000
-        }
-      ],
-      deposits: [10000]
-    })
+    await ApiHelpers.buildDfsp()
+      .deps(harness)
+      .name('dfsp_a')
+      .currency('USD')
+      .build()
+      .create()
+    await ApiHelpers.buildDfsp()
+      .deps(harness)
+      .name('dfsp_b')
+      .currency('USD')
+      .build()
+      .create()
   })
 
   after(async () => {
     await harness.teardownGlobals()
     await harness.down()
   })
-  
+
   it('prepare() prepares a payment from dfsp_a -> dfsp_b.', async () => {
     const positionPayerStart = await ApiHelpers.getPositionAccount('dfsp_a', 'USD')
     const positionPayeeStart = await ApiHelpers.getPositionAccount('dfsp_b', 'USD')
@@ -352,7 +328,7 @@ describe('handlers/tranfers/handlers', () => {
     // Flip the headers, so it comes from the payer.
     const putTransfer = payment.buildMessageFulfil('COMMITTED')
     putTransfer.value.content.headers['fspiop-source'] = 'dfsp_a'
-    putTransfer.value.content.headers['destination-source'] = 'dfsp_b'
+    putTransfer.value.content.headers['fspiop-destination'] = 'dfsp_b'
 
     await harness.messageBus.fulfil(null, [putTransfer])
     await harness.redpandaDrainSmart(harness.expect.messagesPayment(), transferId)
@@ -363,7 +339,7 @@ describe('handlers/tranfers/handlers', () => {
     const transfer = await TransferFacade.getById(transferId)
     assert.equal(transfer.transferState, 'ABORTED_ERROR')
     assert.equal(
-      transfer.reason, 
+      transfer.reason,
       'Generic validation error - caller fsp does not match payment.payeeFsp.'
     )
   })
@@ -377,7 +353,7 @@ describe('handlers/tranfers/handlers', () => {
       .expiry(100)
       .build()
       .prepare()
-    
+
     // Make the callback come from a 3rd dfsp.
     const putTransfer = payment.buildMessageFulfil('COMMITTED')
     putTransfer.value.content.headers['fspiop-source'] = 'dfsp_x'
@@ -392,7 +368,7 @@ describe('handlers/tranfers/handlers', () => {
     const transfer = await TransferFacade.getById(transferId)
     assert.equal(transfer.transferState, 'ABORTED_ERROR')
     assert.equal(
-      transfer.reason, 
+      transfer.reason,
       'Generic validation error - caller fsp does not match payment.payeeFsp.'
     )
   })
@@ -422,4 +398,34 @@ describe('handlers/tranfers/handlers', () => {
     assert.equal(transfer.transferState, 'ABORTED_REJECTED')
     assert.equal(transfer.reason, 'Payer FSP insufficient liquidity')
   })
+
+  it(
+    'Payee recieves a notification with aborted status for an invalid destination header',
+    async () => {
+      const transferId = '1000018'
+      const payment = await ApiHelpers.buildPayment()
+        .deps(harness, harness.messageBus)
+        .parties('dfsp_a', 'dfsp_b')
+        .transferId(transferId)
+        .expiry(100)
+        .build()
+        .prepare()
+
+      const putTransfer = payment.buildMessageFulfil('RESERVED')
+      putTransfer.value.content.headers['fspiop-destination'] = 'dfsp_x'
+
+      await harness.messageBus.fulfil(null, [putTransfer])
+      await harness.redpandaDrainSmart(harness.expect.messagesPayment(), transferId)
+
+      // Check the last messages.
+      harness.expect.topicsPaymentPrepareOrFulfil()
+
+      // Get the transfer:
+      const transfer = await TransferFacade.getById(transferId)
+      assert.equal(transfer.transferState, 'ABORTED_ERROR')
+      assert.equal(
+        transfer.reason,
+        'Generic validation error - caller fsp does not match payment.payerFsp.'
+      )
+    })
 })

@@ -3,7 +3,7 @@ import Harness from "./harness";
 import { Snapshot } from "./snapshot";
 
 /**
- * Resuable, customizable test expectations.
+ * Resuable, customizable test expectations which change with the config.
  */
 export default class Expect {
   public constructor(private config: ApplicationConfig, private harness: Harness) {

@@ -66,7 +66,7 @@ Test('externalParticipant Model Tests -->', (epmTest) => {
   })
 
   epmTest.test('should create externalParticipant in DB', tryCatchEndTest(async (t) => {
-    const data = mockExternalParticipantDto({ id: null, createdDate: null })
+    const data = mockExternalParticipantDto({ id: null })
     Db[EP_TABLE].insert.withArgs(data).resolves(true)
     const result = await model.create(data)
     t.ok(result)
