@@ -40,41 +40,23 @@ describe('handlers/payment', () => {
     await harness.up()
     await harness.setupGlobals()
 
-    // Create the hub accounts + settlement model.
-    const createHubPayload: ApiHelpers.CreateHubPayload = {
-      currencies: ['USD'],
-      settlementModels: [
-        {
-          name: `DEFERRED_MULTILATERAL_NET_USD`,
-          settlementGranularity: 'NET',
-          settlementInterchange: 'MULTILATERAL',
-          settlementDelay: 'DEFERRED',
-          currency: 'USD',
-          requireLiquidityCheck: true,
-          ledgerAccountType: 'POSITION',
-          settlementAccountType: 'SETTLEMENT',
-          autoPositionReset: true
-        }
-      ]
-    }
-    await ApiHelpers.createHub(harness, createHubPayload)
-    // Create 2 test dfsps to transfer between.
-    await ApiHelpers.createDfsp(harness, {
-      name: 'dfsp_a',
-      currencies: ['USD'],
-      isProxy: false,
-      initialPostionsAndLimits: [{ initialPosition: 0, value: 100000 }],
-      deposits: [10000]
-    })
-    await ApiHelpers.createDfsp(harness, {
-      name: 'dfsp_b',
-      currencies: ['USD'],
-      isProxy: false,
-      initialPostionsAndLimits: [
-        { initialPosition: 0, value: 100000 }
-      ],
-      deposits: [10000]
-    })
+    await ApiHelpers.buildHub()
+      .deps(harness)
+      .currency('USD')
+      .build()
+      .create()
+    await ApiHelpers.buildDfsp()
+      .deps(harness)
+      .name('dfsp_a')
+      .currency('USD')
+      .build()
+      .create()
+    await ApiHelpers.buildDfsp()
+      .deps(harness)
+      .name('dfsp_b')
+      .currency('USD')
+      .build()
+      .create()
   })
 
   after(async () => {

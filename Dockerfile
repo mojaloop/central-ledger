@@ -30,7 +30,12 @@ RUN npm rebuild node-rdkafka
 
 COPY src /opt/app/src
 RUN npm run build
-RUN npm prune --omit=dev
+# TODO: put me back! Removed for faster iteration.
+# RUN npm prune --omit=dev
+
+# Copy the swagger file after the build.
+RUN mkdir -p /opt/app/dist/settlement/interface
+RUN cp /opt/app/src/settlement/interface/swagger.json /opt/app/dist/settlement/interface/swagger.json
 
 FROM node:${NODE_VERSION}
 WORKDIR /opt/app

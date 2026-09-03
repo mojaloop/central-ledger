@@ -46,12 +46,13 @@ import { logger } from '../shared/logger';
 import { TransferHelper } from './transfer-helper';
 import { Effect, MessageBus } from '../messaging/message-bus';
 import { PositionHandlerV2, PositionResultType } from './position-v2';
+import { LedgerSql } from '../domain/ledger/ledger-sql';
 
-const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
 const { Type, Action } = Enum.Events.Event
 
 interface Dependencies {
-  config: ApplicationConfig
+  config: ApplicationConfig,
+  ledger: LedgerSql,
   cyril: {
     processFxFulfilMessage: (commitRequestId: string) => Promise<true>
     processFxAbortMessage: (commitRequestId: string) => Promise<{
@@ -173,10 +174,10 @@ export class ForexFulfilHandler {
     const results = await Promise.allSettled(inputs.map(async ({ input }) => this.handleOne(input)))
     results.forEach(result => {
       if (result.status === 'fulfilled' && result.value.type !== ForexFulfilResultType.PASS) {
-        logger.info(`handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
+        logger.info(`ForexFulfilHandler.handleOne() returned non-success: \n\t${JSON.stringify(result.value)}`)
       }
       if (result.status === 'rejected') {
-        logger.error(`handleOne() failed with error: \n\t${result.reason}`)
+        logger.error(`ForexFulfilHandler.handleOne() failed with error: \n\t${result.reason}`)
         if (result.reason.stack) logger.error(`stack\n\t${result.reason.stack}`)
       }
     })
@@ -416,10 +417,11 @@ export class ForexFulfilHandler {
 
     assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
     const notifications = result.effects
-      .filter(effect => effect.functionality === 'notifications')
+      .filter(effect => effect.functionality === 'notification')
     const positions = result.effects
       .filter(effect => effect.functionality === 'position')
       .map(MessageBus.effectToKafkaMessage)
+    assert(notifications.length + positions.length === result.effects.length)
     const resultsPosition = await this.deps.positionHandler.handle(null, positions)
     assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
     // Look just at the first one to map the result type.
@@ -590,6 +592,13 @@ export class ForexFulfilHandler {
     const message = structuredClone(input.message.value)
     message.content.payload = apiFSPIOPError
     message.content.uriParams = { id: input.commitRequestId }
+
+    message.to = message.from
+    message.from = this.deps.config.HUB_NAME
+    if (message.content.headers) {
+      message.content.headers['fspiop-source'] = message.from
+      message.content.headers['fspiop-destination'] = message.to
+    }
 
     return {
       functionality: Type.NOTIFICATION,

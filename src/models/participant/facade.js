@@ -46,6 +46,7 @@ const Config = require('../../lib/config')
 const SettlementModelModel = require('../settlement/settlementModel')
 const { logger } = require('../../shared/logger')
 const rethrow = require('../../shared/rethrow')
+const { sleepSeconds } = require('../../testing/util')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -495,14 +496,16 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
           const participantPosition = {
             participantCurrencyId: positionAccount.participantCurrencyId,
             value: (settlementModel.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION ? limitPositionObj.initialPosition : 0),
-            reservedValue: 0
+            reservedValue: 0,
+            changedDate: new Date(),
           }
           await knex('participantPosition').transacting(trx).insert(participantPosition)
 
           const settlementPosition = {
             participantCurrencyId: settlementAccount.participantCurrencyId,
             value: 0,
-            reservedValue: 0
+            reservedValue: 0,
+            changedDate: new Date(),
           }
           await knex('participantPosition').transacting(trx).insert(settlementPosition)
           if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
@@ -516,14 +519,17 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
         const participantPosition = {
           participantCurrencyId,
           value: limitPositionObj.initialPosition,
-          reservedValue: 0
+          reservedValue: 0,
+          changedDate: new Date(),
+
         }
         const participantPositionResult = await knex('participantPosition').transacting(trx).insert(participantPosition)
         participantPosition.participantPositionId = participantPositionResult[0]
         const settlementPosition = {
           participantCurrencyId: settlementAccountId,
           value: 0,
-          reservedValue: 0
+          reservedValue: 0,
+          changedDate: new Date(),
         }
         await knex('participantPosition').transacting(trx).insert(settlementPosition)
         if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
@@ -613,6 +619,77 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
 }
 
 /**
+ * Adjusts the participant limit, creating it if it doesn't exist.
+ * @returns 
+ */
+const adjustLimitsV2 = async (participantCurrencyId, limit) => {
+  const retriesMax = 5
+  let sleepMs = 50
+
+  const knex = Db.getKnex()
+  for (let attempt = 0; attempt < retriesMax; attempt++) {
+    let trx = await knex.transaction()
+    try {
+      const limitType = await knex('participantLimitType')
+        .where({ name: limit.type, isActive: 1 })
+        .select('participantLimitTypeId')
+        .first()
+      const existingLimit = await knex('participantLimit')
+        .transacting(trx)
+        .forUpdate()
+        .select('*')
+        .where({
+          participantCurrencyId,
+          participantLimitTypeId: limitType.participantLimitTypeId,
+          isActive: 1
+        })
+
+      if (Array.isArray(existingLimit) && existingLimit.length > 0) {
+        // Disable old limit.
+        await knex('participantLimit')
+          .transacting(trx)
+          .update({ isActive: 0 })
+          .where('participantLimitId', existingLimit[0].participantLimitId)
+      }
+
+      const newLimit = {
+        participantCurrencyId,
+        participantLimitTypeId: limitType.participantLimitTypeId,
+        value: limit.value,
+        thresholdAlarmPercentage: limit.alarmPercentage,
+        isActive: 1,
+        createdBy: 'unknown'
+      }
+      const result = await knex('participantLimit').transacting(trx).insert(newLimit)
+      newLimit.participantLimitId = result[0]
+      if (Cache.isCacheEnabled()) {
+        await ParticipantLimitCached.invalidateParticipantLimitCache()
+      }
+
+      await trx.commit()
+
+      return {
+        participantLimit: newLimit
+      }
+    } catch (err) {
+      await trx.rollback()
+      const isDeadlock = err.code === 'ER_LOCK_DEADLOCK'
+      if (isDeadlock) {
+        const jitter = Math.floor(Math.random() * (1000 - 100) + 100)
+        sleepMs = sleepMs * attempt + jitter
+        logger.warn(`adjustLimitsV2() deadlocked. Retrying after ms: ${sleepMs}.`)
+        await new Promise(resolve => setTimeout(resolve, sleepMs))
+        continue
+      }
+      throw err
+    }
+  }
+  const msg = `adjustLimitsV2 deadlocked and failed after: ${retriesMax}.`
+  logger.error(msg)
+  throw new Error(msg)
+}
+
+/**
  * @function GetParticipantLimitsByCurrencyId
  *
  * @async
@@ -693,27 +770,39 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       let result
+      const createdDate = new Date()
       const participantCurrency = {
         participantId,
         currencyId,
         ledgerAccountTypeId,
         createdBy: 'unknown',
         isActive: 1,
-        createdDate: Time.getUTCString(new Date())
+        createdDate,
       }
       result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
       await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
-      participantCurrency.participantCurrencyId = result[0]
+      const participantCurrencyId = result[0]
+
+      // Get the actual createdDate from DB.
+      const insertedRecord = await knex('participantCurrency')
+        .transacting(trx)
+        .where({ participantCurrencyId })
+        .first()
+      participantCurrency.participantCurrencyId = participantCurrencyId
+      participantCurrency.createdDate = insertedRecord.createdDate
+
       const participantPosition = {
         participantCurrencyId: participantCurrency.participantCurrencyId,
         value: 0,
-        reservedValue: 0
+        reservedValue: 0,
+        changedDate: insertedRecord.createdDate,
       }
       result = await knex('participantPosition').transacting(trx).insert(participantPosition)
       participantPosition.participantPositionId = result[0]
+    
       return {
         participantCurrency,
-        participantPosition
+        participantPosition,
       }
     })
   } catch (err) {
@@ -812,6 +901,7 @@ module.exports = {
   getParticipantLimitByParticipantCurrencyLimit,
   addLimitAndInitialPosition,
   adjustLimits,
+  adjustLimitsV2,
   getParticipantLimitsByCurrencyId,
   getParticipantLimitsByParticipantId,
   getAllAccountsByNameAndCurrency,

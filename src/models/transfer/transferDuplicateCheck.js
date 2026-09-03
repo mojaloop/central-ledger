@@ -44,7 +44,7 @@ const rethrow = require('../../shared/rethrow')
  *
  * @param {string} transferId - the transfer id
  *
- * @returns {object} - Returns the record from transferDuplicateCheck table, or throws an error if failed
+ * @returns {Promise<object>} - Returns the record from transferDuplicateCheck table, or throws an error if failed
  */
 
 const getTransferDuplicateCheck = async (transferId) => {

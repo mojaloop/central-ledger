@@ -148,6 +148,16 @@ export interface ApplicationConfig {
    * @default 'LEGACY'
    */
   LEDGER: LedgerType
+
+  /**
+   * Configures whether or not the Admin API uses the Ledger interface. This is a part of the
+   * overall refactor to switch to a TigerBeetle-based leder.
+   * - `NONE`   uses the older implementation of the Admin API (default).
+   * - `LEDGER` uses the ledger interface
+   * 
+   * @default 'NONE' 
+   */
+  API_MODE_ADMIN: 'NONE' |'LEDGER'
   
   /**
    * Experimental Configs. Not recommended for production usage.

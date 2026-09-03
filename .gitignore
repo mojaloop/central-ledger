@@ -24,6 +24,9 @@ docs
 # nyc test coverage
 .nyc_output
 
+# fuzzer traces and coverage reports
+.fuzz_output
+
 # Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
 .grunt
 

@@ -79,8 +79,9 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
       const currencyId = 'USD'
       const isActive = true
       const createdBy = 'unknown'
-      Db.participantCurrency.insert.withArgs({ participantId, currencyId, ledgerAccountTypeId, isActive, createdBy }).returns(1)
-      const result = await Model.create(participantId, currencyId, ledgerAccountTypeId)
+      const createdDate = new Date()
+      Db.participantCurrency.insert.withArgs({ participantId, currencyId, ledgerAccountTypeId, isActive, createdBy, createdDate }).returns(1)
+      const result = await Model.create(participantId, currencyId, ledgerAccountTypeId, isActive, createdDate)
       assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {

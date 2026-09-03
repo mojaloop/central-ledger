@@ -4,10 +4,12 @@ import { logger } from '../shared/logger';
 import { DispatchTransferHandler } from "../handlers/dispatch-transfer-handler";
 import { PositionHandlerV2 } from "../handlers/position-v2";
 import { TimeoutHandlerV2 } from "../handlers/timeout-v2";
+import { CronJob } from "cron";
 
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { StreamingProtocol } = Util
 const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
+const SettlementModelCached = require('../models/settlement/settlementModelCached')
 
 /**
  * Handlers emit `Effects`: messages emitted by the messaging layer to continue
@@ -38,6 +40,23 @@ interface Dependencies {
   }
 }
 
+export enum HandlerName {
+  prepare = 'prepare',
+  position = 'position',
+  positionbatch = 'positionbatch',
+  get = 'get',
+  fulfil = 'fulfil',
+  timeout = 'timeout',
+  admin = 'admin',
+  bulkprepare = 'bulkprepare',
+  bulkfulfil = 'bulkfulfil',
+  bulkprocessing = 'bulkprocessing',
+  bulkget = 'bulkget',
+  deferredSettlement = 'deferredSettlement',
+  grossSettlement = 'grossSettlement',
+  rules = 'rules',
+}
+
 /**
  * @class MessageBus
  * @description An abstraction over the messaging layer (currently implemented in Kafka) which lets
@@ -45,37 +64,185 @@ interface Dependencies {
  */
 export class MessageBus {
   private config: ApplicationConfig
-  
+
   constructor(private deps: Dependencies) {
     this.config = deps.config
   }
 
   /**
-   * Register the required handlers etc.
+   * @description Register the specified handlers.
+   * @param handlers?: {Array<HandlerName>} - The list of handlers to register. If not set, defaults
+   *   to register all handlers.
    */
-  public async init(): Promise<void> {
-    const topicConsumePrepare = 'topic-transfer-prepare'
-    const topicConsumeFulfil = 'topic-transfer-fulfil'
-    const topicConsumePosition = 'topic-transfer-position'
-    const topicConsumePositionBatch = 'topic-transfer-position-batch'
+  public async init(handlers?: Array<HandlerName>): Promise<void> {
+    // Initialize caches that handlers depend on
+    await SettlementModelCached.initialize()
 
-    const configConsumePrepare = this.config.KAFKA_CONFIG.CONSUMER.TRANSFER.PREPARE.config
-    const configConsumeFulfil = this.config.KAFKA_CONFIG.CONSUMER.TRANSFER.FULFIL.config
-    const configConsumePositon = this.config.KAFKA_CONFIG.CONSUMER.TRANSFER.POSITION.config
-    const configConsumePositonBatch = this.config.KAFKA_CONFIG.CONSUMER.TRANSFER.POSITION_BATCH.config
+    // Older handler imports
+    const handlerAdmin = require('../handlers/admin/handler.js')
+    const handlerTransfer = require('../handlers/transfers/handler.js')
+    const handlerPosition = require('../handlers/positions/handler.js')
+    const handlerBulkPrepare = require('../handlers/bulk/prepare/handler.js')
+    const handlerBulkFulfil = require('../handlers/bulk/fulfil/handler.js')
+    const handlerBulkProcessing = require('../handlers/bulk/processing/handler.js')
+    const handlerBulkGet = require('../handlers/bulk/get/handler.js')
+    const handlerDeferredSettlement = require('../settlement/handlers/deferredSettlement/handler.js')
+    const handlerGrossSettlement = require('../settlement/handlers/grossSettlement/handler.js')
+    const handlerRules = require('../settlement/handlers/rules/handler.js')
 
-    configConsumePrepare.rdkafkaConf['client.id'] = topicConsumePrepare
-    configConsumeFulfil.rdkafkaConf['client.id'] = topicConsumeFulfil
-    configConsumePositon.rdkafkaConf['client.id'] = topicConsumePosition
-    configConsumePositonBatch.rdkafkaConf['client.id'] = topicConsumePositionBatch
+    if (!handlers) {
+      logger.warn(`MessageBus.init() - handlers not defined, defaulting to all handlers.`)
+      handlers = [
+        HandlerName.prepare,
+        HandlerName.position,
+        HandlerName.positionbatch,
+        HandlerName.get,
+        HandlerName.fulfil,
+        HandlerName.timeout,
+        HandlerName.admin,
+        HandlerName.bulkprepare,
+        HandlerName.bulkfulfil,
+        HandlerName.bulkprocessing,
+        HandlerName.bulkget,
+        HandlerName.deferredSettlement,
+        HandlerName.grossSettlement,
+        HandlerName.rules,
+      ]
+    }
 
-    await Consumer.createHandler(topicConsumePrepare, configConsumePrepare, this.prepare.bind(this))
-    await Consumer.createHandler(topicConsumeFulfil, configConsumeFulfil, this.fulfil.bind(this))
-    // await Consumer.createHandler(topicConsumePosition, configConsumePositon, this.position.bind(this))
-    await Consumer.createHandler(topicConsumePositionBatch, configConsumePositonBatch, this.position.bind(this))
+    for (const name of handlers) {
+      switch (name) {
+        case HandlerName.prepare: {
+          await Consumer.createHandler(
+            'topic-transfer-prepare', 
+            this.config.KAFKA_CONFIG.CONSUMER.TRANSFER.PREPARE.config, 
+            this.prepare.bind(this)
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-transfer-prepare`)
+          break
+        }
+        case HandlerName.position: {
+          await Consumer.createHandler(
+            'topic-transfer-position', 
+            this.config.KAFKA_CONFIG.CONSUMER.TRANSFER.POSITION.config,
+            handlerPosition.positions
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-transfer-position`)
+          break
+        }
+        case HandlerName.positionbatch: {
+          await Consumer.createHandler(
+            'topic-transfer-position-batch',
+            this.config.KAFKA_CONFIG.CONSUMER.TRANSFER.POSITION_BATCH.config,
+            this.position.bind(this)
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-transfer-position-batch`)
+          break
+        }
+        case HandlerName.get: {
+          await Consumer.createHandler(
+            'topic-transfer-get',
+            this.config.KAFKA_CONFIG.CONSUMER.TRANSFER.GET.config,
+            handlerTransfer.getTransfer
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-transfer-get`)
+          break
+        }
+        case HandlerName.fulfil: {
+          await Consumer.createHandler(
+            'topic-transfer-fulfil',
+            this.config.KAFKA_CONFIG.CONSUMER.TRANSFER.FULFIL.config,
+            this.fulfil.bind(this)
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-transfer-fulfil`)
+          break
+        }
+        case HandlerName.timeout: {
+          const timeoutJob = CronJob.from({
+            cronTime: this.deps.config.HANDLERS_TIMEOUT_TIMEXP,
+            onTick: () => this.timeout(new Date()),
+            start: false,
+            timeZone: this.deps.config.HANDLERS_TIMEOUT_TIMEZONE
+          })
+          timeoutJob.start()
 
-    // TODO: Timeout handler on cron.
-
+          logger.info(`Registered timeout handler.`)
+          break
+        }
+        case HandlerName.admin: {
+          await Consumer.createHandler(
+            'topic-admin-transfer', 
+            this.config.KAFKA_CONFIG.CONSUMER.ADMIN.TRANSFER.config,
+            handlerAdmin.transfer
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-admin-transfer`)
+          break
+        }
+        case HandlerName.bulkprepare: {
+          await Consumer.createHandler(
+            'topic-bulk-prepare', 
+            this.config.KAFKA_CONFIG.CONSUMER.BULK.PREPARE.config, 
+            handlerBulkPrepare.bulkPrepare
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-bulk-prepare`)
+          break
+        }
+        case HandlerName.bulkfulfil: {
+          await Consumer.createHandler(
+            'topic-bulk-fulfil', 
+            this.config.KAFKA_CONFIG.CONSUMER.BULK.FULFIL.config,
+            handlerBulkFulfil.bulkFulfil
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-bulk-fulfil`)
+          break
+        }
+        case HandlerName.bulkprocessing: {
+          await Consumer.createHandler(
+            'topic-bulk-processing', 
+            this.config.KAFKA_CONFIG.CONSUMER.BULK.PROCESSING.config, 
+            handlerBulkProcessing.bulkProcessing
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-bulk-processing`)
+          break
+        }
+        case HandlerName.bulkget: {
+          await Consumer.createHandler(
+            'topic-bulk-get', 
+            this.config.KAFKA_CONFIG.CONSUMER.BULK.GET.config, 
+            handlerBulkGet.getBulkTransfer
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-bulk-get`)
+          break
+        }
+        case HandlerName.deferredSettlement: {
+          await Consumer.createHandler(
+            'topic-deferredsettlement-close',
+            this.config.KAFKA_CONFIG.CONSUMER.DEFERREDSETTLEMENT.CLOSE.config,
+            handlerDeferredSettlement.closeSettlementWindow
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-deferredsettlement-close`)
+          break
+        }
+        case HandlerName.grossSettlement: {
+          await Consumer.createHandler(
+            'topic-notification-event', 
+            this.config.KAFKA_CONFIG.CONSUMER.NOTIFICATION.EVENT.config,
+            handlerGrossSettlement.processTransferSettlement
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-notification-event`)
+          break
+        }
+        case HandlerName.rules: {
+          await Consumer.createHandler(
+            'topic-notification-event',
+            this.config.KAFKA_CONFIG.CONSUMER.NOTIFICATION.EVENT.config,
+            handlerRules.processRules
+          )
+          logger.info(`Registered handler: ${name} on topic: topic-notification-event`)
+          break
+        }
+      }
+    }
   }
 
   public async deinit(): Promise<void> {
@@ -87,35 +254,6 @@ export class MessageBus {
   public getConsumerTopics(): string[] {
     return Consumer.getListOfTopics()
   }
-
-  // public async prepareOld(error: any, messages: Array<any>): Promise<void> {
-  //   const results = await this.deps.handlers.dispatchTransferHandler.prepare(error, messages)
-  //   const effects = this.collectEffects(results)
-
-  //   if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
-  //     // Collect all messages to be emitted.
-  //     await this.emit(effects)
-  //     await this.commit('topic-transfer-prepare', messages)
-
-  //     return
-  //   }
-
-  //   assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
-
-  //   // First emit any notifications from the prepare step.
-  //   const effectsNotification = effects.filter(effect => effect.functionality === 'notification')
-  //   await this.emit(effectsNotification)
-
-  //   const effectsPosition = effects.filter(effect => effect.functionality === 'position')
-  //   // Transform effectsPrepare to something that positionBatchHandler can tolerate.
-  //   const kafkaPrepares = effectsPosition.map(MessageBus.effectToKafkaMessage)
-  //   const resultsPosition = await this.positionMutex.runExclusive(async () => {
-  //     return await this.deps.handlers.positionBatchHandler.handle(error, kafkaPrepares)
-  //   })
-
-  //   await this.emit(this.collectEffects(resultsPosition))
-  //   await this.commit('topic-transfer-prepare', messages)
-  // }
 
   public async prepare(error: any, messages: Array<any>): Promise<void> {
     const results = await this.deps.handlers.dispatchTransferHandler.prepare(error, messages)
@@ -131,9 +269,7 @@ export class MessageBus {
 
   public async position(error: any, messages: Array<any>): Promise<void> {
     // This code path should only be called from an external handler, therefore it must be UNFUSE.
-
-    // TODO: reenable this assertion once we handle positions directly when doing timeouts.
-    // assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE')
+    assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE')
 
     const results = await this.deps.handlers.positionBatchHandler.handle(error, messages)
     const effects = results.reduce((acc: Array<Effect>, curr) => acc.concat(curr.effects), [])
@@ -142,8 +278,8 @@ export class MessageBus {
   }
 
   public async timeout(now: Date): Promise<void> {
+    logger.info(`MessageBus.timeout() called for date: ${now.toISOString()}.`)
     const result = await this.deps.handlers.timeoutHandler.run(now)
-    // TODO: then commit these events
     const effects = result.results.map(result => result.effect)
 
     if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {

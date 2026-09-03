@@ -42,12 +42,13 @@ exports.getAll = async () => {
   }
 }
 
-exports.create = async (participant) => {
+exports.create = async (participant, createdDate = new Date()) => {
   try {
     const result = await Db.from('participant').insert({
       name: participant.name,
       createdBy: 'unknown',
-      isProxy: !!participant.isProxy
+      isProxy: !!participant.isProxy,
+      createdDate,
     })
     return result
   } catch (err) {

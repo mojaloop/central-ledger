@@ -37,6 +37,7 @@ import { ForexFulfilHandler, ForexFulfilResult } from './forex-fulfil'
 import { PaymentForwardHandler, PaymentForwardResult } from './payment-forward'
 import { ForexForwardHandler, ForexForwardResult } from './forex-forward'
 import { PositionHandlerV2 } from './position-v2'
+import { LedgerSql } from '../domain/ledger/ledger-sql'
 
 const { Util } = require('@mojaloop/central-services-shared')
 const { Kafka } = Util
@@ -60,16 +61,9 @@ export class DispatchTransferHandler {
 
   private mode: 'JOINED' | 'SPLIT'
 
-  constructor(
-    private config: ApplicationConfig,
-  ) {
+  constructor(private config: ApplicationConfig, private ledger: LedgerSql) {
     this.mode = this.config.HANDLERS_TRANSFER_DISPATCH_MODE
     assert(this.mode === 'JOINED' || this.mode === 'SPLIT', '`mode` must be LEGACY or SPLIT.')
-
-    // let positionHandler = null
-    // if (config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE') {
-      // positionHandler = require('./positions/handlerBatch').positions
-    // }
 
     // These are global imports, and MUST be imported after we've overriden the config.
     const proxyCache = require('../lib/proxyCache')
@@ -77,12 +71,11 @@ export class DispatchTransferHandler {
       createRemittanceEntityPayment,
       createRemittanceEntityForex,
     } = require('../handlers/transfers/createRemittanceEntity')
-    const {
-      definePositionParticipant,
-    } = require('../handlers/transfers/prepare')
+    const { definePositionParticipant } = require('../handlers/transfers/prepare')
     this.positionHandler = new PositionHandlerV2(this.config)
     this.paymentPrepare = new PaymentPrepareHandler({
       config: this.config,
+      ledger: this.ledger,
       proxyCache,
       createRemittanceEntity: createRemittanceEntityPayment,
       definePositionParticipant,
@@ -92,12 +85,16 @@ export class DispatchTransferHandler {
     const fxService = require('../domain/fx')
     this.paymentFulfil = new PaymentFulfilHandler({
       config: this.config,
+      ledger: this.ledger,
       fxService,
       positionHandler: this.positionHandler,
     })
-    this.paymentForward = new PaymentForwardHandler({ config: this.config })
+    this.paymentForward = new PaymentForwardHandler({ 
+      config: this.config, ledger: this.ledger,
+    })
     this.forexPrepare = new ForexPrepareHandler({
       config: this.config,
+      ledger: this.ledger,
       proxyCache,
       createRemittanceEntity: createRemittanceEntityForex,
       positionHandler: this.positionHandler
@@ -105,10 +102,14 @@ export class DispatchTransferHandler {
     const cyril = require('../domain/fx/cyril')
     this.forexFulfil = new ForexFulfilHandler({
       config: this.config,
+      ledger: this.ledger,
       cyril,
       positionHandler: this.positionHandler
     })
-    this.forexForward = new ForexForwardHandler({ config: this.config })
+    this.forexForward = new ForexForwardHandler({ 
+      config: this.config,
+      ledger: this.ledger,
+    })
 
     this.legacyTransferHandler = require('../handlers/transfers/handler')
   }
@@ -151,7 +152,8 @@ export class DispatchTransferHandler {
     >> {
     if (this.mode === 'JOINED') {
       // Route everything to old handler. This way we can keep the tests the same.
-      return this.legacyTransferHandler.prepare(error, messageOrMessages)
+      await this.legacyTransferHandler.prepare(error, messageOrMessages)
+      return []
     }
 
     let messages: Array<any>
@@ -186,13 +188,12 @@ export class DispatchTransferHandler {
     ]
   }
 
-  // TODO: I feel like we are missing fx-forwarded on the fulfil path somehow. We probably don't
-  // have tests for this.
   public async fulfil(error: any, messageOrMessages: any | Array<any>):
     Promise<Array<PaymentFulfilResult | ForexFulfilResult>> {
     if (this.mode === 'JOINED') {
       // Route everything to old handler. This way we can keep the tests the same.
-      return this.legacyTransferHandler.fulfil(error, messageOrMessages)
+      await this.legacyTransferHandler.fulfil(error, messageOrMessages)
+      return []
     }
 
     let messages: Array<any>

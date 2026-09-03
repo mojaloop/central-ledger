@@ -323,6 +323,9 @@ const settlementTransfersReserve = async function (settlementId, transactionTime
 
               // TODO:: notify dfsp for NDC change
               // TODO:: insert new limit with correct value for startAfterParticipantPositionChangeId
+
+              // TODO(LD): bring adjustLimits with optional transaction isn't really that great.
+              // Since it might deadlock and then need to retry internally...
               await ParticipantFacade.adjustLimits(dfspAccountId, {
                 type: 'NET_DEBIT_CAP',
                 value: new MLNumber(netDebitCap).add(dfspAmount).toNumber()

@@ -5,7 +5,7 @@ import { PositionHandlerV2 } from "../../handlers/position-v2";
 import { MessageBus } from "../../messaging/message-bus";
 import * as ApiHelpers from '../../testing/api-helpers'
 import { logger } from "../../shared/logger";
-import { sleepSeconds } from "../util";
+import { envOrDefaultNumber, sleepSeconds } from "../util";
 import PRNG from "../prng";
 import { TimeoutHandlerV2 } from "../../handlers/timeout-v2";
 
@@ -16,8 +16,9 @@ describe('FUSE vs UNFUSE prepares', () => {
 
   it('runs the benchmark', async () => {
     try {
-      await benchmark('FUSE', 2000, 100)
-      await benchmark('UNFUSE', 2000, 200)
+      const prepares = 2000
+      await benchmark('FUSE', prepares, 42)
+      await benchmark('UNFUSE', prepares, 71)
     } catch (err: any) {
       logger.error(`failed with error: ${err.message}\n${err.stack}.`)
       throw err
@@ -36,80 +37,35 @@ describe('FUSE vs UNFUSE prepares', () => {
     harness.configOverride({
       HANDLERS_TRANSFER_POSITION_FUSE: fuseOrUnfuse
     })
-
-    // Import after bringing up the harness, so that global config is overriden.
-    const SettlementModelCached = require('../../models/settlement/settlementModelCached')
-    await SettlementModelCached.initialize()
-    const proxyCache = require('../../lib/proxyCache')
-    await proxyCache.connect()
-
-    const dispatchHandler = new DispatchTransferHandler(harness.config)
-    const positionHandler = new PositionHandlerV2(harness.config)
-    const timeoutHandler = new TimeoutHandlerV2(harness.config)
-    const messageBus = new MessageBus({
-      config: harness.config,
-      handlers: {
-        dispatchTransferHandler: dispatchHandler,
-        positionBatchHandler: positionHandler,
-        timeoutHandler
-      }
-    })
-    await messageBus.init()
-
-    // Configure the hub.
-    const createHubPayload: ApiHelpers.CreateHubPayload = {
-      currencies: ['USD'],
-      settlementModels: [
-        {
-          name: `DEFERRED_MULTILATERAL_NET_USD`,
-          settlementGranularity: 'NET',
-          settlementInterchange: 'MULTILATERAL',
-          settlementDelay: 'DEFERRED',
-          currency: 'USD',
-          requireLiquidityCheck: true,
-          ledgerAccountType: 'POSITION',
-          settlementAccountType: 'SETTLEMENT',
-          autoPositionReset: true
-        }
-      ]
-    }
-    await ApiHelpers.createHub(harness, createHubPayload)
-    const prng = new PRNG(1001)
-    // Create 4 test dfsps to transfer between.
-    await ApiHelpers.createDfsp(harness, {
-      name: 'dfsp_a',
-      currencies: ['USD'],
-      isProxy: false,
-      initialPostionsAndLimits: [{ initialPosition: 0, value: 1000000 }],
-      deposits: [100000]
-    })
-    await ApiHelpers.createDfsp(harness, {
-      name: 'dfsp_b',
-      currencies: ['USD'],
-      isProxy: false,
-      initialPostionsAndLimits: [
-        { initialPosition: 0, value: 1000000 }
-      ],
-      deposits: [100000]
-    })
-    await ApiHelpers.createDfsp(harness, {
-      name: 'dfsp_c',
-      currencies: ['USD'],
-      isProxy: false,
-      initialPostionsAndLimits: [
-        { initialPosition: 0, value: 1000000 }
-      ],
-      deposits: [100000]
-    })
-    await ApiHelpers.createDfsp(harness, {
-      name: 'dfsp_d',
-      currencies: ['USD'],
-      isProxy: false,
-      initialPostionsAndLimits: [
-        { initialPosition: 0, value: 1000000 }
-      ],
-      deposits: [100000]
-    })
+    await ApiHelpers.buildHub()
+      .deps(harness)
+      .currency('USD')
+      .build()
+      .create()
+    await ApiHelpers.buildDfsp()
+      .deps(harness)
+      .currency('USD')
+      .name('dfsp_a')
+      .build()
+      .create()
+    await ApiHelpers.buildDfsp()
+      .deps(harness)
+      .currency('USD')
+      .name('dfsp_b')
+      .build()
+      .create()
+    await ApiHelpers.buildDfsp()
+      .deps(harness)
+      .currency('USD')
+      .name('dfsp_c')
+      .build()
+      .create()
+    await ApiHelpers.buildDfsp()
+      .deps(harness)
+      .currency('USD')
+      .name('dfsp_d')
+      .build()
+      .create()
     const dfsps = ['dfsp_a', 'dfsp_b', 'dfsp_c', 'dfsp_d']
 
     // Send in prepares and time.
@@ -117,9 +73,9 @@ describe('FUSE vs UNFUSE prepares', () => {
     let countSuccess = 0
     let countFail = 0
     const payments = Array.from({ length: prepares }, (_, idx) => {
-      const [payer, payee] = prng.randomSampleFrom(dfsps, 2)
+      const [payer, payee] = harness.prng.randomSampleFrom(dfsps, 2)
       return ApiHelpers.buildPayment()
-        .deps(harness, messageBus)
+        .deps(harness, harness.messageBus)
         .parties(payer, payee)
         .transferId('100' + idx.toString())
         .expiry(100)
@@ -184,7 +140,7 @@ describe('FUSE vs UNFUSE prepares', () => {
     // Wait for async cleanup (out of our control).
     await sleepSeconds(5)
 
-    await messageBus.deinit()
+    // await messageBus.deinit()
     await harness.teardownGlobals()
     harness.configResetOverride()
     // Producers don't disconect cleanly still.

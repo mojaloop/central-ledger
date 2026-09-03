@@ -261,11 +261,36 @@ export const unwrapResponse = async (asyncFunction: (reply: any) => any) => {
       }
     }
   }
-  await asyncFunction(nestedReply)
+  // Sometimes the handlers call `h.response().code()`, but if they return directly,
+  // we should capture the direct response.
+  const directResponse = await asyncFunction(nestedReply)
+  if (directResponse) {
+    return {
+      responseBody: directResponse,
+      // Default when everything went well!
+      responseCode: 200
+    }
+  }
 
   return {
     responseBody,
     responseCode
+  }
+}
+
+export const unwrapResponseWithError = async (asyncFunction: (reply: any) => any) => {
+  try {
+    return await unwrapResponse(asyncFunction)
+  } catch (err: any) {
+    // Handle FSPIOP errors
+    if (err.httpStatusCode && typeof err.toApiErrorObject === 'function') {
+      return {
+        responseBody: err.toApiErrorObject({ includeCauseExtension: false, truncateExtensions: false }),
+        responseCode: err.httpStatusCode
+      }
+    }
+    // Re-throw unexpected errors
+    throw err
   }
 }
 
@@ -338,15 +363,15 @@ export const prettyPrintPosition = (
  */
 export const futureDate = (
   amount: number, 
-  increment: 'ms' | 's' | 'm' | 'h' | 'd' = 'ms', 
+  unit: 'ms' | 's' | 'm' | 'h' | 'd' = 'ms', 
   now: Date = new Date(),
 ): Date => {
-  assert(amount > 0, 'Invalid amount.')
+  assert(amount > 0, `Invalid amount: ${amount}.`)
   if (Number.isNaN(now.getTime())) {
     throw new Error(`now must be a valid date.`)
   }
   let multiplier = 1
-  switch (increment) {
+  switch (unit) {
     case 'ms': 
       multiplier = 1;
       break;
@@ -363,10 +388,54 @@ export const futureDate = (
       multiplier = 1000 * 60 * 60 * 24;
       break;
     default:
-      throw new Error(`increment must be one of: 'ms' | 's' | 'm' | 'h' | 'd'`)
+      throw new Error(`unit must be one of: 'ms' | 's' | 'm' | 'h' | 'd'`)
   }
   const msToJump = Math.floor(amount * multiplier)
   const then = new Date(now.getTime() + msToJump)
 
   return then
+}
+
+export function envOrDefaultNumber(envName: string, backup: number): number {
+  assert(envName)
+  assert(backup !== undefined && backup !== null )
+  assert(typeof envName === 'string')
+  assert(typeof backup === 'number')
+
+  let envString = process.env[envName]
+  if (Array.isArray(envString)) {
+    envString = envString[0]
+  }
+  
+  if (envString) {
+    return Number.parseInt(envString)
+  }
+
+  return backup
+}
+
+export function envOrDefaultString(envName: string, backup: string): string {
+  assert(envName)
+  assert(backup !== undefined && backup !== null)
+  assert(typeof envName === 'string')
+  assert(typeof backup === 'string')
+
+  let envString = process.env[envName]
+  if (Array.isArray(envString)) {
+    envString = envString[0]
+  }
+
+  if (envString) {
+    return envString
+  }
+
+  return backup
+}
+
+/**
+ * Remove / and _ from a test name, to make it a valid directory name.
+ */
+export function sanitizeTestName(name: string): string {
+  return name.replaceAll(' ', '_')
+    .replaceAll('/', '_')
 }

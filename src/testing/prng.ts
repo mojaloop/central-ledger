@@ -6,16 +6,74 @@ import assert from 'node:assert'
  *   Reference: https://stackoverflow.com/questions/521295/seeding-the-random-number-generator-in-javascript
  */
 export default class PRNG {
+  private a: number
+  private _seed: number
+  private _counterCalls: number
   prng: () => number
 
   constructor(seed: number) {
-    this.prng = splitmix32(seed)
+    this._counterCalls = 0
+    this._seed = seed
+
+    this.a = seed
+    this.prng = () => {
+      this._counterCalls += 1
+      this.a = Math.trunc(this.a)
+      this.a = Math.trunc(this.a + 0x9e3779b9)
+      let t = this.a ^ this.a >>> 16
+      t = Math.imul(t, 0x21f0aaad)
+      t = t ^ t >>> 15
+      t = Math.imul(t, 0x735a2d97)
+      const num = ((t = t ^ t >>> 15) >>> 0) / 4294967296
+      return num
+    }
+  }
+
+  public reset() {
+    this._counterCalls = 0
+    this.a = this._seed
+  }
+
+  get seed() {
+    return this._seed
+  }
+
+  /**
+   * The number of times the PRNG has been called.
+   */
+  get callCount() {
+    return this._counterCalls
   }
 
   public randomElementFrom<T>(array: Array<T>): T {
     assert(array.length > 0, 'Expected array to have at least 1 element.')
     const index = this.intExclusive(array.length)
     return array[index]
+  }
+
+  public randomElementWeighted<T>(array: Array<T>, weights: Array<number>): T {
+    assert.equal(array.length, weights.length)
+    assert(array.length > 0)
+
+    const weightsSum = weights.reduce((sum, weight) => sum + weight, 0)
+    let random = this.prng() * weightsSum
+    for (let idx = 0; idx < array.length; idx++) {
+      random -= weights[idx]
+      if (random < 0) {
+        return array[idx]
+      }
+    }
+
+    return array[array.length - 1]
+  }
+
+  public headsOrTails(): boolean {
+    const index = this.intExclusive(2)
+    if (index === 1) {
+      return true
+    }
+
+    return false
   }
 
   public randomSampleFrom<T>(array: Array<T>, count: number): Array<T> {
@@ -27,7 +85,7 @@ export default class PRNG {
   public intExclusive(bound: number): number {
     assert(typeof bound === 'number')
     assert(bound > 0)
-    
+
     const max = 0xFFFFFFFF
     const threshold = max - (max % bound)
 
@@ -54,6 +112,36 @@ export default class PRNG {
     return buffer
   }
 
+  public randomString(length?: number): string {
+    if (!length) {
+      length = this.intInRange(0, 50)
+    }
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789'
+    let result = ''
+    for (let i = 0; i < length; i++) {
+      result += alphabet[this.intExclusive(alphabet.length)]
+    }
+    return result
+  }
+
+  public randomValue(): any {
+    return this.randomElementFrom([
+      0,
+      1,
+      -1,
+      Number.MAX_SAFE_INTEGER,
+      NaN,
+      '',
+      this.randomString(10),
+      null,
+      undefined,
+      true,
+      false,
+      [],
+      {}
+    ])
+  }
+
   public uuidv4(): string {
     const buf = this.randomBytes(16)
     // Set version (4) bits: byte 6 (index 6), bits 4 high bits.
@@ -75,7 +163,7 @@ export default class PRNG {
   }
 
   public static generateWeightedChoiceTable<T extends string | number | symbol>
-  (weights: any): Array<T> {
+    (weights: any): Array<T> {
     const weightedChoiceTable: Array<T> = []
     Object.keys(weights).forEach(action => {
       const weight = weights[action]
@@ -99,6 +187,8 @@ function splitmix32(a: number) {
     t = Math.imul(t, 0x21f0aaad)
     t = t ^ t >>> 15
     t = Math.imul(t, 0x735a2d97)
-    return ((t = t ^ t >>> 15) >>> 0) / 4294967296
+    const num = ((t = t ^ t >>> 15) >>> 0) / 4294967296
+    console.log('prng state: ', num)
+    return num
   }
 }
