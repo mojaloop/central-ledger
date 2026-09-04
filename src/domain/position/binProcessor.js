@@ -50,7 +50,7 @@ const participantFacade = require('../../models/participant/facade')
  * @async
  * @description This is the domain function to process a list bins containing position messages grouped by participant account.
  *
- * @param {array} bins - a list of account-bins to process
+ * @param {Record<AccountId, Record<Action, Array<BinItem>>>} bins - a list of account-bins to process
  * @param {object} trx - Database transaction object
  *
  * @returns {results} - Returns a list of bins with results or throws an error if failed
@@ -145,6 +145,7 @@ const processBins = async (bins, trx) => {
     let accumulatedTransferStateChanges = []
     let accumulatedFxTransferStateChanges = []
     let accumulatedPositionChanges = []
+    let accumulatedTransferErrors = []
     let changePositions = false
 
     if (accountID !== '0') {
@@ -331,6 +332,9 @@ const processBins = async (bins, trx) => {
     accumulatedTransferStateChanges = accumulatedTransferStateChanges.concat(prepareActionResult.accumulatedTransferStateChanges)
     accumulatedPositionChanges = accumulatedPositionChanges.concat(prepareActionResult.accumulatedPositionChanges)
     notifyMessages = notifyMessages.concat(prepareActionResult.notifyMessages)
+    accumulatedTransferErrors = accumulatedTransferErrors.concat(
+      prepareActionResult.accumulatedTransferErrors
+    )
 
     // ========== FX_PREPARE  ==========
     // If fx-prepare action found then call processPositionFxPrepareBin function
@@ -389,6 +393,14 @@ const processBins = async (bins, trx) => {
       // Bulk insert accumulated positionChanges by calling a facade function
       await BatchPositionModel.bulkInsertParticipantPositionChanges(trx, accumulatedPositionChanges)
     }
+
+    // Mutate accumulated transferErrors with transferStateChangeIds.
+    for (const transferError of accumulatedTransferErrors) {
+      if (fetchedTransferStateChanges[transferError.transferId]) {
+        transferError.transferStateChangeId = fetchedTransferStateChanges[transferError.transferId].transferStateChangeId
+      }
+    }
+    await BatchPositionModel.bulkInsertTransferErrors(trx, accumulatedTransferErrors)
 
     limitAlarms = limitAlarms.concat(prepareActionResult.limitAlarms)
   }

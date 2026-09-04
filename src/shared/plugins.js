@@ -54,6 +54,7 @@ const registerPlugins = async (server) => {
         documentPath: Path.resolve(process.cwd(), 'src/api/interface/swagger.json')
       }
     })
+    await server.register(Blipp)
   }
 
   await server.register({
@@ -77,7 +78,12 @@ const registerPlugins = async (server) => {
     plugin: require('hapi-auth-bearer-token')
   })
 
-  await server.register([Inert, Vision, Blipp, ErrorHandling, HapiEventPlugin])
+  await server.register([
+    Inert,
+    Vision,
+    ErrorHandling,
+    HapiEventPlugin
+  ])
 
   await server.register({
     plugin: loggingPlugin,

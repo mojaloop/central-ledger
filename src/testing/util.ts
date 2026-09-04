@@ -220,7 +220,7 @@ export async function sleepSeconds(seconds: number) {
 /**
  * @function createRequest
  *
- * @description Create a mock hapi request handler
+ * @description Create a mock hapi request handler.
  */
 export const createRequest = (
   { payload, params, query }: { payload: any, params: any, query: any }
@@ -330,4 +330,43 @@ export const prettyPrintPosition = (
   ${role}   | ${'start'.padEnd(lenColumns)}| ${'end'.padEnd(lenColumns)}
   pending | ${start.reservedValue.padEnd(lenColumns)}| ${end.reservedValue.padEnd(lenColumns)}
   posted  | ${start.value.padEnd(lenColumns)}| ${end.value.padEnd(lenColumns)}`
+}
+
+
+/**
+ * @description Returns a date a specified amount of time in the future.
+ */
+export const futureDate = (
+  amount: number, 
+  increment: 'ms' | 's' | 'm' | 'h' | 'd' = 'ms', 
+  now: Date = new Date(),
+): Date => {
+  assert(amount > 0, 'Invalid amount.')
+  if (Number.isNaN(now.getTime())) {
+    throw new Error(`now must be a valid date.`)
+  }
+  let multiplier = 1
+  switch (increment) {
+    case 'ms': 
+      multiplier = 1;
+      break;
+    case 's': 
+      multiplier = 1000;
+      break;
+    case 'm':
+      multiplier = 1000 * 60;
+      break;
+    case 'h':
+      multiplier = 1000 * 60 * 60;
+      break;
+    case 'd':
+      multiplier = 1000 * 60 * 60 * 24;
+      break;
+    default:
+      throw new Error(`increment must be one of: 'ms' | 's' | 'm' | 'h' | 'd'`)
+  }
+  const msToJump = Math.floor(amount * multiplier)
+  const then = new Date(now.getTime() + msToJump)
+
+  return then
 }

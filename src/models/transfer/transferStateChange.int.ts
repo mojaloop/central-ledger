@@ -29,17 +29,13 @@ import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
 
-import TransferHandler from '../../handlers/transfers/handler'
 const harness = Harness.getInstance()
 const TransferStateChange = require('./transferStateChange')
 
-describe('models/tranfer/transferExtension', () => {
+describe('models/tranfer/transferStateChange', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
-
-    await TransferHandler.registerPrepareHandler()
-    await TransferHandler.registerFulfilHandler()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
@@ -84,7 +80,7 @@ describe('models/tranfer/transferExtension', () => {
     })
 
     await ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('5000001')
       .amount('1.50')
@@ -108,7 +104,7 @@ describe('models/tranfer/transferExtension', () => {
     }`).checkUnwrap(stateChange)
   })
 
-  it('getByTransferId()', async () => {
+  it('getLatest()', async () => {
     const latest = await TransferStateChange.getLatest()
     Snapshot.from(`{
       "transferStateChangeId": 12

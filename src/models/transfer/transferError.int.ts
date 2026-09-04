@@ -29,7 +29,6 @@ import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
 
-import TransferHandler from '../../handlers/transfers/handler'
 const harness = Harness.getInstance()
 const TransferError = require('./transferError')
 
@@ -37,9 +36,6 @@ describe('models/tranfer/transferError', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
-
-    await TransferHandler.registerPrepareHandler()
-    await TransferHandler.registerFulfilHandler()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
@@ -90,9 +86,9 @@ describe('models/tranfer/transferError', () => {
   })
 
   it('insert() is called on a failed payment.', async () => {
-    // Create payment which will liquidity check.
+    // Create payment which fails liquidity check.
     await ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
       .amount('10001.00')

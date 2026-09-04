@@ -29,19 +29,13 @@ import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
 
-import TransferHandler from '../../handlers/transfers/handler'
-
 const harness = Harness.getInstance()
 import TransferFacade from "./facade"
-
 
 describe('models/tranfer/facade', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
-
-    await TransferHandler.registerPrepareHandler()
-    await TransferHandler.registerFulfilHandler()
 
     // Create the hub accounts + settlement model.
     const createHubPayload: ApiHelpers.CreateHubPayload = {
@@ -87,7 +81,7 @@ describe('models/tranfer/facade', () => {
 
     // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.
     await ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
       .build()

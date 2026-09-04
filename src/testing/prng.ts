@@ -18,6 +18,12 @@ export default class PRNG {
     return array[index]
   }
 
+  public randomSampleFrom<T>(array: Array<T>, count: number): Array<T> {
+    assert(array.length >= count)
+    const shuffled = [...array].sort(() => this.prng() - 0.5)
+    return shuffled.slice(0, count)
+  }
+
   public intExclusive(bound: number): number {
     assert(typeof bound === 'number')
     assert(bound > 0)
@@ -66,6 +72,22 @@ export default class PRNG {
       hex.substring(16, 20),
       hex.substring(20, 32),
     ].join("-")
+  }
+
+  public static generateWeightedChoiceTable<T extends string | number | symbol>
+  (weights: any): Array<T> {
+    const weightedChoiceTable: Array<T> = []
+    Object.keys(weights).forEach(action => {
+      const weight = weights[action]
+      assert.equal(typeof weight, 'number')
+      assert.ok(weight >= 0)
+
+      for (let count = 0; count < weight; count++) {
+        weightedChoiceTable.push(action as T)
+      }
+    })
+
+    return weightedChoiceTable
   }
 }
 

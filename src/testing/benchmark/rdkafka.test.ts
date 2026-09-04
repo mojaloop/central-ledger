@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
-import Harness from "./harness"
-import { sleepSeconds } from "./util";
-import { Consumer, Producer } from "./kafka";
+import Harness from "../harness"
+import { sleepSeconds } from "../util";
+import { Consumer, Producer } from "../kafka";
 const ProducerLegacy = require('@mojaloop/central-services-stream').Util.Producer
 const ConsumerLegacy = require('@mojaloop/central-services-stream').Kafka.Consumer
 

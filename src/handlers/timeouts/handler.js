@@ -375,13 +375,14 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   *
   * @async
   * @description This is the consumer callback function that gets registered to a cron job.
-  *
-  * ... called to validate/insert ...
-  *
-  * @param {error} error - error thrown if something fails within Cron
+  * @param {Date} [now]
   */
-const timeout = async () => {
+const timeout = async (now) => {
   if (running) return
+
+  if (!now) {
+    now = new Date()
+  }
 
   let isAcquired
   try {
@@ -404,9 +405,18 @@ const timeout = async () => {
     const latestFxTransferStateChange = await TimeoutService.getLatestFxTransferStateChange()
     const fxIntervalMax = (latestFxTransferStateChange && parseInt(latestFxTransferStateChange.fxTransferStateChangeId)) || 0
 
-    const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax)
+    const { transferTimeoutList, fxTransferTimeoutList } = await TimeoutService.timeoutExpireReserved(
+      segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax, now
+    )
 
-    const { transferForwardedList, fxTransferForwardedList } = await TimeoutService.reservedForwardedTransfers(intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, Config.HANDLERS_TIMEOUT_FORWARDED_MAX_ATTEMPTS)
+    const { transferForwardedList, fxTransferForwardedList } = await TimeoutService.reservedForwardedTransfers(
+      intervalMin, 
+      intervalMax, 
+      fxIntervalMin, 
+      fxIntervalMax, 
+      Config.HANDLERS_TIMEOUT_FORWARDED_MAX_ATTEMPTS, 
+      now
+    )
 
     transferTimeoutList && await _processTimedOutTransfers(transferTimeoutList)
     fxTransferTimeoutList && await _processFxTimedOutTransfers(fxTransferTimeoutList)

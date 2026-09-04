@@ -185,6 +185,11 @@ const getByName = async function (request) {
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return entityItem(entity, ledgerAccountIds)
   } catch (err) {
+    // Don't log the ID_NOT_FOUND error - it's very noisy!
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    if (fspiopError.apiErrorCode?.code === ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND.code) {
+      throw fspiopError
+    }
     rethrowAndCountFspiopError(err, 'participantGetByName')
   }
 }

@@ -42,7 +42,7 @@ import { execAsync } from "./exec-async"
 
 import Cache from '../lib/cache'
 import { makeConfig } from "../lib/config/resolver"
-import { deepMerge } from "../lib/config/util"
+import { assertNestedFields, deepMerge } from "../lib/config/util"
 import Db from '../lib/db'
 import Enums from '../lib/enumCached'
 import { Enum } from '@mojaloop/central-services-shared'
@@ -62,7 +62,6 @@ import PositionBatchHandler from '../handlers/positions/handlerBatch'
 import ParticipantCached from '../models/participant/participantCached'
 import ParticipantCurrencyCached from '../models/participant/participantCurrencyCached'
 import ParticipantLimitCached from '../models/participant/participantLimitCached'
-import ProxyCache from '../lib/proxyCache'
 const BatchPositionModelCached = require('../models/position/batchCached')
 const ExternalParticipantCached = require('../models/participant/externalParticipantCached')
 
@@ -72,8 +71,15 @@ import { ApplicationConfig, overrideForTesting, RecursivePartial, resetOverride 
 import { randomAvailablePort } from "./util"
 import { Consumer } from "./kafka"
 import { Message } from "node-rdkafka"
+import { DispatchTransferHandler } from "../handlers/dispatch-transfer-handler"
+import { MessageBus } from "../messaging/message-bus"
+import { PositionHandlerV2 } from "../handlers/position-v2"
+import Expect from "./expect"
+import { TimeoutHandlerV2 } from "../handlers/timeout-v2"
 
 const logger = Logger.child({ scope: 'harness' })
+
+let ProxyCache: any
 
 export interface HarnessOptions {
   /**
@@ -118,9 +124,14 @@ export default class Harness {
   private dependencyMySql: MySql
   private dependencyRedis: Redis
   private applicationConfig: ApplicationConfig | null = null;
+  private applicationConfigOriginal: ApplicationConfig | null = null;
   private omniConsumer: Consumer | null = null;
   private messageQueue: Array<MojaloopKafkaMessage> = []
-  private positionHandlerType: 'NON_BATCH' | 'BATCH' = 'NON_BATCH'
+  private messageQueuePerId: Record<string, Array<MojaloopKafkaMessage>> = {}
+  private _dispatchHandler: DispatchTransferHandler | null = null
+  private _messageBus: MessageBus | null = null
+  private _expect: Expect | null = null
+  private _timeoutHandlerV2: TimeoutHandlerV2 | null = null
 
   /**
    * 
@@ -133,7 +144,7 @@ export default class Harness {
    */
   private _enums: any = null;
 
-  private constructor(options: HarnessOptions) {
+  public constructor(options: HarnessOptions) {
     this.options = options
 
     this.dependencyRedpanda = new Redpanda({
@@ -157,11 +168,16 @@ export default class Harness {
     this.dependencyRedis = new Redis({
       harnessId: this.options.id
     })
+
+  }
+
+  public static randomRunId(): number {
+    return Math.floor(Math.random() * (100000 - 10000) + 10000)
   }
 
   public static getInstance(): Harness {
     if (!Harness.instance) {
-      let run = Math.floor(Math.random() * (100000 - 10000) + 10000)
+      let run = Harness.randomRunId()
       if (process.env.RUN) {
         try {
           run = Number.parseInt(process.env.RUN)
@@ -177,17 +193,8 @@ export default class Harness {
     return Harness.instance;
   }
 
-  /**
-   * The BATCH position handler contains a bug which makes it unable to properly process 
-   * aborted transfers. Since we will be soon removing the position handlers, we work around
-   * this bug by allowing the harness to specify whether or not to use the NON_BATCH or BATCH
-   * position handler for a specific test.
-   * 
-   * The bug is related to cyrilResult not being set for a non-fx transfer, which causes the 
-   * position rest message to not be fired.
-   */
-  public async up(positionHandlerType: 'NON_BATCH' | 'BATCH' = 'NON_BATCH') {
-    const start = performance.now()
+  public async up() {
+    const timerStart = performance.now()
     await this.checkEnvironment()
 
     const results = await Promise.allSettled([
@@ -225,27 +232,16 @@ export default class Harness {
       }
     }
 
-    this.positionHandlerType = positionHandlerType
-    let positionHandlerOverrides: Record<string, string> = {
-      PREPARE: 'topic-transfer-position',
-      COMMIT: 'topic-transfer-position',
-      RESERVE: 'topic-transfer-position',
-      TIMEOUT_RESERVED: 'topic-transfer-position',
-      ABORT: 'topic-transfer-position'
-    }
-
-    if (positionHandlerType === 'BATCH') {
-      positionHandlerOverrides = {
-        PREPARE: 'topic-transfer-position-batch',
-        FX_PREPARE: 'topic-transfer-position-batch',
-        COMMIT: 'topic-transfer-position-batch',
-        RESERVE: 'topic-transfer-position-batch',
-        FX_RESERVE: 'topic-transfer-position-batch',
-        TIMEOUT_RESERVED: 'topic-transfer-position-batch',
-        FX_TIMEOUT_RESERVED: 'topic-transfer-position-batch',
-        ABORT: 'topic-transfer-position-batch',
-        FX_ABORT: 'topic-transfer-position-batch',
-      }
+    const positionHandlerOverrides: Record<string, string> = {
+      PREPARE: 'topic-transfer-position-batch',
+      FX_PREPARE: 'topic-transfer-position-batch',
+      COMMIT: 'topic-transfer-position-batch',
+      RESERVE: 'topic-transfer-position-batch',
+      FX_RESERVE: 'topic-transfer-position-batch',
+      TIMEOUT_RESERVED: 'topic-transfer-position-batch',
+      FX_TIMEOUT_RESERVED: 'topic-transfer-position-batch',
+      ABORT: 'topic-transfer-position-batch',
+      FX_ABORT: 'topic-transfer-position-batch',
     }
 
     // Override the config based on the harness variables.
@@ -322,11 +318,14 @@ export default class Harness {
       } catch (err: any) {
         console.error('Failed to append message to queue:\n')
         console.error(err.message)
+        console.error(err.stack)
       }
     })
 
-    const end = performance.now()
-    logger.warn(`Harness.up() took: ${(end - start).toFixed(0)} ms.`)
+    this._expect = new Expect(this.applicationConfig, this)
+
+    const timerEnd = performance.now()
+    logger.warn(`Harness.up() took: ${(timerEnd - timerStart).toFixed(0)} ms.`)
   }
 
   get mySqlConnectionOptions(): MySqlConnectionOptions {
@@ -347,6 +346,16 @@ export default class Harness {
     return this._enums
   }
 
+  get messageBus(): MessageBus {
+    assert(this._messageBus, 'MessageBus not initialized. Did you forget to call setupGlobals()?')
+    return this._messageBus
+  }
+
+  get timeoutHandler(): TimeoutHandlerV2 {
+    assert(this._timeoutHandlerV2, 'TimeoutHandler not initialized. Did you forget to call setupGlobals()?')
+    return this._timeoutHandlerV2
+  }
+
   get topicTransferPrepare(): { topicName: string } {
     return Utility.createGeneralTopicConf(
       this.config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
@@ -363,6 +372,27 @@ export default class Harness {
     )
   }
 
+  get expect(): Expect {
+    assert(this._expect, 'Enums not initalized. Did you forget to call up()?')
+    return this._expect
+  }
+
+  /**
+   * Override the Application Config.
+   */
+  public configOverride(override: Partial<ApplicationConfig>): void {
+    this.applicationConfigOriginal = this.applicationConfig
+    this.applicationConfig = deepMerge(this.config, override)
+  }
+
+  /**
+   * Reset the override
+   */
+  public configResetOverride(): void {
+    this.applicationConfigOriginal = null
+    this.applicationConfig = this.applicationConfigOriginal
+  }
+
   private appendMessageQueue(message: Message): void {
     assert(message)
     assert(message.value)
@@ -370,33 +400,108 @@ export default class Harness {
     const parsed = JSON.parse(messageValueStr)
     assert(parsed)
 
-    assert(message.timestamp, 'message.timestamp is not defined.')
-
     const mojaloopKafkaMessage = {
       ...message,
       valueStr: messageValueStr,
       valueParsed: parsed
     } as MojaloopKafkaMessage
-    const lastMessage = this.peekMessageQueue()
-    const lastTimestamp = lastMessage ? lastMessage.timestamp : 0
-    // Even if the message is outdated, still append to the message queue instead of dropping it.
-    // This warning will help us catch tests that have overlapping messages.
-    if (mojaloopKafkaMessage.timestamp < lastTimestamp) {
-      const message = `appendMessageQueue() inserted a stale message with timestamp:\
-        ${mojaloopKafkaMessage.timestamp} after message with timestamp: ${lastTimestamp}.`
-      logger.warn(message)
-    }
-    this.messageQueue.push(mojaloopKafkaMessage)
-  }
 
-  /**
-   * Get the last message from the queue.
-   */
-  private peekMessageQueue(): MojaloopKafkaMessage | undefined {
-    if (this.messageQueue.length === 0) {
-      return
+    // Still push to the general queue. Unfortunately for some commands, they don't have 
+    // correlationIds we can pipe through, so we need to rely on the total messages.
+    this.messageQueue.push(mojaloopKafkaMessage)
+
+    // Pull out a correlation id from the message, based on the topic.
+    // Could be a transferId (in multiple places, or some other id)
+    let correlationId
+    switch (mojaloopKafkaMessage.topic) {
+      case 'topic-notification-event': {
+        assertNestedFields(parsed, 'metadata.event.action')
+        switch (parsed.metadata.event.action) {
+          case 'fx-prepare-duplicate': 
+          case 'forwarded':
+          case 'fx-forwarded': 
+          case 'fx-fulfil': 
+          {
+            assertNestedFields(parsed, 'content.uriParams.id')
+            correlationId = parsed.content.uriParams.id
+            break;
+          }
+           case 'fx-prepare': {
+            if (parsed.id) {
+              correlationId = parsed.id
+            } else {
+              assertNestedFields(parsed, 'content.uriParams.id')
+              correlationId = parsed.content.uriParams.id
+            }
+            break;
+          }
+          case 'prepare': {
+            // It can either be at parsed.id, or at parsed.content.uriParams.id.
+            if (parsed.id) {
+              correlationId = parsed.id
+            } else {
+              assertNestedFields(parsed, 'content.uriParams.id')
+              correlationId = parsed.content.uriParams.id
+            }
+            break;
+          }
+          default: {
+            if (parsed.id) {
+              correlationId = parsed.id
+            }
+          }
+        }
+        break
+      }
+      case 'topic-admin-transfer': {
+        if (parsed.id) {
+          correlationId = parsed.id
+        }
+        break;
+      }
+      case 'topic-transfer-position': 
+      case 'topic-transfer-position-batch': {
+        assertNestedFields(parsed, 'metadata.event.action')
+        switch (parsed.metadata.event.action) {
+          case 'commit': 
+          case 'fx-reserve': 
+          case 'fx-abort':
+          case 'abort': 
+          case 'timeout-reserved': 
+          case 'fx-abort-validation': 
+          case 'fx-timeout-reserved': 
+          {
+            assertNestedFields(parsed, 'content.uriParams.id')
+            correlationId = parsed.content.uriParams.id
+            break;
+          }
+          case 'fx-prepare':  { 
+            assertNestedFields(parsed, 'content.payload.commitRequestId')
+            correlationId = parsed.content.payload.commitRequestId
+            break;
+          }
+          default: {
+            assertNestedFields(parsed, 'content.payload.transferId', `for action: ${parsed.metadata.event.action}`)
+            correlationId = parsed.content.payload.transferId
+          }
+        }   
+        break;
+      }
+      default: {
+        throw new Error(`Unhandled topic: ${mojaloopKafkaMessage.topic}.`)
+      }
     }
-    return this.messageQueue.at(-1)
+
+    if (correlationId) {
+      let messages = this.messageQueuePerId[correlationId]
+      if (!messages) {
+        messages = []
+      }
+      messages.push(mojaloopKafkaMessage)
+      this.messageQueuePerId[correlationId] = messages
+    } else {
+      logger.warn(`No correlationId for topic: ${mojaloopKafkaMessage.topic} action: ${parsed.metadata.event.action}. `)
+    }
   }
 
   /**
@@ -407,6 +512,12 @@ export default class Harness {
     logger.info('setupGlobals()')
     // Override the global config with our testing config.
     overrideForTesting(this.config)
+
+    ProxyCache = require('../lib/proxyCache')
+    await ProxyCache.connect()
+
+    const SettlementModelCached = require('../models/settlement/settlementModelCached')
+    await SettlementModelCached.initialize()
 
     await Db.connect(this.config.DATABASE)
     await ParticipantCached.initialize()
@@ -421,17 +532,19 @@ export default class Harness {
     Enums.initialize()
     this._enums = await Enums.getEnums('all')
 
-    // Register the `topic-transfer-position` consumer
-    // Because the kafka registration uses global scope, we cannot register both the non batch
-    // and batch position handlers, in spite of the fact that they have different topics.
-    switch (this.positionHandlerType) {
-      case 'NON_BATCH':
-        await PositionHandler.registerPositionHandler()
-        break;
-      case 'BATCH':
-        await PositionBatchHandler.registerPositionHandler()
-        break;
-    }
+    // Set up the MessageBus.
+    this._dispatchHandler = new DispatchTransferHandler(this.config)
+    const positionHandlerV2 = new PositionHandlerV2(this.config)
+    this._timeoutHandlerV2 = new TimeoutHandlerV2(this.config)
+    this._messageBus = new MessageBus({
+      config: this.config,
+      handlers: {
+        dispatchTransferHandler: this._dispatchHandler,
+        positionBatchHandler: positionHandlerV2,
+        timeoutHandler: this._timeoutHandlerV2,
+      }
+    })
+    await this.messageBus.init()
 
     await AdminHandler.registerAllHandlers()
   }
@@ -439,12 +552,13 @@ export default class Harness {
   public async teardownGlobals(): Promise<void> {
     try {
       logger.info('teardownGlobals()')
+      assert(this.messageBus)
+      await this.messageBus?.deinit()
       await ProxyCache.disconnect()
       await Cache.destroyCache()
       await Db.disconnect()
       await KafkaProducer.disconnect()
       await KafkaConsumer.disconnectAll()
-      resetOverride()
     } catch (err: any) {
       logger.error(`teardownGlobals() failed with error: ${err.message}`)
       throw err
@@ -520,9 +634,80 @@ environment!\n ${err.message}`)
   }
 
   /**
+   * @description Like `redpandaDrain()`, but looks only for messages matching a transfer id.
+   */
+  public async redpandaDrainSmart(numMessages: number, id: string, attempts: number = 20): 
+    Promise<Array<MojaloopKafkaMessage>> {
+    const start = performance.now()
+    let delayMs = 10
+
+    // Init.
+    if (!this.messageQueuePerId[id]) {
+      this.messageQueuePerId[id] = []
+    }
+
+    let markNew
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        markNew = this.messageQueuePerId[id].length
+        if (markNew > numMessages) {
+          const errorMessage = `Redpanda expected to consume: ${numMessages} for id: ${id}, but consumed: ${markNew}.`
+          logger.error(errorMessage)
+          this.print(this.messageQueuePerId[id])
+          throw new Error(errorMessage)
+        }
+
+        if (markNew === numMessages) {
+          const end = performance.now()
+          
+          // Cool down for 20ms, check that there are no late messages.
+          await new Promise(resolve => setTimeout(resolve, 20))
+          const checkAgain = this.messageQueuePerId[id].length
+          const extraMessages = checkAgain - markNew
+          assert(extraMessages >= 0)
+          if (extraMessages > 0) {
+            const errorMessage = `After cooldown, Redpanda consumed ${extraMessages} extra message${extraMessages === 1 ? ' ' : 's'}.`
+            logger.error(errorMessage)
+
+            this.printLast(numMessages + extraMessages)
+            throw new Error(errorMessage)
+          }
+
+          const messages = structuredClone(this.messageQueuePerId[id])
+          // Clear the queue.
+          this.messageQueuePerId[id] = []
+          return messages
+        }
+
+        throw new Error('Not ready')
+      } catch (err: any) {
+        if (attempt === attempts) {
+          const error = new Error(`redpandaDrainSmart() failed to consume ${numMessages} for id: ${id} after ${attempts} attempts.\
+Found only ${markNew} new messages.`)
+          logger.error(error.message)
+          logger.error(error.stack)
+          this.print(this.messageQueuePerId[id])
+          throw error
+        }
+
+        if (err.message !== 'Not ready') {
+          logger.error(err.message)
+          throw err
+        }
+
+        // Slowly back off.
+        delayMs = Math.floor((delayMs * 1.1) + 10)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+    }
+
+    return []
+  }
+
+  /**
    * @description Wait for redpanda to produce and consume _n_ messages.
    */
-  public async redpandaDrain(markLast: number, numMessages: number, attempts: number = 25): Promise<void> {
+  public async redpandaDrain(markLast: number, numMessages: number, attempts: number = 20): Promise<void> {
     const start = performance.now()
     assert(markLast >= 0)
     assert(numMessages >= 0)
@@ -565,12 +750,12 @@ environment!\n ${err.message}`)
         throw new Error('Not ready')
       } catch (err: any) {
         if (attempt === attempts) {
-          const errorMessage = `redpandaDrain() failed to consume ${numMessages} messages after ${attempts} attempts.\
-Found only ${markNew - markLast} new messages.`
-          logger.error(errorMessage)
+          const error = new Error(`redpandaDrain() failed to consume ${numMessages} messages after ${attempts} attempts.\
+Found only ${markNew - markLast} new messages.`)
+          logger.error(error.message)
+          logger.error(error.stack)
           this.printLast(markNew - markLast)
-
-          throw new Error(errorMessage)
+          throw error
         }
 
         if (err.message !== 'Not ready') {
@@ -578,7 +763,6 @@ Found only ${markNew - markLast} new messages.`
           throw err
         }
 
-        logger.info(`redpandaDrain() waiting for Redpanda: [attempt ${`${attempt}`.padStart(3)}/${attempts}, delayMs: ${delayMs}].`)
         // Slowly back off.
         delayMs = Math.floor((delayMs * 1.1) + 10)
         await new Promise(resolve => setTimeout(resolve, delayMs))
@@ -605,14 +789,17 @@ Found only ${markNew - markLast} new messages.`
    * @description Print the last messages in the messageQueue. If `numMessages` is undefined, prints
    * all messages.
    */
-  public printLast(numMessages?: number): void {
+  public printLast(numMessages: number): void {
     let messages = this.spoolLast(this.messageQueue.length)
-    if (numMessages) {
-      assert(numMessages >= 0)
-      assert(numMessages <= messages.length)
-      messages = messages.slice(numMessages * -1)
+
+    if (numMessages === 0) {
+      numMessages = 5
     }
-    logger.warn('printLast() messages:')
+    assert(numMessages > 0)
+    assert(numMessages <= messages.length)
+    messages = messages.slice(numMessages * -1)
+
+    logger.warn(`printLast() ${numMessages} messages:`)
     messages.forEach(msg => {
       logger.warn(`\n
       ts:   ${msg.timestamp}
@@ -626,20 +813,42 @@ Found only ${markNew - markLast} new messages.`
     })
   }
 
+  public print(messages: Array<MojaloopKafkaMessage>): void {
+    messages.forEach(msg => {
+      logger.warn(`\n
+      ts:   ${msg.timestamp}
+      topic: ${msg.topic}
+      uriParams: ${msg.valueParsed.content.uriParams ?
+          JSON.stringify(msg.valueParsed.content.uriParams) : ''
+        }
+      fspiop-source:      ${msg.valueParsed.content.headers['fspiop-source']}
+      fspiop-destination: ${msg.valueParsed.content.headers['fspiop-destination']}
+      valueParsed:
+      ${JSON.stringify(msg.valueParsed.content.payload, null, 2)}
+      `.replaceAll(/^\s{6}/gm, ''))
+    })
+  }
+
   /**
    * Sometimes we just want to check the last topics that were published to.
    */
   public spoolLastTopic(numMessages: number): Array<string> {
-    const last = this.spoolLast(numMessages)
-    return last.map(message => message.topic)
+    return Harness.topicsOf(this.spoolLast(numMessages))
   }
 
   /**
    * Get the payload of the last _n_ messages produced across all topics.
    */
   public spoolLastPayload(numMessages: number): Array<any> {
-    const last = this.spoolLast(numMessages)
-    return last.map(message => message.valueParsed.content.payload)
+    return Harness.payloadsOf(this.spoolLast(numMessages))
+  }
+
+  public static topicsOf(messages: Array<MojaloopKafkaMessage>): Array<any> {
+    return messages.map(message => message.topic)
+  }
+
+  public static payloadsOf(messages: Array<MojaloopKafkaMessage>): Array<any> {
+    return messages.map(message => message.valueParsed.content.payload)
   }
 }
 
@@ -653,6 +862,7 @@ interface RedpandaConnectionOptions {
 
 export type MojaloopKafkaMessage = {
   topic: string,
+  key: string | Buffer;
   valueStr: string,
   timestamp: number,
   partition: number,
@@ -703,6 +913,7 @@ class Redpanda {
   }
 
   public async up(): Promise<void> {
+    const timerStart = performance.now()
     this.logger.debug(`up()`)
     const portRedpanda = await randomAvailablePort()
     const portConsole = await randomAvailablePort()
@@ -715,12 +926,13 @@ class Redpanda {
       --network harness \
       -p ${portRedpanda}:9092 \
       --health-cmd="rpk cluster info" \
-      --health-interval=1s \
-      --health-timeout=2s \
+      --health-interval=100ms \
+      --health-timeout=500ms \
       --health-retries=100 \
-      --health-start-period=2s \
+      --health-start-period=0s \
       docker.io/redpandadata/redpanda:latest \
       redpanda start \
+      --mode dev-container \
       --smp 1 \
       --memory 400M \
       --reserve-memory 0M \
@@ -754,7 +966,8 @@ class Redpanda {
     this.logger.warn(`Redpanda - go to: http://localhost:${portConsole} to see the Redpanda Console`);
     await this.waitForHealthy()
     await this.createTopics()
-    this.logger.debug(`up() - Complete.`)
+    const timerEnd = performance.now()
+    this.logger.info(`up() - took: ${Math.floor(timerEnd - timerStart)}ms`)
   }
 
   private async waitForHealthy(): Promise<void> {
@@ -772,7 +985,7 @@ class Redpanda {
           throw new Error('Not ready.')
         }
 
-        logger.warn(`Redpanda started after ${attempt} attempts (${attempt * delayMs}ms).`)
+        logger.info(`Redpanda started after ${attempt} attempts (${attempt * delayMs}ms).`)
         return
       } catch (err: any) {
         if (attempt === attemptsMax) {
@@ -874,9 +1087,12 @@ class MySql {
   }
 
   public async up(): Promise<void> {
+    const timerStart = performance.now()
     this.logger.debug(`up()`)
     const port = await randomAvailablePort()
 
+    // Highly optimzed `docker run` to try and improve startup time.
+    // takes around 3500 ms on my Mac.
     const command = `
     docker rm -f ${this.containerName} 2>/dev/null;
     docker run -d \
@@ -885,18 +1101,39 @@ class MySql {
       -e MARIADB_ROOT_PASSWORD=password \
       -e MARIADB_DATABASE=${this.options.databaseName} \
       -p ${port}:3306 \
-      mariadb:latest
+      --health-cmd="mariadb -u root -ppassword -e 'select 1'" \
+      --health-interval=10ms \
+      --health-timeout=50ms \
+      --health-retries=100 \
+      --health-start-period=0s \
+      mariadb:latest \
+      --skip-name-resolve \
+      --skip-log-bin \
+      --performance-schema=OFF \
+      --innodb-buffer-pool-size=64M \
+      --innodb-log-file-size=16M \
+      --max-connections=50
     `.replace(/\s/g, ' ')
     await execAsync(command)
-
     this.logger.info(`MySql starting at localhost:${port}`);
+    const timerExec = performance.now()
+    this.logger.info(`  docker run        - took: ${Math.floor(timerExec - timerStart)}ms`)
 
     this._connectionOptions = { port }
-    await this.waitForMySqlReady()
-    await this.migrate()
-    await this.seed()
+    await this.waitForMySqlReadyExec()
+    const timerReady = performance.now()
+    this.logger.info(`  waitForMySqlReady - took: ${Math.floor(timerReady - timerExec)}ms`)
 
-    this.logger.debug(`up() - Complete.`)
+    await this.migrate()
+    const timerMigrated = performance.now()
+    this.logger.info(`  migrate()         - took: ${Math.floor(timerMigrated - timerReady)}ms`)
+
+    await this.seed()
+    const timerSeeded = performance.now()
+    this.logger.info(`  seed()            - took: ${Math.floor(timerSeeded - timerMigrated)}ms`)
+
+    const timerEnd = performance.now()
+    this.logger.info(`up()        - took: ${Math.floor(timerEnd - timerStart)}ms`)
   }
 
   get connectionOptions(): MySqlConnectionOptions {
@@ -921,7 +1158,7 @@ class MySql {
   /**
    * Call exec on the container to make sure mysql is ready for connections.
    */
-  private async waitForMySqlReady(): Promise<void> {
+  private async waitForMySqlReadyExec(): Promise<void> {
     assert(this._connectionOptions)
 
     let attemptsMax = 150
@@ -933,7 +1170,37 @@ class MySql {
           'mariadb -u root -ppassword -e "select 1" ${this.options.databaseName}'
         `
         await execAsync(command)
-        logger.warn(`MySql started after ${attempt} attempts (${attempt * delayMs}ms).`)
+        logger.info(`MySql started after ${attempt} attempts (${attempt * delayMs}ms).`)
+        return
+      } catch (err: any) {
+        if (attempt === attemptsMax) {
+          throw new Error(`MySql failed to start after ${attemptsMax} attempts.\n${err.message}`)
+        }
+        // Extra whitespace for better printing.
+        logger.debug(`Waiting for MySQL:      [attempt ${`${attempt}`.padStart(3)}/${attemptsMax}]`)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+    }
+  }
+
+  /**
+   * Use the internal docker health check, it seems to be slightly faster.
+   */
+  private async waitForMySqlReadyInspect(): Promise<void> {
+    assert(this._connectionOptions)
+
+    let attemptsMax = 100
+    let delayMs = 25
+
+    for (let attempt = 1; attempt <= attemptsMax; attempt++) {
+      try {
+        const command = `docker inspect --format='{{.State.Health.Status}}' ${this.containerName}`
+        const { stdout } = await execAsync(command, { silent: true })
+
+        if (stdout.trim() !== 'healthy') {
+          throw new Error('Not ready.')
+        }
+        logger.info(`MySql started after ${attempt} attempts).`)
         return
       } catch (err: any) {
         if (attempt === attemptsMax) {
@@ -957,13 +1224,13 @@ class MySql {
       try {
         const type = this.options.migration.type
         switch (type) {
-          case "knex": 
+          case "knex":
             await this.migrateKnex()
             break;
-          case "sql": 
+          case "sql":
             await this.migrateSql()
             break
-          default: 
+          default:
             throw new Error(`Unexpected migration type: ${type}`)
         }
       } catch (err: any) {
@@ -1109,6 +1376,7 @@ class Redis {
   }
 
   public async up(): Promise<void> {
+    const timerStart = performance.now()
     this.logger.debug(`up()`)
     const port = await randomAvailablePort()
 
@@ -1128,8 +1396,8 @@ class Redis {
     this.logger.info(`Redis starting at localhost:${port}`);
 
     this._connectionOptions = { port }
-
-    this.logger.debug(`up() - Complete.`)
+    const timerEnd = performance.now()
+    this.logger.info(`up() - took: ${Math.floor(timerEnd - timerStart)}ms`)
   }
 
   get connectionOptions() {

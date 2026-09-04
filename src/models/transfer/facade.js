@@ -49,6 +49,7 @@ const ParticipantFacade = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
 const TransferExtensionModel = require('./transferExtension')
 const rethrow = require('../../shared/rethrow')
+const assert = require('node:assert')
 
 const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
@@ -936,6 +937,43 @@ const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transac
  */
 
 /**
+ * @typedef {Object} ForwardedTransfer
+ *
+ * @property {Integer} transferForwardedId
+ * @property {String} transferId
+ * @property {Date} expirationDate
+ * @property {Date} createdDate
+ * @property {Integer} attemptCount
+ * @property {String} transferStateId
+ * @property {String} payerFsp
+ * @property {String} payeeFsp
+ * @property {Integer} payerParticipantCurrencyId
+ * @property {Integer} payeeParticipantCurrencyId
+ * @property {Integer} effectedParticipantCurrencyId
+ * @property {Integer} bulkTransferId
+ * @property {String} externalPayerName
+ * @property {String} externalPayeeName
+ */
+
+/**
+ * @typedef {Object} ForwardedFxTransfer
+ *
+ * @property {Integer} fxTransferForwardedId
+ * @property {String} commitRequestId
+ * @property {Date} expirationDate
+ * @property {Date} createdDate
+ * @property {Integer} attemptCount
+ * @property {String} transferStateId
+ * @property {String} initiatingFsp
+ * @property {String} counterPartyFsp
+ * @property {Integer} initiatingParticipantCurrencyId
+ * @property {Integer} counterPartyParticipantCurrencyId
+ * @property {Integer} effectedParticipantCurrencyId
+ * @property {String} externalInitiatingFspName
+ * @property {String} externalCounterPartyFspName
+ */
+
+/**
  *  Returns the list of transfers/fxTransfers that have timed out
  *
  * @returns {Promise<{
@@ -943,9 +981,10 @@ const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transac
  *    fxTransferTimeoutList: Array<TimedOutFxTransfer>
  * }>}
  */
-const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
+const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax, now) => {
+  assert(now)
   try {
-    const transactionTimestamp = Time.getUTCString(new Date())
+    const transactionTimestamp = Time.getUTCString(now)
     const knex = Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
@@ -1012,8 +1051,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                   .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
                   .where('tt.expirationDate', '<', transactionTimestamp)
                   .whereIn('tsc.transferStateId', [
-                  `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
-                  `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
+                    `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
+                    `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
                   ])
                   .as('tt1'),
                 'ft.determiningTransferId', 'tt1.transferId'
@@ -1044,8 +1083,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                   .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
                   .where('ftt.expirationDate', '<', transactionTimestamp)
                   .whereIn('ftsc.transferStateId', [
-                  `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
-                  `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
+                    `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
+                    `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
                   ])
                   .as('ftt1'),
                 'ft.commitRequestId', 'ftt1.commitRequestId'
@@ -1063,8 +1102,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                   )
                   .whereRaw('tsc.transferStateChangeId = ts.maxTransferStateChangeId')
                   .whereIn('tsc.transferStateId', [
-                  `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
-                  `${Enum.Transfers.TransferState.RESERVED}`
+                    `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
+                    `${Enum.Transfers.TransferState.RESERVED}`
                   ])
                   .as('tt1'),
                 'ft.determiningTransferId', 'tt1.transferId'
@@ -1126,13 +1165,14 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
  *  Returns the list of transfers/fxTransfers that are in RESERVED_FORWARDED state
  *
  * @returns {Promise<{
- *    transferTimeoutList: TimedOutTransfer,
- *    fxTransferTimeoutList: TimedOutFxTransfer
+ *    transferForwardedList: Array<ForwardedTransfer>,
+ *    fxTransferForwardedList: Array<ForwardedFxTransfer>
  * }>}
  */
-const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount) => {
+const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount, now) => {
+  assert(now)
   try {
-    const transactionTimestamp = Time.getUTCString(new Date())
+    const transactionTimestamp = Time.getUTCString(now)
     const knex = Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
@@ -1248,9 +1288,9 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
         .where('t.transferId', param1.transferId)
         .whereIn('drpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
-          enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
+        enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
         .whereIn('crpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
-          enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
+        enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
         .select('dr.participantCurrencyId AS drAccountId', 'dr.amount AS drAmount', 'drp.participantPositionId AS drPositionId',
           'drp.value AS drPositionValue', 'drp.reservedValue AS drReservedValue', 'cr.participantCurrencyId AS crAccountId',
           'cr.amount AS crAmount', 'crp.participantPositionId AS crPositionId', 'crp.value AS crPositionValue',
@@ -1260,7 +1300,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         .transacting(trx)
 
       if (param1.transferStateId === enums.transferState.COMMITTED ||
-          param1.transferStateId === TransferInternalState.RESERVED_FORWARDED
+        param1.transferStateId === TransferInternalState.RESERVED_FORWARDED
       ) {
         await knex('transferStateChange')
           .insert({
