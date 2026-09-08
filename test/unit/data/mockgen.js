@@ -43,7 +43,7 @@ const Path = require('path')
 const apiPath = Path.resolve(__dirname, '../../../src/settlement/interface/swagger.json')
 
 const resolveRef = (spec, schema) => {
-  if (schema && schema.$ref) {
+  if (schema?.$ref) {
     const refPath = schema.$ref.replace(/^#\//, '').split('/')
     return resolveRef(spec, refPath.reduce((acc, key) => acc[key], spec))
   }
@@ -90,7 +90,7 @@ const mockFromSchema = (spec, schema) => {
 
 const mockRequest = (spec, options) => {
   const pathItem = spec.paths[options.path]
-  const operation = pathItem && pathItem[options.operation]
+  const operation = pathItem?.[options.operation]
   if (!operation) {
     throw new Error(`Mockgen: no operation found for '${options.operation} ${options.path}'`)
   }
@@ -111,9 +111,8 @@ const mockRequest = (spec, options) => {
   }
 
   const request = { path: resolvedPath }
-  const requestBody = operation.requestBody && operation.requestBody.content &&
-    operation.requestBody.content['application/json']
-  if (requestBody && requestBody.schema) {
+  const requestBody = operation.requestBody?.content?.['application/json']
+  if (requestBody?.schema) {
     request.body = mockFromSchema(spec, requestBody.schema)
   }
   return { request }
