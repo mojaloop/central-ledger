@@ -1,21 +1,13 @@
 {
-    "swagger": "2.0",
+    "openapi": "3.1.0",
     "info": {
         "version": "2.0",
         "title": "MOJALOOP Central Settlements Handlers service API",
         "description": "API of Settlements handlers to provide health service"
     },
-    "basePath": "/v2",
-    "schemes": [
-        "http",
-        "https"
-    ],
-    "paths": {  
+    "paths": {
         "/health": {
             "get": {
-                "produces": [
-                    "application/json"
-                ],
                 "deprecated": false,
                 "description": "Gets the health of the service and sub-services (i.e. database).",
                 "summary": "getHealth",
@@ -33,5 +25,10 @@
                 }
             }
         }
-    }
+    },
+    "servers": [
+        {
+            "url": "/v2"
+        }
+    ]
 }

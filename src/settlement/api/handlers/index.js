@@ -21,51 +21,37 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
-
- * ModusBox
- - Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 'use strict'
 
 const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
-const Path = require('path')
-const Handlers = require('./handlers')
-const { getBasePath, handleRequest, assertHandlersRegistered } = require('./openapiRouting')
+const health = require('./health')
+const settlementWindows = require('./settlementWindows')
+const settlementWindowsById = require('./settlementWindows/{id}')
+const settlements = require('./settlements')
+const settlementsById = require('./settlements/{id}')
+const settlementsByIdParticipants = require('./settlements/{sid}/participants/{pid}')
+const settlementsByIdParticipantsAccounts = require('./settlements/{sid}/participants/{pid}/accounts/{aid}')
 
 /**
- * Handlers monitoring API Routes
- *
- * @param {object} api OpenAPIBackend instance
+ * Map of OpenAPI operationIds to their handlers, consumed by
+ * `OpenapiBackend.initialise` (openapi-backend).
  */
-const APIRoutes = (api) => {
-  const basePath = getBasePath(api)
-  return [
-    {
-      method: 'GET',
-      path: `${basePath}/health`,
-      handler: (req, h) => handleRequest(api, req, h),
-      config: {
-        id: 'handlers getHealth',
-        tags: ['api', 'getHealth'],
-        description: 'GET health'
-      }
-    }
-  ]
-}
-
 module.exports = {
-  plugin: {
-    name: 'settlement handler api routes',
-    register: async function (server) {
-      const api = await OpenapiBackend.initialise(Path.resolve(process.cwd(), 'src/settlement/interface/swagger-handler.json'), {
-        getHealth: Handlers.getHealth,
-        validationFail: Handlers.validationFail,
-        notFound: Handlers.notFound,
-        methodNotAllowed: Handlers.methodNotAllowed
-      })
-      assertHandlersRegistered(api)
-      server.route(APIRoutes(api))
-    }
-  }
+  getHealth: health.get,
+  getSettlementWindowsByParams: settlementWindows.get,
+  getSettlementWindowById: settlementWindowsById.get,
+  closeSettlementWindow: settlementWindowsById.post,
+  getSettlementsByParams: settlements.get,
+  createSettlement: settlements.post,
+  getSettlementById: settlementsById.get,
+  updateSettlementById: settlementsById.put,
+  getSettlementBySettlementParticipant: settlementsByIdParticipants.get,
+  updateSettlementBySettlementParticipant: settlementsByIdParticipants.put,
+  getSettlementBySettlementParticipantAccount: settlementsByIdParticipantsAccounts.get,
+  updateSettlementBySettlementParticipantAccount: settlementsByIdParticipantsAccounts.put,
+  validationFail: OpenapiBackend.validationFail,
+  notFound: OpenapiBackend.notFound,
+  methodNotAllowed: OpenapiBackend.methodNotAllowed
 }
