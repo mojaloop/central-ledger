@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.0.0](https://github.com/mojaloop/central-ledger/compare/v19.14.0...v20.0.0) (2026-09-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* malformed-request validation errors now return FSPIOP 3100 (Ajv) where joi returned 3101 "Malformed syntax" (GP test 'Check Settlements Error #956')
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+### Features
+
+* add strict typing to config values, along with comprehensive validation ([#1247](https://github.com/mojaloop/central-ledger/issues/1247)) ([771b9c8](https://github.com/mojaloop/central-ledger/commit/771b9c85768742f804d3b82e50b2f67bb66363da))
+* add typescript and basic `tsc` build ([#1243](https://github.com/mojaloop/central-ledger/issues/1243)) ([f84f8a6](https://github.com/mojaloop/central-ledger/commit/f84f8a6447de6e17769330680d5acbefed5f7975))
+* migrate admin and settlement APIs to OpenAPI 3.1 and openapi-… ([#1291](https://github.com/mojaloop/central-ledger/issues/1291)) ([3c26529](https://github.com/mojaloop/central-ledger/commit/3c265297bd6ae54ff209556f57e962915ca9c8cf)), closes [mojaloop/#4479](https://github.com/mojaloop/project/issues/4479)
+
+
+### Bug Fixes
+
+* config and unit tests for merged settlement codebase ([5738fdd](https://github.com/mojaloop/central-ledger/commit/5738fdd2dc78ad7b4efbd7d6d7bdcc7313f06d1e))
+* return thresholdAlarmPercentage from participant limit facade fo… ([#1288](https://github.com/mojaloop/central-ledger/issues/1288)) ([35b8dfa](https://github.com/mojaloop/central-ledger/commit/35b8dfa4c40ae3b36de43ec45767029768d6c777)), closes [mojaloop/#4479](https://github.com/mojaloop/project/issues/4479)
+
+
+### Refactors
+
+* copy in central-settlement codebase ([#1286](https://github.com/mojaloop/central-ledger/issues/1286)) ([3f65163](https://github.com/mojaloop/central-ledger/commit/3f65163c6dc48d6c63eab3edbc46d577f6834d36))
+
+
+### Tests
+
+* rewrite integration tests in Typescript, using new test harness ([#1287](https://github.com/mojaloop/central-ledger/issues/1287)) ([1fe6767](https://github.com/mojaloop/central-ledger/commit/1fe67675a67fee630e3763649238ceaaecb22355))
+
+
+### Chore
+
+* npm audit fixes ([27c4ee1](https://github.com/mojaloop/central-ledger/commit/27c4ee181d9d0bcc8ba2cb9069f835cc4d54443c))
+* override vulns ([457f0b7](https://github.com/mojaloop/central-ledger/commit/457f0b7fc4e36477b16e7f68e824273e74d3a879))
+* **sbom:** update sbom [skip ci] ([ddc7fe3](https://github.com/mojaloop/central-ledger/commit/ddc7fe3af88e5c327a46ec59f3cf46a7cda47b18))
+* update config imports, add test override for global tests ([#1270](https://github.com/mojaloop/central-ledger/issues/1270)) ([bd47d26](https://github.com/mojaloop/central-ledger/commit/bd47d262af2da2f98a1da3b461362c5a03decfa3))
+
 ## [19.14.0](https://github.com/mojaloop/central-ledger/compare/v19.13.2...v19.14.0) (2026-03-19)
 
 
