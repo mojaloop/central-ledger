@@ -1,7 +1,7 @@
 /*****
  License
  --------------
- Copyright © 2020-2025 Mojaloop Foundation
+ Copyright © 2020-2026 Mojaloop Foundation
  The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
@@ -153,7 +153,7 @@ Test('Server Setup', async setupTest => {
           test.equal(serverStub.register.callCount, 7, 'server.register called 7 times')
           test.ok(serverStub.method.calledOnce, 'server.method called once')
           test.ok(serverStub.start.calledOnce, 'server.start called once')
-          test.ok(serverStub.plugins.openapi.setHost.calledOnce, 'server.plugins.openapi.setHost called once')
+          test.notOk(serverStub.plugins.openapi.setHost.called, 'setHost not used by OpenapiBackend routing')
           test.ok(serverStub.ext.calledOnce, 'server.ext called once')
           test.end()
         } catch (err) {
@@ -192,7 +192,7 @@ Test('Server Setup', async setupTest => {
           test.equal(serverStub.register.callCount, 7, 'server.register called 7 times')
           test.ok(serverStub.method.calledOnce, 'server.method called once')
           test.ok(serverStub.start.calledOnce, 'server.start called once')
-          test.ok(serverStub.plugins.openapi.setHost.calledOnce, 'server.plugins.openapi.setHost called once')
+          test.notOk(serverStub.plugins.openapi.setHost.called, 'setHost not used by OpenapiBackend routing')
           test.end()
         } catch (err) {
           logger.error(`init failed with error - ${err}`)

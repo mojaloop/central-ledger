@@ -6,5 +6,5 @@
 const { getHealth } = require('../../../api/root/handler')
 
 module.exports = {
-  get: getHealth
+  get: (context, request, h) => getHealth(request, h)
 }

@@ -22,6 +22,16 @@ export const NYC_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/nyc')
 export const TAPE_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/tape')
 export const TAP_XUNIT_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/tap-xunit')
 
+// `npm test` pipes this process into tap-spec, which can exit as soon as it has
+// parsed a complete TAP document - before the trailing merged-summary writes.
+// Writes to the closed pipe then raise EPIPE and would crash an otherwise green
+// run, so treat EPIPE on stdout/stderr as best-effort output and ignore it.
+for (const stream of [process.stdout, process.stderr]) {
+  stream.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code !== 'EPIPE') throw err
+  })
+}
+
 async function main() {
   try {
     const task = parseOptions(process.argv.slice(2), process.env)

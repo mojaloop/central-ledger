@@ -28,14 +28,15 @@
  ******/
 'use strict'
 
+const Path = require('path')
 const Inert = require('@hapi/inert')
 const Vision = require('@hapi/vision')
 const Blipp = require('blipp')
 const ErrorHandling = require('@mojaloop/central-services-error-handling')
 const RawPayloadToDataUri = require('@mojaloop/central-services-shared').Util.Hapi.HapiRawPayload
+const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.APIDocumentation
 const HapiEventPlugin = require('@mojaloop/central-services-shared').Util.Hapi.HapiEventPlugin
 const Config = require('../../lib/config')
-const { registerApiDocumentation } = require('../../shared/apiDocumentation')
 
 /**
  * @module src/shared/plugin
@@ -43,7 +44,12 @@ const { registerApiDocumentation } = require('../../shared/apiDocumentation')
 
 const registerPlugins = async (server) => {
   if (Config.API_DOC_ENDPOINTS_ENABLED) {
-    await registerApiDocumentation(server, 'src/settlement/interface/swagger.json')
+    await server.register({
+      plugin: APIDocumentation,
+      options: {
+        documentPath: Path.resolve(process.cwd(), 'src/settlement/interface/swagger.json')
+      }
+    })
   }
 
   await server.register({
