@@ -1,5 +1,6 @@
 'use strict'
 
+const Path = require('path')
 const Test = require('tape')
 const Inert = require('@hapi/inert')
 const Blipp = require('blipp')
@@ -60,6 +61,7 @@ Test('registerPlugins should', pluginsTest => {
     const server = await new Server()
     await Plugins.registerPlugins(server)
     test.ok(server.registrations[0].plugin.plugin.name.includes('apiDocumentation'))
+    test.equal(server.registrations[0].options.pathToSwaggerFile, Path.resolve(process.cwd(), 'src/api/interface/swagger.json'))
     test.end()
   })
 
