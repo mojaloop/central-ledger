@@ -45,9 +45,8 @@
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "lint": "npx standard",
     "lint:fix": "npx standard --fix",
-    "test": "npm run test:unit:spec",
+    "test": "npm run test:unit",
     "test:unit": "ts-node src/testing/run.ts unit",
-    "test:unit:spec": "npm run test:unit | tap-spec",
     "test:unit:distLock": "npx tape -r ts-node/register 'test/unit/lib/distLock/**/*.test.js'",
     "test:unit:participants-routes": "npx tape -r ts-node/register test/unit/api/participants/routes.test.js",
     "test:xunit": "ts-node src/testing/run.ts unit --output=xunit --outputPath=./test/results/xunit.xml",
@@ -157,7 +156,6 @@
     "sinon": "22.1.0",
     "standard": "17.1.2",
     "standard-version": "^9.5.0",
-    "tap-spec": "^5.0.0",
     "tap-xunit": "2.4.1",
     "tape": "4.17.0",
     "tapes": "4.1.0",
@@ -187,6 +185,7 @@
     },
     "axios": "1.18.1",
     "brace-expansion": "2.1.4",
+    "browserslist": "4.28.9",
     "convict": "6.2.5",
     "form-data": "4.0.6",
     "lodash": "4.18.1",
@@ -233,8 +232,9 @@
     "uuid": "11.1.1",
     "lodash-es": "4.18.1",
     "@redocly/openapi-core": "2.46.1",
-    "js-yaml@3": "3.15.1",
-    "js-yaml@4": "4.3.1"
+    "js-yaml@3": "3.15.2",
+    "js-yaml@4": "4.3.2",
+    "mysql2": "3.24.3"
   },
   "config": {
     "knex": "--knexfile ./dist/knexfile.js",
