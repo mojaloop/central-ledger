@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "19.14.0",
+  "version": "20.0.0",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -30,7 +30,7 @@
   },
   "pre-commit": [
     "lint",
-    "test",
+    "test:unit",
     "dep:check",
     "audit:check"
   ],
@@ -115,7 +115,6 @@
     "decimal.js": "10.6.0",
     "docdash": "2.0.2",
     "hapi-auth-bearer-token": "8.0.0",
-    "hapi-openapi": "3.0.0",
     "hapi-swagger": "17.3.2",
     "ilp-packet": "2.2.0",
     "joi": "18.2.9",
@@ -158,7 +157,6 @@
     "sinon": "22.1.0",
     "standard": "17.1.2",
     "standard-version": "^9.5.0",
-    "swagmock": "1.0.0",
     "tap-spec": "^5.0.0",
     "tap-xunit": "2.4.1",
     "tape": "4.17.0",
@@ -168,9 +166,6 @@
   "overrides": {
     "@hapi/wreck": "18.1.2",
     "@now-ims/hapi-now-auth": {
-      "joi": "17.13.4"
-    },
-    "hapi-openapi": {
       "joi": "17.13.4"
     },
     "blipp": {
@@ -188,9 +183,6 @@
       "ajv": "6.14.0"
     },
     "eslint@9.39.2": {
-      "ajv": "6.14.0"
-    },
-    "@eslint/eslintrc": {
       "ajv": "6.14.0"
     },
     "axios": "1.18.1",
