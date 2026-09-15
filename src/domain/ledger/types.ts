@@ -495,14 +495,9 @@ export interface LookupTransferQuery {
 
 export enum LookupTransferResultType {
   /**
-   * Found transfer, it's in a non final state.
+   * Found transfer.
    */
-  FOUND_NON_FINAL = 'FOUND_NON_FINAL',
-
-  /**
-   * Found transfer, it's in a final state.
-   */
-  FOUND_FINAL = 'FOUND_FINAL',
+  FOUND = 'FOUND',
 
   /**
    * Could not find the Transfer.
@@ -516,23 +511,13 @@ export enum LookupTransferResultType {
 }
 
 export type LookupTransferQueryResponse = {
-  type: LookupTransferResultType.FOUND_NON_FINAL,
-  // Transfer amount from Clearing Credit -> Reserved
-  amountClearingCredit: bigint
-  // Transfer amount from Unrestricted -> Reserved
-  amountUnrestricted: bigint
-} | {
-  type: LookupTransferResultType.FOUND_FINAL
-  finalizedTransfer: {
-    completedTimestamp: string
-    transferState: 'ABORTED' | 'COMMITTED'
-    fulfilment?: string
-  }
+  type: LookupTransferResultType.FOUND,
+  transfer: any
 } | {
   type: LookupTransferResultType.NOT_FOUND
 } | {
   type: LookupTransferResultType.FAILED
-  error: FSPIOPError
+  error: Error
 }
 
 

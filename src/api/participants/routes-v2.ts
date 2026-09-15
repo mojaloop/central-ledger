@@ -1,7 +1,7 @@
 import { ReqRefDefaults, ServerRoute } from "@hapi/hapi";
 import HandlerV2 from "./handler-v2";
+import Joi from "joi";
 
-const Joi = require('joi')
 const currencyList = require('../../seeds/currency.js').currencyList
 
 const tags = ['api', 'participants']
