@@ -1,7 +1,8 @@
 import { Enum, Util } from '@mojaloop/central-services-shared';
 const { TransferState } = Enum.Transfers
-import assert from "node:assert";
-import Settlement from '../../domain/settlement';
+import assert from "node:assert"
+import Settlement from '../../domain/settlement'
+import Transaction from '../../domain/transactions'
 import {
   CommitPaymentDtoAborted,
   FulfilHandlerInput,
@@ -63,6 +64,7 @@ import {
   LegacyLimitItem,
   LookupTransferQuery,
   LookupTransferQueryResponse,
+  LookupTransferResultType,
   QueryResult,
   QueryResultWithNotFound,
   SetNetDebitCapCommand,
@@ -97,6 +99,9 @@ import * as Participant from '../participant';
 import TimeoutService from '../timeout';
 import Helper from './helper';
 import TransferObjectTransform from '../transfer/transform'
+import { deserializeIlpPacket } from 'ilp-packet';
+import base64url from 'base64url';
+
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
@@ -1274,7 +1279,7 @@ export class LedgerSql implements Ledger {
       )
     }
 
-    if (error) { 
+    if (error) {
       const effects = [
         await this.buildEffectPositionRollback(input, transfer, error),
       ]
@@ -1562,8 +1567,43 @@ export class LedgerSql implements Ledger {
     }
   }
 
+  /**
+   * This mimicks the old implementation which is actually looking up the ILP Packet for a
+   * transferId. I'm not sure if/how we will want to carry this into TigerBeetle.
+   */
   public async lookupTransfer(query: LookupTransferQuery): Promise<LookupTransferQueryResponse> {
-    throw new Error('Method not implemented.');
+    assert(query.transferId)
+    try {
+      const transactions = await Transaction.getById(query.transferId)
+      if (!transactions || transactions.length === 0) {
+        return {
+          // Backwards compatibility - return FAILED instead of NOT_FOUND to match
+          // legacy Admin API.
+          type: LookupTransferResultType.FAILED,
+          error: new Error(`Failed to find transaction for transferId: ${query.transferId}.`),
+        }
+      }
+      const transfer = transactions[0]
+      assert(transfer)
+
+      const binaryPacket = Buffer.from(transfer.value, 'base64')
+      const deserialized = deserializeIlpPacket(binaryPacket) as any
+      assert(deserialized, 'Malformed deserialization of ilpPacket.')
+      assert(deserialized.data)
+      assert(deserialized.data.data)
+      const decodedData = base64url.decode(deserialized.data.data.toString())
+      const parsedDecodedData = JSON.parse(decodedData)
+
+      return {
+        type: LookupTransferResultType.FOUND,
+        transfer: parsedDecodedData
+      }
+    } catch (err: any) {
+      return {
+        type: LookupTransferResultType.FAILED,
+        error: err
+      }
+    }
   }
 
   public async sweepTimedOut(now: Date): Promise<SweepResult> {

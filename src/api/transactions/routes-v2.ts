@@ -18,54 +18,39 @@
  Mojaloop Foundation for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
+
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
 
  * ModusBox
  - Lazola Lucas <lazola.lucas@modusbox.com>
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
  --------------
  ******/
 'use strict'
 
-const IlpPacket = require('../../models/ilpPackets/ilpPacket')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+import Joi from "joi"
+import HandlerV2 from "./handler-v2"
+import { ReqRefDefaults, ServerRoute } from "@hapi/hapi"
 
-const ilpPacket = require('ilp-packet')
-const base64url = require('base64url')
+const buildRoutes = (handler: HandlerV2) => {
+  return [
+    {
+      method: 'GET',
+      path: '/transactions/{id}',
+      handler: handler.getById.bind(handler),
+      options: {
+        tags: ['api', 'transaction'],
+        validate: {
+          params: Joi.object({
+            id: Joi.string().required().description('Transfer id')
+          })
+        }
+      }
+    }
+  ] as ServerRoute<ReqRefDefaults>[]
+}
 
-/**
- * @returns {Promise<Array<{
- *  createdDate: Date,
- *  transferId: string,
- *  value: string,
- * }>>} 
- */
-const getById = async (id) => {
-  try {
-    return await IlpPacket.getById(id)
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-const decodeIlpPacket = async (inputIlpPacket) => {
-  const binaryPacket = Buffer.from(inputIlpPacket, 'base64')
-  return ilpPacket.deserializeIlpPayment(binaryPacket)
-}
-/**
- * Get the transaction object in the data field of an Ilp packet
- *
- * @returns {object} - Transaction Object
- */
-const getTransactionObject = async function (inputIlpPacket) {
-  try {
-    const jsonPacket = await decodeIlpPacket(inputIlpPacket)
-    const decodedData = base64url.decode(jsonPacket.data.toString())
-    return JSON.parse(decodedData)
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-module.exports = {
-  getById,
-  getTransactionObject
-}
+export default buildRoutes

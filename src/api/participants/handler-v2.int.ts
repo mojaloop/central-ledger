@@ -1,5 +1,5 @@
 import assert from "node:assert"
-import { after, before, describe, it, snapshot } from "node:test"
+import { after, before, describe, it } from "node:test"
 import Harness from '../../testing/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
@@ -19,7 +19,7 @@ import HandlerV2, {
   RequestUpdate,
   RequestUpdateAccount
 } from "./handler-v2"
-import { envOrDefaultNumber, envOrDefaultString, unwrapResponse, unwrapResponseWithError } from "../../testing/util"
+import { envOrDefaultString, unwrapResponse, unwrapResponseWithError } from "../../testing/util"
 import PRNG from "../../testing/prng"
 import { logger } from "../../shared/logger"
 
@@ -28,7 +28,7 @@ const prng = new PRNG(123)
 Harness.injectPrngAndPatchDateGlobal(prng)
 let handler: HandlerV2
 
-describe('api/participants/handler', () => {
+describe('api/participants/handler-v2', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
