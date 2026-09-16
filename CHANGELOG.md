@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.1.0](https://github.com/mojaloop/central-ledger/compare/v20.0.0...v20.1.0) (2026-09-16)
+
+
+### Features
+
+* commit kafka messages asynchronously instead of blocking commit ([#1301](https://github.com/mojaloop/central-ledger/issues/1301)) ([128174a](https://github.com/mojaloop/central-ledger/commit/128174a757bb7aa4ca8b76f51ef560a4a1e0f9cb))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([9dbc9a0](https://github.com/mojaloop/central-ledger/commit/9dbc9a084a5af742247a43efcf1a7a1c893de239))
+
 ## [20.0.0](https://github.com/mojaloop/central-ledger/compare/v19.14.0...v20.0.0) (2026-09-08)
 
 
