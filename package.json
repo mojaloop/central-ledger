@@ -36,6 +36,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "postbuild": "cp src/migrations/migration.template dist/migrations/migration.template",
     "start": "npm run start:api",
     "start:api": "node dist/api/index.js",
     "start:handlers": "node dist/handlers/index.js",
@@ -129,7 +130,8 @@
   },
   "optionalDependencies": {
     "ed25519": "^0.0.5",
-    "mysql": "2.18.1"
+    "mysql": "2.18.1",
+    "mysql2": "3.24.4"
   },
   "devDependencies": {
     "@hapi/joi": "17.1.1",
