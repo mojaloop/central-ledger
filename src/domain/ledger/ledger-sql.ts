@@ -1,7 +1,6 @@
 import { Enum, Util } from '@mojaloop/central-services-shared';
 const { TransferState } = Enum.Transfers
 import assert from "node:assert"
-import Settlement from '../../domain/settlement'
 import Transaction from '../../domain/transactions'
 import {
   CommitPaymentDtoAborted,
@@ -68,11 +67,14 @@ import {
   QueryResult,
   QueryResultWithNotFound,
   SetNetDebitCapCommand,
+  Settlement,
   SettlementAbortCommand,
   SettlementCloseWindowCommand,
   SettlementCommitCommand,
   SettlementPrepareCommand,
   SettlementUpdateCommand,
+  SettlementWindow,
+  SettlementWindowState,
   SweepResult,
   WithdrawAbortCommand,
   WithdrawAbortResponse,
@@ -86,8 +88,8 @@ const FxTransferStateChangeModel = require('../../models/fxTransfer/stateChange'
 
 import { Knex } from 'knex';
 import { TimeoutResultPayment, TimeoutResultPaymentForward } from '../../handlers/timeout-v2';
-import { TransferHelper } from '../../handlers/transfer-helper';
-import { assertBoolean, safeStringToNumber } from '../../lib/config/util';
+import { TransferHelper } from '../../handlers/transfer-helper'
+import { assertBoolean, safeStringToNumber } from '../../lib/config/util'
 import db from "../../lib/db";
 import {
   ForwardedFxTransfer,
@@ -101,7 +103,10 @@ import Helper from './helper';
 import TransferObjectTransform from '../transfer/transform'
 import { deserializeIlpPacket } from 'ilp-packet';
 import base64url from 'base64url';
-
+import SettlementDomain from '../../domain/settlement'
+import SettlementWindowDomain from '../../domain/settlementWindow'
+import SettlementWindowModel from '../../models/settlementWindow'
+import SettlementModel from '../../models/settlement/settlement'
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
@@ -109,11 +114,23 @@ const { Comparators, resourceVersions } = Util
 const { Type, Action } = Enum.Events.Event
 
 interface Enums {
-  ledgerAccountType: { [name: string]: number }
-  ledgerEntryType: { [name: string]: number }
-  transferParticipantRoleType: { [name: string]: number }
-  transferState: { [name: string]: string }
-  participantLimitType: { [name: string]: number }
+  ledgerAccountType: Record<string, number>
+  ledgerEntryType: Record<string, number>
+  transferParticipantRoleType: Record<string, number>
+  transferState: Record<string, number>
+  participantLimitType: Record<string, number>
+  settlementWindowStates: Record<string, number>
+
+  settlementDelay: Record<string, number>
+  settlementDelayEnums: Record<string, number>
+  settlementGranularity: Record<string, number>
+  settlementGranularityEnums: Record<string, number>
+  settlementInterchangeEnums: Record<string, number>
+  settlementStates: Record<string, number>
+  transferParticipantRoleTypes: Record<string, number>
+  transferStateEnums: Record<string, number>
+  transferStates: Record<string, number>
+  settlementInterchange: Record<string, number>
 }
 
 interface Dependencies {
@@ -174,7 +191,7 @@ export class LedgerSql implements Ledger {
         }
       }
 
-      await Settlement.createSettlementModel(cmd.settlementModel)
+      await SettlementDomain.createSettlementModel(cmd.settlementModel)
       return Helper.emptyCommandResultSuccess()
     } catch (err: any) {
       if (err.message === 'Settlement Model already exists') {
@@ -330,7 +347,7 @@ export class LedgerSql implements Ledger {
 
     assert(participant)
 
-    const allSettlementModels = await Settlement.getAll()
+    const allSettlementModels = await SettlementDomain.getAll()
     let settlementModels = allSettlementModels.filter(model => model.currencyId === currency)
     if (settlementModels.length === 0) {
       settlementModels = allSettlementModels.filter(model => model.currencyId === null) // Default settlement model
@@ -2407,28 +2424,316 @@ export class LedgerSql implements Ledger {
   }
 
   public async closeSettlementWindow(cmd: SettlementCloseWindowCommand): Promise<CommandResult<void>> {
-    throw new Error('Method not implemented.');
+    assert(cmd.id)
+    assert(cmd.reason)
+
+    try {
+      await SettlementWindowDomain.process(
+        { settlementWindowId: cmd.id, reason: cmd.reason },
+        this.deps.enums.settlementWindowStates
+      )
+      await SettlementWindowModel.close(cmd.id, cmd.reason)
+
+      return {
+        type: 'SUCCESS'
+      }
+    } catch (err: any) {
+      return {
+        type: 'FAILURE',
+        error: err
+      }
+    }
   }
-  public async settlementPrepare(cmd: SettlementPrepareCommand): Promise<CommandResult<{ id: number; }>> {
-    throw new Error('Method not implemented.');
+
+  public async settlementPrepare(cmd: SettlementPrepareCommand): Promise<CommandResult<{ id: number }>> {
+    assert(cmd.model)
+    assert(cmd.reason)
+    assert(cmd.windowIds)
+
+    try {
+      const triggerResult = await SettlementDomain.settlementEventTrigger(
+        {
+          settlementModel: cmd.model,
+          reason: cmd.reason,
+          // rewrap in a format the function expects
+          settlementWindows: cmd.windowIds.map(id => {
+            return { id }
+          })
+        },
+        this.deps.enums
+      ) as { id: number }
+      assert(triggerResult.id, 'expected settlementEventTrigger() to return an id')
+
+      return {
+        type: 'SUCCESS',
+        result: {
+          id: triggerResult.id
+        }
+      }
+    }
+    catch (err: any) {
+      return {
+        type: 'FAILURE',
+        error: err
+      }
+    }
   }
+
   public async settlementAbort(cmd: SettlementAbortCommand): Promise<CommandResult<void>> {
-    throw new Error('Method not implemented.');
+    assert(cmd)
+    assert(cmd.id)
+
+    logger.info(`settlementAbort() with cmd: ${JSON.stringify(cmd)}`)
+
+    try {
+      // Get the current settlement to check its state
+      const settlement = await SettlementDomain.getById(
+        { settlementId: cmd.id },
+        this.deps.enums
+      )
+
+      // Only allow aborting if settlement is in PENDING_SETTLEMENT state
+      if (settlement.state !== 'PENDING_SETTLEMENT') {
+        const error = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          `Cannot abort settlement ${cmd.id} - settlement must be in PENDING_SETTLEMENT state, but is in ${settlement.state} state`
+        )
+        logger.error(error)
+        return {
+          type: 'FAILURE',
+          error
+        }
+      }
+
+      const payload = {
+        state: 'ABORTED',
+        reason: 'Settlement aborted',
+        externalReference: ''
+      }
+
+      await SettlementModel.abortById(
+        cmd.id,
+        payload,
+        this.deps.enums
+      )
+
+      return {
+        type: 'SUCCESS'
+      }
+    } catch (err: any) {
+      return {
+        type: 'FAILURE',
+        error: err
+      }
+    }
   }
+
+  /**
+   * Noop for LegacyLedger - the Settlement is considered committed when each participant has been
+   * updated
+   */
   public async settlementCommit(cmd: SettlementCommitCommand): Promise<CommandResult<void>> {
-    throw new Error('Method not implemented.');
+    return { type: 'SUCCESS' }
   }
+
   public async settlementUpdate(cmd: SettlementUpdateCommand): Promise<CommandResult<void>> {
-    throw new Error('Method not implemented.');
+    assert(cmd)
+    assert(cmd.id)
+    assert(cmd.updates)
+    assert(Array.isArray(cmd.updates))
+    assert(cmd.updates.length > 0, 'settlementUpdate requires at least one update')
+
+    // Helper to map state to legacy representation
+    const mapState = (participantState: string):
+      'PS_TRANSFERS_RECORDED' |
+      'PS_TRANSFERS_RESERVED' |
+      'PS_TRANSFERS_COMMITTED' |
+      'SETTLED' => {
+      switch (participantState) {
+        case 'RECORDED': return 'PS_TRANSFERS_RECORDED'
+        case 'RESERVED': return 'PS_TRANSFERS_RESERVED'
+        case 'COMMITTED': return 'PS_TRANSFERS_COMMITTED'
+        case 'SETTLED': return 'SETTLED'
+        default: {
+          throw new Error(`Unexpected participantState: ${participantState}. Expected it to be \
+            [RECORDED | RESERVED | COMMITTED | SETTLED]`)
+        }
+      }
+    }
+
+    try {
+      // Group updates by participantId to batch accounts per participant
+      // TODO: maybe don't use a map?
+      const participantMap = new Map<number, Array<{ id: number, state: string, reason: string, externalReference: string }>>()
+      for (const update of cmd.updates) {
+        assert(update.participantId)
+        assert(update.accountId)
+        assert(update.participantState)
+        assert(update.reason)
+        assert(update.externalReference)
+
+        const state = mapState(update.participantState)
+
+        if (!participantMap.has(update.participantId)) {
+          participantMap.set(update.participantId, [])
+        }
+
+        participantMap.get(update.participantId)!.push({
+          id: update.accountId,
+          state,
+          reason: update.reason,
+          externalReference: update.externalReference
+        })
+      }
+
+      // Build participants array from grouped updates
+      const participants = Array
+        .from(participantMap.entries())
+        .map(([participantId, accounts]) => ({
+          id: participantId,
+          accounts
+        }))
+
+      const payload = { participants }
+      await SettlementModel.putById(cmd.id, payload, this.deps.enums)
+      return {
+        type: 'SUCCESS'
+      }
+    } catch (err: any) {
+      return {
+        type: 'FAILURE',
+        error: err
+      }
+    }
   }
+
   public async getSettlementWindows(query: GetSettlementWindowsQuery): Promise<QueryResult<GetSettlementWindowsQueryResponse>> {
-    throw new Error('Method not implemented.');
+    assert(query)
+
+    logger.info(`getSettlementWindows() with query: ${JSON.stringify(query)}`)
+
+    try {
+      // Transform query to legacy format
+      const legacyQuery: {
+        participantId?: string
+        state?: string
+        fromDateTime?: string
+        toDateTime?: string
+        currency?: string
+      } = {}
+
+      if (query.participantId !== undefined) {
+        legacyQuery.participantId = query.participantId.toString()
+      }
+      if (query.state) {
+        legacyQuery.state = query.state
+      }
+      if (query.fromDateTime) {
+        legacyQuery.fromDateTime = query.fromDateTime.toISOString()
+      }
+      if (query.toDateTime) {
+        legacyQuery.toDateTime = query.toDateTime.toISOString()
+      }
+      if (query.currency) {
+        legacyQuery.currency = query.currency
+      }
+
+      const legacyWindows = await SettlementWindowDomain.getByParams(
+        { query: legacyQuery },
+        this.deps.enums
+      )
+
+      // Map legacy format to SettlementWindow format
+      const settlementWindows: SettlementWindow[] = legacyWindows.map((w: any) => {
+        let state: SettlementWindowState
+        switch (w.state) {
+          case 'OPEN':
+          case 'CLOSED':
+          case 'PENDING_SETTLEMENT':
+          case 'SETTLED':
+          case 'ABORTED':
+          case 'PROCESSING':
+          case 'FAILED':
+            state = w.state
+            break
+          default:
+            throw new Error(`Invalid settlement window state: ${w.state}`)
+        }
+
+        return {
+          id: w.settlementWindowId,
+          state,
+          reason: w.reason ?? '',
+          createdDate: w.createdDate,
+          changedDate: w.changedDate,
+          content: w.content || []
+        }
+      })
+
+      return {
+        type: 'SUCCESS',
+        result: settlementWindows
+      }
+    } catch (err: any) {
+      return {
+        type: 'FAILURE',
+        error: err
+      }
+    }
   }
+
   public async getSettlement(query: GetSettlementQuery): Promise<GetSettlementQueryResponse> {
-    throw new Error('Method not implemented.');
+    assert(query)
+    assert(query.id)
+
+    try {
+      const settlement = await SettlementDomain.getById({ settlementId: query.id }, this.deps.enums)
+      // TODO: type me!
+      // @ts-ignore
+      return {
+        type: 'FOUND',
+        ...settlement
+      }
+    } catch (err: any) {
+      // getById throws if not found
+      // TODO(LD): catch the specific not found error!
+      return {
+        type: 'FAILED',
+        error: err
+      }
+    }
   }
+
   public async getSettlements(query: GetSettlementsQuery): Promise<GetSettlementsQueryResponse> {
-    throw new Error('Method not implemented.');
+    try {
+      const legacyQuery = {
+        currency: query.currency,
+        participantId: query.participantId?.toString(),
+        settlementWindowId: query.settlementWindowId?.toString(),
+        state: query.state,
+        fromDateTime: query.fromDateTime?.toISOString(),
+        toDateTime: query.toDateTime?.toISOString(),
+      }
+
+      const result = await SettlementDomain.getSettlementsByParams(
+        { query: legacyQuery },
+        this.deps.enums
+      )
+
+      const settlements: Settlement[] = result.map(settlement => ({
+        id: settlement.id,
+        settlementModel: settlement.settlementModel,
+        state: settlement.state,
+        reason: settlement.reason ?? '',
+        createdDate: settlement.createdDate,
+        changedDate: settlement.changedDate,
+        settlementWindows: settlement.settlementWindows ?? [],
+        participants: settlement.participants ?? []
+      }))
+
+      return { type: 'SUCCESS', result: settlements }
+    } catch (err: any) {
+      return { type: 'FAILURE', error: err }
+    }
   }
 }
-

@@ -65,8 +65,7 @@ module.exports = {
         params: request.params
       }, EventSdk.AuditEventAction.start)
       const Enums = await request.server.methods.enums('settlementWindowStates')
-      const settlementWindowResult = await settlementWindow.getById({ settlementWindowId }, Enums, request.server.log)
-      return h.response(settlementWindowResult)
+      return await settlementWindow.getById({ settlementWindowId }, Enums, request.server.log)
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -93,8 +92,11 @@ module.exports = {
       )
       span.setTags(spanTags)
       await span.audit(request.payload, EventSdk.AuditEventAction.start)
-      const Enums = await request.server.methods.enums('settlementWindowStates')
-      return await settlementWindow.process({ settlementWindowId, reason, headers: request.raw.req.headers }, Enums)
+      const Enums = await request.server.methods.enums('settlementWindowState')
+      return await settlementWindow.process({
+        settlementWindowId,
+        reason,
+      }, Enums)
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)

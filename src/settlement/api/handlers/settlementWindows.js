@@ -66,9 +66,9 @@ module.exports = {
         params: request.params
       }, EventSdk.AuditEventAction.start)
 
-      const Enums = await request.server.methods.enums('settlementWindowStates')
+      const Enums = await request.server.methods.enums('settlementWindowState')
       const settlementWindowResult = await settlementWindows.getByParams({ query: request.query }, Enums)
-      return h.response(settlementWindowResult)
+      return settlementWindowResult
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)

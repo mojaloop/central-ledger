@@ -470,6 +470,8 @@ export default class Harness {
             }
             break;
           }
+          case 'prepare-duplicate':
+          case 'fulfil-duplicate':
           case 'prepare': {
             // It can either be at parsed.id, or at parsed.content.uriParams.id.
             if (parsed.id) {

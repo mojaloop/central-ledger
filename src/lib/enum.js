@@ -162,6 +162,101 @@ const bulkTransferStateEnum = async function () {
   }
 }
 
+const settlementDelay = async function () {
+  const settlementDelayName = {}
+
+  const settlementDelayNamesList = await Db.from('settlementDelay').find({})
+  if (settlementDelayNamesList) {
+    for (const record of settlementDelayNamesList) {
+      settlementDelayName[`${record.name}`] = record.settlementDelayId
+    }
+    return settlementDelayName
+  }
+}
+
+const settlementDelayEnum = async function () {
+  const settlementDelayEnum = {}
+
+  const settlementDelayEnumsList = await Db.from('settlementDelay').find({})
+  if (settlementDelayEnumsList) {
+    for (const record of settlementDelayEnumsList) {
+      settlementDelayEnum[`${record.name}`] = record.name
+    }
+    return settlementDelayEnum
+  }
+}
+
+const settlementGranularity = async function () {
+  const settlementGranularityName = {}
+
+  const settlementGranularityNamesList = await Db.from('settlementGranularity').find({})
+  if (settlementGranularityNamesList) {
+    for (const record of settlementGranularityNamesList) {
+      settlementGranularityName[`${record.name}`] = record.settlementGranularityId
+    }
+    return settlementGranularityName
+  }
+}
+
+const settlementGranularityEnum = async function () {
+  const settlementGranularityEnum = {}
+
+  const settlementGranularityEnumsList = await Db.from('settlementGranularity').find({})
+  if (settlementGranularityEnumsList) {
+    for (const record of settlementGranularityEnumsList) {
+      settlementGranularityEnum[`${record.name}`] = record.name
+    }
+    return settlementGranularityEnum
+  }
+}
+
+const settlementInterchange = async function () {
+  const settlementInterchangeName = {}
+
+  const settlementInterchangeNamesList = await Db.from('settlementInterchange').find({})
+  if (settlementInterchangeNamesList) {
+    for (const record of settlementInterchangeNamesList) {
+      settlementInterchangeName[`${record.name}`] = record.settlementInterchangeId
+    }
+    return settlementInterchangeName
+  }
+}
+
+const settlementInterchangeEnum = async function () {
+  const settlementInterchangeEnum = {}
+
+  const settlementInterchangeEnumsList = await Db.from('settlementInterchange').find({})
+  if (settlementInterchangeEnumsList) {
+    for (const record of settlementInterchangeEnumsList) {
+      settlementInterchangeEnum[`${record.name}`] = record.name
+    }
+    return settlementInterchangeEnum
+  }
+}
+
+const settlementState = async function () {
+  const settlementStateEnum = {}
+
+  const settlementStateEnumsList = await Db.from('settlementState').find({})
+  if (settlementStateEnumsList) {
+    for (const state of settlementStateEnumsList) {
+      settlementStateEnum[`${state.enumeration}`] = state.settlementStateId
+    }
+    return settlementStateEnum
+  }
+}
+
+const settlementWindowState = async function () {
+  const settlementWindowStateEnum = {}
+  const settlementWindowStateEnumsList = await Db.from('settlementWindowState').find({})
+  if (settlementWindowStateEnumsList) {
+    for (const state of settlementWindowStateEnumsList) {
+      settlementWindowStateEnum[`${state.enumeration}`] = state.settlementWindowStateId
+    }
+    return settlementWindowStateEnum
+  }
+}
+
 const enumsIds = [
   'endpointType',
   'hubParticipant',
@@ -173,7 +268,15 @@ const enumsIds = [
   'transferStateEnum',
   'bulkProcessingState',
   'bulkTransferState',
-  'bulkTransferStateEnum'
+  'bulkTransferStateEnum',
+  'settlementDelay',
+  'settlementDelayEnum',
+  'settlementGranularity',
+  'settlementGranularityEnum',
+  'settlementInterchange',
+  'settlementInterchangeEnum',
+  'settlementState',
+  'settlementWindowState',
 ]
 
 module.exports = {
@@ -188,5 +291,13 @@ module.exports = {
   bulkProcessingState,
   bulkTransferState,
   bulkTransferStateEnum,
+  settlementDelay,
+  settlementDelayEnum,
+  settlementGranularity,
+  settlementGranularityEnum,
+  settlementInterchange,
+  settlementInterchangeEnum,
+  settlementState,
+  settlementWindowState,
   enumsIds
 }

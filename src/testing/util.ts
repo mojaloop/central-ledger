@@ -265,10 +265,15 @@ export const unwrapResponse = async (asyncFunction: (reply: any) => any) => {
   // we should capture the direct response.
   const directResponse = await asyncFunction(nestedReply)
   if (directResponse) {
+    // Default when everything went well!
+    let responseCode = 200
+    // Sometimes the handler puts it here!
+    if (directResponse.httpStatusCode) {
+      responseCode = directResponse.httpStatusCode
+    }
     return {
       responseBody: directResponse,
-      // Default when everything went well!
-      responseCode: 200
+      responseCode
     }
   }
 
@@ -277,6 +282,55 @@ export const unwrapResponse = async (asyncFunction: (reply: any) => any) => {
     responseCode
   }
 }
+
+/**
+ * @function unwrapResponseSettlement
+ *
+ * @description A version of unwrap response which maps the response slightly differently for the
+ *   settlement handlers.
+ */
+export const unwrapResponseSettlement = async (asyncFunction: (reply: any) => any) => {
+  let body: any
+  let code: number = 200 // Default.
+  const nestedReply = {
+    response: (response: any) => {
+      body = response
+      return {
+        code: (statusCode: number) => {
+          code = statusCode
+        }
+      }
+    }
+  }
+  // Sometimes the handlers call `h.response().code()`, but if they return directly,
+  // we should capture the direct response.
+  const directResponse = await asyncFunction(nestedReply)
+  if (directResponse) {
+    // Default when everything went well!
+    let code = 200
+    if (directResponse.httpStatusCode) {
+      code = directResponse.httpStatusCode
+    }
+
+    // On error the body isn't that useful, so return the message.
+    if (code > 300) {
+      body = directResponse.message
+    } else {
+      body = directResponse
+    }
+    return {
+      body,
+      code
+    }
+  }
+
+  return {
+    body,
+    code
+  }
+}
+
+
 
 export const unwrapResponseWithError = async (asyncFunction: (reply: any) => any) => {
   try {
