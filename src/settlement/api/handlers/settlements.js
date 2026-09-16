@@ -74,7 +74,10 @@ module.exports = {
     }
   },
   /**
-     * summary: Trigger the creation of a settlement event, that does the calculation of the net settlement position per participant and marks all transfers in the affected windows as Pending settlement. Returned dataset is the net settlement report for the settlement window
+     * summary: Trigger the creation of a settlement event, that does the calculation of the net
+     *          settlement position per participant and marks all transfers in the affected windows 
+     *          as Pending settlement. Returned dataset is the net settlement report for the
+     *          settlement window
      * description:
      * parameters: settlementEventPayload
      * produces: application/json
@@ -95,17 +98,17 @@ module.exports = {
       await span.audit(request.payload, EventSdk.AuditEventAction.start)
 
       const Enums = {
-        ledgerEntryTypes: await request.server.methods.enums('ledgerEntryTypes'),
+        ledgerEntryType: await request.server.methods.enums('ledgerEntryType'),
         settlementDelay: await request.server.methods.enums('settlementDelay'),
         settlementGranularity: await request.server.methods.enums('settlementGranularity'),
         settlementInterchange: await request.server.methods.enums('settlementInterchange'),
-        settlementStates: await request.server.methods.enums('settlementStates'),
-        settlementWindowStates: await request.server.methods.enums('settlementWindowStates'),
-        transferParticipantRoleTypes: await request.server.methods.enums('transferParticipantRoleTypes'),
-        transferStates: await request.server.methods.enums('transferStates')
+        settlementState: await request.server.methods.enums('settlementState'),
+        settlementWindowState: await request.server.methods.enums('settlementWindowState'),
+        transferParticipantRoleType: await request.server.methods.enums('transferParticipantRoleType'),
+        transferState: await request.server.methods.enums('transferState')
       }
       const settlementResult = await Settlements.settlementEventTrigger(request.payload, Enums)
-      return h.response(settlementResult)
+      h.response(settlementResult)
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)

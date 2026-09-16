@@ -32,10 +32,9 @@
 --------------
  ******/
 
-const Config = require('../../../lib/config')
+const Config = require('../../lib/config')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const hasFilters = require('./../../utils/truthyProperty')
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const KafkaUtil = require('@mojaloop/central-services-shared').Util.Kafka
 const SettlementWindowModel = require('../../models/settlementWindow')
@@ -45,23 +44,41 @@ const { logger } = require('../../shared/logger')
 const idGenerator = require('@mojaloop/central-services-shared').Util.id
 const generateULID = idGenerator({ type: 'ulid' })
 
+const hasFilters = (obj) => {
+  if (obj && typeof obj !== 'object') return true
+  if (obj && Object.keys(obj).length) {
+    for (const key of Object.keys(obj)) {
+      if (key && obj[key]) return true
+    }
+  }
+  return false
+}
+
 module.exports = {
   getById: async function (params, enums, options) {
     const settlementWindow = await SettlementWindowModel.getById(params)
 
     if (settlementWindow) {
-      const settlementWindowContent = await SettlementWindowContentModel.getBySettlementWindowId(settlementWindow.settlementWindowId)
+      const settlementWindowContent = await SettlementWindowContentModel.getBySettlementWindowId(
+        settlementWindow.settlementWindowId
+      )
 
       if (settlementWindowContent) {
         settlementWindow.content = settlementWindowContent
         return settlementWindow
       } else {
-        const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `No records for settlementWidowContentId : ${params.settlementWindowId} found`)
+        const error = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 
+          `No records for settlementWidowContentId : ${params.settlementWindowId} found`
+        )
         logger.error(error)
         throw error
       }
     } else {
-      const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `No record for settlementWindowId: ${params.settlementWindowId} found`)
+      const error = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 
+        `No record for settlementWindowId: ${params.settlementWindowId} found`
+      )
       logger.error(error)
       throw error
     }
@@ -73,46 +90,71 @@ module.exports = {
       const settlementWindows = await SettlementWindowModel.getByParams(params, enums)
       if (settlementWindows && settlementWindows.length > 0) {
         for (const settlementWindow of settlementWindows) {
-          const settlementWindowContent = await SettlementWindowContentModel.getBySettlementWindowId(settlementWindow.settlementWindowId)
+          const settlementWindowContent = await SettlementWindowContentModel
+            .getBySettlementWindowId(settlementWindow.settlementWindowId)
           if (settlementWindowContent) {
             settlementWindow.content = settlementWindowContent
           } else {
-            const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `No records for settlementWidowContentId : ${settlementWindow.settlementWindowId} found`)
+            const error = ErrorHandler.Factory.createFSPIOPError(
+              ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 
+              `No records for settlementWidowContentId : ${settlementWindow.settlementWindowId} found`
+            )
             logger.error(error)
             throw error
           }
         }
         return settlementWindows
       } else {
-        const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `settlementWindow by filters: ${JSON.stringify(params.query).replace(/"/g, '')} not found`)
+        const error = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 
+          `settlementWindow by filters: ${JSON.stringify(params.query).replace(/"/g, '')} not found`
+        )
         logger.error(error)
         throw error
       }
     } else {
-      const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Use at least one parameter: participantId, state, fromDateTime, toDateTime, currency')
+      const error = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 
+        'Use at least one parameter: participantId, state, fromDateTime, toDateTime, currency'
+      )
       logger.error(error)
       throw error
     }
   },
 
   process: async function (params, enums) {
-    const nextId = await SettlementWindowModel.process(params, enums)
-    await SettlementWindowModel.close(params.settlementWindowId, params.reason)
-    // TODO(LD): note, removed the kafka call in favour of directly processing the close.
-    // TODO: Trigger the async close settlement window flow.
-
-    // const messageId = generateULID()
-    // const eventId = generateULID()
-    // const state = StreamingProtocol.createEventState(Enum.Events.EventStatus.SUCCESS.status, Enum.Events.EventStatus.SUCCESS.code, Enum.Events.EventStatus.SUCCESS.description)
-    // const event = StreamingProtocol.createEventMetadata(Enum.Events.Event.Type.DEFERRED_SETTLEMENT, Enum.Events.Event.Action.CLOSE, state)
-    // const metadata = StreamingProtocol.createMetadata(eventId, event)
-    // const messageProtocol = StreamingProtocol.createMessage(messageId, Config.HUB_NAME, Config.HUB_NAME, metadata, params.headers, params)
-    // const topicConfig = KafkaUtil.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.DEFERRED_SETTLEMENT, Enum.Events.Event.Action.CLOSE)
+    const settlementWindowId = await SettlementWindowModel.process(params, enums)
+    const messageId = generateULID()
+    const eventId = generateULID()
+    const state = StreamingProtocol.createEventState(
+      Enum.Events.EventStatus.SUCCESS.status, 
+      Enum.Events.EventStatus.SUCCESS.code, 
+      Enum.Events.EventStatus.SUCCESS.description
+    )
+    const event = StreamingProtocol.createEventMetadata(
+      Enum.Events.Event.Type.DEFERRED_SETTLEMENT, 
+      Enum.Events.Event.Action.CLOSE, 
+      state
+    )
+    const metadata = StreamingProtocol.createMetadata(eventId, event)
+    const messageProtocol = StreamingProtocol.createMessage(
+      messageId, Config.HUB_NAME, Config.HUB_NAME, metadata, params.headers, params
+    )
+    const topicConfig = KafkaUtil.createGeneralTopicConf(
+      Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+      Enum.Events.Event.Type.DEFERRED_SETTLEMENT, 
+      Enum.Events.Event.Action.CLOSE
+    )
     // TODO: this config isn't in the validator!
-    // const kafkaConfig = KafkaUtil.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, Enum.Events.Event.Type.DEFERRED_SETTLEMENT.toUpperCase(), Enum.Events.Event.Action.CLOSE.toUpperCase())
-    // await Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
+    const kafkaConfig = KafkaUtil.getKafkaConfig(
+      Config.KAFKA_CONFIG, 
+      Enum.Kafka.Config.PRODUCER, 
+      Enum.Events.Event.Type.DEFERRED_SETTLEMENT.toUpperCase(), 
+      Enum.Events.Event.Action.CLOSE.toUpperCase()
+     )
+    await Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
 
-    return SettlementWindowModel.getById({ settlementWindowId: nextId }, enums)
+    return SettlementWindowModel.getById({ settlementWindowId }, enums)
   },
 
   close: async function (settlementWindowId, reason) {

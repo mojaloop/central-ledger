@@ -3,6 +3,8 @@ import { Enum, LedgerAccountTypeEnum } from '@mojaloop/central-services-shared'
 import Logger from "@mojaloop/central-services-logger"
 import Harness from './harness'
 import ParticipantService from '../domain/participant/index'
+import SettlementWindowModel from '../models/settlementWindow'
+import SettlementDomain from '../domain/settlement'
 
 const { ilpFactory, ILP_VERSIONS } = require('@mojaloop/sdk-standard-components').Ilp
 const ilpService = ilpFactory(ILP_VERSIONS.v1, { secret: 'password', logger: Logger })
@@ -108,7 +110,7 @@ export const createDfsp = async (harness: Harness, payload: CreateDfspPayload): 
 
     idx += 1
   }
-  
+
   if (depositErrors.length > 0) {
     throw new Error(`${depositErrors.length} deposit(s) failed with errors: \n[${depositErrors.join(',')}]`)
   }
@@ -142,6 +144,50 @@ export const getAccounts = async (name: string, currency?: string) => {
   return accounts;
 }
 
+export const closeSettlementWindow = async (harness: Harness, currency: string = 'USD') => {
+  const enums = harness.enums.settlementWindowState
+  const windowsOpen = await SettlementWindowModel.getByParams({
+    query: { state: enums.OPEN, currency }
+  })
+  const closedWindowIds: number[] = []
+  for (const window of windowsOpen) {
+    const reason = 'Test Settlement.'
+    await SettlementWindowModel.process({
+      settlementWindowId: window.settlementWindowId,
+      reason,
+    }, enums)
+
+    await SettlementWindowModel.close(window.settlementWindowId, reason)
+    closedWindowIds.push(window.settlementWindowId)
+  }
+
+  return closedWindowIds
+}
+
+export const getOpenSettlementWindow = async (harness: Harness, currency: string = 'USD') => {
+  const enums = harness.enums.settlementWindowState
+  const windows = await SettlementWindowModel.getByParams({
+    query: { state: enums.OPEN, currency }
+  })
+  assert(windows.length === 1, `No open settlement window found for currency: ${currency}.`)
+  return windows[0]
+}
+
+export const createSettlement = async (
+  harness: Harness, 
+  windowIds: Array<number>,
+  currency: string = 'USD',
+  reason: string = 'Test Settlement.'
+) => {
+
+  const settlementModel = `DEFERRED_MULTILATERAL_NET_${currency}`
+  const payload = {
+    settlementModel,
+    reason,
+    settlementWindows: windowIds.map(id => ({ id }))
+  }
+  return SettlementDomain.settlementEventTrigger(payload, harness.enums)
+}
 
 /**
  * Helper to set up the Hub.
@@ -495,7 +541,7 @@ export class Dfsp {
   }
 
   public async disable(): Promise<void> {
-    await this.options.harness.ledger.disableDfsp({dfspId: this.options.name})
+    await this.options.harness.ledger.disableDfsp({ dfspId: this.options.name })
   }
 
   public async enable(): Promise<void> {
@@ -504,7 +550,7 @@ export class Dfsp {
 
   public async positionAccountDisable(currency: string): Promise<void> {
     const account = await this.getPositionAccount(currency)
-    await this.options.harness.ledger.disableDfspAccount({ 
+    await this.options.harness.ledger.disableDfspAccount({
       dfspId: this.options.name,
       accountId: account.id
     })
@@ -643,6 +689,11 @@ export class PaymentBuilder {
   build(): Payment {
     assert(this.harness)
     assert(this.transferHandler)
+
+    // Default the transfer id from the prng if not set.
+    if (!this._transferId) {
+      this._transferId = this.harness.prng.uuidv4()
+    }
 
     const options: PaymentOptions = {
       harness: this.harness,

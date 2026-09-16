@@ -48,7 +48,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-  get: async function getSettlementWindowById (request, h) {
+  get: async function getSettlementWindowById(request, h) {
     const settlementWindowId = request.params.id
     try {
       const { span, headers } = request
@@ -65,8 +65,7 @@ module.exports = {
         params: request.params
       }, EventSdk.AuditEventAction.start)
       const Enums = await request.server.methods.enums('settlementWindowStates')
-      const settlementWindowResult = await settlementWindow.getById({ settlementWindowId }, Enums, request.server.log)
-      return h.response(settlementWindowResult)
+      return await settlementWindow.getById({ settlementWindowId }, Enums, request.server.log)
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -79,7 +78,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-  post: async function closeSettlementWindow (request) {
+  post: async function closeSettlementWindow(request) {
     const { reason } = request.payload
     const settlementWindowId = request.params.id
     try {
@@ -93,8 +92,11 @@ module.exports = {
       )
       span.setTags(spanTags)
       await span.audit(request.payload, EventSdk.AuditEventAction.start)
-      const Enums = await request.server.methods.enums('settlementWindowStates')
-      return await settlementWindow.process({ settlementWindowId, reason, headers: request.raw.req.headers }, Enums)
+      const Enums = await request.server.methods.enums('settlementWindowState')
+      return await settlementWindow.process({
+        settlementWindowId,
+        reason,
+      }, Enums)
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
