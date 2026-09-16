@@ -22,14 +22,16 @@ export const NYC_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/nyc')
 export const TAPE_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/tape')
 export const TAP_XUNIT_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/tap-xunit')
 
-// `npm test` pipes this process into tap-spec, which can exit as soon as it has
-// parsed a complete TAP document - before the trailing merged-summary writes.
-// Writes to the closed pipe then raise EPIPE and would crash an otherwise green
-// run, so treat EPIPE on stdout/stderr as best-effort output and ignore it.
-for (const stream of [process.stdout, process.stderr]) {
-  stream.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code !== 'EPIPE') throw err
-  })
+/**
+ * @function exitWhenStdoutFlushed
+ * @description Exit the process only once everything already queued on stdout has actually been
+ *   written. `process.exit()` is synchronous, but writes to a non-TTY stdout (e.g. when piped into
+ *   `tap-spec`) are not - calling it right after a large `console.log`/`write` can truncate that
+ *   write mid-flight. Queuing an empty write and exiting in its callback guarantees everything
+ *   enqueued before it has already drained, since a writable stream processes writes in order.
+ */
+function exitWhenStdoutFlushed(code: number): void {
+  process.stdout.write('', () => process.exit(code))
 }
 
 async function main() {
@@ -38,18 +40,20 @@ async function main() {
     switch (task.tag) {
       case 'TEST_UNIT': {
         const result = await runUnitTests(task)
-        process.exit(result.exitCode)
+        exitWhenStdoutFlushed(result.exitCode)
+        break
       }
       case 'TEST_COVERAGE': {
         await runCoverage(task)
         if (task.onlyReport) {
-          process.exit(0)
+          exitWhenStdoutFlushed(0)
         }
         return
       }
       case 'TEST_INTEGRATION': {
         const result = await runIntegrationTests(task)
-        process.exit(result.exitCode)
+        exitWhenStdoutFlushed(result.exitCode)
+        break
       }
     }
   } catch (err: any) {
@@ -66,19 +70,26 @@ async function runUnitTests(task: RunTaskUnit): Promise<ResultTest> {
   let results: ResultTest
   switch (task.type) {
     case 'TAPE':
-      console.log('==== Running Legacy (Tape) unit tests ====')
+      console.error('==== Running Legacy (Tape) unit tests ====')
       results = await runUnitTestsTape()
       break
     case 'NATIVE':
-      console.log('==== Running New (Native) unit tests ====')
+      console.error('==== Running New (Native) unit tests ====')
       results = await runUnitTestsNative()
       break
     case 'BOTH': {
-      console.log('==== Running Legacy (Tape) unit tests ====')
-      const resultsTape = await runUnitTestsTape()
+      // Run both suites silently (only accumulating their output, not relaying it live) because
+      // each one emits its own separate "TAP version 13" document. Concatenating two raw TAP
+      // documents on stdout is not valid TAP, and Node's native-test TAP dialect (nested
+      // subtests, large stack-trace diagnostics) crashes older TAP consumers like tap-spec
+      // outright - which then throws EPIPE back into this process when it keeps writing to a
+      // closed pipe. mergeTapStreams() below produces the one valid, flattened TAP document
+      // that should actually reach stdout.
+      console.error('==== Running Legacy (Tape) unit tests ====')
+      const resultsTape = await runUnitTestsTape({ silent: true })
       assert(resultsTape.exitCode !== null, 'Encountered unknown error when runUnitTestsTape().')
-      console.log('==== Running New (Native) unit tests ====')
-      const resultsNative = await runUnitTestsNative()
+      console.error('==== Running New (Native) unit tests ====')
+      const resultsNative = await runUnitTestsNative({ silent: true })
       assert(resultsNative.exitCode !== null, 'Encountered unknown error when runUnitTestsNative().')
 
       const outputMerged = mergeTapStreams(resultsTape.output, resultsNative.output)
@@ -87,11 +98,7 @@ async function runUnitTests(task: RunTaskUnit): Promise<ResultTest> {
         return acc > 0 ? acc : result.exitCode
       }, 0)
 
-      console.log('==== Merged test results ====')
-      const summaryText = outputMerged.split('\n')
-        .filter(line => line.match(/^#/))
-        .join('\n')
-      console.log(summaryText)
+      console.log(outputMerged)
 
       results = {
         output: outputMerged,
@@ -235,7 +242,7 @@ function runCoverageNative(opts: NycOptions): void {
  * @function runUnitTestsTape
  * @description Run the legacy unit tests written with tape.
  */
-async function runUnitTestsTape(): Promise<ResultTest> {
+async function runUnitTestsTape(opts: { silent?: boolean } = {}): Promise<ResultTest> {
   return new Promise((resolve) => {
     const testFiles = findFiles(
       path.join(PROJECT_ROOT, 'test/unit'),
@@ -270,7 +277,7 @@ async function runUnitTestsTape(): Promise<ResultTest> {
     proc.stdout.on('data', (data: Buffer) => {
       const chunk = data.toString()
       output += chunk
-      process.stdout.write(chunk)
+      if (!opts.silent) process.stdout.write(chunk)
     })
 
     proc.stderr.on('data', (data: Buffer) => {
@@ -292,7 +299,7 @@ async function runUnitTestsTape(): Promise<ResultTest> {
  * @function runUnitTestsNative
  * @description Run the unit tests with the native nodejs test suite.
  */
-async function runUnitTestsNative(): Promise<ResultTest> {
+async function runUnitTestsNative(opts: { silent?: boolean } = {}): Promise<ResultTest> {
   return new Promise((resolve) => {
     const testFiles = findFiles(
       path.join(PROJECT_ROOT, 'src'),
@@ -319,7 +326,7 @@ async function runUnitTestsNative(): Promise<ResultTest> {
     proc.stdout.on('data', (data: Buffer) => {
       const chunk = data.toString()
       output += chunk
-      process.stdout.write(chunk)
+      if (!opts.silent) process.stdout.write(chunk)
     })
 
     proc.stderr.on('data', (data: Buffer) => {

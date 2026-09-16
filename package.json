@@ -96,14 +96,15 @@
     "@mojaloop/central-services-health": "15.2.3",
     "@mojaloop/central-services-logger": "11.10.6",
     "@mojaloop/central-services-metrics": "12.8.8",
-    "@mojaloop/central-services-shared": "18.37.0",
-    "@mojaloop/central-services-stream": "11.9.3",
+    "@mojaloop/central-services-shared": "18.39.3",
+    "@mojaloop/central-services-stream": "11.10.0",
     "@mojaloop/database-lib": "11.3.10",
     "@mojaloop/event-sdk": "14.8.5",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.10.0",
     "@mojaloop/ml-number": "11.4.5",
     "@mojaloop/object-store-lib": "12.2.4",
     "@now-ims/hapi-now-auth": "2.1.0",
+    "@types/bun": "^1.4.2",
     "ajv": "8.20.0",
     "ajv-keywords": "5.1.0",
     "base64url": "3.0.1",
@@ -116,10 +117,10 @@
     "hapi-auth-bearer-token": "8.0.0",
     "hapi-swagger": "17.3.2",
     "ilp-packet": "2.2.0",
-    "joi": "18.2.8",
+    "joi": "18.2.9",
     "knex": "3.3.0",
     "lodash": "4.18.1",
-    "moment": "2.30.1",
+    "moment": "2.31.0",
     "mongo-uri-builder": "^4.0.0",
     "node-rdkafka": "3.6.1",
     "parse-strings-in-object": "2.0.0",
@@ -135,9 +136,8 @@
     "@mojaloop/sdk-standard-components": "19.19.1",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/auto-instrumentations-node": "0.80.0",
-    "@types/bun": "^1.4.2",
     "@types/mock-knex": "0.4.8",
-    "@types/node": "26.5.0",
+    "@types/node": "26.6.0",
     "@types/rc": "1.2.4",
     "@typescript-eslint/eslint-plugin": "^8.70.0",
     "@typescript-eslint/parser": "^8.70.0",
@@ -186,11 +186,12 @@
       "ajv": "6.14.0"
     },
     "axios": "1.18.1",
-    "brace-expansion": "2.1.4",
+    "brace-expansion": "2.1.7",
     "convict": "6.2.5",
     "form-data": "4.0.6",
     "lodash": "4.18.1",
-    "undici": "6.28.0",
+    "lodash-es": "4.18.1",
+    "undici": "6.28.1",
     "shins": {
       "ajv": "8.18.0",
       "ejs": "3.1.10",
@@ -202,13 +203,13 @@
       "markdown-it": "14.3.0"
     },
     "hapi-auth-bearer-token": {
-      "joi": "18.2.8"
+      "joi": "18.2.9"
     },
     "hapi-swagger": {
-      "joi": "18.2.8"
+      "joi": "18.2.9"
     },
     "immutable": "5.1.8",
-    "fast-uri": "3.1.6",
+    "fast-uri": "3.1.8",
     "jsonwebtoken": "9.0.0",
     "jsonpointer": "5.0.0",
     "on-headers": "1.1.0",
@@ -226,15 +227,40 @@
       "minimatch": "3.1.5"
     },
     "underscore": "1.13.8",
-    "postcss": "8.5.26",
+    "postcss": "8.5.28",
     "qs": "6.16.0",
+    "js-yaml@^4.0.0": "4.3.2",
     "@grpc/grpc-js": "1.14.4",
     "joi@^17.0.0": "17.13.4",
     "uuid": "11.1.1",
-    "lodash-es": "4.18.1",
-    "@redocly/openapi-core": "2.46.1",
-    "js-yaml@3": "3.15.1",
-    "js-yaml@4": "4.3.1"
+    "@mojaloop/central-services-shared": {
+      ".": "$@mojaloop/central-services-shared",
+      "ajv": "8.20.0",
+      "@mojaloop/inter-scheme-proxy-cache-lib": {
+        "ajv": "8.20.0"
+      }
+    },
+    "@mojaloop/ml-schema-transformer-lib": {
+      ".": "2.10.1",
+      "ajv": "8.20.0",
+      "@mojaloop/central-services-shared": {
+        ".": "$@mojaloop/central-services-shared",
+        "ajv": "8.20.0",
+        "joi": "18.2.9",
+        "@mojaloop/inter-scheme-proxy-cache-lib": {
+          "ajv": "8.20.0"
+        }
+      },
+      "openapi-backend": {
+        "ajv": "8.20.0"
+      },
+      "@apidevtools/swagger-parser": {
+        "ajv": "8.20.0"
+      }
+    },
+    "@mojaloop/event-sdk": {
+      "@mojaloop/central-services-stream": "$@mojaloop/central-services-stream"
+    }
   },
   "config": {
     "knex": "--knexfile ./dist/knexfile.js",
