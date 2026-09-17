@@ -36,7 +36,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "postbuild": "cp src/migrations/migration.template dist/migrations/migration.template",
+    "postbuild": "mkdir -p dist/migrations && cp src/migrations/migration.template dist/migrations/migration.template",
     "start": "npm run start:api",
     "start:api": "node dist/api/index.js",
     "start:handlers": "node dist/handlers/index.js",
