@@ -123,38 +123,23 @@ module.exports = {
   },
 
   process: async function (params, enums) {
-    const settlementWindowId = await SettlementWindowModel.process(params, enums)
-    const messageId = generateULID()
-    const eventId = generateULID()
-    const state = StreamingProtocol.createEventState(
-      Enum.Events.EventStatus.SUCCESS.status, 
-      Enum.Events.EventStatus.SUCCESS.code, 
-      Enum.Events.EventStatus.SUCCESS.description
-    )
-    const event = StreamingProtocol.createEventMetadata(
-      Enum.Events.Event.Type.DEFERRED_SETTLEMENT, 
-      Enum.Events.Event.Action.CLOSE, 
-      state
-    )
-    const metadata = StreamingProtocol.createMetadata(eventId, event)
-    const messageProtocol = StreamingProtocol.createMessage(
-      messageId, Config.HUB_NAME, Config.HUB_NAME, metadata, params.headers, params
-    )
-    const topicConfig = KafkaUtil.createGeneralTopicConf(
-      Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
-      Enum.Events.Event.Type.DEFERRED_SETTLEMENT, 
-      Enum.Events.Event.Action.CLOSE
-    )
-    // TODO: this config isn't in the validator!
-    const kafkaConfig = KafkaUtil.getKafkaConfig(
-      Config.KAFKA_CONFIG, 
-      Enum.Kafka.Config.PRODUCER, 
-      Enum.Events.Event.Type.DEFERRED_SETTLEMENT.toUpperCase(), 
-      Enum.Events.Event.Action.CLOSE.toUpperCase()
-     )
-    await Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
+    const nextId = await SettlementWindowModel.process(params, enums)
+    await SettlementWindowModel.close(params.settlementWindowId, params.reason)
+    // TODO(LD): note, removed the kafka call in favour of directly processing the close.
+    // TODO: Trigger the async close settlement window flow.
 
-    return SettlementWindowModel.getById({ settlementWindowId }, enums)
+    // const messageId = generateULID()
+    // const eventId = generateULID()
+    // const state = StreamingProtocol.createEventState(Enum.Events.EventStatus.SUCCESS.status, Enum.Events.EventStatus.SUCCESS.code, Enum.Events.EventStatus.SUCCESS.description)
+    // const event = StreamingProtocol.createEventMetadata(Enum.Events.Event.Type.DEFERRED_SETTLEMENT, Enum.Events.Event.Action.CLOSE, state)
+    // const metadata = StreamingProtocol.createMetadata(eventId, event)
+    // const messageProtocol = StreamingProtocol.createMessage(messageId, Config.HUB_NAME, Config.HUB_NAME, metadata, params.headers, params)
+    // const topicConfig = KafkaUtil.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.DEFERRED_SETTLEMENT, Enum.Events.Event.Action.CLOSE)
+    // TODO: this config isn't in the validator!
+    // const kafkaConfig = KafkaUtil.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, Enum.Events.Event.Type.DEFERRED_SETTLEMENT.toUpperCase(), Enum.Events.Event.Action.CLOSE.toUpperCase())
+    // await Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
+
+    return SettlementWindowModel.getById({ settlementWindowId: nextId }, enums)
   },
 
   close: async function (settlementWindowId, reason) {

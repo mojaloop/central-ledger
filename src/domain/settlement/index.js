@@ -44,6 +44,21 @@ const { logger } = require('../../shared/logger')
 
 const arrayDiff = (arr1, arr2) => arr1.filter(x => !arr2.includes(x))
 
+
+/**
+ * @returns {Array<{
+ *   id: number,
+ *   accounts: Array<{
+ *     id: number,
+ *     state: string,
+ *     reason: string,
+ *     netSettlementAmount: {
+ *       amount: number,
+ *       currency: string,
+ *     }
+ *   }>
+ * }>}
+ */
 const prepareParticipantsResult = (participantCurrenciesList) => {
   const participantAccounts = {}
   for (const account of participantCurrenciesList) {
@@ -187,7 +202,7 @@ const validateSettlementModel = async function (settlementModel, settlementDelay
 }
 
 const getById = async ({ settlementId }, enums) => {
-  const settlement = await SettlementModel.getById({ settlementId }, enums)
+  const settlement = await SettlementModel.getById2({ settlementId }, enums)
   if (settlement) {
     const settlementWindowsList = await SettlementWindowModel.getBySettlementId({ settlementId }, enums)
     const participantCurrenciesList = await SettlementParticipantCurrency.getParticipantCurrencyBySettlementId({ settlementId }, enums)
@@ -232,7 +247,7 @@ const getById = async ({ settlementId }, enums) => {
 
 const abortById = async (settlementId, payload, enums) => {
   // seq-settlement-6.2.6, step 3
-  const settlementData = await SettlementModel.getById({ settlementId })
+  const settlementData = await SettlementModel.getById2({ settlementId })
 
   if (!settlementData) {
     const error = ErrorHandler.Factory.createFSPIOPError(
@@ -404,7 +419,7 @@ const settlementEventTrigger = async (params, enums) => {
   )
 
   // retrieve resulting data for response
-  const settlement = await SettlementModel.getById(settlementId)
+  const settlement = await getById({settlementId}, enums)
   const settlementWindowsList = await SettlementWindowModel.getBySettlementId({ settlementId })
   const settlementWindowContentAll = await SettlementWindowContentModel.getBySettlementId(
     settlementId
@@ -420,7 +435,7 @@ const settlementEventTrigger = async (params, enums) => {
     .getParticipantCurrencyBySettlementId({ settlementId })
   const participants = prepareParticipantsResult(participantCurrenciesList)
   return {
-    id: settlement.settlementId,
+    id: settlement.id,
     settlementModel,
     state: settlement.state,
     reason: settlement.reason,

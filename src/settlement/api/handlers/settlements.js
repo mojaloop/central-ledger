@@ -33,7 +33,7 @@
 'use strict'
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Settlements = require('../../domain/settlement/index')
+const Settlements = require('../../../domain/settlement/index')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
@@ -65,7 +65,7 @@ module.exports = {
         params: request.params
       }, EventSdk.AuditEventAction.start)
 
-      const Enums = await request.server.methods.enums('settlementStates')
+      const Enums = await request.server.methods.enums('settlementState')
       const settlementResult = await Settlements.getSettlementsByParams({ query: request.query }, Enums)
       return h.response(settlementResult)
     } catch (err) {

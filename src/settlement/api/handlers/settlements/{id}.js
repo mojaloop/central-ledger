@@ -34,7 +34,7 @@
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { logger } = require('../../../shared/logger')
-const Settlements = require('../../../domain/settlement/index')
+const Settlements = require('../../../../domain/settlement/index')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
@@ -70,7 +70,7 @@ module.exports = {
       const Enums = await request.server.methods.enums('settlementStates')
       request.server.log('info', `get settlement by Id requested with id ${settlementId}`)
       const settlementResult = await Settlements.getById({ settlementId }, Enums)
-      return h.response(settlementResult)
+      return settlementResult
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -107,22 +107,23 @@ module.exports = {
         throw error
       }
       const Enums = {
-        ledgerAccountTypes: await request.server.methods.enums('ledgerAccountTypes'),
-        ledgerEntryTypes: await request.server.methods.enums('ledgerEntryTypes'),
-        participantLimitTypes: await request.server.methods.enums('participantLimitTypes'),
-        settlementStates: await request.server.methods.enums('settlementStates'),
-        settlementWindowStates: await request.server.methods.enums('settlementWindowStates'),
-        transferParticipantRoleTypes: await request.server.methods.enums('transferParticipantRoleTypes'),
-        transferStates: await request.server.methods.enums('transferStates'),
-        transferStateEnums: await request.server.methods.enums('transferStateEnums')
+        ledgerAccountType: await request.server.methods.enums('ledgerAccountType'),
+        ledgerEntryType: await request.server.methods.enums('ledgerEntryType'),
+        participantLimitType: await request.server.methods.enums('participantLimitType'),
+        settlementState: await request.server.methods.enums('settlementState'),
+        settlementWindowState: await request.server.methods.enums('settlementWindowState'),
+        transferParticipantRoleType: await request.server.methods.enums('transferParticipantRoleType'),
+        transferState: await request.server.methods.enums('transferState'),
+        transferStateEnum: await request.server.methods.enums('transferStateEnum')
       }
       if (p.participants) {
         return await Settlements.putById(settlementId, request.payload, Enums)
-      } else if (p.state && p.state === Enums.settlementStates.ABORTED) {
+      } else if (p.state && p.state === Enums.settlementState.ABORTED) {
         return await Settlements.abortById(settlementId, request.payload, Enums)
       } else {
         const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Invalid request payload input')
         logger.error(error)
+        logger.error(error.stack)
         throw error
       }
     } catch (err) {

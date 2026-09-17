@@ -31,7 +31,7 @@
  ******/
 'use strict'
 
-const settlementWindow = require('../../../domain/settlementWindow/index')
+const settlementWindow = require('../../../../domain/settlementWindow/index')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
