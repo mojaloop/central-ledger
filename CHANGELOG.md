@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.2.0](https://github.com/mojaloop/central-ledger/compare/v20.1.1...v20.2.0) (2026-09-17)
+
+
+### Features
+
+* adding security.txt file, accompanying changes to address pre-commit hook failures ([#1304](https://github.com/mojaloop/central-ledger/issues/1304)) ([2f2831c](https://github.com/mojaloop/central-ledger/commit/2f2831c8c6912b3fa2003de745b5062bc6ee881b))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([1625f4a](https://github.com/mojaloop/central-ledger/commit/1625f4a2d4ef8fb96a09c2f6ed77657e3230814b))
+
 ### [20.1.1](https://github.com/mojaloop/central-ledger/compare/v20.1.0...v20.1.1) (2026-09-17)
 
 
