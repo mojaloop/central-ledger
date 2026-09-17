@@ -89,7 +89,6 @@ const create = async (settlement) => {
 }
 
 /**
- * 
  * @param {number} id 
  * @returns {Promise<{
  *   createdDate: Date,
@@ -101,6 +100,33 @@ const create = async (settlement) => {
  */
 const getById = async (id) => {
   return Db.from('settlement').findOne({ settlementId: id })
+}
+
+// Orignally from facade?
+/**
+ * @param {number} id 
+ * @returns {Promise<{
+ *   changedDate: Date,
+ *   createdDate: Date,
+ *   reason: string,
+ *   settlementId: number,
+ *   settlementModelId: number,
+ *   state: string,
+ * }>}
+ */
+const getById2 = async function ({ settlementId }) {
+  return Db.from('settlement').query(builder => {
+    return builder
+      .join('settlementStateChange AS ssc', 'ssc.settlementStateChangeId', 'settlement.currentStateChangeId')
+      .select('settlement.settlementId',
+        'settlement.settlementModelId',
+        'ssc.settlementStateId AS state',
+        'ssc.reason',
+        'settlement.createdDate',
+        'ssc.createdDate AS changedDate')
+      .where('settlement.settlementId', settlementId)
+      .first()
+  })
 }
 
 const getByParams = async ({
@@ -734,16 +760,16 @@ const putById = async (settlementId, payload, enums) => {
 
 
 /**
- * @param enums.ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT
- * @param enums.ledgerEntryTypes
- * @param enums.participantLimitTypes
+ * @param enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT
+ * @param enums.ledgerEntryType
+ * @param enums.participantLimitType
  * @param enums.settlementState.PS_TRANSFERS_RECORDED
  * @param enums.settlementState.PS_TRANSFERS_RESERVED
  * @param enums.settlementState.PS_TRANSFERS_COMMITTED
- * @param enums.transferParticipantRoleTypes
- * @param enums.transferParticipantRoleTypes.DFSP_POSITION
- * @param enums.transferParticipantRoleTypes.HUB
- * @param enums.transferStates
+ * @param enums.transferParticipantRoleType
+ * @param enums.transferParticipantRoleType.DFSP_POSITION
+ * @param enums.transferParticipantRoleType.HUB
+ * @param enums.transferState
  */
 const settlementTransfersPrepare = async function (settlementId, transactionTimestamp, enums, trx = null) {
   const knex = await Db.getKnex()
@@ -792,7 +818,7 @@ const settlementTransfersPrepare = async function (settlementId, transactionTime
         .join('participantCurrency AS pc2', function () {
           this.on('pc2.participantId', Config.HUB_ID)
             .andOn('pc2.currencyId', 'pc1.currencyId')
-            .andOn('pc2.ledgerAccountTypeId', enums.ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT)
+            .andOn('pc2.ledgerAccountTypeId', enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
             .andOn('pc2.isActive', 1)
         })
         .select('pc2.participantCurrencyId AS mlnsAccountId')
@@ -802,11 +828,11 @@ const settlementTransfersPrepare = async function (settlementId, transactionTime
 
       let ledgerEntryTypeId
       if (t.netAmount < 0) {
-        ledgerEntryTypeId = enums.ledgerEntryTypes.SETTLEMENT_NET_RECIPIENT
+        ledgerEntryTypeId = enums.ledgerEntryType.SETTLEMENT_NET_RECIPIENT
       } else if (t.netAmount > 0) {
-        ledgerEntryTypeId = enums.ledgerEntryTypes.SETTLEMENT_NET_SENDER
+        ledgerEntryTypeId = enums.ledgerEntryType.SETTLEMENT_NET_SENDER
       } else { // t.netAmount === 0
-        ledgerEntryTypeId = enums.ledgerEntryTypes.SETTLEMENT_NET_ZERO
+        ledgerEntryTypeId = enums.ledgerEntryType.SETTLEMENT_NET_ZERO
       }
 
       // Insert transferParticipant records
@@ -814,7 +840,7 @@ const settlementTransfersPrepare = async function (settlementId, transactionTime
         .insert({
           transferId: t.settlementTransferId,
           participantCurrencyId: mlnsAccountId,
-          transferParticipantRoleTypeId: enums.transferParticipantRoleTypes.HUB,
+          transferParticipantRoleTypeId: enums.transferParticipantRoleType.HUB,
           ledgerEntryTypeId,
           amount: t.netAmount,
           createdDate: transactionTimestamp,
@@ -825,7 +851,7 @@ const settlementTransfersPrepare = async function (settlementId, transactionTime
         .insert({
           transferId: t.settlementTransferId,
           participantCurrencyId: t.participantCurrencyId,
-          transferParticipantRoleTypeId: enums.transferParticipantRoleTypes.DFSP_POSITION,
+          transferParticipantRoleTypeId: enums.transferParticipantRoleType.DFSP_POSITION,
           ledgerEntryTypeId,
           amount: -t.netAmount,
           createdDate: transactionTimestamp,
@@ -837,7 +863,7 @@ const settlementTransfersPrepare = async function (settlementId, transactionTime
       await knex('transferStateChange')
         .insert({
           transferId: t.settlementTransferId,
-          transferStateId: enums.transferStates.RECEIVED_PREPARE,
+          transferStateId: enums.transferState.RECEIVED_PREPARE,
           reason: 'Settlement transfer prepare',
           createdDate: transactionTimestamp
         })
@@ -859,16 +885,16 @@ const settlementTransfersPrepare = async function (settlementId, transactionTime
 }
 
 /**
- * @param enums.ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT
- * @param enums.ledgerEntryTypes
- * @param enums.participantLimitTypes
+ * @param enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT
+ * @param enums.ledgerEntryType
+ * @param enums.participantLimitType
  * @param enums.settlementState.PS_TRANSFERS_RECORDED
  * @param enums.settlementState.PS_TRANSFERS_RESERVED
  * @param enums.settlementState.PS_TRANSFERS_COMMITTED
- * @param enums.transferParticipantRoleTypes
- * @param enums.transferParticipantRoleTypes.DFSP_POSITION
- * @param enums.transferParticipantRoleTypes.HUB
- * @param enums.transferStates
+ * @param enums.transferParticipantRoleType
+ * @param enums.transferParticipantRoleType.DFSP_POSITION
+ * @param enums.transferParticipantRoleType.HUB
+ * @param enums.transferState
  */
 const settlementTransfersReserve = async function (settlementId, transactionTimestamp, requireLiquidityCheck, enums, trx = null) {
   const knex = await Db.getKnex()
@@ -881,21 +907,21 @@ const settlementTransfersReserve = async function (settlementId, transactionTime
     })
     .join('transferStateChange AS tsc1', function () {
       this.on('tsc1.transferId', 'spc.settlementTransferId')
-        .andOn('tsc1.transferStateId', knex.raw('?', [enums.transferStates.RECEIVED_PREPARE]))
+        .andOn('tsc1.transferStateId', knex.raw('?', [enums.transferState.RECEIVED_PREPARE]))
     })
     .leftJoin('transferStateChange AS tsc2', function () {
       this.on('tsc2.transferId', 'spc.settlementTransferId')
-        .andOn('tsc2.transferStateId', knex.raw('?', [enums.transferStates.RESERVED]))
+        .andOn('tsc2.transferStateId', knex.raw('?', [enums.transferState.RESERVED]))
     })
     .join('transferParticipant AS tp1', function () {
       this.on('tp1.transferId', 'spc.settlementTransferId')
-        .andOn('tp1.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleTypes.DFSP_POSITION]))
+        .andOn('tp1.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleType.DFSP_POSITION]))
     })
     .join('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
     .join('participant AS p1', 'p1.participantId', 'pc1.participantId')
     .join('transferParticipant AS tp2', function () {
       this.on('tp2.transferId', 'spc.settlementTransferId')
-        .andOn('tp2.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleTypes.HUB]))
+        .andOn('tp2.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleType.HUB]))
     })
     .select('tp1.transferId', 'tp1.ledgerEntryTypeId', 'tp1.participantCurrencyId AS dfspAccountId', 'tp1.amount AS dfspAmount',
       'tp2.participantCurrencyId AS hubAccountId', 'tp2.amount AS hubAmount',
@@ -914,13 +940,13 @@ const settlementTransfersReserve = async function (settlementId, transactionTime
         transferStateChangeId = await knex('transferStateChange')
           .insert({
             transferId,
-            transferStateId: enums.transferStates.RESERVED,
+            transferStateId: enums.transferState.RESERVED,
             reason: 'Settlement transfer reserve',
             createdDate: transactionTimestamp
           })
           .transacting(trx)
 
-        if (ledgerEntryTypeId === enums.ledgerEntryTypes.SETTLEMENT_NET_RECIPIENT) {
+        if (ledgerEntryTypeId === enums.ledgerEntryType.SETTLEMENT_NET_RECIPIENT) {
           // Select dfspPosition FOR UPDATE
           const { dfspPositionId, dfspPositionValue, dfspReservedValue } = await knex('participantPosition')
             .select('participantPositionId AS dfspPositionId', 'value AS dfspPositionValue', 'reservedValue AS dfspReservedValue')
@@ -934,7 +960,7 @@ const settlementTransfersReserve = async function (settlementId, transactionTime
             const { netDebitCap } = await knex('participantLimit')
               .select('value AS netDebitCap')
               .where('participantCurrencyId', dfspAccountId)
-              .andWhere('participantLimitTypeId', enums.participantLimitTypes.NET_DEBIT_CAP)
+              .andWhere('participantLimitTypeId', enums.participantLimitType.NET_DEBIT_CAP)
               .first()
               .transacting(trx)
               .forUpdate()
@@ -1036,16 +1062,16 @@ const settlementTransfersReserve = async function (settlementId, transactionTime
 }
 
 /**
- * @param enums.ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT
- * @param enums.ledgerEntryTypes
- * @param enums.participantLimitTypes
+ * @param enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT
+ * @param enums.ledgerEntryType
+ * @param enums.participantLimitType
  * @param enums.settlementState.PS_TRANSFERS_RECORDED
  * @param enums.settlementState.PS_TRANSFERS_RESERVED
  * @param enums.settlementState.PS_TRANSFERS_COMMITTED
- * @param enums.transferParticipantRoleTypes
- * @param enums.transferParticipantRoleTypes.DFSP_POSITION
- * @param enums.transferParticipantRoleTypes.HUB
- * @param enums.transferStates
+ * @param enums.transferParticipantRoleType
+ * @param enums.transferParticipantRoleType.DFSP_POSITION
+ * @param enums.transferParticipantRoleType.HUB
+ * @param enums.transferState
  */
 const settlementTransfersAbort = async function (settlementId, transactionTimestamp, enums, trx = null) {
   const knex = await Db.getKnex()
@@ -1060,22 +1086,22 @@ const settlementTransfersAbort = async function (settlementId, transactionTimest
     .leftJoin('transferStateChange AS tsc1', 'tsc1.transferId', 'spc.settlementTransferId')
     .leftJoin('transferState AS ts1', function () {
       this.on('ts1.transferStateId', 'tsc1.transferStateId')
-        .andOn('ts1.enumeration', knex.raw('?', [enums.transferStateEnums.RESERVED]))
+        .andOn('ts1.enumeration', knex.raw('?', [enums.transferStateEnum.RESERVED]))
     })
     .leftJoin('transferStateChange AS tsc2', 'tsc2.transferId', 'spc.settlementTransferId')
     .leftJoin('transferState AS ts2', function () {
       this.on('ts2.transferStateId', 'tsc2.transferStateId')
-        .andOn('ts2.enumeration', knex.raw('?', [enums.transferStateEnums.ABORTED]))
+        .andOn('ts2.enumeration', knex.raw('?', [enums.transferStateEnum.ABORTED]))
     })
     .join('transferParticipant AS tp1', function () {
       this.on('tp1.transferId', 'spc.settlementTransferId')
-        .andOn('tp1.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleTypes.DFSP_POSITION]))
+        .andOn('tp1.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleType.DFSP_POSITION]))
     })
     .join('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
     .join('participant AS p1', 'p1.participantId', 'pc1.participantId')
     .join('transferParticipant AS tp2', function () {
       this.on('tp2.transferId', 'spc.settlementTransferId')
-        .andOn('tp2.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleTypes.HUB]))
+        .andOn('tp2.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleType.HUB]))
     })
     .select('tp1.transferId', 'tp1.ledgerEntryTypeId', 'tp1.participantCurrencyId AS dfspAccountId', 'tp1.amount AS dfspAmount',
       'tp2.participantCurrencyId AS hubAccountId', 'tp2.amount AS hubAmount', 'tsc1.transferId AS isReserved',
@@ -1094,7 +1120,7 @@ const settlementTransfersAbort = async function (settlementId, transactionTimest
         await knex('transferStateChange')
           .insert({
             transferId,
-            transferStateId: enums.transferStates.REJECTED,
+            transferStateId: enums.transferState.REJECTED,
             reason: 'Settlement transfer reject',
             createdDate: transactionTimestamp
           })
@@ -1102,13 +1128,13 @@ const settlementTransfersAbort = async function (settlementId, transactionTimest
         transferStateChangeId = await knex('transferStateChange')
           .insert({
             transferId,
-            transferStateId: enums.transferStates.ABORTED,
+            transferStateId: enums.transferState.ABORTED,
             reason: 'Settlement transfer abort',
             createdDate: transactionTimestamp
           })
           .transacting(trx)
 
-        if (isReserved !== null && ledgerEntryTypeId === enums.ledgerEntryTypes.SETTLEMENT_NET_RECIPIENT) {
+        if (isReserved !== null && ledgerEntryTypeId === enums.ledgerEntryType.SETTLEMENT_NET_RECIPIENT) {
           // Select dfspPosition FOR UPDATE
           const { dfspPositionId, dfspPositionValue, dfspReservedValue } = await knex('participantPosition')
             .select('participantPositionId AS dfspPositionId', 'value AS dfspPositionValue', 'reservedValue AS dfspReservedValue')
@@ -1192,16 +1218,16 @@ const settlementTransfersAbort = async function (settlementId, transactionTimest
 }
 
 /**
- * @param enums.ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT
- * @param enums.ledgerEntryTypes
- * @param enums.participantLimitTypes
+ * @param enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT
+ * @param enums.ledgerEntryType
+ * @param enums.participantLimitType
  * @param enums.settlementState.PS_TRANSFERS_RECORDED
  * @param enums.settlementState.PS_TRANSFERS_RESERVED
  * @param enums.settlementState.PS_TRANSFERS_COMMITTED
- * @param enums.transferParticipantRoleTypes
- * @param enums.transferParticipantRoleTypes.DFSP_POSITION
- * @param enums.transferParticipantRoleTypes.HUB
- * @param enums.transferStates
+ * @param enums.transferParticipantRoleType
+ * @param enums.transferParticipantRoleType.DFSP_POSITION
+ * @param enums.transferParticipantRoleType.HUB
+ * @param enums.transferState
  */
 const settlementTransfersCommit = async function (settlementId, transactionTimestamp, enums, trx = null) {
   const knex = await Db.getKnex()
@@ -1215,21 +1241,21 @@ const settlementTransfersCommit = async function (settlementId, transactionTimes
     })
     .join('transferStateChange AS tsc1', function () {
       this.on('tsc1.transferId', 'spc.settlementTransferId')
-        .andOn('tsc1.transferStateId', knex.raw('?', [enums.transferStates.RESERVED]))
+        .andOn('tsc1.transferStateId', knex.raw('?', [enums.transferState.RESERVED]))
     })
     .leftJoin('transferStateChange AS tsc2', function () {
       this.on('tsc2.transferId', 'spc.settlementTransferId')
-        .andOn('tsc2.transferStateId', knex.raw('?', [enums.transferStates.COMMITTED]))
+        .andOn('tsc2.transferStateId', knex.raw('?', [enums.transferState.COMMITTED]))
     })
     .join('transferParticipant AS tp1', function () {
       this.on('tp1.transferId', 'spc.settlementTransferId')
-        .andOn('tp1.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleTypes.DFSP_POSITION]))
+        .andOn('tp1.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleType.DFSP_POSITION]))
     })
     .join('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
     .join('participant AS p1', 'p1.participantId', 'pc1.participantId')
     .join('transferParticipant AS tp2', function () {
       this.on('tp2.transferId', 'spc.settlementTransferId')
-        .andOn('tp2.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleTypes.HUB]))
+        .andOn('tp2.transferParticipantRoleTypeId', knex.raw('?', [enums.transferParticipantRoleType.HUB]))
     })
     .select('tp1.transferId', 'tp1.ledgerEntryTypeId', 'tp1.participantCurrencyId AS dfspAccountId', 'tp1.amount AS dfspAmount',
       'tp2.participantCurrencyId AS hubAccountId', 'tp2.amount AS hubAmount',
@@ -1265,7 +1291,7 @@ const settlementTransfersCommit = async function (settlementId, transactionTimes
         await knex('transferStateChange')
           .insert({
             transferId,
-            transferStateId: enums.transferStates.RECEIVED_FULFIL,
+            transferStateId: enums.transferState.RECEIVED_FULFIL,
             reason: 'Settlement transfer commit initiated',
             createdDate: transactionTimestamp
           })
@@ -1274,13 +1300,13 @@ const settlementTransfersCommit = async function (settlementId, transactionTimes
         transferStateChangeId = await knex('transferStateChange')
           .insert({
             transferId,
-            transferStateId: enums.transferStates.COMMITTED,
+            transferStateId: enums.transferState.COMMITTED,
             reason: 'Settlement transfer commit',
             createdDate: transactionTimestamp
           })
           .transacting(trx)
 
-        if (ledgerEntryTypeId === enums.ledgerEntryTypes.SETTLEMENT_NET_SENDER) {
+        if (ledgerEntryTypeId === enums.ledgerEntryType.SETTLEMENT_NET_SENDER) {
           // Select dfspPosition FOR UPDATE
           const { dfspPositionId, dfspPositionValue, dfspReservedValue } = await knex('participantPosition')
             .select('participantPositionId AS dfspPositionId', 'value AS dfspPositionValue', 'reservedValue AS dfspReservedValue')
@@ -1509,6 +1535,7 @@ module.exports = {
   abortById,
   create,
   getById,
+  getById2,
   getByParams,
   putById,
   triggerSettlementEvent,

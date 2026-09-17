@@ -179,7 +179,6 @@ export const createSettlement = async (
   currency: string = 'USD',
   reason: string = 'Test Settlement.'
 ) => {
-
   const settlementModel = `DEFERRED_MULTILATERAL_NET_${currency}`
   const payload = {
     settlementModel,
@@ -187,6 +186,10 @@ export const createSettlement = async (
     settlementWindows: windowIds.map(id => ({ id }))
   }
   return SettlementDomain.settlementEventTrigger(payload, harness.enums)
+}
+
+export const getSettlement = async (harness: Harness, id: number) => {
+  return SettlementDomain.getById({settlementId: id}, harness.enums)
 }
 
 /**
