@@ -5,6 +5,7 @@ import Harness from './harness'
 import ParticipantService from '../domain/participant/index'
 import SettlementWindowModel from '../models/settlementWindow'
 import SettlementDomain from '../domain/settlement'
+import TransferDomain from '../domain/transfer'
 
 const { ilpFactory, ILP_VERSIONS } = require('@mojaloop/sdk-standard-components').Ilp
 const ilpService = ilpFactory(ILP_VERSIONS.v1, { secret: 'password', logger: Logger })
@@ -164,13 +165,20 @@ export const closeSettlementWindow = async (harness: Harness, currency: string =
   return closedWindowIds
 }
 
-export const getOpenSettlementWindow = async (harness: Harness, currency: string = 'USD') => {
+export const getSettlementWindows = async (harness: Harness) => {
+  const windows = await SettlementWindowModel.getByParams({
+    query: { }
+  })
+  return windows
+}
+
+export const getOpenSettlementWindows = async (harness: Harness) => {
   const enums = harness.enums.settlementWindowState
   const windows = await SettlementWindowModel.getByParams({
-    query: { state: enums.OPEN, currency }
+    query: { state: enums.OPEN }
   })
-  assert(windows.length === 1, `No open settlement window found for currency: ${currency}.`)
-  return windows[0]
+  assert(windows.length > 0, `No open settlement window found.`)
+  return windows
 }
 
 export const createSettlement = async (
@@ -302,6 +310,18 @@ export class Payment {
   }
 
   /**
+   * Look up the Payment's status directly from the database.
+   * TODO: use the ledger instead!
+   */
+  public async getStatus(): Promise<string> {
+    const transfer = await TransferDomain.getById(this.options.transferId)
+    if (!transfer) {
+      return 'NOT_FOUND'
+    }
+    return transfer.transferState
+  }
+
+  /**
    * Build the prepare message to be passed to the kafka prepare handler.
    */
   public buildMessagePrepare() {
@@ -407,6 +427,19 @@ export class Payment {
     switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
       case 'UNFUSE': return 2
       case 'FUSE': return 1
+    }
+  }
+
+  getOptions() {
+    return {
+      payerFsp: this.options.payerFsp,
+      payeeFsp: this.options.payeeFsp,
+      transferId: this.options.transferId,
+      linkedCommitRequestId: this.options.linkedCommitRequestId,
+      amountComplex: this.options.amountComplex,
+      date: this.options.date,
+      expirySeconds: this.options.expirySeconds,
+      fx: this.options.fx,
     }
   }
 }

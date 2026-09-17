@@ -109,9 +109,9 @@ const getNotificationMessage = function (action, destination, payload) {
  * @param enums.ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT
  * @param enums.ledgerEntryTypes
  * @param enums.participantLimitTypes
- * @param enums.settlementState.PS_TRANSFERS_RECORDED
- * @param enums.settlementState.PS_TRANSFERS_RESERVED
- * @param enums.settlementState.PS_TRANSFERS_COMMITTED
+ * @param enums.settlementStates.PS_TRANSFERS_RECORDED
+ * @param enums.settlementStates.PS_TRANSFERS_RESERVED
+ * @param enums.settlementStates.PS_TRANSFERS_COMMITTED
  * @param enums.transferParticipantRoleTypes
  * @param enums.transferParticipantRoleTypes.DFSP_POSITION
  * @param enums.transferParticipantRoleTypes.HUB
@@ -128,7 +128,7 @@ const settlementTransfersPrepare = async function (settlementId, transactionTime
     .leftJoin('transferDuplicateCheck AS tdc', 'tdc.transferId', 'spc.settlementTransferId')
     .select('spc.*', 'pc.currencyId', 'pc.participantId')
     .where('spc.settlementId', settlementId)
-    .where('spcsc.settlementStateId', enums.settlementState.PS_TRANSFERS_RECORDED)
+    .where('spcsc.settlementStateId', enums.settlementStates.PS_TRANSFERS_RECORDED)
     .whereNotNull('spc.settlementTransferId')
     .whereNull('tdc.transferId')
     .transacting(trx)
@@ -234,9 +234,9 @@ const settlementTransfersPrepare = async function (settlementId, transactionTime
  * @param enums.ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT
  * @param enums.ledgerEntryTypes
  * @param enums.participantLimitTypes
- * @param enums.settlementState.PS_TRANSFERS_RECORDED
- * @param enums.settlementState.PS_TRANSFERS_RESERVED
- * @param enums.settlementState.PS_TRANSFERS_COMMITTED
+ * @param enums.settlementStates.PS_TRANSFERS_RECORDED
+ * @param enums.settlementStates.PS_TRANSFERS_RESERVED
+ * @param enums.settlementStates.PS_TRANSFERS_COMMITTED
  * @param enums.transferParticipantRoleTypes
  * @param enums.transferParticipantRoleTypes.DFSP_POSITION
  * @param enums.transferParticipantRoleTypes.HUB
@@ -249,7 +249,7 @@ const settlementTransfersReserve = async function (settlementId, transactionTime
   const settlementTransferList = await knex('settlementParticipantCurrency AS spc')
     .join('settlementParticipantCurrencyStateChange AS spcsc', function () {
       this.on('spcsc.settlementParticipantCurrencyId', 'spc.settlementParticipantCurrencyId')
-        .andOn('spcsc.settlementStateId', knex.raw('?', [enums.settlementState.PS_TRANSFERS_RESERVED]))
+        .andOn('spcsc.settlementStateId', knex.raw('?', [enums.settlementStates.PS_TRANSFERS_RESERVED]))
     })
     .join('transferStateChange AS tsc1', function () {
       this.on('tsc1.transferId', 'spc.settlementTransferId')
@@ -409,9 +409,9 @@ const settlementTransfersReserve = async function (settlementId, transactionTime
  * @param enums.ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT
  * @param enums.ledgerEntryTypes
  * @param enums.participantLimitTypes
- * @param enums.settlementState.PS_TRANSFERS_RECORDED
- * @param enums.settlementState.PS_TRANSFERS_RESERVED
- * @param enums.settlementState.PS_TRANSFERS_COMMITTED
+ * @param enums.settlementStates.PS_TRANSFERS_RECORDED
+ * @param enums.settlementStates.PS_TRANSFERS_RESERVED
+ * @param enums.settlementStates.PS_TRANSFERS_COMMITTED
  * @param enums.transferParticipantRoleTypes
  * @param enums.transferParticipantRoleTypes.DFSP_POSITION
  * @param enums.transferParticipantRoleTypes.HUB
@@ -425,7 +425,7 @@ const settlementTransfersAbort = async function (settlementId, transactionTimest
   const settlementTransferList = await knex('settlementParticipantCurrency AS spc')
     .join('settlementParticipantCurrencyStateChange AS spcsc', function () {
       this.on('spcsc.settlementParticipantCurrencyId', 'spc.settlementParticipantCurrencyId')
-        .andOn('spcsc.settlementStateId', knex.raw('?', [enums.settlementState.ABORTED]))
+        .andOn('spcsc.settlementStateId', knex.raw('?', [enums.settlementStates.ABORTED]))
     })
     .leftJoin('transferStateChange AS tsc1', 'tsc1.transferId', 'spc.settlementTransferId')
     .leftJoin('transferState AS ts1', function () {
@@ -563,9 +563,9 @@ const settlementTransfersAbort = async function (settlementId, transactionTimest
  * @param enums.ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT
  * @param enums.ledgerEntryTypes
  * @param enums.participantLimitTypes
- * @param enums.settlementState.PS_TRANSFERS_RECORDED
- * @param enums.settlementState.PS_TRANSFERS_RESERVED
- * @param enums.settlementState.PS_TRANSFERS_COMMITTED
+ * @param enums.settlementStates.PS_TRANSFERS_RECORDED
+ * @param enums.settlementStates.PS_TRANSFERS_RESERVED
+ * @param enums.settlementStates.PS_TRANSFERS_COMMITTED
  * @param enums.transferParticipantRoleTypes
  * @param enums.transferParticipantRoleTypes.DFSP_POSITION
  * @param enums.transferParticipantRoleTypes.HUB
@@ -579,7 +579,7 @@ const settlementTransfersCommit = async function (settlementId, transactionTimes
   const settlementTransferList = await knex('settlementParticipantCurrency AS spc')
     .join('settlementParticipantCurrencyStateChange AS spcsc', function () {
       this.on('spcsc.settlementParticipantCurrencyId', 'spc.settlementParticipantCurrencyId')
-        .andOn('spcsc.settlementStateId', knex.raw('?', [enums.settlementState.PS_TRANSFERS_COMMITTED]))
+        .andOn('spcsc.settlementStateId', knex.raw('?', [enums.settlementStates.PS_TRANSFERS_COMMITTED]))
     })
     .join('transferStateChange AS tsc1', function () {
       this.on('tsc1.transferId', 'spc.settlementTransferId')
@@ -735,7 +735,7 @@ const abortByIdStateAborted = async (settlementId, payload, enums) => {
   const settlementStateChangeId = await knex('settlementStateChange')
     .insert({
       settlementId,
-      settlementStateId: enums.settlementState.ABORTED,
+      settlementStateId: enums.settlementStates.ABORTED,
       reason: payload.reason
     })
   // seq-settlement-6.2.6, step 5a
@@ -756,7 +756,7 @@ const getTransferCommitedAccount = async (settlementId, enums) => {
   return await knex('settlementParticipantCurrency AS spc')
     .join('settlementParticipantCurrencyStateChange AS spcsc', 'spcsc.settlementParticipantCurrencyStateChangeId', 'spc.currentStateChangeId')
     .where('spc.settlementId', settlementId)
-    .where('spcsc.settlementStateId', enums.settlementState.PS_TRANSFERS_COMMITTED)
+    .where('spcsc.settlementStateId', enums.settlementStates.PS_TRANSFERS_COMMITTED)
     .first()
 }
 
@@ -774,10 +774,10 @@ const Facade = {
    * @param enums.ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT
    * @param enums.ledgerEntryTypes
    * @param enums.participantLimitTypes
-   * @param enums.settlementState.PS_TRANSFERS_RECORDED
-   * @param enums.settlementState.PS_TRANSFERS_RESERVED
-   * @param enums.settlementState.PS_TRANSFERS_COMMITTED
-   * @param enums.settlementState.SETTLING
+   * @param enums.settlementStates.PS_TRANSFERS_RECORDED
+   * @param enums.settlementStates.PS_TRANSFERS_RESERVED
+   * @param enums.settlementStates.PS_TRANSFERS_COMMITTED
+   * @param enums.settlementStates.SETTLING
    * @param enums.settlementWindowStates
    * @param enums.transferParticipantRoleTypes
    * @param enums.transferParticipantRoleTypes.DFSP_POSITION
@@ -852,27 +852,27 @@ const Facade = {
 
             // seq-settlement-6.2.5, step 9
             switch (state) {
-              case enums.settlementState.PENDING_SETTLEMENT: {
+              case enums.settlementStates.PENDING_SETTLEMENT: {
                 settlementAccounts.pendingSettlementCount++
                 break
               }
-              case enums.settlementState.PS_TRANSFERS_RECORDED: {
+              case enums.settlementStates.PS_TRANSFERS_RECORDED: {
                 settlementAccounts.psTransfersRecordedCount++
                 break
               }
-              case enums.settlementState.PS_TRANSFERS_RESERVED: {
+              case enums.settlementStates.PS_TRANSFERS_RESERVED: {
                 settlementAccounts.psTransfersReservedCount++
                 break
               }
-              case enums.settlementState.PS_TRANSFERS_COMMITTED: {
+              case enums.settlementStates.PS_TRANSFERS_COMMITTED: {
                 settlementAccounts.psTransfersCommittedCount++
                 break
               }
-              case enums.settlementState.SETTLED: {
+              case enums.settlementStates.SETTLED: {
                 settlementAccounts.settledCount++
                 break
               }
-              case enums.settlementState.ABORTED: {
+              case enums.settlementStates.ABORTED: {
                 settlementAccounts.abortedCount++
                 break
               }
@@ -942,11 +942,11 @@ const Facade = {
                 allAccounts[accountPayload.id].reason = accountPayload.reason
                 allAccounts[accountPayload.id].createdDate = transactionTimestamp
                 // seq-settlement-6.2.5, step 17
-              } else if ((settlementData.settlementStateId === enums.settlementState.PENDING_SETTLEMENT && accountPayload.state === enums.settlementState.PS_TRANSFERS_RECORDED) ||
-                (settlementData.settlementStateId === enums.settlementState.PS_TRANSFERS_RECORDED && accountPayload.state === enums.settlementState.PS_TRANSFERS_RESERVED) ||
-                (settlementData.settlementStateId === enums.settlementState.PS_TRANSFERS_RESERVED && accountPayload.state === enums.settlementState.PS_TRANSFERS_COMMITTED) ||
-                ((settlementData.settlementStateId === enums.settlementState.PS_TRANSFERS_COMMITTED || settlementData.settlementStateId === enums.settlementState.SETTLING) &&
-                  accountPayload.state === enums.settlementState.SETTLED)) {
+              } else if ((settlementData.settlementStateId === enums.settlementStates.PENDING_SETTLEMENT && accountPayload.state === enums.settlementStates.PS_TRANSFERS_RECORDED) ||
+                (settlementData.settlementStateId === enums.settlementStates.PS_TRANSFERS_RECORDED && accountPayload.state === enums.settlementStates.PS_TRANSFERS_RESERVED) ||
+                (settlementData.settlementStateId === enums.settlementStates.PS_TRANSFERS_RESERVED && accountPayload.state === enums.settlementStates.PS_TRANSFERS_COMMITTED) ||
+                ((settlementData.settlementStateId === enums.settlementStates.PS_TRANSFERS_COMMITTED || settlementData.settlementStateId === enums.settlementStates.SETTLING) &&
+                  accountPayload.state === enums.settlementStates.SETTLED)) {
                 processedAccounts.push(accountPayload.id)
                 participant.accounts.push({
                   id: accountPayload.id,
@@ -963,21 +963,21 @@ const Facade = {
                   externalReference: accountPayload.externalReference,
                   createdDate: transactionTimestamp
                 }
-                if (accountPayload.state === enums.settlementState.PS_TRANSFERS_RECORDED) {
+                if (accountPayload.state === enums.settlementStates.PS_TRANSFERS_RECORDED) {
                   spcsc.settlementTransferId = generateULID()
                 }
                 settlementParticipantCurrencyStateChange.push(spcsc)
 
-                if (accountPayload.state === enums.settlementState.PS_TRANSFERS_RECORDED) {
+                if (accountPayload.state === enums.settlementStates.PS_TRANSFERS_RECORDED) {
                   settlementAccounts.pendingSettlementCount--
                   settlementAccounts.psTransfersRecordedCount++
-                } else if (accountPayload.state === enums.settlementState.PS_TRANSFERS_RESERVED) {
+                } else if (accountPayload.state === enums.settlementStates.PS_TRANSFERS_RESERVED) {
                   settlementAccounts.psTransfersRecordedCount--
                   settlementAccounts.psTransfersReservedCount++
-                } else if (accountPayload.state === enums.settlementState.PS_TRANSFERS_COMMITTED) {
+                } else if (accountPayload.state === enums.settlementStates.PS_TRANSFERS_COMMITTED) {
                   settlementAccounts.psTransfersReservedCount--
                   settlementAccounts.psTransfersCommittedCount++
-                } else /* if (accountPayload.state === enums.settlementState.SETTLED) */ { // disabled as else path is never taken
+                } else /* if (accountPayload.state === enums.settlementStates.SETTLED) */ { // disabled as else path is never taken
                   settlementAccounts.psTransfersCommittedCount--
                   settlementAccounts.settledCount++
                   settlementAccounts.settledIdList.push(accountPayload.id)
@@ -1031,11 +1031,11 @@ const Facade = {
           await Promise.all(updatePromises)
 
           if (autoPositionReset) {
-            if (settlementData.settlementStateId === enums.settlementState.PENDING_SETTLEMENT) {
+            if (settlementData.settlementStateId === enums.settlementStates.PENDING_SETTLEMENT) {
               await Facade.settlementTransfersPrepare(settlementId, transactionTimestamp, enums, trx)
-            } else if (settlementData.settlementStateId === enums.settlementState.PS_TRANSFERS_RECORDED) {
+            } else if (settlementData.settlementStateId === enums.settlementStates.PS_TRANSFERS_RECORDED) {
               await Facade.settlementTransfersReserve(settlementId, transactionTimestamp, requireLiquidityCheck, enums, trx)
-            } else if (settlementData.settlementStateId === enums.settlementState.PS_TRANSFERS_RESERVED) {
+            } else if (settlementData.settlementStateId === enums.settlementStates.PS_TRANSFERS_RESERVED) {
               await Facade.settlementTransfersCommit(settlementId, transactionTimestamp, enums, trx)
             }
           }
@@ -1151,27 +1151,27 @@ const Facade = {
 
           // seq-settlement-6.2.5, step post-26
           let settlementStateChanged = true
-          if (settlementData.settlementStateId === enums.settlementState.PENDING_SETTLEMENT &&
+          if (settlementData.settlementStateId === enums.settlementStates.PENDING_SETTLEMENT &&
             settlementAccounts.pendingSettlementCount === 0) {
-            settlementData.settlementStateId = enums.settlementState.PS_TRANSFERS_RECORDED
+            settlementData.settlementStateId = enums.settlementStates.PS_TRANSFERS_RECORDED
             settlementData.reason = 'All settlement accounts are PS_TRANSFERS_RECORDED'
-          } else if (settlementData.settlementStateId === enums.settlementState.PS_TRANSFERS_RECORDED &&
+          } else if (settlementData.settlementStateId === enums.settlementStates.PS_TRANSFERS_RECORDED &&
             settlementAccounts.psTransfersRecordedCount === 0) {
-            settlementData.settlementStateId = enums.settlementState.PS_TRANSFERS_RESERVED
+            settlementData.settlementStateId = enums.settlementStates.PS_TRANSFERS_RESERVED
             settlementData.reason = 'All settlement accounts are PS_TRANSFERS_RESERVED'
-          } else if (settlementData.settlementStateId === enums.settlementState.PS_TRANSFERS_RESERVED &&
+          } else if (settlementData.settlementStateId === enums.settlementStates.PS_TRANSFERS_RESERVED &&
             settlementAccounts.psTransfersReservedCount === 0) {
-            settlementData.settlementStateId = enums.settlementState.PS_TRANSFERS_COMMITTED
+            settlementData.settlementStateId = enums.settlementStates.PS_TRANSFERS_COMMITTED
             settlementData.reason = 'All settlement accounts are PS_TRANSFERS_COMMITTED'
-          } else if (settlementData.settlementStateId === enums.settlementState.PS_TRANSFERS_COMMITTED &&
+          } else if (settlementData.settlementStateId === enums.settlementStates.PS_TRANSFERS_COMMITTED &&
             settlementAccounts.psTransfersCommittedCount > 0 &&
             settlementAccounts.settledCount > 0) {
-            settlementData.settlementStateId = enums.settlementState.SETTLING
+            settlementData.settlementStateId = enums.settlementStates.SETTLING
             settlementData.reason = 'Some settlement accounts are SETTLED'
-          } else if ((settlementData.settlementStateId === enums.settlementState.PS_TRANSFERS_COMMITTED ||
-            settlementData.settlementStateId === enums.settlementState.SETTLING) &&
+          } else if ((settlementData.settlementStateId === enums.settlementStates.PS_TRANSFERS_COMMITTED ||
+            settlementData.settlementStateId === enums.settlementStates.SETTLING) &&
             settlementAccounts.psTransfersCommittedCount === 0) {
-            settlementData.settlementStateId = enums.settlementState.SETTLED
+            settlementData.settlementStateId = enums.settlementStates.SETTLED
             settlementData.reason = 'All settlement accounts are SETTLED'
           } else {
             settlementStateChanged = false
@@ -1239,7 +1239,7 @@ const Facade = {
           // TODO:: PoC - batchInsert + select inserted ids vs multiple inserts without select
           const spcsc = {
             settlementParticipantCurrencyId: sal.key,
-            settlementStateId: enums.settlementState.ABORTED,
+            settlementStateId: enums.settlementStates.ABORTED,
             reason: payload.reason,
             externalReference: payload.externalReference
           }
@@ -1295,7 +1295,7 @@ const Facade = {
         const settlementStateChangeId = await knex('settlementStateChange')
           .insert({
             settlementId,
-            settlementStateId: enums.settlementState.ABORTED,
+            settlementStateId: enums.settlementStates.ABORTED,
             reason: payload.reason
           })
           .transacting(trx)
@@ -1418,7 +1418,7 @@ const Facade = {
         const settlementWindowContentStateChangeList = swcIdArray.map(value => {
           return {
             settlementWindowContentId: value,
-            settlementWindowStateId: enums.settlementState.PENDING_SETTLEMENT,
+            settlementWindowStateId: enums.settlementStates.PENDING_SETTLEMENT,
             reason,
             createdDate: transactionTimestamp
           }
@@ -1459,7 +1459,7 @@ const Facade = {
           settlementParticipantCurrencyIdList.push(value.settlementParticipantCurrencyId)
           return {
             settlementParticipantCurrencyId: value.settlementParticipantCurrencyId,
-            settlementStateId: enums.settlementState.PENDING_SETTLEMENT,
+            settlementStateId: enums.settlementStates.PENDING_SETTLEMENT,
             reason,
             createdDate: transactionTimestamp
           }
@@ -1489,7 +1489,7 @@ const Facade = {
         const settlementWindowStateChangeList = windowsStateToBeUpdatedIdList.map(record => {
           return {
             settlementWindowId: record.settlementWindowId,
-            settlementWindowStateId: enums.settlementState.PENDING_SETTLEMENT,
+            settlementWindowStateId: enums.settlementStates.PENDING_SETTLEMENT,
             reason,
             createdDate: transactionTimestamp
           }
@@ -1514,7 +1514,7 @@ const Facade = {
         const settlementStateChangeId = await knex('settlementStateChange').transacting(trx)
           .insert({
             settlementId,
-            settlementStateId: enums.settlementState.PENDING_SETTLEMENT,
+            settlementStateId: enums.settlementStates.PENDING_SETTLEMENT,
             reason,
             createdDate: transactionTimestamp
           })

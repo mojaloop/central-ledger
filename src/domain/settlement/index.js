@@ -279,6 +279,13 @@ const abortById = async (settlementId, payload, enums) => {
       throw error
     }
   }
+
+  const error = ErrorHandler.Factory.createFSPIOPError(
+    ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+    `Unhandled state: ${settlementData.state} for settlement '${settlementId}'. Aborting is not allowed.`
+  )
+  logger.error(error)
+  throw error
 }
 
 const getSettlementsByParams = async (params, enums) => {
@@ -419,7 +426,7 @@ const settlementEventTrigger = async (params, enums) => {
   )
 
   // retrieve resulting data for response
-  const settlement = await getById({settlementId}, enums)
+  const settlement = await getById({ settlementId }, enums)
   const settlementWindowsList = await SettlementWindowModel.getBySettlementId({ settlementId })
   const settlementWindowContentAll = await SettlementWindowContentModel.getBySettlementId(
     settlementId
@@ -455,7 +462,7 @@ const getByIdParticipantAccount = async (
   let participantAndAccountMatched = !accountProvided
   let accountFoundInSettlement = !accountProvided
 
-  const settlement = await SettlementModel.getById({ settlementId }, enums) // 3
+  const settlement = await SettlementModel.getById2({ settlementId }) // 3
   const settlementFound = !!settlement
 
   let settlementParticipantCurrencyIdList, account, settlementAccount
@@ -465,7 +472,7 @@ const getByIdParticipantAccount = async (
       .getAccountsInSettlementByIds({
         settlementId,
         participantId
-      }, enums) // 6
+      }) // 6
     participantFoundInSettlement = settlementParticipantCurrencyIdList.length > 0
 
     if (participantFoundInSettlement && accountProvided) {
@@ -479,7 +486,7 @@ const getByIdParticipantAccount = async (
         settlementAccount = await SettlementModel.getAccountInSettlement({
           settlementId,
           accountId
-        }, enums) // 12
+        }) // 12
         accountFoundInSettlement = !!settlementAccount
       }
     }
@@ -497,8 +504,8 @@ const getByIdParticipantAccount = async (
       settlementWindows = await SettlementWindowModel.getWindowsBySettlementIdAndAccountId({
         settlementId,
         accountId
-      }, enums)
-      accounts = await SettlementParticipantCurrency.getSettlementAccountById(settlementAccount.settlementParticipantCurrencyId, enums)
+      })
+      accounts = await SettlementParticipantCurrency.getSettlementAccountById(settlementAccount.settlementParticipantCurrencyId)
       participants = prepareParticipantsResult(accounts)
     } else {
       settlementWindows = await SettlementWindowModel.getWindowsBySettlementIdAndParticipantId({
@@ -506,7 +513,7 @@ const getByIdParticipantAccount = async (
         participantId
       }, enums)
       const ids = settlementParticipantCurrencyIdList.map(record => record.settlementParticipantCurrencyId)
-      accounts = await SettlementParticipantCurrency.getSettlementAccountsByListOfIds(ids, enums)
+      accounts = await SettlementParticipantCurrency.getSettlementAccountsByListOfIds(ids)
       participants = prepareParticipantsResult(accounts)
     }
   } else {
@@ -549,31 +556,6 @@ const getByIdParticipantAccount = async (
     participants
   }
 }
-
-
-const getNotificationMessage = function (action, destination, payload) {
-  return {
-    id: generateULID(),
-    from: Config.HUB_NAME,
-    to: destination,
-    type: 'application/json',
-    content: {
-      headers: {
-        'Content-Type': 'application/json',
-        Date: new Date().toISOString(),
-        'FSPIOP-Source': Config.HUB_NAME,
-        'FSPIOP-Destination': destination
-      },
-      payload
-    },
-    metadata: {
-      event: {
-        action
-      }
-    }
-  }
-}
-
 
 module.exports = {
   abortById,

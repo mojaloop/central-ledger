@@ -313,7 +313,8 @@ describe('settlement api handlers', () => {
       .build()
       .prepareAndFulfil()
 
-    const window = await ApiHelpers.getOpenSettlementWindow(harness)
+    const windows = await ApiHelpers.getOpenSettlementWindows(harness)
+    const window = windows[0]
     const request = {
       ...requestTemplate,
       params: {
@@ -352,7 +353,8 @@ describe('settlement api handlers', () => {
       .build()
       .prepareAndFulfil()
 
-    const window = await ApiHelpers.getOpenSettlementWindow(harness)
+    const windows = await ApiHelpers.getOpenSettlementWindows(harness)
+    const window = windows[0]
     const request = {
       ...requestTemplate,
       params: {
@@ -388,7 +390,8 @@ describe('settlement api handlers', () => {
       .build()
       .prepareAndFulfil()
 
-    const window = await ApiHelpers.getOpenSettlementWindow(harness)
+    const windows = await ApiHelpers.getOpenSettlementWindows(harness)
+    const window = windows[0]
     let request = {
       ...requestTemplate,
       params: {

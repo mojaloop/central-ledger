@@ -108,7 +108,7 @@ module.exports = {
         transferState: await request.server.methods.enums('transferState')
       }
       const settlementResult = await Settlements.settlementEventTrigger(request.payload, Enums)
-      h.response(settlementResult)
+      return settlementResult
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)

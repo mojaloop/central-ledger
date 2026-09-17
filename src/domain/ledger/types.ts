@@ -749,7 +749,6 @@ export type SettlementAccount = {
 export type Settlement = {
   id: number
   settlementModel: string,
-  // TODO(LD): refactor to just SettlementState, and adapt on the outside
   state: LegacySettlementState,
   reason: string,
   createdDate: Date,
