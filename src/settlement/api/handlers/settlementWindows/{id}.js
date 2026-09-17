@@ -64,7 +64,7 @@ module.exports = {
         headers: request.headers,
         params: request.params
       }, EventSdk.AuditEventAction.start)
-      const Enums = await request.server.methods.enums('settlementWindowStates')
+      const Enums = await request.server.methods.enums('settlementWindowState')
       return await settlementWindow.getById({ settlementWindowId }, Enums, request.server.log)
     } catch (err) {
       request.server.log('error', err)

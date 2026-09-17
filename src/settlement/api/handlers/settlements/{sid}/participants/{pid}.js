@@ -33,7 +33,7 @@
 'use strict'
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Settlements = require('../../../../../domain/settlement/index')
+const Settlements = require('../../../../../../domain/settlement/index')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
@@ -68,11 +68,10 @@ module.exports = {
         params: request.params
       }, EventSdk.AuditEventAction.start)
       const Enums = {
-        settlementWindowStates: await request.server.methods.enums('settlementWindowStates'),
-        ledgerAccountTypes: await request.server.methods.enums('ledgerAccountTypes')
+        settlementWindowState: await request.server.methods.enums('settlementWindowState'),
+        ledgerAccountType: await request.server.methods.enums('ledgerAccountType')
       }
-      const result = await Settlements.getByIdParticipantAccount({ settlementId, participantId }, Enums)
-      return h.response(result)
+      return await Settlements.getByIdParticipantAccount({ settlementId, participantId }, Enums)
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -110,13 +109,13 @@ module.exports = {
         ]
       }
       const Enums = {
-        ledgerAccountTypes: await request.server.methods.enums('ledgerAccountTypes'),
-        ledgerEntryTypes: await request.server.methods.enums('ledgerEntryTypes'),
-        participantLimitTypes: await request.server.methods.enums('participantLimitTypes'),
-        settlementStates: await request.server.methods.enums('settlementStates'),
-        settlementWindowStates: await request.server.methods.enums('settlementWindowStates'),
-        transferParticipantRoleTypes: await request.server.methods.enums('transferParticipantRoleTypes'),
-        transferStates: await request.server.methods.enums('transferStates')
+        ledgerAccountType: await request.server.methods.enums('ledgerAccountType'),
+        ledgerEntryType: await request.server.methods.enums('ledgerEntryType'),
+        participantLimitType: await request.server.methods.enums('participantLimitType'),
+        settlementState: await request.server.methods.enums('settlementState'),
+        settlementWindowState: await request.server.methods.enums('settlementWindowState'),
+        transferParticipantRoleType: await request.server.methods.enums('transferParticipantRoleType'),
+        transferState: await request.server.methods.enums('transferState')
       }
       return await Settlements.putById(settlementId, universalPayload, Enums)
     } catch (err) {

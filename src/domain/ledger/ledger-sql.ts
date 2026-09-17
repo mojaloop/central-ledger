@@ -1111,9 +1111,14 @@ export class LedgerSql implements Ledger {
     try {
       proxyObligation = await this.calculateProxyObligation(input.payload)
     } catch (err: any) {
+      const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'Validation error'
+      )
+      const effect = this.buildEffectNotificationError(input, errorFspiop)
       return {
         type: PaymentPrepareResultType.FAIL_VALIDATION,
-        effects: [],
+        effects: [effect],
         failureReasons: err.message
       }
     }

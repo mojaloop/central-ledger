@@ -1,9 +1,16 @@
 import assert from 'node:assert'
 
+type Mutation =
+  | 'deleteKey'
+  | 'addKey'
+  | 'nullifyValue'
+  | 'changeType'
+  | 'mutate'
+
 /**
  * @class PRNG
  * @description A seeded Progressive Random Number Generator. Useful for setting up fuzz tests etc.
- *   Reference: https://stackoverflow.com/questions/521295/seeding-the-random-number-generator-in-javascript
+ * Ref: https://stackoverflow.com/questions/521295/seeding-the-random-number-generator-in-javascript
  */
 export default class PRNG {
   private a: number
@@ -52,7 +59,7 @@ export default class PRNG {
   }
 
   public randomElementWeighted<T>(array: Array<T>, weights: Array<number>): T {
-    assert.equal(array.length, weights.length)
+    assert.equal(array.length, weights.length, 'Expected choices & weights to be the same length.')
     assert(array.length > 0)
 
     const weightsSum = weights.reduce((sum, weight) => sum + weight, 0)
@@ -74,6 +81,10 @@ export default class PRNG {
     }
 
     return false
+  }
+
+  public coin(): boolean {
+    return this.headsOrTails()
   }
 
   public randomSampleFrom<T>(array: Array<T>, count: number): Array<T> {
@@ -162,6 +173,95 @@ export default class PRNG {
     ].join("-")
   }
 
+  public mutateObject(input: any, iterations: number = 3): any {
+    if (iterations === 0 || this.headsOrTails()) {
+      return input
+    }
+
+    const clone = structuredClone(input)
+    const keys = Object.keys(clone)
+
+    if (keys.length === 0) {
+      clone[this.randomString(5)] = this.randomValue()
+      return clone
+    }
+
+    const table = PRNG.generateWeightedChoiceTable<Mutation>({
+      'deleteKey': 1,
+      'addKey': 1,
+      'nullifyValue': 1,
+      'changeType': 2,
+      'mutate': 7,
+    })
+    const mutation = this.randomElementFrom(table)
+    const key = this.randomElementFrom(keys)
+    switch (mutation) {
+      case "deleteKey":
+        delete clone[key]
+        break
+      case "addKey":
+        clone[this.randomString(5)] = this.randomValue()
+        break
+      case "nullifyValue":
+        clone[key] = this.randomElementFrom([null, undefined, ''])
+        break
+      case "changeType":
+        clone[key] = this.randomValueDifferentType(clone[key])
+        break
+      case "mutate":
+        if (typeof clone[key] === 'string') {
+          clone[key] = this.mutateString(clone[key])
+        }
+        if (typeof clone[key] === 'number') {
+          clone[key] = this.mutateNumber(clone[key])
+        }
+        if (typeof clone[key] === 'object' && clone[key] !== null) {
+          clone[key] = this.mutateObject(clone[key])
+        }
+        break;
+    }
+
+    return this.mutateObject(clone, iterations - 1)
+  }
+
+  public mutateNumber(input: number): number {
+    const mutation = this.randomElementFrom([
+      'negate',
+      'zero',
+      'overflow',
+      'fraction',
+      'increment',
+    ])
+
+    switch (mutation) {
+      case 'negate': return input * -1
+      case 'zero': return 0
+      case 'overflow': return Number.MAX_SAFE_INTEGER
+      case 'fraction': return input + 0.1
+      case 'increment': return input + this.intInRange(-10, 10)
+      default: return input
+    }
+  }
+
+  public mutateString(input: string): string {
+    if (this.headsOrTails()) {
+      // Safe.
+      return input
+    }
+
+    if (this.headsOrTails() && input.length > 0) {
+      return input.substring(0, this.intInRange(0, input.length))
+    }
+
+    return input + this.randomString(this.intInRange(1, 5))
+  }
+
+  public randomValueDifferentType(current: any): any {
+    const type = typeof current
+    const options = [0, '', null, true, [], {}].filter(v => typeof v !== type)
+    return this.randomElementFrom(options)
+  }
+
   public static generateWeightedChoiceTable<T extends string | number | symbol>
     (weights: any): Array<T> {
     const weightedChoiceTable: Array<T> = []
@@ -176,19 +276,5 @@ export default class PRNG {
     })
 
     return weightedChoiceTable
-  }
-}
-
-function splitmix32(a: number) {
-  return function () {
-    a = Math.trunc(a)
-    a = Math.trunc(a + 0x9e3779b9)
-    let t = a ^ a >>> 16
-    t = Math.imul(t, 0x21f0aaad)
-    t = t ^ t >>> 15
-    t = Math.imul(t, 0x735a2d97)
-    const num = ((t = t ^ t >>> 15) >>> 0) / 4294967296
-    console.log('prng state: ', num)
-    return num
   }
 }

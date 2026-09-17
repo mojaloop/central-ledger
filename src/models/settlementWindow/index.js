@@ -58,7 +58,7 @@ const getWindowsBySettlementIdAndAccountId = async ({ settlementId, accountId })
 }
 
 const getWindowsBySettlementIdAndParticipantId = async ({ settlementId, participantId }, enums) => {
-  const participantAccountList = (await Db.from('participantCurrency').find({ participantId, ledgerAccountTypeId: enums.ledgerAccountTypes.POSITION })).map(record => record.participantCurrencyId)
+  const participantAccountList = (await Db.from('participantCurrency').find({ participantId, ledgerAccountTypeId: enums.ledgerAccountType.POSITION })).map(record => record.participantCurrencyId)
   return Db.from('settlementSettlementWindow').query(builder => {
     return builder
       .join('settlementWindow', 'settlementWindow.settlementWindowId', 'settlementSettlementWindow.settlementWindowId')

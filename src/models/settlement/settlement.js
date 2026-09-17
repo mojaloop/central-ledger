@@ -129,6 +129,30 @@ const getById2 = async function ({ settlementId }) {
   })
 }
 
+const checkParticipantAccountExists = async (
+  { participantId, accountId }, enums = {}
+) => {
+  return Db.from('participantCurrency').query(builder => {
+    return builder
+      .select('participantCurrencyId')
+      .where({ participantId })
+      .andWhere('participantCurrencyId', accountId)
+      .andWhere('ledgerAccountTypeId', enums.ledgerAccountType.POSITION)
+      .first()
+  })
+}
+
+const getAccountInSettlement = async ({ settlementId, accountId }) => {
+  const result = await Db.from('settlementParticipantCurrency').query(builder => {
+    return builder
+      .select('settlementParticipantCurrencyId')
+      .where({ settlementId })
+      .andWhere('participantCurrencyId', accountId)
+      .first()
+  })
+  return result
+}
+
 const getByParams = async ({
   state,
   fromDateTime,
@@ -1534,6 +1558,8 @@ const abortById = async (settlementId, payload, enums) => {
 module.exports = {
   abortById,
   create,
+  checkParticipantAccountExists,
+  getAccountInSettlement,
   getById,
   getById2,
   getByParams,

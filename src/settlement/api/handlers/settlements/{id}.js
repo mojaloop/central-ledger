@@ -67,7 +67,7 @@ module.exports = {
         params: request.params
       }, EventSdk.AuditEventAction.start)
 
-      const Enums = await request.server.methods.enums('settlementStates')
+      const Enums = await request.server.methods.enums('settlementState')
       request.server.log('info', `get settlement by Id requested with id ${settlementId}`)
       const settlementResult = await Settlements.getById({ settlementId }, Enums)
       return settlementResult
@@ -120,12 +120,11 @@ module.exports = {
         return await Settlements.putById(settlementId, request.payload, Enums)
       } else if (p.state && p.state === Enums.settlementState.ABORTED) {
         return await Settlements.abortById(settlementId, request.payload, Enums)
-      } else {
-        const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Invalid request payload input')
-        logger.error(error)
-        logger.error(error.stack)
-        throw error
-      }
+      } 
+      const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Invalid request payload input')
+      logger.error(error)
+      logger.error(error.stack)
+      throw error
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
