@@ -1,0 +1,14 @@
+#Mojaloop's security address
+Contact: mailto:security@mojaloop.io
+
+#Mojaloop's CVD Policy
+Policy: https://docs.mojaloop.io/community/contributing/cvd.html
+
+#This file must be treated as stale/invalid after this date (RFC 9116 mandatory field)
+Expires: 2027-09-18T00:00:00.000Z
+
+#Canonical location of this file, so a copy hosted elsewhere is not trusted
+Canonical: https://raw.githubusercontent.com/mojaloop/central-ledger/main/.well-known/security.txt
+
+#Language(s) the security team can be contacted in
+Preferred-Languages: en
