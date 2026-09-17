@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.1.1](https://github.com/mojaloop/central-ledger/compare/v20.1.0...v20.1.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* knexfile hardcoded mysql driver breaks migrations on MySQL 9 ([#1302](https://github.com/mojaloop/central-ledger/issues/1302)) ([9b41289](https://github.com/mojaloop/central-ledger/commit/9b41289ba609ae1b7368ef27ffc862f63e72efc5))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([71dd934](https://github.com/mojaloop/central-ledger/commit/71dd934322b5c18c89eea3a3669b731886abc8c0))
+
 ## [20.1.0](https://github.com/mojaloop/central-ledger/compare/v20.0.0...v20.1.0) (2026-09-16)
 
 
