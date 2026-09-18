@@ -41,6 +41,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Util = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
 const { logger } = require('../../shared/logger')
+const { default: stringifySorted } = require('../../shared/helpers')
 
 const arrayDiff = (arr1, arr2) => arr1.filter(x => !arr2.includes(x))
 
@@ -365,7 +366,7 @@ const getSettlementsByParams = async (params, enums) => {
     } else {
       const error = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        `No settlements found matching the provided parameters: ${JSON.stringify(params.query)}`
+        `No settlements found matching the provided parameters: ${stringifySorted(params.query)}`
       )
       logger.error(error)
       throw error

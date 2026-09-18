@@ -1,23 +1,25 @@
 import { LedgerSql } from "../domain/ledger/ledger-sql"
 import { ApplicationConfig } from "../lib/config"
 import { ResponseToolkit } from '@hapi/hapi';
-import { 
-  RequestCloseSettlementWindow, 
-  RequestCreateSettlementEvent, 
-  RequestGetSettlementById, 
-  RequestGetSettlementByParticipant, 
-  RequestGetSettlementByParticipantAccount, 
-  RequestGetSettlementsByParams, 
-  RequestGetSettlementWindowById, 
-  RequestGetSettlementWindowsByParams, 
-  RequestUpdateSettlementById, 
-  RequestUpdateSettlementByParticipant, 
-  RequestUpdateSettlementByParticipantAccount 
+import {
+  RequestCloseSettlementWindow,
+  RequestCreateSettlementEvent,
+  RequestGetSettlementById,
+  RequestGetSettlementByParticipant,
+  RequestGetSettlementByParticipantAccount,
+  RequestGetSettlementsByParams,
+  RequestGetSettlementWindowById,
+  RequestGetSettlementWindowsByParams,
+  RequestUpdateSettlementById,
+  RequestUpdateSettlementByParticipant,
+  RequestUpdateSettlementByParticipantAccount
 } from "./types";
 import Settlements from '../domain/settlement/index';
 import settlementWindows from '../domain/settlementWindow/index';
 
 import { logger } from "../shared/logger";
+import { GetSettlementQuery, GetSettlementsQuery, GetSettlementWindowQuery, GetSettlementWindowsQuery, InternalSettlementState, SettlementAbortCommand, SettlementCloseWindowCommand, SettlementPrepareCommand, SettlementUpdate, SettlementUpdateCommand } from "../domain/ledger/types";
+import assert from "node:assert";
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Utility = require('@mojaloop/central-services-shared').Util
@@ -30,13 +32,86 @@ interface Dependencies {
   ledger: LedgerSql,
 }
 
+// Parsing helpers
+const parseIfSet = <T>(
+  input: string | undefined,
+  fun: (input: string) => T
+): T | undefined => {
+  if (input === undefined) {
+    return undefined
+  }
+
+  return fun(input)
+}
+
+const parseInternalSettlementState = (input: string): InternalSettlementState => {
+  switch (input) {
+    case 'PENDING_SETTLEMENT':
+    case 'PS_TRANSFERS_RECORDED':
+    case 'PS_TRANSFERS_RESERVED':
+    case 'PS_TRANSFERS_COMMITTED':
+    case 'SETTLING':
+    case 'SETTLED':
+    case 'ABORTED':
+      return input
+    default:
+      throw new Error(`parseInternalSettlementState() unknown state: ${input}.`
+        + `Expected one of PENDING_SETTLEMENT, PS_TRANSFERS_RECORDED, PS_TRANSFERS_RESERVED, `
+        + `PS_TRANSFERS_COMMITTED, SETTLING, SETTLED, ABORTED.`
+      )
+  }
+}
+
+const parseDate = (input: string): Date => {
+  return new Date(input)
+}
+
+const trimUndefined = (input: Record<string, any>) => Object.entries(input)
+  .reduce((acc, [key, value]) => {
+    if (value !== undefined) acc[key] = value
+    return acc
+  }, {} as Record<string, any>)
+
+/**
+ * @function mapUpdates
+ * @description Map from a updateSettlementById DTO representation to a Ledger representation.
+ */
+const mapUpdates = (items: Array<any>): Array<SettlementUpdate> => {
+  return items.map(item => {
+    assert(item.id)
+    
+    if (item.accounts.length === 0) {
+      throw new Error(`mapUpdates() found no accounts for participant`
+        + `${item.id}. Expected only 1.`)
+    }
+    if (item.accounts.length > 1) {
+      throw new Error(`mapUpdates() found more than 1 account for participant`
+        + `${item.id}. Expected only 1.`)
+    }
+    assert(item.accounts[0])
+    const account = item.accounts[0]
+    assert(account.state)
+    assert(typeof account.reason === 'string')
+    assert(typeof account.externalReference === 'string')
+
+    return {
+      participantId: item.id,
+      accountId: account.id,
+      participantState: account.state,
+      reason: account.reason,
+      externalReference: account.externalReference
+    }
+  })
+}
+
 /**
  * Refactored version of the Settlement API handlers. These were previously split across different
  * files, but it's much simpler to combine them into one ~500 line file.
  */
 export default class HandlerSettlementV2 {
   constructor(private deps: Dependencies) {
-    logger.warn(`HandlerSettlementV2.constructor() - API_MODE_SETTLEMENT=TODO`)
+    logger.warn(`HandlerSettlementV2.constructor() - `
+      + `API_MODE_SETTLEMENT=${this.deps.config.API_MODE_SETTLEMENT}`)
   }
 
   /**
@@ -66,14 +141,32 @@ export default class HandlerSettlementV2 {
       }, EventSdk.AuditEventAction.start)
 
       const Enums = await request.server.methods.enums('settlementState')
-      const settlementResult = await Settlements.getSettlementsByParams({ query: request.query }, Enums)
-      return h.response(settlementResult)
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        const query: GetSettlementsQuery = trimUndefined({
+          currency: request.query.currency,
+          participantId: request.query.participantId,
+          settlementWindowId: request.query.settlementWindowId,
+          accountId: request.query.accountId,
+          state: parseIfSet(request.query.state, parseInternalSettlementState),
+          fromDateTime: parseIfSet(request.query.fromDateTime, parseDate),
+          toDateTime: parseIfSet(request.query.toDateTime, parseDate),
+          fromSettlementWindowDateTime: parseIfSet(request.query.fromSettlementWindowDateTime, parseDate),
+          toSettlementWindowDateTime: parseIfSet(request.query.toSettlementWindowDateTime, parseDate)
+        })
+
+        const result = await this.deps.ledger.getSettlements(query)
+        if (result.type === 'FAILURE') {
+          throw result.error
+        }
+
+        return result.result
+      }
+      return await Settlements.getSettlementsByParams({ query: request.query }, Enums)
     } catch (err: any) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
-
 
   /**
    * summary: Trigger the creation of a settlement event, that does the calculation of the net
@@ -113,6 +206,20 @@ export default class HandlerSettlementV2 {
         ),
         transferState: await request.server.methods.enums('transferState')
       }
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        const cmd: SettlementPrepareCommand = {
+          windowIds: request.payload.settlementWindows.map(window => window.id),
+          model: request.payload.settlementModel,
+          reason: request.payload.reason,
+          now: new Date(),
+        }
+        const result = await this.deps.ledger.settlementPrepare(cmd)
+        if (result.type === 'FAILURE') {
+          throw result.error
+        }
+        return result.result
+      }
+
       const settlementResult = await Settlements.settlementEventTrigger(request.payload, Enums)
       return settlementResult
     } catch (err: any) {
@@ -149,10 +256,27 @@ export default class HandlerSettlementV2 {
       }, EventSdk.AuditEventAction.start)
 
       const Enums = await request.server.methods.enums('settlementWindowState')
-      const settlementWindowResult = await settlementWindows.getByParams(
+
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        const query: GetSettlementWindowsQuery = trimUndefined({
+          participantId: request.query.participantId,
+          state: request.query.state,
+          fromDateTime: parseIfSet(request.query.fromDateTime, parseDate),
+          toDateTime: parseIfSet(request.query.toDateTime, parseDate),
+          currency: request.query.currency,
+
+        })
+        const result = await this.deps.ledger.getSettlementWindows(query)
+        if (result.type === 'FAILURE') {
+          throw result.error
+        }
+
+        return result.result
+      }
+
+      return await settlementWindows.getByParams(
         { query: request.query }, Enums
       )
-      return settlementWindowResult
     } catch (err: any) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -169,7 +293,7 @@ export default class HandlerSettlementV2 {
   public async getSettlementWindowById(
     request: RequestGetSettlementWindowById,
     h: ResponseToolkit
-  ): Promise<void> {
+  ): Promise<any> {
     const settlementWindowId = request.params.id
     try {
       const { span, headers } = request
@@ -186,6 +310,15 @@ export default class HandlerSettlementV2 {
         params: request.params
       }, EventSdk.AuditEventAction.start)
       const Enums = await request.server.methods.enums('settlementWindowState')
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        const query: GetSettlementWindowQuery = { id: settlementWindowId }
+        const result = await this.deps.ledger.getSettlementWindow(query)
+        if (result.type === 'FAILURE' || result.type === 'NOT_FOUND') {
+          throw result.error
+        }
+
+        return result.result
+      }
       return await settlementWindows.getById({ settlementWindowId }, Enums, request.server.log)
     } catch (err: any) {
       request.server.log('error', err)
@@ -219,6 +352,20 @@ export default class HandlerSettlementV2 {
       span.setTags(spanTags)
       await span.audit(request.payload, EventSdk.AuditEventAction.start)
       const Enums = await request.server.methods.enums('settlementWindowState')
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        const cmd: SettlementCloseWindowCommand = {
+          id: settlementWindowId,
+          reason,
+          now: new Date()
+        }
+        const result = await this.deps.ledger.closeSettlementWindow(cmd)
+        if (result.type === 'FAILURE') {
+          throw result.error
+        }
+
+        // @ts-ignore
+        return result.result
+      }
       return await settlementWindows.process({
         settlementWindowId,
         reason,
@@ -255,6 +402,17 @@ export default class HandlerSettlementV2 {
 
       const Enums = await request.server.methods.enums('settlementState')
       request.server.log('info', `get settlement by Id requested with id ${settlementId}`)
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        const query: GetSettlementQuery = {
+          id: settlementId
+        }
+        const result = await this.deps.ledger.getSettlement(query)
+        if (result.type === 'FAILURE' || result.type === 'NOT_FOUND') {
+          throw result.error
+        }
+
+        return result.result
+      }
       const settlementResult = await Settlements.getById({ settlementId }, Enums)
       return settlementResult
     } catch (err: any) {
@@ -310,6 +468,42 @@ export default class HandlerSettlementV2 {
         transferState: await request.server.methods.enums('transferState'),
         transferStateEnum: await request.server.methods.enums('transferStateEnum')
       }
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        if (p.participants) {
+
+          // Update.
+          const cmd: SettlementUpdateCommand = {
+            id: settlementId,
+            updates: mapUpdates(p.participants)
+          }
+          const result = await this.deps.ledger.settlementUpdate(cmd)
+          if (result.type === 'FAILURE') {
+            throw result.error
+          }
+
+          return result.result
+        } else if (p.state && p.state === Enums.settlementState.ABORTED) {
+          // Abort.
+          const reason = request.payload.reason
+          assert(reason,)
+          const cmd: SettlementAbortCommand = {
+            id: settlementId,
+            reason,
+          }
+          const result = await this.deps.ledger.settlementAbort(cmd)
+          if (result.type === 'FAILURE') {
+            throw result.error
+          }
+
+          return result.result
+        }
+        const error = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          'Invalid request payload input'
+        )
+        throw error
+      }
+
       if (p.participants) {
         return await Settlements.putById(settlementId, request.payload, Enums)
       } else if (p.state && p.state === Enums.settlementState.ABORTED) {
@@ -324,18 +518,18 @@ export default class HandlerSettlementV2 {
       throw error
     } catch (err: any) {
       request.server.log('error', err)
+      request.server.log('error', err.stack)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
   /**
-   * summary: Acknowledgement of settlement by updating with Settlements Id and Participant Id.
+   * summary: 
    * description:
-   * parameters: settlementId, participantId, settlementParticipantUpdatePayload
+   * parameters: 
    * produces: application/json
    * responses: 200, 400, 401, 404, 415, default
    */
-
   public async getSettlementBySettlementParticipant(
     request: RequestGetSettlementByParticipant,
     h: ResponseToolkit,
@@ -360,6 +554,33 @@ export default class HandlerSettlementV2 {
         settlementWindowState: await request.server.methods.enums('settlementWindowState'),
         ledgerAccountType: await request.server.methods.enums('ledgerAccountType')
       }
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        const query: GetSettlementQuery = {
+          id: settlementId
+        }
+        const resultSettlement = await this.deps.ledger.getSettlement(query)
+        if (resultSettlement.type === 'FAILURE' || resultSettlement.type === 'NOT_FOUND') {
+          throw resultSettlement.error
+        }
+
+        // Now filter for the participant. Ledger doesn't support lookup by participant.
+        const participants = resultSettlement.result.participants
+          .filter(participant => participant.id === participantId)
+        if (participants.length === 0) {
+          throw new Error(`Participant not found for settlement: ${settlementId} `
+            + `and participantId: ${participantId}`)
+        }
+
+        const formatted = {
+          id: resultSettlement.result.id,
+          state: resultSettlement.result.state,
+          settlementWindows: [], // Backwards compatibility.
+          participants
+        }
+
+        return formatted
+      }
+
       return await Settlements.getByIdParticipantAccount({ settlementId, participantId }, Enums)
     } catch (err: any) {
       request.server.log('error', err)
@@ -411,6 +632,22 @@ export default class HandlerSettlementV2 {
         ),
         transferState: await request.server.methods.enums('transferState')
       }
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        const cmd: SettlementUpdateCommand = {
+          id: settlementId,
+          updates: mapUpdates([{
+            id: participantId,
+            accounts: p.accounts
+          }])
+        }
+        const result = await this.deps.ledger.settlementUpdate(cmd)
+        if (result.type === 'FAILURE') {
+          throw result.error
+        }
+
+        return result.result
+      }
+
       return await Settlements.putById(settlementId, universalPayload, Enums)
     } catch (err: any) {
       request.server.log('error', err)
@@ -451,6 +688,45 @@ export default class HandlerSettlementV2 {
         settlementWindowState: await request.server.methods.enums('settlementWindowState'),
         ledgerAccountType: await request.server.methods.enums('ledgerAccountType')
       }
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        const query: GetSettlementQuery = {
+          id: settlementId
+        }
+        const resultSettlement = await this.deps.ledger.getSettlement(query)
+        if (resultSettlement.type === 'FAILURE' || resultSettlement.type === 'NOT_FOUND') {
+          throw resultSettlement.error
+        }
+
+        // Now filter for the participant + account. Ledger doesn't support lookup by participant.
+        const participant = resultSettlement.result.participants
+          .find(participant => participant.id === participantId)
+        if (!participant) {
+          throw new Error(`Participant not found for settlement: ${settlementId} `
+            + `and participantId: ${participantId}`)
+        }
+        const account = participant.accounts.find(account => account.id === accountId)
+        if (!account) {
+          throw new Error(`Account not found for settlement: ${settlementId} `
+            + `and participantId: ${participantId}`
+            + `and accountId: ${accountId}`
+          )
+        }
+
+        const formatted = {
+          id: resultSettlement.result.id,
+          state: resultSettlement.result.state,
+          settlementWindows: [], // Backwards compatibility.
+          participants: [{
+            id: participant.id,
+            accounts: [
+              account
+            ]
+          }]
+        }
+
+        return formatted
+      }
+
       return await Settlements.getByIdParticipantAccount({ settlementId, participantId, accountId }, Enums)
     } catch (err: any) {
       request.server.log('error', err)
@@ -483,6 +759,10 @@ export default class HandlerSettlementV2 {
       )
       span.setTags(spanTags)
       await span.audit(request.payload, EventSdk.AuditEventAction.start)
+      // Set a default, makes API more consistent.
+      if (!request.payload.externalReference) {
+        request.payload.externalReference = ''
+      }
       const accounts = [Object.assign({}, request.payload, { id: accountId })]
       const universalPayload = {
         participants: [
@@ -500,6 +780,26 @@ export default class HandlerSettlementV2 {
         settlementWindowState: await request.server.methods.enums('settlementWindowState'),
         transferParticipantRoleType: await request.server.methods.enums('transferParticipantRoleType'),
         transferState: await request.server.methods.enums('transferState')
+      }
+      if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
+        const cmd: SettlementUpdateCommand = {
+          id: settlementId,
+          updates: mapUpdates([{
+            id: participantId,
+            accounts: [{
+              id: accountId,
+              state: request.payload.state,
+              reason: request.payload.reason,
+              externalReference: request.payload.externalReference || '',
+            }]
+          }])
+        }
+        const result = await this.deps.ledger.settlementUpdate(cmd)
+        if (result.type === 'FAILURE') {
+          throw result.error
+        }
+
+        return result.result
       }
       return await Settlements.putById(settlementId, universalPayload, Enums)
     } catch (err: any) {

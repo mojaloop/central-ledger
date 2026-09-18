@@ -36,6 +36,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const SettlementWindowModel = require('../../models/settlementWindow')
 const SettlementWindowContentModel = require('../../models/settlementWindowContent')
 const { logger } = require('../../shared/logger')
+const { default: stringifySorted } = require('../../shared/helpers')
 
 const hasFilters = (obj) => {
   if (obj && typeof obj !== 'object') return true
@@ -90,7 +91,7 @@ module.exports = {
           } else {
             const error = ErrorHandler.Factory.createFSPIOPError(
               ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 
-              `No records for settlementWidowContentId : ${settlementWindow.settlementWindowId} found`
+              `No records for settlementWindowContentId : ${settlementWindow.settlementWindowId} found`
             )
             logger.error(error)
             throw error
@@ -100,7 +101,7 @@ module.exports = {
       } else {
         const error = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 
-          `settlementWindow by filters: ${JSON.stringify(params.query).replace(/"/g, '')} not found`
+          `settlementWindow by filters: ${stringifySorted(params.query).replace(/"/g, '')} not found`
         )
         logger.error(error)
         throw error
@@ -115,6 +116,15 @@ module.exports = {
     }
   },
 
+  /**
+   * @returns {Promise<{
+   *   changedDate: Date,
+   *   createdDate: Date,
+   *   reason: string,
+   *   settlementWindowId: number,
+   *   state: string, 
+   * }>}
+   */
   process: async function (params, enums) {
     const nextId = await SettlementWindowModel.process(params, enums)
     await SettlementWindowModel.close(params.settlementWindowId, params.reason)

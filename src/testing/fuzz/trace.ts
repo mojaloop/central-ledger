@@ -1,5 +1,6 @@
 import { isDeepStrictEqual } from "node:util"
 import { logger } from "../../shared/logger"
+import assert from "node:assert"
 
 export type TraceItem = {
   step: number,
@@ -31,7 +32,7 @@ export default class Trace {
       const itemLeft = this.inner[idx]
       const itemRight = other.inner[idx]
 
-      if (!isDeepStrictEqual(itemLeft, itemRight)) {
+      if (!isDeepStrictEqual(JSON.stringify(itemLeft), JSON.stringify(itemRight))) {
         logger.warn(`compare() traces drifted at idx: ${idx}.`)
         // Get up to the last 5 elements for context.
         const lastNLeft = this.inner.slice(Math.max(0, idx - 4), idx + 1)

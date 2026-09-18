@@ -1,7 +1,7 @@
 import { after, before, describe, it } from 'node:test'
 import Harness from '../testing/harness'
 import * as ApiHelpers from '../testing/api-helpers'
-import { unwrapResponseSettlement } from '../testing/util'
+import { envOrDefaultString, unwrapResponseSettlement } from '../testing/util'
 import assert from 'node:assert'
 import { Snapshot } from '../testing/snapshot'
 import { logger } from '../shared/logger'
@@ -18,6 +18,9 @@ describe('settlement api handlers', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
+    const apiModeSettlement = envOrDefaultString('API_MODE_SETTLEMENT', 'NONE') as 'NONE' | 'LEDGER'
+    
+    harness.configOverride({ API_MODE_SETTLEMENT: apiModeSettlement })
 
     handlerV2 = new HandlerSettlementV2({
       config: harness.config,
@@ -537,6 +540,131 @@ describe('settlement api handlers', () => {
     }`).checkUnwrap(body)
   })
 
+  it('gets a settlement by id + participant id', async () => {
+    // Create some transfers.
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_c')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_c', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+
+    // Close the settlement window.
+    const windows = await ApiHelpers.closeSettlementWindow(harness)
+    const settlement = await ApiHelpers.createSettlement(harness, windows)
+    assert(settlement.participants.length > 0, 'Expected settlement to contain >= 1 participants.')
+    const request = {
+      ...requestTemplate,
+      params: {
+        sid: settlement.id,
+        pid: settlement.participants[0].id,
+      }
+    }
+    const {
+      body, code
+    } = await unwrapResponseSettlement(
+      (reply) => handlerV2.getSettlementBySettlementParticipant(request, reply)
+    )
+    assert.equal(code, 200)
+    Snapshot.from(`{
+      "id": :ignore,
+      "state": "PENDING_SETTLEMENT",
+      "settlementWindows": [],
+      "participants": [
+        {
+          "id": :ignore,
+          "accounts": [
+            {
+              "id": :ignore,
+              "state": "PENDING_SETTLEMENT",
+              "reason": "Test Settlement.",
+              "netSettlementAmount": {
+                "amount": 200,
+                "currency": "USD"
+              }
+            }
+          ]
+        }
+      ]
+    }`).checkUnwrap(body)
+  })
+
+  it('gets a settlement by id + participant id + account id', async () => {
+    // Create some transfers.
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_c')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_c', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+
+    // Close the settlement window.
+    const windows = await ApiHelpers.closeSettlementWindow(harness)
+    const settlement = await ApiHelpers.createSettlement(harness, windows)
+    assert(settlement.participants.length > 0, 'Expected settlement to contain >= 1 participants.')
+    const participant = settlement.participants[0]
+    assert(participant.accounts.length > 0, 'Expected participant to contain >= 1 accounts.')
+    const request = {
+      ...requestTemplate,
+      params: {
+        sid: settlement.id,
+        pid: settlement.participants[0].id,
+        aid: participant.accounts[0].id
+      }
+    }
+    const {
+      body, code
+    } = await unwrapResponseSettlement(
+      (reply) => handlerV2.getSettlementBySettlementParticipantAccount(request, reply)
+    )
+    assert.equal(code, 200)
+    Snapshot.from(`{
+      "id": :ignore,
+      "state": "PENDING_SETTLEMENT",
+      "settlementWindows": [],
+      "participants": [
+        {
+          "id": :ignore,
+          "accounts": [
+            {
+              "id": :ignore,
+              "state": "PENDING_SETTLEMENT",
+              "reason": "Test Settlement.",
+              "netSettlementAmount": {
+                "amount": 200,
+                "currency": "USD"
+              }
+            }
+          ]
+        }
+      ]
+    }`).checkUnwrap(body)
+  })
+
   it('updates a settlement', async () => {
     // Create some transfers.
     await ApiHelpers
@@ -631,7 +759,7 @@ describe('settlement api handlers', () => {
     }`).checkUnwrap(body)
   })
 
-  // Note: This seemed unimplemented in central-settlements.
+  // Note: This seemed untested in central-settlements.
   it('aborts a settlement', async () => {
     // Create some transfers.
     await ApiHelpers
@@ -672,7 +800,7 @@ describe('settlement api handlers', () => {
 
     assert.equal(code, 400)
     Snapshot.from(
-      `"Unhandled state: PENDING_SETTLEMENT for settlement '4'. Aborting is not allowed."`
+      `"Unhandled state: PENDING_SETTLEMENT for :ignore`
     ).checkUnwrap(body)
   })
 
@@ -791,5 +919,98 @@ describe('settlement api handlers', () => {
       ["SETTLED", "SETTLED", "SETTLED"],
       'SETTLED'
     )
+  })
+
+  it('updates a settlement by participant account', async () => {
+    // Create some transfers.
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_c')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_c', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+
+    // Close the settlement window.
+    const windows = await ApiHelpers.closeSettlementWindow(harness)
+    const settlement = await ApiHelpers.createSettlement(harness, windows)
+
+    const participant = settlement.participants[0]
+    assert(participant)
+    const account = participant.accounts[0]
+    assert(account)
+
+    const request = {
+      ...requestTemplate,
+      params: {
+        sid: settlement.id,
+        pid: participant.id,
+        aid: account.id
+      },
+      payload: {
+        state: 'PS_TRANSFERS_RECORDED',
+        reason: 'test reason',
+        externalReference: '12345'
+      }
+    }
+
+    let response = await unwrapResponseSettlement(
+      (reply) => handlerV2.updateSettlementByIdParticipantAccount(request, reply)
+    )
+
+    assert.equal(response.code, 200)
+    Snapshot.from(`{
+      "id": :ignore,
+      "state": "PENDING_SETTLEMENT",
+      "createdDate": "2026-01-31T23:00:00.000Z",
+      "settlementWindows": [
+        {
+          "id": :ignore,
+          "state": "PENDING_SETTLEMENT",
+          "reason": "Test Settlement.",
+          "createdDate": "2026-02-01T00:00:00.000Z",
+          "changedDate": "2026-01-31T23:00:00.000Z",
+          "content": [
+            {
+              "id": :ignore,
+              "state": "PENDING_SETTLEMENT",
+              "ledgerAccountType": "POSITION",
+              "currencyId": "USD",
+              "createdDate": "2026-02-01T00:00:00.000Z",
+              "changedDate": "2026-01-31T23:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "participants": [
+        {
+          "id": :ignore,
+          "accounts": [
+            {
+              "id": :ignore,
+              "state": "PS_TRANSFERS_RECORDED",
+              "reason": "test reason",
+              "externalReference": "12345",
+              "createdDate": "2026-02-01 00:00:00.000",
+              "netSettlementAmount": {
+                "amount": "200.0000",
+                "currency": "USD"
+              }
+            }
+          ]
+        }
+      ]
+    }`).checkUnwrap(response.body)
   })
 })
