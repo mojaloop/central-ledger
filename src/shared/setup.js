@@ -66,7 +66,7 @@ const { LedgerSql } = require('../domain/ledger/ledger-sql')
 const { TimeoutHandlerV2 } = require('../handlers/timeout-v2')
 const { default: HandlerV2 } = require('../api/participants/handler-v2')
 const routesAdminBuilder = require('../api/routes-v2').default
-const routesSettlement = require('../settlement/api/routes')
+const routesSettlement = require('../api_settlement/routes')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true

@@ -165,7 +165,6 @@ const APIRoutes = (api) => {
 }
 
 module.exports = {
-<<<<<<< HEAD
   plugin: {
     name: 'settlement api routes',
     register: async function (server) {
@@ -173,16 +172,5 @@ module.exports = {
       assertHandlersRegistered(api)
       server.route(APIRoutes(api))
     }
-||||||| parent of 77a7cb82 (feat(Ledger): implement LedgerSql, a wrapper around the existing)
-  plugin: HapiOpenAPI,
-  options: {
-    api: Path.resolve(process.cwd(), 'src/settlement/interface/swagger.json'),
-    handlers: Path.resolve(__dirname, './handlers')
-=======
-  plugin: HapiOpenAPI,
-  options: {
-    api: Path.join(__dirname, '../interface/swagger.json'),
-    handlers: Path.resolve(__dirname, './handlers')
->>>>>>> 77a7cb82 (feat(Ledger): implement LedgerSql, a wrapper around the existing)
   }
 }

@@ -33,7 +33,7 @@
 'use strict'
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const settlementWindows = require('../../../domain/settlementWindow/index')
+const settlementWindows = require('../../domain/settlementWindow/index')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
