@@ -158,6 +158,16 @@ export interface ApplicationConfig {
    * @default 'NONE' 
    */
   API_MODE_ADMIN: 'NONE' |'LEDGER'
+
+  /**
+   * Configures whether or not the Settlement API uses the Ledger interface. This is a part of the
+   * overall refactor to switch to a TigerBeetle-based leder.
+   * - `NONE`   uses the older implementation of the Settlement API (default).
+   * - `LEDGER` uses the ledger interface
+   * 
+   * @default 'NONE' 
+   */
+  API_MODE_SETTLEMENT: 'NONE' | 'LEDGER'
   
   /**
    * Experimental Configs. Not recommended for production usage.

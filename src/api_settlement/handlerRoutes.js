@@ -32,6 +32,8 @@ require('../shared/legacyUtilShim')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
 
+console.error('WARNING - using handlerRoutes.js, this file is deprecated.')
+
 module.exports = {
   plugin: HapiOpenAPI,
   options: {

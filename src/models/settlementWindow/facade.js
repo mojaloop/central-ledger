@@ -108,7 +108,9 @@ const Facade = {
             'settlementWindow.createdDate as createdDate',
             'swsc.createdDate as changedDate'
           )
-          .orderBy('changedDate', 'desc').distinct()
+          .orderBy('changedDate', 'desc')
+          .orderBy('settlementWindow.settlementWindowId', 'asc')
+          .distinct()
         if (state) { b.where('swsc.settlementWindowStateId', state) }
         if (fromDateTime) { b.where('settlementWindow.createdDate', '>=', fromDateTime) }
         if (toDateTime) { b.where('settlementWindow.createdDate', '<=', toDateTime) }
@@ -127,7 +129,9 @@ const Facade = {
             'settlementWindow.createdDate as createdDate',
             'swsc.createdDate as changedDate'
           )
-          .orderBy('changedDate', 'desc').distinct()
+          .orderBy('changedDate', 'desc')
+          .orderBy('settlementWindow.settlementWindowId', 'asc')
+          .distinct()
           .where('pc.participantId', participantId)
         if (state) { b.where('swsc.settlementWindowStateId', state) }
         if (fromDateTime) { b.where('settlementWindow.createdDate', '>=', fromDateTime) }

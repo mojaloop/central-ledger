@@ -1,4 +1,5 @@
 import { describe, it } from "node:test"
+import fs from "node:fs"
 import path from 'path'
 import LoggerMock from "../testing/logger-mock"
 import { logger as loggerGlobal } from "../shared/logger"
@@ -9,12 +10,13 @@ import Harness from "../testing/harness"
 import { loggerFactory } from "@mojaloop/central-services-logger/src/contextLogger"
 import * as ApiHelpers from '../testing/api-helpers'
 import { envOrDefaultNumber, randomAvailablePort, sanitizeTestName } from "../testing/util"
-import { ReqRefDefaults, Server, ServerRoute } from "@hapi/hapi"
+import { Server } from "@hapi/hapi"
 import Trace from "../testing/fuzz/trace"
 import assert from "node:assert"
 import PRNG from "../testing/prng"
 import { ApplicationConfig } from "../lib/config"
 import { Settlement } from "../domain/ledger/types"
+import HandlerSettlementV2 from "./handler-v2"
 const logger = loggerFactory()
 
 // We need to patch the date globally before starting the harness.
@@ -28,9 +30,55 @@ const filename = path.basename(__filename)
 assert(filename)
 
 describe('Settlement API Fuzz', () => {
-  it('runs the fuzzer', async () => {
+  it('runs the fuzzer', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 100)
-    await run(stepsMax, {})
+    const trace = await run(stepsMax, {})
+
+    const dirTrace = `.fuzz_output/${filename}/${sanitizeTestName(context.name)}`
+    const pathTrace = `${dirTrace}/trace.txt`
+    fs.mkdirSync(dirTrace, { recursive: true });
+    fs.writeFileSync(pathTrace, trace.toString())
+    console.log(`Fuzz trace written to ${pathTrace}.`)
+  })
+
+  it('is identical with/without LEDGER', async (context) => {
+    const stepsMax = envOrDefaultNumber('STEPS_MAX', 100)
+    const traceA = await run(stepsMax, { API_MODE_SETTLEMENT: 'NONE' })
+    const traceB = await run(stepsMax, { API_MODE_SETTLEMENT: 'LEDGER' })
+
+    const pathBase = `.fuzz_output/${filename}/${sanitizeTestName(context.name)}`
+    fs.mkdirSync(pathBase, { recursive: true });
+    const pathA = `${pathBase}/traceA.txt`
+    const pathB = `${pathBase}/traceB.txt`
+
+    fs.writeFileSync(pathA, traceA.toString())
+    fs.writeFileSync(pathB, traceB.toString())
+
+    console.log(`Fuzz trace written to ${pathBase}.`)
+    console.log(`Compare the two files with:\n\tgit diff --no-index ${pathA} ${pathB}`)
+
+    traceA.compare(traceB, { nameLeft: 'REFACTOR=false', nameRight: 'REFACTOR=true' })
+  })
+
+  it.only('is fully deterministic', async (context) => {
+    const stepsMax = 2500
+    const traceA = await run(stepsMax, {})
+    const traceB = await run(stepsMax, {})
+
+    const filename = path.basename(__filename)
+    assert(filename)
+    const pathBase = `.fuzz_output/${filename}/${sanitizeTestName(context.name)}`
+    fs.mkdirSync(pathBase, { recursive: true });
+    const pathA = `${pathBase}/traceA.txt`
+    const pathB = `${pathBase}/traceB.txt`
+
+    fs.writeFileSync(pathA, traceA.toString())
+    fs.writeFileSync(pathB, traceB.toString())
+
+    console.log(`Fuzz trace written to ${pathBase}.`)
+    console.log(`Compare the two files with:\n\tgit diff --no-index ${pathA} ${pathB}`)
+
+    traceA.compare(traceB, { nameLeft: 'traceA', nameRight: 'traceB' })
   })
 })
 
@@ -45,7 +93,11 @@ const run = async (stepsMax: number, config: Partial<ApplicationConfig>): Promis
     harness.configOverride(config)
 
     const port = await randomAvailablePort()
-    const routes = await import('./routes')
+    const buildRoutes = (await import('./routes-v2')).default
+    const handler = new HandlerSettlementV2({
+      config: harness.config, ledger: harness.ledger
+    })
+    const routes = buildRoutes(handler)
     const Setup = await import('../shared/setup')
     server = await Setup.createServer(port, routes)
 
@@ -299,13 +351,13 @@ class SettlementApiFuzzer {
       participants
     }
     const id = this.harness.prng.randomElementWeighted(
-      [settlement.id, this.harness.prng.intExclusive(1500)], 
+      [settlement.id, this.harness.prng.intExclusive(1500)],
       [99, 1]
     )
     await this.request(
-      'updateSettlement', 
-      'PUT', 
-      `/settlements/${id}`, 
+      'updateSettlement',
+      'PUT',
+      `/settlements/${id}`,
       payload
     )
   }
@@ -396,7 +448,7 @@ class SettlementApiFuzzer {
       'PUT',
       `/settlements/${settlementId}/participants/${participantId}`,
       payload
-    )    
+    )
   }
 
   private async getSettlementByParticipantAccount(): Promise<void> {
@@ -698,7 +750,7 @@ class SettlementApiFuzzer {
     const hour = String(this.harness.prng.intInRange(0, 59)).padStart(2, '0')
     const min = String(this.harness.prng.intInRange(0, 59)).padStart(2, '0')
     const sec = String(this.harness.prng.intInRange(0, 59)).padStart(2, '0')
-    
+
     return `${year}-${month}-${day}T${hour}:${min}:${sec}Z`
   }
 }
