@@ -1,20 +1,20 @@
 import { describe, it } from "node:test"
 import path from 'path'
-import LoggerMock from "../../testing/logger-mock"
-import { logger as loggerGlobal } from "../../shared/logger"
+import LoggerMock from "../testing/logger-mock"
+import { logger as loggerGlobal } from "../shared/logger"
 // @ts-ignore  Override the globally exported logger. Note that we MUST do this before
 // we import Harness, which imports the globals.
 loggerGlobal = new LoggerMock()
-import Harness from "../../testing/harness"
+import Harness from "../testing/harness"
 import { loggerFactory } from "@mojaloop/central-services-logger/src/contextLogger"
-import * as ApiHelpers from '../../testing/api-helpers'
-import { envOrDefaultNumber, randomAvailablePort, sanitizeTestName } from "../../testing/util"
+import * as ApiHelpers from '../testing/api-helpers'
+import { envOrDefaultNumber, randomAvailablePort, sanitizeTestName } from "../testing/util"
 import { ReqRefDefaults, Server, ServerRoute } from "@hapi/hapi"
-import Trace from "../../testing/fuzz/trace"
+import Trace from "../testing/fuzz/trace"
 import assert from "node:assert"
-import PRNG from "../../testing/prng"
-import { ApplicationConfig } from "../../lib/config"
-import { Settlement } from "../../domain/ledger/types"
+import PRNG from "../testing/prng"
+import { ApplicationConfig } from "../lib/config"
+import { Settlement } from "../domain/ledger/types"
 const logger = loggerFactory()
 
 // We need to patch the date globally before starting the harness.

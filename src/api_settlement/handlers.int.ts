@@ -1,11 +1,11 @@
 import { after, before, describe, it } from 'node:test'
-import Harness from '../../testing/harness'
-import * as ApiHelpers from '../../testing/api-helpers'
-import { unwrapResponseSettlement, unwrapResponseWithError } from '../../testing/util'
+import Harness from '../testing/harness'
+import * as ApiHelpers from '../testing/api-helpers'
+import { unwrapResponseSettlement, unwrapResponseWithError } from '../testing/util'
 import assert from 'node:assert'
-import { Snapshot } from '../../testing/snapshot'
+import { Snapshot } from '../testing/snapshot'
 import { logger } from '../shared/logger'
-import PRNG from '../../testing/prng'
+import PRNG from '../testing/prng'
 
 const harness = Harness.getInstance()
 const prng = new PRNG(456)

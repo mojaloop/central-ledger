@@ -24,6 +24,7 @@
 
  * ModusBox
  - Deon Botha <deon.botha@modusbox.com>
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Miguel de Barros <miguel.debarros@modusbox.com>
  - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  - Valentin Genev <valentin.genev@modusbox.com>
@@ -31,31 +32,30 @@
  ******/
 'use strict'
 
-const settlementWindow = require('../../../../domain/settlementWindow/index')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Settlements = require('../../domain/settlement/index')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
 
 /**
- * Operations on /settlementWindows/{id}
+ * Operations on /settlements
  */
 module.exports = {
   /**
-     * summary: Returns a Settlement Window as per id.
+     * summary: Returns Settlement(s) as per parameter(s).
      * description:
-     * parameters: id
+     * parameters: currency, participantId, settlementWindowId, accountId, state, fromDateTime, toDateTime
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-  get: async function getSettlementWindowById(request, h) {
-    const settlementWindowId = request.params.id
+  get: async function getSettlementsByParams (request, h) {
     try {
       const { span, headers } = request
       const spanTags = Utility.EventFramework.getSpanTags(
-        Enum.Events.Event.Type.SETTLEMENT_WINDOW,
+        Enum.Events.Event.Type.SETTLEMENT,
         Enum.Events.Event.Action.GET,
-        `settlementWindowId=${settlementWindowId}`,
+        undefined,
         headers[Enum.Http.Headers.FSPIOP.SOURCE],
         headers[Enum.Http.Headers.FSPIOP.DESTINATION]
       )
@@ -64,39 +64,51 @@ module.exports = {
         headers: request.headers,
         params: request.params
       }, EventSdk.AuditEventAction.start)
-      const Enums = await request.server.methods.enums('settlementWindowState')
-      return await settlementWindow.getById({ settlementWindowId }, Enums, request.server.log)
+
+      const Enums = await request.server.methods.enums('settlementState')
+      const settlementResult = await Settlements.getSettlementsByParams({ query: request.query }, Enums)
+      return h.response(settlementResult)
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   },
   /**
-     * summary: If the settlementWindow is open, it can be closed and a new window created. If it is already closed, return an error message. Returns the new settlement window.
+     * summary: Trigger the creation of a settlement event, that does the calculation of the net
+     *          settlement position per participant and marks all transfers in the affected windows 
+     *          as Pending settlement. Returned dataset is the net settlement report for the
+     *          settlement window
      * description:
-     * parameters: id, settlementWindowClosurePayload
+     * parameters: settlementEventPayload
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-  post: async function closeSettlementWindow(request) {
-    const { reason } = request.payload
-    const settlementWindowId = request.params.id
+
+  post: async function createSettlementEvent (request, h) {
     try {
-      const { span, headers } = request
+      const { span, payload, headers } = request
       const spanTags = Utility.EventFramework.getSpanTags(
-        Enum.Events.Event.Type.SETTLEMENT_WINDOW,
+        Enum.Events.Event.Type.SETTLEMENT,
         Enum.Events.Event.Action.POST,
-        `settlementWindowId=${settlementWindowId}`,
+        payload.settlementWindows.map(id => id.id).join(''),
         headers[Enum.Http.Headers.FSPIOP.SOURCE],
         headers[Enum.Http.Headers.FSPIOP.DESTINATION]
       )
       span.setTags(spanTags)
       await span.audit(request.payload, EventSdk.AuditEventAction.start)
-      const Enums = await request.server.methods.enums('settlementWindowState')
-      return await settlementWindow.process({
-        settlementWindowId,
-        reason,
-      }, Enums)
+
+      const Enums = {
+        ledgerEntryType: await request.server.methods.enums('ledgerEntryType'),
+        settlementDelay: await request.server.methods.enums('settlementDelay'),
+        settlementGranularity: await request.server.methods.enums('settlementGranularity'),
+        settlementInterchange: await request.server.methods.enums('settlementInterchange'),
+        settlementState: await request.server.methods.enums('settlementState'),
+        settlementWindowState: await request.server.methods.enums('settlementWindowState'),
+        transferParticipantRoleType: await request.server.methods.enums('transferParticipantRoleType'),
+        transferState: await request.server.methods.enums('transferState')
+      }
+      const settlementResult = await Settlements.settlementEventTrigger(request.payload, Enums)
+      return settlementResult
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)

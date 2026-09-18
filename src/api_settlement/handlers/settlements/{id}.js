@@ -33,32 +33,31 @@
 'use strict'
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Settlements = require('../../../../../../domain/settlement/index')
+const { logger } = require('../../../shared/logger')
+const Settlements = require('../../../domain/settlement/index')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
 
 /**
- * Operations on /settlements/{settlementId}/participants/{participantId}
+ * Operations on /settlements/{id}
  */
 module.exports = {
   /**
-     * summary: Acknowledgement of settlement by updating with Settlements Id and Participant Id.
+     * summary: Returns Settlement(s) as per parameters/filter criteria.
      * description:
-     * parameters: settlementId, participantId, settlementParticipantUpdatePayload
+     * parameters: id
      * produces: application/json
      * responses: 200, 400, 401, 404, 415, default
      */
-
-  get: async function getSettlementBySettlementParticipantAccount (request, h) {
+  get: async function getSettlementById (request, h) {
+    const settlementId = request.params.id
     try {
-      const settlementId = request.params.sid
-      const participantId = request.params.pid
       const { span, headers } = request
       const spanTags = Utility.EventFramework.getSpanTags(
         Enum.Events.Event.Type.SETTLEMENT,
         Enum.Events.Event.Action.GET,
-        `sid=${settlementId};pid=${participantId}`,
+        `sid=${settlementId}`,
         headers[Enum.Http.Headers.FSPIOP.SOURCE],
         headers[Enum.Http.Headers.FSPIOP.DESTINATION]
       )
@@ -67,11 +66,11 @@ module.exports = {
         headers: request.headers,
         params: request.params
       }, EventSdk.AuditEventAction.start)
-      const Enums = {
-        settlementWindowState: await request.server.methods.enums('settlementWindowState'),
-        ledgerAccountType: await request.server.methods.enums('ledgerAccountType')
-      }
-      return await Settlements.getByIdParticipantAccount({ settlementId, participantId }, Enums)
+
+      const Enums = await request.server.methods.enums('settlementState')
+      request.server.log('info', `get settlement by Id requested with id ${settlementId}`)
+      const settlementResult = await Settlements.getById({ settlementId }, Enums)
+      return settlementResult
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -79,34 +78,33 @@ module.exports = {
   },
 
   /**
-   * summary: Acknowledgement of settlement by updating with Settlements Id.
-   * description:
-   * parameters: id, participantId, settlementUpdatePayload
-   * produces: application/json
-   * responses: 200, 400, 401, 404, 415, default
-   */
+     * summary: Acknowledgement of settlement by updating with Settlements Id.
+     * description:
+     * parameters: id, settlementUpdatePayload
+     * produces: application/json
+     * responses: 200, 400, 401, 404, 415, default
+     */
   put: async function updateSettlementById (request) {
-    const settlementId = request.params.sid
-    const participantId = request.params.pid
+    const settlementId = request.params.id
     try {
       const { span, headers } = request
       const spanTags = Utility.EventFramework.getSpanTags(
         Enum.Events.Event.Type.SETTLEMENT,
         Enum.Events.Event.Action.PUT,
-        `sid=${settlementId};pid=${participantId}`,
+        `sid=${settlementId}`,
         headers[Enum.Http.Headers.FSPIOP.SOURCE],
         headers[Enum.Http.Headers.FSPIOP.DESTINATION]
       )
       span.setTags(spanTags)
       await span.audit(request.payload, EventSdk.AuditEventAction.start)
+
       const p = request.payload
-      const universalPayload = {
-        participants: [
-          {
-            id: participantId,
-            accounts: p.accounts
-          }
-        ]
+      if (p.participants && (p.state || p.reason || p.externalReference)) {
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'No other properties are allowed when participants is provided')
+      } else if ((p.state && !p.reason) || (!p.state && p.reason)) {
+        const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MISSING_ELEMENT, 'State and reason are mandatory')
+        logger.error(error)
+        throw error
       }
       const Enums = {
         ledgerAccountType: await request.server.methods.enums('ledgerAccountType'),
@@ -115,9 +113,18 @@ module.exports = {
         settlementState: await request.server.methods.enums('settlementState'),
         settlementWindowState: await request.server.methods.enums('settlementWindowState'),
         transferParticipantRoleType: await request.server.methods.enums('transferParticipantRoleType'),
-        transferState: await request.server.methods.enums('transferState')
+        transferState: await request.server.methods.enums('transferState'),
+        transferStateEnum: await request.server.methods.enums('transferStateEnum')
       }
-      return await Settlements.putById(settlementId, universalPayload, Enums)
+      if (p.participants) {
+        return await Settlements.putById(settlementId, request.payload, Enums)
+      } else if (p.state && p.state === Enums.settlementState.ABORTED) {
+        return await Settlements.abortById(settlementId, request.payload, Enums)
+      } 
+      const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Invalid request payload input')
+      logger.error(error)
+      logger.error(error.stack)
+      throw error
     } catch (err) {
       request.server.log('error', err)
       return ErrorHandler.Factory.reformatFSPIOPError(err)
