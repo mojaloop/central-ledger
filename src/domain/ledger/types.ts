@@ -84,10 +84,10 @@ export interface Ledger {
   /**
    * Update the internal, per Dfsp status of a Settlement
    */
-  settlementUpdate(cmd: SettlementUpdateCommand): Promise<CommandResult<void>>;
+  settlementUpdate(cmd: SettlementUpdateCommand): Promise<CommandResult<SettlementUpdateResult>>;
 
   getSettlementWindows(query: GetSettlementWindowsQuery): Promise<QueryResult<GetSettlementWindowsQueryResponse>>
-  getSettlement(query: GetSettlementQuery): Promise<GetSettlementQueryResponse>
+  getSettlement(query: GetSettlementQuery): Promise<QueryResultWithNotFound<Settlement>>
   getSettlements(query: GetSettlementsQuery): Promise<GetSettlementsQueryResponse>
 }
 
@@ -651,6 +651,24 @@ export type SettlementCommitCommand = {
 
 }
 
+
+export type SettlementUpdate = {
+  participantId: number
+
+  /**
+   * TODO(LD):
+   * Not sure if we need this, but it's on the API.
+   * I suspect it shouldn't be, since accountId is internal and shouldn't be exposed
+   */
+  accountId: number
+  participantState: 'PS_TRANSFERS_RECORDED'
+  | 'PS_TRANSFERS_RESERVED'
+  | 'PS_TRANSFERS_COMMITTED'
+  | 'SETTLED'
+  reason: string
+  externalReference: string
+}
+
 export type SettlementUpdateCommand = {
   /**
    * The settlement id
@@ -660,25 +678,39 @@ export type SettlementUpdateCommand = {
   /**
    * A list of updates to apply to the settlement
    */
-  updates: Array<{
-    participantId: number
+  updates: Array<SettlementUpdate>
+}
 
-    /**
-     * TODO(LD):
-     * Not sure if we need this, but it's on the API.
-     * I suspect it shouldn't be, since accountId is internal and shouldn't be exposed
-     */
-    accountId: number
-    participantState: 'RECORDED' | 'RESERVED' | 'COMMITTED' | 'SETTLED',
-    reason: string
-    externalReference: string
+export type CloseSettlementWindowResult = {
+  changedDate: Date,
+  createdDate: Date,
+  reason: string,
+  settlementWindowId: number,
+  state: SettlementWindowState,
+}
+
+export type SettlementUpdateResult = {
+  createdDate: Date,
+  id: number,
+  participants: Array<{
+    accounts: Array<SettlementAccount>
+    id: number
   }>
+  settlementWindows: Array<SettlementWindow>
+  state: LegacySettlementState  
 }
 
 export type SettlementWindowState = 'OPEN' | 'CLOSED' | 'PENDING_SETTLEMENT' | 'SETTLED'
   | 'ABORTED' | 'PROCESSING' | 'FAILED'
 
-export type InternalSettlementState = 'PENDING' | 'PROCESSING' | 'COMMITTED' | 'ABORTED'
+export type InternalSettlementState =
+  | 'PENDING_SETTLEMENT'
+  | 'PS_TRANSFERS_RECORDED'
+  | 'PS_TRANSFERS_RESERVED'
+  | 'PS_TRANSFERS_COMMITTED'
+  | 'SETTLING'
+  | 'SETTLED'
+  | 'ABORTED'
 
 // TODO: we should remove this completely
 export type LegacySettlementState = 'PENDING_SETTLEMENT' | 'PS_TRANSFERS_RECORDED' | 'PS_TRANSFERS_RESERVED'
@@ -690,6 +722,13 @@ export type GetSettlementWindowsQuery = {
   fromDateTime?: Date
   toDateTime?: Date,
   currency?: string
+}
+
+export type GetSettlementWindowQuery = {
+  /**
+   * The settlementWindowId.
+   */
+  id: number
 }
 
 export type GetSettlementWindowsQueryResponse = Array<SettlementWindow>
@@ -705,13 +744,16 @@ export type GetSettlementsQuery = {
   currency?: string
   participantId?: number
   settlementWindowId?: number
+  accountId?: number,
   state?: InternalSettlementState
   fromDateTime?: Date
   toDateTime?: Date,
+  fromSettlementWindowDateTime?: Date,
+  toSettlementWindowDateTime?: Date,
 }
 
 export type SettlementWindow = {
-  id: number,
+  settlementWindowId: number,
   state: SettlementWindowState,
   reason: string,
   createdDate: Date,

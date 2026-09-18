@@ -360,6 +360,41 @@ const triggerSettlementEvent = async ({ idList, reason }, settlementModel, enums
   })
 }
 
+/**
+ * @returns {Promise<{
+ *   createdDate: Date,
+ *   id: number,
+ *   participants: Array<{
+ *     accounts: Array<{
+ *       createdDate: Date,
+ *       externalReference: string,
+ *       id: number,
+ *       netSettlementAmount: {
+ *         amount: string,
+ *         currency: string
+ *       },
+ *       reason: string,
+ *       state: string
+ *     }>
+ *     id: number
+ *   }>
+ *   settlementWindows: Array<{
+ *     changedDate: Date,
+ *     content: Array<{
+ *       changedDate: Date,
+ *       createdDate: Date,
+ *       currencyId: string,
+ *       id: number,
+ *       ledgerAccountType: string,
+ *       state: string
+ *     }>
+ *     id: number,
+ *     reason: string,
+ *     state: string,
+ *   }>
+ *   state: string
+ * }>}
+ */
 const putById = async (settlementId, payload, enums) => {
   const knex = await Db.getKnex()
   return knex.transaction(async (trx) => {
@@ -1118,7 +1153,7 @@ const settlementTransfersAbort = async function (settlementId, transactionTimest
     .leftJoin('transferStateChange AS tsc2', 'tsc2.transferId', 'spc.settlementTransferId')
     .leftJoin('transferState AS ts2', function () {
       this.on('ts2.transferStateId', 'tsc2.transferStateId')
-        .andOn('ts2.enumeration', knex.raw('?', [enums.transferStateEnum.ABORTED]))
+        .andOn('ts2.enumeration', knex.raw('?', [enums.transferStateEnum.ABORTED_ERROR]))
     })
     .join('transferParticipant AS tp1', function () {
       this.on('tp1.transferId', 'spc.settlementTransferId')
@@ -1506,7 +1541,7 @@ const abortById = async (settlementId, payload, enums) => {
       }
       await Promise.all(updatePromises)
 
-      await Facade.settlementTransfersAbort(settlementId, transactionTimestamp, enums, trx)
+      await settlementTransfersAbort(settlementId, transactionTimestamp, enums, trx)
 
       // seq-settlement-6.2.6, step 16
       insertPromises = []
