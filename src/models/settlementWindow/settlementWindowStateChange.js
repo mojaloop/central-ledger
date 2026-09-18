@@ -36,7 +36,8 @@ const create = async ({ settlementWindowId, state, reason }, enums = {}) => {
   return Db.from('settlementWindowStateChange').insert({
     settlementWindowId,
     settlementWindowStateId: enums[state.toUpperCase()],
-    reason
+    reason,
+    createdDate: new Date()
   })
 }
 

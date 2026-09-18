@@ -513,7 +513,8 @@ const putById = async (settlementId, payload, enums) => {
                 settlementParticipantCurrencyId: allAccounts[accountPayload.id].key,
                 settlementStateId: accountPayload.state,
                 reason: accountPayload.reason,
-                externalReference: accountPayload.externalReference
+                externalReference: accountPayload.externalReference,
+                createdDate: transactionTimestamp
               })
               allAccounts[accountPayload.id].reason = accountPayload.reason
               allAccounts[accountPayload.id].createdDate = transactionTimestamp
@@ -642,7 +643,8 @@ const putById = async (settlementId, payload, enums) => {
             const swcsc = {
               settlementWindowContentId,
               settlementWindowStateId: enums.settlementWindowState.SETTLED,
-              reason: 'All content aggregation records are SETTLED'
+              reason: 'All content aggregation records are SETTLED',
+              createdDate: transactionTimestamp
             }
             insertPromises.push(
               knex('settlementWindowContentStateChange').transacting(trx)
@@ -680,7 +682,8 @@ const putById = async (settlementId, payload, enums) => {
             const swsc = {
               settlementWindowId,
               settlementWindowStateId: enums.settlementWindowState.SETTLED,
-              reason: 'All settlement window content is SETTLED'
+              reason: 'All settlement window content is SETTLED',
+              createdDate: transactionTimestamp
             }
             insertPromises.push(
               knex('settlementWindowStateChange').transacting(trx)
@@ -1297,7 +1300,8 @@ const settlementTransfersCommit = async function (settlementId, transactionTimes
         // Persist transfer fulfilment and transfer state change
         await knex('transferFulfilmentDuplicateCheck')
           .insert({
-            transferId
+            transferId,
+            createdDate: transactionTimestamp
           })
           .transacting(trx)
 
@@ -1420,7 +1424,8 @@ const abortByIdStateAborted = async (settlementId, payload, enums) => {
     .insert({
       settlementId,
       settlementStateId: enums.settlementState.ABORTED,
-      reason: payload.reason
+      reason: payload.reason,
+      createdDate: new Date()
     })
   // seq-settlement-6.2.6, step 5a
   await knex('settlement')
@@ -1479,7 +1484,8 @@ const abortById = async (settlementId, payload, enums) => {
           settlementParticipantCurrencyId: sal.key,
           settlementStateId: enums.settlementState.ABORTED,
           reason: payload.reason,
-          externalReference: payload.externalReference
+          externalReference: payload.externalReference,
+          createdDate: transactionTimestamp
         }
         insertPromises.push(
           knex('settlementParticipantCurrencyStateChange')
@@ -1508,7 +1514,8 @@ const abortById = async (settlementId, payload, enums) => {
         const swsc = {
           settlementWindowId: rec.settlementWindowId,
           settlementWindowStateId: enums.settlementWindowState.ABORTED,
-          reason: payload.reason
+          reason: payload.reason,
+          createdDate: transactionTimestamp
         }
         insertPromises.push(
           knex('settlementWindowStateChange')
@@ -1534,7 +1541,8 @@ const abortById = async (settlementId, payload, enums) => {
         .insert({
           settlementId,
           settlementStateId: enums.settlementState.ABORTED,
-          reason: payload.reason
+          reason: payload.reason,
+          createdDate: transactionTimestamp
         })
         .transacting(trx)
       // seq-settlement-6.2.6, step 22

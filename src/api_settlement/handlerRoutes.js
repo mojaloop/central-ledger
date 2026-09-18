@@ -54,6 +54,8 @@ const APIRoutes = (api) => {
   ]
 }
 
+console.error('WARNING - using handlerRoutes.js, this file is deprecated.')
+
 module.exports = {
   plugin: {
     name: 'settlement handler api routes',

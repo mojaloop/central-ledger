@@ -1,31 +1,28 @@
 import { after, before, describe, it } from 'node:test'
 import Harness from '../testing/harness'
 import * as ApiHelpers from '../testing/api-helpers'
-import { unwrapResponseSettlement, unwrapResponseWithError } from '../testing/util'
+import { unwrapResponseSettlement } from '../testing/util'
 import assert from 'node:assert'
 import { Snapshot } from '../testing/snapshot'
 import { logger } from '../shared/logger'
 import PRNG from '../testing/prng'
+import HandlerSettlementV2 from './handler-v2'
 
 const harness = Harness.getInstance()
 const prng = new PRNG(456)
 Harness.injectPrngAndPatchDateGlobal(prng)
 
-let handlerSettlements: any
-let handlerSettlementsId: any
-let handlerSettlementWindows: any
-let handlerSettlementWindowsId: any
 let requestTemplate: any
-
+let handlerV2: HandlerSettlementV2
 describe('settlement api handlers', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
 
-    handlerSettlements = await import('./handlers/settlements')
-    handlerSettlementsId = await import('./handlers/settlements/{id}')
-    handlerSettlementWindows = await import('./handlers/settlementWindows')
-    handlerSettlementWindowsId = await import('./handlers/settlementWindows/{id}')
+    handlerV2 = new HandlerSettlementV2({
+      config: harness.config,
+      ledger: harness.ledger
+    })
 
     // Settlement API works slightly differently to the Admin API. We need to pass these in as
     // Hapi.server context.
@@ -92,7 +89,7 @@ describe('settlement api handlers', () => {
     }
     const {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlements.get(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.getSettlementByParams(request, reply))
 
     assert.equal(code, 400)
     assert.deepStrictEqual(
@@ -130,7 +127,7 @@ describe('settlement api handlers', () => {
     }
     let {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlements.post(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.createSettlementEvent(request, reply))
 
     assert.equal(code, 200)
     Snapshot.from(`{
@@ -221,7 +218,7 @@ describe('settlement api handlers', () => {
     }
     let {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlements.post(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.createSettlementEvent(request, reply))
 
     assert.equal(code, 400)
     assert.deepEqual(body, "Settlement model not found: UNKNOWN_SETTLEMENT_MODEL")
@@ -238,7 +235,7 @@ describe('settlement api handlers', () => {
     }
     let {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlements.post(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.createSettlementEvent(request, reply))
 
     assert.equal(code, 400)
     assert.deepEqual(body, "Inapplicable windows 945, 946")
@@ -267,7 +264,7 @@ describe('settlement api handlers', () => {
     }
     let {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlementWindows.get(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.getSettlementWindowsByParams(request, reply))
 
     assert.equal(code, 200)
     // Check only a subset for test isolation.
@@ -292,7 +289,7 @@ describe('settlement api handlers', () => {
     }
     let {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlementWindows.get(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.getSettlementWindowsByParams(request, reply))
 
     assert.equal(code, 400)
     Snapshot.from(`"settlementWindow by filters: {currency:XXX} not found"`).checkUnwrap(body)
@@ -326,7 +323,7 @@ describe('settlement api handlers', () => {
     }
     let {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlementWindowsId.post(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.closeSettlementWindow(request, reply))
 
     assert.equal(code, 200)
     Snapshot.from(`{
@@ -365,11 +362,11 @@ describe('settlement api handlers', () => {
       }
     }
     // First time.
-    await unwrapResponseSettlement((reply) => handlerSettlementWindowsId.post(request, reply))
+    await unwrapResponseSettlement((reply) => handlerV2.closeSettlementWindow(request, reply))
     // Second time.
     let {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlementWindowsId.post(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.closeSettlementWindow(request, reply))
 
     assert.equal(code, 400)
     Snapshot.from(`"Window ${window.settlementWindowId} is not open"`).checkUnwrap(body)
@@ -401,7 +398,7 @@ describe('settlement api handlers', () => {
         reason: 'Test close'
       }
     }
-    await unwrapResponseSettlement((reply) => handlerSettlementWindowsId.post(request, reply))
+    await unwrapResponseSettlement((reply) => handlerV2.closeSettlementWindow(request, reply))
     request = {
       ...requestTemplate,
       params: {
@@ -411,7 +408,7 @@ describe('settlement api handlers', () => {
 
     let {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlementWindowsId.get(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.getSettlementWindowById(request, reply))
 
     assert.equal(code, 200)
     Snapshot.from(`{
@@ -466,7 +463,7 @@ describe('settlement api handlers', () => {
     }
     const {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlementsId.get(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.getSettlementById(request, reply))
     assert.equal(code, 200)
     Snapshot.from(`{
       "id": ${settlement.id},
@@ -587,7 +584,7 @@ describe('settlement api handlers', () => {
     }
     const {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlementsId.put(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.updateSettlementById(request, reply))
 
     assert.equal(code, 200)
     Snapshot.from(`{
@@ -634,6 +631,7 @@ describe('settlement api handlers', () => {
     }`).checkUnwrap(body)
   })
 
+  // Note: This seemed unimplemented in central-settlements.
   it('aborts a settlement', async () => {
     // Create some transfers.
     await ApiHelpers
@@ -670,11 +668,12 @@ describe('settlement api handlers', () => {
     }
     const {
       body, code
-    } = await unwrapResponseSettlement((reply) => handlerSettlementsId.put(request, reply))
+    } = await unwrapResponseSettlement((reply) => handlerV2.updateSettlementById(request, reply))
 
-    assert.equal(code, 200)
-    // Not sure what this is meant to be.
-    assert.equal(body, undefined)
+    assert.equal(code, 400)
+    Snapshot.from(
+      `"Unhandled state: PENDING_SETTLEMENT for settlement '4'. Aborting is not allowed."`
+    ).checkUnwrap(body)
   })
 
   it('completes the settlement', async () => {
@@ -740,7 +739,9 @@ describe('settlement api handlers', () => {
       expectedAccountStates: Array<string>,
       expectedSettlementState: string
     ) => {
-      let response = await unwrapResponseSettlement((reply) => handlerSettlementsId.put(request, reply))
+      let response = await unwrapResponseSettlement(
+        (reply) => handlerV2.updateSettlementById(request, reply)
+      )
       assert.equal(response.code, 200)
       let settlementUpdated = await ApiHelpers.getSettlement(harness, settlement.id)
       const accountStates = settlementUpdated.participants
@@ -791,6 +792,4 @@ describe('settlement api handlers', () => {
       'SETTLED'
     )
   })
-
-  it.todo('gets settlement by payment status')
 })

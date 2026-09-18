@@ -64,9 +64,11 @@ const { MessageBus } = require('../messaging/message-bus')
 const { PositionHandlerV2 } = require('../handlers/position-v2')
 const { LedgerSql } = require('../domain/ledger/ledger-sql')
 const { TimeoutHandlerV2 } = require('../handlers/timeout-v2')
-const { default: HandlerV2 } = require('../api_admin/participants/handler-v2')
+const { default: HandlerSettlementV2 } = require('../api_settlement/handler-v2')
+const HandlerParticipantsV2 = require('../api_admin/participants/handler-v2').default
+const HandlerTransactionsV2 = require('../api_admin/transactions/handler-v2').default
 const routesAdminBuilder = require('../api_admin/routes-v2').default
-const routesSettlement = require('../api_settlement/routes')
+const routesSettlementBuilder = require('../api_settlement/routes-v2').default
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
@@ -241,12 +243,13 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     })
 
     // Build the routes.
-    const handlerParticipant = new HandlerV2({
-      config: Config,
-      ledger,
-    })
-    const routesAdmin = routesAdminBuilder(handlerParticipant)
-    
+    const handlerParticipant = new HandlerParticipantsV2({ config: Config, ledger })
+    const handlerTransactions = new HandlerTransactionsV2({ config: Config, ledger })
+    const routesAdmin = routesAdminBuilder(handlerParticipant, handlerTransactions)
+
+    const handlerSettlement = new HandlerSettlementV2({config: Config, ledger })
+    const routesSettlement = routesSettlementBuilder(handlerSettlement)
+
     let server
     switch (service) {
       case 'api':
@@ -257,7 +260,8 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
       case 'handler': {
         server = await createServer(port, [...modules])
         if (!Config.HANDLERS_API_DISABLED) {
-          Logger.warn(`initialize() - service=hander, and HANDLERS_API_DISABLED=${Config.HANDLERS_API_DISABLED}, skipping creating server`)        }
+          Logger.warn(`initialize() - service=hander, and HANDLERS_API_DISABLED=${Config.HANDLERS_API_DISABLED}, skipping creating server`)
+        }
         break
       }
       default: {
