@@ -64,8 +64,8 @@ const { MessageBus } = require('../messaging/message-bus')
 const { PositionHandlerV2 } = require('../handlers/position-v2')
 const { LedgerSql } = require('../domain/ledger/ledger-sql')
 const { TimeoutHandlerV2 } = require('../handlers/timeout-v2')
-const { default: HandlerV2 } = require('../api/participants/handler-v2')
-const routesAdminBuilder = require('../api/routes-v2').default
+const { default: HandlerV2 } = require('../api_admin/participants/handler-v2')
+const routesAdminBuilder = require('../api_admin/routes-v2').default
 const routesSettlement = require('../api_settlement/routes')
 
 const migrate = (runMigrations) => {
