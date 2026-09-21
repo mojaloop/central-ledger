@@ -38,7 +38,7 @@
     "build": "tsc",
     "postbuild": "mkdir -p dist/migrations && cp src/migrations/migration.template dist/migrations/migration.template",
     "start": "npm run start:api",
-    "start:api": "node dist/api/index.js",
+    "start:api": "node dist/api_admin/index.js",
     "start:handlers": "node dist/handlers/index.js",
     "start:debug": "npm start --node-options --inspect=0.0.0.0",
     "start:tsnode": "ts-node ./src/api/index.ts",

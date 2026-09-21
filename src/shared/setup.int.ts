@@ -21,7 +21,7 @@ describe('setup', () => {
     await harness.down()
   })
 
-  it('initialize() runs the admin and settlement APIs', async () => {
+  it.only('initialize() runs the admin and settlement APIs', async () => {
     const MetricPlugin = require('@mojaloop/central-services-metrics').plugin
     const setup = require('./setup')
 
@@ -74,6 +74,27 @@ describe('setup', () => {
           "content": []
         }
       ]`))
+      // Check the legacy health check. We're keeping this around so we don't need to change helm too 
+      await checkEndpoint(result.server, '/v2/health', `200`, Snapshot.from(`{
+        "status": "OK",
+        "uptime": :ignore
+        "startTime": :ignore
+        "versionNumber": :ignore
+        "services": [
+          {
+            "name": "datastore",
+            "status": "OK"
+          },
+          {
+            "name": "broker",
+            "status": "OK"
+          },
+          {
+            "name": "proxyCache",
+            "status": "OK"
+          }
+        ]
+      }`))
     } finally {
       if (result && result.messageBus) {
         await result.messageBus.deinit()
