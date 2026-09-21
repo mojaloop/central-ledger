@@ -1,6 +1,7 @@
 import { LedgerSql } from "../domain/ledger/ledger-sql"
 import { ApplicationConfig } from "../lib/config"
-import { ResponseToolkit } from '@hapi/hapi';
+import { ResponseToolkit } from '@hapi/hapi'
+import assert from "node:assert"
 import {
   RequestCloseSettlementWindow,
   RequestCreateSettlementEvent,
@@ -14,12 +15,22 @@ import {
   RequestUpdateSettlementByParticipant,
   RequestUpdateSettlementByParticipantAccount
 } from "./types";
-import Settlements from '../domain/settlement/index';
-import settlementWindows from '../domain/settlementWindow/index';
+import Settlements from '../domain/settlement/index'
+import settlementWindows from '../domain/settlementWindow/index'
 
-import { logger } from "../shared/logger";
-import { GetSettlementQuery, GetSettlementsQuery, GetSettlementWindowQuery, GetSettlementWindowsQuery, InternalSettlementState, SettlementAbortCommand, SettlementCloseWindowCommand, SettlementPrepareCommand, SettlementUpdate, SettlementUpdateCommand } from "../domain/ledger/types";
-import assert from "node:assert";
+import { logger } from "../shared/logger"
+import {
+  GetSettlementQuery,
+  GetSettlementsQuery,
+  GetSettlementWindowQuery,
+  GetSettlementWindowsQuery,
+  InternalSettlementState,
+  SettlementAbortCommand,
+  SettlementCloseWindowCommand,
+  SettlementPrepareCommand,
+  SettlementUpdate,
+  SettlementUpdateCommand
+} from "../domain/ledger/types";
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Utility = require('@mojaloop/central-services-shared').Util
@@ -79,7 +90,7 @@ const trimUndefined = (input: Record<string, any>) => Object.entries(input)
 const mapUpdates = (items: Array<any>): Array<SettlementUpdate> => {
   return items.map(item => {
     assert(item.id)
-    
+
     if (item.accounts.length === 0) {
       throw new Error(`mapUpdates() found no accounts for participant`
         + `${item.id}. Expected only 1.`)
@@ -468,6 +479,18 @@ export default class HandlerSettlementV2 {
         transferState: await request.server.methods.enums('transferState'),
         transferStateEnum: await request.server.methods.enums('transferStateEnum')
       }
+
+      // Default participants.account.externalReference to an empty string if not defined.
+      if (p.participants) {
+        for (let participant of p.participants) {
+          for (let account of participant.accounts) {
+            if (!account.externalReference) {
+              account.externalReference = ''
+            }
+          }
+        }
+      }
+
       if (this.deps.config.API_MODE_SETTLEMENT === 'LEDGER') {
         if (p.participants) {
 
@@ -612,12 +635,19 @@ export default class HandlerSettlementV2 {
       )
       span.setTags(spanTags)
       await span.audit(request.payload, EventSdk.AuditEventAction.start)
-      const p = request.payload
+      const accounts = structuredClone(request.payload.accounts)
+      
+      // Default account.externalReference to empty string if not defined.
+      for (let account of accounts) {
+        if (!account.externalReference) {
+          account.externalReference = ''
+        }
+      }
       const universalPayload = {
         participants: [
           {
             id: participantId,
-            accounts: p.accounts
+            accounts,
           }
         ]
       }
@@ -637,7 +667,7 @@ export default class HandlerSettlementV2 {
           id: settlementId,
           updates: mapUpdates([{
             id: participantId,
-            accounts: p.accounts
+            accounts,
           }])
         }
         const result = await this.deps.ledger.settlementUpdate(cmd)

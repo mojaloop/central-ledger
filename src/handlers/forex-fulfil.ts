@@ -31,7 +31,6 @@ import assert from 'node:assert';
 import crypto from 'node:crypto';
 
 import { Enum, Util } from '@mojaloop/central-services-shared'
-const { Kafka } = Util
 const { decodePayload } = Util.StreamingProtocol
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -99,27 +98,27 @@ export interface ForexFulfilHandlerInput {
 
 export enum ForexFulfilResultType {
   /**
-   * Fulfil step completed validation. Payment was either fulfilled or aborted successfully
+   * Fulfil step completed validation. Forex was either fulfilled or aborted successfully.
    */
   PASS = 'PASS',
 
   /**
-   * Duplicate payment found in a finalized state
+   * Duplicate forex found in a finalized state.
    */
   DUPLICATE_FINAL = 'DUPLICATE_FINAL',
 
   /**
-   * Duplicate payment found that is still being processed
+   * Duplicate forex found that is still being processed.
    */
   DUPLICATE_NON_FINAL = 'DUPLICATE_NON_FINAL',
 
   /**
-   * Payment failed validation.
+   * Forex failed validation.
    */
   FAIL_VALIDATION = 'FAIL_VALIDATION',
 
   /**
-   * Catch-all Payment failed for another reason.
+   * Catch-all failures for another reason.
    */
   FAIL_OTHER = 'FAIL_OTHER',
 }
@@ -143,7 +142,6 @@ export type ForexFulfilResult = {
   effects: Array<Effect>
   error: typeof FSPIOPError
 }
-
 
 export class ForexFulfilHandler {
   constructor(private deps: Dependencies) { }

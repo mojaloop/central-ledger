@@ -37,7 +37,11 @@ import { toFulfil } from '../domain/transfer/transform'
 import { assertNestedFields } from '../lib/config/util'
 import { Effect, MessageBus } from '../messaging/message-bus'
 import { PositionHandlerV2, PositionResultType } from './position-v2'
-import { CreateRemittanceEntityForex, FxTransferProxyObligation, ProxyCache } from './transfer-types'
+import { 
+  CreateRemittanceEntityForex, 
+  FxTransferProxyObligation, 
+  ProxyCache 
+} from './transfer-types'
 import { LedgerSql } from '../domain/ledger/ledger-sql'
 const { decodePayload } = Util.StreamingProtocol
 const Participant = require('../domain/participant')
@@ -82,8 +86,7 @@ export interface ForexPrepareHandlerInput {
   metric: string;
   functionality: CentralServicesShared.EventTypeEnum.TRANSFER;
   actionEnum: string;
-  // TODO: remove `isForwarded` antipattern.
-  isForwarded: boolean
+  isForwarded: boolean;
 }
 
 // TODO: I don't know what these should be!
@@ -94,32 +97,32 @@ export enum ForexPrepareResultType {
   PASS = 'PASS',
 
   /**
-   * Duplicate transfer found in a finalized state
+   * Duplicate forex found in a finalized state.
    */
   DUPLICATE_FINAL = 'DUPLICATE_FINAL',
 
   /**
-   * Duplicate transfer found that is still being processed
+   * Duplicate forex found that is still being processed.
    */
   DUPLICATE_NON_FINAL = 'DUPLICATE_NON_FINAL',
 
   /**
-   * An existing transfer exists with this id but different parameters
+   * An existing forex exists with this id but different parameters.
    */
   MODIFIED = 'MODIFIED',
 
   /**
-   * Transfer failed validation
+   * Forex failed validation
    */
   FAIL_VALIDATION = 'FAIL_VALIDATION',
 
   /**
-   * Transfer failed as payee didn't have sufficent liquidity
+   * Forex failed as payee didn't have sufficent liquidity.
    */
   FAIL_LIQUIDITY = 'FAIL_LIQUIDITY',
 
   /**
-   * Catch-all Transfer failed for another reason
+   * Catch-all, failed for another reason.
    */
   FAIL_OTHER = 'FAIL_OTHER',
 }
@@ -456,8 +459,8 @@ export class ForexPrepareHandler {
     assert(headers)
 
     if (headers['fspiop-source'] !== payload.initiatingFsp) {
-      reasons.push(`FSPIOP-Source header (${headers?.['fspiop-source']}) \
-should match initiatingFsp (${payload.initiatingFsp})`)
+      reasons.push(`FSPIOP-Source header (${headers?.['fspiop-source']}) ` +
+        `should match initiatingFsp (${payload.initiatingFsp})`)
     }
     reasons = reasons.concat(this.validateComplexAmount(payload.sourceAmount).reasons)
     reasons = reasons.concat(this.validateComplexAmount(payload.targetAmount).reasons)

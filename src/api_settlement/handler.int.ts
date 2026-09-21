@@ -14,12 +14,13 @@ Harness.injectPrngAndPatchDateGlobal(prng)
 
 let requestTemplate: any
 let handlerV2: HandlerSettlementV2
+
 describe('settlement api handlers', () => {
   before(async () => {
     await harness.up()
     await harness.setupGlobals()
     const apiModeSettlement = envOrDefaultString('API_MODE_SETTLEMENT', 'NONE') as 'NONE' | 'LEDGER'
-    
+
     harness.configOverride({ API_MODE_SETTLEMENT: apiModeSettlement })
 
     handlerV2 = new HandlerSettlementV2({
@@ -1002,6 +1003,197 @@ describe('settlement api handlers', () => {
               "state": "PS_TRANSFERS_RECORDED",
               "reason": "test reason",
               "externalReference": "12345",
+              "createdDate": "2026-02-01 00:00:00.000",
+              "netSettlementAmount": {
+                "amount": "200.0000",
+                "currency": "USD"
+              }
+            }
+          ]
+        }
+      ]
+    }`).checkUnwrap(response.body)
+  })
+
+  it('updates a settlement by participant with no externalReference', async () => {
+    // Create some transfers.
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_c')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_c', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+
+    // Close the settlement window.
+    const windows = await ApiHelpers.closeSettlementWindow(harness)
+    const settlement = await ApiHelpers.createSettlement(harness, windows)
+
+    const participant = settlement.participants[0]
+    assert(participant)
+    const account = participant.accounts[0]
+    assert(account)
+
+    const request = {
+      ...requestTemplate,
+      params: {
+        sid: settlement.id,
+        pid: participant.id,
+      },
+      payload: {
+        accounts: [{
+          id: account.id,
+          state: 'PS_TRANSFERS_RECORDED',
+          reason: 'test reason',
+        }
+        ]
+      }
+    }
+
+    let response = await unwrapResponseSettlement(
+      (reply) => handlerV2.updateSettlementByParticipant(request, reply)
+    )
+
+    assert.equal(response.code, 200)
+    Snapshot.from(`{
+      "id": :ignore,
+      "state": "PENDING_SETTLEMENT",
+      "createdDate": "2026-01-31T23:00:00.000Z",
+      "settlementWindows": [
+        {
+          "id": :ignore,
+          "state": "PENDING_SETTLEMENT",
+          "reason": "Test Settlement.",
+          "createdDate": "2026-02-01T00:00:00.000Z",
+          "changedDate": "2026-01-31T23:00:00.000Z",
+          "content": [
+            {
+              "id": :ignore,
+              "state": "PENDING_SETTLEMENT",
+              "ledgerAccountType": "POSITION",
+              "currencyId": "USD",
+              "createdDate": "2026-02-01T00:00:00.000Z",
+              "changedDate": "2026-01-31T23:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "participants": [
+        {
+          "id": :ignore,
+          "accounts": [
+            {
+              "id": :ignore,
+              "state": "PS_TRANSFERS_RECORDED",
+              "reason": "test reason",
+              "externalReference": "",
+              "createdDate": "2026-02-01 00:00:00.000",
+              "netSettlementAmount": {
+                "amount": "200.0000",
+                "currency": "USD"
+              }
+            }
+          ]
+        }
+      ]
+    }`).checkUnwrap(response.body)
+  })
+
+  it('updates a settlement with no externalReference', async () => {
+    // Create some transfers.
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_c')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_c', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+
+    // Close the settlement window.
+    const windows = await ApiHelpers.closeSettlementWindow(harness)
+    const settlement = await ApiHelpers.createSettlement(harness, windows)
+
+    const participant = settlement.participants[0]
+    assert(participant)
+    const account = participant.accounts[0]
+    assert(account)
+
+    const request = {
+      ...requestTemplate,
+      params: {
+        id: settlement.id,
+      },
+      payload: {
+        participants: [{
+          id: participant.id,
+          accounts: [{
+            id: account.id,
+            state: 'PS_TRANSFERS_RECORDED',
+            reason: 'test reason',
+          }]
+        }]
+      }
+    }
+
+    let response = await unwrapResponseSettlement(
+      (reply) => handlerV2.updateSettlementById(request, reply)
+    )
+
+    assert.equal(response.code, 200)
+    Snapshot.from(`{
+      "id": :ignore,
+      "state": "PENDING_SETTLEMENT",
+      "createdDate": "2026-01-31T23:00:00.000Z",
+      "settlementWindows": [
+        {
+          "id": :ignore,
+          "state": "PENDING_SETTLEMENT",
+          "reason": "Test Settlement.",
+          "createdDate": "2026-02-01T00:00:00.000Z",
+          "changedDate": "2026-01-31T23:00:00.000Z",
+          "content": [
+            {
+              "id": :ignore,
+              "state": "PENDING_SETTLEMENT",
+              "ledgerAccountType": "POSITION",
+              "currencyId": "USD",
+              "createdDate": "2026-02-01T00:00:00.000Z",
+              "changedDate": "2026-01-31T23:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "participants": [
+        {
+          "id": :ignore,
+          "accounts": [
+            {
+              "id": :ignore,
+              "state": "PS_TRANSFERS_RECORDED",
+              "reason": "test reason",
+              "externalReference": "",
               "createdDate": "2026-02-01 00:00:00.000",
               "netSettlementAmount": {
                 "amount": "200.0000",
