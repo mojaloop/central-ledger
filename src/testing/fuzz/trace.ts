@@ -19,7 +19,7 @@ export default class Trace {
     this.inner.push(item)
   }
   
-  public compare(other: Trace, options: {nameLeft: string, nameRight: string}) {
+  public compare(other: Trace, options: {nameLeft: string, nameRight: string, seed: number}) {
     let lengthMin = Math.min(this.inner.length, other.inner.length)
     if (this.inner.length !== other.inner.length) {
       logger.warn(`compare() length mismatch - left: ${this.inner.length} right: ${other.inner.length}`)
@@ -40,7 +40,9 @@ export default class Trace {
 
         this.printSideBySide(lastNLeft, lastNRight, options)
 
-        throw new Error(`compare() traces mismatched at step: ${idx + 1}.`)
+        throw new Error(`compare() traces mismatched at step: ${idx + 1}.`
+          + `\nRerun with SEED=${options.seed} to reproduce this case.`
+        )
       }
     }
   }

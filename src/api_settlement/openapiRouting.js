@@ -34,6 +34,22 @@
  */
 
 /**
+ * openapi backend coerces types for us, but puts them in the context object.
+ * This handler copies them into the request object for easier typing and backwards compatability.
+ */
+const preOperationHandler = (context, req) => {
+  if (context.request?.params) {
+    Object.assign(req.params, context.request.params)
+  }
+  if (context.request?.query) {
+    Object.assign(req.query, context.request.query)
+  }
+  if (context.request?.body) {
+    req.payload = context.request.body
+  }
+}
+
+/**
  * Base path the API is served under. It mirrors the `servers` url of the
  * OpenAPI document (formerly the Swagger 2.0 `basePath`).
  *
@@ -83,5 +99,6 @@ const assertHandlersRegistered = (api) => {
 module.exports = {
   getBasePath,
   handleRequest,
-  assertHandlersRegistered
+  assertHandlersRegistered,
+  preOperationHandler
 }

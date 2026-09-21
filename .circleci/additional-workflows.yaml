@@ -27,6 +27,8 @@ jobs:
             # Set Node version to default (Note: this is needed on Ubuntu)
             nvm use default
             ./node_modules/.bin/ts-node src/testing/run.ts coverage --type=all
+          environment:
+            LOG_LEVEL: warn
       - store_artifacts:
           path: coverage
           destination: test

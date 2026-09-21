@@ -5,7 +5,7 @@ import process from 'node:process'
 import { run } from "node:test"
 import { spec } from 'node:test/reporters'
 import { mergeTapStreams } from './tap-stream'
-import { ResultTest, RunTask, RunTaskCoverage, RunTaskIntegration, RunTaskUnit, TagTask } from './types'
+import { ResultTest, RunTask, RunTaskCoverage, RunTaskFuzz, RunTaskIntegration, RunTaskUnit, TagTask } from './types'
 import { convertToXunit, findFiles } from './util'
 import { finished } from 'node:stream/promises'
 
@@ -51,6 +51,11 @@ async function main() {
       }
       case 'TEST_INTEGRATION': {
         const result = await runIntegrationTests(task)
+        exitWhenStdoutFlushed(result.exitCode)
+        break
+      }
+      case 'TEST_FUZZ': {
+        const result = await runFuzzTests(task)
         exitWhenStdoutFlushed(result.exitCode)
         break
       }
@@ -506,6 +511,53 @@ async function runIntegrationTests(task: RunTaskIntegration): Promise<ResultTest
   }
 }
 
+/**
+ * @function runFuzzTests
+ * @description Runs the fuzz tests with the native nodejs test suite.
+ */
+async function runFuzzTests(task: RunTaskFuzz): Promise<ResultTest> {
+  const files = findFiles(
+    path.join(PROJECT_ROOT, 'src'),
+    '**/*.fuzz.ts'
+  ).map(f => path.join(PROJECT_ROOT, 'src', f))
+
+  if (files.length === 0) {
+    return { output: '', exitCode: 0 }
+  }
+
+  let exitCode = 0
+
+  process.once('uncaughtException', async (err) => {
+    console.error(`Uncaught exception:`, err)
+    process.exit(1)
+  })
+
+  process.once('unhandledRejection', async (err) => {
+    console.error(`Unhandled rejection:`, err)
+    process.exit(1)
+  })
+
+  const testStream = run({
+    files,
+    // Run each test file in a separate process.
+    isolation: 'process',
+    // Tweak this depending on what resources we have.
+    concurrency: 2,
+  })
+    .on('test:fail', () => {
+      exitCode = 1
+    })
+
+  const tapStream = testStream.compose(spec)
+  tapStream.pipe(process.stdout)
+  await finished(testStream)
+
+  return {
+    output: '',
+    exitCode
+  }
+}
+
 const parseUnitTestOptions = (args: Array<string>): Omit<RunTaskUnit, 'tag'> => {
   let type = 'BOTH' as RunTaskUnit['type']
   let output = 'DEFAULT' as RunTaskUnit['output']
@@ -628,6 +680,12 @@ function parseOptions(args: Array<string>, _env: NodeJS.ProcessEnv): RunTask {
         ...options
       }
     }
+    case 'fuzz': {
+      tag = 'TEST_FUZZ'
+      return {
+        tag,
+      }
+    }
     case 'functional': {
       throw new Error(`'${taskCommand}' not implemented.`)
     }
@@ -640,10 +698,11 @@ function parseOptions(args: Array<string>, _env: NodeJS.ProcessEnv): RunTask {
 const usage = `
 Usage:
 
-./testing/run.ts [unit | coverage | integration | functional]\n\n\
+./testing/run.ts [unit | coverage | integration | fuzz | functional]\n\n\
   'unit'          : Run the unit tests.
   'coverage'      : Run the unit tests then check coverage.
   'integration'   : Run the integration tests.
+  'fuzz'          : Run the fuzz tests.
   'functional'    : *Preview - not yet implemented* Run the functional tests.
 
 

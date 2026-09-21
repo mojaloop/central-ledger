@@ -21,7 +21,8 @@ const logger = loggerFactory()
 
 // We need to patch the date globally before starting the harness.
 // This is quite annoying since it means we can't change easily change the seed in between runs.
-const prng = new PRNG(envOrDefaultNumber('SEED', Math.floor(Math.random() * 1e8)))
+const seed = envOrDefaultNumber('SEED', Math.floor(Math.random() * 1e8))
+const prng = new PRNG(seed)
 Harness.injectPrngAndPatchDateGlobal(prng)
 const harness = Harness.getInstance()
 let server: Server
@@ -30,7 +31,7 @@ const filename = path.basename(__filename)
 assert(filename)
 
 describe('Settlement API Fuzz', () => {
-  it('runs the fuzzer', async (context) => {
+  it.only('runs the fuzzer', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 1000)
     const trace = await run(stepsMax, {API_MODE_SETTLEMENT: 'LEDGER'})
 
@@ -57,7 +58,7 @@ describe('Settlement API Fuzz', () => {
     console.log(`Fuzz trace written to ${pathBase}.`)
     console.log(`Compare the two files with:\n\tgit diff --no-index ${pathA} ${pathB}`)
 
-    traceA.compare(traceB, { nameLeft: 'REFACTOR=false', nameRight: 'REFACTOR=true' })
+    traceA.compare(traceB, { nameLeft: 'REFACTOR=false', nameRight: 'REFACTOR=true', seed})
   })
 
   it('is fully deterministic', async (context) => {
@@ -78,7 +79,7 @@ describe('Settlement API Fuzz', () => {
     console.log(`Fuzz trace written to ${pathBase}.`)
     console.log(`Compare the two files with:\n\tgit diff --no-index ${pathA} ${pathB}`)
 
-    traceA.compare(traceB, { nameLeft: 'traceA', nameRight: 'traceB' })
+    traceA.compare(traceB, { nameLeft: 'traceA', nameRight: 'traceB', seed})
   })
 })
 

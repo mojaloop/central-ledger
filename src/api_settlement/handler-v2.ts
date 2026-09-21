@@ -355,7 +355,7 @@ export default class HandlerSettlementV2 {
     h: ResponseToolkit
   ) {
     const { reason } = request.payload
-    const settlementWindowId = request.params.id
+    let settlementWindowId = request.params.id
     try {
       const { span, headers } = request
       const spanTags = Utility.EventFramework.getSpanTags(

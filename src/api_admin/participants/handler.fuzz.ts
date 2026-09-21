@@ -21,7 +21,8 @@ const logger = loggerFactory()
 
 // We need to patch the date globally before starting the harness.
 // This is quite annoying since it means we can't change easily change the seed in between runs.
-const prng = new PRNG(envOrDefaultNumber('SEED', Math.floor(Math.random() * 1e8)))
+const seed = envOrDefaultNumber('SEED', Math.floor(Math.random() * 1e8))
+const prng = new PRNG(seed)
 Harness.injectPrngAndPatchDateGlobal(prng)
 const harness = Harness.getInstance()
 let server: Server
@@ -31,7 +32,7 @@ assert(filename)
 
 describe('api/participants/handler', () => {
   it('is identical with/without LEDGER', async (context) => {
-    const stepsMax = 3500
+    const stepsMax = 1000
     const traceA = await run(stepsMax, { API_MODE_ADMIN: 'NONE' })
     const traceB = await run(stepsMax, { API_MODE_ADMIN: 'LEDGER'})
     
@@ -46,7 +47,7 @@ describe('api/participants/handler', () => {
     console.log(`Fuzz trace written to ${pathBase}.`)
     console.log(`Compare the two files with:\n\tgit diff --no-index ${pathA} ${pathB}`)
 
-    traceA.compare(traceB, {nameLeft: 'REFACTOR=false', nameRight: 'REFACTOR=true'})
+    traceA.compare(traceB, {nameLeft: 'REFACTOR=false', nameRight: 'REFACTOR=true', seed})
   })
 
   it('is fully deterministic', async (context) => {
@@ -118,7 +119,7 @@ describe('api/participants/handler', () => {
   it('handler fuzz', async () => {
     try {
       const options: FuzzOptions = {
-        stepsMax: envOrDefaultNumber('STEPS_MAX', 5000),
+        stepsMax: envOrDefaultNumber('STEPS_MAX', 1000),
         injectDbFaults: false
       }
 

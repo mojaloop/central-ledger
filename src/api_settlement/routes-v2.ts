@@ -4,7 +4,7 @@ import HandlerSettlementV2 from "./handler-v2"
 const Path = require('path')
 const HandlerHealth = require('../api_admin/root/handler')
 
-const { getBasePath, handleRequest, assertHandlersRegistered } = require('./openapiRouting')
+const { getBasePath, handleRequest, assertHandlersRegistered, preOperationHandler } = require('./openapiRouting')
 
 
 const APIRoutes = (api: any) => {
@@ -149,8 +149,9 @@ const buildRoutes = (handler: HandlerSettlementV2) => {
       handler.updateSettlementByParticipant.bind(handler),
     getSettlementBySettlementParticipantAccount: 
       handler.getSettlementBySettlementParticipantAccount.bind(handler),
-    updateSettlementBySettlementParticipantAccount: 
+    updateSettlementBySettlementParticipantAccount:
     handler.updateSettlementByIdParticipantAccount.bind(handler),
+    preOperationHandler,
     validationFail: OpenapiBackend.validationFail,
     notFound: OpenapiBackend.notFound,
     methodNotAllowed: OpenapiBackend.methodNotAllowed
