@@ -59,7 +59,7 @@ jobs:
             nvm use default
             npm run test:fuzz
           environment:
-            LOG_LEVEL=warn
+            LOG_LEVEL: warn
       - store_artifacts:
           path: .fuzz_output
           destination: test
