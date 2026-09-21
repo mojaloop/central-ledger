@@ -2,6 +2,9 @@ import { isDeepStrictEqual } from "node:util"
 import { logger } from "../../shared/logger"
 import assert from "node:assert"
 
+const bigIntReplacer = (_key: string, value: unknown) =>
+  typeof value === 'bigint' ? value.toString() : value
+
 export type TraceItem = {
   step: number,
   action: string,
@@ -22,7 +25,8 @@ export default class Trace {
   public compare(other: Trace, options: {nameLeft: string, nameRight: string, seed: number}) {
     let lengthMin = Math.min(this.inner.length, other.inner.length)
     if (this.inner.length !== other.inner.length) {
-      logger.warn(`compare() length mismatch - left: ${this.inner.length} right: ${other.inner.length}`)
+      logger.warn(`compare() length mismatch - left: ${this.inner.length} `
+         + `right: ${other.inner.length}`)
     }
     if (lengthMin === 0) {
       throw new Error('Empty trace.')
@@ -32,7 +36,10 @@ export default class Trace {
       const itemLeft = this.inner[idx]
       const itemRight = other.inner[idx]
 
-      if (!isDeepStrictEqual(JSON.stringify(itemLeft), JSON.stringify(itemRight))) {
+      if (!isDeepStrictEqual(
+        JSON.stringify(itemLeft, bigIntReplacer), 
+        JSON.stringify(itemRight, bigIntReplacer)
+      )) {
         logger.warn(`compare() traces drifted at idx: ${idx}.`)
         // Get up to the last 5 elements for context.
         const lastNLeft = this.inner.slice(Math.max(0, idx - 4), idx + 1)
@@ -47,7 +54,11 @@ export default class Trace {
     }
   }
 
-  private printSideBySide(left: Array<TraceItem>, right: Array<TraceItem>, options: { nameLeft: string, nameRight: string }) {
+  private printSideBySide(
+    left: Array<TraceItem>, 
+    right: Array<TraceItem>, 
+    options: { nameLeft: string, nameRight: string }
+  ) {
     const BG_YELLOW = '\x1b[43m'
     const RESET = '\x1b[0m'
 
@@ -99,8 +110,8 @@ export default class Trace {
           `${item.step}`,
           `${item.action}:`,
           `path=${item.path}`,
-          `payload=${JSON.stringify(item.payload)}`,
-          `body=${JSON.stringify(item.body, null, 2)}`,
+          `payload=${JSON.stringify(item.payload, bigIntReplacer)}`,
+          `body=${JSON.stringify(item.body, bigIntReplacer, 2)}`,
           `prngCalls=${item.prngCalls}`,
           `-----`
         ].join('\n')
@@ -115,8 +126,8 @@ export default class Trace {
           `${item.step}`,
           `${item.action}:`,
           `\tpath=${item.path}`,
-          `\tpayload=${JSON.stringify(item.payload)}`,
-          `\tbody=${JSON.stringify(item.body, null, 2)}`,
+          `\tpayload=${JSON.stringify(item.payload, bigIntReplacer)}`,
+          `\tbody=${JSON.stringify(item.body, bigIntReplacer, 2)}`,
           `\tprngCalls=${item.prngCalls}`,
         ].join('\n')
       })

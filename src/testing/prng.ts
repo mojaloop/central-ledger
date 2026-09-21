@@ -125,7 +125,7 @@ export default class PRNG {
 
   public randomString(length?: number): string {
     if (!length) {
-      length = this.intInRange(0, 50)
+      length = this.intInRange(1, 50)
     }
     const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789'
     let result = ''

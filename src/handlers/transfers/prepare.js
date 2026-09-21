@@ -364,6 +364,7 @@ const definePositionParticipant = async ({ isFx, payload, determiningTransferChe
   if (isSameProxy) {
     messageKey = '0'
   } else {
+    // TODO(LD): bug here, sometimes account is undefined.
     const account = await Participant.getAccountByNameAndCurrency(
       cyrilResult.participantName,
       cyrilResult.currencyId,

@@ -60,6 +60,7 @@ interface Dependencies {
     }>
   }
   positionHandler: PositionHandlerV2
+  effectToKafkaMessage: (effect: Effect) => any
 }
 
 export type CommitForexDto = {
@@ -418,7 +419,7 @@ export class ForexFulfilHandler {
       .filter(effect => effect.functionality === 'notification')
     const positions = result.effects
       .filter(effect => effect.functionality === 'position')
-      .map(MessageBus.effectToKafkaMessage)
+      .map(this.deps.effectToKafkaMessage)
     assert(notifications.length + positions.length === result.effects.length)
     const resultsPosition = await this.deps.positionHandler.handle(null, positions)
     assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')

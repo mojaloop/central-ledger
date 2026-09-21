@@ -56,6 +56,7 @@ interface Dependencies {
   proxyCache: ProxyCache,
   createRemittanceEntity: CreateRemittanceEntityForex,
   positionHandler: PositionHandlerV2
+  effectToKafkaMessage: (effect: Effect) => any
 }
 
 export interface CreateForexDto {
@@ -351,7 +352,7 @@ export class ForexPrepareHandler {
     const notifications = result.effects.filter(effect => effect.functionality === 'notification')
     const positions = result.effects
       .filter(effect => effect.functionality === 'position')
-      .map(MessageBus.effectToKafkaMessage)
+      .map(this.deps.effectToKafkaMessage)
     const resultsPosition = await this.deps.positionHandler.handle(null, positions)
     assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
     // Look just at the first one to map the result type.

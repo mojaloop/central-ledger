@@ -80,6 +80,7 @@ import MockClock from "../mock-clock"
 import { Redpanda, RedpandaConnectionOptions } from "./redpanda"
 import { Redis } from "./redis"
 import { MySql, MySqlConnectionOptions } from "./mysql"
+import MessagingHelper from "../../messaging/helper"
 
 const logger = Logger.child({ scope: 'harness' })
 
@@ -556,10 +557,10 @@ export default class Harness {
     // Override the global config with our testing config.
     overrideForTesting(this.config)
 
-    ProxyCache = require('../lib/proxyCache')
+    ProxyCache = require('../../lib/proxyCache')
     await ProxyCache.connect()
 
-    SettlementModelCached = require('../models/settlement/settlementModelCached')
+    SettlementModelCached = require('../../models/settlement/settlementModelCached')
     await SettlementModelCached.initialize()
 
     await Db.connect(this.config.DATABASE)
@@ -579,9 +580,13 @@ export default class Harness {
     const {
       createRemittanceEntityPayment,
       createRemittanceEntityForex,
-    } = require('../handlers/transfers/createRemittanceEntity')
-    const { definePositionParticipant } = require('../handlers/transfers/prepare')
+    } = require('../../handlers/transfers/createRemittanceEntity')
+    const { definePositionParticipant } = require('../../handlers/transfers/prepare')
 
+    const helper = new MessagingHelper({
+      config: this.config,
+      randomUUID: () => this.prng.uuidv4()
+    })
     const positionHandlerV2 = new PositionHandlerV2(this.config)
     this._ledger = new LedgerSql({
       config: this.config,
@@ -589,7 +594,8 @@ export default class Harness {
       proxyCache: ProxyCache,
       positionHandler: positionHandlerV2,
       createRemittanceEntity: createRemittanceEntityPayment,
-      definePositionParticipant
+      definePositionParticipant,
+      effectToKafkaMessage: helper.effectToKafkaMessage.bind(helper)
     })
     this._dispatchHandler = new DispatchTransferHandler(this.config, this._ledger)
     this._timeoutHandlerV2 = new TimeoutHandlerV2(this.config, this._ledger)
@@ -599,7 +605,8 @@ export default class Harness {
         dispatchTransferHandler: this._dispatchHandler,
         positionBatchHandler: positionHandlerV2,
         timeoutHandler: this._timeoutHandlerV2,
-      }
+      },
+      helper
     })
 
     if (options?.skipMessageBus) {

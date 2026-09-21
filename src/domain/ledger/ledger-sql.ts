@@ -147,6 +147,7 @@ interface Dependencies {
     determiningTransferCheckResult: TransferDeterminingCheckResult,
     proxyObligation: TransferProxyObligation
   }) => Promise<{ messageKey: string, cyrilResult: any }>
+  effectToKafkaMessage: (effect: Effect) => any
 }
 
 export class LedgerSql implements Ledger {
@@ -309,11 +310,7 @@ export class LedgerSql implements Ledger {
         assert(settlementAccount)
       }
 
-      return {
-        type: 'SUCCESS'
-      }
-
-
+      return Helper.emptyCommandResultSuccess()
     } catch (err: any) {
       return {
         type: 'FAILURE',
@@ -370,18 +367,11 @@ export class LedgerSql implements Ledger {
       const participantCurrencySettlement = await Participant.createParticipantCurrency(
         participant.participantId, currency, settlementModel.settlementAccountTypeId, false
       )
-
-      if (Array.isArray(participant.currencyList)) {
-        participant.currencyList = participant.currencyList.concat([
-          await Participant.getParticipantCurrencyById(participantCurrencyPosition),
-          await Participant.getParticipantCurrencyById(participantCurrencySettlement)
-        ])
-      } else {
-        participant.currencyList = await Promise.all([
-          Participant.getParticipantCurrencyById(participantCurrencyPosition),
-          Participant.getParticipantCurrencyById(participantCurrencySettlement)
-        ])
-      }
+      assert(Array.isArray(participant.currencyList))
+      participant.currencyList = participant.currencyList.concat([
+        await Participant.getParticipantCurrencyById(participantCurrencyPosition),
+        await Participant.getParticipantCurrencyById(participantCurrencySettlement)
+      ])
     }
   }
 
@@ -392,7 +382,7 @@ export class LedgerSql implements Ledger {
     assert(cmd.dfspId)
     assert(cmd.currency)
     assert(cmd.amount)
-    assert(cmd.alarmPercentage)
+    assert(typeof cmd.alarmPercentage === 'number')
 
     try {
       const payload = {
@@ -753,7 +743,7 @@ export class LedgerSql implements Ledger {
   public async enableDfspAccount(cmd: { dfspId: string; accountId: number; }): Promise<CommandResult<void>> {
     assert(cmd)
     assert(cmd.dfspId)
-    assert(cmd.accountId)
+    assert(typeof cmd.accountId === 'number')
 
     try {
       await Participant.updateAccount(
@@ -771,7 +761,7 @@ export class LedgerSql implements Ledger {
   public async disableDfspAccount(cmd: { dfspId: string; accountId: number; }): Promise<CommandResult<void>> {
     assert(cmd)
     assert(cmd.dfspId)
-    assert(cmd.accountId)
+    assert(typeof cmd.accountId === 'number')
 
     try {
       await Participant.updateAccount(
@@ -1125,6 +1115,7 @@ export class LedgerSql implements Ledger {
       }
     }
 
+    // TODO: find bad dates!
     assert(proxyObligation)
     const determiningTransferCheckResult = await remittance.checkIfDeterminingTransferExists(
       proxyObligation.payloadClone,
@@ -1200,7 +1191,7 @@ export class LedgerSql implements Ledger {
     const notifications = result.effects.filter(effect => effect.functionality === 'notification')
     const positions = result.effects
       .filter(effect => effect.functionality === 'position')
-      .map(MessageBus.effectToKafkaMessage)
+      .map(this.deps.effectToKafkaMessage)
     const resultsPosition = await this.deps.positionHandler.handle(null, positions)
     assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
     // Look just at the first one to map the result type.
@@ -1318,7 +1309,7 @@ export class LedgerSql implements Ledger {
     }
 
     const payloadHash = Util.Hash.generateSha256(payload)
-    if (transfer.transferState === 'COMMITTED') {
+    if (transfer.transferStateEnumeration === 'COMMITTED') {
       // Payment is finalized. Check to see if this is an exact duplicate Fulfil message, or if the
       // fulfil message was modified in some way.
       let savedFulfilHash
@@ -1354,7 +1345,7 @@ export class LedgerSql implements Ledger {
       }
     }
 
-    if (transfer.transferState === 'ABORTED') {
+    if (transfer.transferStateEnumeration === 'ABORTED') {
       // Payment is finalized. Check to see if this is an exact duplicate Fulfil message, or if the
       // fulfil message was modified in some way.
       let savedHash
@@ -1560,7 +1551,7 @@ export class LedgerSql implements Ledger {
       .filter(effect => effect.functionality === 'notification')
     const positions = result.effects
       .filter(effect => effect.functionality === 'position')
-      .map(MessageBus.effectToKafkaMessage)
+      .map(this.deps.effectToKafkaMessage)
     const resultsPosition = await this.deps.positionHandler.handle(null, positions)
     assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
     // Look just at the first one to map the result type.
@@ -1574,14 +1565,11 @@ export class LedgerSql implements Ledger {
       case PositionResultType.PASS:
         type = PaymentFulfilResultType.PASS
         break
-      case PositionResultType.FAIL_LIQUIDITY:
-        type = PaymentFulfilResultType.FAIL_OTHER
-        error = resultPosition.error
-        break
       case PositionResultType.FAIL_OTHER:
         type = PaymentFulfilResultType.FAIL_OTHER
         error = resultPosition.error
         break
+      default: throw new Error(`fulfilNext() unhandled resultPosition.type: ${resultPosition.type}.`)
     }
 
     return {
@@ -2222,9 +2210,6 @@ export class LedgerSql implements Ledger {
       )
     }
 
-    // TODO: I think there should be a check for determiningTransferCheckResult
-    // watch list? But that feels like it doesn't belong here.
-
     const participantPayer = await Participant.getByName(payload.payerFsp)
     if (!participantPayer) {
       reasons.push(`Participant ${payload.payerFsp} not found`)
@@ -2504,8 +2489,8 @@ export class LedgerSql implements Ledger {
         this.deps.enums
       )
 
-      return { 
-        type: 'SUCCESS', 
+      return {
+        type: 'SUCCESS',
         result: result as unknown as SettlementUpdateResult
       }
     } catch (err: any) {
@@ -2564,7 +2549,7 @@ export class LedgerSql implements Ledger {
 
       const payload = { participants }
       const result = await SettlementModel.putById(cmd.id, payload, this.deps.enums)
-      
+
       return {
         type: 'SUCCESS',
         result: result as unknown as SettlementUpdateResult
@@ -2637,12 +2622,6 @@ export class LedgerSql implements Ledger {
       const legacyWindow = await SettlementWindowDomain.getById(
         { settlementWindowId: query.id }, this.deps.enums
       )
-      if (!legacyWindow) {
-        return {
-          type: 'NOT_FOUND',
-          error: new Error(`Settlement window not found for id: ${query.id}.`)
-        }
-      }
       const result = mapLegacySettlementWindowToLedger(legacyWindow)
       return {
         type: 'SUCCESS',
@@ -2702,10 +2681,8 @@ export class LedgerSql implements Ledger {
         this.deps.enums
       )
 
-      // @ts-ignore TODO: remove settlementModel from response.
       const settlements: Settlement[] = result.map(settlement => ({
         id: settlement.id,
-        // settlementModel: settlement.settlementModel,
         state: settlement.state,
         reason: settlement.reason ?? '',
         createdDate: settlement.createdDate,

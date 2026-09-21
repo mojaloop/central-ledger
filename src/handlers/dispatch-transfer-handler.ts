@@ -38,6 +38,7 @@ import { PaymentForwardHandler, PaymentForwardResult } from './payment-forward'
 import { ForexForwardHandler, ForexForwardResult } from './forex-forward'
 import { PositionHandlerV2 } from './position-v2'
 import { LedgerSql } from '../domain/ledger/ledger-sql'
+import MessagingHelper from '../messaging/helper'
 
 const { Util } = require('@mojaloop/central-services-shared')
 const { Kafka } = Util
@@ -89,24 +90,28 @@ export class DispatchTransferHandler {
       fxService,
       positionHandler: this.positionHandler,
     })
-    this.paymentForward = new PaymentForwardHandler({ 
+    this.paymentForward = new PaymentForwardHandler({
       config: this.config, ledger: this.ledger,
     })
+    const helper = new MessagingHelper({ config: this.config })
     this.forexPrepare = new ForexPrepareHandler({
       config: this.config,
       ledger: this.ledger,
       proxyCache,
       createRemittanceEntity: createRemittanceEntityForex,
-      positionHandler: this.positionHandler
+      positionHandler: this.positionHandler,
+      effectToKafkaMessage: helper.effectToKafkaMessage.bind(helper)
     })
     const cyril = require('../domain/fx/cyril')
     this.forexFulfil = new ForexFulfilHandler({
       config: this.config,
       ledger: this.ledger,
       cyril,
-      positionHandler: this.positionHandler
+      positionHandler: this.positionHandler,
+      effectToKafkaMessage: helper.effectToKafkaMessage.bind(helper)
+
     })
-    this.forexForward = new ForexForwardHandler({ 
+    this.forexForward = new ForexForwardHandler({
       config: this.config,
       ledger: this.ledger,
     })

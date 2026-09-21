@@ -38,8 +38,8 @@
     "DATABASE": "mlos"
   },
   "ERROR_HANDLING": {
-    "includeCauseExtension": true,
-    "truncateExtensions": false
+    "includeCauseExtension": false,
+    "truncateExtensions": true
   },
   "HANDLERS": {
     "DISABLED": false,

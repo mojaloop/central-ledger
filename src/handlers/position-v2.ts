@@ -188,13 +188,20 @@ export class PositionHandlerV2 {
       logger.error(`handlerBatch failed with error: ${err.message}`)
       logger.error(`stack: ${err.stack}`)
 
-      if (trx) await trx.rollback()
+      if (trx) {
+        await trx.rollback()
+      }
 
-      // It's tricky to know what to do here. If the batch partially failed we don't know which 
-      // things actually failed, so we don't know what to respond with.
-      // For now, we should just assume everything failed atomically.
+      const results = messages.map(_ => {
+        return {
+          type: PositionResultType.FAIL_OTHER,
+          // Fail silently, per src/handlers/positions/handlerBatch.js.
+          effects: [],
+          error: err
+        }
+      })
 
-      throw new Error(`PositionHandlerV2 failed with error: ${err.message}\n${err.stack}.`)
+      return results
     }
   }
 

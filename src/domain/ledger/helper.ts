@@ -30,15 +30,6 @@ export default class Helper {
     } as QueryResultSuccess<T>;
   }
 
-  /**
-   * @deprecated
-   */
-  public static emptyQueryResultSuccess(): QueryResultSuccess<void> {
-    return {
-      type: 'SUCCESS'
-    };
-  }
-
   public static queryResultFailure(error: any): QueryResultFailure {
     return {
       type: 'FAILURE',

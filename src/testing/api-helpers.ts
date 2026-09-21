@@ -1,5 +1,7 @@
 import assert from "node:assert"
 import { Enum, LedgerAccountTypeEnum } from '@mojaloop/central-services-shared'
+import { PrepareHandlerInput } from '../handlers/payment-prepare'
+import { FulfilHandlerInput } from '../handlers/payment-fulfil'
 import Logger from "@mojaloop/central-services-logger"
 import Harness from './harness/harness'
 import ParticipantService from '../domain/participant/index'
@@ -325,7 +327,41 @@ export class Payment {
    * Build the prepare message to be passed to the kafka prepare handler.
    */
   public buildMessagePrepare() {
-    const params: PostTransferBuilderParams = {
+    const params = this.buildPostTransferParams()
+    const postTransfer = buildMojaloopPostTransfer(params)
+    const messageKafka = buildMessagePrepare(this.options.harness, postTransfer)
+
+    return messageKafka
+  }
+
+  public toPrepare(): PrepareHandlerInput {
+    const params = this.buildPostTransferParams()
+    const postTransfer = buildMojaloopPostTransfer(params)
+    const { headers, payload } = postTransfer
+    const action = Enum.Events.Event.Action.PREPARE
+
+    const message = {
+      topic: this.options.harness.topicTransferPrepare.topicName,
+      value: {
+        metadata: { event: { action } },
+        content: { headers, payload }
+      }
+    }
+
+    return {
+      message,
+      payload,
+      headers,
+      transferId: payload.transferId,
+      action,
+      metric: `handler_transfers_${action.toLowerCase()}`,
+      functionality: Enum.Events.Event.Type.TRANSFER,
+      actionEnum: action
+    }
+  }
+
+  private buildPostTransferParams(): PostTransferBuilderParams {
+    return {
       payerFsp: this.options.payerFsp,
       payeeFsp: this.options.payeeFsp,
       transferId: this.options.transferId,
@@ -336,10 +372,90 @@ export class Payment {
       date: this.options.date,
       expirySeconds: this.options.expirySeconds
     }
-    const postTransfer = buildMojaloopPostTransfer(params)
-    const messageKafka = buildMessagePrepare(this.options.harness, postTransfer)
+  }
 
-    return messageKafka
+  private buildPutTransferParams(state: 'COMMITTED' | 'RESERVED'): PutTransferBuilderParams {
+    return {
+      payerFsp: this.options.payerFsp,
+      payeeFsp: this.options.payeeFsp,
+      transferId: this.options.transferId,
+      amountComplex: {
+        amount: this.options.amountComplex.amount,
+        currency: this.options.amountComplex.currency,
+      },
+      date: this.options.date,
+      expirySeconds: this.options.expirySeconds,
+      transferState: state
+    }
+  }
+
+  public toFulfil(state: 'COMMITTED' | 'RESERVED' = 'COMMITTED'): FulfilHandlerInput {
+    const params = this.buildPutTransferParams(state)
+    const putTransfer = buildMojaloopPutTransfer(params)
+    const { headers, payload } = putTransfer
+    const action = state === 'COMMITTED'
+      ? Enum.Events.Event.Action.COMMIT
+      : Enum.Events.Event.Action.RESERVE
+
+    const message = {
+      topic: this.options.harness.topicTransferFulfil.topicName,
+      value: {
+        metadata: { event: { type: Enum.Events.Event.Action.FULFIL, action } },
+        content: {
+          uriParams: { id: this.options.transferId },
+          headers,
+          payload
+        }
+      }
+    }
+
+    return {
+      message,
+      payload,
+      headers,
+      transferId: this.options.transferId,
+      action,
+      eventType: Enum.Events.Event.Action.FULFIL,
+      kafkaTopic: message.topic,
+      callerDfspId: headers['fspiop-source'],
+      destinationDfspId: headers['fspiop-destination'],
+      apiVersion: '1.1'
+    }
+  }
+
+  public toAbort(): FulfilHandlerInput {
+    const abortTransfer = buildMojaloopAbortTransfer({
+      payerFsp: this.options.payerFsp,
+      payeeFsp: this.options.payeeFsp,
+      date: this.options.date,
+    })
+    const { headers, payload } = abortTransfer
+    const action = Enum.Events.Event.Action.ABORT
+
+    const message = {
+      topic: this.options.harness.topicTransferFulfil.topicName,
+      value: {
+        metadata: { event: { type: Enum.Events.Event.Action.FULFIL, action } },
+        content: {
+          uriParams: { id: this.options.transferId },
+          headers,
+          payload
+        }
+      }
+    }
+
+    return {
+      message,
+      payload,
+      headers,
+      transferId: this.options.transferId,
+      action,
+      eventType: Enum.Events.Event.Action.FULFIL,
+      kafkaTopic: message.topic,
+      callerDfspId: headers['fspiop-source'],
+      destinationDfspId: headers['fspiop-destination'],
+      apiVersion: '1.1'
+    }
   }
 
   /**
@@ -1344,6 +1460,7 @@ export function buildMojaloopAbortTransfer(params: AbortTransferBuilderParams): 
     'fspiop-source': params.payeeFsp,
   }
   const payload = {
+    transferState: 'ABORTED',
     // Ref: https://docs.mojaloop.io/api/fspiop/v1.1/api-definition.html#payee-errors-5-xxx
     errorInformation: {
       errorCode: '5100',

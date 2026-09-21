@@ -149,6 +149,7 @@ const processBins = async (bins, trx) => {
     let changePositions = false
 
     if (accountID !== '0') {
+      // TODO(LD): this positions is undefined when the account is inactive!
       settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
 
       // Story #3657: The following SQL query/lookup can be optimized for performance

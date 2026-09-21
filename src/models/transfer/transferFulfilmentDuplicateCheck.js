@@ -71,7 +71,7 @@ const getTransferFulfilmentDuplicateCheck = async (transferId) => {
 const saveTransferFulfilmentDuplicateCheck = async (transferId, hash) => {
   Logger.isDebugEnabled && Logger.debug(`save transferFulfilmentDuplicateCheck (transferId=${transferId}, hash=${hash})`)
   try {
-    return Db.from('transferFulfilmentDuplicateCheck').insert({ transferId, hash })
+    return Db.from('transferFulfilmentDuplicateCheck').insert({ transferId, hash, createdDate: new Date() })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }

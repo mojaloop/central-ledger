@@ -87,6 +87,7 @@ export interface Ledger {
   settlementUpdate(cmd: SettlementUpdateCommand): Promise<CommandResult<SettlementUpdateResult>>;
 
   getSettlementWindows(query: GetSettlementWindowsQuery): Promise<QueryResult<GetSettlementWindowsQueryResponse>>
+  getSettlementWindow(query: GetSettlementWindowQuery): Promise<QueryResultWithNotFound<SettlementWindow>>
   getSettlement(query: GetSettlementQuery): Promise<QueryResultWithNotFound<Settlement>>
   getSettlements(query: GetSettlementsQuery): Promise<GetSettlementsQueryResponse>
 }
@@ -654,12 +655,6 @@ export type SettlementCommitCommand = {
 
 export type SettlementUpdate = {
   participantId: number
-
-  /**
-   * TODO(LD):
-   * Not sure if we need this, but it's on the API.
-   * I suspect it shouldn't be, since accountId is internal and shouldn't be exposed
-   */
   accountId: number
   participantState: 'PS_TRANSFERS_RECORDED'
   | 'PS_TRANSFERS_RESERVED'
@@ -790,7 +785,6 @@ export type SettlementAccount = {
 
 export type Settlement = {
   id: number
-  settlementModel: string,
   state: LegacySettlementState,
   reason: string,
   createdDate: Date,
@@ -923,10 +917,3 @@ export type QueryResult<T> = QueryResultSuccess<T> | QueryResultFailure
 
 // TODO: can we just combine this into QueryResult?
 export type QueryResultWithNotFound<T> = QueryResultSuccess<T> | QueryResultNotFound | QueryResultFailure
-
-export function failureWithError(error: any): QueryResultFailure {
-  return {
-    type: 'FAILURE',
-    error
-  }
-}

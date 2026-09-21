@@ -522,7 +522,6 @@ class SettlementApiFuzzer {
 
   private async getSettlementWindowsByParams(): Promise<void> {
     const generators: Record<string, () => string> = {
-      // TODO: enrich these with actual ids from the database.
       participantId: () => this.harness.prng.intExclusive(100).toString(),
       state: () => this.randomSettlementWindowState(),
       fromDateTime: () => this.randomDateTime(),

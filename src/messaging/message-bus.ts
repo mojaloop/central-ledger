@@ -5,6 +5,8 @@ import { DispatchTransferHandler } from "../handlers/dispatch-transfer-handler";
 import { PositionHandlerV2 } from "../handlers/position-v2";
 import { TimeoutHandlerV2 } from "../handlers/timeout-v2";
 import { CronJob } from "cron";
+import { randomUUID } from "node:crypto";
+import MessagingHelper from "./helper";
 
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { StreamingProtocol } = Util
@@ -37,7 +39,8 @@ interface Dependencies {
     dispatchTransferHandler: DispatchTransferHandler
     positionBatchHandler: PositionHandlerV2
     timeoutHandler: TimeoutHandlerV2
-  }
+  },
+  helper: MessagingHelper
 }
 
 export enum HandlerName {
@@ -295,7 +298,7 @@ export class MessageBus {
 
     // Directly apply the position resets.
     const effectsPosition = effects.filter(effect => effect.functionality === 'position')
-    const kafkaPrepares = effectsPosition.map(MessageBus.effectToKafkaMessage)
+    const kafkaPrepares = effectsPosition.map(this.deps.helper.effectToKafkaMessage)
     const resultsPosition = await this.deps.handlers.positionBatchHandler.handle(null, kafkaPrepares)
     await this.emit(this.collectEffects(resultsPosition))
   
@@ -371,22 +374,5 @@ Disable it to use the new message bus.`)
     const consumer = Consumer.getConsumer(topic)
     assert(consumer)
     await consumer.commitMessageSync(lastMessage)
-  }
-
-  public static effectToKafkaMessage(effect: Effect) {
-    const { functionality, action, message, messageKey, status, fspiopError } = effect
-    const eventStatus = Enum.Events.EventStatus[status]
-    const messageProtocol = StreamingProtocol.updateMessageProtocolMetadata(
-      message, functionality, action, eventStatus
-    )
-
-    if (fspiopError) {
-      messageProtocol.content.payload = fspiopError
-    }
-
-    return {
-      key: messageKey,
-      value: messageProtocol
-    }
   }
 }
