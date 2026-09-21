@@ -143,17 +143,13 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
 
   await transferStateChangeModel.test('get latest', async (assert) => {
     try {
-      const builderStub = sandbox.stub()
-      const orderStub = sandbox.stub()
-      const firstStub = sandbox.stub()
+      const firstStub = sandbox.stub().returns(transferStateChangeModelFixtures[0])
+      const orderStub = sandbox.stub().returns({ first: firstStub })
+      const selectStub = sandbox.stub().returns({ orderBy: orderStub })
+      const builderStub = { select: selectStub }
 
       Db.transferStateChange.query.callsArgWith(0, builderStub)
       Db.transferStateChange.query.returns(transferStateChangeModelFixtures[0])
-      builderStub.selext = sandbox.stub().returns({
-        orderBy: orderStub.returns({
-          first: firstStub.returns(transferStateChangeModelFixtures[0])
-        })
-      })
 
       const result = await Model.getLatest()
       assert.deepEqual(result, transferStateChangeModelFixtures[0])

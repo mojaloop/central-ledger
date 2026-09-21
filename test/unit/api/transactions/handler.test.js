@@ -30,7 +30,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Handler = require('../../../../src/api/transactions/handler')
+const Handler = require('../../../../src/api_admin/transactions/handler')
 const TransactionsService = require('../../../../src/domain/transactions')
 const ProxyCache = require('#src/lib/proxyCache')
 const Metrics = require('@mojaloop/central-services-metrics')

@@ -4,7 +4,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 
 const Logger = require('../../../../src/shared/logger').logger
-const Handler = require('../../../../src/api/participants/handler')
+const Handler = require('../../../../src/api_admin/participants/handler')
 const Participant = require('../../../../src/domain/participant')
 const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError

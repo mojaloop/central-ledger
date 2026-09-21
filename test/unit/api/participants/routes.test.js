@@ -30,7 +30,7 @@
 process.env.LOG_LEVEL = 'debug'
 
 const Test = require('tape')
-const AdminRoutes = require('#src/api/routes')
+const AdminRoutes = require('#src/api_admin/routes')
 const Base = require('../../base')
 
 Test('test participant routes', async function (assert) {

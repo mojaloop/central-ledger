@@ -47,13 +47,7 @@ const registerPlugins = async (server) => {
     await server.register({
       plugin: APIDocumentation,
       options: {
-<<<<<<< HEAD
-        pathToSwaggerFile: Path.resolve(process.cwd(), 'src/settlement/interface/swagger.json')
-||||||| parent of 77a7cb82 (feat(Ledger): implement LedgerSql, a wrapper around the existing)
-        documentPath: Path.resolve(process.cwd(), 'src/settlement/interface/swagger.json')
-=======
         pathToSwaggerFile: Path.join(__dirname, '../interface/swagger.json'),        
->>>>>>> 77a7cb82 (feat(Ledger): implement LedgerSql, a wrapper around the existing)
       }
     })
     await server.register(Blipp)

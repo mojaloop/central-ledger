@@ -34,8 +34,6 @@ const Sinon = require('sinon')
 const Logger = require('../../../src/shared/logger').logger
 const Config = require('../../../src/lib/config')
 const ProxyCache = require('#src/lib/proxyCache')
-const RoutesAdmin = require('../../../src/api/routes')
-const RoutesSettlement = require('../../../src/settlement/api/routes')
 const Setup = require('../../../src/shared/setup')
 const MetricsPlugin = require('@mojaloop/central-services-metrics').plugin
 
@@ -69,7 +67,7 @@ Test('Api index', indexTest => {
       server.start.returns(Promise.resolve({}))
       Setup.initialize.returns(Promise.resolve(server))
 
-      await require('../../../src/api/index')
+      await require('../../../src/api_admin/index')
       test.ok(Setup.initialize.calledWith({
         service: 'api',
         port: Config.PORT,

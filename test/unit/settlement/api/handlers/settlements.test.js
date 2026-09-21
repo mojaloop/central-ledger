@@ -33,7 +33,7 @@ const Mockgen = require('../../../data/mockgen.js')
 const Base = require('../../base')
 const Enums = require('../../../../../src/settlement/models/lib/enums')
 const { logger } = require('../../../../../src/settlement/shared/logger')
-const settlement = require('../../../../../src/settlement/domain/settlement/index')
+const settlement = require('../../../../../src/domain/settlement/index')
 const Db = require('../../../../../src/settlement/lib/db')
 
 /**
@@ -63,7 +63,7 @@ Test('/settlements', async (settlementTest) => {
     t.end()
   })
   await settlementTest.test('test settlements get operation', async (t) => {
-    sandbox.stub(Enums, 'settlementStates').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({})
     sandbox.stub(settlement, 'getSettlementsByParams').returns({})
     try {
       const requests = new Promise((resolve, reject) => {
@@ -110,7 +110,7 @@ Test('/settlements', async (settlementTest) => {
   })
 
   await settlementTest.test('test settlements get by params throws', async (t) => {
-    sandbox.stub(Enums, 'settlementStates').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({})
     sandbox.stub(settlement, 'getSettlementsByParams').throws()
     try {
       const requests = new Promise((resolve, reject) => {
@@ -156,14 +156,14 @@ Test('/settlements', async (settlementTest) => {
     }
   })
   await settlementTest.test('test settlements post operation', async (t) => {
-    sandbox.stub(Enums, 'ledgerEntryTypes').returns({})
+    sandbox.stub(Enums, 'ledgerEntryType').returns({})
     sandbox.stub(Enums, 'settlementDelay').returns({})
     sandbox.stub(Enums, 'settlementGranularity').returns({})
     sandbox.stub(Enums, 'settlementInterchange').returns({})
-    sandbox.stub(Enums, 'settlementStates').returns({})
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
-    sandbox.stub(Enums, 'transferParticipantRoleTypes').returns({})
-    sandbox.stub(Enums, 'transferStates').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({})
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
+    sandbox.stub(Enums, 'transferParticipantRoleType').returns({})
+    sandbox.stub(Enums, 'transferState').returns({})
     sandbox.stub(settlement, 'settlementEventTrigger').returns({})
     try {
       const requests = new Promise((resolve, reject) => {
@@ -210,11 +210,11 @@ Test('/settlements', async (settlementTest) => {
   })
 
   await settlementTest.test('test settlements get by params throws', async (t) => {
-    sandbox.stub(Enums, 'settlementStates').returns({})
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
-    sandbox.stub(Enums, 'transferStates').returns({})
-    sandbox.stub(Enums, 'transferParticipantRoleTypes').returns({})
-    sandbox.stub(Enums, 'ledgerEntryTypes').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({})
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
+    sandbox.stub(Enums, 'transferState').returns({})
+    sandbox.stub(Enums, 'transferParticipantRoleType').returns({})
+    sandbox.stub(Enums, 'ledgerEntryType').returns({})
     sandbox.stub(settlement, 'settlementEventTrigger').throws()
     try {
       const requests = new Promise((resolve, reject) => {

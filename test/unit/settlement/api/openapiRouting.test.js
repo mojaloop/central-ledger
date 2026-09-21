@@ -29,7 +29,7 @@
 'use strict'
 
 const Test = require('tapes')(require('tape'))
-const { getBasePath, assertHandlersRegistered } = require('../../../../src/settlement/api/openapiRouting')
+const { getBasePath, assertHandlersRegistered } = require('../../../../src/api_settlement/openapiRouting')
 
 const operation = (method, path, operationId) => ({ method, path, operationId })
 

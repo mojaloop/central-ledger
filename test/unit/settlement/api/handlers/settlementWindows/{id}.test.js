@@ -33,7 +33,7 @@ const Mockgen = require('../../../../data/mockgen.js')
 const Base = require('../../../base')
 const Enums = require('../../../../../../src/settlement/models/lib/enums')
 const { logger } = require('../../../../../../src/settlement/shared/logger')
-const settlementWindows = require('../../../../../../src/settlement/domain/settlementWindow/index')
+const settlementWindows = require('../../../../../../src/domain/settlementWindow/index')
 const Db = require('../../../../../../src/settlement/lib/db')
 
 /**
@@ -63,7 +63,7 @@ Test('/settlementWindows/{id}', async (settlementWindowTest) => {
     t.end()
   })
   await settlementWindowTest.test('test settlementWindows get by Id operation', async (t) => {
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
     sandbox.stub(settlementWindows, 'getById').returns({})
     try {
       const requests = new Promise((resolve, reject) => {
@@ -110,7 +110,7 @@ Test('/settlementWindows/{id}', async (settlementWindowTest) => {
   })
 
   await settlementWindowTest.test('test settlements get by params throws', async (t) => {
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
     sandbox.stub(settlementWindows, 'getById').throws()
     try {
       const requests = new Promise((resolve, reject) => {
@@ -156,7 +156,7 @@ Test('/settlementWindows/{id}', async (settlementWindowTest) => {
     }
   })
   await settlementWindowTest.test('test settlementWindows post operation', async (t) => {
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
     sandbox.stub(settlementWindows, 'process').returns({})
     try {
       const requests = new Promise((resolve, reject) => {
@@ -203,8 +203,8 @@ Test('/settlementWindows/{id}', async (settlementWindowTest) => {
   })
 
   await settlementWindowTest.test('test settlements get by params throws', async (t) => {
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
-    sandbox.stub(settlementWindows, 'close').throws()
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
+    sandbox.stub(settlementWindows, 'process').throws()
     try {
       const requests = new Promise((resolve, reject) => {
         Mockgen().requests({

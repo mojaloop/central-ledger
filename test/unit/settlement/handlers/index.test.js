@@ -34,7 +34,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Config = require('../../../../src/lib/config')
 const Proxyquire = require('proxyquire')
-const Routes = require('../../../../src/settlement/api/handlerRoutes')
+const Routes = require('../../../../src/api_settlement/handlerRoutes')
 const { logger } = require('../../../../src/settlement/shared/logger')
 
 Test('cli', async (cliTest) => {

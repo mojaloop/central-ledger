@@ -33,11 +33,11 @@ const Mockgen = require('../../../data/mockgen.js')
 const Base = require('../../base')
 const Enums = require('../../../../../src/settlement/models/lib/enums')
 const { logger } = require('../../../../../src/settlement/shared/logger')
-const settlementWindows = require('../../../../../src/settlement/domain/settlementWindow/index')
+const settlementWindows = require('../../../../../src/domain/settlementWindow/index')
 const Db = require('../../../../../src/settlement/lib/db')
 const ProxyCache = require('../../../../../src/lib/proxyCache')
 const ServerSetup = require('../../../../../src/settlement/shared/setup')
-const HandlerRoutes = require('../../../../../src/settlement/api/handlerRoutes')
+const HandlerRoutes = require('../../../../../src/api_settlement/handlerRoutes')
 const getPort = async () => (await import('get-port')).default()
 
 /**
@@ -67,7 +67,7 @@ Test('/settlementWindows', async (settlementWindowTest) => {
     t.end()
   })
   await settlementWindowTest.test('test getSettlementWindowsByParams get operation', async (t) => {
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
     sandbox.stub(settlementWindows, 'getByParams').returns({
       settlementWindowId: 8,
       state: 'CLOSED',
@@ -120,7 +120,7 @@ Test('/settlementWindows', async (settlementWindowTest) => {
   })
 
   await settlementWindowTest.test('test getSettlementWindowsByParams get operation throws', async (t) => {
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
     sandbox.stub(settlementWindows, 'getByParams').throws()
     try {
       const requests = new Promise((resolve, reject) => {

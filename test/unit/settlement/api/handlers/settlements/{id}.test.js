@@ -33,7 +33,7 @@ const Mockgen = require('../../../../data/mockgen.js')
 const Base = require('../../../base')
 const Enums = require('../../../../../../src/settlement/models/lib/enums')
 const { logger } = require('../../../../../../src/settlement/shared/logger')
-const settlement = require('../../../../../../src/settlement/domain/settlement/index')
+const settlement = require('../../../../../../src/domain/settlement/index')
 const Db = require('../../../../../../src/settlement/lib/db')
 
 /**
@@ -63,7 +63,7 @@ Test('/settlements/{id}', async (settlementTest) => {
     t.end()
   })
   await settlementTest.test('test settlements get by id operation', async (t) => {
-    sandbox.stub(Enums, 'settlementStates').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({})
     sandbox.stub(settlement, 'getById').returns({
 
     })
@@ -112,7 +112,7 @@ Test('/settlements/{id}', async (settlementTest) => {
   })
 
   await settlementTest.test('test settlements get by id throws', async (t) => {
-    sandbox.stub(Enums, 'settlementStates').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({})
     sandbox.stub(settlement, 'getById').throws()
     try {
       const requests = new Promise((resolve, reject) => {
@@ -159,14 +159,14 @@ Test('/settlements/{id}', async (settlementTest) => {
   })
 
   await settlementTest.test('test settlements put operation :: putById', async (t) => {
-    sandbox.stub(Enums, 'ledgerAccountTypes').returns({})
-    sandbox.stub(Enums, 'ledgerEntryTypes').returns({})
-    sandbox.stub(Enums, 'participantLimitTypes').returns({})
-    sandbox.stub(Enums, 'settlementStates').returns({})
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
-    sandbox.stub(Enums, 'transferParticipantRoleTypes').returns({})
-    sandbox.stub(Enums, 'transferStates').returns({})
-    sandbox.stub(Enums, 'transferStateEnums').returns({})
+    sandbox.stub(Enums, 'ledgerAccountType').returns({})
+    sandbox.stub(Enums, 'ledgerEntryType').returns({})
+    sandbox.stub(Enums, 'participantLimitType').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({})
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
+    sandbox.stub(Enums, 'transferParticipantRoleType').returns({})
+    sandbox.stub(Enums, 'transferState').returns({})
+    sandbox.stub(Enums, 'transferStateEnum').returns({})
     sandbox.stub(settlement, 'putById').returns({})
     try {
       const requests = new Promise((resolve, reject) => {
@@ -218,14 +218,14 @@ Test('/settlements/{id}', async (settlementTest) => {
   })
 
   await settlementTest.test('test settlements put operation :: abortById', async (t) => {
-    sandbox.stub(Enums, 'ledgerAccountTypes').returns({})
-    sandbox.stub(Enums, 'ledgerEntryTypes').returns({})
-    sandbox.stub(Enums, 'participantLimitTypes').returns({})
-    sandbox.stub(Enums, 'settlementStates').returns({ ABORTED: 'ABORTED' })
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
-    sandbox.stub(Enums, 'transferParticipantRoleTypes').returns({})
-    sandbox.stub(Enums, 'transferStates').returns({})
-    sandbox.stub(Enums, 'transferStateEnums').returns({})
+    sandbox.stub(Enums, 'ledgerAccountType').returns({})
+    sandbox.stub(Enums, 'ledgerEntryType').returns({})
+    sandbox.stub(Enums, 'participantLimitType').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({ ABORTED: 'ABORTED' })
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
+    sandbox.stub(Enums, 'transferParticipantRoleType').returns({})
+    sandbox.stub(Enums, 'transferState').returns({})
+    sandbox.stub(Enums, 'transferStateEnum').returns({})
     sandbox.stub(settlement, 'abortById').returns({})
     try {
       const requests = new Promise((resolve, reject) => {
@@ -276,14 +276,14 @@ Test('/settlements/{id}', async (settlementTest) => {
   })
 
   await settlementTest.test('test settlements put operation :: invalidState', async (t) => {
-    sandbox.stub(Enums, 'ledgerAccountTypes').returns({})
-    sandbox.stub(Enums, 'ledgerEntryTypes').returns({})
-    sandbox.stub(Enums, 'participantLimitTypes').returns({})
-    sandbox.stub(Enums, 'settlementStates').returns({ ABORTED: 'ABORTED' })
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
-    sandbox.stub(Enums, 'transferParticipantRoleTypes').returns({})
-    sandbox.stub(Enums, 'transferStates').returns({})
-    sandbox.stub(Enums, 'transferStateEnums').returns({})
+    sandbox.stub(Enums, 'ledgerAccountType').returns({})
+    sandbox.stub(Enums, 'ledgerEntryType').returns({})
+    sandbox.stub(Enums, 'participantLimitType').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({ ABORTED: 'ABORTED' })
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
+    sandbox.stub(Enums, 'transferParticipantRoleType').returns({})
+    sandbox.stub(Enums, 'transferState').returns({})
+    sandbox.stub(Enums, 'transferStateEnum').returns({})
     sandbox.stub(settlement, 'abortById').returns({})
     try {
       const requests = new Promise((resolve, reject) => {
@@ -336,13 +336,13 @@ Test('/settlements/{id}', async (settlementTest) => {
   })
 
   await settlementTest.test('test settlements put operation :: abortById :: only state provided', async (t) => {
-    sandbox.stub(Enums, 'ledgerAccountTypes').returns({})
-    sandbox.stub(Enums, 'ledgerEntryTypes').returns({})
-    sandbox.stub(Enums, 'participantLimitTypes').returns({})
-    sandbox.stub(Enums, 'settlementStates').returns({ ABORTED: 'ABORTED' })
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
-    sandbox.stub(Enums, 'transferParticipantRoleTypes').returns({})
-    sandbox.stub(Enums, 'transferStates').returns({})
+    sandbox.stub(Enums, 'ledgerAccountType').returns({})
+    sandbox.stub(Enums, 'ledgerEntryType').returns({})
+    sandbox.stub(Enums, 'participantLimitType').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({ ABORTED: 'ABORTED' })
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
+    sandbox.stub(Enums, 'transferParticipantRoleType').returns({})
+    sandbox.stub(Enums, 'transferState').returns({})
     sandbox.stub(settlement, 'abortById').returns({})
     try {
       const requests = new Promise((resolve, reject) => {
@@ -393,13 +393,13 @@ Test('/settlements/{id}', async (settlementTest) => {
   })
 
   await settlementTest.test('test settlements put operation :: abortById', async (t) => {
-    sandbox.stub(Enums, 'ledgerAccountTypes').returns({})
-    sandbox.stub(Enums, 'ledgerEntryTypes').returns({})
-    sandbox.stub(Enums, 'participantLimitTypes').returns({})
-    sandbox.stub(Enums, 'settlementStates').returns({ ABORTED: 'ABORTED-err' })
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
-    sandbox.stub(Enums, 'transferParticipantRoleTypes').returns({})
-    sandbox.stub(Enums, 'transferStates').returns({})
+    sandbox.stub(Enums, 'ledgerAccountType').returns({})
+    sandbox.stub(Enums, 'ledgerEntryType').returns({})
+    sandbox.stub(Enums, 'participantLimitType').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({ ABORTED: 'ABORTED-err' })
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
+    sandbox.stub(Enums, 'transferParticipantRoleType').returns({})
+    sandbox.stub(Enums, 'transferState').returns({})
     sandbox.stub(settlement, 'abortById').returns({})
     try {
       const requests = new Promise((resolve, reject) => {
@@ -450,13 +450,13 @@ Test('/settlements/{id}', async (settlementTest) => {
   })
 
   await settlementTest.test('test settlements put by id throws', async (t) => {
-    sandbox.stub(Enums, 'ledgerAccountTypes').returns({})
-    sandbox.stub(Enums, 'ledgerEntryTypes').returns({})
-    sandbox.stub(Enums, 'participantLimitTypes').returns({})
-    sandbox.stub(Enums, 'settlementStates').returns({})
-    sandbox.stub(Enums, 'settlementWindowStates').returns({})
-    sandbox.stub(Enums, 'transferParticipantRoleTypes').returns({})
-    sandbox.stub(Enums, 'transferStates').returns({})
+    sandbox.stub(Enums, 'ledgerAccountType').returns({})
+    sandbox.stub(Enums, 'ledgerEntryType').returns({})
+    sandbox.stub(Enums, 'participantLimitType').returns({})
+    sandbox.stub(Enums, 'settlementState').returns({})
+    sandbox.stub(Enums, 'settlementWindowState').returns({})
+    sandbox.stub(Enums, 'transferParticipantRoleType').returns({})
+    sandbox.stub(Enums, 'transferState').returns({})
     sandbox.stub(settlement, 'putById').throws()
     try {
       const requests = new Promise((resolve, reject) => {
