@@ -74,7 +74,8 @@ describe('setup', () => {
           "content": []
         }
       ]`))
-      // Check the legacy health check. We're keeping this around so we don't need to change helm too 
+      // Check the legacy health check. We're keeping this around so we don't need to change helm
+      // and testing toolkit tests.
       await checkEndpoint(result.server, '/v2/health', `200`, Snapshot.from(`{
         "status": "OK",
         "uptime": :ignore

@@ -133,6 +133,7 @@ export default class HandlerSettlementV2 {
    * responses: 200, 400, 401, 404, 415, default
    */
   public async getSettlementByParams(
+    context: any,
     request: RequestGetSettlementsByParams,
     h: ResponseToolkit
   ): Promise<any> {
@@ -190,6 +191,7 @@ export default class HandlerSettlementV2 {
    * responses: 200, 400, 401, 404, 415, default
    */
   public async createSettlementEvent(
+    context: any,
     request: RequestCreateSettlementEvent,
     h: ResponseToolkit
   ): Promise<any> {
@@ -247,6 +249,7 @@ export default class HandlerSettlementV2 {
    * responses: 200, 400, 401, 404, 415, default
    */
   public async getSettlementWindowsByParams(
+    context: any,
     request: RequestGetSettlementWindowsByParams,
     h: ResponseToolkit
   ): Promise<any> {
@@ -302,6 +305,7 @@ export default class HandlerSettlementV2 {
    * responses: 200, 400, 401, 404, 415, default
    */
   public async getSettlementWindowById(
+    context: any,
     request: RequestGetSettlementWindowById,
     h: ResponseToolkit
   ): Promise<any> {
@@ -346,6 +350,7 @@ export default class HandlerSettlementV2 {
    * responses: 200, 400, 401, 404, 415, default
    */
   public async closeSettlementWindow(
+    context: any,
     request: RequestCloseSettlementWindow,
     h: ResponseToolkit
   ) {
@@ -394,7 +399,11 @@ export default class HandlerSettlementV2 {
    * produces: application/json
    * responses: 200, 400, 401, 404, 415, default
    */
-  public async getSettlementById(request: RequestGetSettlementById, h: ResponseToolkit) {
+  public async getSettlementById(
+    context: any, 
+    request: RequestGetSettlementById, 
+    h: ResponseToolkit
+  ) {
     const settlementId = request.params.id
     try {
       const { span, headers } = request
@@ -439,7 +448,11 @@ export default class HandlerSettlementV2 {
    * produces: application/json
    * responses: 200, 400, 401, 404, 415, default
    */
-  public async updateSettlementById(request: RequestUpdateSettlementById, h: ResponseToolkit) {
+  public async updateSettlementById(
+    context: any, 
+    request: RequestUpdateSettlementById, 
+    h: ResponseToolkit
+  ) {
     const settlementId = request.params.id
     try {
       const { span, headers } = request
@@ -554,6 +567,7 @@ export default class HandlerSettlementV2 {
    * responses: 200, 400, 401, 404, 415, default
    */
   public async getSettlementBySettlementParticipant(
+    context: any,
     request: RequestGetSettlementByParticipant,
     h: ResponseToolkit,
   ): Promise<any> {
@@ -619,6 +633,7 @@ export default class HandlerSettlementV2 {
    * responses: 200, 400, 401, 404, 415, default
    */
   public async updateSettlementByParticipant(
+    context: any,
     request: RequestUpdateSettlementByParticipant,
     h: ResponseToolkit
   ) {
@@ -694,6 +709,7 @@ export default class HandlerSettlementV2 {
      */
 
   public async getSettlementBySettlementParticipantAccount(
+    context: any,
     request: RequestGetSettlementByParticipantAccount,
     h: ResponseToolkit
   ) {
@@ -772,6 +788,7 @@ export default class HandlerSettlementV2 {
    * responses: 200, 400, 401, 404, 415, default
    */
   public async updateSettlementByIdParticipantAccount(
+    context: any,
     request: RequestUpdateSettlementByParticipantAccount,
     h: ResponseToolkit
   ) {
