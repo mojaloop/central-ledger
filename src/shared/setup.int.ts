@@ -21,7 +21,7 @@ describe('setup', () => {
     await harness.down()
   })
 
-  it.only('initialize() runs the admin and settlement APIs', async () => {
+  it('initialize() runs the admin and settlement APIs', async () => {
     const MetricPlugin = require('@mojaloop/central-services-metrics').plugin
     const setup = require('./setup')
 
@@ -170,7 +170,7 @@ describe('setup', () => {
 
 
 const checkEndpoint = async (server: any, url: string, expectedStatus: string, expected: Snapshot) => {
-  let retries = 20
+  let retries = 35
   let success = false
   let res
   while (retries > 0 && !success) {
