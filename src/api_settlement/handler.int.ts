@@ -139,15 +139,15 @@ describe('settlement api handlers', () => {
       "settlementModel": "DEFERRED_MULTILATERAL_NET_USD",
       "state": "PENDING_SETTLEMENT",
       "reason": "Test settlement",
-      "createdDate": "2026-01-31T23:00:00.000Z",
-      "changedDate": "2026-01-31T23:00:00.000Z",
+      "createdDate": "2026-02-01T00:00:00.000Z",
+      "changedDate": "2026-02-01T00:00:00.000Z",
       "settlementWindows": [
         {
           "id": 1,
           "state": "PENDING_SETTLEMENT",
           "reason": "Test settlement",
           "createdDate": "2026-02-01T00:00:00.000Z",
-          "changedDate": "2026-01-31T23:00:00.000Z",
+          "changedDate": "2026-02-01T00:00:00.000Z",
           "content": [
             {
               "id": 1,
@@ -155,7 +155,7 @@ describe('settlement api handlers', () => {
               "ledgerAccountType": "POSITION",
               "currencyId": "USD",
               "createdDate": "2026-02-01T00:00:00.000Z",
-              "changedDate": "2026-01-31T23:00:00.000Z"
+              "changedDate": "2026-02-01T00:00:00.000Z"
             }
           ]
         }
@@ -473,15 +473,15 @@ describe('settlement api handlers', () => {
       "id": ${settlement.id},
       "state": "PENDING_SETTLEMENT",
       "reason": "Test Settlement.",
-      "createdDate": "2026-01-31T23:00:00.000Z",
-      "changedDate": "2026-01-31T23:00:00.000Z",
+      "createdDate": "2026-02-01T00:00:00.000Z",
+      "changedDate": "2026-02-01T00:00:00.000Z",
       "settlementWindows": [
         {
           "id": :ignore,
           "state": "PENDING_SETTLEMENT",
           "reason": "Test Settlement.",
           "createdDate": "2026-02-01T00:00:00.000Z",
-          "changedDate": "2026-01-31T23:00:00.000Z",
+          "changedDate": "2026-02-01T00:00:00.000Z",
           "content": [
             {
               "id": :ignore,
@@ -489,7 +489,7 @@ describe('settlement api handlers', () => {
               "ledgerAccountType": "POSITION",
               "currencyId": "USD",
               "createdDate": "2026-02-01T00:00:00.000Z",
-              "changedDate": "2026-01-31T23:00:00.000Z"
+              "changedDate": "2026-02-01T00:00:00.000Z"
             }
           ]
         }
@@ -719,14 +719,14 @@ describe('settlement api handlers', () => {
     Snapshot.from(`{
       "id": :ignore
       "state": "PENDING_SETTLEMENT",
-      "createdDate": "2026-01-31T23:00:00.000Z",
+      "createdDate": "2026-02-01T00:00:00.000Z",
       "settlementWindows": [
         {
           "id": :ignore
           "state": "PENDING_SETTLEMENT",
           "reason": "Test Settlement.",
           "createdDate": "2026-02-01T00:00:00.000Z",
-          "changedDate": "2026-01-31T23:00:00.000Z",
+          "changedDate": "2026-02-01T00:00:00.000Z",
           "content": [
             {
               "id": :ignore
@@ -734,7 +734,7 @@ describe('settlement api handlers', () => {
               "ledgerAccountType": "POSITION",
               "currencyId": "USD",
               "createdDate": "2026-02-01T00:00:00.000Z",
-              "changedDate": "2026-01-31T23:00:00.000Z"
+              "changedDate": "2026-02-01T00:00:00.000Z"
             }
           ]
         }
@@ -974,14 +974,14 @@ describe('settlement api handlers', () => {
     Snapshot.from(`{
       "id": :ignore,
       "state": "PENDING_SETTLEMENT",
-      "createdDate": "2026-01-31T23:00:00.000Z",
+      "createdDate": "2026-02-01T00:00:00.000Z",
       "settlementWindows": [
         {
           "id": :ignore,
           "state": "PENDING_SETTLEMENT",
           "reason": "Test Settlement.",
           "createdDate": "2026-02-01T00:00:00.000Z",
-          "changedDate": "2026-01-31T23:00:00.000Z",
+          "changedDate": "2026-02-01T00:00:00.000Z",
           "content": [
             {
               "id": :ignore,
@@ -989,7 +989,7 @@ describe('settlement api handlers', () => {
               "ledgerAccountType": "POSITION",
               "currencyId": "USD",
               "createdDate": "2026-02-01T00:00:00.000Z",
-              "changedDate": "2026-01-31T23:00:00.000Z"
+              "changedDate": "2026-02-01T00:00:00.000Z"
             }
           ]
         }
@@ -1069,14 +1069,14 @@ describe('settlement api handlers', () => {
     Snapshot.from(`{
       "id": :ignore,
       "state": "PENDING_SETTLEMENT",
-      "createdDate": "2026-01-31T23:00:00.000Z",
+      "createdDate": "2026-02-01T00:00:00.000Z",
       "settlementWindows": [
         {
           "id": :ignore,
           "state": "PENDING_SETTLEMENT",
           "reason": "Test Settlement.",
           "createdDate": "2026-02-01T00:00:00.000Z",
-          "changedDate": "2026-01-31T23:00:00.000Z",
+          "changedDate": "2026-02-01T00:00:00.000Z",
           "content": [
             {
               "id": :ignore,
@@ -1084,7 +1084,7 @@ describe('settlement api handlers', () => {
               "ledgerAccountType": "POSITION",
               "currencyId": "USD",
               "createdDate": "2026-02-01T00:00:00.000Z",
-              "changedDate": "2026-01-31T23:00:00.000Z"
+              "changedDate": "2026-02-01T00:00:00.000Z",
             }
           ]
         }
@@ -1165,14 +1165,14 @@ describe('settlement api handlers', () => {
     Snapshot.from(`{
       "id": :ignore,
       "state": "PENDING_SETTLEMENT",
-      "createdDate": "2026-01-31T23:00:00.000Z",
+      "createdDate": "2026-02-01T00:00:00.000Z",
       "settlementWindows": [
         {
           "id": :ignore,
           "state": "PENDING_SETTLEMENT",
           "reason": "Test Settlement.",
           "createdDate": "2026-02-01T00:00:00.000Z",
-          "changedDate": "2026-01-31T23:00:00.000Z",
+          "changedDate": "2026-02-01T00:00:00.000Z",
           "content": [
             {
               "id": :ignore,
@@ -1180,7 +1180,7 @@ describe('settlement api handlers', () => {
               "ledgerAccountType": "POSITION",
               "currencyId": "USD",
               "createdDate": "2026-02-01T00:00:00.000Z",
-              "changedDate": "2026-01-31T23:00:00.000Z"
+              "changedDate": "2026-02-01T00:00:00.000Z"
             }
           ]
         }

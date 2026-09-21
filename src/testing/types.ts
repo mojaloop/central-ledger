@@ -35,7 +35,7 @@ export type RunTask = {
   outputPath?: string
 } | {
   tag: 'TEST_COVERAGE',
-  type: 'TAPE' | 'NATIVE' | 'INTEGRATION' | 'ALL',
+  type: 'TAPE' | 'NATIVE' | 'INTEGRATION' | 'FUZZ' | 'ALL',
   onlyReport: boolean
 } | {
   tag: 'TEST_INTEGRATION',

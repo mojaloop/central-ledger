@@ -1457,7 +1457,7 @@ describe('api/participants/handler-v2', () => {
         "isActive": 1,
         "value": -10000,
         "reservedValue": 0,
-        "changedDate": "2026-01-31T23:00:00.000Z",
+        "changedDate": "2026-02-01T00:00:00.000Z",
         "createdDate": "2026-02-01T00:00:00.000Z"
       }
     ]`).checkUnwrap(responseBody)
@@ -1501,7 +1501,7 @@ describe('api/participants/handler-v2', () => {
         "isActive": 1,
         "value": -10000,
         "reservedValue": 0,
-        "changedDate": "2026-01-31T23:00:00.000Z",
+        "changedDate": "2026-02-01T00:00:00.000Z",
         "createdDate": "2026-02-01T00:00:00.000Z"
       },
       {
@@ -1521,7 +1521,7 @@ describe('api/participants/handler-v2', () => {
         "isActive": 1,
         "value": -10000,
         "reservedValue": 0,
-        "changedDate": "2026-01-31T23:00:00.000Z",
+        "changedDate": "2026-02-01T00:00:00.000Z",
         "createdDate": "2026-02-01T00:00:00.000Z"
       }
     ]`).checkUnwrap(responseBody)

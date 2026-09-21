@@ -2,13 +2,12 @@ import assert from 'node:assert'
 import { spawn, spawnSync } from 'node:child_process'
 import path from 'node:path'
 import process from 'node:process'
-import test, { run } from "node:test"
-import { tap, spec } from 'node:test/reporters'
-import Harness from './harness'
+import { run } from "node:test"
+import { spec } from 'node:test/reporters'
 import { mergeTapStreams } from './tap-stream'
 import { ResultTest, RunTask, RunTaskCoverage, RunTaskIntegration, RunTaskUnit, TagTask } from './types'
 import { convertToXunit, findFiles } from './util'
-import { finished, pipeline } from 'node:stream/promises'
+import { finished } from 'node:stream/promises'
 
 /**
  * @file run.ts
@@ -30,7 +29,7 @@ export const TAP_XUNIT_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/tap-xuni
  *   write mid-flight. Queuing an empty write and exiting in its callback guarantees everything
  *   enqueued before it has already drained, since a writable stream processes writes in order.
  */
-function exitWhenStdoutFlushed(code: number): void {
+function exitWhenStdoutFlushed(code: number | null): void {
   process.stdout.write('', () => process.exit(code))
 }
 
@@ -135,11 +134,15 @@ async function runCoverage(task: RunTaskCoverage): Promise<void> {
     case 'INTEGRATION':
       runCoverageIntegration({ silent: true, clean: true})
       break
+    case 'FUZZ':
+      runCoverageIntegration({ silent: true, clean: true })
+      break
     case 'ALL':
       // First run native check, but don't cleanup so we accumulate coverage between runs.
       runCoverageTape({ silent: true, clean: true })
       runCoverageNative({ silent: true, clean: false })
       runCoverageIntegration({ silent: true, clean: false })
+      runCoverageFuzz({ silent: true, clean: false })
       // Generate combined report.
       spawnSync(NYC_BIN, ['report', '--reporter=lcov', '--reporter=text-summary'], {
         cwd: PROJECT_ROOT,
@@ -243,7 +246,7 @@ function runCoverageNative(opts: NycOptions): void {
 }
 
 /**
- * @function runIntegrationTests
+ * @function runCoverageIntegration
  * @description Runs the integration tests with coverage.
  */
 async function runCoverageIntegration(opts: NycOptions) {
@@ -255,8 +258,6 @@ async function runCoverageIntegration(opts: NycOptions) {
   if (files.length === 0) {
     return { output: '', exitCode: 0 }
   }
-
-  let exitCode = 0
 
   process.once('uncaughtException', async (err) => {
     console.error(`Uncaught exception:`, err)
@@ -280,6 +281,7 @@ async function runCoverageIntegration(opts: NycOptions) {
     '--require', 'ts-node/register',
     '--test',
     '--test-reporter=tap',
+    '--test-concurrency=2',
     ...files
   ]
   const result = spawnSync(NYC_BIN, args, {
@@ -292,7 +294,57 @@ async function runCoverageIntegration(opts: NycOptions) {
     console.error('Failed to run integration tests with coverage:', result.error.message)
     process.exit(1)
   }
+}
 
+/**
+ * @function runCoverageFuzz
+ * @description Runs the fuzz tests with coverage.
+ */
+async function runCoverageFuzz(opts: NycOptions) {
+  const files = findFiles(
+    path.join(PROJECT_ROOT, 'src'),
+    '**/*.fuzz.ts'
+  ).map(f => path.join(PROJECT_ROOT, 'src', f))
+
+  if (files.length === 0) {
+    return { output: '', exitCode: 0 }
+  }
+
+  process.once('uncaughtException', async (err) => {
+    console.error(`Uncaught exception:`, err)
+    process.exit(1)
+  })
+
+  process.once('unhandledRejection', async (err) => {
+    console.error(`Unhandled rejection:`, err)
+    process.exit(1)
+  })
+
+  const nycArgs: string[] = []
+  if (opts.silent) nycArgs.push('--silent')
+  if (!opts.clean) nycArgs.push('--no-clean')
+  if (!opts.silent) nycArgs.push('--reporter=lcov', '--reporter=text-summary')
+
+  const args = [
+    ...nycArgs,
+    '--',
+    process.execPath,
+    '--require', 'ts-node/register',
+    '--test',
+    '--test-reporter=tap',
+    '--test-concurrency=2',
+    ...files
+  ]
+  const result = spawnSync(NYC_BIN, args, {
+    cwd: PROJECT_ROOT,
+    stdio: 'inherit',
+    env: process.env
+  })
+
+  if (result.error) {
+    console.error('Failed to run integration tests with coverage:', result.error.message)
+    process.exit(1)
+  }
 }
 
 /**
@@ -509,10 +561,11 @@ const parseCoverageOptions = (args: Array<string>): Omit<RunTaskCoverage, 'tag'>
       switch (matchType[1]) {
         case 'tape': type = 'TAPE'; return
         case 'native': type = 'NATIVE'; return
+        case 'fuzz': type = 'FUZZ'; return
         case 'integration': type = 'INTEGRATION'; return
         case 'all': type = 'ALL'; return
         default: {
-          throw new Error(`Invalid --type=${matchType[1]}, expected: tape | native | integration | all .`)
+          throw new Error(`Invalid --type=${matchType[1]}, expected: tape | native | integration | fuzz | all .`)
         }
       }
     }

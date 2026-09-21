@@ -208,6 +208,7 @@ export interface DatabaseConfig {
     user: string,
     password: string,
     database: string,
+    timezone?: string
   },
   pool: {
     min: number,

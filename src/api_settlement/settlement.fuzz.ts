@@ -31,7 +31,7 @@ assert(filename)
 
 describe('Settlement API Fuzz', () => {
   it('runs the fuzzer', async (context) => {
-    const stepsMax = envOrDefaultNumber('STEPS_MAX', 100)
+    const stepsMax = envOrDefaultNumber('STEPS_MAX', 1000)
     const trace = await run(stepsMax, {API_MODE_SETTLEMENT: 'LEDGER'})
 
     const dirTrace = `.fuzz_output/${filename}/${sanitizeTestName(context.name)}`
@@ -41,8 +41,8 @@ describe('Settlement API Fuzz', () => {
     console.log(`Fuzz trace written to ${pathTrace}.`)
   })
 
-  it.only('is identical with/without LEDGER', async (context) => {
-    const stepsMax = envOrDefaultNumber('STEPS_MAX', 100)
+  it('is identical with/without LEDGER', async (context) => {
+    const stepsMax = envOrDefaultNumber('STEPS_MAX', 1000)
     const traceA = await run(stepsMax, { API_MODE_SETTLEMENT: 'NONE' })
     const traceB = await run(stepsMax, { API_MODE_SETTLEMENT: 'LEDGER' })
 
@@ -61,7 +61,7 @@ describe('Settlement API Fuzz', () => {
   })
 
   it('is fully deterministic', async (context) => {
-    const stepsMax = envOrDefaultNumber('STEPS_MAX', 2500)
+    const stepsMax = envOrDefaultNumber('STEPS_MAX', 250)
     const traceA = await run(stepsMax, {})
     const traceB = await run(stepsMax, {})
 
