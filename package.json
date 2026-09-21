@@ -127,7 +127,8 @@
     "node-rdkafka": "3.6.1",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8",
-    "require-glob": "^4.1.0"
+    "require-glob": "^4.1.0",
+    "tigerbeetle-node": "0.17.9"
   },
   "optionalDependencies": {
     "ed25519": "^0.0.5",

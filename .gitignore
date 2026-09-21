@@ -73,3 +73,6 @@ devspace*
 
 # Build output
 dist
+
+# Local TigerBeetle datafile and binary location.
+.tigerbeetle

@@ -59,8 +59,8 @@ import AdminHandler from '../../handlers/admin/handler'
 import ParticipantCached from '../../models/participant/participantCached'
 import ParticipantCurrencyCached from '../../models/participant/participantCurrencyCached'
 import ParticipantLimitCached from '../../models/participant/participantLimitCached'
-const BatchPositionModelCached = require('../models/position/batchCached')
-const ExternalParticipantCached = require('../models/participant/externalParticipantCached')
+const BatchPositionModelCached = require('../../models/position/batchCached')
+const ExternalParticipantCached = require('../../models/participant/externalParticipantCached')
 
 import Logger from "@mojaloop/central-services-logger"
 import knex from 'knex'
@@ -174,12 +174,12 @@ export default class Harness {
       databaseName: 'central_ledger',
       migration: {
         type: 'sql',
-        sqlFilePath: './src/testing/harness.snapshot.sql',
+        sqlFilePath: './src/testing/harness/harness.snapshot.sql',
 
         // Uncomment below to update the harness.snapshot.sql file. 
         // You'll want to do this after adding new migrations.
         // type: 'knex',
-        // updateSqlFilePath: './src/testing/harness.snapshot.sql'
+        // updateSqlFilePath: './src/testing/harness/harness.snapshot.sql'
       }
     })
 
