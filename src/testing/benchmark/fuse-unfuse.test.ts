@@ -1,5 +1,5 @@
 import { describe, it } from "node:test";
-import Harness from "../harness";
+import Harness from "../harness/harness";
 import { DispatchTransferHandler } from "../../handlers/dispatch-transfer-handler";
 import { PositionHandlerV2 } from "../../handlers/position-v2";
 import { MessageBus } from "../../messaging/message-bus";

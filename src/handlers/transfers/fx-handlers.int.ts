@@ -26,7 +26,7 @@
 
 import { after, before, describe, it } from "node:test"
 import assert from "node:assert"
-import Harness from '../../testing/harness'
+import Harness from '../../testing/harness/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
 import { assertPositionDiff } from "../../testing/util"

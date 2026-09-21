@@ -1,7 +1,7 @@
 import assert from "node:assert"
 import { Enum, LedgerAccountTypeEnum } from '@mojaloop/central-services-shared'
 import Logger from "@mojaloop/central-services-logger"
-import Harness from './harness'
+import Harness from './harness/harness'
 import ParticipantService from '../domain/participant/index'
 import SettlementWindowModel from '../models/settlementWindow'
 import SettlementDomain from '../domain/settlement'

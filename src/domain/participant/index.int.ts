@@ -1,6 +1,6 @@
 import assert from "node:assert"
 import { after, before, describe, it } from "node:test"
-import Harness from '../../testing/harness'
+import Harness from '../../testing/harness/harness'
 import { Enum, LedgerAccountTypeEnum } from '@mojaloop/central-services-shared'
 import ParticipantService from './index'
 import { Snapshot } from "../../testing/snapshot"

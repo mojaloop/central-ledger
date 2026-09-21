@@ -6,7 +6,7 @@ import { logger as loggerGlobal } from "../shared/logger"
 // @ts-ignore  Override the globally exported logger. Note that we MUST do this before
 // we import Harness, which imports the globals.
 loggerGlobal = new LoggerMock()
-import Harness from "../testing/harness"
+import Harness from "../testing/harness/harness"
 import { loggerFactory } from "@mojaloop/central-services-logger/src/contextLogger"
 import * as ApiHelpers from '../testing/api-helpers'
 import { envOrDefaultNumber, randomAvailablePort, sanitizeTestName } from "../testing/util"

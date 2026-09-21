@@ -1,5 +1,5 @@
 import { describe, it, before, after } from 'node:test'
-import Harness from '../testing/harness'
+import Harness from '../testing/harness/harness'
 import * as ApiHelpers from '../testing/api-helpers'
 import assert from 'node:assert'
 import { assertPositionDiff, futureDate } from '../testing/util'

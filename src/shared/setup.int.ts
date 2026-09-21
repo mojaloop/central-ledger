@@ -1,6 +1,6 @@
 import { after, afterEach, before, describe, it } from "node:test"
 import assert from "node:assert"
-import Harness from '../testing/harness'
+import Harness from '../testing/harness/harness'
 import { Snapshot } from "../testing/snapshot"
 
 const harness = Harness.getInstance()

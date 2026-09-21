@@ -6,7 +6,7 @@ import { logger as loggerGlobal } from "../../shared/logger"
 // we import Harness, which imports the globals.
 loggerGlobal = new LoggerMock()
 import assert from "node:assert"
-import Harness from '../../testing/harness'
+import Harness from '../../testing/harness/harness'
 import PRNG from "../../testing/prng"
 
 import * as ApiHelpers from '../../testing/api-helpers'

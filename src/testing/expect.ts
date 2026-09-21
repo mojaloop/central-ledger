@@ -1,5 +1,5 @@
 import { ApplicationConfig } from "../lib/config";
-import Harness from "./harness";
+import Harness from "./harness/harness";
 import { Snapshot } from "./snapshot";
 
 /**

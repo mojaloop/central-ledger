@@ -29,7 +29,7 @@
 
 
 import { after, before, describe, it } from 'node:test'
-import Harness from '../testing/harness'
+import Harness from '../testing/harness/harness'
 import { Snapshot } from '../testing/snapshot'
 
 const harness = Harness.getInstance()

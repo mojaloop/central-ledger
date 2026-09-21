@@ -38,13 +38,13 @@ const span = EventSdk.Tracer.createSpan('thing')
 span.audit('Hopefully we dont see this!')
 
 import assert from "assert"
-import { execAsync } from "./exec-async"
+import { execAsync } from "../exec-async"
 
-import Cache from '../lib/cache'
-import { makeConfig } from "../lib/config/resolver"
-import { assertNestedFields, deepMerge } from "../lib/config/util"
-import Db from '../lib/db'
-import Enums from '../lib/enumCached'
+import Cache from '../../lib/cache'
+import { makeConfig } from "../../lib/config/resolver"
+import { assertNestedFields, deepMerge } from "../../lib/config/util"
+import Db from '../../lib/db'
+import Enums from '../../lib/enumCached'
 import { Enum } from '@mojaloop/central-services-shared'
 
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -55,28 +55,31 @@ const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
 const KafkaConsumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 
-import AdminHandler from '../handlers/admin/handler'
-import ParticipantCached from '../models/participant/participantCached'
-import ParticipantCurrencyCached from '../models/participant/participantCurrencyCached'
-import ParticipantLimitCached from '../models/participant/participantLimitCached'
+import AdminHandler from '../../handlers/admin/handler'
+import ParticipantCached from '../../models/participant/participantCached'
+import ParticipantCurrencyCached from '../../models/participant/participantCurrencyCached'
+import ParticipantLimitCached from '../../models/participant/participantLimitCached'
 const BatchPositionModelCached = require('../models/position/batchCached')
 const ExternalParticipantCached = require('../models/participant/externalParticipantCached')
 
 import Logger from "@mojaloop/central-services-logger"
 import knex from 'knex'
-import { ApplicationConfig, overrideForTesting, RecursivePartial, resetOverride } from "../lib/config"
-import { envOrDefaultNumber, randomAvailablePort } from "./util"
-import { Consumer } from "./kafka"
+import { ApplicationConfig, overrideForTesting, RecursivePartial, resetOverride } from "../../lib/config"
+import { envOrDefaultNumber, randomAvailablePort } from "../util"
+import { Consumer } from "../kafka"
 import { Message } from "node-rdkafka"
-import { DispatchTransferHandler } from "../handlers/dispatch-transfer-handler"
-import { HandlerName, MessageBus } from "../messaging/message-bus"
-import { PositionHandlerV2 } from "../handlers/position-v2"
-import Expect from "./expect"
-import { TimeoutHandlerV2 } from "../handlers/timeout-v2"
-import { LedgerSql } from "../domain/ledger/ledger-sql"
-import PRNG from "./prng"
-import {Clock} from "./mock-clock"
-import MockClock from "./mock-clock"
+import { DispatchTransferHandler } from "../../handlers/dispatch-transfer-handler"
+import { HandlerName, MessageBus } from "../../messaging/message-bus"
+import { PositionHandlerV2 } from "../../handlers/position-v2"
+import Expect from "../expect"
+import { TimeoutHandlerV2 } from "../../handlers/timeout-v2"
+import { LedgerSql } from "../../domain/ledger/ledger-sql"
+import PRNG from "../prng"
+import {Clock} from "../mock-clock"
+import MockClock from "../mock-clock"
+import { Redpanda, RedpandaConnectionOptions } from "./redpanda"
+import { Redis } from "./redis"
+import { MySql, MySqlConnectionOptions } from "./mysql"
 
 const logger = Logger.child({ scope: 'harness' })
 
@@ -124,9 +127,9 @@ export default class Harness {
   private options: HarnessOptions
   private static _prng: PRNG
   private static _clock: Clock
-  private dependencyRedpanda: Redpanda
   private dependencyMySql: MySql
   private dependencyRedis: Redis
+  private dependencyRedpanda: Redpanda
   private applicationConfig: ApplicationConfig | null = null;
   private applicationConfigOriginal: ApplicationConfig | null = null;
   private omniConsumer: Consumer | null = null;
@@ -899,13 +902,10 @@ Found only ${markNew} new messages.`)
   }
 }
 
-interface DependencyOptions {
+export interface DependencyOptions {
   harnessId: number,
 }
 
-interface RedpandaConnectionOptions {
-  port: number
-}
 
 export type MojaloopKafkaMessage = {
   topic: string,
@@ -929,565 +929,3 @@ export type MojaloopKafkaMessage = {
   }
 }
 
-/**
- * Starts a redpanda and redpanda console docker container.
- * Redpanda is much quicker to start up than Kafka, so is more suitable for this testing harness.
- */
-class Redpanda {
-  private logger = logger.child({ scope: 'Redpanda' })
-  private options: DependencyOptions
-  private containerName: string
-  private containerNameConsole: string
-  private _connectionOptions: null | RedpandaConnectionOptions
-
-  /**
-   * The topics to create when spinning up the container.
-   */
-  private topics = [
-    'topic-transfer-prepare',
-    'topic-transfer-position',
-    'topic-transfer-fulfil',
-    'topic-notification-event',
-    'topic-admin-transfer',
-    'topic-transfer-position-batch',
-    'topic-bulk-prepare',
-    'topic-bulk-get',
-    'topic-bulk-fulfil',
-    'topic-bulk-processing',
-  ]
-
-  constructor(options: DependencyOptions) {
-    assert(options)
-    assert(options.harnessId)
-
-    this.options = options;
-    this.containerName = `int_${this.options.harnessId}_redpanda`
-    this.containerNameConsole = `int_${this.options.harnessId}_redpanda_console`
-    this._connectionOptions = null
-  }
-
-  public async up(): Promise<void> {
-    const timerStart = performance.now()
-    this.logger.debug(`up()`)
-    const portRedpanda = await randomAvailablePort()
-    const portConsole = await randomAvailablePort()
-
-    const command = `
-    docker rm -f ${this.containerName} ${this.containerNameConsole} 2>/dev/null;
-    docker network create harness || echo 'harness exists';
-    docker run -d \
-      --name ${this.containerName} \
-      --network harness \
-      -p ${portRedpanda}:9092 \
-      --health-cmd="rpk cluster info" \
-      --health-interval=100ms \
-      --health-timeout=500ms \
-      --health-retries=100 \
-      --health-start-period=0s \
-      docker.io/redpandadata/redpanda:latest \
-      redpanda start \
-      --mode dev-container \
-      --smp 1 \
-      --memory 400M \
-      --reserve-memory 0M \
-      --overprovisioned \
-      --node-id 0 \
-      --check=false \
-      --kafka-addr internal://0.0.0.0:29092,external://0.0.0.0:9092 \
-      --advertise-kafka-addr internal://${this.containerName}:29092,external://localhost:${portRedpanda}
-    `.replace(/\s+/g, ' ')
-    const { stdout, stderr } = await execAsync(command)
-    this.logger.info(`Redpanda.up() stdout: ${stdout}`)
-    this.logger.info(`Redpanda.up() stderr: ${stderr}`)
-
-    const commandConsole = `
-    docker run -d \
-      --name ${this.containerNameConsole} \
-      --hostname ${this.containerNameConsole} \
-      --restart on-failure \
-      --network harness \
-      -p ${portConsole}:8080 \
-      -e KAFKA_BROKERS=${this.containerName}:29092 \
-      docker.redpanda.com/redpandadata/console:latest
-    `.replace(/\s+/g, ' ')
-
-    await execAsync(commandConsole)
-
-    this._connectionOptions = {
-      port: portRedpanda,
-    }
-
-    this.logger.warn(`Redpanda - go to: http://localhost:${portConsole} to see the Redpanda Console`);
-    await this.waitForHealthy()
-    await this.createTopics()
-    const timerEnd = performance.now()
-    this.logger.info(`up() - took: ${Math.floor(timerEnd - timerStart)}ms`)
-  }
-
-  private async waitForHealthy(): Promise<void> {
-    assert(this._connectionOptions)
-
-    let attemptsMax = 75
-    let delayMs = 50
-
-    for (let attempt = 1; attempt <= attemptsMax; attempt++) {
-      try {
-        const command = `docker inspect --format='{{.State.Health.Status}}' ${this.containerName}`
-        const { stdout } = await execAsync(command, { silent: true })
-
-        if (stdout.trim() !== 'healthy') {
-          throw new Error('Not ready.')
-        }
-
-        logger.info(`Redpanda started after ${attempt} attempts (${attempt * delayMs}ms).`)
-        return
-      } catch (err: any) {
-        if (attempt === attemptsMax) {
-          throw new Error(`Redpanda failed to start after ${attemptsMax} attempts.\n${err.message}`)
-        }
-
-        logger.debug(`Waiting for Redpanda: [attempt ${`${attempt}`.padStart(3)}/${attemptsMax}]`)
-        await new Promise(resolve => setTimeout(resolve, delayMs))
-      }
-    }
-  }
-
-  private async createTopics(): Promise<void> {
-    logger.debug(`createTopics() - creating ${this.topics.length} kafka topics`);
-
-    const commands = this.topics.map(topic =>
-      `docker exec ${this.containerName} rpk topic create ${topic}`
-    );
-
-    await Promise.all(commands.map(async cmd => {
-      await execAsync(cmd, { silent: true, force: true })
-    }))
-  }
-
-  get connectionOptions(): MySqlConnectionOptions {
-    if (!this._connectionOptions) {
-      throw new Error(`this._connectionOptions is null. Did you forget to call up()?`)
-    }
-    return this._connectionOptions
-  }
-
-  public async down(): Promise<void> {
-    this.logger.debug(`down() - stopping and removing containers: ${this.containerName}, ${this.containerNameConsole}.`)
-    try {
-      await execAsync(`docker stop ${this.containerName} ${this.containerNameConsole}`, { silent: true })
-      await execAsync(`docker rm -f ${this.containerName} ${this.containerNameConsole}`, { silent: true })
-      this.logger.debug(`down() - Complete.`)
-    } catch (err: any) {
-      this.logger.error(`down() - failed to remove containers: ${err.message}`)
-      throw err
-    }
-  }
-
-  /**
-   * Get the sum of all watermarks across all topics.
-   */
-  public async mark(): Promise<number> {
-    let watermarkSum = 0
-    for (const topic of this.topics) {
-      const cmd = `docker exec ${this.containerName} rpk topic describe ${topic} --format=json`
-      const { stdout } = await execAsync(cmd)
-
-      const describeJson = JSON.parse(stdout)[0].partitions[0]
-      watermarkSum += describeJson.high_watermark
-    }
-    return watermarkSum;
-  }
-}
-
-interface DependencyOptionsMySql extends DependencyOptions {
-  databaseName: string,
-  migration: MigrationOptions,
-  clock: Clock
-}
-
-interface MigrationOptionsKnex {
-  type: 'knex';
-
-  /**
-   * If this is set, then after running the knex migration, perform a mysql dump
-   * to update the migration file
-   */
-  updateSqlFilePath?: string
-}
-
-interface MigrationOptionsSql {
-  type: 'sql';
-  sqlFilePath: string;
-}
-
-type MigrationOptions = MigrationOptionsKnex | MigrationOptionsSql;
-
-interface MySqlConnectionOptions {
-  port: number
-}
-
-class MySql {
-  private logger = logger.child({ scope: 'MySql' })
-  private options: DependencyOptionsMySql
-  private containerName: string
-  private _connectionOptions: MySqlConnectionOptions | null
-  private clock: Clock
-
-  constructor(options: DependencyOptionsMySql) {
-    assert(options)
-    assert(options.harnessId)
-
-    this.options = options;
-    this.containerName = `int_${this.options.harnessId}_mysql`
-    this._connectionOptions = null
-    this.clock = options.clock
-  }
-
-  public async up(): Promise<void> {
-    const timerStart = performance.now()
-    this.logger.debug(`up()`)
-    const port = await randomAvailablePort()
-
-    // Highly optimzed `docker run` to try and improve startup time.
-    // takes around 3500 ms on my Mac.
-    const command = `
-    docker rm -f ${this.containerName} 2>/dev/null;
-    docker run -d \
-      --name ${this.containerName} \
-      --tmpfs /var/lib/mysql:rw,size=256m \
-      -e MARIADB_ROOT_PASSWORD=password \
-      -e MARIADB_DATABASE=${this.options.databaseName} \
-      -p ${port}:3306 \
-      --health-cmd="mariadb -u root -ppassword -e 'select 1'" \
-      --health-interval=10ms \
-      --health-timeout=50ms \
-      --health-retries=100 \
-      --health-start-period=0s \
-      mariadb:latest \
-      --skip-name-resolve \
-      --skip-log-bin \
-      --performance-schema=OFF \
-      --innodb-buffer-pool-size=64M \
-      --innodb-log-file-size=16M \
-      --max-connections=50
-    `.replace(/\s/g, ' ')
-    await execAsync(command)
-    this.logger.info(`MySql starting at localhost:${port}`);
-    const timerExec = performance.now()
-    this.logger.info(`  docker run        - took: ${Math.floor(timerExec - timerStart)}ms`)
-
-    this._connectionOptions = { port }
-    await this.waitForMySqlReadyExec()
-    const timerReady = performance.now()
-    this.logger.info(`  waitForMySqlReady - took: ${Math.floor(timerReady - timerExec)}ms`)
-
-    await this.migrate()
-    const timerMigrated = performance.now()
-    this.logger.info(`  migrate()         - took: ${Math.floor(timerMigrated - timerReady)}ms`)
-
-    await this.seed()
-    const timerSeeded = performance.now()
-    this.logger.info(`  seed()            - took: ${Math.floor(timerSeeded - timerMigrated)}ms`)
-
-    const timerEnd = performance.now()
-    this.logger.info(`up()        - took: ${Math.floor(timerEnd - timerStart)}ms`)
-  }
-
-  get connectionOptions(): MySqlConnectionOptions {
-    if (!this._connectionOptions) {
-      throw new Error(`this._connectionOptions is null. Did you forget to call up()?`)
-    }
-    return this._connectionOptions
-  }
-
-  public async down(): Promise<void> {
-    this.logger.debug(`down() - stopping and removing containers: ${this.containerName}.`)
-    try {
-      await execAsync(`docker stop ${this.containerName}`, { silent: true })
-      await execAsync(`docker rm -f ${this.containerName}`, { silent: true })
-      this.logger.debug(`down() - Complete.`)
-    } catch (err: any) {
-      this.logger.error(`down() - failed to remove containers: ${err.message}`)
-      throw err
-    }
-  }
-
-  /**
-   * Call exec on the container to make sure mysql is ready for connections.
-   *
-   * The probe goes over TCP rather than the unix socket on purpose. The mariadb entrypoint
-   * bootstraps the database on a temporary server started with `--skip-networking`, then stops
-   * it and starts the real one. A socket probe passes against that temporary server and then
-   * migrate() races its shutdown - `ERROR 2002 ... Can't connect to local server through socket`.
-   * Only the real server listens on 3306, so a TCP probe cannot succeed too early.
-   */
-  private async waitForMySqlReadyExec(): Promise<void> {
-    assert(this._connectionOptions)
-
-    let attemptsMax = 150
-    let delayMs = 35
-
-    for (let attempt = 1; attempt <= attemptsMax; attempt++) {
-      try {
-        const command = `docker exec ${this.containerName} sh -c \
-          'mariadb --protocol=TCP -h 127.0.0.1 -P 3306 -u root -ppassword -e "select 1" ${this.options.databaseName}'
-        `
-        await execAsync(command)
-        logger.info(`MySql started after ${attempt} attempts (${attempt * delayMs}ms).`)
-        return
-      } catch (err: any) {
-        if (attempt === attemptsMax) {
-          throw new Error(`MySql failed to start after ${attemptsMax} attempts.\n${err.message}`)
-        }
-        // Extra whitespace for better printing.
-        logger.debug(`Waiting for MySQL:      [attempt ${`${attempt}`.padStart(3)}/${attemptsMax}]`)
-        await new Promise(resolve => setTimeout(resolve, delayMs))
-      }
-    }
-  }
-
-  /**
-   * Use the internal docker health check, it seems to be slightly faster.
-   */
-  private async waitForMySqlReadyInspect(): Promise<void> {
-    assert(this._connectionOptions)
-
-    let attemptsMax = 100
-    let delayMs = 25
-
-    for (let attempt = 1; attempt <= attemptsMax; attempt++) {
-      try {
-        const command = `docker inspect --format='{{.State.Health.Status}}' ${this.containerName}`
-        const { stdout } = await execAsync(command, { silent: true })
-
-        if (stdout.trim() !== 'healthy') {
-          throw new Error('Not ready.')
-        }
-        logger.info(`MySql started after ${attempt} attempts).`)
-        return
-      } catch (err: any) {
-        if (attempt === attemptsMax) {
-          throw new Error(`MySql failed to start after ${attemptsMax} attempts.\n${err.message}`)
-        }
-        // Extra whitespace for better printing.
-        logger.debug(`Waiting for MySQL:      [attempt ${`${attempt}`.padStart(3)}/${attemptsMax}]`)
-        await new Promise(resolve => setTimeout(resolve, delayMs))
-      }
-    }
-  }
-
-  private async migrate(): Promise<void> {
-    assert(this._connectionOptions)
-
-    // Sometimes migration fails even if MySQL is ready, so we wrap this in retries.
-    let attemptsMax = 3
-    let delayMs = 1000
-
-    for (let attempt = 1; attempt <= attemptsMax; attempt++) {
-      try {
-        const type = this.options.migration.type
-        switch (type) {
-          case "knex":
-            await this.migrateKnex()
-            break;
-          case "sql":
-            await this.migrateSql()
-            break
-          default:
-            throw new Error(`Unexpected migration type: ${type}`)
-        }
-        return
-      } catch (err: any) {
-        if (attempt === attemptsMax) {
-          throw new Error(`migrate failed after ${attemptsMax}.\n${err.message}`)
-        }
-        logger.debug(`migrate()          [attempt ${`${attempt}`.padStart(3)}/${attemptsMax}]`)
-        await new Promise(resolve => setTimeout(resolve, delayMs))
-      }
-    }
-  }
-
-  private getKnexClient() {
-    return knex({
-      client: 'mysql2',
-      connection: {
-        host: 'localhost',
-        port: this.connectionOptions.port,
-        user: 'root',
-        password: 'password',
-        database: this.options.databaseName,
-        timezone: '+00:00',
-      },
-      migrations: {
-        tableName: 'migration',
-        directory: './src/migrations'
-      },
-      seeds: {
-        directory: './src/seeds'
-      },
-      // @ts-ignore
-      userParams: {
-        clock: this.clock
-      }
-    })
-  }
-
-  /**
-   * @method migrateKnex()
-   * @description Runs all of the knex migrations. It's quite slow so you probably want to use
-   *   migrateSql() to restore the databse from the checkpoint sql file, and check that file into
-   *   git.
-   */
-  private async migrateKnex(): Promise<void> {
-    assert(this.options.migration.type === 'knex')
-
-    const knexClient = this.getKnexClient();
-    try {
-      await knexClient.migrate.latest()
-      logger.debug('migrateKnex() - complete.')
-
-      if (this.options.migration.updateSqlFilePath) {
-        await this.saveDatabaseCheckpoint(this.options.migration.updateSqlFilePath)
-      }
-    } finally {
-      await knexClient.destroy()
-    }
-  }
-
-  private async saveDatabaseCheckpoint(pathToCheckpoint: string): Promise<void> {
-    try {
-      logger.info(`saveDatabaseCheckpoint() - creating checkpoint at: ${pathToCheckpoint}`)
-
-      // Dump the database inside the container to a known location.
-      const containerTempFile = '/tmp/checkpoint_dump.sql'
-      const dumpCmd = `docker exec ${this.containerName} sh -c \
-        'mariadb-dump -u root -ppassword ${this.options.databaseName} > ${containerTempFile}'`;
-      const { stderr: dumpStderr } = await execAsync(dumpCmd);
-
-      if (dumpStderr && !dumpStderr.includes('Warning: Using a password')) {
-        logger.warn('SQL dump warnings:', dumpStderr);
-      }
-
-      const copyCmd = `docker cp ${this.containerName}:${containerTempFile} ${pathToCheckpoint}`;
-      const { stderr: copyStderr } = await execAsync(copyCmd);
-
-      if (copyStderr) {
-        logger.warn('Docker copy warnings:', copyStderr);
-      }
-
-      const addNoticeCmd = `echo "-- Note: This file was generated by ./testing/harness.ts.
-      -- It is used to speed up the integration tests, but needs to be recreated every time a new
-      -- migration is added. Refer to ./src/testing/harness.ts for instructions of how to update this
-      -- snapshot.
-      " > /tmp/checkpoint; \
-        cat ${pathToCheckpoint} >> /tmp/checkpoint; \
-      `.replace(/\ {2,}/g, '')
-      await execAsync(addNoticeCmd, { silent: false })
-
-      await execAsync(`mv /tmp/checkpoint ${pathToCheckpoint}`)
-      logger.info(`SQL checkpoint saved to ${pathToCheckpoint}`)
-
-    } catch (err: any) {
-      logger.error(`saveDatabaseCheckpoint() failed with error: ${err.message}`)
-      throw err
-    }
-  }
-
-  private async migrateSql(): Promise<void> {
-    assert(this.options.migration.type === 'sql')
-
-    try {
-      logger.debug(`migrateSql(): from: ${this.options.migration.sqlFilePath}.`)
-      const cmd = `docker cp ${this.options.migration.sqlFilePath} ${this.containerName}:/tmp/checkpoint.sql && \
-        docker exec -i ${this.containerName} sh -c 'mariadb -u root -ppassword ${this.options.databaseName} < /tmp/checkpoint.sql'
-      `
-      const { stdout, stderr } = await execAsync(cmd);
-
-      if (stderr && !stderr.includes('warning')) {
-        logger.debug('migrateSql() warnings:', stderr);
-      }
-
-      logger.debug(`migrateSql() from ${this.options.migration.sqlFilePath} completed`);
-    } catch (err: any) {
-      throw new Error(`migrateSql() from: ${this.options.migration.sqlFilePath} failed with error: ${err.message}.`)
-    }
-  }
-
-  private async seed(): Promise<void> {
-    const knexClient = this.getKnexClient();
-    // knexClient.prototype.context = {
-    //   date: new Date('2026-01-02')
-    // }
-    try {
-      await knexClient.seed.run()
-      logger.debug('seed() - complete.')
-    } finally {
-      await knexClient.destroy()
-    }
-  }
-}
-
-interface DependencyOptionsRedis extends DependencyOptions {
-}
-
-interface RedisConnectionOptions {
-  port: number
-}
-
-class Redis {
-  private logger = logger.child({ scope: 'Redis' })
-  private containerName: string
-  private _connectionOptions: RedisConnectionOptions | null
-
-  constructor(private options: DependencyOptionsRedis) {
-    assert(options)
-    assert(options.harnessId)
-
-    this.containerName = `int_${this.options.harnessId}_redis`
-    this._connectionOptions = null
-  }
-
-  public async up(): Promise<void> {
-    const timerStart = performance.now()
-    this.logger.debug(`up()`)
-    const port = await randomAvailablePort()
-
-    const command = `
-    docker rm -f ${this.containerName} 2>/dev/null;
-    docker run -d \
-      --name ${this.containerName} \
-      -p ${port}:6379  \
-      -e ALLOW_EMPTY_PASSWORD=yes \
-      --health-cmd "redis-cli ping" \
-      --health-timeout 2s \
-      --health-interval 10s \
-      redis:latest
-    `.replace(/\s/g, ' ')
-    await execAsync(command)
-
-    this.logger.info(`Redis starting at localhost:${port}`);
-
-    this._connectionOptions = { port }
-    const timerEnd = performance.now()
-    this.logger.info(`up() - took: ${Math.floor(timerEnd - timerStart)}ms`)
-  }
-
-  get connectionOptions() {
-    if (!this._connectionOptions) {
-      throw new Error(`this._connectionOptions is null. Did you forget to call up()?`)
-    }
-    return this._connectionOptions
-  }
-
-  public async down(): Promise<void> {
-    this.logger.debug(`down() - stopping and removing containers: ${this.containerName}.`)
-    try {
-      await execAsync(`docker stop ${this.containerName}`, { silent: true })
-      await execAsync(`docker rm -f ${this.containerName}`, { silent: true })
-      this.logger.debug(`down() - Complete.`)
-    } catch (err: any) {
-      this.logger.error(`down() - failed to remove containers: ${err.message}`)
-      throw err
-    }
-  }
-}
