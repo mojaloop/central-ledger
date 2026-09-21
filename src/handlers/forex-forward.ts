@@ -133,7 +133,6 @@ export class ForexForwardHandler {
   async handleOne(input: ForexForwardInput): Promise<ForexForwardResult> {
     const { commitRequestId } = input
 
-
     const forex = await FxTransferService.getByIdLight(commitRequestId)
     if (!forex) {
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(
