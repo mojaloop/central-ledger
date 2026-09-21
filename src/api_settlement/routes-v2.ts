@@ -2,6 +2,8 @@ import HandlerSettlementV2 from "./handler-v2"
 
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
+const HandlerHealth = require('../api_admin/root/handler')
+
 
 const buildRoutes = (handler: HandlerSettlementV2) => {
   return {
@@ -10,7 +12,7 @@ const buildRoutes = (handler: HandlerSettlementV2) => {
       api: Path.join(__dirname, '../settlement/interface/swagger.json'),
       handlers: {
         health: {
-          get: notImplemented('GET /health')
+          get: HandlerHealth.getHealth
         },
         settlementWindows: {
           get: handler.getSettlementWindowsByParams.bind(handler),
@@ -44,10 +46,6 @@ const buildRoutes = (handler: HandlerSettlementV2) => {
       }
     }
   }
-}
-
-const notImplemented = (route: string) => (_req: any, h: any) => {
-  return h.response({ error: `${route} not implemented in handler-v2` }).code(501)
 }
 
 export default buildRoutes
