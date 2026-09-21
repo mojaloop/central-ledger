@@ -164,11 +164,10 @@
     "tap-xunit": "2.4.1",
     "tape": "4.17.0",
     "tapes": "4.1.0",
-    "ts-node": "^10.9.2",
-    "v8-to-istanbul": "^9.3.0",
-    "why-is-node-running": "^3.2.2"
+    "ts-node": "^10.9.2"
   },
   "overrides": {
+    "browserslist": "4.28.7",
     "@hapi/wreck": "18.1.2",
     "@now-ims/hapi-now-auth": {
       "joi": "17.13.4"
@@ -249,6 +248,7 @@
     "postcss": "8.5.28",
     "qs": "6.16.0",
     "js-yaml@^4.0.0": "4.3.2",
+    "js-yaml@^3.0.0": "3.15.2",
     "@grpc/grpc-js": "1.14.4",
     "joi@^17.0.0": "17.13.4",
     "uuid": "11.1.1",
