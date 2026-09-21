@@ -27,7 +27,6 @@
 
 'use strict'
 
-const assert = require('node:assert')
 const Cache = require('../../lib/cache')
 const Config = require('../../lib/config')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')

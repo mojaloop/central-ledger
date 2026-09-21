@@ -42,7 +42,6 @@ const MLNumber = require('@mojaloop/ml-number')
 
 const arrayDiff = (arr1, arr2) => arr1.filter(x => !arr2.includes(x))
 
-
 const groupByWindowsWithContent = (records) => {
   const settlementWindowsAssoc = {}
   for (const record of records) {
@@ -89,7 +88,7 @@ const create = async (settlement) => {
 }
 
 /**
- * @param {number} id 
+ * @param {number} id
  * @returns {Promise<{
  *   createdDate: Date,
  *   currentStateChangeId: number,
@@ -104,7 +103,7 @@ const getById = async (id) => {
 
 // Orignally from facade?
 /**
- * @param {number} id 
+ * @param {number} id
  * @returns {Promise<{
  *   changedDate: Date,
  *   createdDate: Date,
@@ -162,7 +161,7 @@ const getByParams = async ({
   fromSettlementWindowDateTime,
   toSettlementWindowDateTime,
   participantId,
-  accountId,
+  accountId
 }) => {
   return Db.from('settlement').query(builder => {
     const b = builder
@@ -820,7 +819,6 @@ const putById = async (settlementId, payload, enums) => {
   })
 }
 
-
 /**
  * @param enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT
  * @param enums.ledgerEntryType
@@ -995,8 +993,7 @@ const settlementTransfersReserve = async function (settlementId, transactionTime
   const trxFunction = async (trx) => {
     try {
       for (const {
-        transferId, ledgerEntryTypeId, dfspAccountId, dfspAmount, hubAccountId, hubAmount,
-        dfspName, currencyId
+        transferId, ledgerEntryTypeId, dfspAccountId, dfspAmount, hubAccountId, hubAmount
       } of settlementTransferList) {
         // Persist transfer state change
         transferStateChangeId = await knex('transferStateChange')
@@ -1068,18 +1065,7 @@ const settlementTransfersReserve = async function (settlementId, transactionTime
             })
             .transacting(trx)
 
-          // Send notification for position change
-          const action = 'settlement-transfer-position-change'
-          const destination = dfspName
-          const payload = {
-            currency: currencyId,
-            value: new MLNumber(dfspPositionValue).add(dfspAmount).toNumber(),
-            changedDate: new Date().toISOString()
-          }
-          // TODO: remove kafka stuff!
           logger.warn('removed notification message')
-          // const message = getNotificationMessage(action, destination, payload)
-          // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message, Utility.ENUMS.STATE.SUCCESS)
 
           // Select hubPosition FOR UPDATE
           const { hubPositionId, hubPositionValue } = await knex('participantPosition')
@@ -1175,8 +1161,7 @@ const settlementTransfersAbort = async function (settlementId, transactionTimest
   const trxFunction = async (trx) => {
     try {
       for (const {
-        transferId, ledgerEntryTypeId, dfspAccountId, dfspAmount, hubAccountId, hubAmount, isReserved,
-        dfspName, currencyId
+        transferId, ledgerEntryTypeId, dfspAccountId, dfspAmount, hubAccountId, hubAmount, isReserved
       } of settlementTransferList) {
         // Persist transfer state change
         await knex('transferStateChange')
@@ -1224,18 +1209,7 @@ const settlementTransfersAbort = async function (settlementId, transactionTimest
             })
             .transacting(trx)
 
-          // Send notification for position change
-          const action = 'settlement-transfer-position-change'
-          const destination = dfspName
-          const payload = {
-            currency: currencyId,
-            value: dfspPositionValue - dfspAmount,
-            changedDate: new Date().toISOString()
-          }
-          // TODO: this shouldn't do any kafka here!
           logger.warn('removed notification message')
-          // const message = getNotificationMessage(action, destination, payload)
-          // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message, Utility.ENUMS.STATE.SUCCESS)
 
           // Select hubPosition FOR UPDATE
           const { hubPositionId, hubPositionValue } = await knex('participantPosition')
@@ -1329,8 +1303,7 @@ const settlementTransfersCommit = async function (settlementId, transactionTimes
   const trxFunction = async (trx) => {
     try {
       for (const {
-        transferId, ledgerEntryTypeId, dfspAccountId, dfspAmount, hubAccountId, hubAmount,
-        dfspName, currencyId
+        transferId, ledgerEntryTypeId, dfspAccountId, dfspAmount, hubAccountId, hubAmount
       } of settlementTransferList) {
         // Persist transfer fulfilment and transfer state change
         await knex('transferFulfilmentDuplicateCheck')
@@ -1424,18 +1397,7 @@ const settlementTransfersCommit = async function (settlementId, transactionTimes
             })
             .transacting(trx)
 
-          // Send notification for position change
-          const action = 'settlement-transfer-position-change'
-          const destination = dfspName
-          const payload = {
-            currency: currencyId,
-            value: new MLNumber(dfspPositionValue).add(dfspAmount).toNumber(),
-            changedDate: new Date().toISOString()
-          }
-          // TODO: this shouldn't do any kafka here!
           logger.warn('removed notification message')
-          // const message = getNotificationMessage(action, destination, payload)
-          // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message, Utility.ENUMS.STATE.SUCCESS)
         }
       }
     } catch (err) {
@@ -1609,5 +1571,5 @@ module.exports = {
   putById,
   triggerSettlementEvent,
   abortByIdStateAborted,
-  getTransferCommitedAccount,
+  getTransferCommitedAccount
 }

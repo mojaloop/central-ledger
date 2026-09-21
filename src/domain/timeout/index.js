@@ -148,7 +148,7 @@ const getLatestFxTransferStateChange = async () => {
  */
 const getLatestFxTransferStateChangeV2 = async () => {
   const result = await FxTransferStateChangeModel.getLatest()
-   if (!result) {
+  if (!result) {
     return 0
   }
   assert(result.fxTransferStateChangeId)

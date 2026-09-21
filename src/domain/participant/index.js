@@ -60,7 +60,6 @@ const Db = require('../../lib/db')
 const assert = require('node:assert')
 const rethrow = require('../../shared/rethrow')
 
-
 // Alphabetically ordered list of error texts used below
 const AccountInactiveErrorText = 'Account is currently set inactive'
 const AccountNotFoundErrorText = 'Account not found'
@@ -342,7 +341,7 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
   const log = logger.child()
   try {
     if (limitAndInitialPositionObj.limit.alarmPercentage === undefined) {
-      throw new Error(`limit.alarmPercentage is required.`)
+      throw new Error('limit.alarmPercentage is required.')
     }
     log.debug('adding limit and initial position', { participantName, limitAndInitialPositionObj })
     const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.POSITION)
@@ -592,7 +591,6 @@ const adjustLimitsV2 = async (name, payload) => {
     )
     payload.name = name
 
-
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -728,7 +726,7 @@ const getAccounts = async (name, query) => {
           value: item.value,
           reservedValue: item.reservedValue,
           changedDate: item.changedDate,
-          createdDate: item.createdDate,
+          createdDate: item.createdDate
         })
       })
     }
@@ -884,13 +882,13 @@ const recordFundsInOutV2 = async (payload, params, enums) => {
       case 'recordFundsOutPrepareReserve': {
         transferId = payload.transferId
         mode = 'CREATE'
-        break;
+        break
       }
       case 'recordFundsOutCommit':
       case 'recordFundsOutAbort': {
         transferId = params.transferId
         mode = 'UPDATE'
-        break;
+        break
       }
       default: {
         throw new Error(`recordFundsInOutV2 unknown payload.action: ${payload.action}`)
@@ -986,7 +984,7 @@ const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTime
       logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_COMMIT`)
       const payloadCommit = {
         ...payload,
-        transferId,
+        transferId
       }
       await TransferService.reconciliationTransferCommit(payloadCommit, transactionTimestamp, enums)
     } else if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT) {

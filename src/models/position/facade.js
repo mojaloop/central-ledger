@@ -379,7 +379,7 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
           'lap.name AS ledgerAccountType',
           'pc.currencyId',
           'pc.isActive',
-          'pc.createdDate',
+          'pc.createdDate'
         )
     })
   } catch (err) {

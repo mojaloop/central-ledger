@@ -62,7 +62,7 @@ module.exports = {
         return settlementWindow
       } else {
         const error = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 
+          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
           `No records for settlementWidowContentId : ${params.settlementWindowId} found`
         )
         logger.error(error)
@@ -70,7 +70,7 @@ module.exports = {
       }
     } else {
       const error = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 
+        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
         `No record for settlementWindowId: ${params.settlementWindowId} found`
       )
       logger.error(error)
@@ -90,7 +90,7 @@ module.exports = {
             settlementWindow.content = settlementWindowContent
           } else {
             const error = ErrorHandler.Factory.createFSPIOPError(
-              ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 
+              ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
               `No records for settlementWindowContentId : ${settlementWindow.settlementWindowId} found`
             )
             logger.error(error)
@@ -100,7 +100,7 @@ module.exports = {
         return settlementWindows
       } else {
         const error = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           `settlementWindow by filters: ${stringifySorted(params.query).replace(/"/g, '')} not found`
         )
         logger.error(error)
@@ -108,7 +108,7 @@ module.exports = {
       }
     } else {
       const error = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
         'Use at least one parameter: participantId, state, fromDateTime, toDateTime, currency'
       )
       logger.error(error)
@@ -122,7 +122,7 @@ module.exports = {
    *   createdDate: Date,
    *   reason: string,
    *   settlementWindowId: number,
-   *   state: string, 
+   *   state: string,
    * }>}
    */
   process: async function (params, enums) {

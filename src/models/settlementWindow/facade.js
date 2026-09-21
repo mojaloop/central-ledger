@@ -83,7 +83,7 @@ const Facade = {
   },
 
   /**
-   * 
+   *
    * @returns {Promise<Array<{
    *  changedDate: Date,
    *  createdDate: Date,
@@ -340,7 +340,7 @@ const Facade = {
   },
 
   /**
-   * 
+   *
    * @returns {Promise<Array<{
    *   changedDate: Date,
    *   createdDate: Date,

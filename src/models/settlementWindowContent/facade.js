@@ -48,7 +48,7 @@ const Facade = {
     })
   },
   /**
-   * 
+   *
    * @returns {Promise<Array<{
    *   changedDate: Date,
    *   createdDate: Date,

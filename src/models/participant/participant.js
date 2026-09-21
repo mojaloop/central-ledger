@@ -48,7 +48,7 @@ exports.create = async (participant, createdDate = new Date()) => {
       name: participant.name,
       createdBy: 'unknown',
       isProxy: !!participant.isProxy,
-      createdDate,
+      createdDate
     })
     return result
   } catch (err) {

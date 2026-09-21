@@ -41,7 +41,7 @@ const create = async ({ name, proxyId, createdDate = new Date() }) => {
     const result = await Db.from(TABLE).insert({
       name,
       proxyId,
-      createdDate,
+      createdDate
     })
     log.debug('create result:', { result })
     return result

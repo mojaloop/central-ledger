@@ -51,7 +51,6 @@ const ProxyCache = require('../lib/proxyCache')
 const Cache = require('../lib/cache')
 const EnumCached = require('../lib/enumCached')
 const SettlementEnums = require('../settlement/models/lib/enums')
-const RegisterHandlers = require('../handlers/register')
 const ParticipantCached = require('../models/participant/participantCached')
 const ParticipantCurrencyCached = require('../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
@@ -218,14 +217,13 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
 
     // Set up the MessageBus.
     const {
-      createRemittanceEntityPayment,
-      createRemittanceEntityForex,
+      createRemittanceEntityPayment
     } = require('../handlers/transfers/createRemittanceEntity')
     const { definePositionParticipant } = require('../handlers/transfers/prepare')
     const positionHandlerV2 = new PositionHandlerV2(Config)
     const ledger = new LedgerSql({
       config: Config,
-      enums: enums,
+      enums,
       proxyCache: ProxyCache,
       positionHandler: positionHandlerV2,
       createRemittanceEntity: createRemittanceEntityPayment,
@@ -238,7 +236,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
       handlers: {
         dispatchTransferHandler: dispatchHandler,
         positionBatchHandler: positionHandlerV2,
-        timeoutHandler: timeoutHandlerV2,
+        timeoutHandler: timeoutHandlerV2
       }
     })
 
@@ -247,7 +245,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     const handlerTransactions = new HandlerTransactionsV2({ config: Config, ledger })
     const routesAdmin = routesAdminBuilder(handlerParticipant, handlerTransactions)
 
-    const handlerSettlement = new HandlerSettlementV2({config: Config, ledger })
+    const handlerSettlement = new HandlerSettlementV2({ config: Config, ledger })
     const routesSettlement = routesSettlementBuilder(handlerSettlement)
 
     let server
@@ -271,11 +269,11 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     }
 
     if (!runHandlers) {
-      Logger.warn(`initialize() - runHandlers is false, not calling messageBus.init().`)
+      Logger.warn('initialize() - runHandlers is false, not calling messageBus.init().')
       // Skip running handlers.
       return server
     } else {
-      Logger.warn(`initialize() - runHandlers is true, calling messageBus.init().`)
+      Logger.warn('initialize() - runHandlers is true, calling messageBus.init().')
     }
 
     const handlerNames = handlers.map(handler => handler.type)

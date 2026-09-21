@@ -120,7 +120,7 @@ module.exports = {
         return await Settlements.putById(settlementId, request.payload, Enums)
       } else if (p.state && p.state === Enums.settlementState.ABORTED) {
         return await Settlements.abortById(settlementId, request.payload, Enums)
-      } 
+      }
       const error = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Invalid request payload input')
       logger.error(error)
       logger.error(error.stack)

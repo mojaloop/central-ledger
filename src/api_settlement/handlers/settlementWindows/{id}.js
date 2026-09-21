@@ -95,7 +95,7 @@ module.exports = {
       const Enums = await request.server.methods.enums('settlementWindowState')
       return await settlementWindow.process({
         settlementWindowId,
-        reason,
+        reason
       }, Enums)
     } catch (err) {
       request.server.log('error', err)

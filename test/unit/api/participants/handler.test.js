@@ -1191,13 +1191,6 @@ Test('Participant', participantHandlerTest => {
       const params = {
         name: 'fsp1'
       }
-      const expected = [
-        {
-          currency: 'USD',
-          value: undefined,
-          updatedTime: '2018-08-14T04:01:55.000Z'
-        }
-      ]
       const positionReturn = [
         {
           currency: 'USD',

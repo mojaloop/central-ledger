@@ -123,5 +123,5 @@ module.exports = {
   getBySettlementAndAccount,
   getParticipantCurrencyBySettlementId,
   getSettlementAccountsByListOfIds,
-  getSettlementAccountById,
+  getSettlementAccountById
 }

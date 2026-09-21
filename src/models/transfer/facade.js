@@ -1292,9 +1292,9 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
         .where('t.transferId', param1.transferId)
         .whereIn('drpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
-        enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
+          enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
         .whereIn('crpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
-        enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
+          enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
         .select('dr.participantCurrencyId AS drAccountId', 'dr.amount AS drAmount', 'drp.participantPositionId AS drPositionId',
           'drp.value AS drPositionValue', 'drp.reservedValue AS drReservedValue', 'cr.participantCurrencyId AS crAccountId',
           'cr.amount AS crAmount', 'crp.participantPositionId AS crPositionId', 'crp.value AS crPositionValue',
@@ -1558,7 +1558,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
         const abortPayload = {
           ...payload,
           reason: 'Aborted due to insufficient funds',
-          action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT,
+          action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT
         }
         await TransferFacade.reconciliationTransferAbort(abortPayload, transactionTimestamp, enums, trx)
       }

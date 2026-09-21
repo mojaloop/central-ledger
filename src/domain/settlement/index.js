@@ -45,7 +45,6 @@ const { default: stringifySorted } = require('../../shared/helpers')
 
 const arrayDiff = (arr1, arr2) => arr1.filter(x => !arr2.includes(x))
 
-
 /**
  * @returns {Array<{
  *   id: number,
@@ -374,8 +373,8 @@ const getSettlementsByParams = async (params, enums) => {
   } else {
     const error = ErrorHandler.Factory.createFSPIOPError(
       ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-      `Use at least one parameter: state, fromDateTime, toDateTime, currency, settlementWindowId `
-      + `fromSettlementWindowDateTime, toSettlementWindowDateTime, participantId, accountId`
+      'Use at least one parameter: state, fromDateTime, toDateTime, currency, settlementWindowId ' +
+      'fromSettlementWindowDateTime, toSettlementWindowDateTime, participantId, accountId'
     )
     logger.error(error)
     throw error
@@ -455,14 +454,14 @@ const settlementEventTrigger = async (params, enums) => {
 }
 
 /**
- * 
+ *
  * @param {{
- *   settlementId: number, 
+ *   settlementId: number,
  *   participantId: number,
  *   accountId?: number
- * }} param0 
- * @param {*} enums 
- * @returns 
+ * }} param0
+ * @param {*} enums
+ * @returns
  */
 const getByIdParticipantAccount = async (
   { settlementId, participantId, accountId },
@@ -506,10 +505,10 @@ const getByIdParticipantAccount = async (
   let settlementWindows
   let accounts
   let participants
-  if (settlementFound
-    && participantFoundInSettlement
-    && participantAndAccountMatched
-    && accountFoundInSettlement
+  if (settlementFound &&
+    participantFoundInSettlement &&
+    participantAndAccountMatched &&
+    accountFoundInSettlement
   ) {
     if (accountProvided) { // 16
       settlementWindows = await SettlementWindowModel.getWindowsBySettlementIdAndAccountId({
@@ -580,5 +579,5 @@ module.exports = {
   settlementEventTrigger,
   update,
   validateSettlementModel,
-  putById: SettlementModel.putById,
+  putById: SettlementModel.putById
 }

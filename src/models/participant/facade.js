@@ -31,7 +31,6 @@
  * @module src/models/participant/facade/
  */
 
-const Time = require('@mojaloop/central-services-shared').Util.Time
 const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -46,7 +45,6 @@ const Config = require('../../lib/config')
 const SettlementModelModel = require('../settlement/settlementModel')
 const { logger } = require('../../shared/logger')
 const rethrow = require('../../shared/rethrow')
-const { sleepSeconds } = require('../../testing/util')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -497,7 +495,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
             participantCurrencyId: positionAccount.participantCurrencyId,
             value: (settlementModel.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION ? limitPositionObj.initialPosition : 0),
             reservedValue: 0,
-            changedDate: new Date(),
+            changedDate: new Date()
           }
           await knex('participantPosition').transacting(trx).insert(participantPosition)
 
@@ -505,7 +503,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
             participantCurrencyId: settlementAccount.participantCurrencyId,
             value: 0,
             reservedValue: 0,
-            changedDate: new Date(),
+            changedDate: new Date()
           }
           await knex('participantPosition').transacting(trx).insert(settlementPosition)
           if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
@@ -520,7 +518,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
           participantCurrencyId,
           value: limitPositionObj.initialPosition,
           reservedValue: 0,
-          changedDate: new Date(),
+          changedDate: new Date()
 
         }
         const participantPositionResult = await knex('participantPosition').transacting(trx).insert(participantPosition)
@@ -529,7 +527,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
           participantCurrencyId: settlementAccountId,
           value: 0,
           reservedValue: 0,
-          changedDate: new Date(),
+          changedDate: new Date()
         }
         await knex('participantPosition').transacting(trx).insert(settlementPosition)
         if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
@@ -620,7 +618,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
 
 /**
  * Adjusts the participant limit, creating it if it doesn't exist.
- * @returns 
+ * @returns
  */
 const adjustLimitsV2 = async (participantCurrencyId, limit) => {
   const retriesMax = 5
@@ -628,7 +626,7 @@ const adjustLimitsV2 = async (participantCurrencyId, limit) => {
 
   const knex = Db.getKnex()
   for (let attempt = 0; attempt < retriesMax; attempt++) {
-    let trx = await knex.transaction()
+    const trx = await knex.transaction()
     try {
       const limitType = await knex('participantLimitType')
         .where({ name: limit.type, isActive: 1 })
@@ -777,7 +775,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
         ledgerAccountTypeId,
         createdBy: 'unknown',
         isActive: 1,
-        createdDate,
+        createdDate
       }
       result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
       await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
@@ -795,14 +793,14 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
         participantCurrencyId: participantCurrency.participantCurrencyId,
         value: 0,
         reservedValue: 0,
-        changedDate: insertedRecord.createdDate,
+        changedDate: insertedRecord.createdDate
       }
       result = await knex('participantPosition').transacting(trx).insert(participantPosition)
       participantPosition.participantPositionId = result[0]
-    
+
       return {
         participantCurrency,
-        participantPosition,
+        participantPosition
       }
     })
   } catch (err) {

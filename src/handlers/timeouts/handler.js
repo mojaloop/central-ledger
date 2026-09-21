@@ -410,11 +410,11 @@ const timeout = async (now) => {
     )
 
     const { transferForwardedList, fxTransferForwardedList } = await TimeoutService.reservedForwardedTransfers(
-      intervalMin, 
-      intervalMax, 
-      fxIntervalMin, 
-      fxIntervalMax, 
-      Config.HANDLERS_TIMEOUT_FORWARDED_MAX_ATTEMPTS, 
+      intervalMin,
+      intervalMax,
+      fxIntervalMin,
+      fxIntervalMax,
+      Config.HANDLERS_TIMEOUT_FORWARDED_MAX_ATTEMPTS,
       now
     )
 

@@ -38,7 +38,7 @@ const base64url = require('base64url')
  *  createdDate: Date,
  *  transferId: string,
  *  value: string,
- * }>>} 
+ * }>>}
  */
 const getById = async (id) => {
   try {

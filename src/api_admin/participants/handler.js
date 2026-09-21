@@ -363,7 +363,7 @@ const getAccounts = async function (request) {
       return {
         ...account,
         value: new MLNumber(account.value).toNumber(),
-        reservedValue: new MLNumber(account.reservedValue).toNumber(),
+        reservedValue: new MLNumber(account.reservedValue).toNumber()
       }
     })
   } catch (err) {

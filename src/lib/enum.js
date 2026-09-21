@@ -276,7 +276,7 @@ const enumsIds = [
   'settlementInterchange',
   'settlementInterchangeEnum',
   'settlementState',
-  'settlementWindowState',
+  'settlementWindowState'
 ]
 
 module.exports = {
