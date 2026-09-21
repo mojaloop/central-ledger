@@ -38,11 +38,12 @@
  * This handler copies them into the request object for easier typing and backwards compatability.
  */
 const preOperationHandler = (context, req) => {
-  if (context.request?.params) {
-    Object.assign(req.params, context.request.params)
+  const coerced = context.validation?.coerced
+  if (coerced?.params) {
+    Object.assign(req.params, coerced.params)
   }
-  if (context.request?.query) {
-    Object.assign(req.query, context.request.query)
+  if (coerced?.query) {
+    Object.assign(req.query, coerced.query)
   }
   if (context.request?.body) {
     req.payload = context.request.body

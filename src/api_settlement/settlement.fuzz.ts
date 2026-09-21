@@ -31,7 +31,7 @@ const filename = path.basename(__filename)
 assert(filename)
 
 describe('Settlement API Fuzz', () => {
-  it.only('runs the fuzzer', async (context) => {
+  it('runs the fuzzer', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 1000)
     const trace = await run(stepsMax, {API_MODE_SETTLEMENT: 'LEDGER'})
 
