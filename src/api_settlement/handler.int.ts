@@ -1084,7 +1084,7 @@ describe('settlement api handlers', () => {
               "ledgerAccountType": "POSITION",
               "currencyId": "USD",
               "createdDate": "2026-02-01T00:00:00.000Z",
-              "changedDate": "2026-02-01T00:00:00.000Z",
+              "changedDate": "2026-02-01T00:00:00.000Z"
             }
           ]
         }
