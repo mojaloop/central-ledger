@@ -265,6 +265,7 @@ export default class Harness {
         connection: {
           user: 'root',
           port: this.dependencyMySql.connectionOptions.port,
+          timezone: '+00:00',
         }
       },
       KAFKA_CONFIG: {
@@ -1315,6 +1316,7 @@ class MySql {
         user: 'root',
         password: 'password',
         database: this.options.databaseName,
+        timezone: '+00:00',
       },
       migrations: {
         tableName: 'migration',

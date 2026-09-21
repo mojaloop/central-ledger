@@ -127,15 +127,19 @@ async function runUnitTests(task: RunTaskUnit): Promise<ResultTest> {
 async function runCoverage(task: RunTaskCoverage): Promise<void> {
   switch (task.type) {
     case 'TAPE':
-      runCoverageTape({ silent: false, noClean: false })
+      runCoverageTape({ silent: false, clean: true })
       break
     case 'NATIVE':
-      runCoverageNative({ silent: false, noClean: false })
+      runCoverageNative({ silent: false, clean: true })
       break
-    case 'BOTH':
+    case 'INTEGRATION':
+      runCoverageIntegration({ silent: true, clean: true})
+      break
+    case 'ALL':
       // First run native check, but don't cleanup so we accumulate coverage between runs.
-      runCoverageTape({ silent: true, noClean: false })
-      runCoverageNative({ silent: true, noClean: true })
+      runCoverageTape({ silent: true, clean: true })
+      runCoverageNative({ silent: true, clean: false })
+      runCoverageIntegration({ silent: true, clean: false })
       // Generate combined report.
       spawnSync(NYC_BIN, ['report', '--reporter=lcov', '--reporter=text-summary'], {
         cwd: PROJECT_ROOT,
@@ -158,7 +162,7 @@ async function runCoverage(task: RunTaskCoverage): Promise<void> {
 
 type NycOptions = {
   silent: boolean
-  noClean: boolean
+  clean: boolean,
 }
 
 /**
@@ -178,7 +182,7 @@ function runCoverageTape(opts: NycOptions): void {
 
   const nycArgs: string[] = []
   if (opts.silent) nycArgs.push('--silent')
-  if (opts.noClean) nycArgs.push('--no-clean')
+  if (!opts.clean) nycArgs.push('--no-clean')
   if (!opts.silent) nycArgs.push('--reporter=lcov', '--reporter=text-summary')
 
   const args = [...nycArgs, '--', TAPE_BIN, ...testFiles]
@@ -214,7 +218,7 @@ function runCoverageNative(opts: NycOptions): void {
 
   const nycArgs: string[] = []
   if (opts.silent) nycArgs.push('--silent')
-  if (opts.noClean) nycArgs.push('--no-clean')
+  if (!opts.clean) nycArgs.push('--no-clean')
   if (!opts.silent) nycArgs.push('--reporter=lcov', '--reporter=text-summary')
 
   const args = [
@@ -236,6 +240,59 @@ function runCoverageNative(opts: NycOptions): void {
     console.error('Failed to run native tests with coverage:', result.error.message)
     process.exit(1)
   }
+}
+
+/**
+ * @function runIntegrationTests
+ * @description Runs the integration tests with coverage.
+ */
+async function runCoverageIntegration(opts: NycOptions) {
+  const files = findFiles(
+    path.join(PROJECT_ROOT, 'src'),
+    '**/*.int.ts'
+  ).map(f => path.join(PROJECT_ROOT, 'src', f))
+
+  if (files.length === 0) {
+    return { output: '', exitCode: 0 }
+  }
+
+  let exitCode = 0
+
+  process.once('uncaughtException', async (err) => {
+    console.error(`Uncaught exception:`, err)
+    process.exit(1)
+  })
+
+  process.once('unhandledRejection', async (err) => {
+    console.error(`Unhandled rejection:`, err)
+    process.exit(1)
+  })
+
+  const nycArgs: string[] = []
+  if (opts.silent) nycArgs.push('--silent')
+  if (!opts.clean) nycArgs.push('--no-clean')
+  if (!opts.silent) nycArgs.push('--reporter=lcov', '--reporter=text-summary')
+
+  const args = [
+    ...nycArgs,
+    '--',
+    process.execPath,
+    '--require', 'ts-node/register',
+    '--test',
+    '--test-reporter=tap',
+    ...files
+  ]
+  const result = spawnSync(NYC_BIN, args, {
+    cwd: PROJECT_ROOT,
+    stdio: 'inherit',
+    env: process.env
+  })
+
+  if (result.error) {
+    console.error('Failed to run integration tests with coverage:', result.error.message)
+    process.exit(1)
+  }
+
 }
 
 /**
@@ -443,7 +500,7 @@ const parseUnitTestOptions = (args: Array<string>): Omit<RunTaskUnit, 'tag'> => 
 }
 
 const parseCoverageOptions = (args: Array<string>): Omit<RunTaskCoverage, 'tag'> => {
-  let type = 'BOTH' as RunTaskUnit['type']
+  let type = 'ALL' as RunTaskCoverage['type']
   let onlyReport = false
   args.forEach(arg => {
     const matchType = arg.match(/--type=(.*)$/)
@@ -452,9 +509,10 @@ const parseCoverageOptions = (args: Array<string>): Omit<RunTaskCoverage, 'tag'>
       switch (matchType[1]) {
         case 'tape': type = 'TAPE'; return
         case 'native': type = 'NATIVE'; return
-        case 'both': type = 'BOTH'; return
+        case 'integration': type = 'INTEGRATION'; return
+        case 'all': type = 'ALL'; return
         default: {
-          throw new Error(`Invalid --type=${matchType[1]}, expected: tape | native | both .`)
+          throw new Error(`Invalid --type=${matchType[1]}, expected: tape | native | integration | all .`)
         }
       }
     }
