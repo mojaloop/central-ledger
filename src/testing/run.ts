@@ -137,6 +137,10 @@ async function runCoverage(task: RunTaskCoverage): Promise<void> {
     case 'FUZZ':
       runCoverageIntegration({ silent: true, clean: true })
       break
+    case 'UNIT': 
+      runCoverageTape({ silent: true, clean: true })
+      runCoverageNative({ silent: true, clean: false })
+      break
     case 'ALL':
       // First run native check, but don't cleanup so we accumulate coverage between runs.
       runCoverageTape({ silent: true, clean: true })
@@ -564,8 +568,9 @@ const parseCoverageOptions = (args: Array<string>): Omit<RunTaskCoverage, 'tag'>
         case 'fuzz': type = 'FUZZ'; return
         case 'integration': type = 'INTEGRATION'; return
         case 'all': type = 'ALL'; return
+        case 'unit': type = 'UNIT'; return
         default: {
-          throw new Error(`Invalid --type=${matchType[1]}, expected: tape | native | integration | fuzz | all .`)
+          throw new Error(`Invalid --type=${matchType[1]}, expected: tape | native | integration | fuzz | all | unit.`)
         }
       }
     }

@@ -1,0 +1,48 @@
+jobs:
+  # Runs extended coverage checks againts unit integration and fuzz tests.
+  # I've added this here for now since we need to go upstream to the circleci orb and 
+  # update coverage to run on a machine since the integration and fuzz tests require a machine
+  # executor, not Docker.
+  coverage-check-all:
+    executor:
+      name: build/machine
+    steps:
+      - build/machine_dependencies
+      - checkout
+      - build/configure_nvm
+      - build/display_versions
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load the pre-built docker image from workspace
+          command: |
+            if [ -f /tmp/docker-image.tar ]; then
+              echo "Found docker-image.tar, loading..."
+              docker load -i /tmp/docker-image.tar
+            else
+              echo "No docker-image.tar found, skipping docker load."
+            fi
+      - run:
+          name: Create dir for test results
+          command: mkdir -p ./test/results
+      - run:
+          name: Execute coverage check
+          command: |
+            # Set Node version to default (Note: this is needed on Ubuntu)
+            nvm use default
+            ./node_modules/.bin/ts-node src/testing/run.ts --type=all
+      - store_artifacts:
+          path: coverage
+          destination: test
+      - store_test_results:
+          path: coverage
+
+workflows:
+  build_and_test:
+    jobs:
+      - coverage-check-all:
+          name: coverage-check-all
+          context: org-global
+          filters:
+            tags:
+              only: /v\d+(\.\d+){2}/
