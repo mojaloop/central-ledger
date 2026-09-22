@@ -25,56 +25,34 @@
  ******/
 
 import { after, before, describe, it } from "node:test"
-import Harness from '../../testing/harness'
+import assert from "node:assert"
+import Harness from '../../testing/harness/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
-import assert from "node:assert"
+import { assertPositionDiff } from "../../testing/util"
 
 const harness = Harness.getInstance()
-let TransferHandler: any
 let FxTransferService: any
 
 describe('handlers/fx', () => {
   before(async () => {
-    await harness.up('BATCH')
+    await harness.up()
+    harness.configOverride({
+      HANDLERS_TRANSFER_DISPATCH_MODE: 'SPLIT',
+    })
     await harness.setupGlobals()
 
-    // Import after bringing up the harness, so that global config is overriden.
-    TransferHandler = require('./handler')
     FxTransferService = require('../../domain/fx/index')
-    await TransferHandler.registerPrepareHandler()
-    await TransferHandler.registerFulfilHandler()
 
     // Create the hub accounts + settlement model.
-    const createHubPayload: ApiHelpers.CreateHubPayload = {
-      currencies: ['BWP', 'USD'],
-      settlementModels: [
-        {
-          name: `DEFERRED_MULTILATERAL_NET_BWP`,
-          settlementGranularity: "NET",
-          settlementInterchange: "MULTILATERAL",
-          settlementDelay: "DEFERRED",
-          currency: 'BWP',
-          requireLiquidityCheck: true,
-          ledgerAccountType: "POSITION",
-          settlementAccountType: "SETTLEMENT",
-          autoPositionReset: true
-        },
-        {
-          name: `DEFERRED_MULTILATERAL_NET_USD`,
-          settlementGranularity: "NET",
-          settlementInterchange: "MULTILATERAL",
-          settlementDelay: "DEFERRED",
-          currency: 'USD',
-          requireLiquidityCheck: true,
-          ledgerAccountType: "POSITION",
-          settlementAccountType: "SETTLEMENT",
-          autoPositionReset: true
-        }
-      ]
-    }
-    await ApiHelpers.createHub(harness, createHubPayload)
-    // Create 2 test dfsps to transfer between.
+    await ApiHelpers.buildHub()
+          .deps(harness)
+          .currency('BWP')
+          .currency('USD')
+          .build()
+          .create()
+  
+    // Create test dfsps to transfer between.
     await ApiHelpers.createDfsp(harness, {
       name: 'dfsp_a',
       currencies: ['BWP'],
@@ -92,6 +70,15 @@ describe('handlers/fx', () => {
       ],
       deposits: [10000, 10000]
     })
+    await ApiHelpers.createDfsp(harness, {
+      name: 'dfsp_c',
+      currencies: ['USD'],
+      isProxy: false,
+      initialPostionsAndLimits: [
+        { initialPosition: 0, value: 100000 },
+      ],
+      deposits: [10000]
+    })
   })
 
   after(async () => {
@@ -101,7 +88,7 @@ describe('handlers/fx', () => {
 
   it(`should publish a message to send error callback if fxTransfer does not exist`, async () => {
     const forex = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .commitRequestId('4000001')
       .determiningTransferId('5000001')
       .parties('dfsp_b', 'dfsp_a')
@@ -109,9 +96,8 @@ describe('handlers/fx', () => {
       .amountTarget('10.00', 'USD')
       .build()
 
-    const mark = harness.redpandaMark()
-    await TransferHandler.fulfil(null, forex.buildMessageFulfil())
-    await harness.redpandaDrain(mark, 1)
+    await harness.messageBus.fulfil(null, [forex.buildMessageFulfil()])
+    await harness.redpandaDrainSmart(1, '4000001')
 
     Snapshot.from(`[
       {
@@ -133,7 +119,7 @@ describe('handlers/fx', () => {
 
   it(`should process fxFulfil message (happy path)`, async () => {
     const forex = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .commitRequestId('4000002')
       .determiningTransferId('5000002')
       .parties('dfsp_a', 'dfsp_b')
@@ -186,13 +172,12 @@ describe('handlers/fx', () => {
       "condition": :ignore
       "fulfilment": :ignore
     }`).checkUnwrap(fxTransfer)
-
   })
 
   it(`should check duplicates, and detect modified request`, async () => {
     const fxId = '4000003'
     const forexA = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .commitRequestId(fxId)
       .determiningTransferId('5000003')
       .parties('dfsp_a', 'dfsp_b')
@@ -201,7 +186,7 @@ describe('handlers/fx', () => {
       .build()
 
     const forexB = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .commitRequestId(fxId)
       .determiningTransferId('5000003')
       .parties('dfsp_b', 'dfsp_a')
@@ -213,9 +198,8 @@ describe('handlers/fx', () => {
     await forexA.prepare()
 
     // Manually prepare the 2nd.
-    const mark = harness.redpandaMark()
-    await TransferHandler.prepare(null, forexB.buildMessagePrepare())
-    await harness.redpandaDrain(mark, 1)
+    await harness.messageBus.prepare(null, [forexB.buildMessagePrepare()])
+    await harness.redpandaDrainSmart(1, fxId)
 
     Snapshot.from(`[
       {
@@ -237,7 +221,7 @@ describe('handlers/fx', () => {
 
   it(`should detect an invalid fulfilment`, async () => {
     const forex = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .commitRequestId('4000004')
       .determiningTransferId('5000004')
       .parties('dfsp_a', 'dfsp_b')
@@ -251,20 +235,133 @@ describe('handlers/fx', () => {
     const messageFulfil = forex.buildMessageFulfil()
     assert(messageFulfil.value.content.payload)
     messageFulfil.value.content.payload.fulfilment = 'invalid-fulfilment'
-    const mark = harness.redpandaMark()
-    await TransferHandler.fulfil(null, messageFulfil)
-    await harness.redpandaDrain(mark, 1)
+    await harness.messageBus.fulfil(null, [messageFulfil])
+    await harness.redpandaDrainSmart(1, '4000004')
 
     Snapshot.from(`[
       {
         "errorInformation": {
           "errorCode": "3100",
-          "errorDescription": "Generic validation error - Invalid FX fulfilment",
+          "errorDescription": "Generic validation:ignore",
           "extensionList": {
             "extension": [
               {
                 "key": "cause",
-                "value": "FSPIOPError: Invalid FX:ignore
+                "value": "FSPIOPError:ignore
+              }
+            ]
+          }
+        }
+      }
+    ]`).checkUnwrap(harness.spoolLastPayload(1))
+  })
+
+  it(`reserves funds and releases them on an invalid fulfilment`, async () => {
+    const forex = ApiHelpers.buildForex()
+      .deps(harness, harness.messageBus)
+      .commitRequestId('4000005')
+      .determiningTransferId('5000005')
+      .parties('dfsp_a', 'dfsp_b')
+      .amountSource('100.00', 'BWP')
+      .amountTarget('10.00', 'USD')
+      .build()
+
+    const [positionABWP1] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'BWP')
+    await forex.prepare()
+    const [positionABWP2,] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'BWP')
+
+    assertPositionDiff('payer', positionABWP1, positionABWP2, {
+      pending: 0,
+      posted: 100
+    })
+
+    // Manually override the fulfilment.
+    const messageFulfil = forex.buildMessageFulfil()
+    assert(messageFulfil.value.content.payload)
+    messageFulfil.value.content.payload.fulfilment = 'invalid-fulfilment'
+    await harness.messageBus.fulfil(null, [messageFulfil])
+    await harness.redpandaDrainSmart(1, '4000005')
+
+    Snapshot.from(`[
+      {
+        "errorInformation": {
+          "errorCode": "3100",
+          "errorDescription": "Generic validation:ignore",
+          "extensionList": {
+            "extension": [
+              {
+                "key": "cause",
+                "value": "FSPIOPError:ignore
+              }
+            ]
+          }
+        }
+      }
+    ]`).checkUnwrap(harness.spoolLastPayload(1))
+
+    const [positionABWP3] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'BWP')
+    assertPositionDiff('payer', positionABWP2, positionABWP3, {
+      pending: 0,
+      posted: -100
+    })
+  })
+
+  it(`subsequent payment for a failed forex should also fail`, async () => {
+    const commitRequestId = `4000006`
+    const transferId = `5000006`
+    const forex = ApiHelpers.buildForex()
+      .deps(harness, harness.messageBus)
+      .commitRequestId(commitRequestId)
+      .determiningTransferId(transferId)
+      .parties('dfsp_a', 'dfsp_b')
+      .amountSource('100.00', 'BWP')
+      .amountTarget('10.00', 'USD')
+      .build()
+    const payment = ApiHelpers.buildPayment()
+      .deps(harness)
+      .transferId(transferId)
+      .amount('10.00', 'USD')
+      .parties('dfsp_a', 'dfsp_c')
+      .fx(commitRequestId)
+      .build()
+
+    await forex.prepare()
+
+    // Manually override the fulfilment.
+    const messageFulfil = forex.buildMessageFulfil()
+    assert(messageFulfil.value.content.payload)
+    messageFulfil.value.content.payload.fulfilment = 'invalid-fulfilment'
+    await harness.messageBus.fulfil(null, [messageFulfil])
+    await harness.redpandaDrainSmart(1, commitRequestId)
+    Snapshot.from(`[
+      {
+        "errorInformation": {
+          "errorCode": "3100",
+          "errorDescription": "Generic validation:ignore",
+          "extensionList": {
+            "extension": [
+              {
+                "key": "cause",
+                "value": "FSPIOPError:ignore
+              }
+            ]
+          }
+        }
+      }
+    ]`).checkUnwrap(harness.spoolLastPayload(1))
+
+    // Now try and make the payment.
+    await payment.prepare()
+    Snapshot.from(`[
+      {
+        "errorInformation": {
+          "errorCode": "3100",
+          "errorDescription": "Generic validation:ignore",
+          "extensionList": {
+            "extension": [
+              {
+                "key": "cause",
+                "value": "FSPIOPError:ignore
               }
             ]
           }

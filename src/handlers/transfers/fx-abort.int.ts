@@ -25,15 +25,12 @@
  ******/
 
 import { after, before, describe, it } from "node:test"
-import Harness from '../../testing/harness'
-import * as ApiHelpers from '../../testing/api-helpers'
 import assert from "node:assert"
+import Harness from '../../testing/harness/harness'
+import * as ApiHelpers from '../../testing/api-helpers'
 import { assertPositionDiff } from "../../testing/util"
 
 const harness = Harness.getInstance()
-let PrepareHandler: any
-let TransferHandler: any
-let PositionBatchHandler: any
 let ExternalParticipantCached: any
 let TransferFacade: any
 let FxTransferService: any
@@ -41,50 +38,23 @@ let proxyCache: any
 
 describe('handlers/fx-abort', () => {
   before(async () => {
-    await harness.up('BATCH')
+    await harness.up()
     await harness.setupGlobals()
 
     // Import after bringing up the harness, so that global config is overriden.
-    TransferHandler = require('./handler')
-    PrepareHandler = require('./prepare')
-    PositionBatchHandler = require('../positions/handlerBatch')
     TransferFacade = require('../../models/transfer/facade')
     FxTransferService = require('../../domain/fx/index')
     ExternalParticipantCached = require('../../models/participant/externalParticipantCached')
     proxyCache = require('../../lib/proxyCache')
     await proxyCache.connect()
-    await TransferHandler.registerPrepareHandler()
-    await TransferHandler.registerFulfilHandler()
 
     // Create the hub accounts + settlement model.
-    const createHubPayload: ApiHelpers.CreateHubPayload = {
-      currencies: ['BWP', 'USD'],
-      settlementModels: [
-        {
-          name: `DEFERRED_MULTILATERAL_NET_BWP`,
-          settlementGranularity: "NET",
-          settlementInterchange: "MULTILATERAL",
-          settlementDelay: "DEFERRED",
-          currency: 'BWP',
-          requireLiquidityCheck: true,
-          ledgerAccountType: "POSITION",
-          settlementAccountType: "SETTLEMENT",
-          autoPositionReset: true
-        },
-        {
-          name: `DEFERRED_MULTILATERAL_NET_USD`,
-          settlementGranularity: "NET",
-          settlementInterchange: "MULTILATERAL",
-          settlementDelay: "DEFERRED",
-          currency: 'USD',
-          requireLiquidityCheck: true,
-          ledgerAccountType: "POSITION",
-          settlementAccountType: "SETTLEMENT",
-          autoPositionReset: true
-        }
-      ]
-    }
-    await ApiHelpers.createHub(harness, createHubPayload)
+    await ApiHelpers.buildHub()
+      .deps(harness)
+      .currency('BWP')
+      .currency('USD')
+      .build()
+      .create()
     // Create 2 test dfsps to transfer between.
     await ApiHelpers.createDfsp(harness, {
       name: 'dfsp_a',
@@ -140,7 +110,7 @@ describe('handlers/fx-abort', () => {
 
     // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.
     await ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
       .amount('1.00', 'BWP')
@@ -161,7 +131,7 @@ describe('handlers/fx-abort', () => {
     const positionPayeePre = await ApiHelpers.getPositionAccount('dfsp_b', 'USD')
 
     const forex = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .commitRequestId('5000001')
       .determiningTransferId('6000001')
       .parties('dfsp_a', 'fxp_a')
@@ -178,18 +148,15 @@ describe('handlers/fx-abort', () => {
     assert.equal(fxTransferAfterFulfil.fxTransferState, 'RECEIVED_FULFIL_DEPENDENT')
 
     const payment = ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .parties('fxp_a', 'dfsp_b')
       .transferId('6000001')
       .amount('10.00', 'USD')
-      .fx()
+      .fx('5000001')
       .build()
 
     await payment.prepare()
-    // Need to do a custom fulfil here, as we expect 4 messages due to FX.
-    const mark = harness.redpandaMark()
-    await TransferHandler.fulfil(null, payment.buildMessageAbort())
-    await harness.redpandaDrain(mark, 4)
+    await payment.abort()
 
     const transfer = await TransferFacade.getById('6000001')
     assert.equal(transfer.transferState, 'ABORTED_ERROR')

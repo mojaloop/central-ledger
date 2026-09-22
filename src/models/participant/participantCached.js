@@ -44,10 +44,10 @@ const buildUnifiedParticipantsData = (allParticipants) => {
   const indexByName = {}
 
   allParticipants.forEach((oneParticipant) => {
-    // Participant API returns Date type, but cache internals will serialize it to String
-    // by calling JSON.stringify(), which calls .toISOString() on a Date object.
-    // Let's ensure all places return same kind of String.
-    oneParticipant.createdDate = JSON.stringify(oneParticipant.createdDate)
+    // Participant API returns Date type, but cache internals will serialize it to String.
+    if (oneParticipant.createdDate instanceof Date) {
+      oneParticipant.createdDate = oneParticipant.createdDate.toISOString()
+    }
 
     // Add to indexes
     indexById[oneParticipant.participantId] = oneParticipant

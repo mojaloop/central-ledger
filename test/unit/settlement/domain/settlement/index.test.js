@@ -186,7 +186,7 @@ Test('SettlementService', async (settlementServiceTest) => {
         state: 'PS_TRANSFERS_COMMITTED'
       }
       enums = {
-        settlementStates: { PS_TRANSFERS_COMMITTED: 'PS_TRANSFERS_COMMITTED' }
+        settlementState: { PS_TRANSFERS_COMMITTED: 'PS_TRANSFERS_COMMITTED', ABORTED: 'ABORTED' }
       }
 
       SettlementModel.getById = sandbox.stub().returns(settlementMock)
@@ -209,7 +209,7 @@ Test('SettlementService', async (settlementServiceTest) => {
         state: 'PS_TRANSFERS_COMMITTED'
       }
       enums = {
-        settlementStates: { PS_TRANSFERS_COMMITTED: 'PS_TRANSFERS_COMMITTED' }
+        settlementState: { PS_TRANSFERS_COMMITTED: 'PS_TRANSFERS_COMMITTED', ABORTED: 'ABORTED' }
       }
 
       SettlementModel.getById = sandbox.stub().returns({})
@@ -232,7 +232,7 @@ Test('SettlementService', async (settlementServiceTest) => {
         state: 'PS_TRANSFERS_COMMITTED'
       }
       enums = {
-        settlementStates: { PS_TRANSFERS_COMMITTED: 'PS_TRANSFERS_COMMITTED' }
+        settlementState: { PS_TRANSFERS_COMMITTED: 'PS_TRANSFERS_COMMITTED', ABORTED: 'ABORTED' }
       }
 
       SettlementModel.getById = sandbox.stub().returns(false)
@@ -256,7 +256,7 @@ Test('SettlementService', async (settlementServiceTest) => {
       }
 
       enums = {
-        settlementStates: { PS_TRANSFERS_COMMITTED: 'PS_TRANSFERS_COMMITTED' }
+        settlementState: { PS_TRANSFERS_COMMITTED: 'PS_TRANSFERS_COMMITTED', ABORTED: 'ABORTED' }
       }
 
       SettlementModel.getById = sandbox.stub().returns(settlementMock)
@@ -418,7 +418,7 @@ Test('SettlementService', async (settlementServiceTest) => {
         ]
       }
       const enums = {
-        settlementWindowStates: {
+        settlementWindowState: {
           CLOSED: 'CLOSED'
         },
         settlementGranularity: {
@@ -519,7 +519,7 @@ Test('SettlementService', async (settlementServiceTest) => {
           const idList = [1, 2]
           const reason = params.reason
           const settlementModelData = settlementModelDataMock[settlementModelDataMock.length - 1]
-          test.ok(SettlementWindowModel.getByListOfIds.withArgs(idList, settlementModelData, enums.settlementWindowStates).calledOnce, 'SettlementWindowModel.getByListOfIds with args ... called once')
+          test.ok(SettlementWindowModel.getByListOfIds.withArgs(idList, settlementModelData, enums.settlementWindowState).calledOnce, 'SettlementWindowModel.getByListOfIds with args ... called once')
           test.ok(SettlementModel.triggerSettlementEvent.withArgs({ idList, reason }, settlementModelData, enums).calledOnce, 'SettlementModel.triggerEvent with args ... called once')
           test.ok(SettlementWindowModel.getBySettlementId.withArgs({ settlementId: settlementIdMock }).calledOnce, 'SettlementWindowModel.getBySettlementId with args ... called once')
           test.ok(SettlementModel.settlementParticipantCurrency.getParticipantCurrencyBySettlementId.withArgs({ settlementId: settlementIdMock }).calledOnce, 'SettlementModel.spc.getParticipantCurrencyBySettlementId w/ args ... called once')

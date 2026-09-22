@@ -49,6 +49,7 @@ const ParticipantFacade = require('../participant/facade')
 const ParticipantCachedModel = require('../participant/participantCached')
 const TransferExtensionModel = require('./transferExtension')
 const rethrow = require('../../shared/rethrow')
+const assert = require('node:assert')
 
 const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
@@ -481,7 +482,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
       ilpCondition: payload.condition,
-      expirationDate: Time.getUTCString(new Date(payload.expiration))
+      expirationDate: Time.getUTCString(new Date(payload.expiration)),
+      createdDate: new Date(),
     }
 
     const ilpPacketRecord = {
@@ -940,6 +942,43 @@ const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transac
  */
 
 /**
+ * @typedef {Object} ForwardedTransfer
+ *
+ * @property {Integer} transferForwardedId
+ * @property {String} transferId
+ * @property {Date} expirationDate
+ * @property {Date} createdDate
+ * @property {Integer} attemptCount
+ * @property {String} transferStateId
+ * @property {String} payerFsp
+ * @property {String} payeeFsp
+ * @property {Integer} payerParticipantCurrencyId
+ * @property {Integer} payeeParticipantCurrencyId
+ * @property {Integer} effectedParticipantCurrencyId
+ * @property {Integer} bulkTransferId
+ * @property {String} externalPayerName
+ * @property {String} externalPayeeName
+ */
+
+/**
+ * @typedef {Object} ForwardedFxTransfer
+ *
+ * @property {Integer} fxTransferForwardedId
+ * @property {String} commitRequestId
+ * @property {Date} expirationDate
+ * @property {Date} createdDate
+ * @property {Integer} attemptCount
+ * @property {String} transferStateId
+ * @property {String} initiatingFsp
+ * @property {String} counterPartyFsp
+ * @property {Integer} initiatingParticipantCurrencyId
+ * @property {Integer} counterPartyParticipantCurrencyId
+ * @property {Integer} effectedParticipantCurrencyId
+ * @property {String} externalInitiatingFspName
+ * @property {String} externalCounterPartyFspName
+ */
+
+/**
  *  Returns the list of transfers/fxTransfers that have timed out
  *
  * @returns {Promise<{
@@ -947,9 +986,10 @@ const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transac
  *    fxTransferTimeoutList: Array<TimedOutFxTransfer>
  * }>}
  */
-const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax) => {
+const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegmentId, fxIntervalMin, fxIntervalMax, now) => {
+  assert(now)
   try {
-    const transactionTimestamp = Time.getUTCString(new Date())
+    const transactionTimestamp = Time.getUTCString(now)
     const knex = Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
@@ -1016,8 +1056,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                   .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
                   .where('tt.expirationDate', '<', transactionTimestamp)
                   .whereIn('tsc.transferStateId', [
-                  `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
-                  `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
+                    `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
+                    `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
                   ])
                   .as('tt1'),
                 'ft.determiningTransferId', 'tt1.transferId'
@@ -1048,8 +1088,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                   .innerJoin('fxTransferStateChange AS ftsc', 'ftsc.fxTransferStateChangeId', 'fts.maxFxTransferStateChangeId')
                   .where('ftt.expirationDate', '<', transactionTimestamp)
                   .whereIn('ftsc.transferStateId', [
-                  `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
-                  `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
+                    `${Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT}`,
+                    `${Enum.Transfers.TransferInternalState.EXPIRED_PREPARED}`
                   ])
                   .as('ftt1'),
                 'ft.commitRequestId', 'ftt1.commitRequestId'
@@ -1067,8 +1107,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
                   )
                   .whereRaw('tsc.transferStateChangeId = ts.maxTransferStateChangeId')
                   .whereIn('tsc.transferStateId', [
-                  `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
-                  `${Enum.Transfers.TransferState.RESERVED}`
+                    `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
+                    `${Enum.Transfers.TransferState.RESERVED}`
                   ])
                   .as('tt1'),
                 'ft.determiningTransferId', 'tt1.transferId'
@@ -1130,13 +1170,14 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
  *  Returns the list of transfers/fxTransfers that are in RESERVED_FORWARDED state
  *
  * @returns {Promise<{
- *    transferTimeoutList: TimedOutTransfer,
- *    fxTransferTimeoutList: TimedOutFxTransfer
+ *    transferForwardedList: Array<ForwardedTransfer>,
+ *    fxTransferForwardedList: Array<ForwardedFxTransfer>
  * }>}
  */
-const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount) => {
+const reservedForwardedTransfers = async (intervalMin, intervalMax, fxIntervalMin, fxIntervalMax, maxAttemptCount, now) => {
+  assert(now)
   try {
-    const transactionTimestamp = Time.getUTCString(new Date())
+    const transactionTimestamp = Time.getUTCString(now)
     const knex = Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
@@ -1264,7 +1305,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         .transacting(trx)
 
       if (param1.transferStateId === enums.transferState.COMMITTED ||
-          param1.transferStateId === TransferInternalState.RESERVED_FORWARDED
+        param1.transferStateId === TransferInternalState.RESERVED_FORWARDED
       ) {
         await knex('transferStateChange')
           .insert({
@@ -1395,13 +1436,21 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         })
         .transacting(trx)
 
-      // Retrieve hub reconciliation account for the specified currency
-      const { reconciliationAccountId } = await knex('participantCurrency')
+      // Retrieve hub reconciliation account for the specified currency.
+      const reconciliationAccountIdResult = await knex('participantCurrency')
         .select('participantCurrencyId AS reconciliationAccountId')
         .where('participantId', Config.HUB_ID)
         .andWhere('currencyId', payload.amount.currency)
         .first()
         .transacting(trx)
+
+      if (!reconciliationAccountIdResult) {
+        throw ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+          `Hub reconciliation account not found for currency: ${payload.amount.currency}`
+        )
+      }
+      const { reconciliationAccountId } = reconciliationAccountIdResult
 
       // Get participantId based on participantCurrencyId
       const { participantId } = await knex('participantCurrency')
@@ -1507,9 +1556,12 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
 
       if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
         positionResult.drPositionValue > 0) {
-        payload.reason = 'Aborted due to insufficient funds'
-        payload.action = Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT
-        await TransferFacade.reconciliationTransferAbort(payload, transactionTimestamp, enums, trx)
+        const abortPayload = {
+          ...payload,
+          reason: 'Aborted due to insufficient funds',
+          action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT
+        }
+        await TransferFacade.reconciliationTransferAbort(abortPayload, transactionTimestamp, enums, trx)
       }
     }
 
@@ -1659,6 +1711,19 @@ const recordFundsIn = async (payload, transactionTimestamp, enums) => {
   })
 }
 
+/**
+ * @param {Object} payload
+ * @param {Date} transactionDate
+ * @param {Object} enums
+ * @returns {Promise<void>}
+ */
+const recordFundsInV2 = async (payload, transactionDate, enums) => {
+  // TODO: I think `Time.getUTCString()` is wrong! I'm noticing that the changedDate of the settlement account
+  // is 1 hour behind the current date.
+  const transactionTimestamp = Time.getUTCString(transactionDate)
+  return recordFundsIn(payload, transactionTimestamp, enums)
+}
+
 const TransferFacade = {
   getById,
   getByIdLight,
@@ -1678,6 +1743,7 @@ const TransferFacade = {
   reconciliationTransferAbort,
   getTransferParticipant,
   recordFundsIn,
+  recordFundsInV2,
   updatePrepareReservedForwarded
 }
 

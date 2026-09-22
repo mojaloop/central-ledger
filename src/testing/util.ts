@@ -220,7 +220,7 @@ export async function sleepSeconds(seconds: number) {
 /**
  * @function createRequest
  *
- * @description Create a mock hapi request handler
+ * @description Create a mock hapi request handler.
  */
 export const createRequest = (
   { payload, params, query }: { payload: any, params: any, query: any }
@@ -261,11 +261,90 @@ export const unwrapResponse = async (asyncFunction: (reply: any) => any) => {
       }
     }
   }
-  await asyncFunction(nestedReply)
+  // Sometimes the handlers call `h.response().code()`, but if they return directly,
+  // we should capture the direct response.
+  const directResponse = await asyncFunction(nestedReply)
+  if (directResponse) {
+    // Default when everything went well!
+    let responseCode = 200
+    // Sometimes the handler puts it here!
+    if (directResponse.httpStatusCode) {
+      responseCode = directResponse.httpStatusCode
+    }
+    return {
+      responseBody: directResponse,
+      responseCode
+    }
+  }
 
   return {
     responseBody,
     responseCode
+  }
+}
+
+/**
+ * @function unwrapResponseSettlement
+ *
+ * @description A version of unwrap response which maps the response slightly differently for the
+ *   settlement handlers.
+ */
+export const unwrapResponseSettlement = async (asyncFunction: (reply: any) => any) => {
+  let body: any
+  let code: number = 200 // Default.
+  const nestedReply = {
+    response: (response: any) => {
+      body = response
+      return {
+        code: (statusCode: number) => {
+          code = statusCode
+        }
+      }
+    }
+  }
+  // Sometimes the handlers call `h.response().code()`, but if they return directly,
+  // we should capture the direct response.
+  const directResponse = await asyncFunction(nestedReply)
+  if (directResponse) {
+    // Default when everything went well!
+    let code = 200
+    if (directResponse.httpStatusCode) {
+      code = directResponse.httpStatusCode
+    }
+
+    // On error the body isn't that useful, so return the message.
+    if (code > 300) {
+      body = directResponse.message
+    } else {
+      body = directResponse
+    }
+    return {
+      body,
+      code
+    }
+  }
+
+  return {
+    body,
+    code
+  }
+}
+
+
+
+export const unwrapResponseWithError = async (asyncFunction: (reply: any) => any) => {
+  try {
+    return await unwrapResponse(asyncFunction)
+  } catch (err: any) {
+    // Handle FSPIOP errors
+    if (err.httpStatusCode && typeof err.toApiErrorObject === 'function') {
+      return {
+        responseBody: err.toApiErrorObject({ includeCauseExtension: false, truncateExtensions: false }),
+        responseCode: err.httpStatusCode
+      }
+    }
+    // Re-throw unexpected errors
+    throw err
   }
 }
 
@@ -330,4 +409,87 @@ export const prettyPrintPosition = (
   ${role}   | ${'start'.padEnd(lenColumns)}| ${'end'.padEnd(lenColumns)}
   pending | ${start.reservedValue.padEnd(lenColumns)}| ${end.reservedValue.padEnd(lenColumns)}
   posted  | ${start.value.padEnd(lenColumns)}| ${end.value.padEnd(lenColumns)}`
+}
+
+
+/**
+ * @description Returns a date a specified amount of time in the future.
+ */
+export const futureDate = (
+  amount: number, 
+  unit: 'ms' | 's' | 'm' | 'h' | 'd' = 'ms', 
+  now: Date = new Date(),
+): Date => {
+  assert(amount > 0, `Invalid amount: ${amount}.`)
+  if (Number.isNaN(now.getTime())) {
+    throw new Error(`now must be a valid date.`)
+  }
+  let multiplier = 1
+  switch (unit) {
+    case 'ms': 
+      multiplier = 1;
+      break;
+    case 's': 
+      multiplier = 1000;
+      break;
+    case 'm':
+      multiplier = 1000 * 60;
+      break;
+    case 'h':
+      multiplier = 1000 * 60 * 60;
+      break;
+    case 'd':
+      multiplier = 1000 * 60 * 60 * 24;
+      break;
+    default:
+      throw new Error(`unit must be one of: 'ms' | 's' | 'm' | 'h' | 'd'`)
+  }
+  const msToJump = Math.floor(amount * multiplier)
+  const then = new Date(now.getTime() + msToJump)
+
+  return then
+}
+
+export function envOrDefaultNumber(envName: string, backup: number): number {
+  assert(envName)
+  assert(backup !== undefined && backup !== null )
+  assert(typeof envName === 'string')
+  assert(typeof backup === 'number')
+
+  let envString = process.env[envName]
+  if (Array.isArray(envString)) {
+    envString = envString[0]
+  }
+  
+  if (envString) {
+    return Number.parseInt(envString)
+  }
+
+  return backup
+}
+
+export function envOrDefaultString(envName: string, backup: string): string {
+  assert(envName)
+  assert(backup !== undefined && backup !== null)
+  assert(typeof envName === 'string')
+  assert(typeof backup === 'string')
+
+  let envString = process.env[envName]
+  if (Array.isArray(envString)) {
+    envString = envString[0]
+  }
+
+  if (envString) {
+    return envString
+  }
+
+  return backup
+}
+
+/**
+ * Remove / and _ from a test name, to make it a valid directory name.
+ */
+export function sanitizeTestName(name: string): string {
+  return name.replaceAll(' ', '_')
+    .replaceAll('/', '_')
 }

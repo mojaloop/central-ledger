@@ -467,7 +467,7 @@ export function checkSnapshotString(actual: string, snapshot: string): SnapshotR
   }
 
   let diff = `${RESET}\n`
-  maxColumnLengthLeft = Math.min(85, maxColumnLengthLeft)
+  maxColumnLengthLeft = Math.min(120, maxColumnLengthLeft)
   diff += `${'Actual:'.padEnd(maxColumnLengthLeft)} | Snapshot:\n`
   for (let index = 0; index < maxLines; index++) {
     let left = actualLines[index] || ''

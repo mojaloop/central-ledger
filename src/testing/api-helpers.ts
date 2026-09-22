@@ -1,14 +1,13 @@
-import { Enum, LedgerAccountTypeEnum } from '@mojaloop/central-services-shared'
-import Harness from './harness'
-
-import ParticipantService from '../domain/participant/index'
-import SettlementModelService from '../domain/settlement'
-
 import assert from "node:assert"
-
+import { Enum, LedgerAccountTypeEnum } from '@mojaloop/central-services-shared'
+import { PrepareHandlerInput } from '../handlers/payment-prepare'
+import { FulfilHandlerInput } from '../handlers/payment-fulfil'
 import Logger from "@mojaloop/central-services-logger"
-import { Snapshot } from './snapshot'
-import { sleepSeconds } from './util'
+import Harness from './harness/harness'
+import ParticipantService from '../domain/participant/index'
+import SettlementWindowModel from '../models/settlementWindow'
+import SettlementDomain from '../domain/settlement'
+import TransferDomain from '../domain/transfer'
 
 const { ilpFactory, ILP_VERSIONS } = require('@mojaloop/sdk-standard-components').Ilp
 const ilpService = ilpFactory(ILP_VERSIONS.v1, { secret: 'password', logger: Logger })
@@ -35,17 +34,12 @@ export interface CreateHubPayload {
  */
 export const createHub = async (harness: Harness, payload: CreateHubPayload): Promise<void> => {
   assert.equal(payload.currencies.length, payload.settlementModels.length)
-  for (const currency of payload.currencies) {
-    await ParticipantService.createHubAccount(
-      harness.config.HUB_ID, currency, Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION
-    )
-    await ParticipantService.createHubAccount(
-      harness.config.HUB_ID, currency, Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT
-    )
-  }
-
-  for (const settlementModel of payload.settlementModels) {
-    await SettlementModelService.createSettlementModel(settlementModel)
+  for (let idx = 0; idx < payload.currencies.length; idx++) {
+    const currency = payload.currencies[idx]
+    const settlementModel = payload.settlementModels[idx]
+    await harness.ledger.createHubAccount({
+      currency, settlementModel
+    })
   }
 }
 
@@ -72,86 +66,56 @@ export const createDfsp = async (harness: Harness, payload: CreateDfspPayload): 
   assert.equal(currencies.length, initialPostionsAndLimits.length)
   assert.equal(currencies.length, deposits.length)
 
-  const resultGetByName = await ParticipantService.getByName(name)
-  assert.equal(resultGetByName, undefined, `dfsp with name: ${name} already exists.`)
-
-  const participantId = await ParticipantService.create({
-    name, isProxy,
+  // First create on the Ledger.
+  const result = await harness.ledger.createDfsp({
+    dfspId: payload.name,
+    currencies: payload.currencies,
+    isProxy: payload.isProxy,
   })
-  for (const currency of currencies) {
-    for (const accountType of accountTypes) {
-      await ParticipantService.createParticipantCurrency(
-        participantId,
-        currency,
-        accountType,
-        true
-      )
-    }
+  if (result.type === 'ALREADY_EXISTS') {
+    return;
+  }
+  if (result.type === 'FAILURE') {
+    throw result.error
   }
 
-  for (const [idx, limit] of initialPostionsAndLimits.entries()) {
+  // Then deposit one at a time to avoid position deadlocks.
+  let idx = 0
+  const depositErrors: Array<Error> = []
+  for (const deposit of deposits) {
     const currency = currencies[idx]
-    const payload = {
-      currency,
-      limit: {
-        type: 'NET_DEBIT_CAP',
-        value: limit.value
-      },
-      initialPosition: limit.initialPosition
-    }
-    const mark = harness.redpandaMark()
-    let result = await ParticipantService.addLimitAndInitialPosition(name, payload)
-    assert.equal(result, true)
-    await harness.redpandaDrain(mark, 1)
+    try {
+      const result = await harness.ledger.deposit({
+        // Derived id: dfspId + currency + deposit_opening
+        transferId: `${payload.name}_${currency}_deposit_opening`,
+        dfspId: payload.name,
+        currency,
+        amount: deposit,
+        reason: 'Initial provisioning deposit'
+      })
+      if (result.type === 'FAILURE') {
+        throw result.error
+      }
+      if (result.type === 'ALREADY_EXISTS') {
+        continue
+      }
 
-    result = await ParticipantService.getPositions(name, { currency })
-    Snapshot.from(`{
-      "currency": "${currency}",
-      "value": "${limit.initialPosition}.0000",
-      "changedDate": ":ignore"
-    }`).checkUnwrap(result)
+      await harness.ledger.setNetDebitCap({
+        netDebitCapType: "LIMITED",
+        dfspId: name,
+        currency,
+        amount: deposit,
+        alarmPercentage: 10,
+      })
+    } catch (err: any) {
+      depositErrors.push(err)
+    }
+
+    idx += 1
   }
 
-  for await (const [idx, currency] of currencies.entries()) {
-    const deposit = deposits[idx]
-    const payload = {
-      action: Enum.Events.Event.Action.RECORD_FUNDS_IN,
-      reason: 'deposit',
-      externalReference: `deposit-${name}`,
-      amount: {
-        amount: deposit.toString(),
-        currency,
-      }
-    };
-    let accounts = await ParticipantService.getAccounts(name, { currency })
-    let settlementAccount = await ParticipantService.getAccountByNameAndCurrency(
-      name, currency, Enum.Accounts.LedgerAccountType.SETTLEMENT
-    );
-    assert(settlementAccount, 'Settlement account not found');
-
-    const mark = harness.redpandaMark()
-    await ParticipantService.recordFundsInOut(
-      payload,
-      { name, id: settlementAccount.participantCurrencyId, transferId: `${name}_${currency}_01` },
-      harness.enums
-    )
-    await harness.redpandaDrain(mark, 1)
-
-    // Annoyingly we still have a position update race condition here.
-    await sleepSeconds(2)
-    accounts = await ParticipantService.getAccounts(name, { currency })
-    const settlementAccountResponse = accounts
-      .filter((account: any) => account.ledgerAccountType === 'SETTLEMENT')[0]
-    assert(settlementAccountResponse)
-    Snapshot.from(`{
-      "id": :int,
-      "ledgerAccountType": "SETTLEMENT",
-      "currency": "${currency}",
-      "isActive": 1,
-      "value": "-${deposit}.0000",
-      "reservedValue": "0.0000",
-      "changedDate": :ignore
-    }`).checkUnwrap(settlementAccountResponse)
+  if (depositErrors.length > 0) {
+    throw new Error(`${depositErrors.length} deposit(s) failed with errors: \n[${depositErrors.join(',')}]`)
   }
 }
 
@@ -171,6 +135,100 @@ export const getPositionAccount = async (name: string, currency: string) => {
 
   assert(account, `No position account found for name: ${name} + currency: ${currency}.`)
   return account;
+}
+
+export const getAccounts = async (name: string, currency?: string) => {
+  if (currency) {
+    const accounts = (await ParticipantService.getAccounts(name, { currency }))
+    return accounts
+  }
+
+  const accounts = (await ParticipantService.getAccounts(name, {}))
+  return accounts;
+}
+
+export const closeSettlementWindow = async (harness: Harness, currency: string = 'USD') => {
+  const enums = harness.enums.settlementWindowState
+  const windowsOpen = await SettlementWindowModel.getByParams({
+    query: { state: enums.OPEN, currency }
+  })
+  const closedWindowIds: number[] = []
+  for (const window of windowsOpen) {
+    const reason = 'Test Settlement.'
+    await SettlementWindowModel.process({
+      settlementWindowId: window.settlementWindowId,
+      reason,
+    }, enums)
+
+    await SettlementWindowModel.close(window.settlementWindowId, reason)
+    closedWindowIds.push(window.settlementWindowId)
+  }
+
+  return closedWindowIds
+}
+
+export const getSettlementWindows = async (harness: Harness) => {
+  const windows = await SettlementWindowModel.getByParams({
+    query: { }
+  })
+  return windows
+}
+
+export const getOpenSettlementWindows = async (harness: Harness) => {
+  const enums = harness.enums.settlementWindowState
+  const windows = await SettlementWindowModel.getByParams({
+    query: { state: enums.OPEN }
+  })
+  assert(windows.length > 0, `No open settlement window found.`)
+  return windows
+}
+
+export const createSettlement = async (
+  harness: Harness, 
+  windowIds: Array<number>,
+  currency: string = 'USD',
+  reason: string = 'Test Settlement.'
+) => {
+  const settlementModel = `DEFERRED_MULTILATERAL_NET_${currency}`
+  const payload = {
+    settlementModel,
+    reason,
+    settlementWindows: windowIds.map(id => ({ id }))
+  }
+  return SettlementDomain.settlementEventTrigger(payload, harness.enums)
+}
+
+export const getSettlement = async (harness: Harness, id: number) => {
+  return SettlementDomain.getById({settlementId: id}, harness.enums)
+}
+
+/**
+ * Helper to set up the Hub.
+ * @example
+ * // Set up the hub for `USD` with default settlement model.
+ * await ApiHelpers.buildHub()
+ *     .deps(harness)
+ *     .currency('USD')
+ *     .build()
+ *     .create()
+ */
+export function buildHub(): HubBuilder {
+  return new HubBuilder()
+}
+
+/**
+ * Helper to build a Dfsp and run lifecycle operations
+ * @example
+ * // Create dfsp 'dfsp_b' with USD and default deposit (10,000).
+ * const dfsp = await ApiHelpers.buildDfsp()
+ *     .deps(harness)
+ *     .name('dfsp_b')
+ *     .currency('USD')
+ *     .build()
+ *     .create()
+ */
+export function buildDfsp(): DfspBuilder {
+  return new DfspBuilder()
 }
 
 /**
@@ -223,6 +281,11 @@ export interface PaymentOptions {
   payerFsp: string,
   payeeFsp: string,
   transferId: string,
+
+  /**
+   * The commitRequestId of the linked forex to this payment.
+   */
+  linkedCommitRequestId?: string
   amountComplex: {
     amount: string,
     currency: string,
@@ -240,18 +303,65 @@ export class Payment {
   }
 
   public async prepare(): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
-    this.options.transferHandler.prepare(null, this.buildMessagePrepare())
-    await this.options.harness.redpandaDrain(mark, 2)
+    this.options.transferHandler.prepare(null, [this.buildMessagePrepare()])
+    await this.options.harness.redpandaDrainSmart(
+      this.expectedMessagesPrepare(), this.options.transferId
+    )
 
     return this
+  }
+
+  /**
+   * Look up the Payment's status directly from the database.
+   * TODO: use the ledger instead!
+   */
+  public async getStatus(): Promise<string> {
+    const transfer = await TransferDomain.getById(this.options.transferId)
+    if (!transfer) {
+      return 'NOT_FOUND'
+    }
+    return transfer.transferState
   }
 
   /**
    * Build the prepare message to be passed to the kafka prepare handler.
    */
   public buildMessagePrepare() {
-    const params: PostTransferBuilderParams = {
+    const params = this.buildPostTransferParams()
+    const postTransfer = buildMojaloopPostTransfer(params)
+    const messageKafka = buildMessagePrepare(this.options.harness, postTransfer)
+
+    return messageKafka
+  }
+
+  public toPrepare(): PrepareHandlerInput {
+    const params = this.buildPostTransferParams()
+    const postTransfer = buildMojaloopPostTransfer(params)
+    const { headers, payload } = postTransfer
+    const action = Enum.Events.Event.Action.PREPARE
+
+    const message = {
+      topic: this.options.harness.topicTransferPrepare.topicName,
+      value: {
+        metadata: { event: { action } },
+        content: { headers, payload }
+      }
+    }
+
+    return {
+      message,
+      payload,
+      headers,
+      transferId: payload.transferId,
+      action,
+      metric: `handler_transfers_${action.toLowerCase()}`,
+      functionality: Enum.Events.Event.Type.TRANSFER,
+      actionEnum: action
+    }
+  }
+
+  private buildPostTransferParams(): PostTransferBuilderParams {
+    return {
       payerFsp: this.options.payerFsp,
       payeeFsp: this.options.payeeFsp,
       transferId: this.options.transferId,
@@ -262,10 +372,90 @@ export class Payment {
       date: this.options.date,
       expirySeconds: this.options.expirySeconds
     }
-    const postTransfer = buildMojaloopPostTransfer(params)
-    const messageKafka = buildMessagePrepare(this.options.harness, postTransfer)
+  }
 
-    return messageKafka
+  private buildPutTransferParams(state: 'COMMITTED' | 'RESERVED'): PutTransferBuilderParams {
+    return {
+      payerFsp: this.options.payerFsp,
+      payeeFsp: this.options.payeeFsp,
+      transferId: this.options.transferId,
+      amountComplex: {
+        amount: this.options.amountComplex.amount,
+        currency: this.options.amountComplex.currency,
+      },
+      date: this.options.date,
+      expirySeconds: this.options.expirySeconds,
+      transferState: state
+    }
+  }
+
+  public toFulfil(state: 'COMMITTED' | 'RESERVED' = 'COMMITTED'): FulfilHandlerInput {
+    const params = this.buildPutTransferParams(state)
+    const putTransfer = buildMojaloopPutTransfer(params)
+    const { headers, payload } = putTransfer
+    const action = state === 'COMMITTED'
+      ? Enum.Events.Event.Action.COMMIT
+      : Enum.Events.Event.Action.RESERVE
+
+    const message = {
+      topic: this.options.harness.topicTransferFulfil.topicName,
+      value: {
+        metadata: { event: { type: Enum.Events.Event.Action.FULFIL, action } },
+        content: {
+          uriParams: { id: this.options.transferId },
+          headers,
+          payload
+        }
+      }
+    }
+
+    return {
+      message,
+      payload,
+      headers,
+      transferId: this.options.transferId,
+      action,
+      eventType: Enum.Events.Event.Action.FULFIL,
+      kafkaTopic: message.topic,
+      callerDfspId: headers['fspiop-source'],
+      destinationDfspId: headers['fspiop-destination'],
+      apiVersion: '1.1'
+    }
+  }
+
+  public toAbort(): FulfilHandlerInput {
+    const abortTransfer = buildMojaloopAbortTransfer({
+      payerFsp: this.options.payerFsp,
+      payeeFsp: this.options.payeeFsp,
+      date: this.options.date,
+    })
+    const { headers, payload } = abortTransfer
+    const action = Enum.Events.Event.Action.ABORT
+
+    const message = {
+      topic: this.options.harness.topicTransferFulfil.topicName,
+      value: {
+        metadata: { event: { type: Enum.Events.Event.Action.FULFIL, action } },
+        content: {
+          uriParams: { id: this.options.transferId },
+          headers,
+          payload
+        }
+      }
+    }
+
+    return {
+      message,
+      payload,
+      headers,
+      transferId: this.options.transferId,
+      action,
+      eventType: Enum.Events.Event.Action.FULFIL,
+      kafkaTopic: message.topic,
+      callerDfspId: headers['fspiop-source'],
+      destinationDfspId: headers['fspiop-destination'],
+      apiVersion: '1.1'
+    }
   }
 
   /**
@@ -306,15 +496,17 @@ export class Payment {
   }
 
   public async fulfil(state: 'COMMITTED' | 'RESERVED' = 'COMMITTED'): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
-    await this.options.transferHandler.fulfil(null, this.buildMessageFulfil(state))
+    await this.options.transferHandler.fulfil(null, [this.buildMessageFulfil(state)])
+
+    // Two messages for normal transfer.
     if (this.options.fx) {
-      // If this is a properly build fx transfer, we want to consume 4 messages.
-      await this.options.harness.redpandaDrain(mark, 4)
+      await this.options.harness.redpandaDrainSmart(this.expectedMessagesFulfil(), this.options.transferId)
+      assert(this.options.linkedCommitRequestId)
+      await this.options.harness.redpandaDrainSmart(1, this.options.linkedCommitRequestId)
       return this
     }
 
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.redpandaDrainSmart(this.expectedMessagesFulfil(), this.options.transferId)
 
     return this
   }
@@ -327,14 +519,250 @@ export class Payment {
   }
 
   public async abort(): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
-    await this.options.transferHandler.fulfil(null, this.buildMessageAbort())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.transferHandler.fulfil(null, [this.buildMessageAbort()])
+    await this.options.harness.redpandaDrainSmart(this.expectedMessagesAbort(), this.options.transferId)
 
     return this
   }
+
+  public expectedMessagesPrepare(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2 // position-prepare + notification
+      case 'FUSE': return 1  // notification
+    }
+  }
+
+  public expectedMessagesFulfil(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2 // position-prepare + notification
+      case 'FUSE': return 1  // notification
+    }
+  }
+
+  public expectedMessagesAbort(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2
+      case 'FUSE': return 1
+    }
+  }
+
+  getOptions() {
+    return {
+      payerFsp: this.options.payerFsp,
+      payeeFsp: this.options.payeeFsp,
+      transferId: this.options.transferId,
+      linkedCommitRequestId: this.options.linkedCommitRequestId,
+      amountComplex: this.options.amountComplex,
+      date: this.options.date,
+      expirySeconds: this.options.expirySeconds,
+      fx: this.options.fx,
+    }
+  }
 }
 
+export interface HubOptions {
+  harness: Harness
+  currencies: Array<string>
+  settlementModels: Array<CreateSettlementModelPayload>
+}
+
+export class Hub {
+  public constructor(private options: HubOptions) { }
+
+  public async create(): Promise<this> {
+    const payload: CreateHubPayload = {
+      currencies: this.options.currencies,
+      settlementModels: this.options.settlementModels,
+    }
+
+    await createHub(this.options.harness, payload)
+
+    return this
+  }
+
+  public async settle(): Promise<this> {
+    throw new Error('not implemented')
+  }
+}
+
+export class HubBuilder {
+  private harness!: Harness
+  private currencies: Array<string> = []
+  private settlementModels: Array<CreateSettlementModelPayload> = []
+
+  deps(harness: Harness): this {
+    this.harness = harness
+    return this
+  }
+
+  // For now just defaults to multilateral net.
+  currency(name: string): this {
+    this.currencies.push(name)
+    const model: CreateSettlementModelPayload = {
+      name: `DEFERRED_MULTILATERAL_NET_${name}`,
+      settlementGranularity: 'NET',
+      settlementInterchange: 'MULTILATERAL',
+      settlementDelay: 'DEFERRED',
+      currency: name,
+      requireLiquidityCheck: true,
+      ledgerAccountType: 'POSITION',
+      settlementAccountType: 'SETTLEMENT',
+      autoPositionReset: true
+    }
+    this.settlementModels.push(model)
+
+    return this
+  }
+
+  build(): Hub {
+    assert(this.harness)
+    assert.equal(this.currencies.length, this.settlementModels.length)
+
+    const options: HubOptions = {
+      harness: this.harness,
+      currencies: this.currencies,
+      settlementModels: this.settlementModels
+    }
+
+    return new Hub(options)
+  }
+}
+
+
+export interface DfspOptions {
+  harness: Harness,
+  name: string,
+  currencies: Array<string>,
+  initialPostionsAndLimits: Array<{
+    value: number,
+    initialPosition: number
+  }>,
+  deposits: Array<number>
+  isProxy: boolean
+}
+
+export class Dfsp {
+  public constructor(private options: DfspOptions) { }
+
+  public async create(): Promise<this> {
+    await createDfsp(this.options.harness, this.getPayload())
+    return this
+  }
+
+  public getPayload(): CreateDfspPayload {
+    return {
+      name: this.options.name,
+      currencies: this.options.currencies,
+      initialPostionsAndLimits: this.options.initialPostionsAndLimits,
+      deposits: this.options.deposits,
+      isProxy: this.options.isProxy
+    }
+  }
+
+  public async getAccounts(): Promise<ParticipantService.GetAccountsResponseAccount[]> {
+    const accounts = await getAccounts(this.options.name)
+    return accounts
+  }
+
+  public async getPositionAccount(currency: string):
+    Promise<ParticipantService.GetAccountsResponseAccount> {
+    const accounts = await getAccounts(this.options.name, currency)
+    if (!accounts) {
+      throw new Error(`getPositionAccount - no accounts found for currency: ${currency}`)
+    }
+    const accountSettlement = accounts.find(acc => acc.ledgerAccountType === 'POSITION')
+    if (!accountSettlement) {
+      throw new Error(`getPositionAccount - no settlement account found for currency: ${currency}`)
+    }
+
+    return accountSettlement
+  }
+
+  public async getSettlementAccount(currency: string):
+    Promise<ParticipantService.GetAccountsResponseAccount> {
+    const accounts = await getAccounts(this.options.name, currency)
+    if (!accounts) {
+      throw new Error(`getSettlementAccount - no accounts found for currency: ${currency}`)
+    }
+    const accountSettlement = accounts.find(acc => acc.ledgerAccountType === 'SETTLEMENT')
+    if (!accountSettlement) {
+      throw new Error(`getSettlementAccount - no settlement account found for currency: ${currency}`)
+    }
+
+    return accountSettlement
+  }
+
+  public async disable(): Promise<void> {
+    await this.options.harness.ledger.disableDfsp({ dfspId: this.options.name })
+  }
+
+  public async enable(): Promise<void> {
+    await this.options.harness.ledger.enableDfsp({ dfspId: this.options.name })
+  }
+
+  public async positionAccountDisable(currency: string): Promise<void> {
+    const account = await this.getPositionAccount(currency)
+    await this.options.harness.ledger.disableDfspAccount({
+      dfspId: this.options.name,
+      accountId: account.id
+    })
+  }
+
+  public async positionAccountEnable(currency: string): Promise<void> {
+    const account = await this.getPositionAccount(currency)
+    await this.options.harness.ledger.enableDfspAccount({
+      dfspId: this.options.name,
+      accountId: account.id
+    })
+  }
+}
+
+export class DfspBuilder {
+  private harness!: Harness
+  private _name!: string
+  private currencies: Array<string> = []
+  private _proxy: boolean = false
+  private initialPostionsAndLimits: Array<{ initialPosition: number, value: number }> = []
+  private deposits: Array<number> = []
+
+  deps(harness: Harness): this {
+    this.harness = harness
+    return this
+  }
+
+  name(name: string): this {
+    this._name = name
+    return this
+  }
+
+  currency(name: string, initialPosition: number = 0, deposit: number = 10000): this {
+    this.currencies.push(name)
+    this.initialPostionsAndLimits.push({ initialPosition, value: deposit })
+    this.deposits.push(deposit)
+
+    return this
+  }
+
+  proxy(isProxy: boolean = true): this {
+    this._proxy = isProxy
+    return this
+  }
+
+  build(): Dfsp {
+    assert(this.harness)
+
+    const options: DfspOptions = {
+      harness: this.harness,
+      name: this._name,
+      currencies: this.currencies,
+      initialPostionsAndLimits: this.initialPostionsAndLimits,
+      deposits: this.deposits,
+      isProxy: this._proxy
+    }
+
+    return new Dfsp(options)
+  }
+}
 
 export class PaymentBuilder {
   private harness!: Harness
@@ -348,17 +776,23 @@ export class PaymentBuilder {
   private _date: Date = new Date();
   private expirySeconds: number = 30;
   private _fx: boolean = false
+  private _linkedCommitRequestId: string | undefined = undefined
   private amountComplex: {
     amount: string,
     currency: string
   } = { amount: '100.00', currency: 'USD' };
 
-  deps(harness: Harness, transferHandler: {
-    prepare: (error: any, message: any) => Promise<any>,
-    fulfil: (error: any, message: any) => Promise<any>,
+  deps(harness: Harness, transferHandler?: {
+    prepare: (error: any, message: Array<any>) => Promise<any>,
+    fulfil: (error: any, message: Array<any>) => Promise<any>,
   }): this {
     this.harness = harness
-    this.transferHandler = transferHandler
+    if (transferHandler) {
+      this.transferHandler = transferHandler
+    } else {
+      // Default to harness' messageBus.
+      this.transferHandler = this.harness.messageBus
+    }
 
     return this
   }
@@ -388,8 +822,9 @@ export class PaymentBuilder {
     return this;
   }
 
-  fx(fx: boolean = true): this {
-    this._fx = fx
+  fx(linkedCommitRequestId: string): this {
+    this._fx = true
+    this._linkedCommitRequestId = linkedCommitRequestId
 
     return this
   }
@@ -407,6 +842,11 @@ export class PaymentBuilder {
     assert(this.harness)
     assert(this.transferHandler)
 
+    // Default the transfer id from the prng if not set.
+    if (!this._transferId) {
+      this._transferId = this.harness.prng.uuidv4()
+    }
+
     const options: PaymentOptions = {
       harness: this.harness,
       transferHandler: this.transferHandler,
@@ -417,6 +857,7 @@ export class PaymentBuilder {
       date: this._date,
       expirySeconds: this.expirySeconds,
       fx: this._fx,
+      linkedCommitRequestId: this._linkedCommitRequestId
     }
 
     return new Payment(options)
@@ -426,8 +867,8 @@ export class PaymentBuilder {
 export interface ForexOptions {
   harness: Harness,
   transferHandler: {
-    prepare: (error: any, message: any) => Promise<void>
-    fulfil: (error: any, message: any) => Promise<void>
+    prepare: (error: any, message: Array<any>) => Promise<void>
+    fulfil: (error: any, message: Array<any>) => Promise<void>
   }
   commitRequestId: string,
   determiningTransferId: string,
@@ -444,9 +885,8 @@ export class Forex {
   public constructor(private options: ForexOptions) { }
 
   public async prepare(): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
-    await this.options.transferHandler.prepare(null, this.buildMessagePrepare())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.transferHandler.prepare(null, [this.buildMessagePrepare()])
+    await this.options.harness.redpandaDrainSmart(this.expectedMessagesPrepare(), this.options.commitRequestId)
 
     return this
   }
@@ -484,9 +924,8 @@ export class Forex {
   }
 
   public async fulfil(): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
-    await this.options.transferHandler.fulfil(null, this.buildMessageFulfil())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.transferHandler.fulfil(null, [this.buildMessageFulfil()])
+    await this.options.harness.redpandaDrainSmart(this.expectedMessagesFulfil(), this.options.commitRequestId)
 
     return this
   }
@@ -528,11 +967,31 @@ export class Forex {
     const messageKafka = buildMessageAbortFx(
       this.options.harness, putTransfer, this.options.commitRequestId,
     )
-    const mark = this.options.harness.redpandaMark()
-    await this.options.transferHandler.fulfil(null, messageKafka)
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.transferHandler.fulfil(null, [messageKafka])
+    await this.options.harness.redpandaDrainSmart(this.expectedMessagesAbort(), this.options.commitRequestId)
 
     return this
+  }
+
+  private expectedMessagesPrepare(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2 // position-prepare + notification
+      case 'FUSE': return 1  // notification
+    }
+  }
+
+  private expectedMessagesFulfil(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2 // position-prepare + notification
+      case 'FUSE': return 1  // notification
+    }
+  }
+
+  private expectedMessagesAbort(): number {
+    switch (this.options.harness.config.HANDLERS_TRANSFER_POSITION_FUSE) {
+      case 'UNFUSE': return 2
+      case 'FUSE': return 1
+    }
   }
 }
 
@@ -801,7 +1260,7 @@ export type QuoteIlpResponse = {
   condition: string;
 }
 
-function generateQuoteILPResponse(params: MockQuoteILPResponse): QuoteIlpResponse {
+export function generateQuoteILPResponse(params: MockQuoteILPResponse): QuoteIlpResponse {
   // Build an imaginary Quote Request/Response to generate the ILP packet, fulfilment and condition.
   const quoteRequest = {
     quoteId: params.quoteId,
@@ -1001,6 +1460,7 @@ export function buildMojaloopAbortTransfer(params: AbortTransferBuilderParams): 
     'fspiop-source': params.payeeFsp,
   }
   const payload = {
+    transferState: 'ABORTED',
     // Ref: https://docs.mojaloop.io/api/fspiop/v1.1/api-definition.html#payee-errors-5-xxx
     errorInformation: {
       errorCode: '5100',

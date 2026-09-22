@@ -21,8 +21,7 @@
     "src/**/*.js",
   ],
   "exclude": [
-    "node_modules",
-    "src/**/*.d.ts"
+    "node_modules"
   ],
   "ts-node": {
     "compilerOptions": {

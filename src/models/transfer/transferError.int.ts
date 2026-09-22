@@ -25,11 +25,10 @@
 
  ******/
 import { after, before, describe, it } from "node:test"
-import Harness from '../../testing/harness'
+import Harness from '../../testing/harness/harness'
 import { Snapshot } from "../../testing/snapshot"
 import * as ApiHelpers from '../../testing/api-helpers'
 
-import TransferHandler from '../../handlers/transfers/handler'
 const harness = Harness.getInstance()
 const TransferError = require('./transferError')
 
@@ -38,25 +37,13 @@ describe('models/tranfer/transferError', () => {
     await harness.up()
     await harness.setupGlobals()
 
-    await TransferHandler.registerPrepareHandler()
-    await TransferHandler.registerFulfilHandler()
-
     // Create the hub accounts + settlement model.
-    const createHubPayload: ApiHelpers.CreateHubPayload = {
-      currencies: ['USD'],
-      settlementModels: [{
-        name: `DEFERRED_MULTILATERAL_NET_USD`,
-        settlementGranularity: "NET",
-        settlementInterchange: "MULTILATERAL",
-        settlementDelay: "DEFERRED",
-        currency: 'USD',
-        requireLiquidityCheck: true,
-        ledgerAccountType: "POSITION",
-        settlementAccountType: "SETTLEMENT",
-        autoPositionReset: true
-      }]
-    }
-    await ApiHelpers.createHub(harness, createHubPayload)
+    await ApiHelpers.buildHub()
+      .deps(harness)
+      .currency('USD')
+      .build()
+      .create()
+    
     // Create 2 test dfsps to transfer between.
     await ApiHelpers.createDfsp(harness, {
       name: 'dfsp_a',
@@ -90,9 +77,9 @@ describe('models/tranfer/transferError', () => {
   })
 
   it('insert() is called on a failed payment.', async () => {
-    // Create payment which will liquidity check.
+    // Create payment which fails liquidity check.
     await ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
       .amount('10001.00')

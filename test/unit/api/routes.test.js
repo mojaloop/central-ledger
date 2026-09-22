@@ -30,7 +30,7 @@
 
 const Test = require('tape')
 const Base = require('../base')
-const ApiRoutes = require('../../../src/api/routes')
+const ApiRoutes = require('../../../src/api_admin/routes')
 const ProxyCache = require('#src/lib/proxyCache')
 const Sinon = require('sinon')
 

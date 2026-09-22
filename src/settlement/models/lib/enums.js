@@ -39,7 +39,7 @@ module.exports = {
     }
   },
 
-  ledgerAccountTypes: async function () {
+  ledgerAccountType: async function () {
     const ledgerAccountTypeEnum = {}
     const ledgerAccountTypeEnumsList = await Db.from('ledgerAccountType').find({})
     if (ledgerAccountTypeEnumsList) {
@@ -49,7 +49,7 @@ module.exports = {
       return ledgerAccountTypeEnum
     }
   },
-  ledgerEntryTypes: async function () {
+  ledgerEntryType: async function () {
     const ledgerEntryTypeEnum = {}
     const ledgerEntryTypeEnumsList = await Db.from('ledgerEntryType').find({})
     if (ledgerEntryTypeEnumsList) {
@@ -59,7 +59,7 @@ module.exports = {
       return ledgerEntryTypeEnum
     }
   },
-  participantLimitTypes: async function () {
+  participantLimitType: async function () {
     const participantLimitTypeEnum = {}
     const participantLimitTypeEnumsList = await Db.from('participantLimitType').find({})
     if (participantLimitTypeEnumsList) {
@@ -80,7 +80,7 @@ module.exports = {
       return settlementDelayName
     }
   },
-  settlementDelayEnums: async function () {
+  settlementDelayEnum: async function () {
     const settlementDelayEnum = {}
 
     const settlementDelayEnumsList = await Db.from('settlementDelay').find({})
@@ -102,7 +102,7 @@ module.exports = {
       return settlementGranularityName
     }
   },
-  settlementGranularityEnums: async function () {
+  settlementGranularityEnum: async function () {
     const settlementGranularityEnum = {}
 
     const settlementGranularityEnumsList = await Db.from('settlementGranularity').find({})
@@ -124,7 +124,7 @@ module.exports = {
       return settlementInterchangeName
     }
   },
-  settlementInterchangeEnums: async function () {
+  settlementInterchangeEnum: async function () {
     const settlementInterchangeEnum = {}
 
     const settlementInterchangeEnumsList = await Db.from('settlementInterchange').find({})
@@ -135,7 +135,7 @@ module.exports = {
       return settlementInterchangeEnum
     }
   },
-  settlementStates: async function () {
+  settlementState: async function () {
     const settlementStateEnum = {}
 
     const settlementStateEnumsList = await Db.from('settlementState').find({})
@@ -146,7 +146,7 @@ module.exports = {
       return settlementStateEnum
     }
   },
-  settlementWindowStates: async function () {
+  settlementWindowState: async function () {
     const settlementWindowStateEnum = {}
     const settlementWindowStateEnumsList = await Db.from('settlementWindowState').find({})
     if (settlementWindowStateEnumsList) {
@@ -156,7 +156,7 @@ module.exports = {
       return settlementWindowStateEnum
     }
   },
-  transferParticipantRoleTypes: async function () {
+  transferParticipantRoleType: async function () {
     const transferParticipantRoleTypeEnum = {}
     const transferParticipantRoleTypeEnumsList = await Db.from('transferParticipantRoleType').find({})
     if (transferParticipantRoleTypeEnumsList) {
@@ -166,7 +166,7 @@ module.exports = {
       return transferParticipantRoleTypeEnum
     }
   },
-  transferStateEnums: async function () {
+  transferStateEnum: async function () {
     const transferStateEnum = {}
     const transferStateEnumsList = await Db.from('transferState').find({})
     if (transferStateEnumsList) {
@@ -179,7 +179,7 @@ module.exports = {
       return transferStateEnum
     }
   },
-  transferStates: async function () {
+  transferState: async function () {
     const transferStateEnum = {}
     const transferStateEnumsList = await Db.from('transferState').find({})
     if (transferStateEnumsList) {
