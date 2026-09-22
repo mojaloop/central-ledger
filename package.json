@@ -168,10 +168,10 @@
   "overrides": {
     "@hapi/wreck": "18.1.2",
     "@now-ims/hapi-now-auth": {
-      "joi": "17.13.4"
+      "joi": "17.13.8"
     },
     "blipp": {
-      "joi": "17.13.4"
+      "joi": "17.13.8"
     },
     "jws": "4.0.1",
     "jsdoc": {
@@ -247,7 +247,7 @@
     "qs": "6.16.0",
     "js-yaml@^4.0.0": "4.3.2",
     "@grpc/grpc-js": "1.14.4",
-    "joi@^17.0.0": "17.13.4",
+    "joi@^17.0.0": "17.13.8",
     "uuid": "11.1.1",
     "@mojaloop/central-services-shared": {
       ".": "$@mojaloop/central-services-shared",
