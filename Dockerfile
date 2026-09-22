@@ -1,6 +1,5 @@
 # Arguments
-ARG NODE_VERSION=24.18.0-alpine3.24
-
+ARG NODE_VERSION="24.21.0-alpine3.24"
 # NOTE: Ensure you set NODE_VERSION Build Argument as follows...
 #
 # export NODE_VERSION="$(cat .nvmrc)-alpine"
