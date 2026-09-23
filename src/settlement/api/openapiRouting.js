@@ -34,6 +34,37 @@
  */
 
 /**
+ * Copy the parameter values openapi-backend coerced during validation onto the hapi
+ * request, so handlers reading `request.params` / `request.query` receive the types
+ * declared in the API definition - as they did under hapi-openapi.
+ *
+ * openapi-backend validates against a coercing ajv instance but re-parses path
+ * parameters from the URL afterwards, so the coerced values live only on
+ * `context.validation.coerced`. Registered as openapi-backend's `preOperationHandler`,
+ * this runs after validation and before the operation handler.
+ *
+ * Coercion itself is enabled by the `coerceTypes` option that
+ * `OpenapiBackend.initialise` passes (@mojaloop/central-services-shared). With a
+ * version that does not set it, `context.validation.coerced` holds the uncoerced
+ * values and this is a no-op.
+ *
+ * @param {object} context OpenAPI backend context
+ * @param {object} req     Hapi request
+ */
+const preOperationHandler = (context, req) => {
+  const coerced = context.validation?.coerced
+  if (coerced?.params) {
+    Object.assign(req.params, coerced.params)
+  }
+  if (coerced?.query) {
+    Object.assign(req.query, coerced.query)
+  }
+  if (context.request?.body) {
+    req.payload = context.request.body
+  }
+}
+
+/**
  * Base path the API is served under. It mirrors the `servers` url of the
  * OpenAPI document (formerly the Swagger 2.0 `basePath`).
  *
@@ -83,5 +114,6 @@ const assertHandlersRegistered = (api) => {
 module.exports = {
   getBasePath,
   handleRequest,
-  assertHandlersRegistered
+  assertHandlersRegistered,
+  preOperationHandler
 }

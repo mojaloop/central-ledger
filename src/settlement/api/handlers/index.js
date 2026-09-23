@@ -26,6 +26,7 @@
 'use strict'
 
 const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
+const { preOperationHandler } = require('../openapiRouting')
 const health = require('./health')
 const settlementWindows = require('./settlementWindows')
 const settlementWindowsById = require('./settlementWindows/{id}')
@@ -51,6 +52,7 @@ module.exports = {
   updateSettlementBySettlementParticipant: settlementsByIdParticipants.put,
   getSettlementBySettlementParticipantAccount: settlementsByIdParticipantsAccounts.get,
   updateSettlementBySettlementParticipantAccount: settlementsByIdParticipantsAccounts.put,
+  preOperationHandler,
   validationFail: OpenapiBackend.validationFail,
   notFound: OpenapiBackend.notFound,
   methodNotAllowed: OpenapiBackend.methodNotAllowed
