@@ -11,6 +11,12 @@ const harness = Harness.getInstance()
 describe('handlers/tranfers/handlers', () => {
   before(async () => {
     await harness.up()
+    harness.configOverride({
+      ERROR_HANDLING: {
+        includeCauseExtension: true,
+        truncateExtensions: true
+      }
+    })
     await harness.setupGlobals()
 
     // Create the hub accounts + settlement model.

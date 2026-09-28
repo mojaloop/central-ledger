@@ -39,6 +39,10 @@ describe('handlers/fx', () => {
     await harness.up()
     harness.configOverride({
       HANDLERS_TRANSFER_DISPATCH_MODE: 'SPLIT',
+      ERROR_HANDLING: {
+        includeCauseExtension: true,
+        truncateExtensions: true,
+      }
     })
     await harness.setupGlobals()
 

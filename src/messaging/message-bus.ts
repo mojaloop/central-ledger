@@ -298,7 +298,7 @@ export class MessageBus {
 
     // Directly apply the position resets.
     const effectsPosition = effects.filter(effect => effect.functionality === 'position')
-    const kafkaPrepares = effectsPosition.map(this.deps.helper.effectToKafkaMessage)
+    const kafkaPrepares = effectsPosition.map(effect => this.deps.helper.effectToKafkaMessage(effect))
     const resultsPosition = await this.deps.handlers.positionBatchHandler.handle(null, kafkaPrepares)
     await this.emit(this.collectEffects(resultsPosition))
   

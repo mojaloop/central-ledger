@@ -40,6 +40,12 @@ let proxyCache: any
 describe('handlers/prepare', () => {
   before(async () => {
     await harness.up()
+    harness.configOverride({
+      ERROR_HANDLING: {
+        includeCauseExtension: true,
+        truncateExtensions: false,
+      }
+    })
     await harness.setupGlobals()
 
     TransferFacade = require('../../models/transfer/facade')
