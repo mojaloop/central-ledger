@@ -67,8 +67,8 @@ describe('api/participants/handler', () => {
 
     console.log(`Fuzz trace written to ${pathBase}.`)
     console.log(`Compare the two files with:\n\tgit diff --no-index ${pathA} ${pathB}`)
-
-    assert.ok(traceA === traceB, `Traces don't match!`)
+    
+    traceA.compare(traceB, { nameLeft: 'run=A', nameRight: 'run=B', seed })
   })
 
   const run = async (stepsMax: number, config: Partial<ApplicationConfig>): Promise<Trace> => {
