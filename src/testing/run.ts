@@ -191,6 +191,7 @@ type NycOptions = {
  * @description Run legacy tape tests under nyc coverage.
  */
 function runCoverageTape(opts: NycOptions): void {
+  console.log('runCoverageTape')
   const testFiles = findFiles(
     path.join(PROJECT_ROOT, 'test/unit'),
     '**/*.test.js'
@@ -227,6 +228,7 @@ function runCoverageTape(opts: NycOptions): void {
  * @description Run native Node.js tests under nyc coverage.
  */
 function runCoverageNative(opts: NycOptions): void {
+  console.log('runCoverageNative')
   const testFiles = findFiles(
     path.join(PROJECT_ROOT, 'src'),
     '**/*.unit.ts'
@@ -268,6 +270,7 @@ function runCoverageNative(opts: NycOptions): void {
  * @description Runs the integration tests with coverage.
  */
 async function runCoverageIntegration(opts: NycOptions) {
+  console.log('runCoverageIntegration')
   const files = findFiles(
     path.join(PROJECT_ROOT, 'src'),
     '**/*.int.ts'
@@ -319,6 +322,7 @@ async function runCoverageIntegration(opts: NycOptions) {
  * @description Runs the fuzz tests with coverage.
  */
 async function runCoverageFuzz(opts: NycOptions) {
+  console.log('runCoverageFuzz')
   const files = findFiles(
     path.join(PROJECT_ROOT, 'src'),
     '**/*.fuzz.ts'
