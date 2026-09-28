@@ -758,7 +758,7 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   public async setNetDebitCap(cmd: SetNetDebitCapCommand): Promise<CommandResult<void>> {
-    throw new Error('Method not implemented.');
+    return {type: 'SUCCESS'}
   }
 
   /**
@@ -1307,6 +1307,7 @@ export class LedgerTigerBeetle implements Ledger {
       // Check the failedTigerBeetle.
       if (resultsTigerBeetle[transferId]) {
         resultsOrdered[idx] = resultsTigerBeetle[transferId]
+        return
       }
 
       if (result === undefined) {

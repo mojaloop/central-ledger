@@ -164,8 +164,17 @@ async function runCoverage(task: RunTaskCoverage): Promise<void> {
   if (!task.onlyReport) {
     const checkResult = spawnSync(NYC_BIN, ['check-coverage'], {
       cwd: PROJECT_ROOT,
-      stdio: 'inherit'
+      // Capture output so it doesn't interleave with test output.
+      // We print it at the end after all test output has been flushed.
+      stdio: ['inherit', 'pipe', 'pipe']
     })
+    // Print coverage errors at the very end, after all test output.
+    if (checkResult.stderr && checkResult.stderr.length > 0) {
+      process.stderr.write(checkResult.stderr)
+    }
+    if (checkResult.stdout && checkResult.stdout.length > 0) {
+      process.stdout.write(checkResult.stdout)
+    }
     if (checkResult.status !== 0) {
       process.exit(checkResult.status ?? 1)
     }
@@ -200,7 +209,7 @@ function runCoverageTape(opts: NycOptions): void {
   const args = [...nycArgs, '--', TAPE_BIN, ...testFiles]
   const result = spawnSync(NYC_BIN, args, {
     cwd: PROJECT_ROOT,
-    stdio: 'inherit',
+    stdio: opts.silent ? ['inherit', 'ignore', 'ignore'] : 'inherit',
     env: {
       ...process.env,
       NODE_OPTIONS: '-r ts-node/register'
@@ -244,7 +253,7 @@ function runCoverageNative(opts: NycOptions): void {
   ]
   const result = spawnSync(NYC_BIN, args, {
     cwd: PROJECT_ROOT,
-    stdio: 'inherit',
+    stdio: opts.silent ? ['inherit', 'ignore', 'ignore'] : 'inherit',
     env: process.env
   })
 
@@ -295,7 +304,7 @@ async function runCoverageIntegration(opts: NycOptions) {
   ]
   const result = spawnSync(NYC_BIN, args, {
     cwd: PROJECT_ROOT,
-    stdio: 'inherit',
+    stdio: opts.silent ? ['inherit', 'ignore', 'ignore'] : 'inherit',
     env: process.env
   })
 
@@ -346,12 +355,12 @@ async function runCoverageFuzz(opts: NycOptions) {
   ]
   const result = spawnSync(NYC_BIN, args, {
     cwd: PROJECT_ROOT,
-    stdio: 'inherit',
+    stdio: opts.silent ? ['inherit', 'ignore', 'ignore'] : 'inherit',
     env: process.env
   })
 
   if (result.error) {
-    console.error('Failed to run integration tests with coverage:', result.error.message)
+    console.error('Failed to run fuzz tests with coverage:', result.error.message)
     process.exit(1)
   }
 }
@@ -703,8 +712,6 @@ Usage:
   'coverage'      : Run the unit tests then check coverage.
   'integration'   : Run the integration tests.
   'fuzz'          : Run the fuzz tests.
-  'functional'    : *Preview - not yet implemented* Run the functional tests.
-
 
   Examples:
 
@@ -717,15 +724,17 @@ Usage:
   # Run all the tests, outputting xunit
   ./testing/run.ts unit --output=xunit
 
-  # Run the unit tests then check for coverage (will exit != 0 if it fails.)
+  # Run all of the tests then check for coverage.
   ./testing/run.ts coverage
 
-  # Run coverage report only (don't check thresholds)
+  # Run the above but don't check thresholds.
   ./testing/run.ts coverage --only-report
 
   # Run all of the integration tests.
   ./testing/run.ts integration
 
+  # Run all of the fuzz tests.
+  ./testing/run.ts fuzz
 `
 
 main().catch((error) => {

@@ -87,7 +87,8 @@ export const createDfsp = async (harness: Harness, payload: CreateDfspPayload): 
     try {
       const result = await harness.ledger.deposit({
         // Derived id: dfspId + currency + deposit_opening
-        transferId: `${payload.name}_${currency}_deposit_opening`,
+        // transferId: `${payload.name}_${currency}_deposit_opening`,
+        transferId: harness.prng.intExclusive(10000).toString(),
         dfspId: payload.name,
         currency,
         amount: deposit,

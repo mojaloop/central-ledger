@@ -459,20 +459,21 @@ export default class Helper {
           user_data_128: prepareId,
           ledger: ledger.ledgerOperation,
           code: TransferCode.Clearing_Reserve,
-          flags: TransferFlags.linked
+          // flags: TransferFlags.linked
+          flags: 0
         },
-        // ??
-        {
-          ...Helper.createTransferTemplate,
-          id: id(),
-          debit_account_id: specPayer.clearingLimit,
-          credit_account_id: specPayee.clearingSetup,
-          amount: amount_max,
-          user_data_128: prepareId,
-          ledger: ledger.ledgerOperation,
-          code: 1,
-          flags: TransferFlags.balancing_credit
-        },
+        // // ??
+        // {
+        //   ...Helper.createTransferTemplate,
+        //   id: id(),
+        //   debit_account_id: specPayer.clearingLimit,
+        //   credit_account_id: specPayee.clearingSetup,
+        //   amount: amount_max,
+        //   user_data_128: prepareId,
+        //   ledger: ledger.ledgerOperation,
+        //   code: 1,
+        //   flags: TransferFlags.balancing_credit
+        // },
       )
     }
 
