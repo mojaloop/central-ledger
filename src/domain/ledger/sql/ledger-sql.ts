@@ -2577,10 +2577,12 @@ export class LedgerSql implements Ledger {
         legacyQuery.state = query.state
       }
       if (query.fromDateTime) {
-        legacyQuery.fromDateTime = query.fromDateTime.toISOString()
+        // Match string parsing of previous implementation.
+        legacyQuery.fromDateTime = query.fromDateTime.toISOString().replace('.000Z', 'Z')
       }
       if (query.toDateTime) {
-        legacyQuery.toDateTime = query.toDateTime.toISOString()
+        // Match string parsing of previous implementation.
+        legacyQuery.toDateTime = query.toDateTime.toISOString().replace('.000Z', 'Z')
       }
       if (query.currency) {
         legacyQuery.currency = query.currency
