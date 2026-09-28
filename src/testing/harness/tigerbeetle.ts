@@ -166,8 +166,9 @@ export class TigerBeetle {
 
     assert(response.body, 'Expected response.body to be defined.')
 
-    // Download while calculating the hash as we go.
-    const toZip = to + '.zip'
+    // Download while calculating the hash as we go. Append the harnessId so racing downloads
+    // don't delete eachother's files.
+    const toZip = to + this.options.harnessId + '.zip'
     await pipeline(
       Readable.fromWeb(response.body),
       hashTransform,
