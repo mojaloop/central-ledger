@@ -7,6 +7,8 @@ import * as ApiHelpers from '../../testing/api-helpers'
 import { PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../handlers/payment-prepare";
 import assert from "node:assert";
 import { optional } from "joi";
+import { PrepareResultType } from "../../domain/ledger/shared/types";
+import { FulfilHandlerInput, PaymentFulfilResultType } from "../../handlers/payment-fulfil";
 
 const seed = envOrDefaultNumber('SEED', Math.floor(Math.random() * 1e8))
 const prng = new PRNG(seed)
@@ -16,28 +18,8 @@ const harness = Harness.getInstance()
 describe('ledger benchmark', () => {
   it('LedgerSQL vs LedgerTigerBeetle prepare()', async () => {
     const options = {
-      tag: 'PREPARE' as 'PREPARE',
-      payments: envOrDefaultNumber('PAYMENTS', 1000)
-    }
-
-    const resultA = await run({
-      ...options,
-      bucketSize: 10,
-    }, { LEDGER: 'SQL' })
-    const resultB = await run({
-      ...options,
-      bucketSize: 1250,
-    }, { LEDGER: 'TIGERBEETLE' })
-
-    const left = printResult(resultA)
-    const right = printResult(resultB)
-    printSideBySide(left, right, {labelLeft: 'LEDGER=SQL', labelRight: 'LEDGER=TigerBeetle'})
-  })
-
-  it.only('LedgerSQL vs LedgerTigerBeetle prepareAndFulfil()', async () => {
-    const options = {
-      tag: 'E2E' as 'E2E',
-      payments: envOrDefaultNumber('PAYMENTS', 1000),
+      mode: 'PREPARE' as 'PREPARE',
+      payments: envOrDefaultNumber('PAYMENTS', 250)
     }
 
     const resultA = await run({
@@ -52,6 +34,44 @@ describe('ledger benchmark', () => {
     const left = printResult(resultA)
     const right = printResult(resultB)
     printSideBySide(left, right, { labelLeft: 'LEDGER=SQL', labelRight: 'LEDGER=TigerBeetle' })
+  })
+
+  it('LedgerSQL vs LedgerTigerBeetle prepare() + fulfil()', async () => {
+    const options = {
+      mode: 'E2E' as 'E2E',
+      payments: envOrDefaultNumber('PAYMENTS', 1000),
+    }
+    printOptions(options)
+    const resultA = await run({
+      ...options,
+      bucketSize: 1,
+    }, { LEDGER: 'SQL' })
+    const resultB = await run({
+      ...options,
+      bucketSize: 1250,
+    }, { LEDGER: 'TIGERBEETLE' })
+
+    const left = printResult(resultA)
+    const right = printResult(resultB)
+    printSideBySide(left, right, { labelLeft: 'LEDGER=SQL', labelRight: 'LEDGER=TigerBeetle' })
+  })
+
+  it.only('TigerBeetle solo, prepare() + fulfil()', async () => {
+    const options = {
+      mode: 'E2E' as 'E2E',
+      payments: envOrDefaultNumber('PAYMENTS', 1000),
+    }
+    printOptions(options)
+    const result = await run({
+      ...options,
+      bucketSize: 1300,
+    }, { 
+      LEDGER: 'TIGERBEETLE', 
+      // Set these to be able to connect to a specific cluster!
+      // TIGERBEETLE_CLUSTER_ID: 0n,
+      // TIGERBEETLE_ADDRESSES: ['3990'] 
+    })
+    console.log(printResult(result))
   })
 })
 
@@ -69,11 +89,11 @@ type Result = {
 }
 
 type BenchmarkOptions = {
-  tag: 'PREPARE'
+  mode: 'PREPARE'
   payments: number,
   bucketSize: number
 } | {
-  tag: 'E2E',
+  mode: 'E2E',
   payments: number,
   bucketSize: number
 }
@@ -92,20 +112,19 @@ const printResult = (result: Result): string => {
   }
 
   let printer = ``
-  switch (result.options.tag) {
+  switch (result.options.mode) {
     case "PREPARE":
-      printer += `payments=           ${result.options.payments.toLocaleString()}\n`
-      printer += `bucketSize=         ${result.options.bucketSize.toLocaleString()}\n`
-    break
+      printer += `MODE=prepare()\n`
+      break
     case "E2E":
-      printer += `payments=           ${result.options.payments.toLocaleString()}\n`
-      printer += `bucketSize=         ${result.options.bucketSize.toLocaleString()}\n`
-    break
+      printer += `MODE=prepare() + fulfil()\n`
+      break
     default:
       // @ts-ignore
-      throw new Error(`unknown options.tag: ${result.options.tag}`)
+      throw new Error(`unknown options.mode: ${result.options.mode}`)
   }
-
+  printer += `payments=           ${result.options.payments.toLocaleString()}\n`
+  printer += `bucketSize=         ${result.options.bucketSize.toLocaleString()}\n`
   printer += `durationMs=         ${Math.floor(result.durationMs).toLocaleString()}\n`
   printer += `paymentsPerSecond=  ${Math.floor(result.tpsAvg).toLocaleString()}\n`
   printer += `durationMsBuckets= ${bucketSummary}\n`
@@ -117,6 +136,12 @@ const printResult = (result: Result): string => {
   printer += `[${result.countPass.toLocaleString()}/${(result.countFail + result.countPass).toLocaleString()} Passed]`
 
   return printer
+}
+
+const printOptions = (options: Partial<BenchmarkOptions>) => {
+  console.log('Benchmark options:')
+  console.log(`\tMODE=${options.mode}`)
+  console.log(`\tPAYMENTS=${options.payments}`)
 }
 
 const printSideBySide = (
@@ -199,43 +224,77 @@ class LedgerBenchmark {
       { length: this.options.payments },
       () => LedgerBenchmark.makeRandomPayment(this.harness, dfsps, 'USD')
     )
-    const prepares: Array<PrepareHandlerInput> = payments.map(payment => payment.toPrepare())
+    // const prepares: Array<PrepareHandlerInput> = payments.map(payment => payment.toPrepare())
 
     // Batch into maximum batch sizes.
-    const prepareBuckets: Array<Array<PrepareHandlerInput>> = prepares.reduce((acc, item, idx) => {
+    const paymentBuckets: Array<Array<ApiHelpers.Payment>> = payments.reduce((acc, item, idx) => {
       const idxBucket = Math.floor(idx / this.options.bucketSize)
       acc[idxBucket] = acc[idxBucket] || []
       acc[idxBucket].push(item)
       return acc
-    }, [] as Array<Array<PrepareHandlerInput>>)
+    }, [] as Array<Array<ApiHelpers.Payment>>)
+
+    const prepareBuckets: Array<Array<PrepareHandlerInput>> = paymentBuckets.map(bucket => bucket.map(payment => payment.toPrepare()))
+    const fulfilBuckets: Array<Array<FulfilHandlerInput>> = paymentBuckets.map(bucket => bucket.map(payment => payment.toFulfil()))
 
     let bucketLatencies: Array<number> = []
-    let results: Array<PaymentPrepareResult> = []
+    let results: Array<'PASS' | 'FAIL'> = []
     const start = performance.now()
 
     let bucketIdx = 0
-    for (const bucket of prepareBuckets) {
-      process.stdout.write(`\rbucket: ${bucketIdx.toLocaleString()}/${prepareBuckets.length.toLocaleString()}`)
+    for (const bucket of paymentBuckets) {
+      process.stdout.write(`\rbucket: ${bucketIdx.toLocaleString()}/${paymentBuckets.length.toLocaleString()}`)
       console.clear()
 
-      const startBucket = performance.now()
-      const result = await this.harness.ledger.prepare(bucket)
-      results.push(...result)
-      bucketLatencies.push(performance.now() - startBucket)
+      switch (this.options.mode) {
+        case "PREPARE": {
+          const startBucket = performance.now()
+          const prepares = prepareBuckets[bucketIdx]
+          const resultsPrepare = await this.harness.ledger.prepare(prepares)
+          
+          for (const result of resultsPrepare) {
+            if (result.type === PaymentPrepareResultType.PASS) {
+              results.push('PASS')
+              continue
+            }
+            results.push('FAIL')
+          }
+
+          bucketLatencies.push(performance.now() - startBucket)
+          break
+        }
+        case "E2E": {
+          const startBucket = performance.now()
+          const prepares = prepareBuckets[bucketIdx]
+          const fulfils = fulfilBuckets[bucketIdx]
+          
+          const resultsPrepare = await this.harness.ledger.prepare(prepares)
+          const resultsFulfil = await this.harness.ledger.fulfil(fulfils)
+
+          for (const result of resultsFulfil) {
+            if (result.type === PaymentFulfilResultType.PASS) {
+              results.push('PASS')
+              continue
+            }
+            results.push('FAIL')
+          }
+          bucketLatencies.push(performance.now() - startBucket)
+          break
+        }
+      }
 
       bucketIdx += 1
     }
-    process.stdout.write(`\rbucket: ${bucketIdx.toLocaleString()}/${prepareBuckets.length.toLocaleString()}`)
+    process.stdout.write(`\rbucket: ${bucketIdx.toLocaleString()}/${paymentBuckets.length.toLocaleString()}`)
     console.log()
 
-    assert(bucketLatencies.length === prepareBuckets.length)
+    assert(bucketLatencies.length === paymentBuckets.length)
 
     const durationMs = performance.now() - start
     const latencies = [...bucketLatencies].sort((a, b) => a - b)
 
-    const resultTypes = results.map(result => result.type)
-    const countPass = resultTypes.filter(type => type === PaymentPrepareResultType.PASS).length
-    const countFail = resultTypes.filter(type => type !== PaymentPrepareResultType.PASS).length
+    const countPass = results.filter(result => result === 'PASS').length
+    const countFail = results.filter(result => result === 'FAIL').length
 
     this.result = {
       options: this.options,

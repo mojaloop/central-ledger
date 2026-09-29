@@ -183,13 +183,13 @@ export default class Harness {
       clock: this.clock,
       databaseName: 'central_ledger',
       migration: {
-        // type: 'sql',
-        // sqlFilePath: './src/testing/harness/harness.snapshot.sql',
+        type: 'sql',
+        sqlFilePath: './src/testing/harness/harness.snapshot.sql',
 
         // Uncomment below to update the harness.snapshot.sql file. 
         // You'll want to do this after adding new migrations.
-        type: 'knex',
-        updateSqlFilePath: './src/testing/harness/harness.snapshot.sql'
+        // type: 'knex',
+        // updateSqlFilePath: './src/testing/harness/harness.snapshot.sql'
       }
     })
 
@@ -573,7 +573,7 @@ export default class Harness {
    * so we don't have to call this at the start of each test.
    */
   public async setupGlobals(options?: {
-    skipMessageBus?: boolean
+    skipMessageBus?: boolean,
   }): Promise<void> {
     logger.info('setupGlobals()')
     // Override the global config with our testing config.
@@ -639,11 +639,24 @@ export default class Harness {
         break;
       }
       case "TIGERBEETLE": {
-        this._clientTigerBeetle = createClient({
-          // TODO: add clusterId to config.
-          cluster_id: 0n,
-          replica_addresses: [this.connectionOptionsTigerBeetle.port],
-        })
+        // Either use the harness TigerBeetle or the provided TigerBeetle.
+        if (this.config.TIGERBEETLE_ADDRESSES) {
+          assert(typeof this.config.TIGERBEETLE_CLUSTER_ID === 'bigint', 
+            'Expected TIGERBEETLE_CLUSTER_ID to be set.'
+          )
+          logger.warn(`connecting to TigerBeetle client at: ${this.config.TIGERBEETLE_ADDRESSES}.`)
+          this._clientTigerBeetle = createClient({
+            cluster_id: this.config.TIGERBEETLE_CLUSTER_ID,
+            replica_addresses: this.config.TIGERBEETLE_ADDRESSES,
+          })
+        } else {
+          logger.warn(`connecting to TigerBeetle client at: ${this.dependencyTigerBeetle.connectionOptions.port}.`)
+          this._clientTigerBeetle = createClient({
+            cluster_id: this.dependencyTigerBeetle.connectionOptions.clusterId,
+            replica_addresses: [this.dependencyTigerBeetle.connectionOptions.port]
+          })
+        }
+        
         this._ledger = new LedgerTigerBeetle({
           config: this.config, 
           client: this._clientTigerBeetle,

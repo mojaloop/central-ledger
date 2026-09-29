@@ -156,6 +156,19 @@ export type SaveSpecTransferResult = {
   type: 'SUCCESS' | 'FAILURE'
 }
 
+export type GetSpecTransferResult = {
+  type: 'SUCCESS'
+  id: string,
+  result: SpecTransfer
+} | {
+  type: 'NOT_FOUND',
+  id: string
+} | {
+  type: 'ERROR',
+  id: string,
+  error: any
+}
+
 export type AttachFulfilmentResult = {
 
 }
@@ -484,6 +497,16 @@ export default class SpecStore {
     }))
   }
 
+  // Maybe we don't want this?
+  public async getAllDfspMasterAccounts(): Promise<Array<MasterAccount>> {
+    const rows = await this.db(TABLE_DFSP).select('*')
+
+    return rows.map(row => ({
+      dfspId: row.dfspId,
+      masterAccountId: BigInt(row.masterAccountId)
+    }))
+  }
+
   public async getDfspCurrency(dfspId: string, currency: string):
     Promise<QueryResultWithNotFound<SpecAccount>> {
 
@@ -502,7 +525,7 @@ export default class SpecStore {
   }
 
   public async getDfspCurrencies(id: string): Promise<Array<SpecAccount>> {
-    const rows = await this.db(TABLE_DFSP_CURRENCY).where({dfspId: id}) .select('*')
+    const rows = await this.db(TABLE_DFSP_CURRENCY).where({ dfspId: id }).select('*')
     return rows.map(SpecStore.hydrateSpecAccount)
   }
 
@@ -510,6 +533,7 @@ export default class SpecStore {
     const rows = await this.db(TABLE_DFSP_CURRENCY).whereIn('dfspId', dfsps).select('*')
     return rows.map(SpecStore.hydrateSpecAccount)
   }
+
 
   /**
    * Look up the account within the spec for the dfspid and account id.
@@ -535,7 +559,7 @@ export default class SpecStore {
       .first()
 
     if (!row) {
-      throw new Error(`getCurrencyCodeAndSpec() not found for dfspId: ${dfspId}, ` 
+      throw new Error(`getCurrencyCodeAndSpec() not found for dfspId: ${dfspId}, `
         + `accountId: ${accountId}.`)
     }
 
@@ -562,15 +586,15 @@ export default class SpecStore {
     } else if (spec.clearingLimit === accountId) {
       code = AccountCode.Clearing_Limit
     } else {
-      throw new Error(`getCurrencyCodeAndSpec() - matched row ` + 
+      throw new Error(`getCurrencyCodeAndSpec() - matched row ` +
         `but no field matched accountId: ${accountId}`
       )
     }
 
-    return { 
-      currency: spec.currency, 
-      code, 
-      spec 
+    return {
+      currency: spec.currency,
+      code,
+      spec
     }
   }
 
@@ -618,7 +642,7 @@ export default class SpecStore {
       type: 'UNLIMITED',
       dfspId,
       currency
-    } 
+    }
   }
 
   public async saveFundingSpec(funding: any): Promise<void> {
@@ -681,28 +705,59 @@ export default class SpecStore {
     }
   }
 
-  public async attachFulfillment(updates: Array<SpecTransferUpdate>): Promise<Array<AttachFulfilmentResult>> {
+  // TODO: Ideally we would do a join with the net debit cap of the related dfspids for each payment.
+  public async getTransferSpecs(transferIds: Array<string>): Promise<Array<GetSpecTransferResult>> {
     try {
-      const records = updates.map(update => {
-        const record = {
-          id: update.id,
-          fulfilment: update.fulfilment
-        }
+      const rows = await this.db.from(TABLE_TRANSFER)
+        .whereIn('id', transferIds)
+        .select('*')
 
-        return record
-      })
+      assert.equal(rows.length, transferIds.length, 'Expected the same number of rows as transferIds.')
 
-      await this.db.from(TABLE_TRANSFER)
-        .insert(records)
-        .onConflict('id')
-        .merge()
-
-      return updates.map(update => {
+      // TODO: how do we handle not found?
+      const results = rows.map(result => {
         return {
-          type: 'SUCCESS',
-          id: update.id
+          type: 'SUCCESS' as 'SUCCESS',
+          id: result.id,
+          result: result,
         }
       })
+      return results
+    } catch (err: any) {
+      return transferIds.map(transferId => ({
+        type: 'ERROR',
+        id: transferId,
+        error: err
+      }))
+    }
+  }
+
+  public async attachFulfillments(updates: Array<SpecTransferUpdate>): Promise<Array<AttachFulfilmentResult>> {
+    try {
+      if (updates.length === 0) {
+        return []
+      }
+
+      // Build with raw for efficient bulk update.
+
+      const ids: Array<string> = []
+      const bindings: Array<string> = []
+      const clauses = updates.map(update => {
+        ids.push(update.id)
+        bindings.push(update.id, update.fulfilment)
+        return `WHEN id = ? THEN ?`
+      })
+
+      await this.db.raw(
+        `UPDATE ?? SET fulfilment = CASE ${clauses.join(' ')} END` +
+        ` WHERE id in (${ids.map(() => '?').join(',')})`,
+        [TABLE_TRANSFER, ...bindings, ...ids]
+      )
+
+      return updates.map(update => ({
+        type: 'SUCCESS',
+        id: update.id
+      }))
     } catch (err: any) {
       logger.error(`attachFulfillment() - failed with error: ${err.message}`)
       return updates.map(update => {

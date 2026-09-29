@@ -5,6 +5,7 @@ import assert from "assert";
 import { CurrencyLedger, MasterAccount, SpecAccount, SpecTransfer } from "./spec-store";
 import { AccountCode, TransferCode } from "../shared/types";
 import { PrepareHandlerInput } from "../../../handlers/payment-prepare";
+import { FulfilHandlerAction, FulfilHandlerInput } from "../../../handlers/payment-fulfil";
 
 interface InterledgerValidationPass {
   type: 'PASS'
@@ -475,7 +476,7 @@ export default class Helper {
           ...Helper.createTransferTemplate,
           id: prepareId + 3n,
           debit_account_id: specPayer.clearingSetup,
-          credit_account_id: specPayee.reserved,
+          credit_account_id: specPayer.reserved,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
           ledger: ledger.ledgerOperation,
@@ -498,6 +499,93 @@ export default class Helper {
       )
     }
 
+    return transfers
+  }
+
+  public buildTransfersFulfil(
+    fulfils: Array<FulfilHandlerInput>,
+    specTransfers: Array<SpecTransfer>,
+    currencyLedgers: Record<string, CurrencyLedger>,
+    specCurrencyAccounts: Record<string, SpecAccount>,
+  ): Array<Transfer> {
+    assert.equal(fulfils.length, specTransfers.length)
+
+    const transfers: Array<Transfer> = []
+    for (let idx = 0; idx < fulfils.length; idx++) {
+      const fulfil = fulfils[idx]
+      const specTransfer = specTransfers[idx]
+      assert(fulfil)
+      assert(specTransfer)
+
+      const ledger = currencyLedgers[specTransfer.currency]
+      assert(ledger, `No ledger found for specTransfer.currency: ${specTransfer.currency}.`)
+      // TODO: ideally we wouldn't have to have the amount in the spec store.
+      const amountTigerBeetle = Helper.fromMojaloopAmount(specTransfer.amount, ledger.assetScale)
+
+      const prepareId = Helper.fromMojaloopId(fulfil.transferId)
+      const specPayer = specCurrencyAccounts[`${specTransfer.payerId}:${specTransfer.currency}`]
+      assert(specPayer, `SpecPayer not found for payerId: ${specTransfer.payerId} and currency: ${specTransfer.currency}.`)
+      const specPayee = specCurrencyAccounts[`${specTransfer.payeeId}:${specTransfer.currency}`]
+      assert(specPayee, `SpecPayer not found for payeeId: ${specTransfer.payeeId} and currency: ${specTransfer.currency}.`)
+
+      // Hmm we probably need to use this.
+      const transferHash = Helper.hashTransferProperties({
+        amount: specTransfer.amount,
+        currency: specTransfer.currency,
+        expiration: specTransfer.expiration,
+        payeeFsp: specTransfer.payeeId,
+        payerFsp: specTransfer.payerId,
+        condition: specTransfer.ilpCondition,
+        ilpPacket: specTransfer.ilpPacket,
+      })
+
+      transfers.push(
+        // Ensure both Participants are active
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          pending_id: prepareId,
+          debit_account_id: 0n,
+          credit_account_id: 0n,
+          user_data_128: prepareId,
+          amount: 0n,
+          ledger: 0,
+          code: 0,
+          flags: TransferFlags.linked | TransferFlags.post_pending_transfer,
+        },
+        // Fulfil payment for Participant A.
+        {
+          ...Helper.createTransferTemplate,
+          // TODO(LD): Settlement: if this id is derived from the Mojaloop Id
+          // MojaloopId + 1, we can use that to fetch all records we need for
+          // settlement efficently from TigerBeetle
+          id: id(),
+          debit_account_id: specPayer.reserved,
+          credit_account_id: specPayee.commitedOutgoing,
+          amount: amountTigerBeetle,
+          user_data_128: prepareId,
+          ledger: ledger.ledgerOperation,
+          code: TransferCode.Clearing_Fulfil,
+          flags: TransferFlags.linked
+        },
+        // Note: we always assume Payee Instant Credit is enabled as that is the legacy behaviour
+        // Future implementations where the Payee Instant Credit can be disabled should skip the
+        // following
+
+        // Make credit available for transfers.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          debit_account_id: specPayee.commitedOutgoing,
+          credit_account_id: specPayee.clearingCredit,
+          amount: amountTigerBeetle,
+          user_data_128: prepareId,
+          ledger: ledger.ledgerOperation,
+          code: TransferCode.Clearing_Credit,
+          flags: 0
+        },
+      )
+    }
     return transfers
   }
 

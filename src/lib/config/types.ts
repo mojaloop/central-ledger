@@ -151,6 +151,23 @@ export interface ApplicationConfig {
   LEDGER: LedgerType
 
   /**
+   * The unique id of the TigerBeetle cluster.
+   * No default is provided, this must be explicitly set when LEDGER=TIGERBEETLE.
+   */
+  TIGERBEETLE_CLUSTER_ID: bigint
+
+  /**
+   * Addresses for the TigerBeetle Replicas.
+   * Should be a comma separated list of TigerBeetle addresses, corresponding with the number
+   * of replicas in the cluster.
+   * 
+   * e.g. 'localhost:3001,localhost:3002,localhost:3003'
+   * 
+   * No default is provided, this must be explicitly set when LEDGER=TIGERBEETLE
+   */
+  TIGERBEETLE_ADDRESSES: Array<string>
+
+  /**
    * Configures whether or not the Admin API uses the Ledger interface. This is a part of the
    * overall refactor to switch to a TigerBeetle-based leder.
    * - `NONE`   uses the older implementation of the Admin API (default).

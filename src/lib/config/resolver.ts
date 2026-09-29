@@ -141,6 +141,7 @@ const resolveConfig = (rawConfig: any): UnsafeApplicationConfig => {
     KAFKA_CONFIG: kafka,
     SERVER_PRINT_ROUTES_ON_STARTUP: defaultTo(rawConfig.SERVER_PRINT_ROUTES_ON_STARTUP, true),
     LEDGER: defaultTo(rawConfig.LEDGER, 'SQL'),
+    TIGERBEETLE_ADDRESSES: rawConfig.TIGERBEETLE_ADDRESSES,
     EXPERIMENTAL: {
       PROVISIONING: {
         enabled: defaultTo(rawConfig.EXPERIMENTAL?.PROVISIONING?.enabled, false),
