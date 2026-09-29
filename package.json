@@ -46,6 +46,7 @@
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "lint": "npx standard",
     "lint:fix": "npx standard --fix",
+    "benchmark": "node --test --require ts-node/register --test-only src/testing/benchmark/ledger.test.ts",
     "test": "npm run test:unit:spec",
     "test:unit": "ts-node src/testing/run.ts unit",
     "test:unit:spec": "npm run test:unit | tap-spec",

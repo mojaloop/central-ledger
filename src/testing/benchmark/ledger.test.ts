@@ -13,10 +13,9 @@ Harness.injectPrngAndPatchDateGlobal(prng)
 const harness = Harness.getInstance()
 
 describe('ledger benchmark', () => {
-  it('LedgerSQL vs LedgerTigerBeetle prepare()', async () => {
-    const prepares = envOrDefaultNumber('PREPARES', 1000)
+  it.only('LedgerSQL vs LedgerTigerBeetle prepare()', async () => {
     const options = {
-      prepares,
+      prepares: envOrDefaultNumber('PREPARES', 1000)
     }
 
     const resultA = await run({
@@ -28,31 +27,16 @@ describe('ledger benchmark', () => {
       bucketSizePrepare: 1250,
     }, { LEDGER: 'TIGERBEETLE' })
 
-    const resultAStr = printResult(resultA)
-    const paddingLeft = resultAStr.split('\n').reduce((acc, curr) => {
-      if (curr.length > acc) return curr.length
-      return acc
-    }, 0)
-    const resultBStr = printResult(resultB)
-    let printer = ``
-    printer += ``.padEnd(paddingLeft -2, '=') + `Results` + ``.padEnd(paddingLeft, '=') + `\n`
-    printer += `Ledger=SQL`.padEnd(paddingLeft) + ` | ` + `Ledger=TigerBeetle`
-    console.log(printer)
-    const linesLeft = resultAStr.split('\n')
-    const linesRight = resultBStr.split('\n')
-    assert.equal(linesLeft.length, linesRight.length)
-    linesLeft.forEach((left, idx) => {
-      const right = linesRight[idx]
-
-      console.log(left.padEnd(paddingLeft) + ` | ` + right)
-    })
+    const left = printResult(resultA)
+    const right = printResult(resultB)
+    printSideBySide(left, right, {labelLeft: 'LEDGER=SQL', labelRight: 'LEDGER=TigerBeetle'})
   })
 })
 
 type Result = {
   options: BenchmarkOptions
   durationMs: number,
-  durationsPerBucket: Array<number>, 
+  durationsPerBucket: Array<number>,
   tpsAvg: number,
   latencyP100: number
   latencyP99: number
@@ -68,7 +52,6 @@ interface BenchmarkOptions {
 }
 
 const printResult = (result: Result): string => {
-
   let bucketSummary = ``
   if (result.durationsPerBucket.length > 5) {
     // Show first 3 and last 2.
@@ -83,7 +66,7 @@ const printResult = (result: Result): string => {
 
   let printer = ``
   printer += `prepares=           ${result.options.prepares.toLocaleString()}\n`
-  printer += `bucketSize=         ${result.options.bucketSizePrepare.toLocaleString() }\n`
+  printer += `bucketSize=         ${result.options.bucketSizePrepare.toLocaleString()}\n`
   printer += `durationMs=         ${Math.floor(result.durationMs).toLocaleString()}\n`
   printer += `preparesPerSecond=  ${Math.floor(result.tpsAvg).toLocaleString()}\n`
   printer += `durationMsBuckets= ${bucketSummary}\n`
@@ -96,6 +79,39 @@ const printResult = (result: Result): string => {
 
   return printer
 }
+
+const printSideBySide = (
+  left: string,
+  right: string,
+  options: {
+    labelLeft: string,
+    labelRight: string
+  }
+): void => {
+  assert(left)
+  assert(right)
+  assert(options)
+  assert(options.labelLeft)
+  assert(options.labelRight)
+
+  const paddingLeft = left.split('\n').reduce((acc, curr) => {
+    if (curr.length > acc) return curr.length
+    return acc
+  }, 0)
+  let printer = ``
+  printer += ``.padEnd(paddingLeft - 2, '=') + `Results` + ``.padEnd(paddingLeft, '=') + `\n`
+  printer += options.labelLeft.padEnd(paddingLeft) + ` | ` + options.labelRight
+  console.log(printer)
+  const linesLeft = left.split('\n')
+  const linesRight = right.split('\n')
+  assert.equal(linesLeft.length, linesRight.length)
+  linesLeft.forEach((left, idx) => {
+    const right = linesRight[idx]
+
+    console.log(left.padEnd(paddingLeft) + ` | ` + right)
+  })
+}
+
 
 const run = async (
   options: BenchmarkOptions,
@@ -157,7 +173,7 @@ class LedgerBenchmark {
     let bucketLatencies: Array<number> = []
     let results: Array<PaymentPrepareResult> = []
     const start = performance.now()
-    
+
     let bucketIdx = 0
     for (const bucket of prepareBuckets) {
       process.stdout.write(`\rbucket: ${bucketIdx.toLocaleString()}/${prepareBuckets.length.toLocaleString()}`)

@@ -6,6 +6,7 @@ import { AccountCode, Enums, QueryResultWithNotFound } from '../shared/types';
 import Helper from './helper';
 import { Account } from 'tigerbeetle-node';
 import { logger } from '../../../shared/logger';
+import { fulfil } from '../../../handlers/transfers/handler';
 
 export type CmdHubCurrencyEnable = {
   currency: string,
@@ -680,8 +681,36 @@ export default class SpecStore {
     }
   }
 
-  public async attachFulfillment(specUpdates: Array<SpecTransferUpdate>): Promise<Array<AttachFulfilmentResult>> {
-    throw new Error(`not implemented`)
+  public async attachFulfillment(updates: Array<SpecTransferUpdate>): Promise<Array<AttachFulfilmentResult>> {
+    try {
+      const records = updates.map(update => {
+        const record = {
+          id: update.id,
+          fulfilment: update.fulfilment
+        }
+
+        return record
+      })
+
+      await this.db.from(TABLE_TRANSFER)
+        .insert(records)
+        .onConflict('id')
+        .merge()
+
+      return updates.map(update => {
+        return {
+          type: 'SUCCESS',
+          id: update.id
+        }
+      })
+    } catch (err: any) {
+      logger.error(`attachFulfillment() - failed with error: ${err.message}`)
+      return updates.map(update => {
+        return {
+          type: 'FAILURE',
+          id: update.id
+        }
+      })
+    }
   }
 }
-
