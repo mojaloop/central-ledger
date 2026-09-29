@@ -6,6 +6,7 @@ import Harness from "../harness/harness";
 import * as ApiHelpers from '../../testing/api-helpers'
 import { PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../handlers/payment-prepare";
 import assert from "node:assert";
+import { optional } from "joi";
 
 const seed = envOrDefaultNumber('SEED', Math.floor(Math.random() * 1e8))
 const prng = new PRNG(seed)
@@ -13,23 +14,44 @@ Harness.injectPrngAndPatchDateGlobal(prng)
 const harness = Harness.getInstance()
 
 describe('ledger benchmark', () => {
-  it.only('LedgerSQL vs LedgerTigerBeetle prepare()', async () => {
+  it('LedgerSQL vs LedgerTigerBeetle prepare()', async () => {
     const options = {
-      prepares: envOrDefaultNumber('PREPARES', 1000)
+      tag: 'PREPARE' as 'PREPARE',
+      payments: envOrDefaultNumber('PAYMENTS', 1000)
     }
 
     const resultA = await run({
       ...options,
-      bucketSizePrepare: 10,
+      bucketSize: 10,
     }, { LEDGER: 'SQL' })
     const resultB = await run({
       ...options,
-      bucketSizePrepare: 1250,
+      bucketSize: 1250,
     }, { LEDGER: 'TIGERBEETLE' })
 
     const left = printResult(resultA)
     const right = printResult(resultB)
     printSideBySide(left, right, {labelLeft: 'LEDGER=SQL', labelRight: 'LEDGER=TigerBeetle'})
+  })
+
+  it.only('LedgerSQL vs LedgerTigerBeetle prepareAndFulfil()', async () => {
+    const options = {
+      tag: 'E2E' as 'E2E',
+      payments: envOrDefaultNumber('PAYMENTS', 1000),
+    }
+
+    const resultA = await run({
+      ...options,
+      bucketSize: 10,
+    }, { LEDGER: 'SQL' })
+    const resultB = await run({
+      ...options,
+      bucketSize: 1250,
+    }, { LEDGER: 'TIGERBEETLE' })
+
+    const left = printResult(resultA)
+    const right = printResult(resultB)
+    printSideBySide(left, right, { labelLeft: 'LEDGER=SQL', labelRight: 'LEDGER=TigerBeetle' })
   })
 })
 
@@ -46,9 +68,14 @@ type Result = {
   countFail: number
 }
 
-interface BenchmarkOptions {
-  prepares: number,
-  bucketSizePrepare: number
+type BenchmarkOptions = {
+  tag: 'PREPARE'
+  payments: number,
+  bucketSize: number
+} | {
+  tag: 'E2E',
+  payments: number,
+  bucketSize: number
 }
 
 const printResult = (result: Result): string => {
@@ -65,10 +92,22 @@ const printResult = (result: Result): string => {
   }
 
   let printer = ``
-  printer += `prepares=           ${result.options.prepares.toLocaleString()}\n`
-  printer += `bucketSize=         ${result.options.bucketSizePrepare.toLocaleString()}\n`
+  switch (result.options.tag) {
+    case "PREPARE":
+      printer += `payments=           ${result.options.payments.toLocaleString()}\n`
+      printer += `bucketSize=         ${result.options.bucketSize.toLocaleString()}\n`
+    break
+    case "E2E":
+      printer += `payments=           ${result.options.payments.toLocaleString()}\n`
+      printer += `bucketSize=         ${result.options.bucketSize.toLocaleString()}\n`
+    break
+    default:
+      // @ts-ignore
+      throw new Error(`unknown options.tag: ${result.options.tag}`)
+  }
+
   printer += `durationMs=         ${Math.floor(result.durationMs).toLocaleString()}\n`
-  printer += `preparesPerSecond=  ${Math.floor(result.tpsAvg).toLocaleString()}\n`
+  printer += `paymentsPerSecond=  ${Math.floor(result.tpsAvg).toLocaleString()}\n`
   printer += `durationMsBuckets= ${bucketSummary}\n`
   printer += `latencies:\n`
   printer += `  p100           =  ${Math.floor(result.latencyP100)}\n`
@@ -157,14 +196,14 @@ class LedgerBenchmark {
 
     // Create a bunch of prepares.
     const payments: Array<ApiHelpers.Payment> = Array.from(
-      { length: this.options.prepares },
+      { length: this.options.payments },
       () => LedgerBenchmark.makeRandomPayment(this.harness, dfsps, 'USD')
     )
     const prepares: Array<PrepareHandlerInput> = payments.map(payment => payment.toPrepare())
 
     // Batch into maximum batch sizes.
     const prepareBuckets: Array<Array<PrepareHandlerInput>> = prepares.reduce((acc, item, idx) => {
-      const idxBucket = Math.floor(idx / this.options.bucketSizePrepare)
+      const idxBucket = Math.floor(idx / this.options.bucketSize)
       acc[idxBucket] = acc[idxBucket] || []
       acc[idxBucket].push(item)
       return acc
@@ -202,7 +241,7 @@ class LedgerBenchmark {
       options: this.options,
       durationMs,
       durationsPerBucket: bucketLatencies,
-      tpsAvg: this.options.prepares / (durationMs / 1000),
+      tpsAvg: this.options.payments / (durationMs / 1000),
       latencyP100: latencies[latencies.length - 1],
       latencyP99: latencies[Math.floor(latencies.length * 0.99)],
       latencyP95: latencies[Math.floor(latencies.length * 0.95)],
