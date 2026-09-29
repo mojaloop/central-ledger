@@ -83,9 +83,36 @@ exports.up = async (knex) => {
       })
     }
   })
+
+  await knex.schema.hasTable('specTransfer').then(function (exists) {
+    if (!exists) {
+      return knex.schema.createTable('specTransfer', (t) => {
+        t.string('id', 36).primary().notNullable()
+        t.string('payerId', 256).notNullable()
+        t.string('payeeId', 256).notNullable()
+        t.string('ilpCondition', 256).notNullable()
+        t.text('ilpPacket').notNullable()
+        t.string('amount', 16).notNullable()
+        t.string('currency', 3).notNullable()
+        t.dateTime('expiration').notNullable()
+        t.string('fulfilment', 256)
+        
+        t.foreign('payerId').references('dfspId').inTable('specDfsp')
+        t.foreign('payeeId').references('dfspId').inTable('specDfsp')
+        t.foreign('currency').references('currencyId').inTable('currency')
+
+      })
+    }
+  })
 }
 
 exports.down = async (knex) => {
+  await knex.schema.hasTable('specCurrencyLedger').then(function (exists) {
+    if (exists) {
+      return knex.schema.dropTableIfExists('specCurrencyLedger')
+    }
+  })
+
   await knex.schema.hasTable('specDfspCurrency').then(function (exists) {
     if (exists) {
       return knex.schema.dropTableIfExists('specDfspCurrency')

@@ -2,7 +2,7 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto from "crypto";
 import assert from "assert";
-import { CurrencyLedger, MasterAccount, SpecAccount } from "./spec-store";
+import { CurrencyLedger, MasterAccount, SpecAccount, SpecTransfer } from "./spec-store";
 import { AccountCode, TransferCode } from "../shared/types";
 import { PrepareHandlerInput } from "../../../handlers/payment-prepare";
 
@@ -339,6 +339,27 @@ export default class Helper {
         flags: TransferFlags.void_pending_transfer
       }
     ]
+  }
+
+  public buildTransferSpecs(prepares: Array<PrepareHandlerInput>): Array<SpecTransfer> {
+    const specs: Array<SpecTransfer> = []
+
+    prepares.forEach(prepare => {
+      const spec: SpecTransfer = {
+        id: prepare.transferId,
+        currency: prepare.payload.amount.currency,
+        amount: prepare.payload.amount.amount,
+        expiration: prepare.payload.expiration,
+        payerId: prepare.payload.payerFsp,
+        payeeId: prepare.payload.payeeFsp,
+        ilpCondition: prepare.payload.condition,
+        ilpPacket: prepare.payload.ilpPacket
+      }
+
+      specs.push(spec)
+    })
+
+    return specs
   }
 
   public buildTransfersPrepares(

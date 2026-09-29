@@ -1054,11 +1054,13 @@ export class LedgerTigerBeetle implements Ledger {
     throw new Error('Method not implemented.');
   }
 
-  public async getNetDebitCap(query: GetNetDebitCapQuery): Promise<QueryResultWithNotFound<LegacyLimit>> {
+  public async getNetDebitCap(query: GetNetDebitCapQuery):
+   Promise<QueryResultWithNotFound<LegacyLimit>> {
     throw new Error('Method not implemented.');
   }
 
-  public async getNetDebitCaps(query: GetNetDebitCapsQuery): Promise<QueryResultWithNotFound<Array<LegacyLimitItem>>> {
+  public async getNetDebitCaps(query: GetNetDebitCapsQuery):
+   Promise<QueryResultWithNotFound<Array<LegacyLimitItem>>> {
     throw new Error('Method not implemented.');
   }
 
@@ -1143,7 +1145,6 @@ export class LedgerTigerBeetle implements Ledger {
       }
     })
 
-    // TODO: save the specs in batch.
     // TODO: need to burn the errored transferId or something?
     // TODO: more validation here.
 
@@ -1151,6 +1152,20 @@ export class LedgerTigerBeetle implements Ledger {
       acc[curr.currency] = curr
       return acc
     }, {} as Record<string, CurrencyLedger>)
+
+    const specs = this.helper.buildTransferSpecs(Object.values(preparesMap))
+    const saveSpecResults = await this.specStore.saveTransferSpecs(specs)
+    saveSpecResults.forEach(result => {
+      if (result.type === 'SUCCESS') return
+      // Remove from the preparesMap if it failed.
+      delete preparesMap[result.id]
+
+      resultsMap[result.id] = {
+        type: PaymentPrepareResultType.FAIL_OTHER,
+        effects: [],
+        error: new Error(`Failed to save transfer spec for transfer: ${result.id}`)
+      }
+    })
 
     const transfers = this.helper.buildTransfersPrepares(
       Object.values(preparesMap),
@@ -1179,7 +1194,6 @@ export class LedgerTigerBeetle implements Ledger {
       // The individual transfer within the prepare.
       const idxTransfer = idxAllTransfers % prepareAmpFactor
 
-      // TODO: pull out results, and map back to the inputs to update the reuslts array.
       // Ignore noisy errors
       if (result.status === CreateTransferStatus.linked_event_failed) {
         return

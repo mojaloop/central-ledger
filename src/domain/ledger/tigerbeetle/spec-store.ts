@@ -5,6 +5,7 @@ import { ApplicationConfig } from '../../../lib/config';
 import { AccountCode, Enums, QueryResultWithNotFound } from '../shared/types';
 import Helper from './helper';
 import { Account } from 'tigerbeetle-node';
+import { logger } from '../../../shared/logger';
 
 export type CmdHubCurrencyEnable = {
   currency: string,
@@ -131,6 +132,33 @@ export type SpecNetDebitCap = {
   currency: string,
 }
 
+export type SpecTransfer = {
+  id: string
+  currency: string
+  amount: string
+  expiration: string
+  payerId: string
+  payeeId: string
+  ilpCondition: string
+  ilpPacket: string
+  fulfilment?: string
+}
+
+export type SpecTransferCreate = Omit<SpecTransfer, 'fulfilment'>
+export type SpecTransferUpdate = {
+  id: string,
+  fulfilment: string
+}
+
+export type SaveSpecTransferResult = {
+  id: string,
+  type: 'SUCCESS' | 'FAILURE'
+}
+
+export type AttachFulfilmentResult = {
+
+}
+
 export interface DepsSpecStore {
   config: ApplicationConfig
   enums: Enums,
@@ -142,6 +170,7 @@ const TABLE_CURRENCY_LEDGER = 'specCurrencyLedger'
 const TABLE_CURRENCY_ACCOUNT = 'specCurrencyAccount'
 const TABLE_DFSP = 'specDfsp'
 const TABLE_DFSP_CURRENCY = 'specDfspCurrency'
+const TABLE_TRANSFER = 'specTransfer'
 
 
 /**
@@ -610,6 +639,49 @@ export default class SpecStore {
       clearingLimit: BigInt(row.clearingLimit),
     }
     return spec
+  }
+
+  public async saveTransferSpecs(specs: Array<SpecTransferCreate>): Promise<Array<SaveSpecTransferResult>> {
+    try {
+      const records = specs.map(m => {
+        const record = {
+          id: m.id,
+          currency: m.currency,
+          amount: m.amount,
+          expiration: m.expiration,
+          payerId: m.payerId,
+          payeeId: m.payeeId,
+          ilpCondition: m.ilpCondition,
+          ilpPacket: m.ilpPacket,
+        }
+
+        return record
+      })
+
+      await this.db.from(TABLE_TRANSFER)
+        .insert(records)
+        .onConflict('id')
+        .ignore()
+
+      return specs.map(spec => {
+        return {
+          type: 'SUCCESS',
+          id: spec.id
+        }
+      })
+    } catch (err: any) {
+      logger.error(`saveTransferSpecs() - failed with error: ${err.message}`)
+      return specs.map(spec => {
+        return {
+          type: 'FAILURE',
+          id: spec.id
+        }
+      })
+    }
+  }
+
+  public async attachFulfillment(specUpdates: Array<SpecTransferUpdate>): Promise<Array<AttachFulfilmentResult>> {
+    throw new Error(`not implemented`)
   }
 }
 
