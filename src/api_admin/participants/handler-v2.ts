@@ -349,6 +349,14 @@ export default class HandlerV2 {
         )
       }
 
+      // Backwards compatibility the name of the Participant must be `Hub`.
+      if (participant.participantId !== Config.HUB_ID) {
+        throw ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR,
+          'Endpoint is reserved for creation of Hub account types only.'
+        )
+      }
+
       // Create a default settlement model for the currency
       const settlementModel = {
         name: `DEFERRED_MULTILATERAL_NET_${currency}`,
@@ -636,7 +644,7 @@ export default class HandlerV2 {
       assert(request.payload)
       assert(request.payload.currency)
       assert(request.payload.limit)
-      assert(request.payload.limit.type)
+      assert(request.payload.limit.type === 'NET_DEBIT_CAP')
       assert(request.payload.limit.value !== undefined)
       assert(request.payload.limit.value >= 0)
       if (request.payload.limit.alarmPercentage === undefined) {

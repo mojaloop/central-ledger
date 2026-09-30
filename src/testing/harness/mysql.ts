@@ -85,10 +85,12 @@ export class MySql {
 
     // Highly optimzed `docker run` to try and improve startup time.
     // takes around 3500 ms on my Mac.
+
+    
     const command = `
     docker rm -f ${this.containerName} 2>/dev/null;
     docker run -d \
-      --name ${this.containerName} \
+    --name ${this.containerName} \
       --tmpfs /var/lib/mysql:rw,size=256m \
       -e MARIADB_ROOT_PASSWORD=password \
       -e MARIADB_DATABASE=${this.options.databaseName} \

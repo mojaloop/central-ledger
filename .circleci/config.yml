@@ -10,5 +10,5 @@ workflows:
           filters:
             tags:
               only: /v\d+(\.\d+){2}(-[a-zA-Z-][0-9a-zA-Z-]*\.\d+)?/
-          test_integration_resource_class: large
+          test_integration_resource_class: medium+
 
