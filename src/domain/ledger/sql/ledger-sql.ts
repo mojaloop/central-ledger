@@ -378,7 +378,7 @@ export class LedgerSql implements Ledger {
         limit: {
           type: 'NET_DEBIT_CAP',
           value: cmd.amount,
-          thresholdAlarmPercentage: cmd.alarmPercentage
+          alarmPercentage: cmd.alarmPercentage
         }
       }
       await Participant.adjustLimitsV2(cmd.dfspId, payload)

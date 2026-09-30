@@ -59,7 +59,7 @@ describe('ledger benchmark', () => {
   it.only('TigerBeetle solo, prepare() + fulfil()', async () => {
     const options = {
       mode: 'E2E' as 'E2E',
-      payments: envOrDefaultNumber('PAYMENTS', 1000),
+      payments: envOrDefaultNumber('PAYMENTS', 100000),
     }
     printOptions(options)
     const result = await run({
