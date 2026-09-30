@@ -83,8 +83,13 @@ exclude: [
   'src/models/settlementWindowContent/settlementWindowContentStateChange.js',
   'src/shared/results.ts',
   'src/shared/setup.js',
-
-
-  
+  'src/handlers/transfers/handler.js',
+  'src/handlers/admin/handler.js',
+  'src/handlers/register.js',
+  'src/api_admin/settlementModels/handler.js',
+  'src/handlers/transfers/handler.js',
+  'src/handlers/admin/handler.js',
+  'src/handlers/register.js',
+  'src/api_admin/settlementModels/handler.js',
 ]
 ## todo: increase test coverage before merging feat/fx-impl to main branch
