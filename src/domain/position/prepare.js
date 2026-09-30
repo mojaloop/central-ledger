@@ -51,6 +51,7 @@ const Config = require('../../lib/config')
  *   @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
  *   @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
  *   @param {object} accumulatedTransferStates - object with transfer id keys and transfer state id values. Used to check if transfer is in correct state for processing. Clone and update states for output.
+ *   @param {object} accumulatedTransferErrors - List of errors encountered while processing bin.
  *   @param {number} settlementParticipantPosition - position value of the participants settlement account
  *   @param {object} settlementModel - settlement model object for the currency
  *   @param {object} participantLimit - participant limit object for the currency
@@ -72,6 +73,7 @@ const processPositionPrepareBin = async (
   const participantPositionChanges = []
   const resultMessages = []
   const limitAlarms = []
+  const transferErrors = []
   const accumulatedTransferStatesCopy = Object.assign({}, accumulatedTransferStates)
 
   let currentPosition = new MLNumber(accumulatedPositionValue)
@@ -145,6 +147,11 @@ const processPositionPrepareBin = async (
         )
 
         binItem.result = { success: false }
+        transferErrors.push({
+          transferId: transfer.transferId,
+          errorCode: fspiopError.errorInformation.errorCode,
+          errorDescription: fspiopError.errorInformation.errorDescription
+        })
 
         // Check if payer has insufficient liquidity, produce an error message and abort transfer
       } else if (changePositions && availablePositionBasedOnLiquidityCover.toNumber() < transferAmount) {
@@ -188,6 +195,11 @@ const processPositionPrepareBin = async (
         )
 
         binItem.result = { success: false }
+        transferErrors.push({
+          transferId: transfer.transferId,
+          errorCode: fspiopError.errorInformation.errorCode,
+          errorDescription: fspiopError.errorInformation.errorDescription
+        })
 
         // Check if payer has surpassed their limit, produce an error message and abort transfer
       } else if (changePositions && availablePositionBasedOnPayerLimit.toNumber() < transferAmount) {
@@ -231,6 +243,11 @@ const processPositionPrepareBin = async (
         )
 
         binItem.result = { success: false }
+        transferErrors.push({
+          transferId: transfer.transferId,
+          errorCode: fspiopError.errorInformation.errorCode,
+          errorDescription: fspiopError.errorInformation.errorDescription
+        })
 
         // Payer has sufficient liquidity and limit or positions are not being changed
       } else {
@@ -310,6 +327,7 @@ const processPositionPrepareBin = async (
     accumulatedTransferStates: accumulatedTransferStatesCopy, // finalized transfer state after prepare processing
     accumulatedPositionReservedValue, // not used but kept for consistency
     accumulatedTransferStateChanges: transferStateChanges, // transfer state changes to be persisted in order
+    accumulatedTransferErrors: transferErrors,
     limitAlarms, // array of participant limits that have been breached
     accumulatedPositionChanges: changePositions ? participantPositionChanges : [], // participant position changes to be persisted in order
     notifyMessages: resultMessages // array of objects containing bin item and result message. {binItem, message}

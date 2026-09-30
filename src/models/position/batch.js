@@ -167,6 +167,13 @@ const bulkInsertParticipantPositionChanges = async (trx, participantPositionChan
   return await knex.batchInsert('participantPositionChange', participantPositionChangeList).transacting(trx)
 }
 
+const bulkInsertTransferErrors = async (trx, transferErrorList) => {
+  const knex = Db.getKnex()
+  if (transferErrorList.length > 0) {
+    await knex('transferError').transacting(trx).insert(transferErrorList)
+  }
+}
+
 const getTransferByIdsForReserve = async (trx, transferIds) => {
   if (transferIds && transferIds.length > 0) {
     try {
@@ -272,6 +279,7 @@ module.exports = {
   bulkInsertTransferStateChanges,
   bulkInsertFxTransferStateChanges,
   bulkInsertParticipantPositionChanges,
+  bulkInsertTransferErrors,
   getAllParticipantCurrency,
   getTransferInfoList,
   getTransferByIdsForReserve,

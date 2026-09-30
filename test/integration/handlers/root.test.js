@@ -37,7 +37,7 @@ const Config = require('../../../src/lib/config')
 const ProxyCache = require('../../../src/lib/proxyCache')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 // const Producer = require('@mojaloop/central-services-stream').Util.Producer
-const rootApiHandler = require('../../../src/api/root/handler')
+const rootApiHandler = require('../../../src/api_admin/root/handler')
 const {
   createRequest,
   unwrapResponse,

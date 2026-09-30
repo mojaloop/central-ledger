@@ -43,7 +43,8 @@ const rethrow = require('../../shared/rethrow')
  *
  * @param {string} transferId - the transfer id
  *
- * @returns {object} - Returns the record from transferFulfilmentDuplicateCheck table, or throws an error if failed
+ * @returns {Promise<{transferId: string, hash: string, createdDate: Date}>}
+ * Returns the record from transferFulfilmentDuplicateCheck table, or throws an error if failed
  */
 
 const getTransferFulfilmentDuplicateCheck = async (transferId) => {
@@ -70,7 +71,7 @@ const getTransferFulfilmentDuplicateCheck = async (transferId) => {
 const saveTransferFulfilmentDuplicateCheck = async (transferId, hash) => {
   Logger.isDebugEnabled && Logger.debug(`save transferFulfilmentDuplicateCheck (transferId=${transferId}, hash=${hash})`)
   try {
-    return Db.from('transferFulfilmentDuplicateCheck').insert({ transferId, hash })
+    return Db.from('transferFulfilmentDuplicateCheck').insert({ transferId, hash, createdDate: new Date() })
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }

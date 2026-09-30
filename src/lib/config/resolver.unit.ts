@@ -38,7 +38,7 @@ describe('lib/config/resolver', () => {
     assert.ok(config)
   })
 
-  it('throws if LEDGER !== LEGACY', () => {
+  it('throws if LEDGER !== SQL || TIGERBEETLE', () => {
     // Arrange
     const pathToConfigFile = path.join(__dirname, '../../..', 'config/default.json')
     const raw = parseStringsInObject(RC('CLEDG', require(pathToConfigFile)))

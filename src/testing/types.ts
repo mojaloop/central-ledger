@@ -25,7 +25,7 @@
 
  ******/
 
-export type TagTask = 'TEST_UNIT' | 'TEST_COVERAGE' | 'TEST_FUNCTIONAL' | 'TEST_INTEGRATION'
+export type TagTask = 'TEST_UNIT' | 'TEST_COVERAGE' | 'TEST_FUNCTIONAL' | 'TEST_INTEGRATION' | 'TEST_FUZZ'
 
 export type RunTask = {
   tag: 'TEST_UNIT',
@@ -35,15 +35,18 @@ export type RunTask = {
   outputPath?: string
 } | {
   tag: 'TEST_COVERAGE',
-  type: 'TAPE' | 'NATIVE' | 'BOTH',
+  type: 'TAPE' | 'NATIVE' | 'INTEGRATION' | 'FUZZ' | 'ALL' | 'UNIT',
   onlyReport: boolean
 } | {
   tag: 'TEST_INTEGRATION',
+} | {
+  tag: 'TEST_FUZZ',
 }
 
 export type RunTaskUnit = Extract<RunTask, { tag: 'TEST_UNIT' }>
 export type RunTaskCoverage = Extract<RunTask, { tag: 'TEST_COVERAGE' }>
 export type RunTaskIntegration = Extract<RunTask, { tag: 'TEST_INTEGRATION' }>
+export type RunTaskFuzz = Extract<RunTask, { tag: 'TEST_FUZZ' }>
 
 export type ResultTest = {
   output: string,

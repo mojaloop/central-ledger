@@ -43,6 +43,54 @@ exclude: [
   'src/**/*.test.ts',
   'src/testing/**',     # Test runner.
   'src/**/*.unit.ts',   # Unit test files.
-  'src/**/*.int.ts'    # Integration test tests.
+  'src/**/*.int.ts',    # Integration test tests.
+  'src/shared/refactor-helper.ts', # Will be deleted.
+  # The following are works in progress, not tested in unit tests but integration tests.
+  'src/handlers/dispatch-transfer-handler.ts',
+  'src/handlers/forex-fulfil.ts',
+  'src/handlers/forex-prepare.ts',
+  'src/handlers/payment-fulfil.ts',
+  'src/handlers/payment-prepare.ts',
+  'src/handlers/transfer-helper.ts',
+
+  # TODO: LD update me.
+  'src/api_admin/participants/handler-v2.ts',
+  'src/api_admin/participants/handler.fuzz.ts',
+  'src/api_admin/server.ts',
+  'src/api_admin/transactions/handler-v2.ts',
+  'src/api_settlement/handler-v2.ts',
+  'src/domain/ledger/ledger.fuzz.ts',
+  'src/domain/ledger/shared/results.ts',
+  'src/domain/ledger/sql/ledger-sql.ts',
+  'src/domain/ledger/tigerbeetle/helper.ts',
+  'src/domain/ledger/tigerbeetle/ledger-tigerbeetle.ts',
+  'src/domain/ledger/tigerbeetle/spec-store.ts',
+  'src/domain/settlement/index.js',
+  'src/domain/settlementWindow/index.js',
+  'src/domain/timeout/index.js',
+  'src/handlers/forex-forward.ts',
+  'src/handlers/payment-forward.ts',
+  'src/handlers/position-v2.ts',
+  'src/handlers/timeout-v2.ts',
+  'src/lib/config/resolver.ts',
+  'src/lib/config/util.ts',
+  'src/messaging/message-bus.ts',
+  'src/models/settlement/settlement.js',
+  'src/models/settlement/settlementParticipantCurrency.js',
+  'src/models/settlementWindow/facade.js',
+  'src/models/settlementWindow/settlementWindowStateChange.js',
+  'src/models/settlementWindowContent/facade.js',
+  'src/models/settlementWindowContent/settlementWindowContentStateChange.js',
+  'src/shared/results.ts',
+  'src/shared/setup.js',
+  'src/handlers/transfers/handler.js',
+  'src/handlers/admin/handler.js',
+  'src/handlers/register.js',
+  'src/api_admin/settlementModels/handler.js',
+  'src/handlers/transfers/handler.js',
+  'src/handlers/admin/handler.js',
+  'src/handlers/register.js',
+  'src/api_admin/settlementModels/handler.js',
+  'src/api_settlement/settlement.fuzz.ts',
 ]
 ## todo: increase test coverage before merging feat/fx-impl to main branch

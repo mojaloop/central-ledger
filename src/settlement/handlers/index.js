@@ -39,7 +39,7 @@ const Config = require('../../lib/config')
 const Setup = require('../shared/setup')
 const PJson = require('../../../package.json')
 const { Command } = require('commander')
-const HandlerRoutes = require('../api/handlerRoutes')
+const HandlerRoutes = require('../../api_settlement/handlerRoutes')
 
 const Program = new Command()
 

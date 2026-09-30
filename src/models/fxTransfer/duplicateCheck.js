@@ -85,7 +85,11 @@ const saveCommitRequestIdAndHash = async ({ commitRequestId, hash, table, queryN
  *
  * @param {string} commitRequestId - the fxTransfer commitRequestId
  *
- * @returns {object} - Returns the record from fxTransferDuplicateCheck table, or throws an error if failed
+ * @returns {Promise<{
+ *  commitRequestId: string,
+ *  hash: string,
+ *  createdDate: string
+ * }>} - Returns the record from fxTransferDuplicateCheck table, or throws an error if failed
  */
 const getFxTransferDuplicateCheck = async (commitRequestId) => {
   const table = TABLE_NAMES.fxTransferDuplicateCheck
@@ -118,7 +122,11 @@ const saveFxTransferDuplicateCheck = async (commitRequestId, hash) => {
  *
  * @param {string} commitRequestId - the fxTransfer commitRequestId
  *
- * @returns {object} - Returns the record from fxTransferDuplicateCheck table, or throws an error if failed
+ * @returns {Promise<{
+ *  commitRequestId: string,
+ *  hash: string,
+ *  createdDate: string
+ * }>} - Returns the record from fxTransferErrorDuplicateCheck table, or throws an error if failed
  */
 const getFxTransferErrorDuplicateCheck = async (commitRequestId) => {
   const table = TABLE_NAMES.fxTransferErrorDuplicateCheck

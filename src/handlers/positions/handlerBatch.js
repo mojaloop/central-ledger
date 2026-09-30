@@ -193,6 +193,7 @@ const positions = batchConfig => async (error, messages) => {
     histTimerEnd({ success: true })
   } catch (err) {
     Logger.error(`handlerBatch failed with error: ${err.message}`)
+    Logger.error(`stack: ${err.stack}`)
     // If Bin Processor returns failure
     // -  Rollback DB transaction
     await trx?.rollback()
@@ -243,6 +244,8 @@ const registerPositionHandler = async () => {
       config: batchConfig
     }
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${randomUUID()}`
+    console.log('topicName', positionHandler.topicName)
+    console.log('config', positionHandler.config)
     await Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
   } catch (err) {

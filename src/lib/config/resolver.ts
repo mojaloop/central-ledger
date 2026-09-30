@@ -38,6 +38,7 @@ import {
   assertKafkaConfig,
   assertNestedFields,
   assertNumber,
+  assertOneOf,
   assertProvisioning,
   assertProxyCacheConfig,
   assertString,
@@ -118,6 +119,10 @@ const resolveConfig = (rawConfig: any): UnsafeApplicationConfig => {
     HANDLERS_TIMEOUT_DISABLED: rawConfig.HANDLERS.TIMEOUT.DISABLED,
     HANDLERS_TIMEOUT_TIMEXP: rawConfig.HANDLERS.TIMEOUT.TIMEXP,
     HANDLERS_TIMEOUT_TIMEZONE: rawConfig.HANDLERS.TIMEOUT.TIMEZONE,
+    HANDLERS_TRANSFER_DISPATCH_MODE: defaultTo(rawConfig.HANDLERS.TRANSFER_DISPATCH_MODE, 'SPLIT'),
+    HANDLERS_TRANSFER_POSITION_FUSE: defaultTo(rawConfig.HANDLERS.TRANSFER_POSITION_FUSE, 'FUSE'),
+    API_MODE_ADMIN: defaultTo(rawConfig.API_MODE_ADMIN, 'LEDGER'),
+    API_MODE_SETTLEMENT: defaultTo(rawConfig.API_MODE_ADMIN, 'LEDGER'),
     INSTRUMENTATION_METRICS_DISABLED: rawConfig.INSTRUMENTATION.METRICS.DISABLED,
     INSTRUMENTATION_METRICS_LABELS: rawConfig.INSTRUMENTATION.METRICS.labels,
     INSTRUMENTATION_METRICS_CONFIG: rawConfig.INSTRUMENTATION.METRICS.config,
@@ -135,7 +140,8 @@ const resolveConfig = (rawConfig: any): UnsafeApplicationConfig => {
     WINDOW_AGGREGATION_RETRY_INTERVAL: rawConfig.WINDOW_AGGREGATION.RETRY_INTERVAL,
     KAFKA_CONFIG: kafka,
     SERVER_PRINT_ROUTES_ON_STARTUP: defaultTo(rawConfig.SERVER_PRINT_ROUTES_ON_STARTUP, true),
-    LEDGER: defaultTo(rawConfig.LEDGER, 'LEGACY'),
+    LEDGER: defaultTo(rawConfig.LEDGER, 'SQL'),
+    TIGERBEETLE_ADDRESSES: rawConfig.TIGERBEETLE_ADDRESSES,
     EXPERIMENTAL: {
       PROVISIONING: {
         enabled: defaultTo(rawConfig.EXPERIMENTAL?.PROVISIONING?.enabled, false),
@@ -174,6 +180,7 @@ const parseAndValidateConfig = (unsafeConfig: UnsafeApplicationConfig): Applicat
   assertBoolean(unsafeConfig.HANDLERS_TIMEOUT_DISABLED)
   assertString(unsafeConfig.HANDLERS_TIMEOUT_TIMEXP)
   assertString(unsafeConfig.HANDLERS_TIMEOUT_TIMEZONE)
+  assertOneOf(unsafeConfig.HANDLERS_TRANSFER_DISPATCH_MODE, ['JOINED', 'SPLIT'])
   assert(unsafeConfig.CACHE_CONFIG)
   assertBoolean(unsafeConfig.CACHE_CONFIG.CACHE_ENABLED)
   assertNumber(unsafeConfig.CACHE_CONFIG.MAX_BYTE_SIZE)
@@ -202,9 +209,10 @@ const parseAndValidateConfig = (unsafeConfig: UnsafeApplicationConfig): Applicat
   assert(unsafeConfig.EXPERIMENTAL)
   assertProvisioning(unsafeConfig.EXPERIMENTAL.PROVISIONING)
 
-  // Now assert config business logic - apply rules.
-  if (unsafeConfig.LEDGER !== 'LEGACY') {
-    throw new Error(`LEDGER must be LEGACY. TIGERBEETLE and LOCKSTEP ledgers are currently unsupported.`)
+  // Now assert config business logic.
+  assertOneOf(unsafeConfig.LEDGER, ['SQL', 'TIGERBEETLE'])
+  if (unsafeConfig.LEDGER !== 'SQL') {
+    logger.warn(`LEDGER=${unsafeConfig.LEDGER}. Use in test environments only!`)
   }
 
   if (unsafeConfig.EXPERIMENTAL.PROVISIONING.enabled) {

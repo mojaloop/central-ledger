@@ -30,7 +30,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Base = require('../../base')
-const AdminRoutes = require('../../../../src/api/routes')
+const AdminRoutes = require('../../../../src/api_admin/routes')
 
 Test('/ledgerAccountTypes router ', async ledgerAccountTypesRoutesTest => {
   ledgerAccountTypesRoutesTest.test('should have the routes', async function (test) {

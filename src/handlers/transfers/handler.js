@@ -37,7 +37,7 @@
 /**
  * @module src/handlers/transfers
  */
-
+const assert = require('node:assert')
 const Logger = require('../../shared/logger').logger
 const EventSdk = require('@mojaloop/event-sdk')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -252,9 +252,26 @@ const processFulfilMessage = async (message, functionality, span) => {
 
       // Key position abort with payer account id
       const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
+      const cyrilResult = await FxService.Cyril.processAbortMessage(transferId)
+      params.message.value.content.context = {
+        ...params.message.value.content.context,
+        cyrilResult
+      }
 
       // Publish message to Position Handler
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, toDestination: transfer.payerFsp, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
+      await Kafka.proceed(
+        Config.KAFKA_CONFIG,
+        params,
+        {
+          consumerCommit,
+          fspiopError: apiFSPIOPError,
+          eventDetail,
+          fromSwitch,
+          toDestination: transfer.payerFsp,
+          messageKey: payerAccount.participantCurrencyId.toString(),
+          topicNameOverride: Config.KAFKA_CONFIG.EVENT_TYPE_ACTION_TOPIC_MAP?.POSITION?.ABORT,
+          hubName: Config.HUB_NAME
+        })
 
       /**
        * Send patch notification callback to original payee fsp if they asked for a patch response.
@@ -971,16 +988,31 @@ const getTransfer = async (error, messages) => {
  * @async
  * @description Registers the handler for prepare topic. Gets Kafka config from default.json
  */
-const registerPrepareHandler = async () => {
+const registerPrepareHandler = async (dispatchTransferHandler) => {
+  assert(dispatchTransferHandler, 'expected dispatchTransferHandler to be defined.')
+
   try {
     const { TRANSFER } = TransferEventType
     const { PREPARE } = TransferEventAction
-
-    const topicName = Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TRANSFER, PREPARE)
-    const consumeConfig = Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
+    const topicName = Kafka.transformGeneralTopicName(
+      Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+      TRANSFER,
+      PREPARE
+    )
+    const consumeConfig = Kafka.getKafkaConfig(
+      Config.KAFKA_CONFIG,
+      Enum.Kafka.Config.CONSUMER,
+      TRANSFER.toUpperCase(),
+      PREPARE.toUpperCase()
+    )
     consumeConfig.rdkafkaConf['client.id'] = topicName
 
-    await Consumer.createHandler(topicName, consumeConfig, prepare)
+    await Consumer.createHandler(
+      topicName,
+      consumeConfig,
+      /* istanbul ignore next */
+      (err, msg) => dispatchTransferHandler.prepare(err, msg)
+    )
     return true
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'registerPrepareHandler' })
@@ -995,15 +1027,30 @@ const registerPrepareHandler = async () => {
  * Calls createHandler to register the handler against the Stream Processing API
  * @returns {Promise<boolean>} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerFulfilHandler = async () => {
+const registerFulfilHandler = async (dispatchTransferHandler) => {
+  assert(dispatchTransferHandler, 'expected dispatchTransferHandler to be defined.')
+
   try {
     const fulfillHandler = {
       command: fulfil,
-      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL),
-      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
+      topicName: Kafka.transformGeneralTopicName(
+        Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE,
+        TransferEventType.TRANSFER, TransferEventType.FULFIL
+      ),
+      config: Kafka.getKafkaConfig(
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.CONSUMER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase()
+      )
     }
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
-    await Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
+    await Consumer.createHandler(
+      fulfillHandler.topicName,
+      fulfillHandler.config,
+      /* istanbul ignore next */
+      (err, msg) => dispatchTransferHandler.fulfil(err, msg)
+    )
     return true
   } catch (err) {
     rethrow.rethrowAndCountFspiopError(err, { operation: 'registerFulfilHandler' })
@@ -1016,7 +1063,7 @@ const registerFulfilHandler = async () => {
  * @async
  * @description Registers the one handler for get a transfer by Id. Gets Kafka config from default.json
  * Calls createHandler to register the handler against the Stream Processing API
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ * @returns {Promise<boolean>} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerGetTransferHandler = async () => {
   try {
@@ -1041,10 +1088,10 @@ const registerGetTransferHandler = async () => {
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerAllHandlers = async () => {
+const registerAllHandlers = async (dispatchTransferHandler) => {
   try {
-    await registerPrepareHandler()
-    await registerFulfilHandler()
+    await registerPrepareHandler(dispatchTransferHandler)
+    await registerFulfilHandler(dispatchTransferHandler)
     await registerGetTransferHandler()
     return true
   } catch (err) {

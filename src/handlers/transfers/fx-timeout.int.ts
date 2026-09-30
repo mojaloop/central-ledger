@@ -25,17 +25,12 @@
  ******/
 
 import { after, before, describe, it } from "node:test"
-import Harness from '../../testing/harness'
-import { Snapshot } from "../../testing/snapshot"
-import * as ApiHelpers from '../../testing/api-helpers'
 import assert from "node:assert"
-import { assertPositionDiff, sleepSeconds } from "../../testing/util"
-import TimeoutHandler from '../timeouts/handler'
+import Harness from '../../testing/harness/harness'
+import * as ApiHelpers from '../../testing/api-helpers'
+import { assertPositionDiff, futureDate } from "../../testing/util"
 
 const harness = Harness.getInstance()
-let PrepareHandler: any
-let TransferHandler: any
-let PositionBatchHandler: any
 let ExternalParticipantCached: any
 let TransferFacade: any
 let FxTransferService: any
@@ -43,50 +38,24 @@ let proxyCache: any
 
 describe('handlers/tx-timeout', () => {
   before(async () => {
-    await harness.up('BATCH')
+    await harness.up()
     await harness.setupGlobals()
 
-    // Import after bringing up the harness, so that global config is overriden.
-    TransferHandler = require('./handler')
-    PrepareHandler = require('./prepare')
-    PositionBatchHandler = require('../positions/handlerBatch')
+    // Import after bringing up the harness, so the global config is overriden.
     TransferFacade = require('../../models/transfer/facade')
     FxTransferService = require('../../domain/fx/index')
     ExternalParticipantCached = require('../../models/participant/externalParticipantCached')
     proxyCache = require('../../lib/proxyCache')
     await proxyCache.connect()
-    await TransferHandler.registerPrepareHandler()
-    await TransferHandler.registerFulfilHandler()
 
     // Create the hub accounts + settlement model.
-    const createHubPayload: ApiHelpers.CreateHubPayload = {
-      currencies: ['BWP', 'USD'],
-      settlementModels: [
-        {
-          name: `DEFERRED_MULTILATERAL_NET_BWP`,
-          settlementGranularity: "NET",
-          settlementInterchange: "MULTILATERAL",
-          settlementDelay: "DEFERRED",
-          currency: 'BWP',
-          requireLiquidityCheck: true,
-          ledgerAccountType: "POSITION",
-          settlementAccountType: "SETTLEMENT",
-          autoPositionReset: true
-        },
-        {
-          name: `DEFERRED_MULTILATERAL_NET_USD`,
-          settlementGranularity: "NET",
-          settlementInterchange: "MULTILATERAL",
-          settlementDelay: "DEFERRED",
-          currency: 'USD',
-          requireLiquidityCheck: true,
-          ledgerAccountType: "POSITION",
-          settlementAccountType: "SETTLEMENT",
-          autoPositionReset: true
-        }
-      ]
-    }
-    await ApiHelpers.createHub(harness, createHubPayload)
+    await ApiHelpers.buildHub()
+      .deps(harness)
+      .currency('BWP')
+      .currency('USD')
+      .build()
+      .create()
+
     // Create 2 test dfsps to transfer between.
     await ApiHelpers.createDfsp(harness, {
       name: 'dfsp_a',
@@ -142,7 +111,7 @@ describe('handlers/tx-timeout', () => {
 
     // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.
     await ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .parties('dfsp_a', 'dfsp_b')
       .transferId('1000001')
       .amount('1.00', 'BWP')
@@ -159,7 +128,7 @@ describe('handlers/tx-timeout', () => {
   it('FX Transfer expires without dependent transfer, then resets the position', async () => {
     const positionPayerPre = await ApiHelpers.getPositionAccount('dfsp_a', 'BWP')
     const forex = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .commitRequestId('8000001')
       .determiningTransferId('9000001')
       .parties('dfsp_a', 'fxp_a')
@@ -176,31 +145,8 @@ describe('handlers/tx-timeout', () => {
     let fxTransfer = await FxTransferService.getByIdLight('8000001')
     assert.equal(fxTransfer.fxTransferState, 'RESERVED')
 
-    await sleepSeconds(10)
-    const mark = harness.redpandaMark()
-    const resultTimeout = await TimeoutHandler.timeout()
-    assert(resultTimeout)
-    // Annoyingly the timeout handler still includes aborted transfers in timeouts.
-    const fxTransfers = resultTimeout.fxTransferTimeoutList
-      .filter((transfer: any) => transfer.transferStateId === 'RESERVED_TIMEOUT')
-    Snapshot.from(`[
-      {
-        "fxTransferTimeoutId": 1,
-        "commitRequestId": "8000001",
-        "expirationDate": :ignore
-        "createdDate": :ignore
-        "transferStateId": "RESERVED_TIMEOUT",
-        "initiatingParticipantCurrencyId": null,
-        "initiatingFsp": "dfsp_a",
-        "counterPartyFsp": "fxp_a",
-        "counterPartyParticipantCurrencyId": :ignore
-        "effectedParticipantCurrencyId": :ignore
-        "externalInitiatingFspName": null,
-        "externalCounterPartyFspName": null
-      }
-    ]`).checkUnwrap(fxTransfers)
-    assert(fxTransfers.length === 1)
-    await harness.redpandaDrain(mark, 2)
+    await harness.messageBus.timeout(futureDate(10, 'm'))
+    await harness.redpandaDrainSmart(harness.expect.messagesForexTimeout(), '8000001')
 
     fxTransfer = await FxTransferService.getByIdLight('8000001')
     assert.equal(fxTransfer.fxTransferState, 'EXPIRED_RESERVED')
@@ -210,11 +156,10 @@ describe('handlers/tx-timeout', () => {
 
   it('FX + dependent transfer timeout resets both payer and FXP target currency positions.', async () => {
     const positionPayerPre = await ApiHelpers.getPositionAccount('dfsp_a', 'BWP')
-    const positionFxpBwpPre = await ApiHelpers.getPositionAccount('fxp_a', 'BWP')
     const positionFxpUsdPre = await ApiHelpers.getPositionAccount('fxp_a', 'USD')
 
     const forex = ApiHelpers.buildForex()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .commitRequestId('8000002')
       .determiningTransferId('9000002')
       .parties('dfsp_a', 'fxp_a')
@@ -234,43 +179,20 @@ describe('handlers/tx-timeout', () => {
     assert.equal(fxTransfer.fxTransferState, 'RECEIVED_FULFIL_DEPENDENT')
 
     const payment = ApiHelpers.buildPayment()
-      .deps(harness, TransferHandler)
+      .deps(harness, harness.messageBus)
       .parties('fxp_a', 'dfsp_b')
       .transferId('9000002')
       .amount('10.00', 'USD')
       .expiry(1)
-      .fx()
+      .fx('8000002')
       .build()
 
     await payment.prepare()
 
     // Now time out the payment.
-    await sleepSeconds(10)
-    const mark = harness.redpandaMark()
-    const resultTimeout = await TimeoutHandler.timeout()
-    assert(resultTimeout)
-    // Annoyingly the timeout handler still includes aborted transfers in timeouts.
-    const transfers = resultTimeout.transferTimeoutList
-      .filter((transfer: any) => transfer.transferStateId === 'RESERVED_TIMEOUT')
-    Snapshot.from(`[
-      {
-        "transferTimeoutId": :ignore
-        "transferId": "9000002",
-        "expirationDate": :ignore
-        "createdDate": :ignore
-        "transferStateId": "RESERVED_TIMEOUT",
-        "payerParticipantCurrencyId": null,
-        "payerFsp": "fxp_a",
-        "payeeFsp": "dfsp_b",
-        "payeeParticipantCurrencyId": :ignore
-        "bulkTransferId": null,
-        "effectedParticipantCurrencyId": :ignore
-        "externalPayerName": null,
-        "externalPayeeName": null
-      }
-    ]`).checkUnwrap(transfers)
-    assert(transfers.length === 1)
-    await harness.redpandaDrain(mark, 4)
+    await harness.messageBus.timeout(futureDate(10, 'm'))
+    await harness.redpandaDrainSmart(harness.expect.messagesForexTimeout(), '8000002')
+    await harness.redpandaDrainSmart(harness.expect.messagesPaymentTimeout(), '9000002')
 
     const transfer = await TransferFacade.getById('9000002')
     assert.equal(transfer.transferState, 'EXPIRED_RESERVED')

@@ -30,7 +30,7 @@
 
 'use strict'
 
-const RootHandler = require('../../api/root/handler')
+const RootHandler = require('../../api_admin/root/handler')
 const tags = ['api', 'root']
 
 module.exports = [

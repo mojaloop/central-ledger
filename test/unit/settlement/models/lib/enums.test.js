@@ -52,7 +52,7 @@ Test('Enums', async (enumsTest) => {
     test.end()
   })
 
-  await enumsTest.test('settlementWindowStates should', async settlementWindowStatesTest => {
+  await enumsTest.test('settlementWindowState should', async settlementWindowStatesTest => {
     try {
       await settlementWindowStatesTest.test('return', async test => {
         try {
@@ -64,10 +64,10 @@ Test('Enums', async (enumsTest) => {
             { settlementWindowStateId: 'ABORTED', enumeration: 'ABORTED' }
           ]
           Db.settlementWindowState = { find: sandbox.stub().returns(states) }
-          let settlementWindowStatesEnum = await Enums.settlementWindowStates()
+          let settlementWindowStatesEnum = await Enums.settlementWindowState()
           test.equal(Object.keys(settlementWindowStatesEnum).length, states.length, 'settlement window states enum')
           Db.settlementWindowState.find = sandbox.stub().returns(undefined)
-          settlementWindowStatesEnum = await Enums.settlementWindowStates()
+          settlementWindowStatesEnum = await Enums.settlementWindowState()
           test.notOk(settlementWindowStatesEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -80,7 +80,7 @@ Test('Enums', async (enumsTest) => {
       await settlementWindowStatesTest.test('throw error if database is unavailable', async test => {
         try {
           Db.settlementWindowState = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.settlementWindowStates()
+          await Enums.settlementWindowState()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -97,7 +97,7 @@ Test('Enums', async (enumsTest) => {
     }
   })
 
-  await enumsTest.test('settlementStates should', async settlementStatesTest => {
+  await enumsTest.test('settlementState should', async settlementStatesTest => {
     try {
       await settlementStatesTest.test('return', async test => {
         try {
@@ -107,10 +107,10 @@ Test('Enums', async (enumsTest) => {
             { settlementStateId: 'ABORTED', enumeration: 'ABORTED' }
           ]
           Db.settlementState = { find: sandbox.stub().returns(states) }
-          let settlementStatesEnum = await Enums.settlementStates()
+          let settlementStatesEnum = await Enums.settlementState()
           test.equal(Object.keys(settlementStatesEnum).length, states.length, 'settlement states enum')
           Db.settlementState.find = sandbox.stub().returns(undefined)
-          settlementStatesEnum = await Enums.settlementStates()
+          settlementStatesEnum = await Enums.settlementState()
           test.notOk(settlementStatesEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -123,7 +123,7 @@ Test('Enums', async (enumsTest) => {
       await settlementStatesTest.test('throw error if database is unavailable', async test => {
         try {
           Db.settlementState = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.settlementStates()
+          await Enums.settlementState()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -140,7 +140,7 @@ Test('Enums', async (enumsTest) => {
     }
   })
 
-  await enumsTest.test('transferStates should', async transferStatesTest => {
+  await enumsTest.test('transferState should', async transferStatesTest => {
     try {
       await transferStatesTest.test('return', async test => {
         try {
@@ -156,10 +156,10 @@ Test('Enums', async (enumsTest) => {
             { transferStateId: 'INVALID', enumeration: 'ABORTED' }
           ]
           Db.transferState = { find: sandbox.stub().returns(states) }
-          let transferStatesEnum = await Enums.transferStates()
+          let transferStatesEnum = await Enums.transferState()
           test.equal(Object.keys(transferStatesEnum).length, states.length, 'transfer states enum')
           Db.transferState.find = sandbox.stub().returns(undefined)
-          transferStatesEnum = await Enums.transferStates()
+          transferStatesEnum = await Enums.transferState()
           test.notOk(transferStatesEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -172,7 +172,7 @@ Test('Enums', async (enumsTest) => {
       await transferStatesTest.test('throw error if database is unavailable', async test => {
         try {
           Db.transferState = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.transferStates()
+          await Enums.transferState()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -201,11 +201,11 @@ Test('Enums', async (enumsTest) => {
             { enumeration: 'ABORTED' }
           ]
           Db.transferState = { find: sandbox.stub().returns(states) }
-          let transferStateEnumsEnum = await Enums.transferStateEnums()
+          let transferStateEnumsEnum = await Enums.transferStateEnum()
           test.equal(Object.keys(transferStateEnumsEnum).length, states.length - 1, 'transfer states enum')
 
           Db.transferState.find = sandbox.stub().returns(undefined)
-          transferStateEnumsEnum = await Enums.transferStateEnums()
+          transferStateEnumsEnum = await Enums.transferStateEnum()
           test.notOk(transferStateEnumsEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -218,7 +218,7 @@ Test('Enums', async (enumsTest) => {
       await transferStateEnumsTest.test('throw error if database is unavailable', async test => {
         try {
           Db.transferState = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.transferStateEnums()
+          await Enums.transferStateEnum()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -235,7 +235,7 @@ Test('Enums', async (enumsTest) => {
     }
   })
 
-  await enumsTest.test('ledgerAccountTypes should', async ledgerAccountTypesTest => {
+  await enumsTest.test('ledgerAccountType should', async ledgerAccountTypesTest => {
     try {
       await ledgerAccountTypesTest.test('return', async test => {
         try {
@@ -245,10 +245,10 @@ Test('Enums', async (enumsTest) => {
             { ledgerAccountTypeId: 3, name: 'HUB_SETTLEMENT' }
           ]
           Db.ledgerAccountType = { find: sandbox.stub().returns(states) }
-          let ledgerAccountTypesEnum = await Enums.ledgerAccountTypes()
+          let ledgerAccountTypesEnum = await Enums.ledgerAccountType()
           test.equal(Object.keys(ledgerAccountTypesEnum).length, states.length, 'ledger account type enum')
           Db.ledgerAccountType.find = sandbox.stub().returns(undefined)
-          ledgerAccountTypesEnum = await Enums.ledgerAccountTypes()
+          ledgerAccountTypesEnum = await Enums.ledgerAccountType()
           test.notOk(ledgerAccountTypesEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -261,7 +261,7 @@ Test('Enums', async (enumsTest) => {
       await ledgerAccountTypesTest.test('throw error if database is unavailable', async test => {
         try {
           Db.ledgerAccountType = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.ledgerAccountTypes()
+          await Enums.ledgerAccountType()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -278,7 +278,7 @@ Test('Enums', async (enumsTest) => {
     }
   })
 
-  await enumsTest.test('ledgerEntryTypes should', async ledgerEntryTypesTest => {
+  await enumsTest.test('ledgerEntryType should', async ledgerEntryTypesTest => {
     try {
       await ledgerEntryTypesTest.test('return', async test => {
         try {
@@ -288,10 +288,10 @@ Test('Enums', async (enumsTest) => {
             { ledgerEntryTypeId: 3, name: 'HUB_FEE' }
           ]
           Db.ledgerEntryType = { find: sandbox.stub().returns(states) }
-          let ledgerEntryTypesEnum = await Enums.ledgerEntryTypes()
+          let ledgerEntryTypesEnum = await Enums.ledgerEntryType()
           test.equal(Object.keys(ledgerEntryTypesEnum).length, states.length, 'ledger entry type enum')
           Db.ledgerEntryType.find = sandbox.stub().returns(undefined)
-          ledgerEntryTypesEnum = await Enums.ledgerEntryTypes()
+          ledgerEntryTypesEnum = await Enums.ledgerEntryType()
           test.notOk(ledgerEntryTypesEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -304,7 +304,7 @@ Test('Enums', async (enumsTest) => {
       await ledgerEntryTypesTest.test('throw error if database is unavailable', async test => {
         try {
           Db.ledgerEntryType = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.ledgerEntryTypes()
+          await Enums.ledgerEntryType()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -321,7 +321,7 @@ Test('Enums', async (enumsTest) => {
     }
   })
 
-  await enumsTest.test('transferParticipantRoleTypes should', async transferParticipantRoleTypesTest => {
+  await enumsTest.test('transferParticipantRoleType should', async transferParticipantRoleTypesTest => {
     try {
       await transferParticipantRoleTypesTest.test('return', async test => {
         try {
@@ -331,10 +331,10 @@ Test('Enums', async (enumsTest) => {
             { transferParticipantRoleTypeId: 3, name: 'HUB' }
           ]
           Db.transferParticipantRoleType = { find: sandbox.stub().returns(states) }
-          let transferParticipantRoleTypesEnum = await Enums.transferParticipantRoleTypes()
+          let transferParticipantRoleTypesEnum = await Enums.transferParticipantRoleType()
           test.equal(Object.keys(transferParticipantRoleTypesEnum).length, states.length, 'transfer participant role type enum')
           Db.transferParticipantRoleType.find = sandbox.stub().returns(undefined)
-          transferParticipantRoleTypesEnum = await Enums.transferParticipantRoleTypes()
+          transferParticipantRoleTypesEnum = await Enums.transferParticipantRoleType()
           test.notOk(transferParticipantRoleTypesEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -347,7 +347,7 @@ Test('Enums', async (enumsTest) => {
       await transferParticipantRoleTypesTest.test('throw error if database is unavailable', async test => {
         try {
           Db.transferParticipantRoleType = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.transferParticipantRoleTypes()
+          await Enums.transferParticipantRoleType()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -364,7 +364,7 @@ Test('Enums', async (enumsTest) => {
     }
   })
 
-  await enumsTest.test('participantLimitTypes should', async participantLimitTypesTest => {
+  await enumsTest.test('participantLimitType should', async participantLimitTypesTest => {
     try {
       await participantLimitTypesTest.test('return', async test => {
         try {
@@ -372,10 +372,10 @@ Test('Enums', async (enumsTest) => {
             { participantLimitTypeId: 1, name: 'NET_DEBIT_CAP' }
           ]
           Db.participantLimitType = { find: sandbox.stub().returns(states) }
-          let participantLimitTypesEnum = await Enums.participantLimitTypes()
+          let participantLimitTypesEnum = await Enums.participantLimitType()
           test.equal(Object.keys(participantLimitTypesEnum).length, states.length, 'participant limit type enum')
           Db.participantLimitType.find = sandbox.stub().returns(undefined)
-          participantLimitTypesEnum = await Enums.participantLimitTypes()
+          participantLimitTypesEnum = await Enums.participantLimitType()
           test.notOk(participantLimitTypesEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -388,7 +388,7 @@ Test('Enums', async (enumsTest) => {
       await participantLimitTypesTest.test('throw error if database is unavailable', async test => {
         try {
           Db.participantLimitType = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.participantLimitTypes()
+          await Enums.participantLimitType()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -454,10 +454,10 @@ Test('Enums', async (enumsTest) => {
             { settlementDelayId: 1, name: 'IMMEDIATE' }
           ]
           Db.settlementDelay = { find: sandbox.stub().returns(delays) }
-          let settlementDelayEnum = await Enums.settlementDelayEnums()
+          let settlementDelayEnum = await Enums.settlementDelayEnum()
           test.equal(Object.keys(settlementDelayEnum).length, delays.length, 'settlement delay enum')
           Db.settlementDelay.find = sandbox.stub().returns(undefined)
-          settlementDelayEnum = await Enums.settlementDelayEnums()
+          settlementDelayEnum = await Enums.settlementDelayEnum()
           test.notOk(settlementDelayEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -470,7 +470,7 @@ Test('Enums', async (enumsTest) => {
       await settlementDelayEnumTest.test('throw error if database is unavailable', async test => {
         try {
           Db.settlementDelay = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.settlementDelayEnums()
+          await Enums.settlementDelayEnum()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -536,10 +536,10 @@ Test('Enums', async (enumsTest) => {
             { settlementGranularityId: 1, name: 'GROSS' }
           ]
           Db.settlementGranularity = { find: sandbox.stub().returns(granularityList) }
-          let settlementGranularityEnum = await Enums.settlementGranularityEnums()
+          let settlementGranularityEnum = await Enums.settlementGranularityEnum()
           test.equal(Object.keys(settlementGranularityEnum).length, granularityList.length, 'settlement Granularity enum')
           Db.settlementGranularity.find = sandbox.stub().returns(undefined)
-          settlementGranularityEnum = await Enums.settlementGranularityEnums()
+          settlementGranularityEnum = await Enums.settlementGranularityEnum()
           test.notOk(settlementGranularityEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -552,7 +552,7 @@ Test('Enums', async (enumsTest) => {
       await settlementGranularityEnumTest.test('throw error if database is unavailable', async test => {
         try {
           Db.settlementGranularity = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.settlementGranularityEnums()
+          await Enums.settlementGranularityEnum()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -618,10 +618,10 @@ Test('Enums', async (enumsTest) => {
             { settlementInterchangeId: 1, name: 'GROSS' }
           ]
           Db.settlementInterchange = { find: sandbox.stub().returns(interchangeList) }
-          let settlementInterchangeEnum = await Enums.settlementInterchangeEnums()
+          let settlementInterchangeEnum = await Enums.settlementInterchangeEnum()
           test.equal(Object.keys(settlementInterchangeEnum).length, interchangeList.length, 'settlement interchange enum')
           Db.settlementInterchange.find = sandbox.stub().returns(undefined)
-          settlementInterchangeEnum = await Enums.settlementInterchangeEnums()
+          settlementInterchangeEnum = await Enums.settlementInterchangeEnum()
           test.notOk(settlementInterchangeEnum, 'undefined when no record is returned')
           test.end()
         } catch (err) {
@@ -634,7 +634,7 @@ Test('Enums', async (enumsTest) => {
       await settlementInterchangeEnumTest.test('throw error if database is unavailable', async test => {
         try {
           Db.settlementInterchange = { find: sandbox.stub().throws(new Error('Database unavailable')) }
-          await Enums.settlementInterchangeEnums()
+          await Enums.settlementInterchangeEnum()
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {

@@ -645,7 +645,8 @@ Test('Participant service', async (participantTest) => {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 10000000
+          value: 10000000,
+          alarmPercentage: 10
         },
         initialPosition: 0
       }
@@ -684,7 +685,8 @@ Test('Participant service', async (participantTest) => {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 10000000
+          value: 10000000,
+          alarmPercentage: 10
         },
         initialPosition: 1000
       }
@@ -692,7 +694,8 @@ Test('Participant service', async (participantTest) => {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 10000000
+          value: 10000000,
+          alarmPercentage: 10
         },
         initialPosition: 1000
       }
@@ -1466,7 +1469,8 @@ Test('Participant service', async (participantTest) => {
           isActive: 1,
           value: 0,
           reservedValue: 0,
-          changedDate: '2018-10-11T11:45:00.000Z'
+          changedDate: '2018-10-11T11:45:00.000Z',
+          createdDate: undefined
         },
         {
           id: 2,
@@ -1475,7 +1479,8 @@ Test('Participant service', async (participantTest) => {
           isActive: 1,
           value: 800,
           reservedValue: 0,
-          changedDate: '2018-10-11T11:45:00.000Z'
+          changedDate: '2018-10-11T11:45:00.000Z',
+          createdDate: undefined
         }
       ]
       const participantName = 'fsp1'

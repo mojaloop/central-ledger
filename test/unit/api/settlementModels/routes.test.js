@@ -31,7 +31,7 @@
 
 const Test = require('tape')
 const Base = require('../../base')
-const AdminRoutes = require('../../../../src/api/routes')
+const AdminRoutes = require('../../../../src/api_admin/routes')
 
 Test('test settlementModels routes', async function (assert) {
   const req = Base.buildRequest({ url: '/settlementModels', method: 'POST' })

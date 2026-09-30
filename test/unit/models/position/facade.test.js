@@ -923,7 +923,9 @@ Test('Position facade', async (positionFacadeTest) => {
         innerJoin: sandbox.stub().returns({
           where: sandbox.stub().returns({
             where: sandbox.stub().callsArgWith(0, whereStub).returns({
-              select: sandbox.stub().returns(participantPosition)
+              orderBy: sandbox.stub().returns({
+                select: sandbox.stub().returns(participantPosition)
+              })
             })
           })
         })
@@ -972,7 +974,9 @@ Test('Position facade', async (positionFacadeTest) => {
         innerJoin: sandbox.stub().returns({
           where: sandbox.stub().returns({
             where: sandbox.stub().callsArgWith(0, whereStub).returns({
-              select: sandbox.stub().returns(participantPosition)
+              orderBy: sandbox.stub().returns({
+                select: sandbox.stub().returns(participantPosition)
+              })
             })
           })
         })

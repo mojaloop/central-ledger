@@ -160,7 +160,7 @@ export class Consumer {
 
       this._consumer.on('disconnected', (msg) => {
         this._status = 'DISCONNECTED'
-        logger.warn('disconnected', msg);
+        logger.info('disconnected', msg);
       })
       
       this._consumer.on('rebalance', (err, assignments) => {
@@ -173,7 +173,7 @@ export class Consumer {
    * Disconnect the consumer. Noop if not already consuming.
    */
   public async disconnect(): Promise<void> {
-    logger.warn(`Consumer.disconnect()`)
+    logger.info(`Consumer.disconnect()`)
     const connected = this._consumer.isConnected()
     
     if (!connected) {

@@ -2,7 +2,6 @@
 
 const Test = require('tape')
 const Inert = require('@hapi/inert')
-const Blipp = require('blipp')
 const Vision = require('@hapi/vision')
 const ErrorHandling = require('@mojaloop/central-services-error-handling')
 const Config = require('../../../src/lib/config')
@@ -32,7 +31,7 @@ Test('registerPlugins should', pluginsTest => {
   pluginsTest.test('registers base modules', async function (test) {
     const server = await new Server()
     await Plugins.registerPlugins(server)
-    const modules = [Inert, Vision, Blipp, ErrorHandling]
+    const modules = [Inert, Vision, ErrorHandling]
     modules.forEach(x => test.ok(server.contains(x)))
     test.end()
   })

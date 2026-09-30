@@ -101,12 +101,14 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('create participant', async (assert) => {
     try {
+      const createdDate = participantFixtures[0].createdDate
       Db.participant.insert.withArgs({
         name: participantFixtures[0].name,
         createdBy: 'unknown',
-        isProxy: false
+        isProxy: false,
+        createdDate
       }).returns(1)
-      const result = await Model.create(participantFixtures[0])
+      const result = await Model.create(participantFixtures[0], createdDate)
       assert.equal(result, 1, ` returns ${result}`)
       assert.end()
     } catch (err) {
@@ -118,12 +120,14 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('create participant should throw an error', async (test) => {
     try {
+      const createdDate = participantFixtures[0].createdDate
       Db.participant.insert.withArgs({
         name: participantFixtures[0].name,
         createdBy: 'unknown',
-        isProxy: false
+        isProxy: false,
+        createdDate
       }).throws(new Error())
-      const result = await Model.create(participantFixtures[0])
+      const result = await Model.create(participantFixtures[0], createdDate)
       test.equal(result, 1, ` returns ${result}`)
       test.fail('Error not thrown')
       test.end()

@@ -29,7 +29,7 @@
 'use strict'
 
 const ServerSetup = require('../../../src/settlement/shared/setup')
-const ApiRoutes = require('../../../src/settlement/api/routes')
+const ApiRoutes = require('../../../src/api_settlement/routes')
 const getPort = async () => (await import('get-port')).default()
 
 const setup = async () => {

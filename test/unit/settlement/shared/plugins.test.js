@@ -4,7 +4,6 @@ const Test = require('tape')
 const Proxyquire = require('proxyquire')
 const Inert = require('@hapi/inert')
 const Vision = require('@hapi/vision')
-const Blipp = require('blipp')
 const ErrorHandling = require('@mojaloop/central-services-error-handling')
 const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.APIDocumentation
 const Config = require('../../../../src/lib/config')
@@ -32,7 +31,7 @@ Test('registerPlugins should', pluginsTest => {
   pluginsTest.test('registers base modules', async function (test) {
     const server = await new Server()
     await Plugins.registerPlugins(server)
-    const modules = [Inert, Vision, Blipp, ErrorHandling]
+    const modules = [Inert, Vision, ErrorHandling]
     modules.forEach(x => test.ok(server.contains(x)))
     test.end()
   })

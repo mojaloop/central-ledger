@@ -80,6 +80,28 @@ export interface ApplicationConfig {
   HANDLERS_TIMEOUT_DISABLED: boolean,
   HANDLERS_TIMEOUT_TIMEXP: string,
   HANDLERS_TIMEOUT_TIMEZONE: string,
+
+  /**
+   * @description Passed through to DispatchTransferHandler. When SPLIT (default), uses the new
+   * split payment-prepare, payment-fulfil, forex-prepare and forex-fulfil handlers.
+   * 
+   * @default 'SPLIT'
+   */
+  HANDLERS_TRANSFER_DISPATCH_MODE: 'JOINED' | 'SPLIT',
+
+  /**
+   * @description Passed through to payment-prepare, payment-fulfil, forex-prepare and forex-fulfil
+   * handlers.
+   * 
+   * 'UNFUSE': Uses the legacy position logic, which emits a position message to be picked up by
+   *           the position handlers.
+   * 
+   * 'FUSE'  : Uses the new position logic, which handles position changes inside of the handler.
+   * 
+   * @default 'UNFUSE'
+   */
+  HANDLERS_TRANSFER_POSITION_FUSE: 'UNFUSE' | 'FUSE',
+
   CACHE_CONFIG: {
     CACHE_ENABLED: boolean
     MAX_BYTE_SIZE: number,
@@ -116,16 +138,54 @@ export interface ApplicationConfig {
   SERVER_PRINT_ROUTES_ON_STARTUP: boolean,
   /**
    * Configures the underlying primary ledger.
-   * - `LEGACY` uses the existing MySQL central-ledger implementation.
+   * - `SQL` uses the existing MySQL central-ledger implementation.
    * - `TIGERBEETLE` uses the TigerBeetle OLTP Database.
    * - `LOCKSTEP` uses both the LEGACY and TIGERBEETLE ledgers in parallel, used to verify
    *    the Ledgers to one another.
    * 
-   * At the momeny, only LEGACY is supported, any other value will fail with a validation error.
+   * At the moment, TIGERBEETLE and LOCKSTEP are experimental only, and not recommended for 
+   * production.
    *
-   * @default 'LEGACY'
+   * @default 'SQL'
    */
   LEDGER: LedgerType
+
+  /**
+   * The unique id of the TigerBeetle cluster.
+   * No default is provided, this must be explicitly set when LEDGER=TIGERBEETLE.
+   */
+  TIGERBEETLE_CLUSTER_ID: bigint
+
+  /**
+   * Addresses for the TigerBeetle Replicas.
+   * Should be a comma separated list of TigerBeetle addresses, corresponding with the number
+   * of replicas in the cluster.
+   * 
+   * e.g. 'localhost:3001,localhost:3002,localhost:3003'
+   * 
+   * No default is provided, this must be explicitly set when LEDGER=TIGERBEETLE
+   */
+  TIGERBEETLE_ADDRESSES: Array<string>
+
+  /**
+   * Configures whether or not the Admin API uses the Ledger interface. This is a part of the
+   * overall refactor to switch to a TigerBeetle-based leder.
+   * - `NONE`   uses the older implementation of the Admin API (default).
+   * - `LEDGER` uses the ledger interface
+   * 
+   * @default 'NONE' 
+   */
+  API_MODE_ADMIN: 'NONE' |'LEDGER'
+
+  /**
+   * Configures whether or not the Settlement API uses the Ledger interface. This is a part of the
+   * overall refactor to switch to a TigerBeetle-based leder.
+   * - `NONE`   uses the older implementation of the Settlement API (default).
+   * - `LEDGER` uses the ledger interface
+   * 
+   * @default 'NONE' 
+   */
+  API_MODE_SETTLEMENT: 'NONE' | 'LEDGER'
   
   /**
    * Experimental Configs. Not recommended for production usage.
@@ -166,6 +226,7 @@ export interface DatabaseConfig {
     user: string,
     password: string,
     database: string,
+    timezone?: string
   },
   pool: {
     min: number,
@@ -200,7 +261,7 @@ export interface DatabaseConfig {
 }
 
 
-export type LedgerType = 'LEGACY' | 'TIGERBEETLE' | 'LOCKSTEP';
+export type LedgerType = 'SQL' | 'TIGERBEETLE' | 'LOCKSTEP';
 
 export interface DistLockRedisConfig {
   type: string,

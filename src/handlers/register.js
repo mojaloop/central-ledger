@@ -102,10 +102,10 @@ const handlers = {
   }
 }
 
-const registerAllHandlers = async () => {
+const registerAllHandlers = async (dispatchTransferHandler) => {
   try {
     Logger.isInfoEnabled && Logger.info('registerAllHandlers() - Registering all handlers.')
-    await handlers.transfers.registerAllHandlers()
+    await handlers.transfers.registerAllHandlers(dispatchTransferHandler)
     await handlers.positions.registerAllHandlers()
     await handlers.timeouts.registerAllHandlers()
     await handlers.admin.registerAdminHandlers()

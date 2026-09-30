@@ -40,6 +40,8 @@ const participant = [
 ]
 
 exports.seed = async function (knex) {
+  participant[0].createdDate = new Date()
+
   try {
     return await knex('participant').insert(participant).onConflict('id').merge()
   } catch (err) {

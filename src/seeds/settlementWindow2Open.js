@@ -47,6 +47,9 @@ const initialSettlementWindowStateChange = {
 }
 
 exports.seed = async function (knex) {
+  initialSettlementWindow.createdDate = new Date()
+  initialSettlementWindowStateChange.createdDate = new Date()
+
   try {
     const settlementWindowStateChangeList = await knex('settlementWindow AS sw').select('*')
       .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'sw.currentStateChangeId')

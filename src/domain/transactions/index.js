@@ -33,6 +33,13 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const ilpPacket = require('ilp-packet')
 const base64url = require('base64url')
 
+/**
+ * @returns {Promise<Array<{
+ *  createdDate: Date,
+ *  transferId: string,
+ *  value: string,
+ * }>>}
+ */
 const getById = async (id) => {
   try {
     return await IlpPacket.getById(id)

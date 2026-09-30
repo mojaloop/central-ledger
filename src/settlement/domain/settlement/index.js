@@ -143,18 +143,18 @@ module.exports = {
       logger.error(error)
       throw error
     }
-    if (settlementData.state === enums.settlementStates.PS_TRANSFERS_COMMITTED ||
-      settlementData.state === enums.settlementStates.SETTLING ||
-      settlementData.state === enums.settlementStates.SETTLED) {
+    if (settlementData.state === enums.settlementState.PS_TRANSFERS_COMMITTED ||
+      settlementData.state === enums.settlementState.SETTLING ||
+      settlementData.state === enums.settlementState.SETTLED) {
       const error = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
         `State change is not allowed for settlement '${settlementId}' in state '${settlementData.state}'`
       )
       logger.error(error)
       throw error
-    } else if (settlementData.state === enums.settlementStates.ABORTED) {
+    } else if (settlementData.state === enums.settlementState.ABORTED) {
       return SettlementModel.abortByIdStateAborted(settlementId, payload, enums)
-    } else if (settlementData.state === enums.settlementStates.PS_TRANSFERS_RESERVED) {
+    } else if (settlementData.state === enums.settlementState.PS_TRANSFERS_RESERVED) {
       const transferCommittedAccount = await SettlementModel.getTransferCommitedAccount(settlementId, enums)
       if (transferCommittedAccount !== undefined) {
         const error = ErrorHandler.Factory.createFSPIOPError(
@@ -273,7 +273,7 @@ module.exports = {
 
     // validate windows content
     const idList = settlementWindows.map(v => v.id)
-    const applicableWindows = await SettlementWindowModel.getByListOfIds(idList, settlementModelData, enums.settlementWindowStates)
+    const applicableWindows = await SettlementWindowModel.getByListOfIds(idList, settlementModelData, enums.settlementWindowState)
     const applicableIdList = applicableWindows.map(v => v.settlementWindowId)
     const nonApplicableIdList = arrayDiff(idList, applicableIdList)
     if (nonApplicableIdList.length) {
