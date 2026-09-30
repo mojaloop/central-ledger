@@ -506,7 +506,7 @@ async function runIntegrationTests(task: RunTaskIntegration): Promise<ResultTest
     // Run each test file in a separate process.
     isolation: 'process',
     // Tweak this depending on what resources we have.
-    concurrency: 1,
+    concurrency: 2,
   })
     .on('test:fail', () => {
       exitCode = 1

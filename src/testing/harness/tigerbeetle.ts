@@ -6,6 +6,7 @@ import { randomAvailablePort } from "../util"
 import { DependencyOptions } from "./harness";
 import path from "node:path";
 import fs, { createWriteStream, unlink } from "node:fs"
+import os from "node:os"
 import crypto from "node:crypto";
 import { Transform } from "node:stream";
 import { Readable } from 'stream';
@@ -168,7 +169,9 @@ export class TigerBeetle {
 
     // Download while calculating the hash as we go. Append the harnessId so racing downloads
     // don't delete eachother's files.
-    const toZip = to + this.options.harnessId + '.zip'
+    const toZipDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tmp-'))
+    const toZip = path.join(toZipDir, 'tigerbeele.zip')
+    const toUnzip = path.join(toZipDir, 'tigerbeetle')
     await pipeline(
       Readable.fromWeb(response.body),
       hashTransform,
@@ -176,17 +179,29 @@ export class TigerBeetle {
     )
     const hashFound = hash.digest('hex')
     if (hashFound !== checksum) {
-      fs.unlinkSync(to)
+      fs.unlinkSync(toZip)
       throw new Error(`downloadRelease() checksum mismatch. Expected: ${checksum}, got ${hashFound}.`)
     }
 
     // Extract zip.
-    const destDir = path.dirname(to)
-    await execAsync(`unzip -o "${toZip}" tigerbeetle -d "${destDir}"`)
-    fs.unlinkSync(toZip)
+    await execAsync(`unzip -o "${toZip}" tigerbeetle -d "${toZipDir}"`)
 
     // Make executable.
-    fs.chmodSync(to, '0755')
+    fs.chmodSync(toUnzip, '0755')
+    
+    // Copy to where it needs to be.
+    try {
+      fs.copyFileSync(toUnzip, to, fs.constants.COPYFILE_EXCL)
+    } catch (err: any) {
+      if (err.code === 'EEXIST') {
+        this.logger.warn(`Tried to copy: ${toUnzip} -> ${to}, but destination already exists.`)
+      } else {
+        this.logger.warn(`Tried to copy: ${toUnzip} -> ${to}, failed with error: ${err.message}`)
+        throw err
+      }
+    }
+    // fs.unlinkSync(toZipDir)
+    fs.unlinkSync(toUnzip)
   }
 
   private getRelease(): { url: string, checksum: string} {

@@ -91,5 +91,6 @@ exclude: [
   'src/handlers/admin/handler.js',
   'src/handlers/register.js',
   'src/api_admin/settlementModels/handler.js',
+  'src/api_settlement/settlement.fuzz.ts',
 ]
 ## todo: increase test coverage before merging feat/fx-impl to main branch

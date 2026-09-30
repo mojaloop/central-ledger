@@ -9,14 +9,12 @@ loggerGlobal = new LoggerMock()
 import Harness from "../../testing/harness/harness"
 import { loggerFactory } from "@mojaloop/central-services-logger/src/contextLogger"
 import { envOrDefaultNumber, sanitizeTestName } from "../../testing/util"
-import { Server } from "@hapi/hapi"
 import * as ApiHelpers from '../../testing/api-helpers'
 import Trace from "../../testing/fuzz/trace"
 import assert from "node:assert"
 import PRNG from "../../testing/prng"
 import { ApplicationConfig } from "../../lib/config"
 import {
-  CloseSettlementWindowResult,
   CreateDfspCommand,
   CreateHubAccountCommand,
   DepositCommand,
@@ -24,7 +22,6 @@ import {
   EnableDfspAccountCommand,
   GetAllDfspAccountsQuery,
   GetDfspAccountsQuery,
-  GetHubAccountsQuery,
   GetNetDebitCapQuery,
   GetNetDebitCapsQuery,
   GetSettlementQuery,
@@ -60,7 +57,7 @@ assert(filename)
 
 describe('Ledger Fuzz', () => {
   it('runs the fuzzer for LedgerSQL', async (context) => {
-    const stepsMax = envOrDefaultNumber('STEPS_MAX', 1000)
+    const stepsMax = envOrDefaultNumber('STEPS_MAX', 2500)
     const trace = await run(stepsMax, { LEDGER: 'SQL' })
 
     const dirTrace = `.fuzz_output/${filename}/${sanitizeTestName(context.name)}`

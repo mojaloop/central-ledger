@@ -97,7 +97,7 @@ export class Redpanda {
       redpanda start \
       --mode dev-container \
       --smp 1 \
-      --memory 200M \
+      --memory 350M \
       --reserve-memory 0M \
       --overprovisioned \
       --node-id 0 \
