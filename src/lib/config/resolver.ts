@@ -209,7 +209,8 @@ const parseAndValidateConfig = (unsafeConfig: UnsafeApplicationConfig): Applicat
   assert(unsafeConfig.EXPERIMENTAL)
   assertProvisioning(unsafeConfig.EXPERIMENTAL.PROVISIONING)
 
-  // Now assert config business logic - apply rules.
+  // Now assert config business logic.
+  assertOneOf(unsafeConfig.LEDGER, ['SQL', 'TIGERBEETLE'])
   if (unsafeConfig.LEDGER !== 'SQL') {
     logger.warn(`LEDGER=${unsafeConfig.LEDGER}. Use in test environments only!`)
   }

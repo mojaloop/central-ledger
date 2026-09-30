@@ -96,11 +96,10 @@ exports.up = async (knex) => {
         t.string('currency', 3).notNullable()
         t.dateTime('expiration').notNullable()
         t.string('fulfilment', 256)
-        
+
         t.foreign('payerId').references('dfspId').inTable('specDfsp')
         t.foreign('payeeId').references('dfspId').inTable('specDfsp')
         t.foreign('currency').references('currencyId').inTable('currency')
-
       })
     }
   })

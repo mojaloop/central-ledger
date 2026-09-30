@@ -6,6 +6,7 @@ jobs:
   coverage-check-all:
     executor:
       name: build/machine
+      resource_class: large
     steps:
       - build/machine_dependencies
       - checkout
@@ -39,6 +40,7 @@ jobs:
   fuzz:
     executor:
       name: build/machine
+      resource_class: large
     steps:
       - build/machine_dependencies
       - checkout
