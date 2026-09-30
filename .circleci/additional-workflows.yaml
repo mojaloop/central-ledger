@@ -72,7 +72,7 @@ jobs:
   benchmark:
     executor:
       name: build/machine
-      resource_class: medium
+      resource_class: large
     steps:
       - build/machine_dependencies
       - checkout
