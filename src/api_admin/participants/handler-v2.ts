@@ -196,13 +196,13 @@ export default class HandlerV2 {
           participant.participantId,
           request.payload.currency,
           settlementModel.ledgerAccountTypeId,
-          false
+          true
         )
         const participantCurrencyId2 = await ParticipantService.createParticipantCurrency(
           participant.participantId,
           request.payload.currency,
           settlementModel.settlementAccountTypeId,
-          false
+          true
         )
         assert(Array.isArray(participant.currencyList))
         participant.currencyList = participant.currencyList.concat([

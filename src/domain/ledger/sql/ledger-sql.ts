@@ -454,10 +454,10 @@ export class LedgerSql implements Ledger {
         const ledgerAccountType = ledgerAccountIdMap[currency.ledgerAccountTypeId]
         assert(ledgerAccountType)
         const formattedAccount: LegacyLedgerAccount = {
-          // id: BigInt(currency.participantCurrencyId),
+          id: BigInt(currency.participantCurrencyId),
           // TODO: disabled this for now, the LedgerSql implementation is quite hard to 
           // match with LedgerTigerBeetle since the database autoincrements the id on failure.
-          id: BigInt(0),
+          // id: BigInt(0),
           ledgerAccountType,
           currency: currency.currencyId,
           isActive: Boolean(currency.isActive),
@@ -2665,10 +2665,10 @@ export class LedgerSql implements Ledger {
         participantId: query.participantId,
         settlementWindowId: query.settlementWindowId,
         state: query.state,
-        fromDateTime: query.fromDateTime?.toISOString(),
-        toDateTime: query.toDateTime?.toISOString(),
-        fromSettlementWindowDateTime: query.fromSettlementWindowDateTime?.toISOString(),
-        toSettlementWindowDateTime: query.toSettlementWindowDateTime?.toISOString(),
+        fromDateTime: query.fromDateTime?.toISOString().replace('.000Z', 'Z'),
+        toDateTime: query.toDateTime?.toISOString().replace('.000Z', 'Z'),
+        fromSettlementWindowDateTime: query.fromSettlementWindowDateTime?.toISOString().replace('.000Z', 'Z'),
+        toSettlementWindowDateTime: query.toSettlementWindowDateTime?.toISOString().replace('.000Z', 'Z'),
       }
 
       const result = await SettlementDomain.getSettlementsByParams(
