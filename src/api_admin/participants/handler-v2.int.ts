@@ -90,7 +90,7 @@ describe('api/participants/handler-v2', () => {
           "id": :ignore,
           "ledgerAccountType": "POSITION",
           "currency": "AUD",
-          "isActive": 0,
+          "isActive": 1,
           "createdDate": "2026-02-01T00:00:00.000Z",
           "createdBy": "unknown"
         },
@@ -98,7 +98,7 @@ describe('api/participants/handler-v2', () => {
           "id": :ignore,
           "ledgerAccountType": "SETTLEMENT",
           "currency": "AUD",
-          "isActive": 0,
+          "isActive": 1,
           "createdDate": "2026-02-01T00:00:00.000Z",
           "createdBy": "unknown"
         }
@@ -179,7 +179,7 @@ describe('api/participants/handler-v2', () => {
           "id": :ignore,
           "ledgerAccountType": "POSITION",
           "currency": "AUD",
-          "isActive": 0,
+          "isActive": 1,
           "createdDate": "2026-02-01T00:00:00.000Z",
           "createdBy": "unknown"
         },
@@ -187,7 +187,7 @@ describe('api/participants/handler-v2', () => {
           "id": :ignore,
           "ledgerAccountType": "SETTLEMENT",
           "currency": "AUD",
-          "isActive": 0,
+          "isActive": 1,
           "createdDate": "2026-02-01T00:00:00.000Z",
           "createdBy": "unknown"
         },
@@ -195,7 +195,7 @@ describe('api/participants/handler-v2', () => {
           "id": :ignore,
           "ledgerAccountType": "POSITION",
           "currency": "EUR",
-          "isActive": 0,
+          "isActive": 1,
           "createdDate": "2026-02-01T00:00:00.000Z",
           "createdBy": "unknown"
         },
@@ -203,7 +203,7 @@ describe('api/participants/handler-v2', () => {
           "id": :ignore,
           "ledgerAccountType": "SETTLEMENT",
           "currency": "EUR",
-          "isActive": 0,
+          "isActive": 1,
           "createdDate": "2026-02-01T00:00:00.000Z",
           "createdBy": "unknown"
         }
