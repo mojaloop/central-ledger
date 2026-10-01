@@ -40,21 +40,37 @@ export class TigerBeetle {
   private child: ChildProcess | null = null
 
   private readonly releases = [
+    // {
+    //   url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-aarch64-linux.zip',
+    //   checksum: '413994920fe48b04f5aa86895b7a1d9d98d14803b29d4e91d2a6d0098fff4ef2',
+    // },
+    // {
+    //   url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-universal-macos.zip',
+    //   checksum: '4e085eaffc66c2ed82e7f94a8137c468256d2fb0b35152ccf903cc6676c22940'
+    // },
+    // {
+    //   url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-x86_64-linux.zip',
+    //   checksum: 'af71f2c0057e3b409bf79940fa94894b738187b0d4f1e711097bca15df5d8cd4',
+    // },
+    // {
+    //   url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-x86_64-windows.zip',
+    //   checksum: 'aaac96a69380b33a0e63f981635c24924d610f28c3f41637f9e57b8caa0e5e77'
+    // }
     {
-      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-aarch64-linux.zip',
-      checksum: '413994920fe48b04f5aa86895b7a1d9d98d14803b29d4e91d2a6d0098fff4ef2',
+      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.4/tigerbeetle-aarch64-linux.zip',
+      checksum: '54e22d94d0ca63d62e5de0bee21bea0df3cea66c66690002741068a0b005af95',
     },
     {
-      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-universal-macos.zip',
-      checksum: '4e085eaffc66c2ed82e7f94a8137c468256d2fb0b35152ccf903cc6676c22940'
+      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.4/tigerbeetle-universal-macos.zip',
+      checksum: 'e6ea735eff37d0df1ed7ffbf279694adfd3b59da407d5b6cb36ec12cf405f6ca'
     },
     {
-      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-x86_64-linux.zip',
-      checksum: 'af71f2c0057e3b409bf79940fa94894b738187b0d4f1e711097bca15df5d8cd4',
+      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.4/tigerbeetle-x86_64-linux.zip',
+      checksum: '642bd30b24e551c67ff179decb09a5bcb4f5158257e0223c835bf720d5f32264',
     },
     {
-      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-x86_64-windows.zip',
-      checksum: 'aaac96a69380b33a0e63f981635c24924d610f28c3f41637f9e57b8caa0e5e77'
+      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.4/tigerbeetle-x86_64-windows.zip',
+      checksum: 'b5a27410b9a79b8943db1111006b3519b2b121aa2d4e23daf8b3e7e3b6771c28'
     }
   ]
   
@@ -63,8 +79,8 @@ export class TigerBeetle {
     assert(options.harnessId)
     assert(options.pathToBinary)
 
-    if (options.version !== '0.17.9') {
-      throw new Error(`Currently only TigerBeetle verion '0.17.9' is supported.`)
+    if (options.version !== '0.17.4') {
+      throw new Error(`Currently only TigerBeetle verion '0.17.4' is supported.`)
     }
 
     this.dataFileName = `0_0.${options.harnessId}.tigerbeetle`
