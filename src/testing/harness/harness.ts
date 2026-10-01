@@ -430,6 +430,11 @@ export default class Harness {
     return Harness._prng.seed
   }
 
+  get clientTigerBeetle(): Client {
+    assert(this._clientTigerBeetle, 'Expected clientTigerBeetle to be defined. Have you called setupGlobals()?')
+    return this._clientTigerBeetle
+  }
+
   /**
    * Override the Application Config.
    */
@@ -991,7 +996,6 @@ Found only ${markNew} new messages.`)
 export interface DependencyOptions {
   harnessId: number,
 }
-
 
 export type MojaloopKafkaMessage = {
   topic: string,
