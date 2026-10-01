@@ -100,7 +100,7 @@
     "@mojaloop/central-services-shared": "18.39.3",
     "@mojaloop/central-services-stream": "11.10.0",
     "@mojaloop/database-lib": "11.3.10",
-    "@mojaloop/event-sdk": "14.8.5",
+    "@mojaloop/event-sdk": "14.8.6",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.10.0",
     "@mojaloop/ml-number": "11.4.5",
     "@mojaloop/object-store-lib": "12.2.4",
