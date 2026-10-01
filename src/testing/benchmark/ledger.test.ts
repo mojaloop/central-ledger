@@ -75,7 +75,7 @@ describe('ledger benchmark', () => {
   })
 
   it.only('TigerBeetle solo prepare() 1M Payments', async () => {
-    const TIGERBEETLE_ADDRESSES_STR = envOrDefaultString('TIGERBEETLE_ADDRESSES', '3000')
+    const TIGERBEETLE_ADDRESSES_STR = process.env.TIGERBEETLE_ADDRESSES
 
     const options = {
       mode: 'PREPARE' as 'PREPARE',
@@ -89,7 +89,7 @@ describe('ledger benchmark', () => {
       LEDGER: 'TIGERBEETLE',
       TIGERBEETLE_CLUSTER_ID: 0n,
       // TIGERBEETLE_ADDRESSES: '172.25.0.100:3000,172.25.0.101:3000,172.25.1.100:3000,172.25.1.101:3000,172.25.2.100:3000,172.25.2.101:3000'.split(',')
-      TIGERBEETLE_ADDRESSES: TIGERBEETLE_ADDRESSES_STR.split(',')
+      TIGERBEETLE_ADDRESSES: TIGERBEETLE_ADDRESSES_STR ? TIGERBEETLE_ADDRESSES_STR.split(',') : undefined
     })
     console.log(printResult(result))
   })
