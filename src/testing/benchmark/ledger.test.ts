@@ -74,7 +74,7 @@ describe('ledger benchmark', () => {
     console.log(printResult(result))
   })
 
-  it('TigerBeetle solo prepare() 1M Payments', async () => {
+  it.only('TigerBeetle solo prepare() 1M Payments', async () => {
     const options = {
       mode: 'PREPARE' as 'PREPARE',
       payments: envOrDefaultNumber('PAYMENTS', 100),
