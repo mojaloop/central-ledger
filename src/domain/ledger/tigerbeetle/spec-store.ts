@@ -700,10 +700,10 @@ export default class SpecStore {
         return record
       })
 
-      // await this.db.from(TABLE_TRANSFER)
-      //   .insert(records)
-      //   .onConflict('id')
-      //   .ignore()
+      await this.db.from(TABLE_TRANSFER)
+        .insert(records)
+        .onConflict('id')
+        .ignore()
 
       return specs.map(spec => {
         return {
