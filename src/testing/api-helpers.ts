@@ -1333,7 +1333,9 @@ export function buildMojaloopPostTransfer(params: PostTransferBuilderParams): Tr
     },
     expiration,
   }
-  const { condition, ilpPacket } = generateQuoteILPResponse(mockQuoteResponse)
+  // const { condition, ilpPacket } = generateQuoteILPResponse(mockQuoteResponse)
+  const condition = '12345'
+  const ilpPacket = '12345'
 
   const payload = {
     transferId: params.transferId,
@@ -1415,7 +1417,8 @@ export function buildMojaloopPutTransfer(params: PutTransferBuilderParams): Tran
     },
     expiration,
   }
-  const { fulfilment } = generateQuoteILPResponse(mockQuoteResponse)
+  // const { fulfilment } = generateQuoteILPResponse(mockQuoteResponse)
+  const fulfilment = ''
 
   const payload = {
     transferState: params.transferState,

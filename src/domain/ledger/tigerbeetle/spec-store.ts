@@ -489,13 +489,21 @@ export default class SpecStore {
   }
 
   public async getDfspMasterAccounts(dfspIds: Array<string>): Promise<Array<MasterAccount>> {
+    if (this.dfspMasterAccounts.length > 0) {
+      return this.dfspMasterAccounts
+    }
+
     const rows = await this.db(TABLE_DFSP).whereIn('dfspId', dfspIds).select('*')
 
-    return rows.map(row => ({
+    this.dfspMasterAccounts = rows.map(row => ({
       dfspId: row.dfspId,
       masterAccountId: BigInt(row.masterAccountId)
     }))
+
+    return this.dfspMasterAccounts
   }
+
+  private dfspMasterAccounts: Array<MasterAccount> = []
 
   // Maybe we don't want this?
   public async getAllDfspMasterAccounts(): Promise<Array<MasterAccount>> {
@@ -530,9 +538,18 @@ export default class SpecStore {
   }
 
   public async getAllDfspCurrencies(dfsps: Array<string>): Promise<Array<SpecAccount>> {
+    // Naive cache.
+    if (this.dfspCurrencies.length > 0) {
+      return this.dfspCurrencies
+    }
     const rows = await this.db(TABLE_DFSP_CURRENCY).whereIn('dfspId', dfsps).select('*')
-    return rows.map(SpecStore.hydrateSpecAccount)
+    this.dfspCurrencies = rows.map(SpecStore.hydrateSpecAccount)
+
+    return this.dfspCurrencies
   }
+
+
+  private dfspCurrencies: Array<SpecAccount> = []
 
 
   /**

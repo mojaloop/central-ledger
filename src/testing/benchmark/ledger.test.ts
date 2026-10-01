@@ -56,7 +56,7 @@ describe('ledger benchmark', () => {
     printSideBySide(left, right, { labelLeft: 'LEDGER=SQL', labelRight: 'LEDGER=TigerBeetle' })
   })
 
-  it.only('TigerBeetle solo, prepare() + fulfil()', async () => {
+  it('TigerBeetle solo, prepare() + fulfil()', async () => {
     const options = {
       mode: 'E2E' as 'E2E',
       payments: envOrDefaultNumber('PAYMENTS', 100000),
@@ -69,7 +69,22 @@ describe('ledger benchmark', () => {
       LEDGER: 'TIGERBEETLE', 
       // Set these to be able to connect to a specific cluster!
       // TIGERBEETLE_CLUSTER_ID: 0n,
-      TIGERBEETLE_ADDRESSES: '172.25.0.100:3000,172.25.0.101:3000,172.25.1.100:3000,172.25.1.101:3000,172.25.2.100:3000,172.25.2.101:3000'.split(',')
+      // TIGERBEETLE_ADDRESSES: '172.25.0.100:3000,172.25.0.101:3000,172.25.1.100:3000,172.25.1.101:3000,172.25.2.100:3000,172.25.2.101:3000'.split(',')
+    })
+    console.log(printResult(result))
+  })
+
+  it.only('TigerBeetle solo 1M Payments', async () => {
+    const options = {
+      mode: 'PREPARE' as 'PREPARE',
+      payments: envOrDefaultNumber('PAYMENTS', 100),
+    }
+    printOptions(options)
+    const result = await run({
+      ...options,
+      bucketSize: 1300,
+    }, {
+      LEDGER: 'TIGERBEETLE',
     })
     console.log(printResult(result))
   })

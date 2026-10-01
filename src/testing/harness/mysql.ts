@@ -83,13 +83,14 @@ export class MySql {
     this.logger.debug(`up()`)
     const port = await randomAvailablePort()
 
+    // --tmpfs /var/lib/mysql:rw,size=256m \
+
     // Highly optimzed `docker run` to try and improve startup time.
     // takes around 3500 ms on my Mac.
     const command = `
     docker rm -f ${this.containerName} 2>/dev/null;
     docker run -d \
       --name ${this.containerName} \
-      --tmpfs /var/lib/mysql:rw,size=256m \
       -e MARIADB_ROOT_PASSWORD=password \
       -e MARIADB_DATABASE=${this.options.databaseName} \
       -p ${port}:3306 \
@@ -102,8 +103,11 @@ export class MySql {
       --skip-name-resolve \
       --skip-log-bin \
       --performance-schema=OFF \
-      --innodb-buffer-pool-size=64M \
-      --innodb-log-file-size=16M \
+      --innodb-buffer-pool-size=2G \
+      --innodb-log-file-size=1G \
+      --innodb-log-buffer-size=64M \
+      --innodb-io-capacity=2000 \
+      --innodb-io-capacity-max=4000 \
       --max-connections=50
     `.replace(/\s/g, ' ')
     await execAsync(command)
