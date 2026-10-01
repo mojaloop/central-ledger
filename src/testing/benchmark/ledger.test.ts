@@ -74,7 +74,7 @@ describe('ledger benchmark', () => {
     console.log(printResult(result))
   })
 
-  it.only('TigerBeetle solo 1M Payments', async () => {
+  it('TigerBeetle solo prepare() 1M Payments', async () => {
     const options = {
       mode: 'PREPARE' as 'PREPARE',
       payments: envOrDefaultNumber('PAYMENTS', 100),
@@ -85,6 +85,8 @@ describe('ledger benchmark', () => {
       bucketSize: 1300,
     }, {
       LEDGER: 'TIGERBEETLE',
+      TIGERBEETLE_CLUSTER_ID: 0n,
+      TIGERBEETLE_ADDRESSES: '172.25.0.100:3000,172.25.0.101:3000,172.25.1.100:3000,172.25.1.101:3000,172.25.2.100:3000,172.25.2.101:3000'.split(',')
     })
     console.log(printResult(result))
   })

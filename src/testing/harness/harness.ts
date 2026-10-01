@@ -203,7 +203,7 @@ export default class Harness {
       // TODO: configure some fallback locations.
       // dataDir: `/Volumes/RAMDisk/`,
       dataDir: `.tigerbeetle/`,
-      version: '0.17.9'
+      version: '0.17.4'
     })
   }
 
