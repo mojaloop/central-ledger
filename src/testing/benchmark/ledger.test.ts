@@ -262,49 +262,67 @@ class LedgerBenchmark {
     const start = performance.now()
 
     let bucketIdx = 0
-    for (const bucket of paymentBuckets) {
-      process.stdout.write(`\rbucket: ${bucketIdx.toLocaleString()}/${paymentBuckets.length.toLocaleString()}`)
-      console.clear()
 
-      switch (this.options.mode) {
-        case "PREPARE": {
-          const startBucket = performance.now()
-          const prepares = prepareBuckets[bucketIdx]
-          const resultsPrepare = await this.harness.ledger.prepare(prepares)
-          
-          for (const result of resultsPrepare) {
-            if (result.type === PaymentPrepareResultType.PASS) {
-              results.push('PASS')
-              continue
-            }
-            results.push('FAIL')
-          }
-
-          bucketLatencies.push(performance.now() - startBucket)
-          break
+    // Try in parallel.
+    await Promise.all(paymentBuckets.map(async (_, idx) => {
+      const startBucket = performance.now()
+      const prepares = prepareBuckets[idx]
+      const resultsPrepare = await this.harness.ledger.prepare(prepares)
+      for (const result of resultsPrepare) {
+        if (result.type === PaymentPrepareResultType.PASS) {
+          results.push('PASS')
+          continue
         }
-        case "E2E": {
-          const startBucket = performance.now()
-          const prepares = prepareBuckets[bucketIdx]
-          const fulfils = fulfilBuckets[bucketIdx]
-          
-          const resultsPrepare = await this.harness.ledger.prepare(prepares)
-          const resultsFulfil = await this.harness.ledger.fulfil(fulfils)
-
-          for (const result of resultsFulfil) {
-            if (result.type === PaymentFulfilResultType.PASS) {
-              results.push('PASS')
-              continue
-            }
-            results.push('FAIL')
-          }
-          bucketLatencies.push(performance.now() - startBucket)
-          break
-        }
+        results.push('FAIL')
       }
 
-      bucketIdx += 1
-    }
+      bucketLatencies.push(performance.now() - startBucket)
+    }))
+
+
+    // for (const bucket of paymentBuckets) {
+    //   process.stdout.write(`\rbucket: ${bucketIdx.toLocaleString()}/${paymentBuckets.length.toLocaleString()}`)
+    //   console.clear()
+
+    //   switch (this.options.mode) {
+    //     case "PREPARE": {
+    //       const startBucket = performance.now()
+    //       const prepares = prepareBuckets[bucketIdx]
+    //       const resultsPrepare = await this.harness.ledger.prepare(prepares)
+          
+    //       for (const result of resultsPrepare) {
+    //         if (result.type === PaymentPrepareResultType.PASS) {
+    //           results.push('PASS')
+    //           continue
+    //         }
+    //         results.push('FAIL')
+    //       }
+
+    //       bucketLatencies.push(performance.now() - startBucket)
+    //       break
+    //     }
+    //     case "E2E": {
+    //       const startBucket = performance.now()
+    //       const prepares = prepareBuckets[bucketIdx]
+    //       const fulfils = fulfilBuckets[bucketIdx]
+          
+    //       const resultsPrepare = await this.harness.ledger.prepare(prepares)
+    //       const resultsFulfil = await this.harness.ledger.fulfil(fulfils)
+
+    //       for (const result of resultsFulfil) {
+    //         if (result.type === PaymentFulfilResultType.PASS) {
+    //           results.push('PASS')
+    //           continue
+    //         }
+    //         results.push('FAIL')
+    //       }
+    //       bucketLatencies.push(performance.now() - startBucket)
+    //       break
+    //     }
+    //   }
+
+    //   bucketIdx += 1
+    // }
     process.stdout.write(`\rbucket: ${bucketIdx.toLocaleString()}/${paymentBuckets.length.toLocaleString()}`)
     console.log()
 
