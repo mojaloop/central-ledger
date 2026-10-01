@@ -69,7 +69,7 @@ describe('ledger benchmark', () => {
       LEDGER: 'TIGERBEETLE', 
       // Set these to be able to connect to a specific cluster!
       // TIGERBEETLE_CLUSTER_ID: 0n,
-      // TIGERBEETLE_ADDRESSES: ['3990'] 
+      TIGERBEETLE_ADDRESSES: '172.25.0.100:3000,172.25.0.101:3000,172.25.1.100:3000,172.25.1.101:3000,172.25.2.100:3000,172.25.2.101:3000'.split(',')
     })
     console.log(printResult(result))
   })
