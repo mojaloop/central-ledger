@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.3.0](https://github.com/mojaloop/central-ledger/compare/v20.2.0...v20.3.0) (2026-10-01)
+
+
+### Features
+
+* upgrade streaming lib version to add more metrics ([#1307](https://github.com/mojaloop/central-ledger/issues/1307)) ([c13f8ce](https://github.com/mojaloop/central-ledger/commit/c13f8cebfd91f4312a32182df5c915d3ebfee277))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([9aa0385](https://github.com/mojaloop/central-ledger/commit/9aa0385feadde5febf8e816b2fe7b23076d2c7e5))
+
 ## [20.2.0](https://github.com/mojaloop/central-ledger/compare/v20.1.1...v20.2.0) (2026-09-17)
 
 
