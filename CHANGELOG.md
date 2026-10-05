@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.3.0](https://github.com/mojaloop/central-ledger/compare/v20.2.0...v20.3.0) (2026-10-01)
+
+
+### Features
+
+* upgrade streaming lib version to add more metrics ([#1307](https://github.com/mojaloop/central-ledger/issues/1307)) ([c13f8ce](https://github.com/mojaloop/central-ledger/commit/c13f8cebfd91f4312a32182df5c915d3ebfee277))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([9aa0385](https://github.com/mojaloop/central-ledger/commit/9aa0385feadde5febf8e816b2fe7b23076d2c7e5))
+
+## [20.2.0](https://github.com/mojaloop/central-ledger/compare/v20.1.1...v20.2.0) (2026-09-17)
+
+
+### Features
+
+* adding security.txt file, accompanying changes to address pre-commit hook failures ([#1304](https://github.com/mojaloop/central-ledger/issues/1304)) ([2f2831c](https://github.com/mojaloop/central-ledger/commit/2f2831c8c6912b3fa2003de745b5062bc6ee881b))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([1625f4a](https://github.com/mojaloop/central-ledger/commit/1625f4a2d4ef8fb96a09c2f6ed77657e3230814b))
+
+### [20.1.1](https://github.com/mojaloop/central-ledger/compare/v20.1.0...v20.1.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* knexfile hardcoded mysql driver breaks migrations on MySQL 9 ([#1302](https://github.com/mojaloop/central-ledger/issues/1302)) ([9b41289](https://github.com/mojaloop/central-ledger/commit/9b41289ba609ae1b7368ef27ffc862f63e72efc5))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([71dd934](https://github.com/mojaloop/central-ledger/commit/71dd934322b5c18c89eea3a3669b731886abc8c0))
+
+## [20.1.0](https://github.com/mojaloop/central-ledger/compare/v20.0.0...v20.1.0) (2026-09-16)
+
+
+### Features
+
+* commit kafka messages asynchronously instead of blocking commit ([#1301](https://github.com/mojaloop/central-ledger/issues/1301)) ([128174a](https://github.com/mojaloop/central-ledger/commit/128174a757bb7aa4ca8b76f51ef560a4a1e0f9cb))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([9dbc9a0](https://github.com/mojaloop/central-ledger/commit/9dbc9a084a5af742247a43efcf1a7a1c893de239))
+
 ## [20.0.0](https://github.com/mojaloop/central-ledger/compare/v19.14.0...v20.0.0) (2026-09-08)
 
 

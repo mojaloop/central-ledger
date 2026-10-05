@@ -3,8 +3,7 @@
 const Config = require('./lib/config')
 
 module.exports = {
-  client: 'mysql',
-  version: '5.5',
+  client: Config.DATABASE.client,
   connection: Config.DATABASE.connection,
   pool: Config.DATABASE.pool,
   migrations: {

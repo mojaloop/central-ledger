@@ -550,7 +550,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         'facade_saveTransferPrepared_transaction - Metrics for transfer model',
         ['success', 'queryName']
       ).startTimer()
-      return await knex.transaction(async (trx) => {
+      const result = await knex.transaction(async (trx) => {
         try {
           await knex('transfer').transacting(trx).insert(transferRecord)
           await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
@@ -576,6 +576,10 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           rethrow.rethrowDatabaseError(err)
         }
       })
+      // The inner timer above stops inside the transaction callback, i.e. before Knex
+      // issues COMMIT. This outer one stops after it, so the commit cost is measured.
+      histTimerSaveTransferPreparedEnd({ success: true, queryName: 'transfer_model_facade_saveTransferPrepared' })
+      return result
     } else {
       const histTimerSaveTransferNoValidationEnd = Metrics.getHistogram(
         'model_transfer',

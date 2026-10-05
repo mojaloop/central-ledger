@@ -88,6 +88,9 @@ ignore:
   - vulnerability: GHSA-rpr9-rxv7-x643
     include-aliases: true
     reason: "Unfixable npm transitive vulnerability: sanitize-html (critical severity) as of 2026-05-18"
+  - vulnerability: GHSA-vfj7-8cjw-p6xm
+    include-aliases: true
+    reason: "No patched braces release exists as of 2026-10-05; temporary exception to be reassessed by 2026-11-05"
 output:
   - table
   - json
