@@ -499,6 +499,8 @@ export default class HandlerV2 {
       isProxy: 0,
     })
 
+    // Order by name to be consistent between NONE and LEDGER implementations.
+    reply.sort((a, b) => a.name.localeCompare(b.name))
     return reply
   }
 
@@ -834,6 +836,9 @@ export default class HandlerV2 {
           })
         })
       }
+      // Sort based on the dfsp name for consistency between old and new implementation.
+      limits.sort((a: any, b: any) => b.name.localeCompare(a.name))
+
       return limits
     } catch (err) {
       this.rethrowAndCountFspiopError(err, 'participantGetLimitsForAllParticipants')
@@ -870,7 +875,9 @@ export default class HandlerV2 {
       }
 
       const limitResponses = await Promise.all(
-        resultDfsps.result.dfsps.map(async (dfsp) => {
+        resultDfsps.result.dfsps
+        .filter(dfsp => dfsp.isActive) // Only return active DFSPs in response.
+        .map(async (dfsp) => {
           const limitResponse = await this.deps.ledger.getNetDebitCaps({
             dfspId: dfsp.name,
           })
@@ -890,11 +897,14 @@ export default class HandlerV2 {
         }
       }
 
+      // Sort based on the dfsp name.
+      limitWithCurrencies.sort((a, b) => b.name.localeCompare(a.name))
+
       // Filter after the fact for the specified currency.
       if (request.query.currency) {
         return limitWithCurrencies.filter(limit => limit.currency === request.query.currency)
       }
-
+      
       return limitWithCurrencies
     } catch (err) {
       rethrow.rethrowAndCountFspiopError(err, { operation: 'participantGetLimitsForAllParticipants' })

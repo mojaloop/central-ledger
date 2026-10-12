@@ -45,6 +45,7 @@ const Config = require('../../lib/config')
 const SettlementModelModel = require('../settlement/settlementModel')
 const { logger } = require('../../shared/logger')
 const rethrow = require('../../shared/rethrow')
+const assert = require('node:assert')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -478,6 +479,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
         participantCurrencyId,
         participantLimitTypeId: limitType.participantLimitTypeId,
         value: limitPositionObj.limit.value,
+        thresholdAlarmPercentage: limitPositionObj.limit.alarmPercentage,
         isActive: 1,
         createdBy: 'unknown'
       }
@@ -621,6 +623,10 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
  * @returns
  */
 const adjustLimitsV2 = async (participantCurrencyId, limit) => {
+  assert(limit)
+  assert(typeof limit.alarmPercentage === 'number')
+  assert(typeof limit.value === 'number')
+
   const retriesMax = 5
   let sleepMs = 50
 
