@@ -32,7 +32,7 @@ export interface ConnectionOptionsTigerBeetle {
  *   downloads the binary from https://github.com/tigerbeetle/tigerbeetle/releases 
  */
 export class TigerBeetle {
-  private logger = logger.child({ scope: 'Redis' })
+  private logger = logger.child({ scope: 'TigerBeetle' })
   private _connectionOptions: ConnectionOptionsTigerBeetle | null = null
   private pathToBinary: string
   private dataFileName: string
@@ -189,9 +189,9 @@ export class TigerBeetle {
     // Make executable.
     fs.chmodSync(toUnzip, '0755')
     
-    // Copy to where it needs to be.
     try {
-      fs.copyFileSync(toUnzip, to, fs.constants.COPYFILE_EXCL)
+      // Move file to destination atomically with rename.
+      fs.renameSync(toUnzip, to)
     } catch (err: any) {
       if (err.code === 'EEXIST') {
         this.logger.warn(`Tried to copy: ${toUnzip} -> ${to}, but destination already exists.`)
@@ -200,8 +200,6 @@ export class TigerBeetle {
         throw err
       }
     }
-    // fs.unlinkSync(toZipDir)
-    fs.unlinkSync(toUnzip)
   }
 
   private getRelease(): { url: string, checksum: string} {
