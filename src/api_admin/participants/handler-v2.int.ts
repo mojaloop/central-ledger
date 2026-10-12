@@ -815,6 +815,88 @@ describe('api/participants/handler-v2', () => {
     ]`).checkUnwrap(responseGetLimit.responseBody)
   })
 
+  it('addLimitAndInitialPosition() with smaller limit than position', async () => {
+    const requestCreate = {
+      payload: {
+        name: 'dfsp_lb',
+        currency: 'AUD',
+      }
+    } as RequestCreate
+
+    await unwrapResponse((reply: any) => handler.create(requestCreate, reply))
+
+    const request = {
+      params: {
+        name: 'dfsp_lb'
+      },
+      payload: {
+        currency: 'AUD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 303550,
+          alarmPercentage: 62,
+        },
+        initialPosition: 609475
+      }
+    } as RequestAddLimitAndInitialPosition
+
+    const responseAddLimit = await unwrapResponse((reply: any) => handler.addLimitAndInitialPosition(
+      request, reply
+    ))
+
+    assert.equal(responseAddLimit.responseCode, 201)
+    assert.equal(responseAddLimit.responseBody, undefined)
+
+    // Check the accounts:
+    const requestGetAccounts = {
+      params: { name: 'dfsp_lb' },
+      query: {
+        currency: 'AUD'
+      }
+    } as RequestGetAccounts
+    const responseAccounts = await unwrapResponse((reply: any) => handler.getAccounts(requestGetAccounts, reply))
+    Snapshot.from(`[
+      {
+        "id": :ignore
+        "ledgerAccountType": "POSITION",
+        "currency": "AUD",
+        "isActive": 1,
+        "value": 609475,
+        "reservedValue": 0,
+        "changedDate": "2026-02-01T00:00:00.000Z",
+        "createdDate": "2026-02-01T00:00:00.000Z"
+      },
+      {
+        "id": :ignore
+        "ledgerAccountType": "SETTLEMENT",
+        "currency": "AUD",
+        "isActive": 1,
+        "value": 0,
+        "reservedValue": 0,
+        "changedDate": "2026-02-01T00:00:00.000Z",
+        "createdDate": "2026-02-01T00:00:00.000Z"
+      }
+    ]`).checkUnwrap(responseAccounts.responseBody)
+
+    const requestGetLimits = {
+      params: { name: 'dfsp_lb' },
+      query: { currency: 'AUD' }
+    } as RequestGetLimits
+    const responseGetLimit = await unwrapResponse((reply: any) => handler.getLimits(
+      requestGetLimits, reply
+    ))
+    Snapshot.from(`[
+      {
+        "currency": "AUD",
+        "limit": {
+          "type": "NET_DEBIT_CAP",
+          "value": 303550,
+          "alarmPercentage": 62
+        }
+      }
+    ]`).checkUnwrap(responseGetLimit.responseBody)
+  })
+
   it('addLimitAndInitialPosition() missing alarmPercentage', async () => {
     // Can't use ApiHelpers as they implicitly set the limit and position.
     // Instead use the api.

@@ -31,7 +31,7 @@ const filename = path.basename(__filename)
 assert(filename)
 
 describe('api/participants/handler', () => {
-  it('is identical with/without LEDGER', async (context) => {
+  it.only('is identical with/without LEDGER', async (context) => {
     const stepsMax = 2500
     const traceA = await run(stepsMax, { API_MODE_ADMIN: 'NONE' })
     const traceB = await run(stepsMax, { API_MODE_ADMIN: 'LEDGER'})

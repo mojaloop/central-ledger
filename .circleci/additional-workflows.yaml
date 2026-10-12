@@ -25,7 +25,6 @@ jobs:
       - run:
           name: Execute coverage check
           command: |
-            # Set Node version to default (Note: this is needed on Ubuntu)
             nvm use default
             ./node_modules/.bin/ts-node src/testing/run.ts coverage --type=all
           environment:
@@ -59,7 +58,6 @@ jobs:
       - run:
           name: Execute fuzz tests
           command: |
-            # Set Node version to default (Note: this is needed on Ubuntu)
             nvm use default
             npm run test:fuzz
           environment:
@@ -91,7 +89,6 @@ jobs:
       - run:
           name: Run benchmark
           command: |
-            # Set Node version to default (Note: this is needed on Ubuntu)
             nvm use default
             npm run benchmark
           environment:
