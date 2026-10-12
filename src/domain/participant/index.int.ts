@@ -619,13 +619,14 @@ describe('domain/participant/index', () => {
 
     const result = await ParticipantService.adjustLimitsV2(name, {
       currency: 'USD',
-      limit: { type: 'NET_DEBIT_CAP', value: 9999 }
+      limit: { type: 'NET_DEBIT_CAP', value: 9999, alarmPercentage: 11 }
     })
     Snapshot.from(`{
       "participantLimit": {
         "participantCurrencyId": :ignore,
         "participantLimitTypeId": 1,
         "value": 9999,
+        "thresholdAlarmPercentage": 11,
         "isActive": 1,
         "createdBy": "unknown",
         "participantLimitId": :ignore
@@ -641,7 +642,7 @@ describe('domain/participant/index', () => {
         "participantCurrencyId": 21,
         "participantLimitTypeId": 1,
         "value": "9999.0000",
-        "thresholdAlarmPercentage": "10.00",
+        "thresholdAlarmPercentage": "11.00",
         "startAfterParticipantPositionChangeId": null,
         "isActive": 1,
         "createdDate": ":ignore",
@@ -658,7 +659,7 @@ describe('domain/participant/index', () => {
         "participantCurrencyId": 21,
         "participantLimitTypeId": 1,
         "value": "9999.0000",
-        "thresholdAlarmPercentage": "10.00",
+        "thresholdAlarmPercentage": "11.00",
         "startAfterParticipantPositionChangeId": null,
         "isActive": 1,
         "createdDate": ":ignore",
