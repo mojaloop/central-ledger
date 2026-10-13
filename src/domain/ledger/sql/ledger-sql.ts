@@ -140,6 +140,16 @@ export class LedgerSql implements Ledger {
     .toApiErrorObject(this.deps.config.ERROR_HANDLING)
 
   constructor(private deps: Dependencies) {
+    assert(deps)
+    assert(deps.config)
+    assert(deps.enums)
+    assert(deps.proxyCache)
+    assert(deps.positionHandler)
+    assert(deps.createRemittanceEntity)
+    assert(deps.definePositionParticipant)
+    assert(deps.effectToKafkaMessage)
+    assert(deps.db)
+    
     this.db = deps.db
   }
 
