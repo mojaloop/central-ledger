@@ -136,6 +136,7 @@ export interface ApplicationConfig {
    * @default true
    */
   SERVER_PRINT_ROUTES_ON_STARTUP: boolean,
+
   /**
    * Configures the underlying primary ledger.
    * - `SQL` uses the existing MySQL central-ledger implementation.
@@ -175,7 +176,7 @@ export interface ApplicationConfig {
    * 
    * @default 'NONE' 
    */
-  API_MODE_ADMIN: 'NONE' |'LEDGER'
+  API_MODE_ADMIN: 'NONE' | 'LEDGER'
 
   /**
    * Configures whether or not the Settlement API uses the Ledger interface. This is a part of the
