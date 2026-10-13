@@ -69,6 +69,13 @@ export class MessageBus {
   private config: ApplicationConfig
 
   constructor(private deps: Dependencies) {
+    assert(deps.config)
+    assert(deps.handlers)
+    assert(deps.handlers.dispatchTransferHandler)
+    assert(deps.handlers.positionBatchHandler)
+    assert(deps.handlers.timeoutHandler)
+    assert(deps.helper)
+    
     this.config = deps.config
   }
 

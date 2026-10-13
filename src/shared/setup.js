@@ -223,7 +223,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     const { definePositionParticipant } = require('../handlers/transfers/prepare')
     const positionHandlerV2 = new PositionHandlerV2(Config)
     const helper = new MessagingHelper({
-      config: Config,
+      config: Config
     })
     const ledger = new LedgerSql({
       config: Config,
@@ -243,7 +243,8 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
         dispatchTransferHandler: dispatchHandler,
         positionBatchHandler: positionHandlerV2,
         timeoutHandler: timeoutHandlerV2
-      }
+      },
+      helper
     })
 
     // Build the routes.
