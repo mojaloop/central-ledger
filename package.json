@@ -134,7 +134,7 @@
   "optionalDependencies": {
     "ed25519": "^0.0.5",
     "mysql": "2.18.1",
-    "mysql2": "3.24.5"
+    "mysql2": "3.24.6"
   },
   "devDependencies": {
     "@hapi/joi": "17.1.1",
