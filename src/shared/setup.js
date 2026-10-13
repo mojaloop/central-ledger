@@ -64,6 +64,7 @@ const { PositionHandlerV2 } = require('../handlers/position-v2')
 const { LedgerSql } = require('../domain/ledger/sql/ledger-sql')
 const { TimeoutHandlerV2 } = require('../handlers/timeout-v2')
 const { default: HandlerSettlementV2 } = require('../api_settlement/handler-v2')
+const { default: MessagingHelper } = require('../messaging/helper')
 const HandlerParticipantsV2 = require('../api_admin/participants/handler-v2').default
 const HandlerTransactionsV2 = require('../api_admin/transactions/handler-v2').default
 const routesAdminBuilder = require('../api_admin/routes-v2').default
@@ -221,13 +222,18 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     } = require('../handlers/transfers/createRemittanceEntity')
     const { definePositionParticipant } = require('../handlers/transfers/prepare')
     const positionHandlerV2 = new PositionHandlerV2(Config)
+    const helper = new MessagingHelper({
+      config: Config,
+    })
     const ledger = new LedgerSql({
       config: Config,
       enums,
       proxyCache: ProxyCache,
       positionHandler: positionHandlerV2,
       createRemittanceEntity: createRemittanceEntityPayment,
-      definePositionParticipant
+      definePositionParticipant,
+      effectToKafkaMessage: helper.effectToKafkaMessage.bind(helper),
+      db: Db._knex
     })
     const dispatchHandler = new DispatchTransferHandler(Config, ledger)
     const timeoutHandlerV2 = new TimeoutHandlerV2(Config, ledger)

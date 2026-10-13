@@ -284,6 +284,52 @@ describe('settlement api handlers', () => {
     ]`).checkUnwrap(body.filter((window: any) => window.state === 'OPEN'))
   })
 
+  it.only('gets open settlement windows where participantId=0', async () => {
+    // Create some transfers.
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_a', 'dfsp_b')
+      .build()
+      .prepareAndFulfil()
+    await ApiHelpers
+      .buildPayment()
+      .deps(harness)
+      .parties('dfsp_b', 'dfsp_a')
+      .build()
+      .prepareAndFulfil()
+
+    const request = {
+      ...requestTemplate,
+      query: {
+        currency: 'USD'
+      }
+    }
+    const params = {
+      query: {
+        participantId: 0,
+        state: 'OPEN'
+      }
+    }
+    let {
+      body, code
+    } = await unwrapResponseSettlement((reply) => handlerV2.getSettlementWindowsByParams(params, request, reply))
+
+    assert.equal(code, 200)
+    // Check only a subset for test isolation.
+    Snapshot.from(`[
+      {
+        "settlementWindowId": :ignore
+        "state": "OPEN",
+        "reason": :ignore
+        "createdDate": :ignore
+        "changedDate": :ignore
+        "content": []
+      }
+    ]`).checkUnwrap(body.filter((window: any) => window.state === 'OPEN'))
+
+  })
+
   it('fails to query a settlement window', async () => {
     const request = {
       ...requestTemplate,
