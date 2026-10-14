@@ -78,8 +78,8 @@ describe('Ledger Fuzz', () => {
     console.log(`Fuzz trace written to ${pathTrace}.`)
   })
 
-  it.skip('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
-    const stepsMax = envOrDefaultNumber('STEPS_MAX', 100)
+  it.only('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
+    const stepsMax = envOrDefaultNumber('STEPS_MAX', 250)
     const traceA = await run(stepsMax, { LEDGER: 'SQL' })
     const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
 
@@ -230,10 +230,19 @@ class LedgerFuzzer {
     enableDfsp: 1,
     enableDfspAccount: 1,
     disableDfspAccount: 1,
+    deposit: 1,
+    withdrawPrepare: 0,
+    withdrawCommit: 0,
+    withdrawAbort: 0,
+    setNetDebitCap: 0,
     getHubAccounts: 1,
     getDfsp: 1,
-    deposit: 1,
-    prepare: 1,
+    getAllDfsps: 0,
+    getDfspAccounts: 0,
+    getAllDfspAccounts: 0,
+    getNetDebitCap: 0,
+    getNetDebitCaps: 0,
+    prepare: 0,
     fulfil: 0,
 
     // createHubAccount: 5,
@@ -269,7 +278,6 @@ class LedgerFuzzer {
     // getSettlement: 1,
     // getSettlements: 1
   }
-
 
   constructor(
     private options: FuzzOptions,
@@ -418,7 +426,7 @@ class LedgerFuzzer {
     // console.log(`createDfsp`, cmd.dfspId, cmd.currencies)
     // TODO: reenable me when the time is right!
     if (this.registeredDfsps.length >= 5) {
-      this.weights.prepare = 15
+      // this.weights.prepare = 15
       // this.weights.fulfil = 15
     }
 
@@ -561,12 +569,9 @@ class LedgerFuzzer {
     // TODO: remove me eventually - Ignore certain fields from the results to match between 
     // the ledgers.
     const clone = structuredClone(result)
-    clone.result.created = new Date(0)
-    clone.result.isProxy = false
     clone.result.accounts.forEach(account => {
       account.id = 0n
-      account.changedDate = new Date(0)
-      account.createdDate = new Date(0)
+      // account.changedDate = new Date(0)
     })
 
     this.traceResult('getDfsp', {}, clone)

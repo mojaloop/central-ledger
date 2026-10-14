@@ -2,7 +2,7 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto from "crypto";
 import assert from "assert";
-import { CurrencyLedger, MasterAccount, SpecAccount, SpecTransfer } from "./spec-store";
+import { CurrencyLedger, MasterSpec, SpecAccount, SpecTransfer } from "./spec-store";
 import { AccountCode, TransferCode } from "../shared/types";
 import { PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { FulfilHandlerAction, FulfilHandlerInput } from "../../../handlers/payment-fulfil";
@@ -195,6 +195,8 @@ export default class Helper {
         ledger: Helper.ledgerIds.globalControl,
         code: AccountCode.Dfsp,
         flags: 0,
+        // Store the application-side DFSP Creation time on the Master Account.
+        user_data_64: BigInt((new Date()).getTime())
       },
       // Deposit
       {
@@ -366,7 +368,7 @@ export default class Helper {
   public buildTransfersPrepares(
     prepares: Array<PrepareHandlerInput>,
     currencyLedgers: Record<string, CurrencyLedger>,
-    masterAccounts: Record<string, MasterAccount>,
+    masterSpecs: Record<string, MasterSpec>,
     specAccounts: Record<string, SpecAccount>
   ): Array<Transfer> {
 
@@ -375,9 +377,9 @@ export default class Helper {
       // Shortcut.
       const amountStr = prepare.payload.amount.amount
       const currency = prepare.payload.amount.currency
-      const masterAccountPayer = masterAccounts[prepare.payload.payerFsp]
+      const masterAccountPayer = masterSpecs[prepare.payload.payerFsp]
       assert(masterAccountPayer)
-      const masterAccountPayee = masterAccounts[prepare.payload.payeeFsp]
+      const masterAccountPayee = masterSpecs[prepare.payload.payeeFsp]
       assert(masterAccountPayee)
       const specPayer = specAccounts[prepare.payload.payerFsp + '_' + currency]
       assert(specPayer)
@@ -423,8 +425,8 @@ export default class Helper {
         {
           ...Helper.createTransferTemplate,
           id: prepareId,
-          debit_account_id: masterAccountPayer.masterAccountId,
-          credit_account_id: masterAccountPayee.masterAccountId,
+          debit_account_id: masterAccountPayer.id,
+          credit_account_id: masterAccountPayee.id,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
           user_data_64: BigInt(expirationMs),

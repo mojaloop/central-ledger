@@ -464,10 +464,10 @@ export class LedgerSql implements Ledger {
         const ledgerAccountType = ledgerAccountIdMap[currency.ledgerAccountTypeId]
         assert(ledgerAccountType)
         const formattedAccount: LegacyLedgerAccount = {
-          id: BigInt(currency.participantCurrencyId),
+          // id: BigInt(currency.participantCurrencyId),
           // TODO: disabled this for now, the LedgerSql implementation is quite hard to 
           // match with LedgerTigerBeetle since the database autoincrements the id on failure.
-          // id: BigInt(0),
+          id: BigInt(0),
           ledgerAccountType,
           currency: currency.currencyId,
           isActive: Boolean(currency.isActive),
