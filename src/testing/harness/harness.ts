@@ -183,13 +183,13 @@ export default class Harness {
       clock: this.clock,
       databaseName: 'central_ledger',
       migration: {
-        type: 'sql',
-        sqlFilePath: './src/testing/harness/harness.snapshot.sql',
+        // type: 'sql',
+        // sqlFilePath: './src/testing/harness/harness.snapshot.sql',
 
         // Uncomment below to update the harness.snapshot.sql file. 
         // You'll want to do this after adding new migrations.
-        // type: 'knex',
-        // updateSqlFilePath: './src/testing/harness/harness.snapshot.sql'
+        type: 'knex',
+        updateSqlFilePath: './src/testing/harness/harness.snapshot.sql'
       }
     })
 

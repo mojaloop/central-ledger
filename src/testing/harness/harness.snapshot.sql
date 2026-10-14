@@ -3282,6 +3282,7 @@ DROP TABLE IF EXISTS `specDfsp`;
 CREATE TABLE `specDfsp` (
   `dfspId` varchar(255) NOT NULL,
   `masterAccountId` bigint(20) unsigned NOT NULL,
+  `isProxy` tinyint(1) NOT NULL,
   PRIMARY KEY (`dfspId`),
   UNIQUE KEY `specdfsp_masteraccountid_unique` (`masterAccountId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
@@ -3318,6 +3319,8 @@ CREATE TABLE `specDfspCurrency` (
   `clearingCredit` bigint(20) unsigned NOT NULL,
   `clearingSetup` bigint(20) unsigned NOT NULL,
   `clearingLimit` bigint(20) unsigned NOT NULL,
+  `createdDate` datetime NOT NULL,
+  `changedDate` datetime NOT NULL,
   PRIMARY KEY (`dfspId`,`currency`),
   KEY `specdfspcurrency_currency_foreign` (`currency`),
   CONSTRAINT `specdfspcurrency_currency_foreign` FOREIGN KEY (`currency`) REFERENCES `currency` (`currencyId`),
@@ -4058,4 +4061,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-09-29 12:27:47
+-- Dump completed on 2026-10-14 14:56:09

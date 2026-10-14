@@ -79,9 +79,10 @@ type CurrencyAccountSave = Omit<CurrencyAccount, 'id'>
 /**
  * Stores the mapping between the dfspId => MasterAccount Id on TigerBeetle.
  */
-export interface MasterAccount {
+export interface MasterSpec {
   dfspId: string,
-  masterAccountId: bigint
+  id: bigint,
+  isProxy: boolean
 }
 
 /**
@@ -105,6 +106,16 @@ export interface DfspAccountIds {
 export interface SpecAccount extends DfspAccountIds {
   dfspId: string,
   currency: string,
+
+  /**
+   * When the account was last activated/deactivated.
+   */
+  changedDate: Date,
+
+  /**
+   * When the account was created.
+   */
+  createdDate: Date,
 }
 
 export interface InternalLedgerAccount extends Account {
@@ -454,7 +465,7 @@ export default class SpecStore {
   /**
    * Create the TigerBeetle master account id for this DFSP.
    */
-  public async getOrCreateDfspMasterAccount(dfspId: string): Promise<bigint> {
+  public async getOrCreateDfspMasterSpec(dfspId: string, isProxy: boolean): Promise<MasterSpec> {
     let trx: Knex.Transaction | undefined
     try {
       trx = await this.db.transaction()
@@ -462,14 +473,22 @@ export default class SpecStore {
       const row = await trx(TABLE_DFSP).where({ dfspId }).select('*').first()
       if (row) {
         await trx.commit()
-        return BigInt(row.masterAccountId)
+        return {
+          dfspId: row.dfspId,
+          id: row.masterAccountId,
+          isProxy: Boolean(row.isProxy),
+        }
       }
 
       const masterAccountId = this.helper.idSmall()
-      await trx(TABLE_DFSP).insert({ dfspId, masterAccountId })
+      await trx(TABLE_DFSP).insert({ dfspId, masterAccountId, isProxy })
 
       await trx.commit()
-      return masterAccountId
+      return {
+        dfspId,
+        id: masterAccountId,
+        isProxy,
+      }
     } catch (err) {
       if (trx) {
         await trx.rollback()
@@ -479,31 +498,37 @@ export default class SpecStore {
     }
   }
 
-  public async getDfspMasterAccount(dfspId: string): Promise<bigint> {
+  public async getDfspMasterSpec(dfspId: string): Promise<MasterSpec> {
     const row = await this.db(TABLE_DFSP).where({ dfspId }).select('*').first()
     if (!row) {
       throw new Error(`No dfsp found for id: ${dfspId}`)
     }
 
-    return BigInt(row.masterAccountId)
+    return {
+      dfspId,
+      id: BigInt(row.masterAccountId),
+      isProxy: Boolean(row.isProxy)
+    }
   }
 
-  public async getDfspMasterAccounts(dfspIds: Array<string>): Promise<Array<MasterAccount>> {
+  public async getDfspMasterSpecs(dfspIds: Array<string>): Promise<Array<MasterSpec>> {
     const rows = await this.db(TABLE_DFSP).whereIn('dfspId', dfspIds).select('*')
 
     return rows.map(row => ({
       dfspId: row.dfspId,
-      masterAccountId: BigInt(row.masterAccountId)
+      id: BigInt(row.masterAccountId),
+      isProxy: Boolean(row.isProxy),
     }))
   }
 
   // Maybe we don't want this?
-  public async getAllDfspMasterAccounts(): Promise<Array<MasterAccount>> {
+  public async getAllDfspMasterSpecs(): Promise<Array<MasterSpec>> {
     const rows = await this.db(TABLE_DFSP).select('*')
 
     return rows.map(row => ({
       dfspId: row.dfspId,
-      masterAccountId: BigInt(row.masterAccountId)
+      id: BigInt(row.masterAccountId),
+      isProxy: Boolean(row.isProxy),
     }))
   }
 
@@ -598,7 +623,7 @@ export default class SpecStore {
     }
   }
 
-  public async newAccountSpec(dfspId: string, currency: string): Promise<SpecAccount> {
+  public async newAccountSpec(dfspId: string, currency: string, now: Date): Promise<SpecAccount> {
     let trx: Knex.Transaction | undefined
     try {
       trx = await this.db.transaction()
@@ -621,6 +646,8 @@ export default class SpecStore {
         clearingCredit: this.helper.idSmall(),
         clearingSetup: this.helper.idSmall(),
         clearingLimit: this.helper.idSmall(),
+        changedDate: now,
+        createdDate: now,
       };
       await trx(TABLE_DFSP_CURRENCY).insert(spec)
 
@@ -662,6 +689,8 @@ export default class SpecStore {
       clearingCredit: BigInt(row.clearingCredit),
       clearingSetup: BigInt(row.clearingSetup),
       clearingLimit: BigInt(row.clearingLimit),
+      changedDate: row.changedDate,
+      createdDate: row.createdDate,
     }
     return spec
   }

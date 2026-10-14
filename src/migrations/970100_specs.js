@@ -58,6 +58,7 @@ exports.up = async (knex) => {
       return knex.schema.createTable('specDfsp', (t) => {
         t.string('dfspId').primary().notNullable()
         t.bigInteger('masterAccountId').unsigned().notNullable().unique()
+        t.boolean('isProxy').notNullable()
       })
     }
   })
@@ -76,6 +77,8 @@ exports.up = async (knex) => {
         t.bigInteger('clearingCredit').unsigned().notNullable()
         t.bigInteger('clearingSetup').unsigned().notNullable()
         t.bigInteger('clearingLimit').unsigned().notNullable()
+        t.dateTime('createdDate').notNullable()
+        t.dateTime('changedDate').notNullable()
 
         t.primary(['dfspId', 'currency'])
         t.foreign('dfspId').references('dfspId').inTable('specDfsp')

@@ -83,7 +83,7 @@ const { TransferState } = Enum.Transfers
 
 import SettlementDomain from '../../settlement';
 import { default as Helper, default as LedgerTigerBeetleHelper } from './helper';
-import SpecStore, { CmdHubCurrencyEnable, CurrencyLedger, InternalLedgerAccount, InternalMasterAccount, MasterAccount, SpecAccount, SpecTransfer, SpecTransferUpdate } from './spec-store';
+import SpecStore, { CmdHubCurrencyEnable, CurrencyLedger, InternalLedgerAccount, InternalMasterAccount, MasterSpec, SpecAccount, SpecTransfer, SpecTransferUpdate } from './spec-store';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -194,12 +194,12 @@ export class LedgerTigerBeetle implements Ledger {
     assert(cmd.currencies.length > 0)
     assert.equal(cmd.currencies.length, 1, 'Currently only 1 currency is supported')
     const currency = cmd.currencies[0]
-
+    assertBoolean(cmd.isProxy)
     try {
       await this.specStore.assertCurrenciesEnabled(cmd.currencies)
 
       // Get or create the specDfsp.
-      const masterAccountId = await this.specStore.getOrCreateDfspMasterAccount(cmd.dfspId)
+      await this.specStore.getOrCreateDfspMasterSpec(cmd.dfspId, cmd.isProxy)
       const resultDfspCurrency = await this.specStore.getDfspCurrency(cmd.dfspId, currency)
 
       if (resultDfspCurrency.type === 'FAILURE') {
@@ -243,23 +243,26 @@ export class LedgerTigerBeetle implements Ledger {
     try {
       // Backwards compatibility, check that the correct legacy accounts have been created.
       const currencyAccounts = await this.specStore.getCurrencyAccounts(currency)
-      const hubReconcilation = currencyAccounts.find(acc => acc.accountType === 'HUB_RECONCILIATION')
-      const hubMultilateralSettlement = currencyAccounts.find(acc => acc.accountType === 'HUB_MULTILATERAL_SETTLEMENT')
+      const hubReconcilation = currencyAccounts
+        .find(acc => acc.accountType === 'HUB_RECONCILIATION')
+      const hubMultilateralSettlement = currencyAccounts
+        .find(acc => acc.accountType === 'HUB_MULTILATERAL_SETTLEMENT')
       if (!hubReconcilation) {
         throw new Error(`Hub reconciliation account for the specified currency does not exist.`)
       }
       if (!hubMultilateralSettlement) {
-        throw new Error(`Hub multilateral net settlement account for the specified currency does not exist.`)
+        throw new Error(`Hub multilateral net settlement account for the specified currency does ` 
+          + `not exist.`)
       }
 
       // First we create the spec.
-      const spec = await this.specStore.newAccountSpec(id, currency)
-      const masterAccountId = await this.specStore.getOrCreateDfspMasterAccount(id)
+      const spec = await this.specStore.newAccountSpec(id, currency, new Date())
+      const masterSpec = await this.specStore.getDfspMasterSpec(id)
       const ledger = await this.specStore.getCurrencyLedger(currency)
       const accountIdSettlementBalance = await this.specStore.getAccountIdSettlementBalance(currency)
 
       const accounts = this.helper.buildAccountsDfsp(
-        spec, ledger, accountIdSettlementBalance, masterAccountId
+        spec, ledger, accountIdSettlementBalance, masterSpec.id
       )
       const createAccountResults = await this.client.createAccounts(accounts)
       let fatal = false
@@ -271,6 +274,11 @@ export class LedgerTigerBeetle implements Ledger {
         if (result.status === CreateAccountStatus.exists) return
         // This is fine, the 'different flags' could be closed.
         if (result.status === CreateAccountStatus.exists_with_different_flags) return
+
+        // If the master account was already created, then by definition is exists with a different
+        // user_data_64.
+        if (idx === 2 &&
+          result.status === CreateAccountStatus.exists_with_different_user_data_64) return
 
         readableErrors.push(CreateAccountStatus[result.status])
         const failedAccount = accounts[idx]
@@ -303,12 +311,12 @@ export class LedgerTigerBeetle implements Ledger {
     assert(cmd.dfspId)
 
     try {
-      const masterAccountId = await this.specStore.getDfspMasterAccount(cmd.dfspId)
-      let closeAccountResult = await this.closeDfspMasterAccount(masterAccountId)
+      const masterSpec = await this.specStore.getDfspMasterSpec(cmd.dfspId)
+      let closeAccountResult = await this.closeDfspMasterAccount(masterSpec.id)
 
       if (closeAccountResult.type === DeactivateDfspResponseType.CREATE_ACCOUNT) {
         await this.createAccountDevNull()
-        closeAccountResult = await this.closeDfspMasterAccount(masterAccountId)
+        closeAccountResult = await this.closeDfspMasterAccount(masterSpec.id)
 
         if (closeAccountResult.type === DeactivateDfspResponseType.CREATE_ACCOUNT) {
           throw new Error(`Failed to closeDfspMasterAccount again with no DevNull account!`)
@@ -416,9 +424,9 @@ export class LedgerTigerBeetle implements Ledger {
     assert(cmd.dfspId)
 
     try {
-      const masterAccountId = await this.specStore.getDfspMasterAccount(cmd.dfspId)
+      const masterAccount = await this.specStore.getDfspMasterSpec(cmd.dfspId)
       const transfers = await this.deps.client.getAccountTransfers({
-        account_id: masterAccountId,
+        account_id: masterAccount.id,
         user_data_128: 0n,
         user_data_64: 0n,
         user_data_32: 0,
@@ -646,7 +654,7 @@ export class LedgerTigerBeetle implements Ledger {
     try {
       // Backwards compatibility - first check if the dfsp exists.
       try {
-        await this.specStore.getDfspMasterAccount(cmd.dfspId)
+        await this.specStore.getDfspMasterSpec(cmd.dfspId)
       } catch (err) {
         return {
           type: 'NOT_FOUND'
@@ -759,7 +767,7 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   public async setNetDebitCap(cmd: SetNetDebitCapCommand): Promise<CommandResult<void>> {
-    return {type: 'SUCCESS'}
+    return { type: 'SUCCESS' }
   }
 
   /**
@@ -805,10 +813,10 @@ export class LedgerTigerBeetle implements Ledger {
   public async getDfsp(query: { dfspId: string; }):
     Promise<QueryResultWithNotFound<LegacyLedgerDfsp>> {
     try {
-      let masterAccountId
+      let masterSpec: MasterSpec | null
       // Backwards compatibility.
       try {
-        masterAccountId = await this.specStore.getDfspMasterAccount(query.dfspId)
+        masterSpec = await this.specStore.getDfspMasterSpec(query.dfspId)
       } catch (err) {
         return {
           type: 'NOT_FOUND',
@@ -823,9 +831,15 @@ export class LedgerTigerBeetle implements Ledger {
         }
       }
 
-      const masterAccount = (await this._internalAccountsForSpecDfsps([{
-        dfspId: query.dfspId, masterAccountId
-      }]))[0]
+      // For this query we need:
+      // 1. Master Account for the DFSP
+      // 2. The SpecAccounts for the DFSP
+      // 3. Iterate through all specAccounts and get the TigerBeetle Account ids (we're currently
+      //    doing this in 2 steps).
+      // 4. Lookup Accounts in TigerBeetle
+      // 5. Join it all together into a 'virtual' POSITION and SETTLEMENT Account.
+      assert(masterSpec)
+      const masterAccount = (await this._internalAccountsForSpecDfsps([masterSpec]))[0]
       const internalLedgerAccounts = await this._internalAccountsForSpecAccounts(specAccounts)
 
       // Group by currency and convert to legacy accounts.
@@ -845,17 +859,36 @@ export class LedgerTigerBeetle implements Ledger {
         .flatMap(([currency, accounts]) => {
           const currencyLedger = currencyLedgerMap[currency]
           assert(currencyLedger)
-          return this._fromInternalAccountsToLegacyLedgerAccounts(accounts, currencyLedger)
+
+          // TODO: find something more optimal.
+          const specAccount = specAccounts.find(specAccount => specAccount.currency === currency)
+          assert(specAccount)
+          return this._fromInternalAccountsToLegacyLedgerAccounts(accounts, currencyLedger, specAccount)
         })
+
+      // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
+      legacyLedgerAccounts.sort((a, b) => {
+        if (a.createdDate.getTime() === b.createdDate.getTime()) {
+          return `${a.currency}_${a.ledgerAccountType}`.localeCompare(`${b.currency}_${b.ledgerAccountType}`)
+        }
+
+        return a.createdDate.getTime() - b.createdDate.getTime()
+      })
+
+      const dfspCreatedDate = new Date(Number(masterAccount.user_data_64))
+      if (Number.isNaN(dfspCreatedDate.getTime())) {
+        throw new Error(`expected dfspMasterAccount.user_data_64 to contain a valid ms timestamp.`)
+      }
+      // Backwards compatibility. Past implementations only store seconds, whereas we store ms.
+      dfspCreatedDate.setMilliseconds(0)
 
       const ledgerDfsp: LegacyLedgerDfsp = {
         name: query.dfspId,
         isActive: !(masterAccount.flags & AccountFlags.closed),
-        // TODO: need to get from somewhere.
-        created: new Date(),
+        // Created Date of the DFSP is on the user_data_64 of the master account.
+        created: dfspCreatedDate,
         accounts: legacyLedgerAccounts,
-        // TODO: need to store on master account?
-        isProxy: false,
+        isProxy: masterSpec.isProxy
       }
 
       return {
@@ -870,9 +903,9 @@ export class LedgerTigerBeetle implements Ledger {
     }
   }
 
-  private async _internalAccountsForSpecDfsps(masterAccounts: Array<MasterAccount>):
+  private async _internalAccountsForSpecDfsps(masterSpecs: Array<MasterSpec>):
     Promise<Array<InternalMasterAccount>> {
-    const masterAccountIds = masterAccounts.map(acc => acc.masterAccountId)
+    const masterAccountIds = masterSpecs.map(spec => spec.id)
     const accountResult = await Helper.safeLookupAccounts(this.deps.client, masterAccountIds)
     if (accountResult.type === 'FAILURE') {
       logger.error(`_internalAccountsForSpecDfsps() - failed with error: ${accountResult.error.message}`)
@@ -880,7 +913,7 @@ export class LedgerTigerBeetle implements Ledger {
     }
 
     return accountResult.result.map((account, idx) => {
-      const spec = masterAccounts[idx]
+      const spec = masterSpecs[idx]
       assert(spec)
 
       return {
@@ -968,9 +1001,11 @@ export class LedgerTigerBeetle implements Ledger {
    */
   private _fromInternalAccountsToLegacyLedgerAccounts(
     input: Array<InternalLedgerAccount>,
-    currencyLedger: CurrencyLedger
+    currencyLedger: CurrencyLedger,
+    spec: SpecAccount
   ):
     Array<LegacyLedgerAccount> {
+
     const accounts: Array<LegacyLedgerAccount> = []
     const currencies = [...new Set(input.map(item => item.currency))]
     input.map(internalAccount => internalAccount.currency)
@@ -1018,9 +1053,10 @@ export class LedgerTigerBeetle implements Ledger {
       ledgerAccountType: 'POSITION',
       currency,
       isActive: !(accountUnrestricted.flags & AccountFlags.closed),
-      // TODO: get from the spec.
-      changedDate: new Date(0),
-      createdDate: new Date(0),
+      // TODO: This might diverge given that we have just 1 spec per virtual POSITION and 
+      // SETTLEMENT account
+      changedDate: spec.changedDate,
+      createdDate: spec.createdDate,
       value: Helper.toRealAmount(legacyPositionBalancePosted, currencyLedger.assetScale),
       reservedValue: Helper.toRealAmount(legacyPositionBalancePending, currencyLedger.assetScale),
     })
@@ -1030,9 +1066,10 @@ export class LedgerTigerBeetle implements Ledger {
       ledgerAccountType: 'SETTLEMENT',
       currency,
       isActive: !(accountDeposit.flags & AccountFlags.closed),
-      // TODO: get from the spec.
-      changedDate: new Date(0),
-      createdDate: new Date(0),
+      // TODO: This might diverge given that we have just 1 spec per virtual POSITION and 
+      // SETTLEMENT account
+      changedDate: spec.changedDate,
+      createdDate: spec.createdDate,
       // TODO: Set this to match the LedgerSQL, but I think ledgerSQL is wrong!
       // value: Helper.toRealAmount(settlementValue, currencyLedger.assetScale),
       value: 0,
@@ -1041,7 +1078,6 @@ export class LedgerTigerBeetle implements Ledger {
 
     return accounts;
   }
-
 
   public async getAllDfsps(query: AnyQuery): Promise<QueryResult<GetAllDfspsResponse>> {
     throw new Error('Method not implemented.');
@@ -1056,12 +1092,12 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   public async getNetDebitCap(query: GetNetDebitCapQuery):
-   Promise<QueryResultWithNotFound<LegacyLimit>> {
+    Promise<QueryResultWithNotFound<LegacyLimit>> {
     throw new Error('Method not implemented.');
   }
 
   public async getNetDebitCaps(query: GetNetDebitCapsQuery):
-   Promise<QueryResultWithNotFound<Array<LegacyLimitItem>>> {
+    Promise<QueryResultWithNotFound<Array<LegacyLimitItem>>> {
     throw new Error('Method not implemented.');
   }
 
@@ -1090,11 +1126,11 @@ export class LedgerTigerBeetle implements Ledger {
     }, {} as Record<string, true>)
 
     const dfsps = await this.specStore.getAllDfspCurrencies(Object.keys(dfspIdMap))
-    const masterAccounts = (await this.specStore.getDfspMasterAccounts(Object.keys(dfspIdMap)))
+    const masterAccounts = (await this.specStore.getDfspMasterSpecs(Object.keys(dfspIdMap)))
       .reduce((acc, curr) => {
         acc[curr.dfspId] = curr
         return acc
-      }, {} as Record<string, MasterAccount>)
+      }, {} as Record<string, MasterSpec>)
     const dfspCurrencyMap: Record<string, SpecAccount> = {}
     dfsps.forEach(specAccount => {
       dfspCurrencyMap[`${specAccount.dfspId}_${specAccount.currency}`] = specAccount
@@ -1401,7 +1437,7 @@ export class LedgerTigerBeetle implements Ledger {
       acc[key] = curr
       return acc
     }, {} as Record<string, SpecAccount>)
-    
+
     // Now save transfers.
     const transfers = this.helper.buildTransfersFulfil(
       Object.values(fulfilsMap),
