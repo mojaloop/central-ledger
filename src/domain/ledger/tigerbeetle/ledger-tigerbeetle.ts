@@ -156,7 +156,9 @@ export class LedgerTigerBeetle implements Ledger {
 
       const cmdEnableHubCurrency: CmdHubCurrencyEnable = {
         currency: cmd.currency,
-        accounts: cmd.accountType ? [cmd.accountType] : []
+        accounts: cmd.accountType ? [
+          { id: Number(this.deps.helper.idSmall()), type: cmd.accountType }
+        ] : []
       }
       const enableHubCurrencyResponse = await this.specStore.enableHubCurrency(cmdEnableHubCurrency)
 
@@ -251,7 +253,7 @@ export class LedgerTigerBeetle implements Ledger {
         throw new Error(`Hub reconciliation account for the specified currency does not exist.`)
       }
       if (!hubMultilateralSettlement) {
-        throw new Error(`Hub multilateral net settlement account for the specified currency does ` 
+        throw new Error(`Hub multilateral net settlement account for the specified currency does `
           + `not exist.`)
       }
 
@@ -784,10 +786,8 @@ export class LedgerTigerBeetle implements Ledger {
       const accounts: Array<LegacyLedgerAccount> = []
       currencyAccounts.forEach(acc => {
         accounts.push({
-          // TODO: disabled this for now, the LedgerSql implementation is quite hard to 
-          // match with LedgerTigerBeetle since the database autoincrements the id on failure.
-          // id: BigInt(acc.id),
-          id: BigInt(0),
+
+          id: BigInt(acc.id),
           ledgerAccountType: acc.accountType,
           currency: acc.currency,
           isActive: true,

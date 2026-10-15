@@ -10,7 +10,7 @@ import { fulfil } from '../../../handlers/transfers/handler';
 
 export type CmdHubCurrencyEnable = {
   currency: string,
-  accounts: Array<string>
+  accounts: Array<{ id: number, type: string }>
 }
 
 export type EnableHubCurrencyResponse = {
@@ -53,7 +53,7 @@ export interface CurrencyLedger {
  */
 export type CurrencyAccount = {
   /**
-   * A mocked out id to match LedgerSQL.
+   * The id of the currency account.
    */
   id: number,
 
@@ -73,8 +73,6 @@ export type CurrencyAccount = {
    */
   changedDate: Date,
 }
-
-type CurrencyAccountSave = Omit<CurrencyAccount, 'id'>
 
 /**
  * Stores the mapping between the dfspId => MasterAccount Id on TigerBeetle.
@@ -259,17 +257,20 @@ export default class SpecStore {
 
       // If accounts is empty, we just assume it's these two.
       if (cmd.accounts.length === 0) {
-        cmd.accounts.push('HUB_MULTILATERAL_SETTLEMENT', 'HUB_RECONCILIATION');
+        cmd.accounts.push(
+          { id: Number(this.deps.helper.idSmall()), type: 'HUB_MULTILATERAL_SETTLEMENT' },
+          { id: Number(this.deps.helper.idSmall()), type: 'HUB_RECONCILIATION' },
+        )
       }
 
       // Validate the account types.
       cmd.accounts.forEach(account => {
-        const ledgerAccountTypeId = this.deps.enums.ledgerAccountType[account];
+        const ledgerAccountTypeId = this.deps.enums.ledgerAccountType[account.type];
         if (!ledgerAccountTypeId) {
           throw new Error('Ledger account type was not found.');
         }
 
-        const permittedHubAccountType = this.deps.config.HUB_ACCOUNTS.find(acc => acc === account);
+        const permittedHubAccountType = this.deps.config.HUB_ACCOUNTS.find(acc => acc === account.type);
         if (!permittedHubAccountType) {
           throw new Error(`The requested hub operator account type is not allowed.`);
         }
@@ -277,11 +278,12 @@ export default class SpecStore {
 
       await this.insertCurrencyLedger(cmd.currency)
 
-      for (const accountType of cmd.accounts) {
+      for (const account of cmd.accounts) {
         // Do only one at a time, to match LedgerSQL implementation.
         const result = await this.insertCurrencyAccount({
+          id: account.id,
           currency: cmd.currency,
-          accountType,
+          accountType: account.type,
           createdDate: new Date(),
           changedDate: new Date(),
         })
@@ -342,7 +344,7 @@ export default class SpecStore {
     }
   }
 
-  private async insertCurrencyAccount(account: CurrencyAccountSave)
+  private async insertCurrencyAccount(account: CurrencyAccount)
     : Promise<EnableHubCurrencyResponse> {
     let trx: Knex.Transaction | undefined
     try {
@@ -361,6 +363,7 @@ export default class SpecStore {
 
       await trx(TABLE_CURRENCY_ACCOUNT)
         .insert({
+          id: account.id,
           currency: account.currency,
           accountType: account.accountType,
           createdDate: account.createdDate,

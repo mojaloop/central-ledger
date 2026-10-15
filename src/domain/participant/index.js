@@ -59,6 +59,7 @@ const TransferService = require('../../domain/transfer')
 const Db = require('../../lib/db')
 const assert = require('node:assert')
 const rethrow = require('../../shared/rethrow')
+const { randomBytes } = require('node:crypto')
 
 // Alphabetically ordered list of error texts used below
 const AccountInactiveErrorText = 'Account is currently set inactive'
@@ -148,11 +149,16 @@ const update = async (name, payload) => {
   }
 }
 
-const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
+const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId, isActive = true, id) => {
   const log = logger.child()
   try {
     log.info('creating participant currency')
-    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId, isActive)
+
+    // Default id to a random int. If you want a deterministic id, then pass one in!
+    if (!id) {
+      id = Number(randomBytes(8).readBigInt64BE() & 0x1FFFFFFFFFFFFFn)
+    }
+    const participantCurrency = await ParticipantCurrencyModel.create(id, participantId, currencyId, ledgerAccountTypeId, isActive)
     return participantCurrency
   } catch (err) {
     log.error('error creating participant currency', err)
@@ -160,11 +166,15 @@ const createParticipantCurrency = async (participantId, currencyId, ledgerAccoun
   }
 }
 
-const createHubAccount = async (participantId, currencyId, ledgerAccountTypeId) => {
+const createHubAccount = async (participantId, currencyId, ledgerAccountTypeId, id) => {
   const log = logger.child()
   try {
     log.info('creating hub account')
-    const participantCurrency = await ParticipantFacade.addHubAccountAndInitPosition(participantId, currencyId, ledgerAccountTypeId)
+    // Default id to a random int. If you want a deterministic id, then pass one in!
+    if (!id) {
+      id = Number(randomBytes(8).readBigInt64BE() & 0x1FFFFFFFFFFFFFn)
+    }
+    const participantCurrency = await ParticipantFacade.addHubAccountAndInitPosition(id, participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
     log.error('error creating hub account', err)

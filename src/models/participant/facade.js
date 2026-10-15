@@ -769,13 +769,14 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
   }
 }
 
-const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAccountTypeId) => {
+const addHubAccountAndInitPosition = async (id, participantId, currencyId, ledgerAccountTypeId) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       let result
       const createdDate = new Date()
       const participantCurrency = {
+        participantCurrencyId: id,
         participantId,
         currencyId,
         ledgerAccountTypeId,
@@ -785,21 +786,21 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
       }
       result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
       await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
-      const participantCurrencyId = result[0]
 
       // Get the actual createdDate from DB.
       const insertedRecord = await knex('participantCurrency')
         .transacting(trx)
-        .where({ participantCurrencyId })
+        .where({ participantCurrencyId: id })
         .first()
-      participantCurrency.participantCurrencyId = participantCurrencyId
+      assert(insertedRecord, `participantCurrency not found for id: ${id}`)
+
       participantCurrency.createdDate = insertedRecord.createdDate
 
       const participantPosition = {
-        participantCurrencyId: participantCurrency.participantCurrencyId,
+        participantCurrencyId: id,
         value: 0,
         reservedValue: 0,
-        changedDate: insertedRecord.createdDate
+        changedDate: createdDate,
       }
       result = await knex('participantPosition').transacting(trx).insert(participantPosition)
       participantPosition.participantPositionId = result[0]

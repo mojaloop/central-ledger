@@ -110,6 +110,7 @@ import SettlementDomain from '../../../domain/settlement'
 import SettlementWindowDomain from '../../../domain/settlementWindow'
 import SettlementModel from '../../../models/settlement/settlement'
 import * as Result from '../shared/results'
+import Helper from './helper';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
@@ -130,7 +131,8 @@ interface Dependencies {
     proxyObligation: TransferProxyObligation
   }) => Promise<{ messageKey: string, cyrilResult: any }>
   effectToKafkaMessage: (effect: Effect) => any
-  db: Knex
+  db: Knex,
+  helper: Helper
 }
 
 export class LedgerSql implements Ledger {
@@ -149,7 +151,8 @@ export class LedgerSql implements Ledger {
     assert(deps.definePositionParticipant)
     assert(deps.effectToKafkaMessage)
     assert(deps.db)
-    
+    assert(deps.helper)
+
     this.db = deps.db
   }
 
@@ -359,11 +362,13 @@ export class LedgerSql implements Ledger {
     for (const settlementModel of settlementModels) {
       // TODO(LD): Ideally these would be created in a transaction - as it stands right now, these are non
       // atomically created.
+
+      // TODO: How do we pass in our idSmall() here?
       const participantCurrencyPosition = await Participant.createParticipantCurrency(
-        participant.participantId, currency, settlementModel.ledgerAccountTypeId, true
+        participant.participantId, currency, settlementModel.ledgerAccountTypeId, true, Number(this.deps.helper.idSmall())
       )
       const participantCurrencySettlement = await Participant.createParticipantCurrency(
-        participant.participantId, currency, settlementModel.settlementAccountTypeId, true
+        participant.participantId, currency, settlementModel.settlementAccountTypeId, true, Number(this.deps.helper.idSmall())
       )
       assert(Array.isArray(participant.currencyList))
       participant.currencyList = participant.currencyList.concat([
@@ -464,10 +469,10 @@ export class LedgerSql implements Ledger {
         const ledgerAccountType = ledgerAccountIdMap[currency.ledgerAccountTypeId]
         assert(ledgerAccountType)
         const formattedAccount: LegacyLedgerAccount = {
-          // id: BigInt(currency.participantCurrencyId),
+          id: BigInt(currency.participantCurrencyId),
           // TODO: disabled this for now, the LedgerSql implementation is quite hard to 
           // match with LedgerTigerBeetle since the database autoincrements the id on failure.
-          id: BigInt(0),
+          // id: BigInt(0),
           ledgerAccountType,
           currency: currency.currencyId,
           isActive: Boolean(currency.isActive),
