@@ -111,6 +111,7 @@ import SettlementWindowDomain from '../../../domain/settlementWindow'
 import SettlementModel from '../../../models/settlement/settlement'
 import * as Result from '../shared/results'
 import Helper from './helper';
+import { calendarFormat } from 'moment';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
@@ -468,6 +469,15 @@ export class LedgerSql implements Ledger {
           reservedValue: 0,
         }
         formattedAccounts.push(formattedAccount)
+      })
+
+      // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
+      formattedAccounts.sort((a, b) => {
+        if (a.createdDate.getTime() === b.createdDate.getTime()) {
+          return `${a.currency}_${a.ledgerAccountType}`.localeCompare(`${b.currency}_${b.ledgerAccountType}`)
+        }
+
+        return a.createdDate.getTime() - b.createdDate.getTime()
       })
 
       const dfsp: LegacyLedgerDfsp = {
@@ -961,7 +971,15 @@ export class LedgerSql implements Ledger {
       );
       assert(positionAccount, 'Position account not found');
 
-      // Create participantPosition and activate SETTLEMENT account if needed (BEFORE validation)
+      // Check if accounts are active before proceeding This deviates from the legacy behaviour,
+      // which would enable the accounts if they were disabled.
+      if (!settlementAccount.currencyIsActive) {
+        throw new Error(`Settlement account is disabled for participant: ${cmd.dfspId}`)
+      }
+      if (!positionAccount.currencyIsActive) {
+        throw new Error(`Position account is disabled for participant: ${cmd.dfspId}`)
+      }
+
       const existingSettlementPosition = await knex('participantPosition')
         .where('participantCurrencyId', settlementAccount.participantCurrencyId)
         .first();
@@ -973,14 +991,9 @@ export class LedgerSql implements Ledger {
           reservedValue: 0,
           changedDate: new Date(),
         });
-
-        // Activate the settlement account so validation passes
-        await knex('participantCurrency')
-          .update({ isActive: 1 })
-          .where('participantCurrencyId', settlementAccount.participantCurrencyId);
       }
 
-      // Create participantPosition and activate POSITION account if needed.
+      // Create participantPosition if needed.
       const existingPositionPosition = await knex('participantPosition')
         .where('participantCurrencyId', positionAccount.participantCurrencyId)
         .first();
@@ -992,11 +1005,6 @@ export class LedgerSql implements Ledger {
           reservedValue: 0,
           changedDate: new Date(),
         });
-
-        // Activate the position account.
-        await knex('participantCurrency')
-          .update({ isActive: 1 })
-          .where('participantCurrencyId', positionAccount.participantCurrencyId);
       }
 
       const fundsInPayload = {
