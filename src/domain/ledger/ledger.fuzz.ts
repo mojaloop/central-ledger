@@ -421,7 +421,8 @@ class LedgerFuzzer {
 
     const cmd: CreateHubAccountCommand = {
       currency,
-      settlementModel: this.defaultSettlementModel(currency)
+      settlementModel: this.defaultSettlementModel(currency),
+      ids: [this.prng.idSmall(), this.prng.idSmall()]
     }
     if (accountType) {
       cmd.accountType = accountType

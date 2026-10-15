@@ -303,7 +303,13 @@ export interface CreateHubAccountCommand {
    * HUB_MULTILATERAL_SETTLEMENT and HUB_RECONCILIATION by default.
    */
   accountType?: string,
-  settlementModel: SettlementModel
+  settlementModel: SettlementModel,
+
+  /**
+   * The ids to assign to the participantCurrencyIds or specCurrencyAccount.id
+   * Allows us to deterministically create hub accounts across ledgers.
+   */
+  ids?: Array<number>
 }
 
 export type CreateHubAccountResponse = {

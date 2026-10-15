@@ -373,7 +373,7 @@ export default class HandlerV2 {
       const result = await this.deps.ledger.createHubAccount({
         currency,
         accountType: type,
-        settlementModel
+        settlementModel,
       })
 
       if (result.type === 'FAILURE') {

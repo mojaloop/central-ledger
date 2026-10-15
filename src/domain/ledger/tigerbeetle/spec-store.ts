@@ -10,7 +10,8 @@ import { fulfil } from '../../../handlers/transfers/handler';
 
 export type CmdHubCurrencyEnable = {
   currency: string,
-  accounts: Array<{ id: number, type: string }>
+  accountTypes: Array<string>
+  accountIds: Array<number>
 }
 
 export type EnableHubCurrencyResponse = {
@@ -252,25 +253,28 @@ export default class SpecStore {
 
   public async enableHubCurrency(cmd: CmdHubCurrencyEnable): Promise<EnableHubCurrencyResponse> {
     try {
-      assert(cmd.currency);
-      assert(Array.isArray(cmd.accounts));
+      assert(cmd.currency)
+      assert(Array.isArray(cmd.accountTypes))
+      assert(Array.isArray(cmd.accountIds))
+
+      assert(cmd.accountIds.length >= 2, 'enableHubCurrency expects accountIds to be provided.')
 
       // If accounts is empty, we just assume it's these two.
-      if (cmd.accounts.length === 0) {
-        cmd.accounts.push(
-          { id: Number(this.deps.helper.idSmall()), type: 'HUB_MULTILATERAL_SETTLEMENT' },
-          { id: Number(this.deps.helper.idSmall()), type: 'HUB_RECONCILIATION' },
+      if (cmd.accountTypes.length === 0) {
+        cmd.accountTypes.push(
+          'HUB_MULTILATERAL_SETTLEMENT',
+          'HUB_RECONCILIATION',
         )
       }
 
       // Validate the account types.
-      cmd.accounts.forEach(account => {
-        const ledgerAccountTypeId = this.deps.enums.ledgerAccountType[account.type];
+      cmd.accountTypes.forEach(type => {
+        const ledgerAccountTypeId = this.deps.enums.ledgerAccountType[type];
         if (!ledgerAccountTypeId) {
           throw new Error('Ledger account type was not found.');
         }
 
-        const permittedHubAccountType = this.deps.config.HUB_ACCOUNTS.find(acc => acc === account.type);
+        const permittedHubAccountType = this.deps.config.HUB_ACCOUNTS.find(acc => acc === type);
         if (!permittedHubAccountType) {
           throw new Error(`The requested hub operator account type is not allowed.`);
         }
@@ -278,12 +282,16 @@ export default class SpecStore {
 
       await this.insertCurrencyLedger(cmd.currency)
 
-      for (const account of cmd.accounts) {
-        // Do only one at a time, to match LedgerSQL implementation.
+      for (let idx = 0; idx < cmd.accountTypes.length; idx++) {
+        const id = cmd.accountIds[idx]
+        const accountType = cmd.accountTypes[idx]
+        assert(id)
+        assert(accountType)
+
         const result = await this.insertCurrencyAccount({
-          id: account.id,
+          id,
           currency: cmd.currency,
-          accountType: account.type,
+          accountType,
           createdDate: new Date(),
           changedDate: new Date(),
         })
@@ -292,7 +300,7 @@ export default class SpecStore {
           return {
             type: 'EXISTS'
           }
-        }
+        } 
       }
 
       return { type: 'OK' };
