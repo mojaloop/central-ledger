@@ -42,7 +42,7 @@ exports.up = async (knex) => {
   await knex.schema.hasTable('specCurrencyAccount').then(function (exists) {
     if (!exists) {
       return knex.schema.createTable('specCurrencyAccount', (t) => {
-        t.increments('id').primary().notNullable()
+        t.bigInteger('id').primary().notNullable()
         t.string('currency', 3).notNullable()
         t.string('accountType').notNullable()
         t.dateTime('createdDate').notNullable()

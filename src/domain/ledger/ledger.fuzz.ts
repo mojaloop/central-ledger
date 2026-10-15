@@ -140,6 +140,43 @@ const run = async (stepsMax: number, config: Partial<ApplicationConfig>): Promis
     await knex.raw(`ALTER TABLE transferErrorDuplicateCheck MODIFY COLUMN createdDate datetime NOT NULL;`)
     await knex.raw(`ALTER TABLE transferFulfilment MODIFY COLUMN createdDate datetime NOT NULL;`)
 
+
+    // Change the participantCurrencyId to an unsigned bigint, and remove the auto incrementing id.
+    // This allows us to match the id implementation between LedgerSql and LedgerTigerBeetle.
+    const statements = [
+      `ALTER TABLE participantPosition DROP FOREIGN KEY participantposition_participantcurrencyid_foreign`,
+      `ALTER TABLE participantLimit DROP FOREIGN KEY participantlimit_participantcurrencyid_foreign`,
+      `ALTER TABLE settlementTransferParticipant DROP FOREIGN KEY settlementtransferparticipant_participantcurrencyid_foreign`,
+      `ALTER TABLE participantPositionChange DROP FOREIGN KEY participantpositionchange_participantcurrencyid_foreign`,
+      `ALTER TABLE settlementParticipantCurrency DROP FOREIGN KEY settlementparticipantcurrency_participantcurrencyid_foreign`,
+      `ALTER TABLE settlementContentAggregation DROP FOREIGN KEY settlementcontentaggregation_participantcurrencyid_foreign`,
+      `ALTER TABLE transferParticipant DROP FOREIGN KEY transferparticipant_participantcurrencyid_foreign`,
+      `ALTER TABLE fxTransferParticipant DROP FOREIGN KEY fxtransferparticipant_participantcurrencyid_foreign`,
+      `ALTER TABLE participantCurrency MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+      `ALTER TABLE participantPosition MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+      `ALTER TABLE participantLimit MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+      `ALTER TABLE settlementTransferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+      `ALTER TABLE participantPositionChange MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+      `ALTER TABLE settlementParticipantCurrency MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+      `ALTER TABLE settlementContentAggregation MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+      `ALTER TABLE transferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+      `ALTER TABLE fxTransferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+      `ALTER TABLE participantPosition ADD CONSTRAINT participantposition_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+      `ALTER TABLE participantLimit ADD CONSTRAINT participantlimit_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+      `ALTER TABLE settlementTransferParticipant ADD CONSTRAINT settlementtransferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+      `ALTER TABLE participantPositionChange ADD CONSTRAINT participantpositionchange_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+      `ALTER TABLE settlementParticipantCurrency ADD CONSTRAINT settlementparticipantcurrency_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+      `ALTER TABLE settlementContentAggregation ADD CONSTRAINT settlementcontentaggregation_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+      `ALTER TABLE transferParticipant ADD CONSTRAINT transferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+      `ALTER TABLE fxTransferParticipant ADD CONSTRAINT fxtransferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+    ]
+
+    await knex.transaction(async (trx: any) => {
+      for (const statement of statements) {
+        await trx.raw(statement)
+      }
+    })
+
     const fuzzer = new LedgerFuzzer(options, harness)
     await fuzzer.run()
 
@@ -208,7 +245,7 @@ class LedgerFuzzer {
   private registeredCurrencies: Array<string> = []
   private registeredDfspIds: Record<string, true> = {}
   private registeredDfsps: Array<string> = []
-  private dfspAccountIds: Array<number> = []
+  private dfspAccountIds: Record<number, true> = {}
   private withdrawIds: Record<string, true> = {}
   private withdraws: Array<any> = []
   private transferIds: Record<string, true> = {}
@@ -563,8 +600,12 @@ class LedgerFuzzer {
 
     if (result.type !== 'SUCCESS') {
       this.traceResult('getDfsp', {}, result)
-      return  
+      return
     }
+
+    result.result.accounts.forEach(account => {
+      this.dfspAccountIds[Number(account.id)] = true
+    })
 
     // TODO: remove me eventually - Ignore certain fields from the results to match between 
     // the ledgers.
@@ -713,7 +754,7 @@ class LedgerFuzzer {
       assert(payment, `Could not find existing payment for succesfully preparedId: ${id}.`)
 
       return payment.toFulfil(this.prng.randomElementFrom(['COMMITTED', 'RESERVED']))
-    } 
+    }
 
     // High chance of getting an existing payment.
     if (this.payments.length > 0 && this.prng.intExclusive(100) > 5) {
@@ -963,7 +1004,7 @@ class LedgerFuzzer {
 
     const query: GetSettlementQuery = { id }
     const result = await this.ledger.getSettlement(query)
-    this.traceResult('getSettlement', query, result)    
+    this.traceResult('getSettlement', query, result)
 
     if (result.type === 'SUCCESS') {
       if (!this.settlementIds[id]) {
@@ -1045,9 +1086,11 @@ class LedgerFuzzer {
   }
 
   private randomDfspAccount(): number {
-    if (this.dfspAccountIds.length > 0 && this.harness.prng.intExclusive(100) > 20) {
+    if (Object.keys(this.dfspAccountIds).length > 0 && this.harness.prng.intExclusive(100) > 20) {
       // Reuse.
-      return this.harness.prng.randomElementFrom(this.dfspAccountIds)
+      return this.harness.prng.randomElementFrom(
+        Object.keys(this.dfspAccountIds).map(key => Number.parseInt(key))
+      )
     }
 
     return this.prng.intExclusive(1000)

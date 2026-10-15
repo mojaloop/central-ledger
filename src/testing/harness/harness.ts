@@ -88,6 +88,7 @@ import LedgerTigerBeetleHelper from "../../domain/ledger/tigerbeetle/helper"
 import SpecStore from "../../domain/ledger/tigerbeetle/spec-store"
 import { LedgerSql } from "../../domain/ledger/sql/ledger-sql"
 import { Ledger } from "../../domain/ledger/shared/types"
+import Helper from "../../domain/ledger/sql/helper"
 
 const logger = Logger.child({ scope: 'harness' })
 
@@ -640,6 +641,9 @@ export default class Harness {
           definePositionParticipant,
           effectToKafkaMessage: helper.effectToKafkaMessage.bind(helper),
           db: Db._knex,
+          helper: new Helper({
+            randomBytes: prngId.randomBytes.bind(prngId)
+          })
         })
         break;
       }
