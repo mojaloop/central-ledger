@@ -205,18 +205,16 @@ export class LedgerTigerBeetle implements Ledger {
     assert.equal(cmd.currencies.length, 1, 'Currently only 1 currency is supported')
     const currency = cmd.currencies[0]
     assertBoolean(cmd.isProxy)
+
     if (!cmd.ids) {
       const idsToCreate = cmd.currencies.length * 10
       cmd.ids = Array.from({ length: idsToCreate }, (_) => Number(this.deps.helper.idSmall()))
     }
     try {
       await this.specStore.assertCurrenciesEnabled(cmd.currencies)
+      await this.specStore.assertHubAccountsCreatedForCurrencies(cmd.currencies)
 
       // Get or create the specDfsp.
-      // await this.specStore.getOrCreateDfspMasterSpec(cmd.dfspId, cmd.isProxy, BigInt(cmd.ids[0]))
-
-      // I don't think the id of the master spec needs to be deterministic between the 2 ledger
-      // implementations.
       await this.specStore.getOrCreateDfspMasterSpec(cmd.dfspId, cmd.isProxy, this.deps.helper.idSmall())
       const resultDfspCurrency = await this.specStore.getDfspCurrency(cmd.dfspId, currency)
 
@@ -259,20 +257,6 @@ export class LedgerTigerBeetle implements Ledger {
 
   private async createDfspAccounts(id: string, currency: string, ids: Array<number>): Promise<CreateDfspResponse> {
     try {
-      // Backwards compatibility, check that the correct legacy accounts have been created.
-      const currencyAccounts = await this.specStore.getCurrencyAccounts(currency)
-      const hubReconcilation = currencyAccounts
-        .find(acc => acc.accountType === 'HUB_RECONCILIATION')
-      const hubMultilateralSettlement = currencyAccounts
-        .find(acc => acc.accountType === 'HUB_MULTILATERAL_SETTLEMENT')
-      if (!hubReconcilation) {
-        throw new Error(`Hub reconciliation account for the specified currency does not exist.`)
-      }
-      if (!hubMultilateralSettlement) {
-        throw new Error(`Hub multilateral net settlement account for the specified currency does `
-          + `not exist.`)
-      }
-
       // First we create the spec.
       const spec = await this.specStore.newAccountSpec(id, currency, new Date(), ids)
       const masterSpec = await this.specStore.getDfspMasterSpec(id)
@@ -517,13 +501,12 @@ export class LedgerTigerBeetle implements Ledger {
 
       const { currency, code, spec } = await this.specStore.getCurrencyCodeAndSpec(cmd.dfspId, accountId)
       switch (code) {
-        case AccountCode.Deposit:
         case AccountCode.Unrestricted:
           break;
         default:
           return {
             type: 'FAILURE',
-            error: new Error(`enableDfspAccount() - account id not found, or is not Deposit or Unrestricted.`)
+            error: new Error(`enableDfspAccount() - account id not found, or is not Unrestricted.`)
           }
       }
 
@@ -556,7 +539,7 @@ export class LedgerTigerBeetle implements Ledger {
         id: id(),
         pending_id: lastClosingTransfer.id,
         debit_account_id: spec.unrestrictedLock,
-        credit_account_id: code === AccountCode.Deposit ? spec.deposit : spec.unrestricted,
+        credit_account_id: spec.unrestricted,
         amount: 0n,
         ledger: ledgers.ledgerOperation,
         code: TransferCode.Close_Account,
@@ -681,17 +664,15 @@ export class LedgerTigerBeetle implements Ledger {
       // Lookup the net debit cap.
       const netDebitCap = await this.specStore.getNetDebitCap(cmd.dfspId, cmd.currency)
       const dfspCurrencyResult = await this.deps.specStore.getDfspCurrency(cmd.dfspId, cmd.currency)
-      if (dfspCurrencyResult.type !== 'SUCCESS') {
+      if (dfspCurrencyResult.type === 'NOT_FOUND') {
+        return {
+          type: 'NOT_FOUND'
+        }
+      }
+      if (dfspCurrencyResult.type === 'FAILURE') {
         throw dfspCurrencyResult.error
       }
       const dfspCurrency = dfspCurrencyResult.result
-
-      // // Backwards compatibility - deposting reactivates a disabled account.
-      // await this.enableDfspAccount({
-      //   dfspId: cmd.dfspId, 
-      //   accountId: Number(dfspCurrency.unrestricted)
-      // })
-
       const ledger = await this.deps.specStore.getCurrencyLedger(cmd.currency)
 
       // Save the funding spec before writing to TigerBeetle (write last, read first).
@@ -1073,10 +1054,6 @@ export class LedgerTigerBeetle implements Ledger {
 
     // I'm pretty sure this should always be 0.
     const settlementReservedValue = 0
-
-    if (accountUnrestricted.id === 5335567318332822n){
-      console.log('accountUnrestricted.flags', accountUnrestricted.flags)
-    }
     accounts.push({
       id: accountUnrestricted.id,
       ledgerAccountType: 'POSITION',

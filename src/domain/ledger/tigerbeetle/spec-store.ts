@@ -473,6 +473,26 @@ export default class SpecStore {
   }
 
   /**
+   * Backwards compatibility, check that the correct legacy accounts have been created.
+   */
+  public async assertHubAccountsCreatedForCurrencies(currencies: Array<string>): Promise<void> {
+    for (const currency of currencies) {
+      const currencyAccounts = await this.getCurrencyAccounts(currency)
+      const hubReconcilation = currencyAccounts
+        .find(acc => acc.accountType === 'HUB_RECONCILIATION')
+      const hubMultilateralSettlement = currencyAccounts
+        .find(acc => acc.accountType === 'HUB_MULTILATERAL_SETTLEMENT')
+      if (!hubReconcilation) {
+        throw new Error(`Hub reconciliation account for the specified currency does not exist.`)
+      }
+      if (!hubMultilateralSettlement) {
+        throw new Error(`Hub multilateral net settlement account for the specified currency does `
+          + `not exist.`)
+      }
+    }
+  }
+
+  /**
    * Create the TigerBeetle master account id for this DFSP.
    * Pass in an id to use if this is a new MasterSpec.
    */

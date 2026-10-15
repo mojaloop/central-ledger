@@ -962,14 +962,17 @@ export class LedgerSql implements Ledger {
         cmd.currency,
         Enum.Accounts.LedgerAccountType.SETTLEMENT
       );
-      assert(settlementAccount, 'Settlement account not found');
-
+      
       const positionAccount = await ParticipantFacade.getByNameAndCurrency(
         cmd.dfspId,
         cmd.currency,
         Enum.Accounts.LedgerAccountType.POSITION
       );
-      assert(positionAccount, 'Position account not found');
+      if (!settlementAccount || !positionAccount) {
+        return {
+          type: 'NOT_FOUND'
+        }
+      }
 
       // Check if accounts are active before proceeding This deviates from the legacy behaviour,
       // which would enable the accounts if they were disabled.
