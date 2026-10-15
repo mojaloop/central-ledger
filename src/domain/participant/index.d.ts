@@ -27,7 +27,7 @@ export function getByName(name: string): Promise<Participant | undefined>
 export function getLedgerAccountTypeName(ledgerAccountTypeId: any): Promise<string>
 export function update(name: string, payload: any): Promise<any>
 export function createParticipantCurrency(participantId: any, currencyId: any, ledgerAccountTypeId: any, isActive: boolean, id?: number): Promise<any>
-export function createHubAccount(participantId: number, currencyId: any, ledgerAccountTypeId: any): Promise<any>
+export function createHubAccount(participantId: number, currencyId: any, ledgerAccountTypeId: any, participantCurrencyId?: number): Promise<any>
 export function getParticipantCurrencyById(participantCurrencyId: any): Promise<any>
 export function destroyByName(name: string): Promise<void>
 export function addEndpoint(name: string, payload: { type: string, value: string }): Promise<any>

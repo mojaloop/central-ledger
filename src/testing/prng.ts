@@ -153,6 +153,19 @@ export default class PRNG {
     ])
   }
 
+  /**
+   * Create a random bigint id within Number.MAX_SAFE_INTEGER (53 bits).
+   * 
+   * TigerBeetle Accounts can be 128 bits, but since the Admin API uses javascript/json numbers
+   * to maintain backwards compatibility, we generate our own random accountIds under 
+   * Number.MAX_SAFE_INTEGER to be safe.
+   */
+  public idSmall(): number {
+    const bytes = this.randomBytes(8)
+    const value = bytes.readBigUInt64BE();
+    return Number(value & 0x1FFFFFFFFFFFFFn)
+  }
+
   public uuidv4(): string {
     const buf = this.randomBytes(16)
     // Set version (4) bits: byte 6 (index 6), bits 4 high bits.

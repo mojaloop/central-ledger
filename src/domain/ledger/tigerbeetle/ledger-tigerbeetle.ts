@@ -150,15 +150,23 @@ export class LedgerTigerBeetle implements Ledger {
     assert(cmd.settlementModel.settlementAccountType)
     assertBoolean(cmd.settlementModel.autoPositionReset)
 
+    if (!cmd.ids) {
+      cmd.ids = [
+        Number(this.deps.helper.idSmall()),
+        Number(this.deps.helper.idSmall()),
+      ]
+    }
+
     try {
       // Validate the currency is valid.
       await this.specStore.validateCurrency(cmd.currency)
 
       const cmdEnableHubCurrency: CmdHubCurrencyEnable = {
         currency: cmd.currency,
-        accounts: cmd.accountType ? [
-          { id: Number(this.deps.helper.idSmall()), type: cmd.accountType }
-        ] : []
+        accountTypes: cmd.accountType ? [
+          cmd.accountType
+        ] : [],
+        accountIds: cmd.ids
       }
       const enableHubCurrencyResponse = await this.specStore.enableHubCurrency(cmdEnableHubCurrency)
 

@@ -172,6 +172,13 @@ export class LedgerSql implements Ledger {
     assert(cmd.settlementModel.settlementAccountType)
     assertBoolean(cmd.settlementModel.autoPositionReset)
 
+    if (!cmd.ids) {
+      cmd.ids = [
+        Number(this.deps.helper.idSmall()),
+        Number(this.deps.helper.idSmall()),
+      ]
+    }
+
     try {
       // Validate the currency is valid.
       await this.validateCurrency(cmd.currency)
@@ -179,10 +186,10 @@ export class LedgerSql implements Ledger {
       try {
         // Backwards compatibility. Register only the requested account type.
         if (cmd.accountType) {
-          await this._createHubAccount(cmd.accountType, cmd.currency)
+          await this._createHubAccount(cmd.accountType, cmd.currency, cmd.ids[0])
         } else {
-          await this._createHubAccount('HUB_MULTILATERAL_SETTLEMENT', cmd.currency)
-          await this._createHubAccount('HUB_RECONCILIATION', cmd.currency)
+          await this._createHubAccount('HUB_MULTILATERAL_SETTLEMENT', cmd.currency, cmd.ids[0])
+          await this._createHubAccount('HUB_RECONCILIATION', cmd.currency, cmd.ids[1])
         }
       } catch (err) {
         // Catch this early, we can't know if the settlementModel has also already been created.
@@ -209,7 +216,11 @@ export class LedgerSql implements Ledger {
     }
   }
 
-  private async _createHubAccount(accountType: string, currency: string): Promise<void> {
+  private async _createHubAccount(
+    accountType: string, 
+    currency: string, 
+    participantCurrencyId: number
+  ): Promise<void> {
     const participant = await Participant.getByName('Hub')
     if (!participant) {
       throw ErrorHandler.Factory.createFSPIOPError(
@@ -256,7 +267,8 @@ export class LedgerSql implements Ledger {
     const newCurrencyAccount = await Participant.createHubAccount(
       participant.participantId,
       currency,
-      ledgerAccountTypeId
+      ledgerAccountTypeId,
+      participantCurrencyId,
     )
     if (!newCurrencyAccount) {
       throw ErrorHandler.Factory.createFSPIOPError(

@@ -643,6 +643,7 @@ export default class Harness {
           db: Db._knex,
           helper: new Helper({
             randomBytes: prngId.randomBytes.bind(prngId)
+
           })
         })
         break;
