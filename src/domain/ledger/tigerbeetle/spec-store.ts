@@ -196,7 +196,6 @@ const TABLE_DFSP = 'specDfsp'
 const TABLE_DFSP_CURRENCY = 'specDfspCurrency'
 const TABLE_TRANSFER = 'specTransfer'
 
-
 /**
  * @class SpecStore
  * @description Metadata-sidecar store for TigerBeetle Account, Transfer and Hub metadata: 'Specs'.
@@ -300,7 +299,7 @@ export default class SpecStore {
           return {
             type: 'EXISTS'
           }
-        } 
+        }
       }
 
       return { type: 'OK' };
@@ -475,8 +474,9 @@ export default class SpecStore {
 
   /**
    * Create the TigerBeetle master account id for this DFSP.
+   * Pass in an id to use if this is a new MasterSpec.
    */
-  public async getOrCreateDfspMasterSpec(dfspId: string, isProxy: boolean): Promise<MasterSpec> {
+  public async getOrCreateDfspMasterSpec(dfspId: string, isProxy: boolean, id: bigint): Promise<MasterSpec> {
     let trx: Knex.Transaction | undefined
     try {
       trx = await this.db.transaction()
@@ -491,13 +491,12 @@ export default class SpecStore {
         }
       }
 
-      const masterAccountId = this.helper.idSmall()
-      await trx(TABLE_DFSP).insert({ dfspId, masterAccountId, isProxy })
+      await trx(TABLE_DFSP).insert({ dfspId, masterAccountId: id, isProxy })
 
       await trx.commit()
       return {
         dfspId,
-        id: masterAccountId,
+        id,
         isProxy,
       }
     } catch (err) {
@@ -634,8 +633,9 @@ export default class SpecStore {
     }
   }
 
-  public async newAccountSpec(dfspId: string, currency: string, now: Date): Promise<SpecAccount> {
+  public async newAccountSpec(dfspId: string, currency: string, now: Date, ids: Array<number>): Promise<SpecAccount> {
     let trx: Knex.Transaction | undefined
+    assert(ids.length >= 9)
     try {
       trx = await this.db.transaction()
 
@@ -648,15 +648,17 @@ export default class SpecStore {
       const spec: SpecAccount = {
         dfspId,
         currency,
-        deposit: this.helper.idSmall(),
-        unrestricted: this.helper.idSmall(),
-        unrestrictedLock: this.helper.idSmall(),
-        restricted: this.helper.idSmall(),
-        reserved: this.helper.idSmall(),
-        commitedOutgoing: this.helper.idSmall(),
-        clearingCredit: this.helper.idSmall(),
-        clearingSetup: this.helper.idSmall(),
-        clearingLimit: this.helper.idSmall(),
+        // Note: These orders are important for the fuzz tests, to ensure determinism between
+        // LedgerSql and LedgerTigerBeetle.
+        unrestricted: BigInt(ids[0]),
+        deposit: BigInt(ids[1]),
+        unrestrictedLock: BigInt(ids[2]),
+        restricted: BigInt(ids[3]),
+        reserved: BigInt(ids[4]),
+        commitedOutgoing: BigInt(ids[5]),
+        clearingCredit: BigInt(ids[6]),
+        clearingSetup: BigInt(ids[7]),
+        clearingLimit: BigInt(ids[8]),
         changedDate: now,
         createdDate: now,
       };

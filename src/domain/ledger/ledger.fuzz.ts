@@ -447,12 +447,10 @@ class LedgerFuzzer {
       isProxy: this.prng.randomElementWeighted([false, true], [8, 2]),
       currencies: [
         currency
-      ]
+      ],
+      ids: Array.from({ length: 25 }, (_) => this.prng.idSmall())
     }
-    // Disabled for now, to keep things simpler.
-    // if (this.prng.intExclusive(100) > 80) {
-    //   cmd.currencies.push(this.randomCurrency())
-    // }
+
     const result = await this.ledger.createDfsp(cmd)
     this.traceResult('createDfsp', cmd, result)
 
@@ -612,7 +610,7 @@ class LedgerFuzzer {
     // the ledgers.
     const clone = structuredClone(result)
     clone.result.accounts.forEach(account => {
-      account.id = 0n
+      // account.id = 0n
       // account.changedDate = new Date(0)
     })
 
