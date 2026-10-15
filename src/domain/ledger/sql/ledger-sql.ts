@@ -217,8 +217,8 @@ export class LedgerSql implements Ledger {
   }
 
   private async _createHubAccount(
-    accountType: string, 
-    currency: string, 
+    accountType: string,
+    currency: string,
     participantCurrencyId: number
   ): Promise<void> {
     const participant = await Participant.getByName('Hub')
@@ -284,6 +284,11 @@ export class LedgerSql implements Ledger {
     assert(cmd.currencies.length > 0)
     assert(cmd.currencies.length < 16, 'Cannot register more than 16 currencies for a DFSP')
 
+    if (!cmd.ids) {
+      const idsToCreate = cmd.currencies.length * 2
+      cmd.ids = Array.from({ length: idsToCreate }, (_) => Number(this.deps.helper.idSmall()))
+    }
+
     try {
       const participant = await Participant.getByName(cmd.dfspId);
 
@@ -300,8 +305,10 @@ export class LedgerSql implements Ledger {
       }
 
       // Create participant and currency accounts directly.
-      for (const currency of cmd.currencies) {
-        await this.createParticipantWithCurrency(cmd.dfspId, cmd.isProxy, currency);
+      for (let idx = 0; idx < cmd.currencies.length; idx++) {
+        const currency = cmd.currencies[idx]
+        const ids = cmd.ids.slice(idx * 2, idx * 2 + 2)
+        await this.createParticipantWithCurrency(cmd.dfspId, cmd.isProxy, currency, ids);
       }
 
       for (let i = 0; i < cmd.currencies.length; i++) {
@@ -336,7 +343,12 @@ export class LedgerSql implements Ledger {
    * Create participant and currency accounts directly (bypassing handler to avoid circular dependency)
    * This extracts the core logic from the participants handler create method
    */
-  private async createParticipantWithCurrency(dfspId: string, isProxy: boolean, currency: string): Promise<void> {
+  private async createParticipantWithCurrency(
+    dfspId: string, 
+    isProxy: boolean, 
+    currency: string, 
+    ids: Array<number>
+  ): Promise<void> {
     await Participant.validateHubAccounts(currency)
 
     let participant = await Participant.getByName(dfspId)
@@ -371,16 +383,23 @@ export class LedgerSql implements Ledger {
       }
     }
 
-    for (const settlementModel of settlementModels) {
+    // We need a 2x participantCurrencyId per Settlement Model.
+    assert(ids.length >= settlementModels.length * 2, 'Not enough ids provided')
+    for (let idx = 0; idx < settlementModels.length; idx++) {
+      const settlementModel = settlementModels[idx]
+      const [idA, idB] = ids.slice(idx * 2, idx * 2 + 2)
+      assert(idA)
+      assert(idB)
+
       // TODO(LD): Ideally these would be created in a transaction - as it stands right now, these are non
       // atomically created.
 
       // TODO: How do we pass in our idSmall() here?
       const participantCurrencyPosition = await Participant.createParticipantCurrency(
-        participant.participantId, currency, settlementModel.ledgerAccountTypeId, true, Number(this.deps.helper.idSmall())
+        participant.participantId, currency, settlementModel.ledgerAccountTypeId, true, idA
       )
       const participantCurrencySettlement = await Participant.createParticipantCurrency(
-        participant.participantId, currency, settlementModel.settlementAccountTypeId, true, Number(this.deps.helper.idSmall())
+        participant.participantId, currency, settlementModel.settlementAccountTypeId, true, idB
       )
       assert(Array.isArray(participant.currencyList))
       participant.currencyList = participant.currencyList.concat([

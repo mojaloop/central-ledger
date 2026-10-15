@@ -205,11 +205,19 @@ export class LedgerTigerBeetle implements Ledger {
     assert.equal(cmd.currencies.length, 1, 'Currently only 1 currency is supported')
     const currency = cmd.currencies[0]
     assertBoolean(cmd.isProxy)
+    if (!cmd.ids) {
+      const idsToCreate = cmd.currencies.length * 10
+      cmd.ids = Array.from({ length: idsToCreate }, (_) => Number(this.deps.helper.idSmall()))
+    }
     try {
       await this.specStore.assertCurrenciesEnabled(cmd.currencies)
 
       // Get or create the specDfsp.
-      await this.specStore.getOrCreateDfspMasterSpec(cmd.dfspId, cmd.isProxy)
+      // await this.specStore.getOrCreateDfspMasterSpec(cmd.dfspId, cmd.isProxy, BigInt(cmd.ids[0]))
+
+      // I don't think the id of the master spec needs to be deterministic between the 2 ledger
+      // implementations.
+      await this.specStore.getOrCreateDfspMasterSpec(cmd.dfspId, cmd.isProxy, this.deps.helper.idSmall())
       const resultDfspCurrency = await this.specStore.getDfspCurrency(cmd.dfspId, currency)
 
       if (resultDfspCurrency.type === 'FAILURE') {
@@ -239,7 +247,7 @@ export class LedgerTigerBeetle implements Ledger {
         }
       }
 
-      return this.createDfspAccounts(cmd.dfspId, currency)
+      return this.createDfspAccounts(cmd.dfspId, currency, cmd.ids)
     } catch (err: any) {
       logger.error(`createDfsp() failed with error: ${err.message}`)
       return {
@@ -249,7 +257,7 @@ export class LedgerTigerBeetle implements Ledger {
     }
   }
 
-  private async createDfspAccounts(id: string, currency: string): Promise<CreateDfspResponse> {
+  private async createDfspAccounts(id: string, currency: string, ids: Array<number>): Promise<CreateDfspResponse> {
     try {
       // Backwards compatibility, check that the correct legacy accounts have been created.
       const currencyAccounts = await this.specStore.getCurrencyAccounts(currency)
@@ -266,7 +274,7 @@ export class LedgerTigerBeetle implements Ledger {
       }
 
       // First we create the spec.
-      const spec = await this.specStore.newAccountSpec(id, currency, new Date())
+      const spec = await this.specStore.newAccountSpec(id, currency, new Date(), ids)
       const masterSpec = await this.specStore.getDfspMasterSpec(id)
       const ledger = await this.specStore.getCurrencyLedger(currency)
       const accountIdSettlementBalance = await this.specStore.getAccountIdSettlementBalance(currency)

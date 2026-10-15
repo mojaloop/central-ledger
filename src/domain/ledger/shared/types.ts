@@ -327,6 +327,14 @@ export interface CreateDfspCommand {
   dfspId: string
   isProxy: boolean
   currencies: Array<string>
+
+  /**
+   * Optionally provide a list of internal ids to be associated with the 
+   * participantCurrency (LedgerSql) or specCurrencyAccount (LedgerTigerBeetle).
+   *
+   * This ensures determinism of the accountIds internally between both implementations.
+   */
+  ids?: Array<number>
 }
 
 export type CreateDfspResponse = {
