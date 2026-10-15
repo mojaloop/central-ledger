@@ -109,7 +109,7 @@ type WithdrawPrepareFailureType = 'ACCOUNT_CLOSED' | 'TRANSFER_ID_REUSED' | 'INS
   'UNKNOWN'
 type WithdrawCommitFailureType = 'NOT_FOUND' | 'UNKNOWN'
 type WithdrawAbortFailureType = 'NOT_FOUND' | 'UNKNOWN'
-type DepositFailureType = 'EXISTS' | 'MODIFIED' | 'UNKNOWN'
+type DepositFailureType = 'EXISTS' | 'MODIFIED' | 'UNKNOWN' | 'CLOSED'
 type SetNetDebitCapFailureType = 'UNKNOWN'
 type CloseDfspMasterAccountFailureType = 'DEBIT_ACCOUNT_NOT_FOUND' | 'ALREADY_CLOSED' | 'UNKNOWN'
 type EnableDfspAccountFailureType = 'ALREADY_ENABLED' | 'UNKNOWN'
@@ -609,13 +609,12 @@ export class LedgerTigerBeetle implements Ledger {
 
       const { currency, code, spec } = await this.specStore.getCurrencyCodeAndSpec(cmd.dfspId, accountId)
       switch (code) {
-        case AccountCode.Deposit:
         case AccountCode.Unrestricted:
           break;
         default:
           return {
             type: 'FAILURE',
-            error: new Error(`disableDfspAccount() - account is not Deposit or Unrestricted.`)
+            error: new Error(`disableDfspAccount() - Only Unrestricted account update is permitted.`)
           }
       }
 
@@ -636,7 +635,7 @@ export class LedgerTigerBeetle implements Ledger {
       const fatalErrors: Array<TransferFailureResult<DisableDfspAccountFailureType>> = []
 
       transferResults.forEach((result, idx) => {
-        if (idx) {
+        if (idx === 0) {
           switch (result.status) {
             case CreateTransferStatus.created:
             case CreateTransferStatus.credit_account_already_closed:
@@ -687,6 +686,12 @@ export class LedgerTigerBeetle implements Ledger {
       }
       const dfspCurrency = dfspCurrencyResult.result
 
+      // // Backwards compatibility - deposting reactivates a disabled account.
+      // await this.enableDfspAccount({
+      //   dfspId: cmd.dfspId, 
+      //   accountId: Number(dfspCurrency.unrestricted)
+      // })
+
       const ledger = await this.deps.specStore.getCurrencyLedger(cmd.currency)
 
       // Save the funding spec before writing to TigerBeetle (write last, read first).
@@ -719,6 +724,9 @@ export class LedgerTigerBeetle implements Ledger {
             case CreateTransferStatus.exists:
               fatalErrors.push({ type: 'EXISTS', ...result })
               return
+            case CreateTransferStatus.credit_account_already_closed: 
+              fatalErrors.push({ type: 'CLOSED', ...result})
+              return
             case CreateTransferStatus.exists_with_different_flags:
             case CreateTransferStatus.exists_with_different_pending_id:
             case CreateTransferStatus.exists_with_different_timeout:
@@ -731,9 +739,6 @@ export class LedgerTigerBeetle implements Ledger {
             case CreateTransferStatus.exists_with_different_ledger:
             case CreateTransferStatus.exists_with_different_code:
               fatalErrors.push({ type: 'MODIFIED', ...result })
-              return
-            default:
-              fatalErrors.push({ type: 'UNKNOWN', ...result })
               return
           }
         }
@@ -752,6 +757,11 @@ export class LedgerTigerBeetle implements Ledger {
             return {
               type: 'FAILURE',
               error: new Error(`deposit failed - transfer already exists with different parameters`)
+            }
+          case 'CLOSED':
+            return {
+              type: 'FAILURE',
+              error: new Error(`deposit failed - the dfsp account is closed.`)
             }
           case 'UNKNOWN':
             return {
@@ -1064,11 +1074,14 @@ export class LedgerTigerBeetle implements Ledger {
     // I'm pretty sure this should always be 0.
     const settlementReservedValue = 0
 
+    if (accountUnrestricted.id === 5335567318332822n){
+      console.log('accountUnrestricted.flags', accountUnrestricted.flags)
+    }
     accounts.push({
       id: accountUnrestricted.id,
       ledgerAccountType: 'POSITION',
       currency,
-      isActive: !(accountUnrestricted.flags & AccountFlags.closed),
+      isActive: !((accountUnrestricted.flags & AccountFlags.closed) === AccountFlags.closed),
       // TODO: This might diverge given that we have just 1 spec per virtual POSITION and 
       // SETTLEMENT account
       changedDate: spec.changedDate,
@@ -1081,7 +1094,7 @@ export class LedgerTigerBeetle implements Ledger {
       id: accountDeposit.id,
       ledgerAccountType: 'SETTLEMENT',
       currency,
-      isActive: !(accountDeposit.flags & AccountFlags.closed),
+      isActive: !((accountDeposit.flags & AccountFlags.closed) === AccountFlags.closed),
       // TODO: This might diverge given that we have just 1 spec per virtual POSITION and 
       // SETTLEMENT account
       changedDate: spec.changedDate,
