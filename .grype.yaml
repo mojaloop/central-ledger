@@ -139,6 +139,12 @@ ignore:
   - vulnerability: GHSA-vfj7-8cjw-p6xm
     include-aliases: true
     reason: No patched braces release exists as of 2026-10-05; temporary exception to be reassessed by 2026-11-05
+  - vulnerability: GHSA-p8wg-vrv2-v86f
+    include-aliases: true
+    reason: 'Unfixable npm transitive vulnerability: handlebars (critical severity) as of 2026-10-16'
+  - vulnerability: GHSA-hp3w-g68c-fv3c
+    include-aliases: true
+    reason: 'Unfixable npm transitive vulnerability: sprintf-js (moderate severity) as of 2026-10-16'
 output:
   - table
   - json
