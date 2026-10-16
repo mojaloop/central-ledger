@@ -724,7 +724,7 @@ const getAccounts = async (name, query) => {
     const participant = await ParticipantModel.getByName(name)
     log.debug('getting accounts for participant', { participant })
     participantExists(participant)
-    const result = await PositionFacade.getAllByNameAndCurrency(name, query.currency)
+    const result = await PositionFacade.getAllByNameAndCurrencyV2(name, query.currency)
     const positions = []
     if (Array.isArray(result) && result.length > 0) {
       result.forEach(item => {
@@ -733,10 +733,10 @@ const getAccounts = async (name, query) => {
           ledgerAccountType: item.ledgerAccountType,
           currency: item.currencyId,
           isActive: item.isActive,
-          value: item.value,
-          reservedValue: item.reservedValue,
           changedDate: item.changedDate,
-          createdDate: item.createdDate
+          createdDate: item.createdDate,
+          value: item.value,
+          reservedValue: item.reservedValue
         })
       })
     }
