@@ -136,6 +136,9 @@ ignore:
     reason: >-
       Base image npm package: undici - bundled in Node.js base image, not fixable via application dependencies as of
       2026-09-22 (moderate severity)
+  - vulnerability: GHSA-vfj7-8cjw-p6xm
+    include-aliases: true
+    reason: No patched braces release exists as of 2026-10-05; temporary exception to be reassessed by 2026-11-05
 output:
   - table
   - json

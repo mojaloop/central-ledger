@@ -4,5 +4,12 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [ // NOTE": Please add as much information as possible to any items added to the allowList
+    {
+      "GHSA-vfj7-8cjw-p6xm": {
+        "active": true,
+        "notes": "No patched braces release exists as of 2026-10-05; usage is limited to local glob processing. Reassess when upstream publishes a fix.",
+        "expiry": "2026-11-05"
+      }
+    }
   ]
 }
