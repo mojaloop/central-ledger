@@ -814,12 +814,23 @@ export class LedgerTigerBeetle implements Ledger {
           }
         }
 
+        if (idx === 1) {
+          switch (result.status) {
+            case CreateTransferStatus.credit_account_already_closed:
+              fatalErrors.push({ type: 'ACCOUNT_CLOSED', ...result })
+              return
+          }
+        }
+
         if (idx === 2) {
           switch (result.status) {
+            // Insufficent funds masks the reusal error.
+            // And because we ignore the insufficent funds errors, we can't properly pull out the
+            // proper response.
             case CreateTransferStatus.exceeds_credits: 
               fatalErrors.push({ type: 'INSUFFICIENT_FUNDS', ...result })
               return
-            case CreateTransferStatus.credit_account_already_closed:
+            case CreateTransferStatus.debit_account_already_closed:
               fatalErrors.push({ type: 'ACCOUNT_CLOSED', ...result })
               return
             case CreateTransferStatus.exists:
@@ -847,21 +858,31 @@ export class LedgerTigerBeetle implements Ledger {
       if (fatalErrors.length > 0) {
         const firstError = fatalErrors[0]
         switch (firstError.type) {
-          case 'INSUFFICIENT_FUNDS':
-            // Backwards compatability - we previously only checked the account had enough funds
-            // asynchronously.
-            return Helper.successEmpty()
+          case 'INSUFFICIENT_FUNDS': 
+            // Backwards compatability - always update the changed date for the settlement account?
+            await this.deps.specStore.updateChangedDateSettlement(
+              cmd.dfspId, cmd.currency, new Date()
+            )
             // In the future, we should return this error.
-            // return Helper.failure(new Error(`withdrawPrepare() failed - insufficent funds.`))
+            return Helper.failure(new Error(`withdrawPrepare() failed - insufficent funds.`))
+
+          case 'ACCOUNT_CLOSED':
+            // Backwards compatability - always update the changed date for the settlement account?
+            // await this.deps.specStore.updateChangedDateSettlement(
+            //   cmd.dfspId, cmd.currency, new Date()
+            // )
+            // In the future, we should return this error.
+            return Helper.failure(new Error(`withdrawPrepare() failed - insufficent funds.`))
           case 'TRANSFER_ID_REUSED':
             return Helper.failure(new Error(`withdrawPrepare() failed - transfer already exists.`))
           case 'DFSP_CLOSED':
-          case 'ACCOUNT_CLOSED':
             return Helper.failure(new Error(`withdrawPrepare() failed - the dfsp account is closed.`))
           case 'UNKNOWN':
             return Helper.failure(new Error(`withdrawPrepare() failed with error: ${CreateTransferStatus[firstError.status]}`))
         }
       }
+
+      await this.deps.specStore.updateChangedDateSettlement(cmd.dfspId, cmd.currency, new Date())
 
       return Helper.successEmpty()
     } catch (err: any) {

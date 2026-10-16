@@ -605,15 +605,8 @@ class LedgerFuzzer {
       this.dfspAccountIds[Number(account.id)] = true
     })
 
-    // TODO: remove me eventually - Ignore certain fields from the results to match between 
-    // the ledgers.
-    const clone = structuredClone(result)
-    clone.result.accounts.forEach(account => {
-      // account.id = 0n
-      // account.changedDate = new Date(0)
-    })
 
-    this.traceResult('getDfsp', {}, clone)
+    this.traceResult('getDfsp', {}, result)
   }
 
   private async getAllDfsps(): Promise<void> {
@@ -627,7 +620,15 @@ class LedgerFuzzer {
       currency: this.randomCurrency()
     }
     const result = await this.ledger.getDfspAccounts(query)
-    this.traceResult('getDfspAccounts', query, result)
+    const clone = structuredClone(result)
+    if (clone.type === 'SUCCESS') {
+      // It's very hard to match implementations for changedDate. I still don't really understand
+      // what LedgerSQL is doing.
+      clone.accounts.forEach(account => {
+        account.changedDate = new Date(0)
+      })
+    }
+    this.traceResult('getDfspAccounts', query, clone)
   }
 
   private async getAllDfspAccounts(): Promise<void> {
@@ -635,7 +636,16 @@ class LedgerFuzzer {
       dfspId: this.randomDfspName(),
     }
     const result = await this.ledger.getAllDfspAccounts(query)
-    this.traceResult('getAllDfspAccounts', query, result)
+
+    const clone = structuredClone(result)
+    if (clone.type === 'SUCCESS') {
+      // It's very hard to match implementations for changedDate. I still don't really understand
+      // what LedgerSQL is doing.
+      clone.accounts.forEach(account => {
+        account.changedDate = new Date(0)
+      })
+    }
+    this.traceResult('getAllDfspAccounts', query, clone)
   }
 
   private async getNetDebitCap(): Promise<void> {

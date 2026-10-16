@@ -903,7 +903,13 @@ export class LedgerSql implements Ledger {
           throw new Error('recordFundsInOut transfer modified created.')
         }
       }
-      await Participant.createRecordFundsInOut(payload, new Date(), this.deps.enums)
+      const result = await Participant.createRecordFundsInOut(payload, new Date(), this.deps.enums)
+      if (result.abortedDueToInsufficientFunds) {
+        return {
+          type: 'FAILURE',
+          error: new Error('withdrawPrepare() failed with insufficent funds.')
+        }
+      }
 
       return Result.emptyCommandResultSuccess()
     } catch (err) {

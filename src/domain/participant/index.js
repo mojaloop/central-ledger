@@ -955,6 +955,9 @@ const recordFundsInOutV2 = async (payload, params, enums) => {
 
 /**
  * Copied from src/handlers/admin/handler.js
+ * @returns {
+ *   abortedDueToInsufficientFunds: boolean
+ * }
  */
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   const knex = Db.getKnex()
@@ -968,7 +971,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
     return knex.transaction(async trx => {
       try {
         await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
-        await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
+        return await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
       } catch (err) {
         rethrow.rethrowAndCountFspiopError(err, { operation: 'adminCreateRecordFundsInOut' })
       }

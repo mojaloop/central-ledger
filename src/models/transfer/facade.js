@@ -1542,6 +1542,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
 const reconciliationTransferReserve = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
     const knex = Db.getKnex()
+    let abortedDueToInsufficientFunds = false
 
     const trxFunction = async (trx) => {
       const param1 = {
@@ -1562,6 +1563,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
           action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT
         }
         await TransferFacade.reconciliationTransferAbort(abortPayload, transactionTimestamp, enums, trx)
+        abortedDueToInsufficientFunds = true
       }
     }
 
@@ -1570,7 +1572,9 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
     } else {
       await knex.transaction(trxFunction)
     }
-    return 0
+    return {
+      abortedDueToInsufficientFunds
+    }
   } catch (err) {
     rethrow.rethrowDatabaseError(err)
   }
