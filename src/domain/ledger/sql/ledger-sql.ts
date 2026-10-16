@@ -578,6 +578,15 @@ export class LedgerSql implements Ledger {
           formattedAccounts.push(formattedAccount)
         })
 
+        // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
+        formattedAccounts.sort((a, b) => {
+          if (a.createdDate.getTime() === b.createdDate.getTime()) {
+            return `${a.currency}_${a.ledgerAccountType}`.localeCompare(`${b.currency}_${b.ledgerAccountType}`)
+          }
+
+          return a.createdDate.getTime() - b.createdDate.getTime()
+        })
+
         dfsps.push({
           name: participant.name,
           isActive: participant.isActive === 1,

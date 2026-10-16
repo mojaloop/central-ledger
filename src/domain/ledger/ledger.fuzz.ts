@@ -274,7 +274,7 @@ class LedgerFuzzer {
     setNetDebitCap: 0,
     getHubAccounts: 1,
     getDfsp: 1,
-    getAllDfsps: 0,
+    getAllDfsps: 1,
     getDfspAccounts: 0,
     getAllDfspAccounts: 0,
     getNetDebitCap: 0,

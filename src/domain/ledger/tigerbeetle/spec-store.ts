@@ -25,6 +25,8 @@ export type EnableHubCurrencyResponse = {
 
 /**
  * Mapping from a currency => Set of TigerBeetle Ledger Ids.
+ * 
+ * TODO: rename to just Ledger?
  */
 export interface CurrencyLedger {
   currency: string,
@@ -51,6 +53,8 @@ export interface CurrencyLedger {
 /**
  * The Hub account's representation of each individual accounts. 
  * This is mainly used to maintain backwards compatibility with LedgerSQL.
+ * 
+ * TODO: rename to HubCurrency?
  */
 export type CurrencyAccount = {
   /**
@@ -77,6 +81,7 @@ export type CurrencyAccount = {
 
 /**
  * Stores the mapping between the dfspId => MasterAccount Id on TigerBeetle.
+ * TODO: rename to SpecMaster?
  */
 export interface MasterSpec {
   dfspId: string,
@@ -101,6 +106,7 @@ export interface DfspAccountIds {
 
 /**
  * The specification which defines the TigerBeetle Accounts for a dfspId + currency.
+ * TODO: rename to SpecCurrency?
  */
 export interface SpecAccount extends DfspAccountIds {
   dfspId: string,
@@ -130,6 +136,7 @@ export interface InternalLedgerAccount extends Account {
  */
 export interface InternalMasterAccount extends Account {
   dfspId: string,
+  isProxy: boolean,
 }
 
 export type SpecNetDebitCap = {
@@ -560,6 +567,52 @@ export default class SpecStore {
       id: BigInt(row.masterAccountId),
       isProxy: Boolean(row.isProxy),
     }))
+  }
+
+  public async queryCurrenciesWithMasterAccounts(): Promise<{
+    // All rows joined together.
+    masterSpecsWithSpecAccounts: Array<MasterSpec & SpecAccount>,
+    masterSpecs: Array<MasterSpec>,
+    specAccounts: Array<SpecAccount>
+  }> {
+    const result = await this.db('specDfspCurrency')
+      .join('specDfsp', 'specDfspCurrency.dfspId', 'specDfsp.dfspId')
+      .select('*')
+
+    const masterSpecs: Array<MasterSpec> = []
+    const uniqueMasterSpecIds: Record<string, true> = {}
+
+    const specAccounts: Array<SpecAccount> = []
+    const uniqueSpecAccountIds: Record<string, true> = {}
+
+    const rows: Array<MasterSpec & SpecAccount> = []
+    result.forEach(row => {
+      const masterSpec: MasterSpec = {
+        dfspId: row.dfspId,
+        id: BigInt(row.masterAccountId),
+        isProxy: Boolean(row.isProxy)
+      }
+      const specAccount: SpecAccount = SpecStore.hydrateSpecAccount(row)
+
+      if (!uniqueMasterSpecIds[masterSpec.dfspId]) { 
+        uniqueMasterSpecIds[masterSpec.dfspId] = true
+        masterSpecs.push(masterSpec)
+      }
+
+      const key = specAccount.dfspId + specAccount.currency
+      if (!uniqueSpecAccountIds[key]) {
+        uniqueSpecAccountIds[key] = true
+        specAccounts.push(specAccount)
+      }
+
+      rows.push({...masterSpec, ...specAccount})
+    })
+
+    return {
+      masterSpecsWithSpecAccounts: rows,
+      masterSpecs,
+      specAccounts
+    }
   }
 
   public async getDfspCurrency(dfspId: string, currency: string):

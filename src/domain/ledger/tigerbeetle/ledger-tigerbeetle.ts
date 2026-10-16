@@ -84,6 +84,7 @@ const { TransferState } = Enum.Transfers
 import SettlementDomain from '../../settlement';
 import { default as Helper, default as LedgerTigerBeetleHelper } from './helper';
 import SpecStore, { CmdHubCurrencyEnable, CurrencyLedger, InternalLedgerAccount, InternalMasterAccount, MasterSpec, SpecAccount, SpecTransfer, SpecTransferUpdate } from './spec-store';
+import { spec } from 'node:test/reporters';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -705,8 +706,8 @@ export class LedgerTigerBeetle implements Ledger {
             case CreateTransferStatus.exists:
               fatalErrors.push({ type: 'EXISTS', ...result })
               return
-            case CreateTransferStatus.credit_account_already_closed: 
-              fatalErrors.push({ type: 'CLOSED', ...result})
+            case CreateTransferStatus.credit_account_already_closed:
+              fatalErrors.push({ type: 'CLOSED', ...result })
               return
             case CreateTransferStatus.exists_with_different_flags:
             case CreateTransferStatus.exists_with_different_pending_id:
@@ -925,7 +926,8 @@ export class LedgerTigerBeetle implements Ledger {
 
       return {
         ...account,
-        dfspId: spec.dfspId
+        dfspId: spec.dfspId,
+        isProxy: spec.isProxy,
       }
     })
   }
@@ -1031,7 +1033,6 @@ export class LedgerTigerBeetle implements Ledger {
     const accountClearingCredit = input.find(acc => acc.accountCode === AccountCode.Clearing_Credit)
     assert(accountClearingCredit, 'could not find clearing credit account')
 
-
     // Legacy Settlement Balance: How much Dfsp has available to settle.
     // Was a negative number in the legacy API once the dfsp had deposited funds.
     const legacySettlementBalancePosted = (accountDeposit.debits_posted - accountDeposit.credits_posted) * -1n
@@ -1086,7 +1087,99 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   public async getAllDfsps(query: AnyQuery): Promise<QueryResult<GetAllDfspsResponse>> {
-    throw new Error('Method not implemented.');
+    try {
+
+      // Look up all metadata: 
+      // 1. Master Accounts joined with DfspCurrencies
+      const result = await this.specStore.queryCurrenciesWithMasterAccounts()
+
+      // Join together all TB Accounts to look up into a single account array.
+      const masterSpecs = await this._internalAccountsForSpecDfsps(result.masterSpecs)
+      const internalLedgerAccounts = await this._internalAccountsForSpecAccounts(result.specAccounts)
+
+      // Lookup the currencies //TODO: we can put this in the same query as above.
+      const currencyLedgers = await this.specStore.getCurrencyLedgers()
+      const currencyLedgerMap: Record<string, CurrencyLedger> = {}
+      for (const currencyLedger of currencyLedgers) {
+        currencyLedgerMap[currencyLedger.currency] = currencyLedger
+      }
+
+      // I think we just need to group by dfsp.
+      // Group by currency and convert to legacy accounts.
+      const internalLedgerAccountsPerCurrency = internalLedgerAccounts.reduce((acc, ila) => {
+        (acc[ila.currency] = acc[ila.currency] || []).push(ila);
+        return acc;
+      }, {} as Record<string, Array<InternalLedgerAccount>>);
+
+      // Initialize per dfsp.
+      const internalAccountsPerDfsp: Record<string, Array<InternalLedgerAccount>> = masterSpecs.reduce((acc, curr) => {
+        acc[curr.dfspId] = []
+        return acc
+      }, {} as Record<string, Array<InternalLedgerAccount>>)
+      internalLedgerAccounts.forEach(account => {
+        internalAccountsPerDfsp[account.dfspId].push(account)
+      })
+      const accountsPerDfsp: Record<string, Array<LegacyLedgerAccount>> = result.masterSpecs.reduce((acc, curr) => {
+        acc[curr.dfspId] = []
+        return acc
+      }, {} as Record<string, []>)
+      Object.entries(internalAccountsPerDfsp).flatMap(([dfspId, accounts]) => {
+        accounts.sort((a, b) => a.currency.localeCompare(b.currency))
+        const dfspCurrencies = [... new Set(accounts.map(account => account.currency))]
+
+        // Now group the accounts by currency.
+        dfspCurrencies.forEach(currency => {
+          const accountsPerCurrency = accounts.filter(acc => acc.currency === currency)
+          const currencyLedger = currencyLedgerMap[currency]
+          assert(currencyLedger)
+
+          const specAccount = result.specAccounts.find(specAccount => 
+            specAccount.currency === currency && specAccount.dfspId === dfspId
+          )
+          assert(specAccount)
+
+          const legacyAccounts = this._fromInternalAccountsToLegacyLedgerAccounts(accountsPerCurrency, currencyLedger, specAccount)
+          accountsPerDfsp[dfspId].push(...legacyAccounts)
+        })
+      })
+
+      const dfsps: Array<LegacyLedgerDfsp> = []
+      masterSpecs.forEach(spec => {
+        const created = new Date(Number(spec.user_data_64))
+        // Legacy has accuracy only to seconds.
+        created.setMilliseconds(0)
+
+        const accounts = accountsPerDfsp[spec.dfspId]
+        // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
+        accounts.sort((a, b) => {
+          if (a.createdDate.getTime() === b.createdDate.getTime()) {
+            return `${a.currency}_${a.ledgerAccountType}`.localeCompare(`${b.currency}_${b.ledgerAccountType}`)
+          }
+
+          return a.createdDate.getTime() - b.createdDate.getTime()
+        })
+
+        dfsps.push({
+          name: spec.dfspId,
+          isActive: !((spec.flags & AccountFlags.closed) === AccountFlags.closed),
+          created,
+          accounts,
+          isProxy: spec.isProxy,
+        })
+      })
+
+      return {
+        type: 'SUCCESS',
+        result: {
+          dfsps
+        }
+      }
+    } catch (error: any) {
+      return {
+        type: 'FAILURE',
+        error
+      }
+    }
   }
 
   public async getDfspAccounts(query: GetDfspAccountsQuery): Promise<DfspAccountResponse> {
