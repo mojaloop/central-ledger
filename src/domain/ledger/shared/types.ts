@@ -141,7 +141,7 @@ export interface LegacyLedgerDfsp {
   // TODO(LD): rename to simply active
   isActive: boolean
   created: Date
-  accounts: Array<LegacyLedgerAccount>,
+  accounts: Array<LegacyLedgerAccountNoValue>,
   isProxy: boolean,
 }
 
@@ -163,7 +163,7 @@ export interface LedgerDfsp {
  * Once everything is migrated to the TigerBeetle Ledger, we can deprecate this in favour of
  * LedgerAccount
  */
-export interface LegacyLedgerAccount {
+export type LegacyLedgerAccount = {
   // TODO(LD): should this be a number?
   id: bigint
   ledgerAccountType: string
@@ -178,6 +178,8 @@ export interface LegacyLedgerAccount {
   changedDate: Date
   createdDate: Date
 }
+
+export type LegacyLedgerAccountNoValue = Omit<LegacyLedgerAccount, 'value' | 'reservedValue' | 'changedDate'>
 
 /**
  * LedgerAccount with TigerBeetle Accounting Model

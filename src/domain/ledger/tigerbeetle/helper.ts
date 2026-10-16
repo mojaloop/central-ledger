@@ -2,8 +2,8 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto from "crypto";
 import assert from "assert";
-import { CurrencyLedger, MasterSpec, SpecAccount, SpecTransfer } from "./spec-store";
-import { AccountCode, LegacyLedgerAccount, TransferCode } from "../shared/types";
+import { CurrencyLedger, MasterSpec, SpecAccount, SpecNetDebitCap, SpecTransfer } from "./spec-store";
+import { AccountCode, LegacyLedgerAccount, LegacyLedgerAccountNoValue, TransferCode } from "../shared/types";
 import { PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { FulfilHandlerAction, FulfilHandlerInput } from "../../../handlers/payment-fulfil";
 
@@ -342,6 +342,88 @@ export default class Helper {
         flags: TransferFlags.void_pending_transfer
       }
     ]
+  }
+
+  public buildTransfersWithdrawPrepare(
+    transferId: string,
+    amount: number,
+    netDebitCapLockAmount: bigint,
+    spec: SpecAccount,
+    master: MasterSpec,
+    ledger: CurrencyLedger,
+  ): Array<Transfer> {
+    const idLockTransfer = id()
+    const transfers: Array<Transfer> = [
+      // Ensure DFSP is active.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: Helper.accountIds.devNull,
+        credit_account_id: master.id,
+        amount: 0n,
+        ledger: Helper.ledgerIds.globalControl,
+        code: 1,
+        flags: TransferFlags.linked,
+      },
+      // Sweep total balance from Restricted to Unrestricted.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: spec.restricted,
+        credit_account_id: spec.unrestricted,
+        amount: amount_max,
+        ledger: ledger.ledgerOperation,
+        code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
+        flags: TransferFlags.linked | TransferFlags.balancing_debit
+      },
+      // Prepare the withdrawal.
+      {
+        ...Helper.createTransferTemplate,
+        id: Helper.fromMojaloopId(transferId),
+        debit_account_id: spec.unrestricted,
+        credit_account_id: spec.deposit,
+        amount: Helper.toTigerBeetleAmount(amount, ledger.assetScale),
+        ledger: ledger.ledgerOperation,
+        code: TransferCode.Withdraw,
+        flags: TransferFlags.linked | TransferFlags.pending
+      },
+      // Temporarily lock up to the net debit cap amount.
+      {
+        ...Helper.createTransferTemplate,
+        id: idLockTransfer,
+        debit_account_id: spec.unrestricted,
+        credit_account_id: spec.unrestrictedLock,
+        amount: netDebitCapLockAmount,
+        ledger: ledger.ledgerOperation,
+        code: TransferCode.Net_Debit_Cap_Lock,
+        flags: TransferFlags.linked | TransferFlags.balancing_debit | TransferFlags.pending
+      },
+      // Sweep whatever remains in Unrestricted to Restricted.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: spec.unrestricted,
+        credit_account_id: spec.restricted,
+        amount: amount_max,
+        ledger: ledger.ledgerOperation,
+        code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
+        flags: TransferFlags.linked | TransferFlags.balancing_debit
+      },
+      // Void the pending limit lock transfer.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        pending_id: idLockTransfer,
+        debit_account_id: 0n,
+        credit_account_id: 0n,
+        amount: 0n,
+        ledger: ledger.ledgerOperation,
+        code: TransferCode.Net_Debit_Cap_Lock,
+        flags: TransferFlags.void_pending_transfer
+      },
+    ]
+
+    return transfers
   }
 
   public buildTransferSpecs(prepares: Array<PrepareHandlerInput>): Array<SpecTransfer> {
@@ -773,13 +855,26 @@ export default class Helper {
   }
 
   // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
-  public static legacyAccountComparator(a: LegacyLedgerAccount, b: LegacyLedgerAccount): number {
+  public static legacyAccountComparator(a: LegacyLedgerAccountNoValue, b: LegacyLedgerAccountNoValue): number {
     if (a.createdDate.getTime() === b.createdDate.getTime()) {
       return `${a.currency}_${a.ledgerAccountType}`.localeCompare(`${b.currency}_${b.ledgerAccountType}`)
     }
 
     return a.createdDate.getTime() - b.createdDate.getTime()
   }
+
+  public static successEmpty() {
+    return {
+      type: 'SUCCESS' as 'SUCCESS'
+    }
+  }
+
+  public static failure(error: any) {
+    return {
+      type: "FAILURE" as 'FAILURE',
+      error
+    }
+  } 
 }
 
 const bigIntReplacer = (_key: string, value: unknown) =>

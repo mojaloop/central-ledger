@@ -96,7 +96,7 @@ export function createRecordFundsInOut(
   payload: RecordFundsPayload,
   transactionTimestamp: Date,
   enums: any
-): Promise<void>
+): Promise<{ abortedDueToInsufficientFunds: boolean}>
 
 export function changeStatusOfRecordFundsOut(
   payload: RecordFundsPayload,
