@@ -94,19 +94,18 @@
     "@hapi/hapi": "21.4.10",
     "@hapi/inert": "7.1.2",
     "@hapi/vision": "7.0.3",
-    "@mojaloop/central-services-error-handling": "13.2.0",
-    "@mojaloop/central-services-health": "15.2.3",
-    "@mojaloop/central-services-logger": "11.10.6",
-    "@mojaloop/central-services-metrics": "12.8.8",
+    "@mojaloop/central-services-error-handling": "13.2.1",
+    "@mojaloop/central-services-health": "15.2.4",
+    "@mojaloop/central-services-logger": "11.10.7",
+    "@mojaloop/central-services-metrics": "12.8.9",
     "@mojaloop/central-services-shared": "18.39.3",
-    "@mojaloop/central-services-stream": "11.11.0",
+    "@mojaloop/central-services-stream": "11.12.0",
     "@mojaloop/database-lib": "11.3.10",
     "@mojaloop/event-sdk": "14.8.6",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.10.0",
-    "@mojaloop/ml-number": "11.4.5",
+    "@mojaloop/ml-number": "11.4.6",
     "@mojaloop/object-store-lib": "12.2.5",
     "@now-ims/hapi-now-auth": "2.1.0",
-    "@types/bun": "^1.4.2",
     "ajv": "8.20.0",
     "ajv-keywords": "5.1.0",
     "base64url": "3.0.1",
@@ -119,7 +118,7 @@
     "hapi-auth-bearer-token": "8.0.0",
     "hapi-swagger": "17.3.2",
     "ilp-packet": "2.2.0",
-    "joi": "18.2.9",
+    "joi": "18.3.0",
     "knex": "3.3.0",
     "lodash": "4.18.1",
     "moment": "2.31.0",
@@ -132,18 +131,18 @@
   "optionalDependencies": {
     "ed25519": "^0.0.5",
     "mysql": "2.18.1",
-    "mysql2": "3.24.5"
+    "mysql2": "3.24.6"
   },
   "devDependencies": {
     "@mojaloop/license-scanner-tool": "1.1.2",
-    "@mojaloop/sdk-standard-components": "19.19.1",
+    "@mojaloop/sdk-standard-components": "19.19.3",
     "@opentelemetry/api": "1.9.1",
-    "@opentelemetry/auto-instrumentations-node": "0.80.0",
+    "@opentelemetry/auto-instrumentations-node": "0.81.1",
     "@types/mock-knex": "0.4.8",
-    "@types/node": "26.6.4",
+    "@types/node": "26.6.5",
     "@types/rc": "1.2.4",
-    "@typescript-eslint/eslint-plugin": "^8.71.0",
-    "@typescript-eslint/parser": "^8.71.0",
+    "@typescript-eslint/eslint-plugin": "^8.71.2",
+    "@typescript-eslint/parser": "^8.71.2",
     "async-retry": "1.3.3",
     "audit-ci": "^7.1.0",
     "get-port": "7.2.0",
@@ -151,7 +150,7 @@
     "jsonpath": "1.3.0",
     "mock-knex": "0.4.13",
     "nodemon": "3.1.14",
-    "npm-check-updates": "23.1.0",
+    "npm-check-updates": "23.1.1",
     "nyc": "18.0.0",
     "pre-commit": "2.0.0",
     "proxyquire": "2.1.3",
@@ -173,21 +172,14 @@
     "blipp": {
       "joi": "17.13.8"
     },
-    "jws": "4.0.1",
     "jsdoc": {
       "markdown-it": "14.3.2"
     },
     "linkify-it": "5.0.2",
-    "protobufjs": "8.6.6",
-    "handlebars": "4.7.9",
+    "protobufjs": "8.8.0",
+    "handlebars": "4.7.10",
     "ajv": "8.20.0",
     "eslint": {
-      "ajv": "6.14.0",
-      "@eslint/eslintrc": {
-        "ajv": "6.14.0"
-      }
-    },
-    "eslint@9.39.2": {
       "ajv": "6.14.0",
       "@eslint/eslintrc": {
         "ajv": "6.14.0"
@@ -202,40 +194,22 @@
       }
     },
     "axios": "1.20.0",
-    "brace-expansion": "2.1.7",
     "convict": "6.2.5",
     "form-data": "4.0.6",
     "lodash": "4.18.1",
     "lodash-es": "4.18.1",
     "undici": "6.28.1",
-    "shins": {
-      "ajv": "8.18.0",
-      "ejs": "3.1.10",
-      "sanitize-html": "2.17.7",
-      "markdown-it": "14.3.0"
-    },
-    "widdershins": {
-      "swagger2openapi": "7.0.8",
-      "markdown-it": "14.3.0"
-    },
     "hapi-auth-bearer-token": {
-      "joi": "18.2.9"
+      "joi": "18.3.0"
     },
     "hapi-swagger": {
-      "joi": "18.2.9"
+      "joi": "18.3.0"
     },
-    "immutable": "5.1.8",
+    "immutable": "5.1.9",
     "fast-uri": "3.1.8",
-    "jsonwebtoken": "9.0.0",
-    "jsonpointer": "5.0.0",
-    "on-headers": "1.1.0",
-    "path-to-regexp": "0.1.13",
-    "trim": "0.0.3",
+    "jsonwebtoken": "9.0.3",
     "cross-spawn": "7.0.6",
-    "yaml": "1.10.3",
     "validator": "13.15.22",
-    "yargs-parser": "21.1.1",
-    "fast-xml-parser": "5.7.0",
     "minimatch@<=3.1.3": "3.1.5",
     "minimatch@5.1.7": "5.1.9",
     "minimatch@9.0.6": "9.0.9",
@@ -243,12 +217,10 @@
       "minimatch": "3.1.5"
     },
     "underscore": "1.13.8",
-    "postcss": "8.5.28",
     "qs": "6.16.0",
     "js-yaml@^4.0.0": "4.3.2",
     "@grpc/grpc-js": "1.14.5",
     "joi@^17.0.0": "17.13.8",
-    "uuid": "11.1.1",
     "@mojaloop/central-services-shared": {
       ".": "$@mojaloop/central-services-shared",
       "ajv": "8.20.0",
@@ -262,7 +234,7 @@
       "@mojaloop/central-services-shared": {
         ".": "$@mojaloop/central-services-shared",
         "ajv": "8.20.0",
-        "joi": "18.2.9",
+        "joi": "18.3.0",
         "@mojaloop/inter-scheme-proxy-cache-lib": {
           "ajv": "8.20.0"
         }
@@ -276,7 +248,16 @@
     },
     "@mojaloop/event-sdk": {
       "@mojaloop/central-services-stream": "$@mojaloop/central-services-stream"
-    }
+    },
+    "yargs-parser@21": "21.1.1",
+    "yargs-parser@20": "20.2.9",
+    "jws@4": "4.0.1",
+    "jws@3": "3.2.3",
+    "brace-expansion@2": "2.1.7",
+    "brace-expansion@1": "1.1.21",
+    "yaml@1": "1.10.3",
+    "yaml@2": "2.9.1",
+    "argparse@1": "2.0.1"
   },
   "config": {
     "knex": "--knexfile ./dist/knexfile.js",
