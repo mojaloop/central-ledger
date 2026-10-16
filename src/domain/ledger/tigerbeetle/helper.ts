@@ -3,7 +3,7 @@ import { Account, AccountFlags, amount_max, Client, id, Transfer, TransferFlags 
 import crypto from "crypto";
 import assert from "assert";
 import { CurrencyLedger, MasterSpec, SpecAccount, SpecTransfer } from "./spec-store";
-import { AccountCode, TransferCode } from "../shared/types";
+import { AccountCode, LegacyLedgerAccount, TransferCode } from "../shared/types";
 import { PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { FulfilHandlerAction, FulfilHandlerInput } from "../../../handlers/payment-fulfil";
 
@@ -770,6 +770,15 @@ export default class Helper {
   public static stringify(accountOrTransfer: Account | Transfer): string {
     // We could make this context aware to map the ledger ids etc.
     return JSON.stringify(accountOrTransfer, bigIntReplacer, 2)
+  }
+
+  // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
+  public static legacyAccountComparator(a: LegacyLedgerAccount, b: LegacyLedgerAccount): number {
+    if (a.createdDate.getTime() === b.createdDate.getTime()) {
+      return `${a.currency}_${a.ledgerAccountType}`.localeCompare(`${b.currency}_${b.ledgerAccountType}`)
+    }
+
+    return a.createdDate.getTime() - b.createdDate.getTime()
   }
 }
 

@@ -875,13 +875,7 @@ export class LedgerTigerBeetle implements Ledger {
         })
 
       // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
-      legacyLedgerAccounts.sort((a, b) => {
-        if (a.createdDate.getTime() === b.createdDate.getTime()) {
-          return `${a.currency}_${a.ledgerAccountType}`.localeCompare(`${b.currency}_${b.ledgerAccountType}`)
-        }
-
-        return a.createdDate.getTime() - b.createdDate.getTime()
-      })
+      legacyLedgerAccounts.sort(Helper.legacyAccountComparator)
 
       const dfspCreatedDate = new Date(Number(masterAccount.user_data_64))
       if (Number.isNaN(dfspCreatedDate.getTime())) {
@@ -1053,8 +1047,6 @@ export class LedgerTigerBeetle implements Ledger {
     const settlementValue = (accountDeposit.debits_posted - accountDeposit.credits_pending
       - accountDeposit.credits_posted) * -1n
 
-    // I'm pretty sure this should always be 0.
-    const settlementReservedValue = 0
     accounts.push({
       id: accountUnrestricted.id,
       ledgerAccountType: 'POSITION',
@@ -1078,9 +1070,9 @@ export class LedgerTigerBeetle implements Ledger {
       changedDate: spec.changedDate,
       createdDate: spec.createdDate,
       // TODO: Set this to match the LedgerSQL, but I think ledgerSQL is wrong!
-      // value: Helper.toRealAmount(settlementValue, currencyLedger.assetScale),
-      value: 0,
-      reservedValue: settlementReservedValue,
+      value: Helper.toRealAmount(settlementValue, currencyLedger.assetScale),
+      // value: 0,
+      reservedValue: 0,
     })
 
     return accounts;
@@ -1104,13 +1096,6 @@ export class LedgerTigerBeetle implements Ledger {
         currencyLedgerMap[currencyLedger.currency] = currencyLedger
       }
 
-      // I think we just need to group by dfsp.
-      // Group by currency and convert to legacy accounts.
-      const internalLedgerAccountsPerCurrency = internalLedgerAccounts.reduce((acc, ila) => {
-        (acc[ila.currency] = acc[ila.currency] || []).push(ila);
-        return acc;
-      }, {} as Record<string, Array<InternalLedgerAccount>>);
-
       // Initialize per dfsp.
       const internalAccountsPerDfsp: Record<string, Array<InternalLedgerAccount>> = masterSpecs.reduce((acc, curr) => {
         acc[curr.dfspId] = []
@@ -1124,7 +1109,6 @@ export class LedgerTigerBeetle implements Ledger {
         return acc
       }, {} as Record<string, []>)
       Object.entries(internalAccountsPerDfsp).flatMap(([dfspId, accounts]) => {
-        accounts.sort((a, b) => a.currency.localeCompare(b.currency))
         const dfspCurrencies = [... new Set(accounts.map(account => account.currency))]
 
         // Now group the accounts by currency.
@@ -1133,7 +1117,7 @@ export class LedgerTigerBeetle implements Ledger {
           const currencyLedger = currencyLedgerMap[currency]
           assert(currencyLedger)
 
-          const specAccount = result.specAccounts.find(specAccount => 
+          const specAccount = result.specAccounts.find(specAccount =>
             specAccount.currency === currency && specAccount.dfspId === dfspId
           )
           assert(specAccount)
@@ -1150,14 +1134,7 @@ export class LedgerTigerBeetle implements Ledger {
         created.setMilliseconds(0)
 
         const accounts = accountsPerDfsp[spec.dfspId]
-        // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
-        accounts.sort((a, b) => {
-          if (a.createdDate.getTime() === b.createdDate.getTime()) {
-            return `${a.currency}_${a.ledgerAccountType}`.localeCompare(`${b.currency}_${b.ledgerAccountType}`)
-          }
-
-          return a.createdDate.getTime() - b.createdDate.getTime()
-        })
+        accounts.sort(Helper.legacyAccountComparator)
 
         dfsps.push({
           name: spec.dfspId,
@@ -1183,7 +1160,37 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   public async getDfspAccounts(query: GetDfspAccountsQuery): Promise<DfspAccountResponse> {
-    throw new Error('Method not implemented.');
+    try {
+      const specCurrencyResult = await this.deps.specStore.getDfspCurrency(query.dfspId, query.currency)
+      if (specCurrencyResult.type === 'NOT_FOUND') {
+        return {
+          // Backwards compatibility. This used to be a failure.
+          type: 'FAILURE',
+          error: new Error(`No dfspAccount found for dfspId: ${query.dfspId}, currency: ${query.currency}.`)
+        }
+      }
+      if (specCurrencyResult.type === 'FAILURE') {
+        return specCurrencyResult
+      }
+      const currencyLedger = await this.deps.specStore.getCurrencyLedger(query.currency)
+      const internalLedgerAccounts = await this._internalAccountsForSpecAccounts([specCurrencyResult.result])
+
+      const legacyAccounts = this._fromInternalAccountsToLegacyLedgerAccounts(
+        internalLedgerAccounts, currencyLedger, specCurrencyResult.result
+      )
+      .filter(account => account.isActive) // Backwards compatibility, filters out deactivated.
+      .sort(Helper.legacyAccountComparator)
+
+      return {
+        type: 'SUCCESS',
+        accounts: legacyAccounts
+      }
+    } catch (error: any) {
+      return {
+        type: 'FAILURE',
+        error
+      }
+    }
   }
 
   public async getAllDfspAccounts(query: GetAllDfspAccountsQuery): Promise<DfspAccountResponse> {

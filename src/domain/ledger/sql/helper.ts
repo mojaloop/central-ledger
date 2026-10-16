@@ -1,4 +1,5 @@
 import assert from "node:assert"
+import { LegacyLedgerAccount } from "../shared/types";
 
 interface Dependencies {
   randomBytes: (length: number) => Buffer
@@ -22,6 +23,15 @@ export default class Helper {
     const bytes = this.deps.randomBytes(8)
     const value = bytes.readBigUInt64BE();
     return value & 0x1FFFFFFFFFFFFFn;
+  }
+
+  // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
+  public static dfspAccountComparator(a: LegacyLedgerAccount, b: LegacyLedgerAccount): number {
+    if (a.createdDate.getTime() === b.createdDate.getTime()) {
+      return `${a.currency}_${a.ledgerAccountType}`.localeCompare(`${b.currency}_${b.ledgerAccountType}`)
+    }
+
+    return a.createdDate.getTime() - b.createdDate.getTime()
   }
 
 }

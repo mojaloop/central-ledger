@@ -475,10 +475,10 @@ export type DfspAccountResponse = {
   accounts: Array<LegacyLedgerAccount>
 } | {
   type: 'NOT_FOUND'
-  error: FSPIOPError
+  error: Error
 } | {
   type: 'FAILURE'
-  error: FSPIOPError
+  error: Error
 }
 
 export interface GetHubAccountsQuery { }
@@ -489,7 +489,7 @@ export type HubAccountResponse = {
   accounts: Array<LegacyLedgerAccount>
 } | {
   type: 'FAILURE'
-  error: FSPIOPError
+  error: Error
 }
 
 export interface GetNetDebitCapQuery {
@@ -612,10 +612,10 @@ export type FulfilResult = {
   type: FulfilResultType.DUPLICATE_FINAL
 } | {
   type: FulfilResultType.FAIL_VALIDATION
-  error: FSPIOPError
+  error: Error
 } | {
   type: FulfilResultType.FAIL_OTHER
-  error: FSPIOPError
+  error: Error
 }
 
 export type SweepResult = {

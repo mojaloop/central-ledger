@@ -551,6 +551,19 @@ export class LedgerSql implements Ledger {
         return acc
       }, {} as Record<number, string>)
 
+      // Deviation from legacy - we include the positions in the dfsps response.
+      const knex = db.getKnex()
+      const positions = await knex('participantPosition')
+        .select('participantCurrencyId', 'value', 'reservedValue', 'changedDate')
+      const positionMap = new Map<number, { value: number; reservedValue: number; changedDate: Date }>()
+      for (const pos of positions) {
+        positionMap.set(pos.participantCurrencyId, {
+          value: pos.value,
+          reservedValue: pos.reservedValue,
+          changedDate: new Date(pos.changedDate)
+        })
+      }
+
       const dfsps: Array<LegacyLedgerDfsp> = []
       participants.forEach(participant => {
         // Filter out the Hub accounts
@@ -562,18 +575,19 @@ export class LedgerSql implements Ledger {
         participant.currencyList.forEach((currency: any) => {
           const ledgerAccountType = ledgerAccountIdMap[currency.ledgerAccountTypeId]
           assert(ledgerAccountType)
+
+          // Look up position values, defaulting to 0 if no position record exists
+          const position = positionMap.get(currency.participantCurrencyId)
+
           const formattedAccount: LegacyLedgerAccount = {
             id: BigInt(currency.participantCurrencyId),
             ledgerAccountType,
             currency: currency.currencyId,
             isActive: Boolean(currency.isActive),
-            changedDate: new Date(currency.createdDate),
+            changedDate: position?.changedDate ?? new Date(currency.createdDate),
             createdDate: new Date(currency.createdDate),
-
-            // These feel wrong to me - we should just return the value anyway
-            // but the getByName query doesn't look up account values.
-            value: 0,
-            reservedValue: 0,
+            value: position?.value ?? 0,
+            reservedValue: position?.reservedValue ?? 0,
           }
           formattedAccounts.push(formattedAccount)
         })
@@ -724,11 +738,7 @@ export class LedgerSql implements Ledger {
       // Backwards compatibility, also check for positions, since getAccounts doesn't throw if the
       // currency isn't registered.
       let positions = await Participant.getPositions(query.dfspId, legacyQuery)
-
       let accounts = await Participant.getAccounts(query.dfspId, legacyQuery)
-      // ensure they are always ordered by id
-      accounts = accounts.toSorted((a, b) => a.id - b.id)
-
       const formattedAccounts: Array<LegacyLedgerAccount> = []
       accounts.forEach(account => {
         assert(account.createdDate, 'getAccounts to contain account.createdDate')
@@ -739,13 +749,15 @@ export class LedgerSql implements Ledger {
           ledgerAccountType: account.ledgerAccountType,
           currency: account.currency,
           isActive: Boolean(account.isActive),
-          value: safeStringToNumber(account.value),
-          reservedValue: safeStringToNumber(account.reservedValue),
           changedDate: new Date(account.changedDate),
           createdDate: new Date(account.createdDate),
+          value: safeStringToNumber(account.value),
+          reservedValue: safeStringToNumber(account.reservedValue),
         }
         formattedAccounts.push(formattedAccount)
       })
+
+      formattedAccounts.sort(Helper.dfspAccountComparator)
 
       assert(formattedAccounts.length === accounts.length)
 
