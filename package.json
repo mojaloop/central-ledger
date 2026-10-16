@@ -176,16 +176,10 @@
       "markdown-it": "14.3.2"
     },
     "linkify-it": "5.0.2",
-    "protobufjs": "8.6.6",
+    "protobufjs": "8.8.0",
     "handlebars": "4.7.10",
     "ajv": "8.20.0",
     "eslint": {
-      "ajv": "6.14.0",
-      "@eslint/eslintrc": {
-        "ajv": "6.14.0"
-      }
-    },
-    "eslint@9.39.2": {
       "ajv": "6.14.0",
       "@eslint/eslintrc": {
         "ajv": "6.14.0"
@@ -205,33 +199,17 @@
     "lodash": "4.18.1",
     "lodash-es": "4.18.1",
     "undici": "6.28.1",
-    "shins": {
-      "ajv": "8.18.0",
-      "ejs": "3.1.10",
-      "sanitize-html": "2.17.7",
-      "markdown-it": "14.3.0"
-    },
-    "widdershins": {
-      "swagger2openapi": "7.0.8",
-      "markdown-it": "14.3.0"
-    },
     "hapi-auth-bearer-token": {
       "joi": "18.3.0"
     },
     "hapi-swagger": {
       "joi": "18.3.0"
     },
-    "immutable": "5.1.8",
+    "immutable": "5.1.9",
     "fast-uri": "3.1.8",
-    "jsonwebtoken": "9.0.0",
-    "jsonpointer": "5.0.0",
-    "on-headers": "1.1.0",
-    "path-to-regexp": "0.1.13",
-    "trim": "0.0.3",
+    "jsonwebtoken": "9.0.3",
     "cross-spawn": "7.0.6",
-    "yaml": "1.10.3",
     "validator": "13.15.22",
-    "fast-xml-parser": "5.7.0",
     "minimatch@<=3.1.3": "3.1.5",
     "minimatch@5.1.7": "5.1.9",
     "minimatch@9.0.6": "9.0.9",
@@ -239,12 +217,10 @@
       "minimatch": "3.1.5"
     },
     "underscore": "1.13.8",
-    "postcss": "8.5.28",
     "qs": "6.16.0",
     "js-yaml@^4.0.0": "4.3.2",
     "@grpc/grpc-js": "1.14.5",
     "joi@^17.0.0": "17.13.8",
-    "uuid": "11.1.1",
     "@mojaloop/central-services-shared": {
       ".": "$@mojaloop/central-services-shared",
       "ajv": "8.20.0",
@@ -278,7 +254,10 @@
     "jws@4": "4.0.1",
     "jws@3": "3.2.3",
     "brace-expansion@2": "2.1.7",
-    "brace-expansion@1": "1.1.21"
+    "brace-expansion@1": "1.1.21",
+    "yaml@1": "1.10.3",
+    "yaml@2": "2.9.1",
+    "argparse@1": "2.0.1"
   },
   "config": {
     "knex": "--knexfile ./dist/knexfile.js",
