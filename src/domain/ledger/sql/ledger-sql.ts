@@ -61,6 +61,7 @@ import {
   HubAccountResponse,
   Ledger,
   LegacyLedgerAccount,
+  LegacyLedgerAccountNoValue,
   LegacyLedgerDfsp,
   LegacyLimit,
   LegacyLimitItem,
@@ -402,6 +403,26 @@ export class LedgerSql implements Ledger {
       const participantCurrencySettlement = await Participant.createParticipantCurrency(
         participant.participantId, currency, settlementModel.settlementAccountTypeId, true, idB
       )
+
+      // Also create positions here as well. This deviates from the old implementation, which
+      // lazily created the positions on deposit.
+      const knex = db.getKnex()
+      const now = new Date()
+      await knex('participantPosition').insert([
+        {
+          participantCurrencyId: idA,
+          value: 0,
+          reservedValue: 0,
+          changedDate: now,
+        },
+        {
+          participantCurrencyId: idB,
+          value: 0,
+          reservedValue: 0,
+          changedDate: now,
+        }
+      ])
+
       assert(Array.isArray(participant.currencyList))
       participant.currencyList = participant.currencyList.concat([
         await Participant.getParticipantCurrencyById(participantCurrencyPosition),
@@ -452,21 +473,16 @@ export class LedgerSql implements Ledger {
         return acc
       }, {} as Record<number, string>)
 
-      const formattedAccounts: Array<LegacyLedgerAccount> = []
+      const formattedAccounts: Array<LegacyLedgerAccountNoValue> = []
       participant.currencyList.forEach(currency => {
         const ledgerAccountType = ledgerAccountIdMap[currency.ledgerAccountTypeId]
         assert(ledgerAccountType)
-        const formattedAccount: LegacyLedgerAccount = {
+        const formattedAccount: LegacyLedgerAccountNoValue = {
           id: BigInt(currency.participantCurrencyId),
           ledgerAccountType,
           currency: currency.currencyId,
           isActive: Boolean(currency.isActive),
-          changedDate: new Date(currency.createdDate),
           createdDate: new Date(currency.createdDate),
-          // These feel wrong to me - we should just return the value anyway
-          // but the getByName query doesn't look up account values.
-          value: 0,
-          reservedValue: 0,
         }
         formattedAccounts.push(formattedAccount)
       })
@@ -551,19 +567,6 @@ export class LedgerSql implements Ledger {
         return acc
       }, {} as Record<number, string>)
 
-      // Deviation from legacy - we include the positions in the dfsps response.
-      const knex = db.getKnex()
-      const positions = await knex('participantPosition')
-        .select('participantCurrencyId', 'value', 'reservedValue', 'changedDate')
-      const positionMap = new Map<number, { value: number; reservedValue: number; changedDate: Date }>()
-      for (const pos of positions) {
-        positionMap.set(pos.participantCurrencyId, {
-          value: pos.value,
-          reservedValue: pos.reservedValue,
-          changedDate: new Date(pos.changedDate)
-        })
-      }
-
       const dfsps: Array<LegacyLedgerDfsp> = []
       participants.forEach(participant => {
         // Filter out the Hub accounts
@@ -571,23 +574,16 @@ export class LedgerSql implements Ledger {
           return
         }
 
-        const formattedAccounts: Array<LegacyLedgerAccount> = []
+        const formattedAccounts: Array<LegacyLedgerAccountNoValue> = []
         participant.currencyList.forEach((currency: any) => {
           const ledgerAccountType = ledgerAccountIdMap[currency.ledgerAccountTypeId]
           assert(ledgerAccountType)
-
-          // Look up position values, defaulting to 0 if no position record exists
-          const position = positionMap.get(currency.participantCurrencyId)
-
-          const formattedAccount: LegacyLedgerAccount = {
+          const formattedAccount: LegacyLedgerAccountNoValue = {
             id: BigInt(currency.participantCurrencyId),
             ledgerAccountType,
             currency: currency.currencyId,
             isActive: Boolean(currency.isActive),
-            changedDate: position?.changedDate ?? new Date(currency.createdDate),
             createdDate: new Date(currency.createdDate),
-            value: position?.value ?? 0,
-            reservedValue: position?.reservedValue ?? 0,
           }
           formattedAccounts.push(formattedAccount)
         })
@@ -737,7 +733,7 @@ export class LedgerSql implements Ledger {
     try {
       // Backwards compatibility, also check for positions, since getAccounts doesn't throw if the
       // currency isn't registered.
-      let positions = await Participant.getPositions(query.dfspId, legacyQuery)
+      await Participant.getPositions(query.dfspId, legacyQuery)
       let accounts = await Participant.getAccounts(query.dfspId, legacyQuery)
       const formattedAccounts: Array<LegacyLedgerAccount> = []
       accounts.forEach(account => {
@@ -789,13 +785,14 @@ export class LedgerSql implements Ledger {
           ledgerAccountType: account.ledgerAccountType,
           currency: account.currency,
           isActive: Boolean(account.isActive),
-          value: safeStringToNumber(account.value),
-          reservedValue: safeStringToNumber(account.reservedValue),
           changedDate: new Date(account.changedDate),
           createdDate: new Date(account.createdDate),
+          value: safeStringToNumber(account.value),
+          reservedValue: safeStringToNumber(account.reservedValue),
         }
         formattedAccounts.push(formattedAccount)
       })
+      formattedAccounts.sort(Helper.dfspAccountComparator)
 
       assert(formattedAccounts.length === accounts.length)
       return {
@@ -847,8 +844,6 @@ export class LedgerSql implements Ledger {
   }
 
   public async withdrawPrepare(cmd: WithdrawPrepareCommand): Promise<WithdrawPrepareResponse> {
-    const knex = db.getKnex() as Knex
-
     assert(cmd.amount)
     assert(cmd.dfspId)
     assert(cmd.currency)
@@ -1008,28 +1003,14 @@ export class LedgerSql implements Ledger {
         .where('participantCurrencyId', settlementAccount.participantCurrencyId)
         .first();
 
-      if (!existingSettlementPosition) {
-        await knex('participantPosition').insert({
-          participantCurrencyId: settlementAccount.participantCurrencyId,
-          value: 0,
-          reservedValue: 0,
-          changedDate: new Date(),
-        });
-      }
+      assert(existingSettlementPosition, 'No existingSettlementPosition found.')
 
       // Create participantPosition if needed.
       const existingPositionPosition = await knex('participantPosition')
         .where('participantCurrencyId', positionAccount.participantCurrencyId)
         .first();
 
-      if (!existingPositionPosition) {
-        await knex('participantPosition').insert({
-          participantCurrencyId: positionAccount.participantCurrencyId,
-          value: 0,
-          reservedValue: 0,
-          changedDate: new Date(),
-        });
-      }
+      assert(existingPositionPosition, 'No existingPositionPosition found.')
 
       const fundsInPayload = {
         transferId: cmd.transferId,

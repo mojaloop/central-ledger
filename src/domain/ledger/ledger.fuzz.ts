@@ -256,7 +256,6 @@ class LedgerFuzzer {
   private settlementIds: Record<number, true> = {}
   private settlements: Array<Settlement> = []
 
-
   private ledger: Ledger
   private prng: PRNG
 
@@ -268,7 +267,7 @@ class LedgerFuzzer {
     enableDfspAccount: 1,
     disableDfspAccount: 1,
     deposit: 1,
-    withdrawPrepare: 0,
+    withdrawPrepare: 1,
     withdrawCommit: 0,
     withdrawAbort: 0,
     setNetDebitCap: 0,
@@ -276,7 +275,7 @@ class LedgerFuzzer {
     getDfsp: 1,
     getAllDfsps: 1,
     getDfspAccounts: 1,
-    getAllDfspAccounts: 0,
+    getAllDfspAccounts: 1,
     getNetDebitCap: 0,
     getNetDebitCaps: 0,
     prepare: 0,

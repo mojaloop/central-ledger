@@ -118,6 +118,18 @@ export interface SpecAccount extends DfspAccountIds {
   changedDate: Date,
 
   /**
+   * Backwards compatibility: Keep track of the application timestamp when the position
+   * account was last changed.
+   */
+  changedDatePosition: Date,
+
+  /**
+   * Backwards compatibility: Keep track of the application timestamp when the settlement
+   * account was last changed.
+   */
+  changedDateSettlement: Date,
+
+  /**
    * When the account was created.
    */
   createdDate: Date,
@@ -594,7 +606,7 @@ export default class SpecStore {
       }
       const specAccount: SpecAccount = SpecStore.hydrateSpecAccount(row)
 
-      if (!uniqueMasterSpecIds[masterSpec.dfspId]) { 
+      if (!uniqueMasterSpecIds[masterSpec.dfspId]) {
         uniqueMasterSpecIds[masterSpec.dfspId] = true
         masterSpecs.push(masterSpec)
       }
@@ -605,7 +617,7 @@ export default class SpecStore {
         specAccounts.push(specAccount)
       }
 
-      rows.push({...masterSpec, ...specAccount})
+      rows.push({ ...masterSpec, ...specAccount })
     })
 
     return {
@@ -733,6 +745,8 @@ export default class SpecStore {
         clearingSetup: BigInt(ids[7]),
         clearingLimit: BigInt(ids[8]),
         changedDate: now,
+        changedDatePosition: now,
+        changedDateSettlement: now,
         createdDate: now,
       };
       await trx(TABLE_DFSP_CURRENCY).insert(spec)
@@ -776,6 +790,8 @@ export default class SpecStore {
       clearingSetup: BigInt(row.clearingSetup),
       clearingLimit: BigInt(row.clearingLimit),
       changedDate: row.changedDate,
+      changedDatePosition: row.changedDatePosition,
+      changedDateSettlement: row.changedDateSettlement,
       createdDate: row.createdDate,
     }
     return spec
@@ -882,5 +898,36 @@ export default class SpecStore {
         }
       })
     }
+  }
+
+  public async updateChangedDatePositionAndSettlement(
+    dfspId: string, currency: string, now: Date
+  ): Promise<void> {
+    await this.db(TABLE_DFSP_CURRENCY)
+      .where({ dfspId, currency })
+      .update({
+        changedDatePosition: now,
+        changedDateSettlement: now
+      })
+  }
+
+  public async updateChangedDatePosition(
+    dfspId: string, currency: string, now: Date
+  ): Promise<void> {
+    await this.db(TABLE_DFSP_CURRENCY)
+      .where({ dfspId, currency })
+      .update({
+        changedDatePosition: now,
+      })
+  }
+
+  public async updateChangedDateSettlement(
+    dfspId: string, currency: string, now: Date
+  ): Promise<void> {
+    await this.db(TABLE_DFSP_CURRENCY)
+      .where({ dfspId, currency })
+      .update({
+        changedDateSettlement: now,
+      })
   }
 }

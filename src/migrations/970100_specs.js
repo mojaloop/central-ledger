@@ -78,6 +78,8 @@ exports.up = async (knex) => {
         t.bigInteger('clearingSetup').unsigned().notNullable()
         t.bigInteger('clearingLimit').unsigned().notNullable()
         t.dateTime('createdDate').notNullable()
+        t.dateTime('changedDatePosition').notNullable()
+        t.dateTime('changedDateSettlement').notNullable()
         t.dateTime('changedDate').notNullable()
 
         t.primary(['dfspId', 'currency'])

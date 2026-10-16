@@ -3320,6 +3320,8 @@ CREATE TABLE `specDfspCurrency` (
   `clearingSetup` bigint(20) unsigned NOT NULL,
   `clearingLimit` bigint(20) unsigned NOT NULL,
   `createdDate` datetime NOT NULL,
+  `changedDatePosition` datetime NOT NULL,
+  `changedDateSettlement` datetime NOT NULL,
   `changedDate` datetime NOT NULL,
   PRIMARY KEY (`dfspId`,`currency`),
   KEY `specdfspcurrency_currency_foreign` (`currency`),
@@ -4061,4 +4063,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-10-16 10:52:56
+-- Dump completed on 2026-10-16 15:34:54

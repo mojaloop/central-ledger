@@ -54,6 +54,7 @@ import {
   HubAccountResponse,
   Ledger,
   LegacyLedgerAccount,
+  LegacyLedgerAccountNoValue,
   LegacyLedgerDfsp,
   LegacyLimit,
   LegacyLimitItem,
@@ -106,7 +107,7 @@ type PrepareFailureType = 'FAIL_LIQUIDITY' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | '
 type AbortFailureType = 'ALREADY_ABORTED' | 'ALREADY_FULFILLED' | 'NOT_FOUND' | 'UNKNOWN'
 type FulfilFailureType = 'ALREADY_ABORTED' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | 'ALREADY_FULFILLED'
   | 'NOT_FOUND' | 'PAYER_ACCOUNT_CLOSED' | 'PAYEE_ACCOUNT_CLOSED' | 'METADATA_CORRUPTED' | 'UNKNOWN'
-type WithdrawPrepareFailureType = 'ACCOUNT_CLOSED' | 'TRANSFER_ID_REUSED' | 'INSUFFICIENT_FUNDS' |
+type WithdrawPrepareFailureType = 'DFSP_CLOSED' | 'ACCOUNT_CLOSED' | 'TRANSFER_ID_REUSED' | 'INSUFFICIENT_FUNDS' |
   'UNKNOWN'
 type WithdrawCommitFailureType = 'NOT_FOUND' | 'UNKNOWN'
 type WithdrawAbortFailureType = 'NOT_FOUND' | 'UNKNOWN'
@@ -753,6 +754,11 @@ export class LedgerTigerBeetle implements Ledger {
         }
       }
 
+      // Backwards compatibility: Keep track of last deposit time in specStore.
+      await this.deps.specStore.updateChangedDateSettlement(
+        cmd.dfspId, cmd.currency, new Date()
+      )
+
       return {
         type: 'SUCCESS'
       }
@@ -765,7 +771,102 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   public async withdrawPrepare(cmd: WithdrawPrepareCommand): Promise<WithdrawPrepareResponse> {
-    throw new Error('Method not implemented.');
+    assert(cmd.transferId)
+    assert(cmd.currency)
+    assert(cmd.dfspId)
+    assert(cmd.amount)
+    assert(cmd.reason)
+    try {
+      // TODO: make all these lookups atomic!
+      const spec = await this.specStore.getDfspCurrency(cmd.dfspId, cmd.currency)
+      if (spec.type === 'NOT_FOUND') {
+        return Helper.failure(new Error(`No dfspCurrency found for dfsp: ${cmd.dfspId}, ${cmd.currency}.`))
+      }
+      if (spec.type === 'FAILURE') {
+        return Helper.failure(spec.error)
+      }
+      const currency = await this.specStore.getCurrencyLedger(cmd.currency)
+      const netDebitCap = await this.specStore.getNetDebitCap(cmd.dfspId, cmd.currency)
+      const master = await this.specStore.getDfspMasterSpec(cmd.dfspId)
+
+      let netDebitCapLockAmount = amount_max
+      if (netDebitCap.type === 'LIMITED') {
+        netDebitCapLockAmount = Helper.toTigerBeetleAmount(netDebitCap.amount, currency.assetScale)
+      }
+
+      // Save the funding metadata before writing to TigerBeetle (write last, read first)
+      // await this.specStore.saveFundingSpec()
+      const transfers = this.helper.buildTransfersWithdrawPrepare(
+        cmd.transferId, cmd.amount, netDebitCapLockAmount, spec.result, master, currency
+      )
+      const createTransfersResults = await this.deps.client.createTransfers(transfers)
+      const fatalErrors: Array<TransferFailureResult<WithdrawPrepareFailureType>> = []
+      createTransfersResults.forEach((result, idx) => {
+        // Ignore noisy errors
+        if (result.status === CreateTransferStatus.linked_event_failed) return
+        if (result.status === CreateTransferStatus.created) return
+
+        if (idx === 0) {
+          switch (result.status) {
+            case CreateTransferStatus.credit_account_already_closed:
+              fatalErrors.push({ type: 'DFSP_CLOSED', ...result })
+              return
+          }
+        }
+
+        if (idx === 2) {
+          switch (result.status) {
+            case CreateTransferStatus.exceeds_credits: 
+              fatalErrors.push({ type: 'INSUFFICIENT_FUNDS', ...result })
+              return
+            case CreateTransferStatus.credit_account_already_closed:
+              fatalErrors.push({ type: 'ACCOUNT_CLOSED', ...result })
+              return
+            case CreateTransferStatus.exists:
+              fatalErrors.push({ type: 'TRANSFER_ID_REUSED', ...result })
+              return
+            case CreateTransferStatus.exists_with_different_flags:
+            case CreateTransferStatus.exists_with_different_pending_id:
+            case CreateTransferStatus.exists_with_different_timeout:
+            case CreateTransferStatus.exists_with_different_debit_account_id:
+            case CreateTransferStatus.exists_with_different_credit_account_id:
+            case CreateTransferStatus.exists_with_different_amount:
+            case CreateTransferStatus.exists_with_different_user_data_128:
+            case CreateTransferStatus.exists_with_different_user_data_64:
+            case CreateTransferStatus.exists_with_different_user_data_32:
+            case CreateTransferStatus.exists_with_different_ledger:
+            case CreateTransferStatus.exists_with_different_code:
+              fatalErrors.push({ type: 'TRANSFER_ID_REUSED', ...result })
+              return
+          }
+        }
+
+        throw new Error(`unhandled transfer error: ${idx}, ${CreateTransferStatus[result.status]}`)
+      })
+
+      if (fatalErrors.length > 0) {
+        const firstError = fatalErrors[0]
+        switch (firstError.type) {
+          case 'INSUFFICIENT_FUNDS':
+            // Backwards compatability - we previously only checked the account had enough funds
+            // asynchronously.
+            return Helper.successEmpty()
+            // In the future, we should return this error.
+            // return Helper.failure(new Error(`withdrawPrepare() failed - insufficent funds.`))
+          case 'TRANSFER_ID_REUSED':
+            return Helper.failure(new Error(`withdrawPrepare() failed - transfer already exists.`))
+          case 'DFSP_CLOSED':
+          case 'ACCOUNT_CLOSED':
+            return Helper.failure(new Error(`withdrawPrepare() failed - the dfsp account is closed.`))
+          case 'UNKNOWN':
+            return Helper.failure(new Error(`withdrawPrepare() failed with error: ${CreateTransferStatus[firstError.status]}`))
+        }
+      }
+
+      return Helper.successEmpty()
+    } catch (err: any) {
+      return Helper.failure(err)
+    }
   }
 
   public async withdrawCommit(cmd: WithdrawCommitCommand): Promise<WithdrawCommitResponse> {
@@ -871,11 +972,23 @@ export class LedgerTigerBeetle implements Ledger {
           // TODO: find something more optimal.
           const specAccount = specAccounts.find(specAccount => specAccount.currency === currency)
           assert(specAccount)
-          return this._fromInternalAccountsToLegacyLedgerAccounts(accounts, currencyLedger, specAccount)
+
+          const legacyAccounts = this._fromInternalAccountsToLegacyLedgerAccounts(accounts, currencyLedger, specAccount)
+          // Strip the values for backwards compatibility.
+          const legacyAccountsNoValue = legacyAccounts.map((acc: any) => {
+            delete acc['reservedValue']
+            delete acc['value']
+            delete acc['changedDate']
+
+            return acc as LegacyLedgerAccountNoValue
+          })
+
+          return legacyAccountsNoValue
         })
 
       // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
       legacyLedgerAccounts.sort(Helper.legacyAccountComparator)
+
 
       const dfspCreatedDate = new Date(Number(masterAccount.user_data_64))
       if (Number.isNaN(dfspCreatedDate.getTime())) {
@@ -1054,7 +1167,7 @@ export class LedgerTigerBeetle implements Ledger {
       isActive: !((accountUnrestricted.flags & AccountFlags.closed) === AccountFlags.closed),
       // TODO: This might diverge given that we have just 1 spec per virtual POSITION and 
       // SETTLEMENT account
-      changedDate: spec.changedDate,
+      changedDate: spec.changedDatePosition,
       createdDate: spec.createdDate,
       value: Helper.toRealAmount(legacyPositionBalancePosted, currencyLedger.assetScale),
       reservedValue: Helper.toRealAmount(legacyPositionBalancePending, currencyLedger.assetScale),
@@ -1067,7 +1180,7 @@ export class LedgerTigerBeetle implements Ledger {
       isActive: !((accountDeposit.flags & AccountFlags.closed) === AccountFlags.closed),
       // TODO: This might diverge given that we have just 1 spec per virtual POSITION and 
       // SETTLEMENT account
-      changedDate: spec.changedDate,
+      changedDate: spec.changedDateSettlement,
       createdDate: spec.createdDate,
       // TODO: Set this to match the LedgerSQL, but I think ledgerSQL is wrong!
       value: Helper.toRealAmount(settlementValue, currencyLedger.assetScale),
@@ -1104,7 +1217,7 @@ export class LedgerTigerBeetle implements Ledger {
       internalLedgerAccounts.forEach(account => {
         internalAccountsPerDfsp[account.dfspId].push(account)
       })
-      const accountsPerDfsp: Record<string, Array<LegacyLedgerAccount>> = result.masterSpecs.reduce((acc, curr) => {
+      const accountsPerDfsp: Record<string, Array<LegacyLedgerAccountNoValue>> = result.masterSpecs.reduce((acc, curr) => {
         acc[curr.dfspId] = []
         return acc
       }, {} as Record<string, []>)
@@ -1123,7 +1236,15 @@ export class LedgerTigerBeetle implements Ledger {
           assert(specAccount)
 
           const legacyAccounts = this._fromInternalAccountsToLegacyLedgerAccounts(accountsPerCurrency, currencyLedger, specAccount)
-          accountsPerDfsp[dfspId].push(...legacyAccounts)
+          // Strip the values for backwards compatibility.
+          const legacyAccountsNoValue = legacyAccounts.map((acc: any) => {
+            delete acc['reservedValue']
+            delete acc['value']
+            delete acc['changedDate']
+
+            return acc as LegacyLedgerAccountNoValue
+          })
+          accountsPerDfsp[dfspId].push(...legacyAccountsNoValue)
         })
       })
 
@@ -1178,8 +1299,8 @@ export class LedgerTigerBeetle implements Ledger {
       const legacyAccounts = this._fromInternalAccountsToLegacyLedgerAccounts(
         internalLedgerAccounts, currencyLedger, specCurrencyResult.result
       )
-      .filter(account => account.isActive) // Backwards compatibility, filters out deactivated.
-      .sort(Helper.legacyAccountComparator)
+        // .filter(account => account.isActive) // Backwards compatibility, filters out deactivated.
+        .sort(Helper.legacyAccountComparator)
 
       return {
         type: 'SUCCESS',
@@ -1194,7 +1315,49 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   public async getAllDfspAccounts(query: GetAllDfspAccountsQuery): Promise<DfspAccountResponse> {
-    throw new Error('Method not implemented.');
+    try {
+      await this.deps.specStore.getDfspMasterSpec(query.dfspId)
+      // Lookup all specCurrency for the dfsp.
+      // Now need to iterate over the currencies for this dfsp.
+      const specCurrencies = await this.deps.specStore.getDfspCurrencies(query.dfspId)
+      if (specCurrencies.length === 0) {
+        return {
+          type: 'FAILURE',
+          error: new Error(`No dfspAccounts found for dfspId: ${query.dfspId}.`)
+        }
+      }
+      const internalLedgerAccounts = await this._internalAccountsForSpecAccounts(specCurrencies)
+      const currencyLedgers = await this.deps.specStore.getCurrencyLedgers()
+      const currencyLedgerMap: Record<string, CurrencyLedger> = {}
+      for (const currencyLedger of currencyLedgers) {
+        currencyLedgerMap[currencyLedger.currency] = currencyLedger
+      }
+
+      const internalLedgerAccountsPerCurrency = internalLedgerAccounts.reduce((acc, ledgerAccount) => {
+        (acc[ledgerAccount.currency] = acc[ledgerAccount.currency] || []).push(ledgerAccount)
+        return acc
+      }, {} as Record<string, Array<InternalLedgerAccount>>);
+
+      const accounts = Object.entries(internalLedgerAccountsPerCurrency)
+        .flatMap(([currency, accounts]) => {
+          const currencyLedger = currencyLedgerMap[currency]
+          assert(currencyLedger)
+          const specAccount = specCurrencies.find(spec => spec.currency === currency)
+          assert(specAccount)
+          return this._fromInternalAccountsToLegacyLedgerAccounts(accounts, currencyLedger, specAccount)
+        })
+        .sort(Helper.legacyAccountComparator)
+
+      return {
+        type: 'SUCCESS',
+        accounts
+      }
+    } catch (error: any) {
+      return {
+        type: 'FAILURE',
+        error
+      }
+    }
   }
 
   public async getNetDebitCap(query: GetNetDebitCapQuery):

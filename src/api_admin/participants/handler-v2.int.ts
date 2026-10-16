@@ -236,7 +236,7 @@ describe('api/participants/handler-v2', () => {
     }`).checkUnwrap(responseBody)
   })
 
-  it.only('createHubAccount() creates a new hub account', async () => {
+  it('createHubAccount() creates a new hub account', async () => {
     const requestCreate = {
       payload: {
         currency: 'BWP',
