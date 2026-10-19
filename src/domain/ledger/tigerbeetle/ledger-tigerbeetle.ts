@@ -109,8 +109,8 @@ type FulfilFailureType = 'ALREADY_ABORTED' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | '
   | 'NOT_FOUND' | 'PAYER_ACCOUNT_CLOSED' | 'PAYEE_ACCOUNT_CLOSED' | 'METADATA_CORRUPTED' | 'UNKNOWN'
 type WithdrawPrepareFailureType = 'DFSP_CLOSED' | 'ACCOUNT_CLOSED' | 'TRANSFER_ID_REUSED' | 'INSUFFICIENT_FUNDS' |
   'UNKNOWN'
-type WithdrawCommitFailureType = 'NOT_FOUND' | 'UNKNOWN'
-type WithdrawAbortFailureType = 'NOT_FOUND' | 'UNKNOWN'
+type WithdrawCommitFailureType = 'NOT_FOUND' | 'UNKNOWN' | 'ALREADY_COMMITTED' | 'ALREADY_ABORTED'
+type WithdrawAbortFailureType = 'NOT_FOUND' | 'UNKNOWN' | 'ALREADY_COMMITTED' | 'ALREADY_ABORTED'
 type DepositFailureType = 'EXISTS' | 'MODIFIED' | 'UNKNOWN' | 'CLOSED'
 type SetNetDebitCapFailureType = 'UNKNOWN'
 type CloseDfspMasterAccountFailureType = 'DEBIT_ACCOUNT_NOT_FOUND' | 'ALREADY_CLOSED' | 'UNKNOWN'
@@ -827,7 +827,7 @@ export class LedgerTigerBeetle implements Ledger {
             // Insufficent funds masks the reusal error.
             // And because we ignore the insufficent funds errors, we can't properly pull out the
             // proper response.
-            case CreateTransferStatus.exceeds_credits: 
+            case CreateTransferStatus.exceeds_credits:
               fatalErrors.push({ type: 'INSUFFICIENT_FUNDS', ...result })
               return
             case CreateTransferStatus.debit_account_already_closed:
@@ -858,7 +858,7 @@ export class LedgerTigerBeetle implements Ledger {
       if (fatalErrors.length > 0) {
         const firstError = fatalErrors[0]
         switch (firstError.type) {
-          case 'INSUFFICIENT_FUNDS': 
+          case 'INSUFFICIENT_FUNDS':
             // Backwards compatability - always update the changed date for the settlement account?
             await this.deps.specStore.updateChangedDateSettlement(
               cmd.dfspId, cmd.currency, new Date()
@@ -867,10 +867,6 @@ export class LedgerTigerBeetle implements Ledger {
             return Helper.failure(new Error(`withdrawPrepare() failed - insufficent funds.`))
 
           case 'ACCOUNT_CLOSED':
-            // Backwards compatability - always update the changed date for the settlement account?
-            // await this.deps.specStore.updateChangedDateSettlement(
-            //   cmd.dfspId, cmd.currency, new Date()
-            // )
             // In the future, we should return this error.
             return Helper.failure(new Error(`withdrawPrepare() failed - insufficent funds.`))
           case 'TRANSFER_ID_REUSED':
@@ -891,11 +887,101 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   public async withdrawCommit(cmd: WithdrawCommitCommand): Promise<WithdrawCommitResponse> {
-    throw new Error('Method not implemented.');
+    assert(cmd.transferId)
+
+    try {
+      const transfers: Array<Transfer> = [
+        // Commit the withdrawal.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          pending_id: Helper.fromMojaloopId(cmd.transferId),
+          debit_account_id: 0n,
+          credit_account_id: 0n,
+          amount: amount_max,
+          ledger: 0,
+          code: TransferCode.Withdraw,
+          flags: TransferFlags.post_pending_transfer
+        },
+      ]
+
+      const createTransfersResult = await this.deps.client.createTransfers(transfers)
+      const fatalErrors: Array<TransferFailureResult<WithdrawCommitFailureType>> = []
+      createTransfersResult.forEach((result, idx) => {
+        // Ignore noisy errors
+        if (result.status === CreateTransferStatus.linked_event_failed) return
+        if (result.status === CreateTransferStatus.created) return
+
+        if (idx === 0) {
+          switch (result.status) {
+            case CreateTransferStatus.pending_transfer_not_found:
+              fatalErrors.push({ type: 'NOT_FOUND', ...result })
+              return
+            case CreateTransferStatus.pending_transfer_already_posted:
+              fatalErrors.push({ type: 'ALREADY_COMMITTED', ...result })
+              return
+            case CreateTransferStatus.pending_transfer_already_voided:
+              fatalErrors.push({ type: 'ALREADY_ABORTED', ...result })
+              return
+          }
+        }
+
+        throw new Error(`unhandled transfer error: ${idx}, ${CreateTransferStatus[result.status]}`)
+      })
+
+      // Backwards compatibility: always return success.
+      return Helper.successEmpty()
+    } catch (err) {
+      return Helper.failure(err)
+    }
   }
 
   public async withdrawAbort(cmd: WithdrawAbortCommand): Promise<WithdrawAbortResponse> {
-    throw new Error('Method not implemented.');
+    assert(cmd.transferId)
+
+    try {
+      const transfers: Array<Transfer> = [
+        // Abort the withdrawal
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          pending_id: Helper.fromMojaloopId(cmd.transferId),
+          debit_account_id: 0n,
+          credit_account_id: 0n,
+          amount: 0n,
+          ledger: 0,
+          code: TransferCode.Withdraw,
+          flags: TransferFlags.void_pending_transfer
+        },
+      ]
+
+      const createTransfersResult = await this.deps.client.createTransfers(transfers)
+      const fatalErrors: Array<TransferFailureResult<WithdrawAbortFailureType>> = []
+      createTransfersResult.forEach((result, idx) => {
+        if (result.status === CreateTransferStatus.created) return
+
+        if (idx === 0) {
+          switch (result.status) {
+            case CreateTransferStatus.pending_transfer_not_found:
+              fatalErrors.push({ type: 'NOT_FOUND', ...result })
+              return
+            case CreateTransferStatus.pending_transfer_already_posted:
+              fatalErrors.push({ type: 'ALREADY_COMMITTED', ...result })
+              return
+            case CreateTransferStatus.pending_transfer_already_voided:
+              fatalErrors.push({ type: 'ALREADY_ABORTED', ...result })
+              return
+          }
+        }
+
+        throw new Error(`unhandled transfer error: ${idx}, ${CreateTransferStatus[result.status]}`)
+      })
+      
+      // Backwards compatibility: always return success.
+      return Helper.successEmpty()
+    } catch (err) {
+      return Helper.failure(err)
+    }
   }
 
   public async setNetDebitCap(cmd: SetNetDebitCapCommand): Promise<CommandResult<void>> {

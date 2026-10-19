@@ -107,6 +107,7 @@ export interface DfspAccountIds {
 /**
  * The specification which defines the TigerBeetle Accounts for a dfspId + currency.
  * TODO: rename to SpecCurrency?
+ * // This isn't actually an account. It's the metadata attached to a number of accounts.
  */
 export interface SpecAccount extends DfspAccountIds {
   dfspId: string,
