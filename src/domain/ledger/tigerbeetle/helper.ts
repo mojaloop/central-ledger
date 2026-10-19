@@ -425,6 +425,66 @@ export default class Helper {
     return transfers
   }
 
+  public buildTranfersSetNetDebitCap(
+    dfspCurrency: DfspCurrency,
+    currencyConfig: CurrencyConfig,
+    amountNetDebitCap: bigint,
+    netDebitCapType: 'LIMITED' | 'UNLIMITED'
+  ): Array<Transfer> {
+  
+    const idLockTransfer = id()
+    const transfers: Array<Transfer> = [
+      // Sweep total balance from Restricted to Unrestricted
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: dfspCurrency.restricted,
+        credit_account_id: dfspCurrency.unrestricted,
+        amount: amount_max,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
+        flags: TransferFlags.linked | TransferFlags.balancing_debit
+      },
+      // Move the new NDC amount out to a temporary account.
+      // if the new NDC amount is unlimited, then move all into temporary account.
+      {
+        ...Helper.createTransferTemplate,
+        id: idLockTransfer,
+        debit_account_id: dfspCurrency.unrestricted,
+        credit_account_id: dfspCurrency.unrestrictedLock,
+        amount: netDebitCapType === 'LIMITED' ? amountNetDebitCap : amount_max,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Lock,
+        flags: TransferFlags.linked | TransferFlags.balancing_debit | TransferFlags.pending
+      },
+      // Sweep whatever remains in Unrestricted to Restricted.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: dfspCurrency.unrestricted,
+        credit_account_id: dfspCurrency.restricted,
+        amount: amount_max,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
+        flags: TransferFlags.linked | TransferFlags.balancing_debit
+      },
+      // Void the pending limit lock transfer.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        pending_id: idLockTransfer,
+        debit_account_id: 0n,
+        credit_account_id: 0n,
+        amount: 0n,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Lock,
+        flags: TransferFlags.void_pending_transfer
+      },
+    ]
+
+    return transfers
+  }
+
   public buildTransferSpecs(prepares: Array<PrepareHandlerInput>): Array<SpecTransfer> {
     const specs: Array<SpecTransfer> = []
 

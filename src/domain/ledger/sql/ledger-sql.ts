@@ -649,11 +649,11 @@ export class LedgerSql implements Ledger {
       const result = await Participant.getLimits(query.dfspId, legacyQuery)
       if (result.length === 0) {
         return {
-          type: 'FAILURE',
+          type: 'NOT_FOUND',
           error: ErrorHandler.Factory.createFSPIOPError(
             ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-            `getNetDebitCap() - no limits found for dfspId: ${query.dfspId}, 
-            ` + `currency: ${query.currency}, type: 'NET_DEBIT_CAP`
+            `getNetDebitCap() - no limits found for dfspId: ${query.dfspId}, ` + 
+            `currency: ${query.currency}, type: 'NET_DEBIT_CAP`
           )
         }
       }
@@ -671,7 +671,6 @@ export class LedgerSql implements Ledger {
         }
 
       }
-
     } catch (err: any) {
       if (err.message === 'participant not found') {
         return {
@@ -679,10 +678,7 @@ export class LedgerSql implements Ledger {
           error: err
         }
       }
-      return {
-        type: 'FAILURE',
-        error: err
-      }
+      return Helper.failure(err)
     }
   }
 

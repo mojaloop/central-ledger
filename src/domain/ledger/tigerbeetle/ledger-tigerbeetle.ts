@@ -84,8 +84,8 @@ const { TransferState } = Enum.Transfers
 
 import SettlementDomain from '../../settlement';
 import { default as Helper, default as LedgerTigerBeetleHelper } from './helper';
-import SpecStore, { CmdHubCurrencyEnable, CurrencyConfig, CurrencyLedger, DfspCurrency, DfspRoot, InternalDfspCurrency, InternalDfspRoot, SpecTransfer, SpecTransferUpdate } from './spec-store';
-import { spec } from 'node:test/reporters';
+import SpecStore, { CmdHubCurrencyEnable, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, InternalDfspRoot, SpecTransfer, SpecTransferUpdate } from './spec-store';
+import { currencyList } from '../../../seeds/currency';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -663,7 +663,14 @@ export class LedgerTigerBeetle implements Ledger {
       }
 
       // Lookup the net debit cap.
-      const netDebitCap = await this.specStore.getNetDebitCap(cmd.dfspId, cmd.currency)
+      const netDebitCapResult = await this.specStore.getNetDebitCap(cmd.dfspId, cmd.currency)
+      if (netDebitCapResult.type === 'NOT_FOUND') {
+        return { type: 'NOT_FOUND'}
+      }
+      if (netDebitCapResult.type === 'FAILURE') {
+        return Helper.failure(netDebitCapResult.error)
+      }
+      const netDebitCap = netDebitCapResult.result
       const dfspCurrencyResult = await this.deps.specStore.getDfspCurrency(cmd.dfspId, cmd.currency)
       if (dfspCurrencyResult.type === 'NOT_FOUND') {
         return {
@@ -687,7 +694,7 @@ export class LedgerTigerBeetle implements Ledger {
 
       let netDebitCapLockAmount = amount_max
       if (netDebitCap.type === 'LIMITED') {
-        netDebitCapLockAmount = Helper.toTigerBeetleAmount(netDebitCap.amount, currency.assetScale)
+        netDebitCapLockAmount = netDebitCap.amount
       }
       const transfers = this.helper.buildTransfersDeposit(
         cmd.transferId, cmd.amount, netDebitCapLockAmount, dfspCurrency, currency
@@ -785,12 +792,16 @@ export class LedgerTigerBeetle implements Ledger {
         return Helper.failure(spec.error)
       }
       const currency = await this.specStore.getCurrencyConfig(cmd.currency)
-      const netDebitCap = await this.specStore.getNetDebitCap(cmd.dfspId, cmd.currency)
+      const netDebitCapResult = await this.specStore.getNetDebitCap(cmd.dfspId, cmd.currency)
       const dfspRoot = await this.specStore.getDfspRoot(cmd.dfspId)
-
+      
+      if (netDebitCapResult.type !== 'SUCCESS') {
+        return Helper.failure(netDebitCapResult.error)
+      }
+      const netDebitCap = netDebitCapResult.result
       let netDebitCapLockAmount = amount_max
       if (netDebitCap.type === 'LIMITED') {
-        netDebitCapLockAmount = Helper.toTigerBeetleAmount(netDebitCap.amount, currency.assetScale)
+        netDebitCapLockAmount = netDebitCap.amount
       }
 
       // Save the funding metadata before writing to TigerBeetle (write last, read first)
@@ -975,16 +986,12 @@ export class LedgerTigerBeetle implements Ledger {
 
         throw new Error(`unhandled transfer error: ${idx}, ${CreateTransferStatus[result.status]}`)
       })
-      
+
       // Backwards compatibility: always return success.
       return Helper.successEmpty()
     } catch (err) {
       return Helper.failure(err)
     }
-  }
-
-  public async setNetDebitCap(cmd: SetNetDebitCapCommand): Promise<CommandResult<void>> {
-    return { type: 'SUCCESS' }
   }
 
   /**
@@ -1455,14 +1462,155 @@ export class LedgerTigerBeetle implements Ledger {
     }
   }
 
+  public async setNetDebitCap(cmd: SetNetDebitCapCommand): Promise<CommandResult<void>> {
+    assert(cmd.currency)
+    assert(cmd.dfspId)
+
+    try {
+      const currencyConfig = await this.specStore.getCurrencyConfig(cmd.currency)
+      let amountNetDebitCap: bigint
+      switch (cmd.netDebitCapType) {
+        case 'LIMITED': {
+          assert(cmd.amount)
+          assert(cmd.amount >= 0, 'expected amount to 0 or a positive integer')
+          amountNetDebitCap = Helper.toTigerBeetleAmount(cmd.amount, currencyConfig.assetScale)
+          break;
+        }
+        case 'UNLIMITED': {
+          amountNetDebitCap = 0n
+          break;
+        }
+      }
+      const dfspCurrencyResult = await this.specStore.getDfspCurrency(cmd.dfspId, cmd.currency)
+      if (dfspCurrencyResult.type === 'NOT_FOUND') {
+        return Helper.failure(new Error(`no dfspId + currency found: ${cmd.dfspId} + ${cmd.currency}`))
+      }
+      if (dfspCurrencyResult.type === 'FAILURE') {
+        return Helper.failure(dfspCurrencyResult.error)
+      }
+      const dfspCurrency = dfspCurrencyResult.result
+
+      // Write Last, Read First.
+      await this.deps.specStore.saveNetDebitCap({
+        type: cmd.netDebitCapType,
+        amount: amountNetDebitCap,
+        alarmPercentage: cmd.netDebitCapType === 'LIMITED' ? cmd.alarmPercentage : 0,
+        dfspId: cmd.dfspId,
+        currency: cmd.currency
+      })
+      
+      const transfers = this.helper.buildTranfersSetNetDebitCap(
+        dfspCurrency,
+        currencyConfig,
+        amountNetDebitCap,
+        cmd.netDebitCapType
+      )
+      const createTransfersResults = await this.deps.client.createTransfers(transfers)
+      const fatalErrors: Array<TransferFailureResult<SetNetDebitCapFailureType>> = []
+
+      createTransfersResults.forEach((result, idx) => {
+        // Ignore noisy statuses.
+        if (result.status === CreateTransferStatus.linked_event_failed) return
+        if (result.status === CreateTransferStatus.created) return
+
+        // if (idx === 0) {
+        //   switch (result.status) {
+        //     default:
+        //       fatalErrors.push({ type: 'UNKNOWN', ...error })
+        //       return
+        //   }
+        // }
+
+        throw new Error(`unhandled transfer status at index: ${idx}, ` +
+          `${CreateTransferStatus[result.status]}`
+        )
+      })
+
+      if (fatalErrors.length > 0) {
+        const firstError = fatalErrors[0]
+        return {
+          type: 'FAILURE',
+          error: new Error(`setNetDebitCap() failed with error: ${CreateTransferStatus[firstError.status]}`)
+        }
+      }
+
+      return Helper.successEmpty()
+    } catch (err) {
+      return Helper.failure(err)
+    }
+  }
+
   public async getNetDebitCap(query: GetNetDebitCapQuery):
     Promise<QueryResultWithNotFound<LegacyLimit>> {
-    throw new Error('Method not implemented.');
+    assert(query.currency)
+    assert(query.dfspId)
+
+    // Backwards compatiblity - if the currency isn't doesn't exist return NOT_FOUND instead of 
+    // throwing an error
+    let currency
+    try {
+      currency = await this.deps.specStore.getCurrencyConfig(query.currency)
+    } catch (err: any) {
+      return {
+        type: 'NOT_FOUND',
+        error: new Error(`failed to get currency: ${query.currency}.`)
+      }
+    }
+
+    try {
+      assert(currency)
+      const netDebitCapResult = await this.deps.specStore.getNetDebitCap(query.dfspId, query.currency)
+      if (netDebitCapResult.type === 'FAILURE') {
+        return {
+          type: 'FAILURE',
+          error: netDebitCapResult.error
+        }
+      }
+
+      if (netDebitCapResult.type === 'NOT_FOUND') {
+        return {
+          type: 'NOT_FOUND',
+          error: netDebitCapResult.error
+        }
+      }
+      const netDebitCap = netDebitCapResult.result
+
+      // Backwards compatability: LedgerTigerBeetle sees this internally as an Unlimited limit,
+      // but to match the Admin API we consider it a missing limit.
+      if (netDebitCap.type === 'UNLIMITED') {
+        return {
+          type: 'NOT_FOUND',
+          error: ErrorHandler.Factory.createFSPIOPError(
+            ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
+            `getNetDebitCap() - no limits found for dfspId: ${query.dfspId},` +
+            `currency: ${query.currency}, type: 'NET_DEBIT_CAP`
+          )
+        }
+      }
+      const limit: LegacyLimit = {
+        type: "NET_DEBIT_CAP",
+        value: Helper.toRealAmount(netDebitCap.amount, currency.assetScale),
+        alarmPercentage: netDebitCap.alarmPercentage,
+      }
+
+      return {
+        type: 'SUCCESS',
+        result: limit
+      }
+    } catch (err) {
+      return Helper.failure(err)
+    }
   }
 
   public async getNetDebitCaps(query: GetNetDebitCapsQuery):
     Promise<QueryResultWithNotFound<Array<LegacyLimitItem>>> {
-    throw new Error('Method not implemented.');
+    assert(query.dfspId)
+
+    try {
+      return Helper.failure(new Error(`Not implemented.`))
+    } catch (err) {
+      return Helper.failure(err)
+    }
   }
 
   public async prepare(inputs: Array<PrepareHandlerInput>): Promise<Array<PaymentPrepareResult>> {
