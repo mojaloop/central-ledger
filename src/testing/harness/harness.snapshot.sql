@@ -3212,90 +3212,31 @@ COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
--- Table structure for table `specCurrencyAccount`
+-- Table structure for table `specCurrencyConfig`
 --
 
-DROP TABLE IF EXISTS `specCurrencyAccount`;
+DROP TABLE IF EXISTS `specCurrencyConfig`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `specCurrencyAccount` (
-  `id` bigint(20) NOT NULL,
-  `currency` varchar(3) NOT NULL,
-  `accountType` varchar(255) NOT NULL,
-  `createdDate` datetime NOT NULL,
-  `changedDate` datetime NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `speccurrencyaccount_currency_accounttype_unique` (`currency`,`accountType`),
-  CONSTRAINT `speccurrencyaccount_currency_foreign` FOREIGN KEY (`currency`) REFERENCES `currency` (`currencyId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `specCurrencyAccount`
---
-
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
-LOCK TABLES `specCurrencyAccount` WRITE;
-/*!40000 ALTER TABLE `specCurrencyAccount` DISABLE KEYS */;
-/*!40000 ALTER TABLE `specCurrencyAccount` ENABLE KEYS */;
-UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
-
---
--- Table structure for table `specCurrencyLedger`
---
-
-DROP TABLE IF EXISTS `specCurrencyLedger`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `specCurrencyLedger` (
+CREATE TABLE `specCurrencyConfig` (
   `currency` varchar(3) NOT NULL,
   `ledgerOperation` int(10) unsigned NOT NULL,
   `ledgerControl` int(10) unsigned NOT NULL,
   `settlementBalance` bigint(20) unsigned NOT NULL,
-  `assetScale` int(10) unsigned NOT NULL,
+  `assetScale` int(11) NOT NULL,
   PRIMARY KEY (`currency`),
-  CONSTRAINT `speccurrencyledger_currency_foreign` FOREIGN KEY (`currency`) REFERENCES `currency` (`currencyId`)
+  CONSTRAINT `speccurrencyconfig_currency_foreign` FOREIGN KEY (`currency`) REFERENCES `currency` (`currencyId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `specCurrencyLedger`
+-- Dumping data for table `specCurrencyConfig`
 --
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
-LOCK TABLES `specCurrencyLedger` WRITE;
-/*!40000 ALTER TABLE `specCurrencyLedger` DISABLE KEYS */;
-/*!40000 ALTER TABLE `specCurrencyLedger` ENABLE KEYS */;
-UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
-
---
--- Table structure for table `specDfsp`
---
-
-DROP TABLE IF EXISTS `specDfsp`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `specDfsp` (
-  `dfspId` varchar(255) NOT NULL,
-  `masterAccountId` bigint(20) unsigned NOT NULL,
-  `isProxy` tinyint(1) NOT NULL,
-  PRIMARY KEY (`dfspId`),
-  UNIQUE KEY `specdfsp_masteraccountid_unique` (`masterAccountId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `specDfsp`
---
-
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
-LOCK TABLES `specDfsp` WRITE;
-/*!40000 ALTER TABLE `specDfsp` DISABLE KEYS */;
-/*!40000 ALTER TABLE `specDfsp` ENABLE KEYS */;
+LOCK TABLES `specCurrencyConfig` WRITE;
+/*!40000 ALTER TABLE `specCurrencyConfig` DISABLE KEYS */;
+/*!40000 ALTER TABLE `specCurrencyConfig` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
@@ -3326,7 +3267,7 @@ CREATE TABLE `specDfspCurrency` (
   PRIMARY KEY (`dfspId`,`currency`),
   KEY `specdfspcurrency_currency_foreign` (`currency`),
   CONSTRAINT `specdfspcurrency_currency_foreign` FOREIGN KEY (`currency`) REFERENCES `currency` (`currencyId`),
-  CONSTRAINT `specdfspcurrency_dfspid_foreign` FOREIGN KEY (`dfspId`) REFERENCES `specDfsp` (`dfspId`)
+  CONSTRAINT `specdfspcurrency_dfspid_foreign` FOREIGN KEY (`dfspId`) REFERENCES `specDfspRoot` (`dfspId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -3338,6 +3279,65 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `specDfspCurrency` WRITE;
 /*!40000 ALTER TABLE `specDfspCurrency` DISABLE KEYS */;
 /*!40000 ALTER TABLE `specDfspCurrency` ENABLE KEYS */;
+UNLOCK TABLES;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
+
+--
+-- Table structure for table `specDfspRoot`
+--
+
+DROP TABLE IF EXISTS `specDfspRoot`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `specDfspRoot` (
+  `dfspId` varchar(255) NOT NULL,
+  `masterAccountId` bigint(20) unsigned NOT NULL,
+  `isProxy` tinyint(1) NOT NULL,
+  PRIMARY KEY (`dfspId`),
+  UNIQUE KEY `specdfsproot_masteraccountid_unique` (`masterAccountId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `specDfspRoot`
+--
+
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
+LOCK TABLES `specDfspRoot` WRITE;
+/*!40000 ALTER TABLE `specDfspRoot` DISABLE KEYS */;
+/*!40000 ALTER TABLE `specDfspRoot` ENABLE KEYS */;
+UNLOCK TABLES;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
+
+--
+-- Table structure for table `specLegacyHubCurrency`
+--
+
+DROP TABLE IF EXISTS `specLegacyHubCurrency`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `specLegacyHubCurrency` (
+  `id` bigint(20) NOT NULL,
+  `currency` varchar(3) NOT NULL,
+  `accountType` varchar(255) NOT NULL,
+  `createdDate` datetime NOT NULL,
+  `changedDate` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `speclegacyhubcurrency_currency_accounttype_unique` (`currency`,`accountType`),
+  CONSTRAINT `speclegacyhubcurrency_currency_foreign` FOREIGN KEY (`currency`) REFERENCES `currency` (`currencyId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `specLegacyHubCurrency`
+--
+
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
+LOCK TABLES `specLegacyHubCurrency` WRITE;
+/*!40000 ALTER TABLE `specLegacyHubCurrency` DISABLE KEYS */;
+/*!40000 ALTER TABLE `specLegacyHubCurrency` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
@@ -3364,8 +3364,8 @@ CREATE TABLE `specTransfer` (
   KEY `spectransfer_payeeid_foreign` (`payeeId`),
   KEY `spectransfer_currency_foreign` (`currency`),
   CONSTRAINT `spectransfer_currency_foreign` FOREIGN KEY (`currency`) REFERENCES `currency` (`currencyId`),
-  CONSTRAINT `spectransfer_payeeid_foreign` FOREIGN KEY (`payeeId`) REFERENCES `specDfsp` (`dfspId`),
-  CONSTRAINT `spectransfer_payerid_foreign` FOREIGN KEY (`payerId`) REFERENCES `specDfsp` (`dfspId`)
+  CONSTRAINT `spectransfer_payeeid_foreign` FOREIGN KEY (`payeeId`) REFERENCES `specDfspRoot` (`dfspId`),
+  CONSTRAINT `spectransfer_payerid_foreign` FOREIGN KEY (`payerId`) REFERENCES `specDfspRoot` (`dfspId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -4063,4 +4063,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-10-16 17:05:14
+-- Dump completed on 2026-10-19 15:22:20

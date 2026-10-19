@@ -868,16 +868,22 @@ export class LedgerSql implements Ledger {
       const settlementAccount = await ParticipantFacade.getByNameAndCurrency(
         cmd.dfspId,
         cmd.currency,
-        Enum.Accounts.LedgerAccountType.SETTLEMENT
+        Enum.Accounts.LedgerAccountType.SETTLEMENT,
       );
-      assert(settlementAccount, 'Settlement account not found');
+      assert(settlementAccount, 'Settlement account not found')
+      if (!settlementAccount.currencyIsActive) {
+        return Helper.failure(new Error('settlement account is inactive.'))
+      }
 
       const positionAccount = await ParticipantFacade.getByNameAndCurrency(
         cmd.dfspId,
         cmd.currency,
-        Enum.Accounts.LedgerAccountType.POSITION
+        Enum.Accounts.LedgerAccountType.POSITION,
       );
       assert(positionAccount, 'Position account not found');
+      if (!positionAccount.currencyIsActive) {
+        return Helper.failure(new Error('position account is inactive.'))
+      }
 
       const payload = {
         transferId: cmd.transferId,
