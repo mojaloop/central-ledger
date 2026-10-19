@@ -34,4 +34,17 @@ export default class Helper {
     return a.createdDate.getTime() - b.createdDate.getTime()
   }
 
+  public static successEmpty() {
+    return {
+      type: 'SUCCESS' as 'SUCCESS'
+    }
+  }
+
+  public static failure(error: any) {
+    return {
+      type: "FAILURE" as 'FAILURE',
+      error
+    }
+  }
+
 }

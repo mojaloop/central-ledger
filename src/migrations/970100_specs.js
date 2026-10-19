@@ -25,23 +25,22 @@
  **********/
 
 exports.up = async (knex) => {
-  await knex.schema.hasTable('specCurrencyLedger').then(function (exists) {
+  await knex.schema.hasTable('specCurrencyConfig').then(function (exists) {
     if (!exists) {
-      return knex.schema.createTable('specCurrencyLedger', (t) => {
+      return knex.schema.createTable('specCurrencyConfig', (t) => {
         t.string('currency', 3).primary().notNullable()
         t.integer('ledgerOperation').unsigned().notNullable()
         t.integer('ledgerControl').unsigned().notNullable()
         t.bigIncrements('settlementBalance').notNullable()
-        t.integer('assetScale').unsigned().notNullable()
-
+        t.integer('assetScale').notNullable()
         t.foreign('currency').references('currencyId').inTable('currency')
       })
     }
   })
 
-  await knex.schema.hasTable('specCurrencyAccount').then(function (exists) {
+  await knex.schema.hasTable('specLegacyHubCurrency').then(function (exists) {
     if (!exists) {
-      return knex.schema.createTable('specCurrencyAccount', (t) => {
+      return knex.schema.createTable('specLegacyHubCurrency', (t) => {
         t.bigInteger('id').primary().notNullable()
         t.string('currency', 3).notNullable()
         t.string('accountType').notNullable()
@@ -53,9 +52,9 @@ exports.up = async (knex) => {
     }
   })
 
-  await knex.schema.hasTable('specDfsp').then(function (exists) {
+  await knex.schema.hasTable('specDfspRoot').then(function (exists) {
     if (!exists) {
-      return knex.schema.createTable('specDfsp', (t) => {
+      return knex.schema.createTable('specDfspRoot', (t) => {
         t.string('dfspId').primary().notNullable()
         t.bigInteger('masterAccountId').unsigned().notNullable().unique()
         t.boolean('isProxy').notNullable()
@@ -83,7 +82,7 @@ exports.up = async (knex) => {
         t.dateTime('changedDate').notNullable()
 
         t.primary(['dfspId', 'currency'])
-        t.foreign('dfspId').references('dfspId').inTable('specDfsp')
+        t.foreign('dfspId').references('dfspId').inTable('specDfspRoot')
         t.foreign('currency').references('currencyId').inTable('currency')
       })
     }
@@ -102,8 +101,8 @@ exports.up = async (knex) => {
         t.dateTime('expiration').notNullable()
         t.string('fulfilment', 256)
 
-        t.foreign('payerId').references('dfspId').inTable('specDfsp')
-        t.foreign('payeeId').references('dfspId').inTable('specDfsp')
+        t.foreign('payerId').references('dfspId').inTable('specDfspRoot')
+        t.foreign('payeeId').references('dfspId').inTable('specDfspRoot')
         t.foreign('currency').references('currencyId').inTable('currency')
       })
     }
@@ -111,9 +110,9 @@ exports.up = async (knex) => {
 }
 
 exports.down = async (knex) => {
-  await knex.schema.hasTable('specCurrencyLedger').then(function (exists) {
+  await knex.schema.hasTable('specCurrencyConfig').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specCurrencyLedger')
+      return knex.schema.dropTableIfExists('specCurrencyConfig')
     }
   })
 
@@ -123,15 +122,15 @@ exports.down = async (knex) => {
     }
   })
 
-  await knex.schema.hasTable('specDfsp').then(function (exists) {
+  await knex.schema.hasTable('specDfspRoot').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specDfsp')
+      return knex.schema.dropTableIfExists('specDfspRoot')
     }
   })
 
-  await knex.schema.hasTable('specCurrencyAccount').then(function (exists) {
+  await knex.schema.hasTable('specLegacyHubCurrency').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specCurrencyAccount')
+      return knex.schema.dropTableIfExists('specLegacyHubCurrency')
     }
   })
 

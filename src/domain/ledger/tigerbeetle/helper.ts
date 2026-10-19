@@ -2,8 +2,8 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto from "crypto";
 import assert from "assert";
-import { CurrencyLedger, MasterSpec, SpecAccount, SpecNetDebitCap, SpecTransfer } from "./spec-store";
-import { AccountCode, LegacyLedgerAccount, LegacyLedgerAccountNoValue, TransferCode } from "../shared/types";
+import { CurrencyConfig, DfspCurrency, DfspRoot, SpecTransfer } from "./spec-store";
+import { AccountCode, LegacyLedgerAccountNoValue, TransferCode } from "../shared/types";
 import { PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { FulfilHandlerAction, FulfilHandlerInput } from "../../../handlers/payment-fulfil";
 
@@ -165,17 +165,16 @@ export default class Helper {
   }
 
   public buildAccountsDfsp(
-    spec: SpecAccount,
-    currencyLedger: CurrencyLedger,
-    accountIdSettlementBalance: bigint,
+    spec: DfspCurrency,
+    currencyLedger: CurrencyConfig,
     masterAccountId: bigint
   ): Array<Account> {
-    const ledgerOperation = currencyLedger.ledgerOperation
+    const ledgerOperation = currencyLedger.idOperation
     const accounts: Array<Account> = [
       // Settlement_Balance
       {
         ...Helper.createAccountTemplate,
-        id: accountIdSettlementBalance,
+        id: currencyLedger.settlementBalance,
         ledger: ledgerOperation,
         code: AccountCode.Settlement_Balance,
         flags: 0,
@@ -279,8 +278,8 @@ export default class Helper {
     transferId: string,
     amount: number,
     netDebitCapLockAmount: bigint,
-    spec: SpecAccount,
-    ledger: CurrencyLedger
+    spec: DfspCurrency,
+    ledger: CurrencyConfig
   ): Array<Transfer> {
     const idLockTransfer = id()
     return [
@@ -291,7 +290,7 @@ export default class Helper {
         debit_account_id: spec.deposit,
         credit_account_id: spec.unrestricted,
         amount: Helper.toTigerBeetleAmount(amount, ledger.assetScale),
-        ledger: ledger.ledgerOperation,
+        ledger: ledger.idOperation,
         code: TransferCode.Deposit,
         flags: TransferFlags.linked
 
@@ -303,7 +302,7 @@ export default class Helper {
         debit_account_id: spec.restricted,
         credit_account_id: spec.unrestricted,
         amount: amount_max,
-        ledger: ledger.ledgerOperation,
+        ledger: ledger.idOperation,
         code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
         flags: TransferFlags.linked | TransferFlags.balancing_debit
       },
@@ -314,7 +313,7 @@ export default class Helper {
         debit_account_id: spec.unrestricted,
         credit_account_id: spec.unrestrictedLock,
         amount: netDebitCapLockAmount,
-        ledger: ledger.ledgerOperation,
+        ledger: ledger.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
         flags: TransferFlags.linked | TransferFlags.pending | TransferFlags.balancing_debit
       },
@@ -325,7 +324,7 @@ export default class Helper {
         debit_account_id: spec.unrestricted,
         credit_account_id: spec.restricted,
         amount: amount_max,
-        ledger: ledger.ledgerOperation,
+        ledger: ledger.idOperation,
         code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
         flags: TransferFlags.linked | TransferFlags.balancing_debit
       },
@@ -337,7 +336,7 @@ export default class Helper {
         debit_account_id: 0n,
         credit_account_id: 0n,
         amount: 0n,
-        ledger: ledger.ledgerOperation,
+        ledger: ledger.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
         flags: TransferFlags.void_pending_transfer
       }
@@ -348,9 +347,9 @@ export default class Helper {
     transferId: string,
     amount: number,
     netDebitCapLockAmount: bigint,
-    spec: SpecAccount,
-    master: MasterSpec,
-    ledger: CurrencyLedger,
+    spec: DfspCurrency,
+    master: DfspRoot,
+    ledger: CurrencyConfig,
   ): Array<Transfer> {
     const idLockTransfer = id()
     const transfers: Array<Transfer> = [
@@ -372,7 +371,7 @@ export default class Helper {
         debit_account_id: spec.restricted,
         credit_account_id: spec.unrestricted,
         amount: amount_max,
-        ledger: ledger.ledgerOperation,
+        ledger: ledger.idOperation,
         code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
         flags: TransferFlags.linked | TransferFlags.balancing_debit
       },
@@ -383,7 +382,7 @@ export default class Helper {
         debit_account_id: spec.unrestricted,
         credit_account_id: spec.deposit,
         amount: Helper.toTigerBeetleAmount(amount, ledger.assetScale),
-        ledger: ledger.ledgerOperation,
+        ledger: ledger.idOperation,
         code: TransferCode.Withdraw,
         flags: TransferFlags.linked | TransferFlags.pending
       },
@@ -394,7 +393,7 @@ export default class Helper {
         debit_account_id: spec.unrestricted,
         credit_account_id: spec.unrestrictedLock,
         amount: netDebitCapLockAmount,
-        ledger: ledger.ledgerOperation,
+        ledger: ledger.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
         flags: TransferFlags.linked | TransferFlags.balancing_debit | TransferFlags.pending
       },
@@ -405,7 +404,7 @@ export default class Helper {
         debit_account_id: spec.unrestricted,
         credit_account_id: spec.restricted,
         amount: amount_max,
-        ledger: ledger.ledgerOperation,
+        ledger: ledger.idOperation,
         code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
         flags: TransferFlags.linked | TransferFlags.balancing_debit
       },
@@ -417,7 +416,7 @@ export default class Helper {
         debit_account_id: 0n,
         credit_account_id: 0n,
         amount: 0n,
-        ledger: ledger.ledgerOperation,
+        ledger: ledger.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
         flags: TransferFlags.void_pending_transfer
       },
@@ -449,9 +448,9 @@ export default class Helper {
 
   public buildTransfersPrepares(
     prepares: Array<PrepareHandlerInput>,
-    currencyLedgers: Record<string, CurrencyLedger>,
-    masterSpecs: Record<string, MasterSpec>,
-    specAccounts: Record<string, SpecAccount>
+    currencyLedgers: Record<string, CurrencyConfig>,
+    masterSpecs: Record<string, DfspRoot>,
+    specAccounts: Record<string, DfspCurrency>
   ): Array<Transfer> {
 
     const transfers: Array<Transfer> = []
@@ -525,7 +524,7 @@ export default class Helper {
           credit_account_id: specPayee.clearingLimit,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
-          ledger: ledger.ledgerOperation,
+          ledger: ledger.idOperation,
           code: 1,
           flags: TransferFlags.linked
         },
@@ -537,7 +536,7 @@ export default class Helper {
           credit_account_id: specPayee.clearingSetup,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
-          ledger: ledger.ledgerOperation,
+          ledger: ledger.idOperation,
           code: TransferCode.Clearing_Reserve,
           flags: TransferFlags.linked | TransferFlags.balancing_debit
             | TransferFlags.balancing_credit
@@ -550,7 +549,7 @@ export default class Helper {
           credit_account_id: specPayee.clearingSetup,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
-          ledger: ledger.ledgerOperation,
+          ledger: ledger.idOperation,
           code: TransferCode.Clearing_Reserve,
           flags: TransferFlags.linked | TransferFlags.balancing_debit
             | TransferFlags.balancing_credit
@@ -563,7 +562,7 @@ export default class Helper {
           credit_account_id: specPayer.reserved,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
-          ledger: ledger.ledgerOperation,
+          ledger: ledger.idOperation,
           code: TransferCode.Clearing_Reserve,
           // flags: TransferFlags.linked
           flags: 0
@@ -589,8 +588,8 @@ export default class Helper {
   public buildTransfersFulfil(
     fulfils: Array<FulfilHandlerInput>,
     specTransfers: Array<SpecTransfer>,
-    currencyLedgers: Record<string, CurrencyLedger>,
-    specCurrencyAccounts: Record<string, SpecAccount>,
+    currencyLedgers: Record<string, CurrencyConfig>,
+    specCurrencyAccounts: Record<string, DfspCurrency>,
   ): Array<Transfer> {
     assert.equal(fulfils.length, specTransfers.length)
 
@@ -648,7 +647,7 @@ export default class Helper {
           credit_account_id: specPayee.commitedOutgoing,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
-          ledger: ledger.ledgerOperation,
+          ledger: ledger.idOperation,
           code: TransferCode.Clearing_Fulfil,
           flags: TransferFlags.linked
         },
@@ -664,7 +663,7 @@ export default class Helper {
           credit_account_id: specPayee.clearingCredit,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
-          ledger: ledger.ledgerOperation,
+          ledger: ledger.idOperation,
           code: TransferCode.Clearing_Credit,
           flags: 0
         },
@@ -874,7 +873,7 @@ export default class Helper {
       type: "FAILURE" as 'FAILURE',
       error
     }
-  } 
+  }
 }
 
 const bigIntReplacer = (_key: string, value: unknown) =>

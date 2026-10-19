@@ -587,7 +587,13 @@ class LedgerFuzzer {
 
   private async getHubAccounts(): Promise<void> {
     const result = await this.ledger.getHubAccounts({})
-    this.traceResult('getHubAccounts', {}, result)
+
+    // Strip the createdDate, since we don't have such a concept in TigerBeetle.
+    const cloned = structuredClone(result)
+    if (cloned.type === 'SUCCESS') {
+      cloned.createdDate = new Date(0)
+    }
+    this.traceResult('getHubAccounts', {}, cloned)
   }
 
   private async getDfsp(): Promise<void> {

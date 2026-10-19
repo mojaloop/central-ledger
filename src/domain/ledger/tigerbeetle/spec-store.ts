@@ -1,12 +1,11 @@
-import { Knex } from 'knex';
-import assert from 'node:assert';
-import LedgerTigerBeetleHelper from './helper';
-import { ApplicationConfig } from '../../../lib/config';
-import { AccountCode, Enums, QueryResultWithNotFound } from '../shared/types';
-import Helper from './helper';
-import { Account } from 'tigerbeetle-node';
-import { logger } from '../../../shared/logger';
-import { fulfil } from '../../../handlers/transfers/handler';
+import { Knex } from 'knex'
+import assert from 'node:assert'
+import LedgerTigerBeetleHelper from './helper'
+import { ApplicationConfig } from '../../../lib/config'
+import { AccountCode, Enums, QueryResultWithNotFound } from '../shared/types'
+import Helper from './helper'
+import { Account } from 'tigerbeetle-node'
+import { logger } from '../../../shared/logger'
 
 export type CmdHubCurrencyEnable = {
   currency: string,
@@ -23,10 +22,144 @@ export type EnableHubCurrencyResponse = {
   error: any
 }
 
+export interface CurrencyConfig {
+  /**
+   * What precision to store the currency amounts in.
+   * See [asset scale](https://docs.tigerbeetle.com/coding/data-modeling/#asset-scale)
+   * for more information.
+   */
+  assetScale: number
+
+  /**
+   * ISO 4217 Currency code for this Ledger.
+   */
+  currency: string,
+
+  /**
+   * The TigerBeetle ledger where 'real' funds are tracked. 
+   * Used for financial reporting.
+   */
+  idOperation: number,
+
+  /**
+   * A separate 'control' ledger for non-financial operations.
+   */
+  idControl: number,
+
+  /**
+   * Backwards Compatibility: The AccountId for the settlement balance account.
+   */
+  settlementBalance: bigint,
+}
+
+/**
+ * The Hub account's representation of each individual accounts. 
+ * This is used to maintain backwards compatibility with LedgerSQL.
+ */
+export type LegacyHubCurrency = {
+  /**
+   * The id of the currency account.
+   */
+  id: number,
+
+  currency: string,
+  /**
+   * The Legacy account type.
+   */
+  accountType: string,
+
+  /**
+   * When the LegacyHubCurrency was created.
+   */
+  createdDate: Date,
+
+  /**
+   * When the LegacyHubCurrency was last updated.
+   */
+  changedDate: Date,
+}
+
+/**
+ * Stores the mapping between the dfspId => DfspRoot Id on TigerBeetle.
+ */
+export interface DfspRoot {
+  dfspId: string,
+  id: bigint,
+  isProxy: boolean
+}
+
+/**
+ * The set of TigerBeetle Account ids.
+ */
+export interface DfspAccountIds {
+  deposit: bigint,
+  unrestricted: bigint,
+  unrestrictedLock: bigint,
+  restricted: bigint,
+  reserved: bigint,
+  commitedOutgoing: bigint,
+  clearingCredit: bigint
+  clearingSetup: bigint
+  clearingLimit: bigint
+}
+
+/**
+ * Defines the TigerBeetle Accounts for a dfspId + currency.
+ */
+export interface DfspCurrency extends DfspAccountIds {
+  dfspId: string,
+  currency: string,
+
+  /**
+   * When the account was last activated/deactivated.
+   */
+  changedDate: Date,
+
+  /**
+   * Backwards compatibility: Keep track of the application timestamp when the position
+   * account was last changed.
+   */
+  changedDatePosition: Date,
+
+  /**
+   * Backwards compatibility: Keep track of the application timestamp when the settlement
+   * account was last changed.
+   */
+  changedDateSettlement: Date,
+
+  /**
+   * When the account was created.
+   */
+  createdDate: Date,
+}
+
+/**
+ * Internal representation of the DfspRoot account.
+ */
+export interface InternalDfspRoot extends Account {
+  dfspId: string,
+  isProxy: boolean,
+}
+
+/**
+ * Internal representation of the DfspCurrency Account.
+ */
+export interface InternalDfspCurrency extends Account {
+  dfspId: string,
+  currency: string,
+
+  /**
+   * Technically we don't need this since it lives on the account.code, but as a number,
+   * but explicit typing here makes accessing this property easier.
+   */
+  accountCode: AccountCode
+}
+
 /**
  * Mapping from a currency => Set of TigerBeetle Ledger Ids.
  * 
  * TODO: rename to just Ledger?
+ * @deprecated
  */
 export interface CurrencyLedger {
   currency: string,
@@ -55,6 +188,7 @@ export interface CurrencyLedger {
  * This is mainly used to maintain backwards compatibility with LedgerSQL.
  * 
  * TODO: rename to HubCurrency?
+ * @deprecated
  */
 export type CurrencyAccount = {
   /**
@@ -82,74 +216,12 @@ export type CurrencyAccount = {
 /**
  * Stores the mapping between the dfspId => MasterAccount Id on TigerBeetle.
  * TODO: rename to SpecMaster?
+ * @deprecated
  */
 export interface MasterSpec {
   dfspId: string,
   id: bigint,
   isProxy: boolean
-}
-
-/**
- * The set of TigerBeetle Account ids.
- */
-export interface DfspAccountIds {
-  deposit: bigint,
-  unrestricted: bigint,
-  unrestrictedLock: bigint,
-  restricted: bigint,
-  reserved: bigint,
-  commitedOutgoing: bigint,
-  clearingCredit: bigint
-  clearingSetup: bigint
-  clearingLimit: bigint
-}
-
-/**
- * The specification which defines the TigerBeetle Accounts for a dfspId + currency.
- * TODO: rename to SpecCurrency?
- * // This isn't actually an account. It's the metadata attached to a number of accounts.
- */
-export interface SpecAccount extends DfspAccountIds {
-  dfspId: string,
-  currency: string,
-
-  /**
-   * When the account was last activated/deactivated.
-   */
-  changedDate: Date,
-
-  /**
-   * Backwards compatibility: Keep track of the application timestamp when the position
-   * account was last changed.
-   */
-  changedDatePosition: Date,
-
-  /**
-   * Backwards compatibility: Keep track of the application timestamp when the settlement
-   * account was last changed.
-   */
-  changedDateSettlement: Date,
-
-  /**
-   * When the account was created.
-   */
-  createdDate: Date,
-}
-
-export interface InternalLedgerAccount extends Account {
-  dfspId: string,
-  currency: string,
-  // Technically we don't need this since it lives on the account.code, but as a number,
-  // but explicit typing here makes accessing this property easier.
-  accountCode: AccountCode
-}
-
-/**
- * Internal representation of the Dfsp/Participant Master account
- */
-export interface InternalMasterAccount extends Account {
-  dfspId: string,
-  isProxy: boolean,
 }
 
 export type SpecNetDebitCap = {
@@ -210,56 +282,23 @@ export interface DepsSpecStore {
   helper: Helper,
 }
 
-const TABLE_CURRENCY_LEDGER = 'specCurrencyLedger'
-const TABLE_CURRENCY_ACCOUNT = 'specCurrencyAccount'
-const TABLE_DFSP = 'specDfsp'
+const TABLE_CURRENCY_CONFIG = 'specCurrencyConfig'
+const TABLE_CURRENCY_ACCOUNT = 'specLegacyHubCurrency'
+const TABLE_DFSP_ROOT = 'specDfspRoot'
 const TABLE_DFSP_CURRENCY = 'specDfspCurrency'
 const TABLE_TRANSFER = 'specTransfer'
 
 /**
  * @class SpecStore
- * @description Metadata-sidecar store for TigerBeetle Account, Transfer and Hub metadata: 'Specs'.
+ * @description Metadata store for TigerBeetle Account, Transfer and Hub metadata: 'Specifications'.
  */
 export default class SpecStore {
   private db: Knex;
   private readonly helper: Helper
 
-  private hubAccountId = 0;
-
-  /**
-   * Backwards compatibility - keep track of the very first date the first currency was created.
-   */
-  private firstCreationDate: Date | null = null;
-
-  private dfsps: Array<{
-    id: string;
-    /**
-     * The master account id of the dfsp.
-     */
-    masterAccountId: bigint;
-  }> = [];
-  private dfspSpecs: Array<SpecAccount> = [];
-
   constructor(private deps: DepsSpecStore) {
     this.db = deps.db;
     this.helper = deps.helper
-    // This mimicks how the participant gets setup in LedgerSQL.
-    this.getFirstOrImplyCreationDate();
-  }
-
-  /**
-   * Strip the MS off of the date, this mimicks what MySQL does internally.
-   */
-  public static stripMs(date: Date): Date {
-    return new Date(new Date().setMilliseconds(0));
-  }
-
-  public async getFirstOrImplyCreationDate(): Promise<Date> {
-    if (!this.firstCreationDate) {
-      this.firstCreationDate = SpecStore.stripMs(new Date());
-    }
-
-    return this.firstCreationDate;
   }
 
   public async validateCurrency(currency: string): Promise<void> {
@@ -299,7 +338,7 @@ export default class SpecStore {
         }
       });
 
-      await this.insertCurrencyLedger(cmd.currency)
+      await this.insertCurrencyConfig(cmd.currency)
 
       for (let idx = 0; idx < cmd.accountTypes.length; idx++) {
         const id = cmd.accountIds[idx]
@@ -307,7 +346,7 @@ export default class SpecStore {
         assert(id)
         assert(accountType)
 
-        const result = await this.insertCurrencyAccount({
+        const result = await this.insertLegacyHubCurrency({
           id,
           currency: cmd.currency,
           accountType,
@@ -324,19 +363,17 @@ export default class SpecStore {
 
       return { type: 'OK' };
     } catch (error) {
-      return {
-        type: 'FAILURE', error
-      };
+      return Helper.failure(error)
     }
   }
 
-  private async insertCurrencyLedger(currency: string): Promise<void> {
+  private async insertCurrencyConfig(currency: string): Promise<void> {
     let trx: Knex.Transaction | undefined
     try {
       trx = await this.db.transaction()
 
-      // Look up the currency ledger.
-      const existing = await trx(TABLE_CURRENCY_LEDGER)
+      // Look up the CurrencyConfig.
+      const existing = await trx(TABLE_CURRENCY_CONFIG)
         .select('currency')
         .where({ currency })
       if (existing.length > 0) {
@@ -344,15 +381,15 @@ export default class SpecStore {
         return
       }
 
-      // Create a new currency ledger, ids are based on the number of existing currencies.
-      const currencyCountResult = await trx(TABLE_CURRENCY_LEDGER).count('* as count')
+      // Create a new CurrencyConfig, ids are based on the number of existing currencies.
+      const currencyCountResult = await trx(TABLE_CURRENCY_CONFIG).count('* as count')
       const currencyCount = Number(currencyCountResult[0].count)
       const [
         ledgerOperation,
         ledgerControl
       ] = LedgerTigerBeetleHelper.generateLedgerIds(currencyCount);
 
-      await trx(TABLE_CURRENCY_LEDGER).insert({
+      await trx(TABLE_CURRENCY_CONFIG).insert({
         currency,
         ledgerOperation,
         ledgerControl,
@@ -371,13 +408,13 @@ export default class SpecStore {
     }
   }
 
-  private async insertCurrencyAccount(account: CurrencyAccount)
+  private async insertLegacyHubCurrency(account: LegacyHubCurrency)
     : Promise<EnableHubCurrencyResponse> {
     let trx: Knex.Transaction | undefined
     try {
       trx = await this.db.transaction()
 
-      // Look up the currency ledger.
+      // Look up the LegacyHubCurrency.
       const existing = await trx(TABLE_CURRENCY_ACCOUNT)
         .select('currency')
         .where({ currency: account.currency, accountType: account.accountType })
@@ -411,63 +448,36 @@ export default class SpecStore {
     }
   }
 
-  public async getCurrencyLedger(currency: string): Promise<CurrencyLedger> {
-    const rows = await this.db(TABLE_CURRENCY_LEDGER).where({ currency }).select('*')
+  public async getCurrencyConfig(currency: string): Promise<CurrencyConfig> {
+    const rows = await this.db(TABLE_CURRENCY_CONFIG).where({ currency }).select('*')
     if (rows.length === 0) {
-      throw new Error(`getCurrencyLedger() - no ledger found for currency: ${currency}`);
+      throw new Error(`getCurrencyConfig() - no CurrencyConfig found for currency: ${currency}`);
     }
 
     assert(rows.length === 1, 'Expected only 1 row.')
     const row = rows[0]
 
-    return {
-      currency: row.currency,
-      ledgerOperation: row.ledgerOperation,
-      ledgerControl: row.ledgerControl,
-      settlementBalance: BigInt(row.settlementBalance),
-      assetScale: row.assetScale
-    }
+    return SpecStore.hydrateCurrencyConfig(row)
   }
 
-  public async getCurrencyLedgers(): Promise<Array<CurrencyLedger>> {
-    const rows = await this.db(TABLE_CURRENCY_LEDGER).select('*')
+  public async getCurrencyConfigsMap(): Promise<Record<string, CurrencyConfig>> {
+    const rows = await this.db(TABLE_CURRENCY_CONFIG).select('*')
 
-    return rows.map(row => ({
-      currency: row.currency,
-      ledgerOperation: row.ledgerOperation,
-      ledgerControl: row.ledgerControl,
-      settlementBalance: BigInt(row.settlementBalance),
-      assetScale: row.assetScale
-    }))
+    return rows.map(SpecStore.hydrateCurrencyConfig)
+      .reduce((acc, curr) => {
+        acc[curr.currency] = curr
+        return acc
+      }, {} as Record<string, CurrencyConfig>)
   }
 
-  public async getAllCurrencyAccounts(): Promise<Array<CurrencyAccount>> {
+  public async getLegacyHubCurrenciesAll(): Promise<Array<LegacyHubCurrency>> {
     const rows = await this.db(TABLE_CURRENCY_ACCOUNT).select('*')
-
-    return rows.map(row => ({
-      id: row.id,
-      currency: row.currency,
-      accountType: row.accountType,
-      createdDate: row.createdDate,
-      changedDate: row.changedDate,
-    }))
+    return rows.map(SpecStore.hydrateLegacyHubCurrency)
   }
 
-  public async getCurrencyAccounts(currency: string): Promise<Array<CurrencyAccount>> {
+  public async getLegacyHubCurrency(currency: string): Promise<Array<LegacyHubCurrency>> {
     const rows = await this.db(TABLE_CURRENCY_ACCOUNT).where({ currency }).select('*')
-
-    return rows.map(row => ({
-      id: row.id,
-      currency: row.currency,
-      accountType: row.accountType,
-      createdDate: row.createdDate,
-      changedDate: row.changedDate,
-    }))
-  }
-
-  public async getAccountIdSettlementBalance(currency: string): Promise<bigint> {
-    const currencyLedger = await this.getCurrencyLedger(currency)
-    return currencyLedger.settlementBalance
+    return rows.map(SpecStore.hydrateLegacyHubCurrency)
   }
 
   public async assertCurrenciesEnabled(currencies: Array<string>): Promise<void> {
@@ -475,15 +485,11 @@ export default class SpecStore {
     assert(currencies.length > 0, 'Expected at least one currency.');
 
     const errors: Array<string> = [];
-    const currencyLedgerSet: Record<string, true> = (await this.getCurrencyLedgers())
-      .reduce((acc, curr) => {
-        acc[curr.currency] = true
-        return acc
-      }, {} as Record<string, true>)
+    const currencyConfigs = await this.getCurrencyConfigsMap()
     currencies.forEach(currency => {
-      const found = currencyLedgerSet[currency]
+      const found = currencyConfigs[currency]
       if (!found) {
-        errors.push(`No currencyLedger found for: ${currency}.`);
+        errors.push(`No CurrencyConfig found for: ${currency}.`);
       }
     });
 
@@ -497,7 +503,7 @@ export default class SpecStore {
    */
   public async assertHubAccountsCreatedForCurrencies(currencies: Array<string>): Promise<void> {
     for (const currency of currencies) {
-      const currencyAccounts = await this.getCurrencyAccounts(currency)
+      const currencyAccounts = await this.getLegacyHubCurrency(currency)
       const hubReconcilation = currencyAccounts
         .find(acc => acc.accountType === 'HUB_RECONCILIATION')
       const hubMultilateralSettlement = currencyAccounts
@@ -513,25 +519,26 @@ export default class SpecStore {
   }
 
   /**
-   * Create the TigerBeetle master account id for this DFSP.
-   * Pass in an id to use if this is a new MasterSpec.
+   * Create the TigerBeetle DfspRoot id for this DFSP.
+   * Pass in an id to use if this is a new DfspRoot.
    */
-  public async getOrCreateDfspMasterSpec(dfspId: string, isProxy: boolean, id: bigint): Promise<MasterSpec> {
+  public async getOrCreateDfspRoot(dfspId: string, isProxy: boolean, id: bigint): Promise<DfspRoot> {
     let trx: Knex.Transaction | undefined
     try {
       trx = await this.db.transaction()
 
-      const row = await trx(TABLE_DFSP).where({ dfspId }).select('*').first()
+      const row = await trx(TABLE_DFSP_ROOT).where({ dfspId }).select('*').first()
       if (row) {
         await trx.commit()
         return {
           dfspId: row.dfspId,
+          // TODO: rename.
           id: row.masterAccountId,
           isProxy: Boolean(row.isProxy),
         }
       }
 
-      await trx(TABLE_DFSP).insert({ dfspId, masterAccountId: id, isProxy })
+      await trx(TABLE_DFSP_ROOT).insert({ dfspId, masterAccountId: id, isProxy })
 
       await trx.commit()
       return {
@@ -548,89 +555,72 @@ export default class SpecStore {
     }
   }
 
-  public async getDfspMasterSpec(dfspId: string): Promise<MasterSpec> {
-    const row = await this.db(TABLE_DFSP).where({ dfspId }).select('*').first()
+  public async getDfspRoot(dfspId: string): Promise<DfspRoot> {
+    const row = await this.db(TABLE_DFSP_ROOT).where({ dfspId }).select('*').first()
     if (!row) {
       throw new Error(`No dfsp found for id: ${dfspId}`)
     }
 
-    return {
-      dfspId,
-      id: BigInt(row.masterAccountId),
-      isProxy: Boolean(row.isProxy)
-    }
+    return SpecStore.hydrateDfspRoot(row)
   }
 
-  public async getDfspMasterSpecs(dfspIds: Array<string>): Promise<Array<MasterSpec>> {
-    const rows = await this.db(TABLE_DFSP).whereIn('dfspId', dfspIds).select('*')
-
-    return rows.map(row => ({
-      dfspId: row.dfspId,
-      id: BigInt(row.masterAccountId),
-      isProxy: Boolean(row.isProxy),
-    }))
+  /**
+   * Gets all of the DfspRoots for the dfspIds given by the ids as a mapping of id => DfspRoot.
+   * If a dfspid could not be found, it is not returned (doesn't throw an error).
+   */
+  public async getDfspRoots(dfspIds: Array<string>): Promise<Record<string, DfspRoot>> {
+    const rows = await this.db(TABLE_DFSP_ROOT).whereIn('dfspId', dfspIds).select('*')
+    return rows.map(SpecStore.hydrateDfspRoot)
+      .reduce((acc, curr) => {
+        acc[curr.dfspId] = curr
+        return acc
+      }, {} as Record<string, DfspRoot>)
   }
 
-  // Maybe we don't want this?
-  public async getAllDfspMasterSpecs(): Promise<Array<MasterSpec>> {
-    const rows = await this.db(TABLE_DFSP).select('*')
-
-    return rows.map(row => ({
-      dfspId: row.dfspId,
-      id: BigInt(row.masterAccountId),
-      isProxy: Boolean(row.isProxy),
-    }))
-  }
-
-  public async queryCurrenciesWithMasterAccounts(): Promise<{
+  public async queryDfspRootsWithCurrencies(): Promise<{
     // All rows joined together.
-    masterSpecsWithSpecAccounts: Array<MasterSpec & SpecAccount>,
-    masterSpecs: Array<MasterSpec>,
-    specAccounts: Array<SpecAccount>
+    dfspRootAndCurrency: Array<DfspRoot & DfspCurrency>,
+    dfspRoots: Array<DfspRoot>,
+    dfspCurrencies: Array<DfspCurrency>
   }> {
-    const result = await this.db('specDfspCurrency')
-      .join('specDfsp', 'specDfspCurrency.dfspId', 'specDfsp.dfspId')
+    const result = await this.db(TABLE_DFSP_CURRENCY)
+      .join(TABLE_DFSP_ROOT, `${TABLE_DFSP_CURRENCY}.dfspId`, `${TABLE_DFSP_ROOT}.dfspId`)
       .select('*')
 
-    const masterSpecs: Array<MasterSpec> = []
-    const uniqueMasterSpecIds: Record<string, true> = {}
+    const dfspRoots: Array<DfspRoot> = []
+    const uniqueRootIds: Record<string, true> = {}
 
-    const specAccounts: Array<SpecAccount> = []
-    const uniqueSpecAccountIds: Record<string, true> = {}
+    const dfspCurrencies: Array<DfspCurrency> = []
+    const uniqueDfspCurrencyIds: Record<string, true> = {}
 
-    const rows: Array<MasterSpec & SpecAccount> = []
+    const rows: Array<DfspRoot & DfspCurrency> = []
     result.forEach(row => {
-      const masterSpec: MasterSpec = {
-        dfspId: row.dfspId,
-        id: BigInt(row.masterAccountId),
-        isProxy: Boolean(row.isProxy)
-      }
-      const specAccount: SpecAccount = SpecStore.hydrateSpecAccount(row)
+      const dfspRoot = SpecStore.hydrateDfspRoot(row)
+      const dfspCurrency: DfspCurrency = SpecStore.hydrateDfspCurrency(row)
 
-      if (!uniqueMasterSpecIds[masterSpec.dfspId]) {
-        uniqueMasterSpecIds[masterSpec.dfspId] = true
-        masterSpecs.push(masterSpec)
+      if (!uniqueRootIds[dfspRoot.dfspId]) {
+        uniqueRootIds[dfspRoot.dfspId] = true
+        dfspRoots.push(dfspRoot)
       }
 
-      const key = specAccount.dfspId + specAccount.currency
-      if (!uniqueSpecAccountIds[key]) {
-        uniqueSpecAccountIds[key] = true
-        specAccounts.push(specAccount)
+      const key = dfspCurrency.dfspId + dfspCurrency.currency
+      if (!uniqueDfspCurrencyIds[key]) {
+        uniqueDfspCurrencyIds[key] = true
+        dfspCurrencies.push(dfspCurrency)
       }
 
-      rows.push({ ...masterSpec, ...specAccount })
+      rows.push({ ...dfspRoot, ...dfspCurrency })
     })
 
     return {
-      masterSpecsWithSpecAccounts: rows,
-      masterSpecs,
-      specAccounts
+      dfspRootAndCurrency: rows,
+      dfspRoots,
+      dfspCurrencies
     }
   }
 
   public async getDfspCurrency(dfspId: string, currency: string):
-    Promise<QueryResultWithNotFound<SpecAccount>> {
-
+    Promise<QueryResultWithNotFound<DfspCurrency>> {
     const row = await this.db(TABLE_DFSP_CURRENCY).where({ dfspId, currency }).select('*').first()
     if (!row) {
       return {
@@ -641,26 +631,27 @@ export default class SpecStore {
 
     return {
       type: 'SUCCESS',
-      result: SpecStore.hydrateSpecAccount(row)
+      result: SpecStore.hydrateDfspCurrency(row)
     };
   }
 
-  public async getDfspCurrencies(id: string): Promise<Array<SpecAccount>> {
+  public async getDfspCurrencies(id: string): Promise<Array<DfspCurrency>> {
     const rows = await this.db(TABLE_DFSP_CURRENCY).where({ dfspId: id }).select('*')
-    return rows.map(SpecStore.hydrateSpecAccount)
+    return rows.map(SpecStore.hydrateDfspCurrency)
   }
 
-  public async getAllDfspCurrencies(dfsps: Array<string>): Promise<Array<SpecAccount>> {
+  // TODO: should we auto transform this to be a map of (dfspId,currency) => DfspCurrency ?
+  // Or even better a proper data structure?
+  public async getDfspCurrenciesAll(dfsps: Array<string>): Promise<Array<DfspCurrency>> {
     const rows = await this.db(TABLE_DFSP_CURRENCY).whereIn('dfspId', dfsps).select('*')
-    return rows.map(SpecStore.hydrateSpecAccount)
+    return rows.map(SpecStore.hydrateDfspCurrency)
   }
-
 
   /**
-   * Look up the account within the spec for the dfspid and account id.
+   * Look up the account within the DfspCurrency for the dfspid and account id.
    */
-  public async getCurrencyCodeAndSpec(dfspId: string, accountId: bigint):
-    Promise<{ currency: string; code: AccountCode; spec: SpecAccount; }> {
+  public async lookupDfspCurrencyByAccountId(dfspId: string, accountId: bigint):
+    Promise<{code: AccountCode; currency: DfspCurrency; }> {
 
     const accountIdStr = accountId.toString()
     const row = await this.db(TABLE_DFSP_CURRENCY)
@@ -680,46 +671,46 @@ export default class SpecStore {
       .first()
 
     if (!row) {
-      throw new Error(`getCurrencyCodeAndSpec() not found for dfspId: ${dfspId}, `
+      throw new Error(`lookupDfspCurrencyByAccountId() not found for dfspId: ${dfspId}, `
         + `accountId: ${accountId}.`)
     }
 
-    const spec = SpecStore.hydrateSpecAccount(row)
+    const currency = SpecStore.hydrateDfspCurrency(row)
 
     // Check which field matched.
     let code: AccountCode
-    if (spec.deposit === accountId) {
+    if (currency.deposit === accountId) {
       code = AccountCode.Deposit
-    } else if (spec.unrestricted === accountId) {
+    } else if (currency.unrestricted === accountId) {
       code = AccountCode.Unrestricted
-    } else if (spec.unrestrictedLock === accountId) {
+    } else if (currency.unrestrictedLock === accountId) {
       code = AccountCode.Unrestricted_Lock
-    } else if (spec.restricted === accountId) {
+    } else if (currency.restricted === accountId) {
       code = AccountCode.Restricted
-    } else if (spec.reserved === accountId) {
+    } else if (currency.reserved === accountId) {
       code = AccountCode.Reserved
-    } else if (spec.commitedOutgoing === accountId) {
+    } else if (currency.commitedOutgoing === accountId) {
       code = AccountCode.Committed_Outgoing
-    } else if (spec.clearingCredit === accountId) {
+    } else if (currency.clearingCredit === accountId) {
       code = AccountCode.Clearing_Credit
-    } else if (spec.clearingSetup === accountId) {
+    } else if (currency.clearingSetup === accountId) {
       code = AccountCode.Clearing_Setup
-    } else if (spec.clearingLimit === accountId) {
+    } else if (currency.clearingLimit === accountId) {
       code = AccountCode.Clearing_Limit
     } else {
-      throw new Error(`getCurrencyCodeAndSpec() - matched row ` +
+      throw new Error(`lookupDfspCurrencyByAccountId() - matched row ` +
         `but no field matched accountId: ${accountId}`
       )
     }
 
     return {
-      currency: spec.currency,
       code,
-      spec
+      currency
     }
   }
 
-  public async newAccountSpec(dfspId: string, currency: string, now: Date, ids: Array<number>): Promise<SpecAccount> {
+  public async createDfspCurrency(dfspId: string, currency: string, now: Date, ids: Array<number>):
+    Promise<DfspCurrency> {
     let trx: Knex.Transaction | undefined
     assert(ids.length >= 9)
     try {
@@ -728,10 +719,10 @@ export default class SpecStore {
       const row = await trx(TABLE_DFSP_CURRENCY).where({ dfspId, currency }).select('*').first()
       if (row) {
         await trx.commit()
-        return SpecStore.hydrateSpecAccount(row)
+        return SpecStore.hydrateDfspCurrency(row)
       }
 
-      const spec: SpecAccount = {
+      const dfspCurrency: DfspCurrency = {
         dfspId,
         currency,
         // Note: These orders are important for the fuzz tests, to ensure determinism between
@@ -750,11 +741,11 @@ export default class SpecStore {
         changedDateSettlement: now,
         createdDate: now,
       };
-      await trx(TABLE_DFSP_CURRENCY).insert(spec)
+      await trx(TABLE_DFSP_CURRENCY).insert(dfspCurrency)
 
       await trx.commit()
 
-      return spec
+      return dfspCurrency
     } catch (err) {
       if (trx) {
         await trx.rollback()
@@ -775,27 +766,6 @@ export default class SpecStore {
 
   public async saveFundingSpec(funding: any): Promise<void> {
     return
-  }
-
-  private static hydrateSpecAccount(row: any): SpecAccount {
-    const spec: SpecAccount = {
-      dfspId: row.dfspId,
-      currency: row.currency,
-      deposit: BigInt(row.deposit),
-      unrestricted: BigInt(row.unrestricted),
-      unrestrictedLock: BigInt(row.unrestrictedLock),
-      restricted: BigInt(row.restricted),
-      reserved: BigInt(row.reserved),
-      commitedOutgoing: BigInt(row.commitedOutgoing),
-      clearingCredit: BigInt(row.clearingCredit),
-      clearingSetup: BigInt(row.clearingSetup),
-      clearingLimit: BigInt(row.clearingLimit),
-      changedDate: row.changedDate,
-      changedDatePosition: row.changedDatePosition,
-      changedDateSettlement: row.changedDateSettlement,
-      createdDate: row.createdDate,
-    }
-    return spec
   }
 
   public async saveTransferSpecs(specs: Array<SpecTransferCreate>): Promise<Array<SaveSpecTransferResult>> {
@@ -930,5 +900,55 @@ export default class SpecStore {
       .update({
         changedDateSettlement: now,
       })
+  }
+
+  private static hydrateCurrencyConfig(row: any): CurrencyConfig {
+    return {
+      currency: row.currency,
+      idOperation: row.ledgerOperation,
+      idControl: row.ledgerControl,
+      settlementBalance: BigInt(row.settlementBalance),
+      assetScale: row.assetScale
+    }
+  }
+
+  private static hydrateLegacyHubCurrency(row: any): LegacyHubCurrency {
+    return {
+      id: row.id,
+      currency: row.currency,
+      accountType: row.accountType,
+      createdDate: row.createdDate,
+      changedDate: row.changedDate,
+    }
+  }
+
+  private static hydrateDfspRoot(row: any): DfspRoot {
+    return {
+      dfspId: row.dfspId,
+      // TODO: rename.
+      id: BigInt(row.masterAccountId),
+      isProxy: Boolean(row.isProxy),
+    }
+  }
+
+  private static hydrateDfspCurrency(row: any): DfspCurrency {
+    const dfspCurrency: DfspCurrency = {
+      dfspId: row.dfspId,
+      currency: row.currency,
+      deposit: BigInt(row.deposit),
+      unrestricted: BigInt(row.unrestricted),
+      unrestrictedLock: BigInt(row.unrestrictedLock),
+      restricted: BigInt(row.restricted),
+      reserved: BigInt(row.reserved),
+      commitedOutgoing: BigInt(row.commitedOutgoing),
+      clearingCredit: BigInt(row.clearingCredit),
+      clearingSetup: BigInt(row.clearingSetup),
+      clearingLimit: BigInt(row.clearingLimit),
+      changedDate: row.changedDate,
+      changedDatePosition: row.changedDatePosition,
+      changedDateSettlement: row.changedDateSettlement,
+      createdDate: row.createdDate,
+    }
+    return dfspCurrency
   }
 }
