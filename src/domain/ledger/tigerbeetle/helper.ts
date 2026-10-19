@@ -269,6 +269,22 @@ export default class Helper {
         code: AccountCode.Clearing_Credit,
         flags: AccountFlags.debits_must_not_exceed_credits,
       },
+      // Control 
+      {
+        ...Helper.createAccountTemplate,
+        id: spec.control,
+        ledger: currencyLedger.idControl,
+        code: AccountCode.Net_Debit_Cap_Control,
+        flags: 0,
+      },
+      // Net Debit Cap
+      {
+        ...Helper.createAccountTemplate,
+        id: spec.netDebitCap,
+        ledger: currencyLedger.idControl,
+        code: AccountCode.Net_Debit_Cap,
+        flags: 0,
+      },
     ]
 
     return accounts
@@ -417,6 +433,81 @@ export default class Helper {
         credit_account_id: 0n,
         amount: 0n,
         ledger: ledger.idOperation,
+        code: TransferCode.Net_Debit_Cap_Lock,
+        flags: TransferFlags.void_pending_transfer
+      },
+    ]
+
+    return transfers
+  }
+
+  public buildTranfersSetNetDebitCap(
+    dfspCurrency: DfspCurrency,
+    currencyConfig: CurrencyConfig,
+    amountNetDebitCap: bigint,
+    netDebitCapType: 'LIMITED' | 'UNLIMITED',
+    alarmPercentage: number,
+  ): Array<Transfer> {
+
+    const idLockTransfer = id()
+    const transfers: Array<Transfer> = [
+      // NDC is encoded on the latest Transfer to the net debic cap control account.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: dfspCurrency.control,
+        credit_account_id: dfspCurrency.netDebitCap,
+        amount: amountNetDebitCap,
+        ledger: currencyConfig.idControl,
+        user_data_64: BigInt(alarmPercentage),
+        user_data_32: netDebitCapType === 'LIMITED' ? 1 : 0,
+        code: TransferCode.Set_Net_Debit_Cap,
+        flags: TransferFlags.linked
+      },
+
+      // Sweep total balance from Restricted to Unrestricted
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: dfspCurrency.restricted,
+        credit_account_id: dfspCurrency.unrestricted,
+        amount: amount_max,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
+        flags: TransferFlags.linked | TransferFlags.balancing_debit
+      },
+      // Move the new NDC amount out to a temporary account.
+      // if the new NDC amount is unlimited, then move all into temporary account.
+      {
+        ...Helper.createTransferTemplate,
+        id: idLockTransfer,
+        debit_account_id: dfspCurrency.unrestricted,
+        credit_account_id: dfspCurrency.unrestrictedLock,
+        amount: netDebitCapType === 'LIMITED' ? amountNetDebitCap : amount_max,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Lock,
+        flags: TransferFlags.linked | TransferFlags.balancing_debit | TransferFlags.pending
+      },
+      // Sweep whatever remains in Unrestricted to Restricted.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: dfspCurrency.unrestricted,
+        credit_account_id: dfspCurrency.restricted,
+        amount: amount_max,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
+        flags: TransferFlags.linked | TransferFlags.balancing_debit
+      },
+      // Void the pending limit lock transfer.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        pending_id: idLockTransfer,
+        debit_account_id: 0n,
+        credit_account_id: 0n,
+        amount: 0n,
+        ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
         flags: TransferFlags.void_pending_transfer
       },

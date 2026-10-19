@@ -441,6 +441,19 @@ export class LedgerSql implements Ledger {
     assert(typeof cmd.alarmPercentage === 'number')
 
     try {
+      // Check if position account is active.
+      const positionAccount = await ParticipantFacade.getByNameAndCurrency(
+        cmd.dfspId,
+        cmd.currency,
+        Enum.Accounts.LedgerAccountType.POSITION,
+      )
+      if (!positionAccount) {
+        return Result.commandResultFailure(new Error(`Position account not found for ${cmd.dfspId} ${cmd.currency}`))
+      }
+      if (!positionAccount.currencyIsActive) {
+        return Result.commandResultFailure(new Error('Position account is inactive'))
+      }
+
       const payload = {
         currency: cmd.currency,
         limit: {
@@ -649,11 +662,11 @@ export class LedgerSql implements Ledger {
       const result = await Participant.getLimits(query.dfspId, legacyQuery)
       if (result.length === 0) {
         return {
-          type: 'FAILURE',
+          type: 'NOT_FOUND',
           error: ErrorHandler.Factory.createFSPIOPError(
             ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-            `getNetDebitCap() - no limits found for dfspId: ${query.dfspId}, 
-            ` + `currency: ${query.currency}, type: 'NET_DEBIT_CAP`
+            `getNetDebitCap() - no limits found for dfspId: ${query.dfspId}, ` + 
+            `currency: ${query.currency}, type: 'NET_DEBIT_CAP`
           )
         }
       }
@@ -671,7 +684,6 @@ export class LedgerSql implements Ledger {
         }
 
       }
-
     } catch (err: any) {
       if (err.message === 'participant not found') {
         return {
@@ -679,10 +691,7 @@ export class LedgerSql implements Ledger {
           error: err
         }
       }
-      return {
-        type: 'FAILURE',
-        error: err
-      }
+      return Helper.failure(err)
     }
   }
 
