@@ -1,23 +1,11 @@
 ## Add a comment indicating the reason for each rejected dependency upgrade added to this list.
 reject: [
-  # central-services-shared 18.38.x ships two behavioural regressions in a minor release, both
-  # reproduced here on 2026-08-19: (1) Util.omitNil/mergeAndOmitNil were de-lodashed and the
-  # replacement filters only null, so undefined-valued keys survive - TransformService.toTransfer
-  # gains an "expiration: undefined" key and 3 unit tests fail (test/unit/domain/transfer/
-  # transform.test.js); (2) the APIDocumentation plugin option was renamed documentPath ->
-  # pathToSwaggerFile, breaking plugin registration. Hold at 18.37.0 (same as main) until a
-  # shared release restores omitNil nil-semantics; then re-apply the option rename with the bump.
-  "@mojaloop/central-services-shared",
-  # tape 5.x enforces strict .end()/plan semantics that break this repo's stream-style event tests
-  # (verified against the tape 5.10.x line); the suite also runs under the tapes wrapper, which is bound to tape 4.
+  # tape 5.x enforces strict .end() ordering: seven forEach(async ...) loops in
+  # test/unit/domain/participant/index.test.js are never awaited, so their assertions land after
+  # assert.end() (16 failures on 5.10.3, re-tested 2026-10-20); awaiting them exposes three tests
+  # (getById, update, ...) whose bodies never ran. Needs a test fix before the tape 5 move.
   "tape",
   # ilp-packet >2.2.0 (3.x is currently an alpha prerelease) implements a newer ILP packet format
   # that is not compatible with the Mojaloop Specification.
-  "ilp-packet",
-  # database-lib 11.3.8 regression (verified 2026-07-07): Table._addWhere now runs `assert(value)` on every
-  # criteria value, so legitimate falsy filters throw, e.g. transferExtension.getByTransferId's
-  # { isFulfilment: false, isError: false } fails with "AssertionError [ERR_ASSERTION]: The expression
-  # evaluated to a falsy value: assert(value)" (@mojaloop/database-lib/src/table.js:111). Hold at 11.3.7
-  # until the upstream assert is fixed to allow falsy (non-undefined/null) criteria values.
-  "@mojaloop/database-lib"
+  "ilp-packet"
 ]
