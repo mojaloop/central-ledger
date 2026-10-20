@@ -14,17 +14,17 @@ export type CmdHubCurrencyEnable = {
   accountIds: Array<number>
 }
 
-export type CmdSetNetDebitCap = {
-  dfspId: string,
-  currency: string,
-  type: 'UNLIMITED',
-} | {
-  dfspId: string,
-  currency: string,
-  alarmPercentage: number,
-  amount: bigint,
-  type: 'LIMITED'
-}
+// export type CmdSetNetDebitCap = {
+//   dfspId: string,
+//   currency: string,
+//   type: 'UNLIMITED',
+// } | {
+//   dfspId: string,
+//   currency: string,
+//   alarmPercentage: number,
+//   amount: bigint,
+//   type: 'LIMITED'
+// }
 
 export type EnableHubCurrencyResponse = {
   type: 'OK'
@@ -796,77 +796,6 @@ export default class SpecStore {
     }
   }
 
-  public async getNetDebitCap(dfspId: string, currency: string): Promise<QueryResultWithNotFound<NetDebitCap>> {
-    const row = await this.db(TABLE_NET_DEBIT_CAP).where({
-      dfspId, currency
-    })
-    .select('*')
-    .first()
-
-    if (!row) {
-      return {
-        type: 'NOT_FOUND',
-        error: new Error(`No netDebitCap found for dfspId: ${dfspId}, currency: ${currency}`)
-      }
-    }
-
-    return {
-      type: 'SUCCESS', 
-      result: SpecStore.hydrateNetDebitCap(row)
-    } as QueryResultWithNotFound<NetDebitCap>
-  }
-
-  public async getNetDebitCaps(dfsps: Array<string>):
-    Promise<Array<NetDebitCap>> {
-    const rows = await this.db(TABLE_NET_DEBIT_CAP).whereIn('dfspId', dfsps).select()
-    return rows.map(SpecStore.hydrateNetDebitCap)
-  }
-
-  public async saveNetDebitCap(cmd: CmdSetNetDebitCap): Promise<void> {
-    let trx: Knex.Transaction | undefined
-    try {
-      trx = await this.db.transaction()
-
-      let record: any
-      switch (cmd.type) {
-        case 'UNLIMITED': {
-          record = ({
-            dfspId: cmd.dfspId,
-            currency: cmd.currency,
-            type: cmd.type,
-            alarmPercentage: null,
-            amount: null,
-          })
-          break
-        }
-        case 'LIMITED': {
-          record = {
-            dfspId: cmd.dfspId,
-            currency: cmd.currency,
-            type: cmd.type,
-            alarmPercentage: cmd.alarmPercentage,
-            amount: cmd.amount.toString()
-          }
-          break;
-        }
-        throw new Error(`unhandled cmd.type: ${cmd.type}.`)
-      }
-
-      await trx(TABLE_NET_DEBIT_CAP)
-        .insert(record)
-        .onConflict(['dfspId', 'currency'])
-        .merge(['type', 'amount', 'alarmPercentage'])
-      await trx.commit()
-    } catch (err) {
-      if (trx) {
-        await trx.rollback()
-      }
-
-      throw err
-    }
-
-  }
-
   public async saveFundingSpec(funding: any): Promise<void> {
     return
   }
@@ -1057,26 +986,26 @@ export default class SpecStore {
     return dfspCurrency
   }
 
-  private static hydrateNetDebitCap(row: any): NetDebitCap {
-    assertOneOf(row.type, ['LIMITED', 'UNLIMITED'])
-    if (row.type === 'UNLIMITED') {
-      assert(row.amount === null,
-        `hydrateNetDebitCap - expected amount to be null when type == UNLIMITED.`
-      )
+  // private static hydrateNetDebitCap(row: any): NetDebitCap {
+  //   assertOneOf(row.type, ['LIMITED', 'UNLIMITED'])
+  //   if (row.type === 'UNLIMITED') {
+  //     assert(row.amount === null,
+  //       `hydrateNetDebitCap - expected amount to be null when type == UNLIMITED.`
+  //     )
 
-      return {
-        type: 'UNLIMITED',
-        dfspId: row.dfspId,
-        currency: row.currency,
-      }
-    }
+  //     return {
+  //       type: 'UNLIMITED',
+  //       dfspId: row.dfspId,
+  //       currency: row.currency,
+  //     }
+  //   }
 
-    return {
-      type: 'LIMITED',
-      dfspId: row.dfspId,
-      amount: BigInt(row.amount),
-      currency: row.currency,
-      alarmPercentage: Number.parseFloat(row.alarmPercentage),
-    }
-  }
+  //   return {
+  //     type: 'LIMITED',
+  //     dfspId: row.dfspId,
+  //     amount: BigInt(row.amount),
+  //     currency: row.currency,
+  //     alarmPercentage: Number.parseFloat(row.alarmPercentage),
+  //   }
+  // }
 }

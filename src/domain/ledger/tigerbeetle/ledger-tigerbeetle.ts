@@ -731,7 +731,7 @@ export class LedgerTigerBeetle implements Ledger {
       }
 
       // Lookup the net debit cap.
-      const netDebitCapResult = await this.specStore.getNetDebitCap(cmd.dfspId, cmd.currency)
+      const netDebitCapResult = await this.getInternalNetDebitCap(cmd.dfspId, cmd.currency)
       if (netDebitCapResult.type === 'NOT_FOUND') {
         return { type: 'NOT_FOUND'}
       }
@@ -860,8 +860,7 @@ export class LedgerTigerBeetle implements Ledger {
         return Helper.failure(spec.error)
       }
       const currency = await this.specStore.getCurrencyConfig(cmd.currency)
-      // const netDebitCap = await this.getInternalNetDebitCap(cmd.dfspId, cmd.currency)
-      const netDebitCapResult = await this.specStore.getNetDebitCap(cmd.dfspId, cmd.currency)
+      const netDebitCapResult = await this.getInternalNetDebitCap(cmd.dfspId, cmd.currency)
       const dfspRoot = await this.specStore.getDfspRoot(cmd.dfspId)
 
       if (netDebitCapResult.type !== 'SUCCESS') {
