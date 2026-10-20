@@ -441,6 +441,19 @@ export class LedgerSql implements Ledger {
     assert(typeof cmd.alarmPercentage === 'number')
 
     try {
+      // Check if position account is active.
+      const positionAccount = await ParticipantFacade.getByNameAndCurrency(
+        cmd.dfspId,
+        cmd.currency,
+        Enum.Accounts.LedgerAccountType.POSITION,
+      )
+      if (!positionAccount) {
+        return Result.commandResultFailure(new Error(`Position account not found for ${cmd.dfspId} ${cmd.currency}`))
+      }
+      if (!positionAccount.currencyIsActive) {
+        return Result.commandResultFailure(new Error('Position account is inactive'))
+      }
+
       const payload = {
         currency: cmd.currency,
         limit: {

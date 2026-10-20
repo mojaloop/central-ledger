@@ -805,9 +805,7 @@ export default class SpecStore {
 
   public async getNetDebitCaps(dfsps: Array<string>):
     Promise<Array<NetDebitCap>> {
-    // Mock result for now.
     const rows = await this.db(TABLE_NET_DEBIT_CAP).whereIn('dfspId', dfsps).select()
-    
     return rows.map(SpecStore.hydrateNetDebitCap)
   }
 

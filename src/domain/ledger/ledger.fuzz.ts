@@ -269,7 +269,7 @@ class LedgerFuzzer {
     deposit: 1,
     withdrawPrepare: 1,
     withdrawCommit: 1,
-    withdrawAbort: 0,
+    withdrawAbort: 1,
     getHubAccounts: 1,
     getDfsp: 1,
     getAllDfsps: 1,
@@ -277,7 +277,7 @@ class LedgerFuzzer {
     getAllDfspAccounts: 1,
     setNetDebitCap: 1,
     getNetDebitCap: 1,
-    getNetDebitCaps: 0,
+    getNetDebitCaps: 1,
     prepare: 0,
     fulfil: 0,
 

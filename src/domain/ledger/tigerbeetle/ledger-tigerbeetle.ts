@@ -1491,6 +1491,8 @@ export class LedgerTigerBeetle implements Ledger {
       const dfspCurrency = dfspCurrencyResult.result
 
       // Write Last, Read First.
+      // This is subtle, but we only want to store this record iff the TigerBeetle transfers
+      // succeed.
       await this.deps.specStore.saveNetDebitCap({
         type: cmd.netDebitCapType,
         amount: amountNetDebitCap,
@@ -1545,7 +1547,7 @@ export class LedgerTigerBeetle implements Ledger {
     assert(query.currency)
     assert(query.dfspId)
 
-    // Backwards compatiblity - if the currency isn't doesn't exist return NOT_FOUND instead of 
+    // Backwards compatablity - if the currency isn't doesn't exist return NOT_FOUND instead of 
     // throwing an error
     let currency
     try {
@@ -1606,8 +1608,32 @@ export class LedgerTigerBeetle implements Ledger {
     Promise<QueryResultWithNotFound<Array<LegacyLimitItem>>> {
     assert(query.dfspId)
 
+    // Backwards compatibility, return NOT_FOUND if the dfsp does not exist.
     try {
-      return Helper.failure(new Error(`Not implemented.`))
+      await this.specStore.getDfspRoot(query.dfspId)
+    } catch (err) {
+      return {
+        type: 'NOT_FOUND',
+        error: new Error(`Dfsp not found for id: ${query.dfspId}.`)
+      }
+    }
+
+    try {
+      const dfspCurrencies = await this.specStore.getDfspCurrencies(query.dfspId)
+      const currencies = dfspCurrencies.map(dfspCurrency => dfspCurrency.currency)
+      const netDebitCaps: Array<LegacyLimitItem> = []
+      for (const currency of currencies) {
+        const netDebitCap = await this.getNetDebitCap({
+          dfspId: query.dfspId, currency
+        })
+        if (netDebitCap.type === 'SUCCESS') netDebitCaps.push({currency, limit: netDebitCap.result})
+      }
+
+     
+      return {
+        type: 'SUCCESS',
+        result: netDebitCaps
+      }
     } catch (err) {
       return Helper.failure(err)
     }
