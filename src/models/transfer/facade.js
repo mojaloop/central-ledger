@@ -449,12 +449,12 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       if (participant) {
         participants[name].id = participant.participantId
       }
-      // If determiningTransferCheckResult.participantCurrencyValidationList contains the participant name, then get the participantCurrencyId
-      const participantCurrency = determiningTransferCheckResult && determiningTransferCheckResult.participantCurrencyValidationList.find(participantCurrencyItem => participantCurrencyItem.participantName === name)
-      if (participantCurrency) {
-        const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(participantCurrency.participantName, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
-        participants[name].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId
-      }
+      // Always try to look up the participantCurrencyId for each participant.
+      // If hasPassedValidation, it might not exist.
+      const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(
+        name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION
+      )
+      participants[name].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId ?? null
     }
 
     if (proxyObligation?.isInitiatingFspProxy) {
@@ -501,20 +501,28 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     let payerTransferParticipantRecord
     if (proxyObligation?.isInitiatingFspProxy) {
       const externalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(proxyObligation.initiatingFspProxyOrParticipantId)
+      const participant = participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId]
+      assert(participant, `Expected participant ${proxyObligation.initiatingFspProxyOrParticipantId.proxyId} in participants map`)
+      assert(participant.id, `participant.id not defined.`)
+
       payerTransferParticipantRecord = {
         transferId: payload.transferId,
-        participantId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].id,
-        participantCurrencyId: participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId].participantCurrencyId,
+        participantId: participant.id,
+        participantCurrencyId: participant.participantCurrencyId,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
         amount: payload.amount.amount,
         externalParticipantId
       }
     } else {
+      const participant = participants[payload.payerFsp]
+      assert(participant, `Expected participant ${payload.payerFsp} in participants map`)
+      assert(participant.id, `participant.id not defined.`)
+
       payerTransferParticipantRecord = {
         transferId: payload.transferId,
-        participantId: participants[payload.payerFsp].id,
-        participantCurrencyId: participants[payload.payerFsp].participantCurrencyId,
+        participantId: participant.id,
+        participantCurrencyId: participant.participantCurrencyId,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
         amount: payload.amount.amount
@@ -555,7 +563,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       const result = await knex.transaction(async (trx) => {
         try {
           await knex('transfer').transacting(trx).insert(transferRecord)
+          assert(payerTransferParticipantRecord.participantCurrencyId)
           await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
+          assert(payeeTransferParticipantRecord.participantCurrencyId)
           await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
           payerTransferParticipantRecord.name = payload.payerFsp
           payeeTransferParticipantRecord.name = payload.payeeFsp
@@ -590,12 +600,14 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       ).startTimer()
       await knex('transfer').insert(transferRecord)
       try {
+        assert(payerTransferParticipantRecord.participantCurrencyId)
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
         logger.warn('Payer transferParticipant insert error', err)
         histTimerSaveTransferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
+        assert(payeeTransferParticipantRecord.participantCurrencyId)
         await knex('transferParticipant').insert(payeeTransferParticipantRecord)
       } catch (err) {
         logger.warn('Payee transferParticipant insert error:', err)

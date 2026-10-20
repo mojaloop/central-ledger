@@ -192,9 +192,10 @@ export default class Helper {
         ...Helper.createAccountTemplate,
         id: masterAccountId,
         ledger: Helper.ledgerIds.globalControl,
+        // TODO: rename this code DfspRoot
         code: AccountCode.Dfsp,
         flags: 0,
-        // Store the application-side DFSP Creation time on the Master Account.
+        // Store the application-side DFSP Creation time on the Root Account.
         user_data_64: BigInt((new Date()).getTime())
       },
       // Deposit
@@ -451,6 +452,10 @@ export default class Helper {
 
     const idLockTransfer = id()
     const transfers: Array<Transfer> = [
+      // TODO: add in the 
+      // CTL DR dfsp_a:netDebitCap  CR dfsp_a:control          10000 balancing_debit
+      // to reset the amount of netDebitCap
+
       // NDC is encoded on the latest Transfer to the net debic cap control account.
       {
         ...Helper.createTransferTemplate,
@@ -592,8 +597,16 @@ export default class Helper {
         ilpPacket: prepare.payload.ilpPacket,
       })
 
+      // DRCR Example Snippet:
+      // GLB DR dfsp_a:root           CR dfsp_b:root             45 pending ^3
+      // USD DR dfsp_a:clearingSetup  CR dfsp_a:clearingLimit    45
+      // USD DR dfsp_a:clearingCredit CR dfsp_a:clearingSetup    45 balancing_debit
+      // USD DR dfsp_a:unrestricted   CR dfsp_a:clearingSetup    45 balancing_debit
+      // USD DR dfsp_a:clearingSetup  CR dfsp_a:reserved         45
+      // USD DR dfsp_a:clearingLimit  CR dfsp_a:clearingSetup 10000 balancing_credit
+
       transfers.push(
-        // Ensure both Participants are active
+        // 1. Ensure both Participants are active.
         {
           ...Helper.createTransferTemplate,
           id: prepareId,
@@ -607,24 +620,26 @@ export default class Helper {
           code: TransferCode.Clearing_Active_Check,
           flags: TransferFlags.linked | TransferFlags.pending,
         },
-        // Setup the limit account for this payment.
+        // Note: This is the Multi-Debit, single Credit pattern from TigerBeetle.
+        // https://docs.tigerbeetle.com/coding/recipes/multi-debit-credit-transfers/#multiple-debits-single-credit-balancing-debits
+        // 2. Setup the limit account for this payment.
         {
           ...Helper.createTransferTemplate,
           id: id(),
           debit_account_id: specPayer.clearingSetup,
-          credit_account_id: specPayee.clearingLimit,
+          credit_account_id: specPayer.clearingLimit,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
           ledger: ledger.idOperation,
           code: 1,
           flags: TransferFlags.linked
         },
-        // Reserve funds for Participant A from Clearing Credit.
+        // 3. Reserve funds for Participant A from Clearing Credit.
         {
           ...Helper.createTransferTemplate,
           id: id(),
           debit_account_id: specPayer.clearingCredit,
-          credit_account_id: specPayee.clearingSetup,
+          credit_account_id: specPayer.clearingSetup,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
           ledger: ledger.idOperation,
@@ -632,12 +647,12 @@ export default class Helper {
           flags: TransferFlags.linked | TransferFlags.balancing_debit
             | TransferFlags.balancing_credit
         },
-        // Reserve funds for Participant A from Unrestricted
+        // 3. Reserve funds for Participant A from Unrestricted.
         {
           ...Helper.createTransferTemplate,
           id: id(),
           debit_account_id: specPayer.unrestricted,
-          credit_account_id: specPayee.clearingSetup,
+          credit_account_id: specPayer.clearingSetup,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
           ledger: ledger.idOperation,
@@ -645,7 +660,7 @@ export default class Helper {
           flags: TransferFlags.linked | TransferFlags.balancing_debit
             | TransferFlags.balancing_credit
         },
-        // Reserve funds for Participant A from Clearing_Setup
+        // 4. The money movement.
         {
           ...Helper.createTransferTemplate,
           id: prepareId + 3n,
@@ -655,27 +670,31 @@ export default class Helper {
           user_data_128: prepareId,
           ledger: ledger.idOperation,
           code: TransferCode.Clearing_Reserve,
-          // flags: TransferFlags.linked
-          flags: 0
+          flags: TransferFlags.linked
         },
-        // // ??
-        // {
-        //   ...Helper.createTransferTemplate,
-        //   id: id(),
-        //   debit_account_id: specPayer.clearingLimit,
-        //   credit_account_id: specPayee.clearingSetup,
-        //   amount: amount_max,
-        //   user_data_128: prepareId,
-        //   ledger: ledger.ledgerOperation,
-        //   code: 1,
-        //   flags: TransferFlags.balancing_credit
-        // },
+        // 5. Close the loop, resetting clearingSetup.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          debit_account_id: specPayer.clearingLimit,
+          credit_account_id: specPayer.clearingSetup,
+          amount: amount_max,
+          user_data_128: prepareId,
+          ledger: ledger.idOperation,
+          code: 1,
+          flags: TransferFlags.balancing_credit
+        },
       )
     }
 
     return transfers
   }
 
+  /**
+   * Build the TigerBeetle Transfers for the fulfil inputs.
+   * Note that this is using the existing accounting model, which gives the payee dfsp clearing
+   * credit above their net debit cap. 
+   */
   public buildTransfersFulfil(
     fulfils: Array<FulfilHandlerInput>,
     specTransfers: Array<SpecTransfer>,
@@ -713,8 +732,12 @@ export default class Helper {
         ilpPacket: specTransfer.ilpPacket,
       })
 
+      // DRCR Example Snippet:
+      // GLB DR dfsp_a:root     CR dfsp_b:root           45 post_pending_transfer ^1
+      // USD DR dfsp_a:reserved CR dfsp_b:clearingCredit 45
+
       transfers.push(
-        // Ensure both Participants are active
+        // 1. Complete the logical payment.
         {
           ...Helper.createTransferTemplate,
           id: id(),
@@ -727,30 +750,11 @@ export default class Helper {
           code: 0,
           flags: TransferFlags.linked | TransferFlags.post_pending_transfer,
         },
-        // Fulfil payment for Participant A.
-        {
-          ...Helper.createTransferTemplate,
-          // TODO(LD): Settlement: if this id is derived from the Mojaloop Id
-          // MojaloopId + 1, we can use that to fetch all records we need for
-          // settlement efficently from TigerBeetle
-          id: id(),
-          debit_account_id: specPayer.reserved,
-          credit_account_id: specPayee.commitedOutgoing,
-          amount: amountTigerBeetle,
-          user_data_128: prepareId,
-          ledger: ledger.idOperation,
-          code: TransferCode.Clearing_Fulfil,
-          flags: TransferFlags.linked
-        },
-        // Note: we always assume Payee Instant Credit is enabled as that is the legacy behaviour
-        // Future implementations where the Payee Instant Credit can be disabled should skip the
-        // following
-
-        // Make credit available for transfers.
+        // 2. Make credit available for transfers.
         {
           ...Helper.createTransferTemplate,
           id: id(),
-          debit_account_id: specPayee.commitedOutgoing,
+          debit_account_id: specPayee.reserved,
           credit_account_id: specPayee.clearingCredit,
           amount: amountTigerBeetle,
           user_data_128: prepareId,

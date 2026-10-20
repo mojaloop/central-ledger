@@ -3345,38 +3345,6 @@ COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 --
--- Table structure for table `specNetDebitCap`
---
-
-DROP TABLE IF EXISTS `specNetDebitCap`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `specNetDebitCap` (
-  `dfspId` varchar(255) NOT NULL,
-  `currency` varchar(3) NOT NULL,
-  `amount` bigint(20) DEFAULT NULL,
-  `alarmPercentage` decimal(5,2) DEFAULT NULL,
-  `type` enum('LIMITED','UNLIMITED') DEFAULT NULL,
-  PRIMARY KEY (`dfspId`,`currency`),
-  KEY `specnetdebitcap_currency_foreign` (`currency`),
-  CONSTRAINT `specnetdebitcap_currency_foreign` FOREIGN KEY (`currency`) REFERENCES `currency` (`currencyId`),
-  CONSTRAINT `specnetdebitcap_dfspid_foreign` FOREIGN KEY (`dfspId`) REFERENCES `specDfspRoot` (`dfspId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `specNetDebitCap`
---
-
-SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
-LOCK TABLES `specNetDebitCap` WRITE;
-/*!40000 ALTER TABLE `specNetDebitCap` DISABLE KEYS */;
-/*!40000 ALTER TABLE `specNetDebitCap` ENABLE KEYS */;
-UNLOCK TABLES;
-COMMIT;
-SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
-
---
 -- Table structure for table `specTransfer`
 --
 
@@ -4097,4 +4065,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-10-20  9:19:47
+-- Dump completed on 2026-10-20 15:18:16
