@@ -269,6 +269,22 @@ export default class Helper {
         code: AccountCode.Clearing_Credit,
         flags: AccountFlags.debits_must_not_exceed_credits,
       },
+      // Control 
+      {
+        ...Helper.createAccountTemplate,
+        id: spec.control,
+        ledger: currencyLedger.idControl,
+        code: AccountCode.Net_Debit_Cap_Control,
+        flags: 0,
+      },
+      // Net Debit Cap
+      {
+        ...Helper.createAccountTemplate,
+        id: spec.netDebitCap,
+        ledger: currencyLedger.idControl,
+        code: AccountCode.Net_Debit_Cap,
+        flags: 0,
+      },
     ]
 
     return accounts
@@ -429,11 +445,26 @@ export default class Helper {
     dfspCurrency: DfspCurrency,
     currencyConfig: CurrencyConfig,
     amountNetDebitCap: bigint,
-    netDebitCapType: 'LIMITED' | 'UNLIMITED'
+    netDebitCapType: 'LIMITED' | 'UNLIMITED',
+    alarmPercentage: number,
   ): Array<Transfer> {
-  
+
     const idLockTransfer = id()
     const transfers: Array<Transfer> = [
+      // NDC is encoded on the latest Transfer to the net debic cap control account.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: dfspCurrency.control,
+        credit_account_id: dfspCurrency.netDebitCap,
+        amount: amountNetDebitCap,
+        ledger: currencyConfig.idControl,
+        user_data_64: BigInt(alarmPercentage),
+        user_data_32: netDebitCapType === 'LIMITED' ? 1 : 0,
+        code: TransferCode.Set_Net_Debit_Cap,
+        flags: TransferFlags.linked
+      },
+
       // Sweep total balance from Restricted to Unrestricted
       {
         ...Helper.createTransferTemplate,

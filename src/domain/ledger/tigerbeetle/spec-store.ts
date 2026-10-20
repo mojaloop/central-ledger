@@ -114,6 +114,17 @@ export interface DfspAccountIds {
   clearingCredit: bigint
   clearingSetup: bigint
   clearingLimit: bigint
+
+  
+  /**
+   * Control account to act as counterparty for netDebitCap.
+   */
+  control: bigint,
+
+  /**
+   * TigerBeetle account id of the net debit cap control account.
+   */
+  netDebitCap: bigint
 }
 
 /**
@@ -731,7 +742,7 @@ export default class SpecStore {
   public async createDfspCurrency(dfspId: string, currency: string, now: Date, ids: Array<number>):
     Promise<DfspCurrency> {
     let trx: Knex.Transaction | undefined
-    assert(ids.length >= 9)
+    assert(ids.length >= 11)
     try {
       trx = await this.db.transaction()
 
@@ -755,6 +766,8 @@ export default class SpecStore {
         clearingCredit: BigInt(ids[6]),
         clearingSetup: BigInt(ids[7]),
         clearingLimit: BigInt(ids[8]),
+        control: BigInt(ids[9]),
+        netDebitCap: BigInt(ids[10]),
         changedDate: now,
         changedDatePosition: now,
         changedDateSettlement: now,
@@ -1034,6 +1047,8 @@ export default class SpecStore {
       clearingCredit: BigInt(row.clearingCredit),
       clearingSetup: BigInt(row.clearingSetup),
       clearingLimit: BigInt(row.clearingLimit),
+      control: BigInt(row.control),
+      netDebitCap: BigInt(row.netDebitCap),
       changedDate: row.changedDate,
       changedDatePosition: row.changedDatePosition,
       changedDateSettlement: row.changedDateSettlement,

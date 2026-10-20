@@ -76,6 +76,8 @@ exports.up = async (knex) => {
         t.bigInteger('clearingCredit').unsigned().notNullable()
         t.bigInteger('clearingSetup').unsigned().notNullable()
         t.bigInteger('clearingLimit').unsigned().notNullable()
+        t.bigInteger('control').unsigned().notNullable()
+        t.bigInteger('netDebitCap').unsigned().notNullable()
         t.dateTime('createdDate').notNullable()
         t.dateTime('changedDatePosition').notNullable()
         t.dateTime('changedDateSettlement').notNullable()

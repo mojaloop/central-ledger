@@ -253,6 +253,7 @@ export enum TransferCode {
   Net_Debit_Cap_Set_Unlimited = 50005,
   Net_Debit_Cap_Sweep_To_Unrestricted = 50006,
   Close_Account = 50007,
+  Set_Net_Debit_Cap = 60001,
 }
 
 export const TransferCodeDescription = {
@@ -271,6 +272,7 @@ export const TransferCodeDescription = {
   [TransferCode.Net_Debit_Cap_Set_Unlimited]: 'Set the new Net Debit Cap to unlimited.',
   [TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted]: 'Sweep total balance from Restricted to Unrestricted',
   [TransferCode.Close_Account]: 'Close account.',
+  [TransferCode.Set_Net_Debit_Cap]: 'Set net debit cap top ',
 }
 
 

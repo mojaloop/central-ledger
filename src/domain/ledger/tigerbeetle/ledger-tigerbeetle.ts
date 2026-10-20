@@ -23,7 +23,7 @@ import {
   PrepareHandlerInput
 } from "../../../handlers/payment-prepare";
 import { ApplicationConfig } from "../../../lib/config";
-import { assertBoolean } from '../../../lib/config/util';
+import { assertBoolean, assertOneOf, convertBigIntToNumber } from '../../../lib/config/util';
 import { logger } from "../../../shared/logger";
 import * as Result from '../shared/results';
 import {
@@ -84,7 +84,7 @@ const { TransferState } = Enum.Transfers
 
 import SettlementDomain from '../../settlement';
 import { default as Helper, default as LedgerTigerBeetleHelper } from './helper';
-import SpecStore, { CmdHubCurrencyEnable, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, InternalDfspRoot, SpecTransfer, SpecTransferUpdate } from './spec-store';
+import SpecStore, { CmdHubCurrencyEnable, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecTransfer, SpecTransferUpdate } from './spec-store';
 import { currencyList } from '../../../seeds/currency';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -645,6 +645,74 @@ export class LedgerTigerBeetle implements Ledger {
     }
   }
 
+  /**
+   * Look up the net debit cap for the dfsp + currency based on the last credit transfer to the 
+   * net debit cap control account.
+   */
+  private async getInternalNetDebitCap(dfspId: string, currency: string):
+    Promise<QueryResultWithNotFound<NetDebitCap>> {
+    const dfspCurrencyResult = await this.specStore.getDfspCurrency(dfspId, currency)
+    if (dfspCurrencyResult.type !== 'SUCCESS') {
+      return dfspCurrencyResult
+    }
+
+    const dfspCurrency = dfspCurrencyResult.result
+
+    // Lookup the last transfer to the net debit cap account.
+    const transfers = await this.deps.client.getAccountTransfers({
+      account_id: dfspCurrency.netDebitCap,
+      user_data_128: 0n,
+      user_data_64: 0n,
+      user_data_32: 0,
+      code: TransferCode.Set_Net_Debit_Cap,
+      timestamp_min: 0n,
+      timestamp_max: 0n,
+      limit: 10,
+      flags: AccountFilterFlags.credits |
+        AccountFilterFlags.reversed,
+    })
+
+    if (transfers.length === 0) {
+      // throw new Error(`No net debit cap found for dfspId: ${dfspId}, ${currency}.`)
+      // If no Net Debit Cap is explicitly set, we assume it is unlimited.
+      return {
+        type: 'SUCCESS',
+        result: {
+          type: 'UNLIMITED',
+          dfspId,
+          currency,
+        }
+      }
+    }
+
+
+    const last = transfers[0]
+    // 1 = LIMITED,  0 = UNLIMITED.
+    if (last.user_data_32 === 0) {
+      return {
+        type: 'SUCCESS',
+        result: {
+          type: 'UNLIMITED',
+          dfspId,
+          currency,
+        }
+      }
+    }
+    assert(last.user_data_32 === 1, 'Expected last.user_data_32 to be either 1 or 0.')
+    const alarmPercentage = convertBigIntToNumber(last.user_data_64)
+    const amount = last.amount
+    return {
+      type: 'SUCCESS',
+      result: {
+        type: 'LIMITED',
+        dfspId,
+        currency,
+        alarmPercentage,
+        amount
+      }
+    }
+  }
+
   public async deposit(cmd: DepositCommand): Promise<DepositResponse> {
     assert(cmd.amount)
     assert(cmd.currency)
@@ -792,9 +860,10 @@ export class LedgerTigerBeetle implements Ledger {
         return Helper.failure(spec.error)
       }
       const currency = await this.specStore.getCurrencyConfig(cmd.currency)
+      // const netDebitCap = await this.getInternalNetDebitCap(cmd.dfspId, cmd.currency)
       const netDebitCapResult = await this.specStore.getNetDebitCap(cmd.dfspId, cmd.currency)
       const dfspRoot = await this.specStore.getDfspRoot(cmd.dfspId)
-      
+
       if (netDebitCapResult.type !== 'SUCCESS') {
         return Helper.failure(netDebitCapResult.error)
       }
@@ -1493,19 +1562,20 @@ export class LedgerTigerBeetle implements Ledger {
       // Write Last, Read First.
       // This is subtle, but we only want to store this record iff the TigerBeetle transfers
       // succeed.
-      await this.deps.specStore.saveNetDebitCap({
-        type: cmd.netDebitCapType,
-        amount: amountNetDebitCap,
-        alarmPercentage: cmd.netDebitCapType === 'LIMITED' ? cmd.alarmPercentage : 0,
-        dfspId: cmd.dfspId,
-        currency: cmd.currency
-      })
-      
+      // await this.deps.specStore.saveNetDebitCap({
+      //   type: cmd.netDebitCapType,
+      //   amount: amountNetDebitCap,
+      //   alarmPercentage: cmd.netDebitCapType === 'LIMITED' ? cmd.alarmPercentage : 0,
+      //   dfspId: cmd.dfspId,
+      //   currency: cmd.currency
+      // })
+
       const transfers = this.helper.buildTranfersSetNetDebitCap(
         dfspCurrency,
         currencyConfig,
         amountNetDebitCap,
-        cmd.netDebitCapType
+        cmd.netDebitCapType,
+        cmd.netDebitCapType === 'LIMITED' ? cmd.alarmPercentage : 0,
       )
       const createTransfersResults = await this.deps.client.createTransfers(transfers)
       const fatalErrors: Array<TransferFailureResult<SetNetDebitCapFailureType>> = []
@@ -1547,7 +1617,7 @@ export class LedgerTigerBeetle implements Ledger {
     assert(query.currency)
     assert(query.dfspId)
 
-    // Backwards compatablity - if the currency isn't doesn't exist return NOT_FOUND instead of 
+    // Backwards compatiblity - if the currency isn't doesn't exist return NOT_FOUND instead of 
     // throwing an error
     let currency
     try {
@@ -1561,7 +1631,7 @@ export class LedgerTigerBeetle implements Ledger {
 
     try {
       assert(currency)
-      const netDebitCapResult = await this.deps.specStore.getNetDebitCap(query.dfspId, query.currency)
+      const netDebitCapResult = await this.getInternalNetDebitCap(query.dfspId, query.currency)
       if (netDebitCapResult.type === 'FAILURE') {
         return {
           type: 'FAILURE',
@@ -1626,10 +1696,10 @@ export class LedgerTigerBeetle implements Ledger {
         const netDebitCap = await this.getNetDebitCap({
           dfspId: query.dfspId, currency
         })
-        if (netDebitCap.type === 'SUCCESS') netDebitCaps.push({currency, limit: netDebitCap.result})
+        if (netDebitCap.type === 'SUCCESS') netDebitCaps.push({ currency, limit: netDebitCap.result })
       }
 
-     
+
       return {
         type: 'SUCCESS',
         result: netDebitCaps
