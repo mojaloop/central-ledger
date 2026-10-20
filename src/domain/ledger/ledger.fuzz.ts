@@ -56,8 +56,8 @@ const filename = path.basename(__filename)
 assert(filename)
 
 describe('Ledger Fuzz', () => {
-  it('runs the fuzzer for LedgerSQL', async (context) => {
-    const stepsMax = envOrDefaultNumber('STEPS_MAX', 2500)
+  it.only('runs the fuzzer for LedgerSQL', async (context) => {
+    const stepsMax = envOrDefaultNumber('STEPS_MAX', 5000)
     const trace = await run(stepsMax, { LEDGER: 'SQL' })
 
     const dirTrace = `.fuzz_output/${filename}/${sanitizeTestName(context.name)}`
@@ -78,7 +78,7 @@ describe('Ledger Fuzz', () => {
     console.log(`Fuzz trace written to ${pathTrace}.`)
   })
 
-  it.only('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
+  it('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 250)
     const traceA = await run(stepsMax, { LEDGER: 'SQL' })
     const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
@@ -129,17 +129,8 @@ const run = async (stepsMax: number, config: Partial<ApplicationConfig>): Promis
     harness.configOverride(config)
     await harness.setupGlobals()
 
-    // Temporarily patch the database schema to get rid of default dates, making it easy to find
-    // where we are setting them!
     const Db = await import('../../lib/db')
     const knex = Db._knex
-    await knex.raw(`ALTER TABLE transfer MODIFY COLUMN createdDate datetime NOT NULL;`)
-    await knex.raw(`ALTER TABLE transferStateChange MODIFY COLUMN createdDate datetime NOT NULL;`)
-    await knex.raw(`ALTER TABLE transferDuplicateCheck MODIFY COLUMN createdDate datetime NOT NULL;`)
-    await knex.raw(`ALTER TABLE transferError MODIFY COLUMN createdDate datetime NOT NULL;`)
-    await knex.raw(`ALTER TABLE transferErrorDuplicateCheck MODIFY COLUMN createdDate datetime NOT NULL;`)
-    await knex.raw(`ALTER TABLE transferFulfilment MODIFY COLUMN createdDate datetime NOT NULL;`)
-
 
     // Change the participantCurrencyId to an unsigned bigint, and remove the auto incrementing id.
     // This allows us to match the id implementation between LedgerSql and LedgerTigerBeetle.
@@ -278,41 +269,32 @@ class LedgerFuzzer {
     setNetDebitCap: 1,
     getNetDebitCap: 1,
     getNetDebitCaps: 1,
-    prepare: 0,
-    fulfil: 0,
-
-    // createHubAccount: 5,
-    // createDfsp: 5,
-    // disableDfsp: 2,
-    // enableDfsp: 5,
-    // enableDfspAccount: 5,
-    // disableDfspAccount: 2,
-
-    // deposit: 4,
-    // withdrawPrepare: 5,
-    // withdrawCommit: 5,
-    // withdrawAbort: 5,
-    // setNetDebitCap: 5,
-    // getHubAccounts: 5,
-    // getDfsp: 1,
-    // getAllDfsps: 1,
-    // getDfspAccounts: 1,
-    // getAllDfspAccounts: 1,
-    // getNetDebitCap: 1,
-    // getNetDebitCaps: 1,
     // prepare: 1,
     // fulfil: 1,
     // sweepTimedOut: 1,
     // lookupTransfer: 1,
-    // closeSettlementWindow: 2,
-    // settlementPrepare: 2,
-    // settlementAbort: 2,
-    // settlementCommit: 2,
-    // settlementUpdate: 2,
+    // closeSettlementWindow: 1,
+    // settlementPrepare: 1,
+    // settlementAbort: 1,
+    // settlementCommit: 1,
+    // settlementUpdate: 1,
     // getSettlementWindows: 1,
     // getSettlementWindow: 1,
     // getSettlement: 1,
-    // getSettlements: 1
+    // getSettlements: 1,
+    prepare: 1,
+    fulfil: 0,
+    sweepTimedOut: 0,
+    lookupTransfer: 0,
+    closeSettlementWindow: 0,
+    settlementPrepare: 0,
+    settlementAbort: 0,
+    settlementCommit: 0,
+    settlementUpdate: 0,
+    getSettlementWindows: 0,
+    getSettlementWindow: 0,
+    getSettlement: 0,
+    getSettlements: 0,
   }
 
   constructor(
@@ -458,11 +440,9 @@ class LedgerFuzzer {
       this.registeredDfsps.push(name)
     }
 
-    // console.log(`createDfsp`, cmd.dfspId, cmd.currencies)
-    // TODO: reenable me when the time is right!
     if (this.registeredDfsps.length >= 5) {
-      // this.weights.prepare = 15
-      // this.weights.fulfil = 15
+      this.weights.prepare = 10
+      this.weights.fulfil = 10
     }
 
     if (this.registeredDfsps.length >= 50) {
@@ -538,8 +518,8 @@ class LedgerFuzzer {
     }
 
     if (this.withdraws.length > 0 && this.prng.coin()) {
-      // Reuse an existing one.
-      cmd = this.prng.randomElementFrom(this.withdraws)
+      // Reuse an existing one (clone to avoid mutating the original).
+      cmd = structuredClone(this.prng.randomElementFrom(this.withdraws))
 
       // Maybe mutate.
       if (this.prng.coin()) {

@@ -774,18 +774,8 @@ export default class SpecStore {
         createdDate: now,
       };
       await trx(TABLE_DFSP_CURRENCY).insert(dfspCurrency)
-
-      // By default, all Dfsps have an UNLIMITED net debit cap when creating the currency.
-      await trx(TABLE_NET_DEBIT_CAP).insert({
-        dfspId,
-        currency,
-        type: 'UNLIMITED',
-        alarmPercentage: null,
-        amount: null
-      })
-
+      
       await trx.commit()
-
       return dfspCurrency
     } catch (err) {
       if (trx) {
@@ -839,7 +829,6 @@ export default class SpecStore {
     }
   }
 
-  // TODO: Ideally we would do a join with the net debit cap of the related dfspids for each payment.
   public async getTransferSpecs(transferIds: Array<string>): Promise<Array<GetSpecTransferResult>> {
     try {
       const rows = await this.db.from(TABLE_TRANSFER)

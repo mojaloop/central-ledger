@@ -84,7 +84,7 @@ exports.up = async (knex) => {
         t.dateTime('changedDate').notNullable()
 
         t.primary(['dfspId', 'currency'])
-        t.foreign('dfspId').references('dfspId').inTable('specDfspRoot')
+        t.foreign('dfspId').references('dfspId').inTable('specDfspRoot') 
         t.foreign('currency').references('currencyId').inTable('currency')
       })
     }
@@ -105,23 +105,6 @@ exports.up = async (knex) => {
 
         t.foreign('payerId').references('dfspId').inTable('specDfspRoot')
         t.foreign('payeeId').references('dfspId').inTable('specDfspRoot')
-        t.foreign('currency').references('currencyId').inTable('currency')
-      })
-    }
-  })
-
-  await knex.schema.hasTable('specNetDebitCap').then(function (exists) {
-    if (!exists) {
-      return knex.schema.createTable('specNetDebitCap', (t) => {
-        t.string('dfspId').notNullable()
-        t.string('currency', 3).notNullable()
-        t.bigint('amount')
-        t.decimal('alarmPercentage', 5, 2)
-
-        t.enu('type', ['LIMITED', 'UNLIMITED'])
-        
-        t.primary(['dfspId', 'currency'])
-        t.foreign('dfspId').references('dfspId').inTable('specDfspRoot')
         t.foreign('currency').references('currencyId').inTable('currency')
       })
     }
@@ -156,12 +139,6 @@ exports.down = async (knex) => {
   await knex.schema.hasTable('specCurrencyLedger').then(function (exists) {
     if (exists) {
       return knex.schema.dropTableIfExists('specCurrencyLedger')
-    }
-  })
-
-  await knex.schema.hasTable('specNetDebitCap').then(function (exists) {
-    if (exists) {
-      return knex.schema.dropTableIfExists('specNetDebitCap')
     }
   })
 }

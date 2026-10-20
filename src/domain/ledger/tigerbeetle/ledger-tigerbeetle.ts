@@ -1995,6 +1995,8 @@ export class LedgerTigerBeetle implements Ledger {
     const specsMap: Record<string, SpecTransfer> = {}
     specLookupResult.forEach(specResult => {
       if (specResult.type === 'NOT_FOUND') {
+        delete fulfilsMap[specResult.id]
+
         resultsMap[specResult.id] = {
           type: PaymentFulfilResultType.FAIL_VALIDATION,
           effects: [],
@@ -2004,6 +2006,7 @@ export class LedgerTigerBeetle implements Ledger {
       }
 
       if (specResult.type === 'ERROR') {
+        delete fulfilsMap[specResult.id]
         resultsMap[specResult.id] = {
           type: PaymentFulfilResultType.FAIL_OTHER,
           effects: [],

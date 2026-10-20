@@ -112,7 +112,6 @@ import SettlementWindowDomain from '../../../domain/settlementWindow'
 import SettlementModel from '../../../models/settlement/settlement'
 import * as Result from '../shared/results'
 import Helper from './helper';
-import { calendarFormat } from 'moment';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
@@ -139,10 +138,8 @@ interface Dependencies {
 
 export class LedgerSql implements Ledger {
   private readonly db: Knex
-  private readonly timeoutError = ErrorHandler.Factory
-    .createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
-    .toApiErrorObject(this.deps.config.ERROR_HANDLING)
-
+  private readonly helper: Helper
+  
   constructor(private deps: Dependencies) {
     assert(deps)
     assert(deps.config)
@@ -156,6 +153,7 @@ export class LedgerSql implements Ledger {
     assert(deps.helper)
 
     this.db = deps.db
+    this.helper = deps.helper
   }
 
   public async createHubAccount(cmd: CreateHubAccountCommand): Promise<CreateHubAccountResponse> {
@@ -1126,7 +1124,7 @@ export class LedgerSql implements Ledger {
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
       )
-      const effect = this.buildEffectNotificationError(input, fspiopError)
+      const effect = this.helper.buildEffectNotificationError(input, fspiopError)
       return {
         type: PaymentPrepareResultType.MODIFIED,
         effects: [effect]
@@ -1139,7 +1137,7 @@ export class LedgerSql implements Ledger {
     if (payment && payment.transferStateEnumeration) {
       switch (payment.transferStateEnumeration) {
         case TransferState.ABORTED: {
-          const effect = this.buildEffectNotificationDuplicate(input, payment)
+          const effect = this.helper.buildEffectNotificationDuplicate(input, payment)
           return {
             type: PaymentPrepareResultType.DUPLICATE_FINAL,
             effects: [effect],
@@ -1151,7 +1149,7 @@ export class LedgerSql implements Ledger {
         }
         case TransferState.COMMITTED:
         case TransferState.RESERVED: {
-          const effect = this.buildEffectNotificationDuplicate(input, payment)
+          const effect = this.helper.buildEffectNotificationDuplicate(input, payment)
           return {
             type: PaymentPrepareResultType.DUPLICATE_FINAL,
             effects: [effect],
@@ -1180,7 +1178,7 @@ export class LedgerSql implements Ledger {
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
         'Validation error'
       )
-      const effect = this.buildEffectNotificationError(input, errorFspiop)
+      const effect = this.helper.buildEffectNotificationError(input, errorFspiop)
       return {
         type: PaymentPrepareResultType.FAIL_VALIDATION,
         effects: [effect],
@@ -1224,7 +1222,7 @@ export class LedgerSql implements Ledger {
         validationResult.reasons.toString(),
       )
 
-      const effect = this.buildEffectNotificationError(input, errorFspiop)
+      const effect = this.helper.buildEffectNotificationError(input, errorFspiop)
       return {
         type: PaymentPrepareResultType.FAIL_VALIDATION,
         effects: [effect],
@@ -1243,8 +1241,14 @@ export class LedgerSql implements Ledger {
       proxyObligation,
     )
 
-    const effectPosition = await this.buildEffectPosition(
-      input, determiningTransferCheckResult, proxyObligation
+    const { messageKey, cyrilResult } = await this.deps.definePositionParticipant({
+      payload: proxyObligation.payloadClone,
+      isFx: false,
+      determiningTransferCheckResult,
+      proxyObligation
+    })
+    const effectPosition = this.helper.buildEffectPosition(
+      input, messageKey, cyrilResult
     )
 
     return this.prepareNext({
@@ -1369,10 +1373,10 @@ export class LedgerSql implements Ledger {
 
     if (error) {
       const effects = [
-        await this.buildEffectPositionRollback(input, transfer, error),
+        await this.helper.buildEffectPositionRollback(input, transfer, error),
       ]
       if (input.action === Action.RESERVE) {
-        effects.push(this.buildEffectReservedAbortedNotification(input, transfer))
+        effects.push(this.helper.buildEffectReservedAbortedNotification(input, transfer))
       }
       return this.fulfilNext({
         type: PaymentFulfilResultType.FAIL_VALIDATION,
@@ -1389,7 +1393,7 @@ export class LedgerSql implements Ledger {
       try {
         savedFulfilHash = (await getTransferFulfilmentDuplicateCheck(transferId)).hash
         if (savedFulfilHash === payloadHash) {
-          const effect = this.buildEffectFulfilDuplicateNotification(input, transfer, false)
+          const effect = this.helper.buildEffectFulfilDuplicateNotification(input, transfer, false)
           return {
             type: PaymentFulfilResultType.DUPLICATE_FINAL,
             effects: [effect],
@@ -1399,7 +1403,7 @@ export class LedgerSql implements Ledger {
         const errorModified = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
         )
-        const effect = this.buildEffectFulfilDuplicateError(input, errorModified, false)
+        const effect = this.helper.buildEffectFulfilDuplicateError(input, errorModified, false)
         return {
           type: PaymentFulfilResultType.FAIL_VALIDATION,
           effects: [effect],
@@ -1425,7 +1429,7 @@ export class LedgerSql implements Ledger {
       try {
         savedHash = (await getTransferErrorDuplicateCheck(transferId)).hash
         if (savedHash === payloadHash) {
-          const effect = this.buildEffectFulfilDuplicateNotification(input, transfer, true)
+          const effect = this.helper.buildEffectFulfilDuplicateNotification(input, transfer, true)
           return {
             type: PaymentFulfilResultType.DUPLICATE_FINAL,
             effects: [effect],
@@ -1435,7 +1439,7 @@ export class LedgerSql implements Ledger {
         const errorModified = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
         )
-        const effect = this.buildEffectFulfilDuplicateError(input, errorModified, true)
+        const effect = this.helper.buildEffectFulfilDuplicateError(input, errorModified, true)
         return {
           type: PaymentFulfilResultType.FAIL_VALIDATION,
           effects: [effect],
@@ -1472,7 +1476,7 @@ export class LedgerSql implements Ledger {
       )
 
       if (hasDuplicateId && hasDuplicateHash) {
-        const effect = this.buildEffectFulfilDuplicateNotification(input, transfer, true)
+        const effect = this.helper.buildEffectFulfilDuplicateNotification(input, transfer, true)
         return {
           type: PaymentFulfilResultType.DUPLICATE_FINAL,
           effects: [effect]
@@ -1483,7 +1487,7 @@ export class LedgerSql implements Ledger {
         const modifiedError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
         )
-        const effect = this.buildEffectFulfilDuplicateError(input, modifiedError, true)
+        const effect = this.helper.buildEffectFulfilDuplicateError(input, modifiedError, true)
         return {
           type: PaymentFulfilResultType.FAIL_VALIDATION,
           effects: [effect],
@@ -1498,7 +1502,7 @@ export class LedgerSql implements Ledger {
         errorApi
       )
 
-      const effects = [await this.buildEffectPositionRollback(input, transfer, errorApi, false)]
+      const effects = [await this.helper.buildEffectPositionRollback(input, transfer, errorApi, false)]
       return this.fulfilNext({
         type: PaymentFulfilResultType.PASS,
         effects,
@@ -1525,7 +1529,7 @@ export class LedgerSql implements Ledger {
     )
 
     if (hasDuplicateId && hasDuplicateHash) {
-      const effect = this.buildEffectFulfilDuplicateNotification(input, transfer, false)
+      const effect = this.helper.buildEffectFulfilDuplicateNotification(input, transfer, false)
       return {
         type: PaymentFulfilResultType.DUPLICATE_FINAL,
         effects: [effect]
@@ -1536,7 +1540,7 @@ export class LedgerSql implements Ledger {
       const modifiedError = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
       )
-      const effect = this.buildEffectFulfilDuplicateError(input, modifiedError, false)
+      const effect = this.helper.buildEffectFulfilDuplicateError(input, modifiedError, false)
       return {
         type: PaymentFulfilResultType.FAIL_VALIDATION,
         effects: [effect],
@@ -1559,9 +1563,9 @@ export class LedgerSql implements Ledger {
         error
       )
 
-      const effects = [await this.buildEffectPositionRollback(input, transfer, error)]
+      const effects = [await this.helper.buildEffectPositionRollback(input, transfer, error)]
       if (input.action === Action.RESERVE) {
-        effects.push(this.buildEffectReservedAbortedNotification(input, transfer))
+        effects.push(this.helper.buildEffectReservedAbortedNotification(input, transfer))
       }
       return this.fulfilNext({ type: PaymentFulfilResultType.FAIL_VALIDATION, effects, error })
     }
@@ -1730,10 +1734,10 @@ export class LedgerSql implements Ledger {
         now
       )
 
-      const paymentsResults = await this.paymentEffects(transferTimeoutList)
-      const forexResults = await this.forexEffects(fxTransferTimeoutList)
-      const forwardedPaymentsResults = await this.forwardedPaymentEffects(transferForwardedList)
-      const forwardedForexesResults = await this.forwardedForexEffects(fxTransferForwardedList)
+      const paymentsResults = this.helper.paymentEffects(transferTimeoutList)
+      const forexResults = this.helper.forexEffects(fxTransferTimeoutList)
+      const forwardedPaymentsResults = this.helper.forwardedPaymentEffects(transferForwardedList)
+      const forwardedForexesResults = this.helper.forwardedForexEffects(fxTransferForwardedList)
       return Result.commandResultSuccess({
         intervalPayment: [intervalPaymentMin, intervalPaymentMax],
         intervalForex: [intervalForexMin, intervalForexMax],
@@ -1749,515 +1753,6 @@ export class LedgerSql implements Ledger {
     } finally {
       await knex.raw(`SELECT RELEASE_LOCK("timeout_handler")`)
     }
-  }
-
-  private async buildEffectPosition(
-    input: PrepareHandlerInput,
-    determiningTransferCheckResult: TransferDeterminingCheckResult,
-    proxyObligation: TransferProxyObligation,
-  ): Promise<Effect> {
-    const { messageKey, cyrilResult } = await this.deps.definePositionParticipant({
-      payload: proxyObligation.payloadClone,
-      isFx: false,
-      determiningTransferCheckResult,
-      proxyObligation
-    })
-    const messageEffect = input.message
-    messageEffect.value.content.context = {
-      ...messageEffect.value.content.context,
-      cyrilResult
-    }
-    const effectPosition: Effect = {
-      functionality: Type.POSITION,
-      action: Action.PREPARE,
-      message: messageEffect.value,
-      messageKey,
-      topicName: 'topic-transfer-position-batch',
-      status: 'SUCCESS',
-    }
-    return effectPosition
-  }
-
-  private buildEffectNotificationError(
-    input: PrepareHandlerInput,
-    fspiopError: any
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-
-    message.content.payload = apiFSPIOPError
-    message.content.uriParams = { id: input.payload.transferId }
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    const effect: Effect = {
-      functionality: Type.NOTIFICATION,
-      action: Action.PREPARE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-      fspiopError: apiFSPIOPError
-    }
-    return effect
-  }
-
-  private buildEffectNotificationDuplicate(
-    input: PrepareHandlerInput,
-    transfer: any
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    message.content.payload = TransferObjectTransform.toFulfil(transfer, false)
-    message.content.uriParams = { id: input.payload.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: Action.PREPARE_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'SUCCESS',
-    }
-  }
-
-  private buildEffectFulfilDuplicateNotification(
-    input: FulfilHandlerInput,
-    transfer: any,
-    isTransferError: boolean
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    message.content.payload = TransferObjectTransform.toFulfil(transfer, false)
-    message.content.uriParams = { id: input.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: isTransferError ? Action.ABORT_DUPLICATE : Action.FULFIL_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'SUCCESS',
-    }
-  }
-
-  private buildEffectFulfilDuplicateError(
-    input: FulfilHandlerInput,
-    fspiopError: any,
-    isTransferError: boolean
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-    message.content.payload = apiFSPIOPError
-    message.content.uriParams = { id: input.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: isTransferError ? Action.ABORT_DUPLICATE : Action.FULFIL_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-      fspiopError: apiFSPIOPError
-    }
-  }
-
-  private async buildEffectPositionRollback(
-    input: FulfilHandlerInput,
-    transfer: any,
-    error: {
-      errorInformation: {
-        errorCode: string,
-        errorDescription: string,
-      }
-    },
-    /**
-     * If true, will use action=ABORT_VALIDATION, otherwise ABORT.
-     */
-    isValidationFailure: boolean = true
-  ): Promise<Effect> {
-    const cyrilResult = await fxService.Cyril.processAbortMessage(input.transferId)
-    // If a payment has a linked forex, we first set its state to RECEIVED_ERROR otherwise the
-    // position handler ignores the position reset.
-    for (const positionChange of cyrilResult.positionChanges) {
-      if (positionChange.isFxTransferStateChange) {
-        await fxService.handleFulfilResponse(
-          positionChange.commitRequestId,
-          error,
-          Action.FX_ABORT,
-          error
-        )
-      }
-    }
-
-    const message = structuredClone(input.message.value)
-    message.content.payload = error
-    message.content.context = {
-      ...message.content.context,
-      cyrilResult
-    }
-
-    let messageKey: string
-    if (cyrilResult.positionChanges.length > 0) {
-      messageKey = cyrilResult.positionChanges[0].participantCurrencyId.toString()
-    } else {
-      // Fallback to payer account
-      const payerAccount = await Participant.getAccountByNameAndCurrency(
-        transfer.payerFsp,
-        transfer.currency,
-        Enum.Accounts.LedgerAccountType.POSITION
-      )
-      messageKey = payerAccount.participantCurrencyId.toString()
-    }
-    assert(messageKey)
-    const action = isValidationFailure ? Action.ABORT_VALIDATION : Action.ABORT
-    return {
-      functionality: Type.POSITION,
-      action,
-      message,
-      messageKey,
-      topicName: 'topic-transfer-position-batch',
-      status: 'FAILURE',
-      fspiopError: error
-    }
-  }
-
-  private buildEffectReservedAbortedNotification(
-    input: FulfilHandlerInput,
-    transfer: any
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    message.content.payload = {
-      transferId: transfer.transferId,
-      completedTimestamp: new Date().toISOString(),
-      transferState: TransferState.ABORTED
-    }
-    message.content.uriParams = { id: input.transferId }
-
-    message.to = transfer.payeeFsp
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: Action.RESERVED_ABORTED,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'SUCCESS',
-    }
-  }
-
-  /**
-     * Iterate through all of the timed out payments, and emit notification and position effects.
-     */
-  private async paymentEffects(payments: Array<TimedOutTransfer>):
-    Promise<Array<TimeoutResultPayment>> {
-    return payments.map(payment => {
-      if (payment.bulkTransferId) {
-        throw new Error('TimeoutHandlerV2 - timeouts for bulk transfers not yet supported.')
-      }
-
-      switch (payment.transferStateId) {
-        // Payment expired _before_ the position was reserved.
-        case 'EXPIRED_PREPARED': {
-          return {
-            context: payment,
-            effect: this.buildEffectPaymentTimeoutNotification(payment)
-          }
-        }
-        // Payment expired _after_ the position was reserved.
-        case 'RESERVED_TIMEOUT':
-          return {
-            context: payment,
-            effect: this.buildEffectPaymentPositionTimeout(payment)
-          }
-        default: {
-          throw new Error(`timeoutPaymentEffects - unhandled transferStateId: ${payment.transferStateId}`)
-        }
-      }
-    })
-  }
-
-  private async forexEffects(forexes: Array<TimedOutFxTransfer>):
-    Promise<Array<TimeoutResultPayment>> {
-    return forexes.map(forex => {
-      switch (forex.transferStateId) {
-        // Payment expired _before_ the position was reserved.
-        case 'EXPIRED_PREPARED': {
-          return {
-            context: forex,
-            effect: this.buildEffectForexTimeoutNotification(forex)
-          }
-        }
-        // Payment expired _after_ the position was reserved.
-        case 'RESERVED_TIMEOUT':
-          return {
-            context: forex,
-            effect: this.buildEffectForexPositionTimeout(forex)
-          }
-        default: {
-          throw new Error(`timeoutForexEffects - unhandled transferStateId: ${forex.transferStateId}`)
-        }
-      }
-    })
-  }
-
-  private async forwardedPaymentEffects(payments: Array<ForwardedTransfer>):
-    Promise<Array<TimeoutResultPaymentForward>> {
-    return payments.map(payment => {
-      const effect: Effect = {
-        functionality: Type.NOTIFICATION,
-        action: Action.GET,
-        message: this.buildForwardedPaymentMessage(payment),
-        topicName: 'topic-notification-event',
-        status: 'FAILURE',
-        fspiopError: this.timeoutError
-      }
-
-      return {
-        context: payment,
-        effect,
-      }
-    })
-  }
-
-  private async forwardedForexEffects(forexes: Array<ForwardedFxTransfer>):
-    Promise<Array<TimeoutResultPaymentForward>> {
-    return forexes.map(forex => {
-      const effect: Effect = {
-        functionality: Type.NOTIFICATION,
-        action: Action.GET,
-        message: this.buildForwardedForexMessage(forex),
-        topicName: 'topic-notification-event',
-        status: 'FAILURE',
-        fspiopError: this.timeoutError
-      }
-
-      return {
-        context: forex,
-        effect,
-      }
-    })
-  }
-
-  private buildEffectPaymentTimeoutNotification(payment: TimedOutTransfer): Effect {
-    const effect: Effect = {
-      functionality: Type.NOTIFICATION,
-      action: Action.TIMEOUT_RECEIVED,
-      message: this.buildTimeoutMessagePayment(payment),
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-      fspiopError: this.timeoutError
-    }
-
-    return effect
-  }
-
-  private buildEffectPaymentPositionTimeout(payment: TimedOutTransfer): Effect {
-    return {
-      functionality: Type.POSITION,
-      action: Action.TIMEOUT_RESERVED,
-      message: this.buildTimeoutMessagePayment(payment),
-      messageKey: payment.effectedParticipantCurrencyId.toString(),
-      topicName: 'topic-transfer-position-batch',
-      status: 'FAILURE',
-      fspiopError: this.timeoutError
-    }
-  }
-
-  private buildEffectForexTimeoutNotification(forex: TimedOutFxTransfer): Effect {
-    const effect: Effect = {
-      functionality: Type.NOTIFICATION,
-      action: Action.FX_TIMEOUT_RECEIVED,
-      message: this.buildForexTimeoutMessage(forex),
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-      fspiopError: this.timeoutError
-    }
-
-    return effect
-  }
-
-  private buildEffectForexPositionTimeout(forex: TimedOutFxTransfer): Effect {
-    return {
-      functionality: Type.POSITION,
-      action: Action.FX_TIMEOUT_RESERVED,
-      message: this.buildForexTimeoutMessage(forex),
-      messageKey: forex.effectedParticipantCurrencyId.toString(),
-      topicName: 'topic-transfer-position-batch',
-      status: 'FAILURE',
-      fspiopError: this.timeoutError
-    }
-  }
-
-  private buildTimeoutMessagePayment(payment: TimedOutTransfer) {
-    const destination = payment.externalPayerName || payment.payerFsp
-    const source = payment.externalPayeeName || payment.payeeFsp
-    const transfersResource = Enum.Http.HeaderResources.TRANSFERS
-    const contentVersion = resourceVersions[transfersResource].contentVersion
-
-    const state = Util.StreamingProtocol.createEventState(
-      Enum.Events.EventStatus.FAILURE.status,
-      this.timeoutError.errorInformation.errorCode,
-      this.timeoutError.errorInformation.errorDescription
-    )
-    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
-      payment.transferId,
-      Enum.Kafka.Topics.NOTIFICATION,
-      Action.TIMEOUT_RECEIVED,
-      state
-    )
-    const headers = Util.Http.SwitchDefaultHeaders(
-      destination, transfersResource, this.deps.config.HUB_NAME, contentVersion
-    )
-    const message = Util.StreamingProtocol.createMessage(
-      payment.transferId,
-      destination,
-      source,
-      metadata,
-      headers,
-      this.timeoutError,
-      { id: payment.transferId },
-      `application/vnd.interoperability.${transfersResource}+json;version=${contentVersion}`
-    )
-    message.from = this.deps.config.HUB_NAME
-    message.content.context = {
-      payer: payment.externalPayerName || payment.payerFsp,
-      payee: payment.externalPayeeName || payment.payeeFsp
-    }
-
-    return message
-  }
-
-  private buildForexTimeoutMessage(forex: TimedOutFxTransfer) {
-    const destination = forex.externalInitiatingFspName || forex.initiatingFsp
-    const source = forex.externalCounterPartyFspName || forex.counterPartyFsp
-    const fxTransfersResource = Enum.Http.HeaderResources.FX_TRANSFERS
-    const contentVersion = resourceVersions[fxTransfersResource].contentVersion
-
-    const state = Util.StreamingProtocol.createEventState(
-      Enum.Events.EventStatus.FAILURE.status,
-      this.timeoutError.errorInformation.errorCode,
-      this.timeoutError.errorInformation.errorDescription
-    )
-    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
-      forex.commitRequestId,
-      Enum.Kafka.Topics.NOTIFICATION,
-      Action.FX_TIMEOUT_RECEIVED,
-      state
-    )
-    const headers = Util.Http.SwitchDefaultHeaders(
-      destination, fxTransfersResource, this.deps.config.HUB_NAME, contentVersion
-    )
-    const message = Util.StreamingProtocol.createMessage(
-      forex.commitRequestId,
-      destination,
-      source,
-      metadata,
-      headers,
-      this.timeoutError,
-      { id: forex.commitRequestId },
-      `application/vnd.interoperability.${fxTransfersResource}+json;version=${contentVersion}`
-    )
-    message.from = this.deps.config.HUB_NAME
-    message.content.context = {
-      payer: forex.externalInitiatingFspName || forex.initiatingFsp,
-      payee: forex.externalCounterPartyFspName || forex.counterPartyFsp
-    }
-
-    return message
-  }
-
-  private buildForwardedPaymentMessage(payment: ForwardedTransfer) {
-    const destination = payment.externalPayerName || payment.payeeFsp
-    const source = payment.externalPayeeName || payment.payerFsp
-    const transfersResource = Enum.Http.HeaderResources.TRANSFERS
-    const contentVersion = resourceVersions[transfersResource].contentVersion
-
-    const state = Util.StreamingProtocol.createEventState(
-      Enum.Events.EventStatus.FAILURE.status,
-      this.timeoutError.errorInformation.errorCode,
-      this.timeoutError.errorInformation.errorDescription
-    )
-    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
-      payment.transferId,
-      Enum.Kafka.Topics.NOTIFICATION,
-      Action.GET,
-      state
-    )
-    const headers = Util.Http.SwitchDefaultHeaders(
-      destination, transfersResource, source, contentVersion
-    )
-    const message = Util.StreamingProtocol.createMessage(
-      payment.transferId,
-      destination,
-      source,
-      metadata,
-      headers,
-      null,
-      { id: payment.transferId },
-      `application/vnd.interoperability.${transfersResource}+json;version=${contentVersion}`
-    )
-    message.from = this.deps.config.HUB_NAME
-
-    return message
-  }
-
-  private buildForwardedForexMessage(forex: ForwardedFxTransfer) {
-    const destination = forex.externalCounterPartyFspName || forex.counterPartyFsp
-    const source = forex.externalInitiatingFspName || forex.initiatingFsp
-    const fxTransfersResource = Enum.Http.HeaderResources.FX_TRANSFERS
-    const contentVersion = resourceVersions[fxTransfersResource].contentVersion
-
-    const state = Util.StreamingProtocol.createEventState(
-      Enum.Events.EventStatus.FAILURE.status,
-      this.timeoutError.errorInformation.errorCode,
-      this.timeoutError.errorInformation.errorDescription
-    )
-    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
-      forex.commitRequestId,
-      Enum.Kafka.Topics.NOTIFICATION,
-      Action.GET,
-      state
-    )
-    const headers = Util.Http.SwitchDefaultHeaders(
-      destination, fxTransfersResource, source, contentVersion
-    )
-    const message = Util.StreamingProtocol.createMessage(
-      forex.commitRequestId,
-      destination,
-      source,
-      metadata,
-      headers,
-      null,
-      { id: forex.commitRequestId },
-      `application/vnd.interoperability.${fxTransfersResource}+json;version=${contentVersion}`
-    )
-    message.from = this.deps.config.HUB_NAME
-
-    return message
   }
 
   /**
@@ -2296,6 +1791,15 @@ export class LedgerSql implements Ledger {
     }
     if (participantPayee && !participantPayee.isActive) {
       reasons.push(`Participant ${payload.payerFsp} is inactive`)
+    }
+
+    const accountPayer = await Participant.getAccountByNameAndCurrency(
+      payload.payerFsp, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION
+    )
+    if (!accountPayer) {
+      reasons.push(`Participant ${payload.payerFsp} ${payload.amount.currency} account not found`)
+    } else if (!accountPayer.currencyIsActive) {
+      reasons.push(`Participant ${payload.payerFsp} ${payload.amount.currency} account is inactive`)
     }
 
     const accountPayee = await Participant.getAccountByNameAndCurrency(
