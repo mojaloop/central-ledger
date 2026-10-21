@@ -40,13 +40,15 @@ interface Dependencies {
 }
 
 export default class Helper {
-  private readonly timeoutError = ErrorHandler.Factory
-      .createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
-      .toApiErrorObject(this.deps.config.ERROR_HANDLING)
+  private readonly timeoutError
   
   constructor(private deps: Dependencies) {
     assert(deps.randomBytes)
     assert(deps.config)
+
+    this.timeoutError = ErrorHandler.Factory
+      .createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
+      .toApiErrorObject(this.deps.config.ERROR_HANDLING)
   }
 
   /**

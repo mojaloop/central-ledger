@@ -328,6 +328,15 @@ export class LedgerSql implements Ledger {
           Enum.Accounts.LedgerAccountType.SETTLEMENT
         );
         assert(settlementAccount)
+
+        // If we don't set a net debit cap, clearing doesn't seem to work.
+        await this.setNetDebitCap({
+          dfspId: cmd.dfspId, 
+          currency: currency, 
+          amount: 10000, 
+          netDebitCapType: 'LIMITED', 
+          alarmPercentage: 10
+        })
       }
 
       return Result.emptyCommandResultSuccess()
@@ -878,9 +887,7 @@ export class LedgerSql implements Ledger {
         Enum.Accounts.LedgerAccountType.SETTLEMENT,
       );
       assert(settlementAccount, 'Settlement account not found')
-      if (!settlementAccount.currencyIsActive) {
-        return Helper.failure(new Error('settlement account is inactive.'))
-      }
+      assert(settlementAccount.currencyIsActive, 'Expected settlement account to be active.')
 
       const positionAccount = await ParticipantFacade.getByNameAndCurrency(
         cmd.dfspId,

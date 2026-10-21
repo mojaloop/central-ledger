@@ -39,6 +39,7 @@ const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('../../shared/logger').logger
 const Config = require('../../lib/config')
+const assert = require('node:assert')
 
 /**
  * @function processPositionPrepareBin
@@ -69,6 +70,8 @@ const processPositionPrepareBin = async (
     changePositions = true
   }
 ) => {
+  assert(participantLimit, 'Expected participantLimit to be defined.')
+
   const transferStateChanges = []
   const participantPositionChanges = []
   const resultMessages = []
