@@ -41,7 +41,7 @@ import {
   WithdrawPrepareCommand
 } from "../ledger/shared/types"
 import { PaymentPrepareResultType, PrepareHandlerInput } from "../../handlers/payment-prepare"
-import { FulfilHandlerInput } from "../../handlers/payment-fulfil"
+import { FulfilHandlerInput, PaymentFulfilResultType } from "../../handlers/payment-fulfil"
 
 const logger = loggerFactory()
 
@@ -241,6 +241,7 @@ class LedgerFuzzer {
   private withdraws: Array<any> = []
   private transferIds: Record<string, true> = {}
   private prepareIdsSuccess: Record<string, true> = {}
+  private fulfilIdsSuccess: Record<string, true> = {}
 
   private abortedIds: Record<string, true> = {}
   private payments: Array<ApiHelpers.Payment> = []
@@ -251,24 +252,24 @@ class LedgerFuzzer {
   private prng: PRNG
 
   private weights: Record<string, number> = {
-    createHubAccount: 1,
-    createDfsp: 5,
+    createHubAccount: 2,
+    createDfsp: 6,
     disableDfsp: 1,
     enableDfsp: 1,
     enableDfspAccount: 1,
-    disableDfspAccount: 1,
+    disableDfspAccount: 0,
     deposit: 1,
-    withdrawPrepare: 1,
-    withdrawCommit: 1,
-    withdrawAbort: 1,
+    withdrawPrepare: 2,
+    withdrawCommit: 2,
+    withdrawAbort: 2,
     getHubAccounts: 1,
     getDfsp: 1,
     getAllDfsps: 1,
-    getDfspAccounts: 1,
+    getDfspAccounts: 2,
     getAllDfspAccounts: 1,
-    setNetDebitCap: 1,
-    getNetDebitCap: 1,
-    getNetDebitCaps: 1,
+    setNetDebitCap: 2,
+    getNetDebitCap: 2,
+    getNetDebitCaps: 2,
     // prepare: 1,
     // fulfil: 1,
     // sweepTimedOut: 1,
@@ -325,6 +326,11 @@ class LedgerFuzzer {
       logger.error(`LedgerFuzzer.run() rerun with SEED=${this.harness.seed}`)
       throw err
     }
+
+    logger.warn(`Summary:`)
+    logger.warn(`\tDFSPS Created:       ${Object.keys(this.registeredDfsps).length}`)
+    logger.warn(`\tSuccessful Prepares: ${Object.keys(this.prepareIdsSuccess).length}`)
+    logger.warn(`\tSuccessful Fulfils:  ${Object.keys(this.fulfilIdsSuccess).length}`)
   }
 
   get trace() {
@@ -441,11 +447,11 @@ class LedgerFuzzer {
     }
 
     if (this.registeredDfsps.length >= 5) {
-      this.weights.prepare = 10
-      this.weights.fulfil = 10
+      this.weights.prepare = 15
+      this.weights.fulfil = 15
     }
 
-    if (this.registeredDfsps.length >= 50) {
+    if (this.registeredDfsps.length >= 25) {
       // No more need to more dfsps.
       this.weights.createDfsp = 0
     }
@@ -500,7 +506,7 @@ class LedgerFuzzer {
       dfspId: name,
       transferId: this.prng.uuidv4(),
       currency: this.randomCurrency(),
-      amount: this.prng.intExclusive(100000),
+      amount: this.prng.intExclusive(100000) + 1,
       reason: this.prng.randomString()
     }
     const result = await this.ledger.deposit(cmd)
@@ -513,7 +519,7 @@ class LedgerFuzzer {
       dfspId: name,
       transferId: this.prng.uuidv4(),
       currency: this.randomCurrency(),
-      amount: this.prng.intExclusive(100000),
+      amount: this.prng.intExclusive(100000) + 1,
       reason: this.prng.randomString()
     }
 
@@ -652,7 +658,12 @@ class LedgerFuzzer {
   }
 
   private async prepare(): Promise<void> {
-    const prepares: Array<PrepareHandlerInput> = Array(1).fill(this.makePrepare())
+    const prepares: Array<PrepareHandlerInput> = [
+      // this.makePrepare()
+    ]
+    for (let index = 0; index < this.prng.intExclusive(100); index++) {
+      prepares.push(this.makePrepare())
+    }
     const result = await this.ledger.prepare(prepares)
     this.traceResult('prepare', prepares, result)
 
@@ -665,9 +676,19 @@ class LedgerFuzzer {
   }
 
   private async fulfil(): Promise<void> {
-    const fulfills: Array<FulfilHandlerInput> = Array(1).fill(this.makeFulfilOrAbort())
+    const fulfills: Array<FulfilHandlerInput> = [this.makeFulfilOrAbort()]
+    // for (let index = 0; index < this.prng.intExclusive(1); index++) {
+    //   fulfills.push(this.makeFulfilOrAbort())
+    // }
     const result = await this.ledger.fulfil(fulfills)
     this.traceResult('fulfil', fulfills, result)
+
+    result.forEach((fulfilResult, idx) => {
+      const fulfil = fulfills[idx]
+      if (fulfilResult.type === PaymentFulfilResultType.PASS) {
+        this.fulfilIdsSuccess[fulfil.transferId] = true
+      }
+    })
   }
 
   private makePrepare(): PrepareHandlerInput {
@@ -764,7 +785,7 @@ class LedgerFuzzer {
         .build()
     }
 
-    if (this.prng.intExclusive(100) > 95) {
+    if (this.prng.intExclusive(100) > 60) {
       return this.mutateFulfil(payment)
     }
 
@@ -803,8 +824,8 @@ class LedgerFuzzer {
 
   private mutateFulfil(payment: ApiHelpers.Payment): FulfilHandlerInput {
     const mutation = this.prng.randomElementWeighted([
-      'invalidFulfilment', 'swapSrcDest', 'changeId', 'changeDate'
-    ], [1, 1, 1, 1])
+      'invalidFulfilment', 'swapSrcDest', 'changeId', 'changeDate', 'wrongCaller', 'wrongDestination'
+    ], [1, 1, 1, 1, 1, 1])
     const fulfil = payment.toFulfil(this.prng.randomElementFrom(['COMMITTED', 'RESERVED']))
     assert(fulfil.payload.transferState !== 'ABORTED')
     switch (mutation) {
@@ -824,6 +845,18 @@ class LedgerFuzzer {
       case 'changeDate':
         fulfil.payload.completedTimestamp = (new Date()).toISOString()
         return fulfil
+      case 'wrongCaller': {
+        const dfsp = this.randomDfspName()
+        fulfil.callerDfspId = dfsp
+        fulfil.headers['fspiop-source'] = dfsp
+        return fulfil
+      }
+      case 'wrongDestination': {
+        const dfsp = this.randomDfspName()
+        fulfil.destinationDfspId = dfsp
+        fulfil.headers['fspiop-destination'] = dfsp
+        return fulfil
+      }
     }
 
     throw new Error(`mutateFulfil() - unsupported mutation: ${mutation}`)

@@ -642,8 +642,8 @@ export default class Harness {
           effectToKafkaMessage: helper.effectToKafkaMessage.bind(helper),
           db: Db._knex,
           helper: new Helper({
-            randomBytes: prngId.randomBytes.bind(prngId)
-
+            randomBytes: prngId.randomBytes.bind(prngId),
+            config: this.config
           })
         })
         break;

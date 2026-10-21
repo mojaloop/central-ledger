@@ -152,6 +152,7 @@ const processBins = async (bins, trx) => {
       // TODO(LD): this positions is undefined when the account is inactive!
       settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
 
+      // TODO(LD): This is undefined when the participanLimit and/or participantCurrency is disabled.
       // Story #3657: The following SQL query/lookup can be optimized for performance
       participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(
         accountIdMap[accountID].participantId,
