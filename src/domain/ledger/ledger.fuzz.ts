@@ -29,6 +29,7 @@ import {
   GetSettlementWindowQuery,
   GetSettlementWindowsQuery,
   Ledger,
+  LegacyLedgerAccount,
   LookupTransferQuery,
   SetNetDebitCapCommand,
   Settlement,
@@ -683,6 +684,62 @@ class LedgerFuzzer {
       if (prepareResult.type === PaymentPrepareResultType.PASS) {
         this.prepareIdsSuccess[prepare.transferId] = true
       }
+    })
+
+    // After every money movement, produce a trace of the balances to help us assert
+    // equal balances between Ledger implementations.
+    await this.traceBalances()
+  }
+
+  private async traceBalances(): Promise<void> {
+    const dfspAccounts: Record<string, Array<LegacyLedgerAccount>> = {}
+    for (const dfspId of this.registeredDfsps) {
+      const accountsResponse = await this.ledger.getAllDfspAccounts({dfspId})
+      if (accountsResponse.type !== 'SUCCESS') return
+      dfspAccounts[dfspId] = accountsResponse.accounts
+    }
+
+    const currencies = [...new Set(
+      Object.values(dfspAccounts).flat().map(acc => acc.currency)
+    )]
+
+    const COL_DFSP = 12
+    const COL_VAL = 12
+
+    let builder = ''
+
+    for (const currency of currencies) {
+      const dfspIds = Object.keys(dfspAccounts).sort()
+      const width = COL_DFSP + 3 + COL_VAL + 3 + COL_VAL + 1
+
+      builder += `┌${'─'.repeat(width - 1)}┐\n`
+      builder += `│ ${currency.padEnd(width - 4)}  │\n`
+      builder += `├${'─'.repeat(COL_DFSP)}┬${'─'.repeat(COL_VAL + 2)}┬${'─'.repeat(COL_VAL + 2)}┤\n`
+      builder += `│${' DFSP'.padEnd(COL_DFSP)}│${'Position'.padStart(COL_VAL)}  │${'Settlement'.padStart(COL_VAL)}  │\n`
+      builder += `├${'─'.repeat(COL_DFSP)}┼${'─'.repeat(COL_VAL + 2)}┼${'─'.repeat(COL_VAL + 2)}┤\n`
+
+      for (const dfspId of dfspIds) {
+        const accounts = dfspAccounts[dfspId].filter(acc => acc.currency === currency)
+        const position = accounts.find(acc => acc.ledgerAccountType === 'POSITION')
+        const settlement = accounts.find(acc => acc.ledgerAccountType === 'SETTLEMENT')
+        const valuePosition = position ? position.value.toString().padStart(COL_VAL) : '-'.padStart(COL_VAL)
+        const valueSettlement = settlement ? settlement.value.toString().padStart(COL_VAL) : '-'.padStart(COL_VAL)
+        builder += `│ ${dfspId.padEnd(COL_DFSP - 1)}│${valuePosition}  │${valueSettlement}  │\n`
+      }
+
+      builder += `└${'─'.repeat(COL_DFSP)}┴${'─'.repeat(COL_VAL + 2)}┴${'─'.repeat(COL_VAL + 2)}┘\n`
+    }
+
+    // Hmm this is annoying but tracer expects json, not other types of objects.
+    // For now we are can stick it in path so it doesn't get json stringified.
+    this.trace.push({
+      step: this.step,
+      action: 'balances',
+      path: '\n' + builder,
+      payload: '',
+      code: 0,
+      body: '',
+      prngCalls: this.harness.prng.callCount
     })
   }
 
