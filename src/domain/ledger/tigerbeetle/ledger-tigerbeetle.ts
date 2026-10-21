@@ -1804,23 +1804,21 @@ export class LedgerTigerBeetle implements Ledger {
 
     const dfsps = await this.specStore.getDfspCurrenciesAll(Object.keys(dfspIdMap))
     const dfspRoots = await this.specStore.getDfspRoots(Object.keys(dfspIdMap))
-    const limits = await this.getInternalNetDebitCap
+    const netDebitCaps = await this.getInternalNetDebitCaps()
     const dfspCurrencyMap: Record<string, DfspCurrency> = {}
     dfsps.forEach(dfspCurrency => {
-      dfspCurrencyMap[`${dfspCurrency.dfspId}_${dfspCurrency.currency}`] = dfspCurrency
+      dfspCurrencyMap[`${dfspCurrency.dfspId}:${dfspCurrency.currency}`] = dfspCurrency
     })
 
     inputs.forEach((prepare, idx) => {
       const key = prepare.transferId + `:` + idx
-      const payer = dfspCurrencyMap[`${prepare.payload.payerFsp}_${prepare.payload.amount.currency}`]
-      const payee = dfspCurrencyMap[`${prepare.payload.payeeFsp}_${prepare.payload.amount.currency}`]
+      const payer = dfspCurrencyMap[`${prepare.payload.payerFsp}:${prepare.payload.amount.currency}`]
+      const payee = dfspCurrencyMap[`${prepare.payload.payeeFsp}:${prepare.payload.amount.currency}`]
+      const netDebitCapPayer = netDebitCaps[`${prepare.payload.payerFsp}:${prepare.payload.amount.currency}`]
+      const netDebitCapPayee = netDebitCaps[`${prepare.payload.payeeFsp}:${prepare.payload.amount.currency}`]
 
       let failValidation = false
       let failureReasons: Array<string> = []
-      if (prepare.payload.payerFsp === prepare.payload.payeeFsp) {
-        failValidation = true
-        failureReasons.push(`payerFsp and payeeFsp must be different.`)
-      }
       if (!payer) {
         failValidation = true
         failureReasons.push(`Payer proxy or participant not found: payer: ${prepare.payload.payerFsp}.`)
@@ -1830,7 +1828,21 @@ export class LedgerTigerBeetle implements Ledger {
         failureReasons.push(`Payee proxy or participant not found: payee: ${prepare.payload.payeeFsp}.`)
       }
 
-      // Backwards compatibility: Check that the limits are defined for the participants.
+      // Backwards compatibility: Check that the net debit cap is defined for the participants.
+      if (!netDebitCapPayer) {
+        failValidation = true
+        failureReasons.push(`Payer net debit cap not defined.`)
+      }
+
+      if (!netDebitCapPayee) {
+        failValidation = true
+        failureReasons.push(`Payee net debit cap not defined.`)
+      }
+
+      if (prepare.payload.payerFsp === prepare.payload.payeeFsp) {
+        failValidation = true
+        failureReasons.push(`Payer FSP and Payee FSP should be different, unless on-us tranfers are allowed by the Scheme`)
+      }
 
       const expirationMs = Date.parse(prepare.payload.expiration)
       if (isNaN(expirationMs)) {
@@ -1845,15 +1857,15 @@ export class LedgerTigerBeetle implements Ledger {
 
       if (failValidation) {
         // Update the results.
+        // const firstReason = failureReasons[0]
         const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-          'Validation error'
+          failureReasons.toString()
         )
         resultsMap[key] = {
           type: PaymentPrepareResultType.FAIL_VALIDATION,
           effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
-          // Backwards compatibility: Return only the first failure reason.
-          failureReasons: failureReasons.slice(0, 1)
+          failureReasons,
         }
 
         // Remove from the set of prepares to continue with.
