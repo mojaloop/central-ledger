@@ -567,9 +567,9 @@ export default class Helper {
       assert(masterAccountPayer)
       const masterAccountPayee = masterSpecs[prepare.payload.payeeFsp]
       assert(masterAccountPayee)
-      const specPayer = specAccounts[prepare.payload.payerFsp + '_' + currency]
+      const specPayer = specAccounts[prepare.payload.payerFsp + ':' + currency]
       assert(specPayer)
-      const specPayee = specAccounts[prepare.payload.payeeFsp + '_' + currency]
+      const specPayee = specAccounts[prepare.payload.payeeFsp + ':' + currency]
       assert(specPayee)
 
       // TODO: come back to this - we need to ensure increasing ids.

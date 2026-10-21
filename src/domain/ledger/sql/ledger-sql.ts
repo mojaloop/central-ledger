@@ -1177,24 +1177,29 @@ export class LedgerSql implements Ledger {
       }
     }
 
-    let proxyObligation: TransferProxyObligation
-    try {
-      proxyObligation = await this.calculateProxyObligation(input.payload)
-    } catch (err: any) {
+    const proxyResult = await this.calculateProxyObligation(input.payload)
+    const allErrors = [...proxyResult.errors]
+
+    // Ensure the Net Debit Caps are defined, otherwise position handler fails
+    // silently.
+    const ndcErrors = await this.validateNetDebitCaps(input.payload)
+    allErrors.push(...ndcErrors)
+
+    // If proxy resolution failed, we can't continue - return accumulated errors.
+    if (proxyResult.proxyObligation === null) {
       const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'Validation error'
+        allErrors.toString()
       )
       const effect = this.helper.buildEffectNotificationError(input, errorFspiop)
       return {
         type: PaymentPrepareResultType.FAIL_VALIDATION,
         effects: [effect],
-        failureReasons: [err.message]
+        failureReasons: allErrors
       }
     }
 
-    // TODO: find bad dates!
-    assert(proxyObligation)
+    const proxyObligation = proxyResult.proxyObligation
     const determiningTransferCheckResult = await remittance.checkIfDeterminingTransferExists(
       proxyObligation.payloadClone,
       proxyObligation
@@ -1208,36 +1213,28 @@ export class LedgerSql implements Ledger {
     } else {
       validationResult = await this.validatePayloadUnlinkedPayment(proxyObligation.payloadClone)
     }
+    allErrors.push(...validationResult.reasons)
 
-    // In case the payee/payer are not 'in scheme', the proxyObligation payload clone has rewritten
-    // the payer/payee to be the proxy payee/payer, so we check _this_ payload.
-    // We might want to rewrite this validation, to be aware of native vs non-native payment.
-    assert(validationResult)
-    if (validationResult.result === 'FAIL') {
-      assert(validationResult.reasons.length > 0)
-      // Save the request even if it failed validation.
-      // This call fails when the participants don't exist.
+    if (allErrors.length > 0) {
       await remittance.savePreparedRequest(
         input.payload,
-        validationResult.reasons.toString(),
+        allErrors.toString(),
         false,
         determiningTransferCheckResult,
         proxyObligation,
       )
       const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        validationResult.reasons.toString(),
+        allErrors.toString()
       )
 
       const effect = this.helper.buildEffectNotificationError(input, errorFspiop)
       return {
         type: PaymentPrepareResultType.FAIL_VALIDATION,
         effects: [effect],
-        failureReasons: validationResult.reasons
+        failureReasons: allErrors
       }
     }
-    assert(validationResult.result === 'PASS')
-    assert(validationResult.reasons.length === 0)
 
     // Save the payment as successfully prepared.
     await remittance.savePreparedRequest(
@@ -1762,9 +1759,36 @@ export class LedgerSql implements Ledger {
     }
   }
 
-  /**
-   * Validate the payment for a simple Payment with no 'determiningTransfers'.
-   */
+  private async validateNetDebitCaps(payload: CreatePaymentDto): Promise<Array<string>> {
+    const errors: Array<string> = []
+
+    try {
+      const payerLimit = await Participant.getLimits(payload.payerFsp, {
+        currency: payload.amount.currency,
+        type: 'NET_DEBIT_CAP'
+      })
+      if (!payerLimit || payerLimit.length === 0) {
+        errors.push(`Payer net debit cap not defined.`)
+      }
+    } catch {
+      errors.push(`Payer net debit cap not defined.`)
+    }
+
+    try {
+      const payeeLimit = await Participant.getLimits(payload.payeeFsp, {
+        currency: payload.amount.currency,
+        type: 'NET_DEBIT_CAP'
+      })
+      if (!payeeLimit || payeeLimit.length === 0) {
+        errors.push(`Payee net debit cap not defined.`)
+      }
+    } catch {
+      errors.push(`Payee net debit cap not defined.`)
+    }
+
+    return errors
+  }
+
   private async validatePayloadUnlinkedPayment(payload: CreatePaymentDto): Promise<{
     reasons: Array<string>,
     result: 'PASS' | 'FAIL'
@@ -1850,7 +1874,9 @@ export class LedgerSql implements Ledger {
   }
 
   /**
-   * Validate the payment for a simple Payment _with_ 'determiningTransfers'.
+   * Validate the linked-payment-specific checks (FX transfer state).
+   * Common validation (participant, account, NDC, amount, condition, expiration) is already
+   * done by validatePayloadUnlinkedPayment which runs first.
    */
   private async validatePayloadLinkedPayment(
     payload: CreatePaymentDto,
@@ -1860,20 +1886,6 @@ export class LedgerSql implements Ledger {
     result: 'PASS' | 'FAIL'
   }> {
     const reasons: Array<string> = []
-    const [leftStr, rightStr = ''] = payload.amount.amount.split('.')
-    assert(leftStr !== undefined)
-    assert(rightStr !== undefined)
-    if (rightStr.length > this.deps.config.AMOUNT.SCALE) {
-      reasons.push(
-        `Amount ${payload.amount.amount} exceeds allowed scale of ${this.deps.config.AMOUNT.SCALE}`
-      )
-    }
-    const precision = leftStr.length + rightStr.length
-    if (precision > this.deps.config.AMOUNT.PRECISION) {
-      reasons.push(
-        `Amount ${precision} exceeds allowed precision of ${this.deps.config.AMOUNT.PRECISION}`
-      )
-    }
 
     // Check the status of the linked transfers.
     if (determiningTransferCheckResult.watchListRecords) {
@@ -1889,39 +1901,6 @@ export class LedgerSql implements Ledger {
       }
     }
 
-    const participantPayer = await Participant.getByName(payload.payerFsp)
-    if (!participantPayer) {
-      reasons.push(`Participant ${payload.payerFsp} not found`)
-    }
-    if (participantPayer && !participantPayer.isActive) {
-      reasons.push(`Participant ${payload.payerFsp} is inactive`)
-    }
-    const participantPayee = await Participant.getByName(payload.payeeFsp)
-    if (!participantPayee) {
-      reasons.push(`Participant ${payload.payerFsp} not found`)
-    }
-    if (participantPayee && !participantPayee.isActive) {
-      reasons.push(`Participant ${payload.payerFsp} is inactive`)
-    }
-
-    if (!payload.condition) {
-      reasons.push('Condition is required for a conditional transfer')
-    } else {
-      const buffer = Buffer.from(payload.condition, 'base64')
-      if (buffer.length !== 32) {
-        logger.info(`validateInput() condition validation failed.`)
-        reasons.push('Condition validation failed')
-      }
-    }
-
-    if (!payload.expiration) {
-      reasons.push('Expiration is required for conditional transfer')
-    } else {
-      if (Date.parse(payload.expiration) < Date.parse(new Date().toISOString())) {
-        reasons.push(`Expiration date ${new Date(payload.expiration).toISOString()} is already in the past`)
-      }
-    }
-
     return {
       reasons,
       result: reasons.length === 0 ? 'PASS' : 'FAIL'
@@ -1932,21 +1911,28 @@ export class LedgerSql implements Ledger {
    * @description Figure out if the participants in the Payment message are native to the scheme
    * or are proxies.
    */
-  private async calculateProxyObligation(payload: CreatePaymentDto):
-    Promise<TransferProxyObligation> {
+  private async calculateProxyObligation(payload: CreatePaymentDto): Promise<{
+    proxyObligation: TransferProxyObligation | null,
+    errors: Array<string>
+  }> {
+    const errors: Array<string> = []
+
     // If the proxy isn't enabled, just return the default.
     if (!this.deps.config.PROXY_CACHE_CONFIG.enabled) {
       return {
-        isFx: false,
-        payloadClone: { ...payload },  // just a copy of the original payload
-        isInitiatingFspProxy: false,
-        isCounterPartyFspProxy: false,
-        initiatingFspProxyOrParticipantId: {
-          inScheme: true, proxyId: null, name: payload.payerFsp
+        proxyObligation: {
+          isFx: false,
+          payloadClone: { ...payload },  // just a copy of the original payload
+          isInitiatingFspProxy: false,
+          isCounterPartyFspProxy: false,
+          initiatingFspProxyOrParticipantId: {
+            inScheme: true, proxyId: null, name: payload.payerFsp
+          },
+          counterPartyFspProxyOrParticipantId: {
+            inScheme: true, proxyId: null, name: payload.payeeFsp
+          }
         },
-        counterPartyFspProxyOrParticipantId: {
-          inScheme: true, proxyId: null, name: payload.payeeFsp
-        }
+        errors: []
       }
     }
 
@@ -1965,37 +1951,39 @@ export class LedgerSql implements Ledger {
     assert(payerResult)
     assert(payeeResult)
 
-    // Validate the not found case.
+    
     if (payerResult.inScheme === false && payerResult.proxyId === null) {
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-        `Payer proxy or participant not found: payer: ${payload.payerFsp}.`
-      )
-      throw fspiopError
+      errors.push(`Payer proxy or participant not found: payer: ${payload.payerFsp}.`)
     }
     if (payeeResult.inScheme === false && payeeResult.proxyId === null) {
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-        `Payee proxy or participant not found: payee: ${payload.payeeFsp}.`
-      )
-      throw fspiopError
+      errors.push(`Payee proxy or participant not found: payee: ${payload.payeeFsp}.`)
+    }
+
+    if (errors.length > 0) {
+      return { 
+        proxyObligation: null, 
+        errors 
+      }
     }
 
     const isInitiatingFspProxy = !payerResult.inScheme && payerResult.proxyId !== null
     const isCounterPartyFspProxy = !payeeResult.inScheme && payeeResult.proxyId !== null
 
     return {
-      isFx: false,
-      payloadClone: {
-        ...payload,
-        // Reroute the proxies.
-        payerFsp: isInitiatingFspProxy ? payerResult.proxyId! : payload.payerFsp,
-        payeeFsp: isCounterPartyFspProxy ? payeeResult.proxyId! : payload.payeeFsp
+      proxyObligation: {
+        isFx: false,
+        payloadClone: {
+          ...payload,
+          // Reroute the proxies.
+          payerFsp: isInitiatingFspProxy ? payerResult.proxyId! : payload.payerFsp,
+          payeeFsp: isCounterPartyFspProxy ? payeeResult.proxyId! : payload.payeeFsp
+        },
+        isInitiatingFspProxy,
+        isCounterPartyFspProxy,
+        initiatingFspProxyOrParticipantId: payerResult,
+        counterPartyFspProxyOrParticipantId: payeeResult
       },
-      isInitiatingFspProxy,
-      isCounterPartyFspProxy,
-      initiatingFspProxyOrParticipantId: payerResult,
-      counterPartyFspProxyOrParticipantId: payeeResult
+      errors: []
     }
   }
 
