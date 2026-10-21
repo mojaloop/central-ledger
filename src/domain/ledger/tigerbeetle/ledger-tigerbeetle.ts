@@ -9,6 +9,7 @@ import {
   CreateTransferResult,
   CreateTransferStatus,
   id,
+  QueryFilterFlags,
   Transfer,
   TransferFlags
 } from 'tigerbeetle-node';
@@ -713,6 +714,75 @@ export class LedgerTigerBeetle implements Ledger {
     }
   }
 
+  private hydrateNetDebitCap(dfspCurrency: DfspCurrency, transfer: Transfer): NetDebitCap {
+    if (transfer.user_data_32 === 0) {
+      return {
+        type: 'UNLIMITED',
+        dfspId: dfspCurrency.dfspId,
+        currency: dfspCurrency.currency,
+      }
+    }
+
+    assert(transfer.user_data_32 === 1, 'Expected last.user_data_32 to be either 1 or 0.')
+    const alarmPercentage = convertBigIntToNumber(transfer.user_data_64)
+    const amount = transfer.amount
+    return {
+      type: 'LIMITED',
+      dfspId: dfspCurrency.dfspId,
+      currency: dfspCurrency.currency,
+      alarmPercentage,
+      amount,
+    }
+  }
+
+  /**
+   * Returns a map of 'dfspId:currency' => NetDebitCap.
+   */
+  private async getInternalNetDebitCaps(): Promise<Record<string, NetDebitCap>> {
+    // Breadth first - query for all Set_Net_Debit_Cap Transfers. 
+    const transfers = await this.client.queryTransfers({
+      user_data_128: 0n,
+      user_data_64: 0n,
+      user_data_32: 0,
+      ledger: 0,
+      code: TransferCode.Set_Net_Debit_Cap,
+      timestamp_min: 0n,
+      timestamp_max: 0n,
+      limit: 8000,
+      flags: QueryFilterFlags.reversed
+    })
+
+    if (transfers.length === 8000) {
+      throw new Error(`Not Implemented: Could not find all NetDebitCap transfers.` +
+        `We now need to go through each dfsp+currency.`)
+    }
+
+    const netDebitCapAccountIdSet: Set<bigint> = new Set()
+    const lastTransferMap: Record<string, Transfer> = {}
+    transfers.forEach(transfer => {
+      if (!netDebitCapAccountIdSet.has(transfer.credit_account_id)) {
+        lastTransferMap[transfer.credit_account_id.toString()] = transfer
+        netDebitCapAccountIdSet.add(transfer.credit_account_id)
+      }
+    })
+
+    // Get unique accountIds.
+    const netDebitCapAccountIds = [...netDebitCapAccountIdSet]
+    // Now lookup the DfspCurrency for these account ids.
+    const dfspCurrencies = await this.specStore.dfspCurrenciesForNetDebitCapAccountIds(netDebitCapAccountIds)
+    
+    const results: Record<string, NetDebitCap> = {}
+    Object.entries(dfspCurrencies).forEach(([id, dfspCurrency]) => {
+      const lastTransfer = lastTransferMap[id]
+      assert(lastTransfer, `No lastTransfer found for id: ${id}.`)
+
+      const dfspCurrencyKey = `${dfspCurrency.dfspId}:${dfspCurrency.currency}`
+      results[dfspCurrencyKey] = this.hydrateNetDebitCap(dfspCurrency, lastTransfer)
+    })
+
+    return results
+  }
+
   public async deposit(cmd: DepositCommand): Promise<DepositResponse> {
     assert(cmd.amount)
     assert(cmd.currency)
@@ -733,7 +803,7 @@ export class LedgerTigerBeetle implements Ledger {
       // Lookup the net debit cap.
       const netDebitCapResult = await this.getInternalNetDebitCap(cmd.dfspId, cmd.currency)
       if (netDebitCapResult.type === 'NOT_FOUND') {
-        return { type: 'NOT_FOUND'}
+        return { type: 'NOT_FOUND' }
       }
       if (netDebitCapResult.type === 'FAILURE') {
         return Helper.failure(netDebitCapResult.error)
@@ -1734,6 +1804,7 @@ export class LedgerTigerBeetle implements Ledger {
 
     const dfsps = await this.specStore.getDfspCurrenciesAll(Object.keys(dfspIdMap))
     const dfspRoots = await this.specStore.getDfspRoots(Object.keys(dfspIdMap))
+    const limits = await this.getInternalNetDebitCap
     const dfspCurrencyMap: Record<string, DfspCurrency> = {}
     dfsps.forEach(dfspCurrency => {
       dfspCurrencyMap[`${dfspCurrency.dfspId}_${dfspCurrency.currency}`] = dfspCurrency
@@ -1752,12 +1823,14 @@ export class LedgerTigerBeetle implements Ledger {
       }
       if (!payer) {
         failValidation = true
-        failureReasons.push(`payerFsp not found: ${prepare.payload.payerFsp}`)
+        failureReasons.push(`Payer proxy or participant not found: payer: ${prepare.payload.payerFsp}.`)
       }
       if (!payee) {
         failValidation = true
-        failureReasons.push(`payeeFsp not found: ${prepare.payload.payeeFsp}`)
+        failureReasons.push(`Payee proxy or participant not found: payee: ${prepare.payload.payeeFsp}.`)
       }
+
+      // Backwards compatibility: Check that the limits are defined for the participants.
 
       const expirationMs = Date.parse(prepare.payload.expiration)
       if (isNaN(expirationMs)) {
@@ -1772,11 +1845,15 @@ export class LedgerTigerBeetle implements Ledger {
 
       if (failValidation) {
         // Update the results.
+        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          'Validation error'
+        )
         resultsMap[key] = {
           type: PaymentPrepareResultType.FAIL_VALIDATION,
-          // TODO: build these!
-          effects: [],
-          failureReasons
+          effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
+          // Backwards compatibility: Return only the first failure reason.
+          failureReasons: failureReasons.slice(0, 1)
         }
 
         // Remove from the set of prepares to continue with.
@@ -1785,7 +1862,7 @@ export class LedgerTigerBeetle implements Ledger {
       }
     })
 
-    // TODO: need to burn the errored transferId or something?
+    // TODO: Do we need to burn the errored transferId or something?
     // TODO: more validation here.
 
     const currencies = await this.specStore.getCurrencyConfigsMap()
@@ -1793,14 +1870,21 @@ export class LedgerTigerBeetle implements Ledger {
     const saveSpecResults = await this.specStore.saveTransferSpecs(specs)
     saveSpecResults.forEach(result => {
       if (result.type === 'SUCCESS') return
-      // Remove from the preparesMap if it failed.
-      delete preparesMap[result.id]
 
+      const prepare = preparesMap[result.id]
+      assert(prepare)
+      const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+        `Failed to save transfer spec for transfer: ${result.id}`
+      )
       resultsMap[result.id] = {
         type: PaymentPrepareResultType.FAIL_OTHER,
-        effects: [],
+        effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
         error: new Error(`Failed to save transfer spec for transfer: ${result.id}`)
       }
+
+      // Remove from the preparesMap if it failed.
+      delete preparesMap[result.id]
     })
 
     const transfers = this.helper.buildTransfersPrepares(
@@ -1892,27 +1976,41 @@ export class LedgerTigerBeetle implements Ledger {
       if (errors.length === 0) {
         result = {
           type: PaymentPrepareResultType.PASS,
+          // TODO: build me!
           effects: [],
         }
         resultsTigerBeetle[transferId] = result
         return
       }
       const firstError = errors[0]
+
+      const prepare = preparesMap[transferId]
+      assert(prepare)
+
       switch (firstError.type) {
-        case 'FAIL_LIQUIDITY':
+        case 'FAIL_LIQUIDITY': {
+          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+            ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY,
+            `Payer insufficent liquidity.`
+          )
           result = {
             type: PaymentPrepareResultType.FAIL_LIQUIDITY,
-            effects: [],
+            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
             error: new Error(`Payer insufficent liquidity.`)
           }
           break;
-        case 'MODIFIED':
+        }
+        case 'MODIFIED': {
+          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+            ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
+            `Modified`
+          )
           result = {
             type: PaymentPrepareResultType.MODIFIED,
-            effects: [],
+            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
           }
           break;
-
+        }
         case 'EXISTS': {
           // TODO: need to do another lookup to determine final or not, right?
           result = {
@@ -1921,31 +2019,45 @@ export class LedgerTigerBeetle implements Ledger {
           }
           break;
         }
-        case 'PAYER_CLOSED':
+        case 'PAYER_CLOSED': {
+          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+            ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+            'Validation error'
+          )
           result = {
             type: PaymentPrepareResultType.FAIL_VALIDATION,
-            effects: [],
+            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
             failureReasons: [`Payer account closed.`]
           }
           break
-        case 'PAYEE_CLOSED':
+        }
+        case 'PAYEE_CLOSED': {
+          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+            ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+            'Validation error'
+          )
           result = {
             type: PaymentPrepareResultType.FAIL_VALIDATION,
-            effects: [],
+            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
             failureReasons: [`Payee account closed.`]
           }
           break
-        case 'UNKNOWN':
+        }
+        case 'UNKNOWN': {
+          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+            ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+            `TigerBeetle transfer failed with: ${CreateTransferStatus[firstError.status]}`
+          )
           result = {
             type: PaymentPrepareResultType.FAIL_OTHER,
-            effects: [],
+            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
             error: new Error(`TigerBeetle transfer failed with: ${CreateTransferStatus[firstError.status]}`)
           }
+        }
       }
       assert(result)
       resultsTigerBeetle[transferId] = result
     })
-
 
     const resultsOrdered: Record<string, PaymentPrepareResult> = {}
 
@@ -2077,6 +2189,7 @@ export class LedgerTigerBeetle implements Ledger {
     return inputs.map(input => {
       return {
         type: PaymentFulfilResultType.PASS,
+        // TODO: build me!
         effects: []
       }
     })

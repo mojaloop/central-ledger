@@ -56,7 +56,7 @@ const filename = path.basename(__filename)
 assert(filename)
 
 describe('Ledger Fuzz', () => {
-  it.only('runs the fuzzer for LedgerSQL', async (context) => {
+  it('runs the fuzzer for LedgerSQL', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 5000)
     const trace = await run(stepsMax, { LEDGER: 'SQL' })
 
@@ -78,7 +78,7 @@ describe('Ledger Fuzz', () => {
     console.log(`Fuzz trace written to ${pathTrace}.`)
   })
 
-  it('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
+  it.only('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 250)
     const traceA = await run(stepsMax, { LEDGER: 'SQL' })
     const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
@@ -444,11 +444,22 @@ class LedgerFuzzer {
     if (result.type === 'SUCCESS' && !this.registeredDfspIds[name]) {
       this.registeredDfspIds[name] = true
       this.registeredDfsps.push(name)
+
+      // Maybe also set up the net debit cap.
+      if (this.prng.coin()) {
+        await this.ledger.setNetDebitCap({
+          dfspId: name,
+          currency: currency,
+          amount: 100000,
+          netDebitCapType: 'LIMITED',
+          alarmPercentage: this.prng.intExclusive(100),
+        })
+      }
     }
 
     if (this.registeredDfsps.length >= 5) {
       this.weights.prepare = 15
-      this.weights.fulfil = 15
+      // this.weights.fulfil = 15
     }
 
     if (this.registeredDfsps.length >= 25) {
@@ -659,11 +670,11 @@ class LedgerFuzzer {
 
   private async prepare(): Promise<void> {
     const prepares: Array<PrepareHandlerInput> = [
-      // this.makePrepare()
+      this.makePrepare()
     ]
-    for (let index = 0; index < this.prng.intExclusive(100); index++) {
-      prepares.push(this.makePrepare())
-    }
+    // for (let index = 0; index < this.prng.intExclusive(100); index++) {
+    //   prepares.push(this.makePrepare())
+    // }
     const result = await this.ledger.prepare(prepares)
     this.traceResult('prepare', prepares, result)
 

@@ -329,14 +329,14 @@ export class LedgerSql implements Ledger {
         );
         assert(settlementAccount)
 
-        // If we don't set a net debit cap, clearing doesn't seem to work.
-        await this.setNetDebitCap({
-          dfspId: cmd.dfspId, 
-          currency: currency, 
-          amount: 10000, 
-          netDebitCapType: 'LIMITED', 
-          alarmPercentage: 10
-        })
+        // // If we don't set a net debit cap, clearing doesn't seem to work.
+        // await this.setNetDebitCap({
+        //   dfspId: cmd.dfspId, 
+        //   currency: currency, 
+        //   amount: 10000, 
+        //   netDebitCapType: 'LIMITED', 
+        //   alarmPercentage: 10
+        // })
       }
 
       return Result.emptyCommandResultSuccess()
@@ -1189,7 +1189,7 @@ export class LedgerSql implements Ledger {
       return {
         type: PaymentPrepareResultType.FAIL_VALIDATION,
         effects: [effect],
-        failureReasons: err.message
+        failureReasons: [err.message]
       }
     }
 

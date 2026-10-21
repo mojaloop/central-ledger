@@ -619,7 +619,8 @@ export default class Harness {
 
     const prngId = new PRNG(this.seed + 1)
     const helperTigerBeetle = new LedgerTigerBeetleHelper({
-      randomBytes: prngId.randomBytes.bind(prngId)
+      randomBytes: prngId.randomBytes.bind(prngId),
+      config: this.config,
     })
 
     // TODO: move to dependencies.
