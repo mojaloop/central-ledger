@@ -6,6 +6,11 @@ import { CurrencyConfig, DfspCurrency, DfspRoot, SpecTransfer } from "./spec-sto
 import { AccountCode, LegacyLedgerAccountNoValue, TransferCode } from "../shared/types";
 import { PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { FulfilHandlerAction, FulfilHandlerInput } from "../../../handlers/payment-fulfil";
+import { Effect } from "../../../messaging/message-bus";
+import { ApplicationConfig } from "../../../lib/config";
+import { Enum, Util } from '@mojaloop/central-services-shared';
+
+const { Type, Action } = Enum.Events.Event
 
 interface InterledgerValidationPass {
   type: 'PASS'
@@ -21,12 +26,16 @@ export type InterledgerValidationResult = InterledgerValidationPass
 
 
 interface Dependencies {
-  randomBytes: (length: number) => Buffer
+  randomBytes: (length: number) => Buffer,
+  config: ApplicationConfig
 }
 
 export default class Helper {
 
-  constructor(private deps: Dependencies) { }
+  constructor(private deps: Dependencies) {
+    assert(deps.randomBytes)
+    assert(deps.config)
+   }
 
   /**
    * Global account ids that persist across all Ledgers
@@ -969,6 +978,34 @@ export default class Helper {
       error
     }
   }
+
+  public buildEffectNotificationError(
+      input: PrepareHandlerInput,
+      fspiopError: any
+    ): Effect {
+      const message = structuredClone(input.message.value)
+      const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+  
+      message.content.payload = apiFSPIOPError
+      message.content.uriParams = { id: input.payload.transferId }
+      message.to = message.from
+      message.from = this.deps.config.HUB_NAME
+      if (message.content.headers) {
+        message.content.headers['fspiop-source'] = message.from
+        message.content.headers['fspiop-destination'] = message.to
+      }
+  
+      const effect: Effect = {
+        functionality: Type.NOTIFICATION,
+        action: Action.PREPARE,
+        message,
+        topicName: 'topic-notification-event',
+        status: 'FAILURE',
+        fspiopError: apiFSPIOPError
+      }
+      return effect
+    }
+
 }
 
 const bigIntReplacer = (_key: string, value: unknown) =>

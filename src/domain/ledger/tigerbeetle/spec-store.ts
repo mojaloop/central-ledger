@@ -115,7 +115,7 @@ export interface DfspAccountIds {
   clearingSetup: bigint
   clearingLimit: bigint
 
-  
+
   /**
    * Control account to act as counterparty for netDebitCap.
    */
@@ -739,6 +739,22 @@ export default class SpecStore {
     }
   }
 
+  public async dfspCurrenciesForNetDebitCapAccountIds(ids: Array<bigint>):
+    Promise<Record<string, DfspCurrency>> {
+
+    const rows = await this.db(TABLE_DFSP_CURRENCY)
+      .whereIn('netDebitCap', ids.map(id => id.toString()))
+      .select('*')
+
+    const dfspCurrencies = rows.map(SpecStore.hydrateDfspCurrency)
+    const resultMap: Record<string, DfspCurrency> = {}
+    dfspCurrencies.forEach(currency => {
+      resultMap[currency.netDebitCap.toString()] = currency
+    })
+
+    return resultMap
+  }
+
   public async createDfspCurrency(dfspId: string, currency: string, now: Date, ids: Array<number>):
     Promise<DfspCurrency> {
     let trx: Knex.Transaction | undefined
@@ -774,7 +790,7 @@ export default class SpecStore {
         createdDate: now,
       };
       await trx(TABLE_DFSP_CURRENCY).insert(dfspCurrency)
-      
+
       await trx.commit()
       return dfspCurrency
     } catch (err) {

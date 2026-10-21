@@ -91,7 +91,7 @@ export default class Helper {
     messageKey: string,
     cyrilResult: any
   ): Effect {
-    const messageEffect = input.message
+    const messageEffect = structuredClone(input.message)
     messageEffect.value.content.context = {
       ...messageEffect.value.content.context,
       cyrilResult
