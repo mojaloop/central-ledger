@@ -60,6 +60,7 @@ module.exports = {
     register: async function (server) {
       const api = await OpenapiBackend.initialise(Path.resolve(process.cwd(), 'src/settlement/interface/swagger-handler.json'), {
         getHealth: Handlers.getHealth,
+        preOperationHandler: Handlers.preOperationHandler,
         validationFail: Handlers.validationFail,
         notFound: Handlers.notFound,
         methodNotAllowed: Handlers.methodNotAllowed
