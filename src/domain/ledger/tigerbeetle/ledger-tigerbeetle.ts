@@ -61,6 +61,7 @@ import {
   LegacyLimitItem,
   LookupTransferQuery,
   LookupTransferQueryResponse,
+  LookupTransferResultType,
   PayloadFinalizedTransfer,
   QueryResult,
   QueryResultWithNotFound,
@@ -86,7 +87,7 @@ const { TransferState } = Enum.Transfers
 
 import SettlementDomain from '../../settlement';
 import { CloseDfspMasterAccountFailureType, DepositFailureType, DisableDfspAccountFailureType, EnableDfspAccountFailureType, FulfilFailureType, default as Helper, default as LedgerTigerBeetleHelper, PrepareFailureType, SetNetDebitCapFailureType, TransferFailureResult, WithdrawAbortFailureType, WithdrawCommitFailureType, WithdrawPrepareFailureType } from './helper';
-import SpecStore, { CmdHubCurrencyEnable, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecTransfer, SpecTransferUpdate } from './spec-store';
+import SpecStore, { CmdHubCurrencyEnable, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecTransfer, SpecTransferUpdate } from './spec-store';
 import { currencyList } from '../../../seeds/currency';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -713,6 +714,38 @@ export class LedgerTigerBeetle implements Ledger {
       alarmPercentage,
       amount,
     }
+  }
+
+  // TODO: this really should be called a 'Payment' to avoid confusion elsewhere.
+  private hydrateTransfer(transfer: Transfer, spec: SpecTransfer): PayloadFinalizedTransfer {
+    // Finalized burned prepare.
+    if (transfer.code === TransferCode.Clearing_Burn_Id) {
+      const timestamp = transfer.user_data_64
+      const completedTimestamp = new Date(Number(timestamp))
+      // Backwards compatibilty - MySQL stores timestamp to seconds precision.
+      completedTimestamp.setMilliseconds(0)
+
+      return {
+        completedTimestamp,
+        transferState: 'ABORTED'
+      }
+    }
+
+    assert.equal(transfer.code, TransferCode.Clearing_Active_Check, 'Invalid transfer code.')
+
+    // If we have a spec fulfilment, then we know the Payment is complete.
+    // Ideally we would be able to check the TigerBeetle payment status.
+    if (spec.fulfilment) {
+      return {
+        fulfilment: spec.fulfilment,
+        // TODO: figure out where to get this date, ideally it comes from TigerBeetle.
+        // Although it is an application date....
+        completedTimestamp: new Date(),
+        transferState: 'COMMITTED'
+      }
+    }
+
+    throw new Error('Lewis didnt finish implementing me yet!')
   }
 
   /**
@@ -1863,12 +1896,20 @@ export class LedgerTigerBeetle implements Ledger {
     })
 
     const currencies = await this.specStore.getCurrencyConfigsMap()
-    const specs = this.helper.buildTransferSpecs(Object.values(preparesMap))
+    // At the moment, we store the spec even if it's failed validation. 
+    // We may want to store it in a different place, or mark it as failed validation.
+    const specs = this.helper.buildTransferSpecs([
+      ...Object.values(preparesMap),
+      ...Object.values(preparesMapFailing),
+    ])
     const saveSpecResults = await this.specStore.saveTransferSpecs(specs)
     saveSpecResults.forEach(result => {
       if (result.type === 'SUCCESS') return
 
-      const prepare = preparesMap[result.id]
+      let prepare = preparesMap[result.id]
+      if (!prepare) {
+        prepare = preparesMapFailing[result.id]
+      }
       assert(prepare)
       const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
@@ -1929,10 +1970,7 @@ export class LedgerTigerBeetle implements Ledger {
       }
     })
   
-    if (lookupPrepareIds.length > 0) {
-      const transfers = await this.lookupTransfers(lookupPrepareIds)
-    }  
-
+    const finalizedPayments = await this.lookupTransfers(lookupPrepareIds)
     Object.entries(fatalErrorsBurn).forEach(([transferId, errors]) => {
       if (errors.length === 0) {
         assert(resultsMap2[transferId], `Expected a result to already exist for transferId: ${transferId}.`)
@@ -1949,10 +1987,14 @@ export class LedgerTigerBeetle implements Ledger {
         case 'MODIFIED':
           {
             // TODO: need to now look this up in batch!
-            const payload: PayloadFinalizedTransfer = {
-              completedTimestamp: new Date(),
-              transferState: 'ABORTED'
-            }
+            // const payload: PayloadFinalizedTransfer = {
+            //   completedTimestamp: new Date(),
+            //   transferState: 'ABORTED'
+            // }
+            const finalized = finalizedPayments[transferId]
+            assert(finalized)
+            assert(finalized.type === LookupTransferResultType.FOUND)
+            const payload = finalized.transfer
 
             // Prepare has already failed. Override any other results.
             result = {
@@ -2119,15 +2161,15 @@ export class LedgerTigerBeetle implements Ledger {
         return
       }
 
-      if (specResult.type === 'ERROR') {
-        delete fulfilsMap[specResult.id]
-        resultsMap[specResult.id] = {
-          type: PaymentFulfilResultType.FAIL_OTHER,
-          effects: [],
-          error: specResult.error
-        }
-        return
-      }
+      // if (specResult.type === 'ERROR') {
+      //   delete fulfilsMap[specResult.id]
+      //   resultsMap[specResult.id] = {
+      //     type: PaymentFulfilResultType.FAIL_OTHER,
+      //     effects: [],
+      //     error: specResult.error
+      //   }
+      //   return
+      // }
 
       specsMap[specResult.id] = specResult.result
 
@@ -2203,13 +2245,56 @@ export class LedgerTigerBeetle implements Ledger {
     throw new Error('Method not implemented.');
   }
 
-  public async lookupTransfers(transferIds: Array<string>): Promise<Record<string, any>> {
+  public async lookupTransfers(transferIds: Array<string>): Promise<Record<string, LookupTransferQueryResponse>> {
+    if (transferIds.length === 0) {
+      return {}
+    }
     // TODO: look them up! Also partials etc.
     // Should be at most 2 round trips
     // Look up TigerBeetle, then look up spec.
+    const tbIds = transferIds.map(Helper.fromMojaloopId)
+    const idTransferMap: Record<string, Transfer | undefined> = {}
+    const idSpecMap: Record<string, GetSpecTransferResult | undefined> = {}
+    // Set up out id maps.
+    transferIds.forEach(id => {
+      idTransferMap[id] = undefined
+      idSpecMap[id] = undefined
+    })
 
+    const transfers = await this.client.lookupTransfers(tbIds)
+    transfers.forEach(transfer => {
+      const idMoja = Helper.toMojaloopId(transfer.id)
+      idTransferMap[idMoja] = transfer
+    })
 
-    return []
+    const specs = await this.specStore.getTransferSpecs(transferIds)
+    specs.forEach(spec => idSpecMap[spec.id] = spec)
+
+    assert.equal(Object.values(idTransferMap).length, Object.values(idSpecMap).length)
+    const results: Record<string, LookupTransferQueryResponse> = {}
+    transferIds.forEach(id => {
+      const transfer = idTransferMap[id]
+      const specResult = idSpecMap[id]
+      assert(specResult)
+
+      if (!transfer) {
+        console.log(`warning - no TB transfer found for id: ${id}.`)
+        results[id] = { type: LookupTransferResultType.NOT_FOUND }
+        return
+      }
+      // Write Last, Read First. If the Transfer exists in TigerBeetle, then the spec MUST exist.
+      if (specResult.type !== 'SUCCESS') {
+        results[id] = { type: LookupTransferResultType.NOT_FOUND }
+        return
+      }
+
+      results[id] = { 
+        type: LookupTransferResultType.FOUND,
+        transfer: this.hydrateTransfer(transfer, specResult.result)
+      }
+    })
+  
+    return results
   }
 
   public async closeSettlementWindow(cmd: SettlementCloseWindowCommand): Promise<CommandResult<void>> {

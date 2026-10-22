@@ -2,9 +2,6 @@ import { isDeepStrictEqual } from "node:util"
 import { logger } from "../../shared/logger"
 import assert from "node:assert"
 
-const bigIntReplacer = (_key: string, value: unknown) =>
-  typeof value === 'bigint' ? value.toString() : value
-
 export type TraceItem = {
   step: number,
   action: string,
@@ -21,12 +18,28 @@ export default class Trace {
   public push(item: TraceItem): void {
     this.inner.push(item)
   }
-  
-  public compare(other: Trace, options: {nameLeft: string, nameRight: string, seed: number}) {
+
+  public static stringifyFormatter(_key: string, value: unknown) {
+    if (typeof value === 'bigint') {
+      return value.toString()
+    }
+
+    // Handle `:ignore` strings which let us ignore the remainder of the line.
+    if (typeof value === 'string') {
+      const ignoreMatch = value.match(/:ignore/)
+      if (ignoreMatch) {
+        return ':ignore'
+      }
+    }
+    return value
+  }
+
+
+  public compare(other: Trace, options: { nameLeft: string, nameRight: string, seed: number }) {
     let lengthMin = Math.min(this.inner.length, other.inner.length)
     if (this.inner.length !== other.inner.length) {
       logger.warn(`compare() length mismatch - left: ${this.inner.length} `
-         + `right: ${other.inner.length}`)
+        + `right: ${other.inner.length}`)
     }
     if (lengthMin === 0) {
       throw new Error('Empty trace.')
@@ -36,9 +49,10 @@ export default class Trace {
       const itemLeft = this.inner[idx]
       const itemRight = other.inner[idx]
 
+      // Maybe we should add an :ignore to this like we do with snapshots.
       if (!isDeepStrictEqual(
-        JSON.stringify(itemLeft, bigIntReplacer), 
-        JSON.stringify(itemRight, bigIntReplacer)
+        JSON.stringify(itemLeft, Trace.stringifyFormatter),
+        JSON.stringify(itemRight, Trace.stringifyFormatter)
       )) {
         logger.warn(`compare() traces drifted at idx: ${idx}.`)
         // Get up to the last 5 elements for context.
@@ -55,8 +69,8 @@ export default class Trace {
   }
 
   private printSideBySide(
-    left: Array<TraceItem>, 
-    right: Array<TraceItem>, 
+    left: Array<TraceItem>,
+    right: Array<TraceItem>,
     options: { nameLeft: string, nameRight: string }
   ) {
     const BG_YELLOW = '\x1b[43m'
@@ -91,7 +105,7 @@ export default class Trace {
         open = BG_YELLOW
         close = RESET
       }
-      
+
       builder += open
       builder += left.slice(0, maxLineWidth).padEnd(maxLineWidth)
       builder += `|`
@@ -110,8 +124,8 @@ export default class Trace {
           `${item.step}`,
           `${item.action}:`,
           `path=${item.path}`,
-          `payload=${JSON.stringify(item.payload, bigIntReplacer)}`,
-          `body=${JSON.stringify(item.body, bigIntReplacer, 2)}`,
+          `payload=${JSON.stringify(item.payload, Trace.stringifyFormatter)}`,
+          `body=${JSON.stringify(item.body, Trace.stringifyFormatter, 2)}`,
           `prngCalls=${item.prngCalls}`,
           `-----`
         ].join('\n')
@@ -126,8 +140,8 @@ export default class Trace {
           `${item.step}`,
           `${item.action}:`,
           `\tpath=${item.path}`,
-          `\tpayload=${JSON.stringify(item.payload, bigIntReplacer)}`,
-          `\tbody=${JSON.stringify(item.body, bigIntReplacer, 2)}`,
+          `\tpayload=${JSON.stringify(item.payload, Trace.stringifyFormatter)}`,
+          `\tbody=${JSON.stringify(item.body, Trace.stringifyFormatter, 2)}`,
           `\tprngCalls=${item.prngCalls}`,
         ].join('\n')
       })

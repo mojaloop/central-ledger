@@ -677,7 +677,25 @@ class LedgerFuzzer {
     //   prepares.push(this.makePrepare())
     // }
     const result = await this.ledger.prepare(prepares)
-    this.traceResult('prepare', prepares, result)
+    const resultNormalized = result.map(prepareResult => {
+      const clone = structuredClone(prepareResult) as any
+      if (clone.failureReasons && Array.isArray(clone.failureReasons)) {
+        clone.failureReasons = `:ignore ${clone.failureReasons.join(',')}` 
+      }
+      if (clone.effects) {
+        clone.effects.forEach((effect: any) => {
+          if (effect.fspiopError?.errorInformation?.errorDescription) {
+            // Match just the type of error, it's going to be almost impossible to match all errors
+            // across LedgerSQL and LedgerTigerBeetle because of the internal changes to how 
+            // prepares are validated.
+            effect.fspiopError.errorInformation.errorDescription =
+              effect.fspiopError.errorInformation.errorDescription.split('-')[0]
+          }
+        })
+      }
+      return clone
+    })
+    this.traceResult('prepare', prepares, resultNormalized)
 
     result.forEach((prepareResult, idx) => {
       const prepare = prepares[idx]

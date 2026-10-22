@@ -533,7 +533,7 @@ export enum LookupTransferResultType {
 
 export type LookupTransferQueryResponse = {
   type: LookupTransferResultType.FOUND,
-  transfer: any
+  transfer: PayloadFinalizedTransfer
 } | {
   type: LookupTransferResultType.NOT_FOUND
 } | {
