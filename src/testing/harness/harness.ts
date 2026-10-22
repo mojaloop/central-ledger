@@ -611,13 +611,14 @@ export default class Harness {
     } = require('../../handlers/transfers/createRemittanceEntity')
     const { definePositionParticipant } = require('../../handlers/transfers/prepare')
 
+    const prngId = new PRNG(this.seed + 1)
+
     const helper = new MessagingHelper({
       config: this.config,
-      randomUUID: () => this.prng.uuidv4()
+      randomUUID: () => prngId.uuidv4()
     })
     const positionHandlerV2 = new PositionHandlerV2(this.config)
 
-    const prngId = new PRNG(this.seed + 1)
     const helperTigerBeetle = new LedgerTigerBeetleHelper({
       randomBytes: prngId.randomBytes.bind(prngId),
       config: this.config,

@@ -676,6 +676,7 @@ class LedgerFuzzer {
     // for (let index = 0; index < this.prng.intExclusive(100); index++) {
     //   prepares.push(this.makePrepare())
     // }
+
     const result = await this.ledger.prepare(prepares)
     const resultNormalized = result.map(prepareResult => {
       const clone = structuredClone(prepareResult) as any
@@ -684,6 +685,10 @@ class LedgerFuzzer {
       }
       if (clone.effects) {
         clone.effects.forEach((effect: any) => {
+          // We don't emit this in LedgerTigerBeetle.
+          if (effect.message.content.context) {
+            delete effect.message.content.context
+          }
           if (effect.fspiopError?.errorInformation?.errorDescription) {
             // Match just the type of error, it's going to be almost impossible to match all errors
             // across LedgerSQL and LedgerTigerBeetle because of the internal changes to how 
@@ -691,8 +696,20 @@ class LedgerFuzzer {
             effect.fspiopError.errorInformation.errorDescription =
               effect.fspiopError.errorInformation.errorDescription.split('-')[0]
           }
+
+          // Ignore the completedTimestamp if the transfer is aborted. We don't always have that
+          // information in LedgerTigerBeetle.
+          if (effect.message.content.payload.transferState === 'ABORTED') {
+            effect.message.content.payload.completedTimestamp = (new Date(0))
+          }
         })
       }
+      // Ignore the completedTimestamp if the transfer is aborted. We don't always have that
+      // information in LedgerTigerBeetle.
+      if (clone.finalizedTransfer && clone.finalizedTransfer.transferState === 'ABORTED') {
+        clone.finalizedTransfer.completedTimestamp = (new Date(0))
+      }
+
       return clone
     })
     this.traceResult('prepare', prepares, resultNormalized)

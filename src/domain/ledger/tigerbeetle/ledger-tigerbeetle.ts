@@ -749,6 +749,26 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   /**
+   * If we don't have the spec, we still have enough information to imply an aborted Payment.
+   */
+  private hydrateTransferPartial(transfer: Transfer): PayloadFinalizedTransfer {
+    assert(transfer.code === TransferCode.Clearing_Burn_Id)
+    if (transfer.code === TransferCode.Clearing_Burn_Id) {
+      const timestamp = transfer.user_data_64
+      const completedTimestamp = new Date(Number(timestamp))
+      // Backwards compatibilty - MySQL stores timestamp to seconds precision.
+      completedTimestamp.setMilliseconds(0)
+
+      return {
+        completedTimestamp,
+        transferState: 'ABORTED'
+      }
+    }
+
+    throw new Error('Lewis didnt finish implementing me yet!')
+  }
+
+  /**
    * Returns a map of 'dfspId:currency' => NetDebitCap.
    */
   private async getInternalNetDebitCaps(): Promise<Record<string, NetDebitCap>> {
@@ -1969,7 +1989,7 @@ export class LedgerTigerBeetle implements Ledger {
         lookupPrepareIds.push(transferId)
       }
     })
-  
+
     const finalizedPayments = await this.lookupTransfers(lookupPrepareIds)
     Object.entries(fatalErrorsBurn).forEach(([transferId, errors]) => {
       if (errors.length === 0) {
@@ -1983,32 +2003,49 @@ export class LedgerTigerBeetle implements Ledger {
 
       const firstError = errors[0]
       switch (firstError.type) {
+        // It failed before, but we at least have the TigerBeetle Transfer, maybe we have the
+        // SpecTranfer.
         case 'EXISTS':
-        case 'MODIFIED':
-          {
-            // TODO: need to now look this up in batch!
-            // const payload: PayloadFinalizedTransfer = {
-            //   completedTimestamp: new Date(),
-            //   transferState: 'ABORTED'
-            // }
-            const finalized = finalizedPayments[transferId]
-            assert(finalized)
-            assert(finalized.type === LookupTransferResultType.FOUND)
-            const payload = finalized.transfer
-
-            // Prepare has already failed. Override any other results.
-            result = {
-              type: PaymentPrepareResultType.DUPLICATE_FINAL,
-              // TODO: build me!
-              effects: [this.helper.buildEffectNotificationDuplicate(prepare, payload)],
-              finalizedTransfer: {
-                completedTimestamp: payload.completedTimestamp.toISOString(),
-                transferState: 'ABORTED'
-              }
-            }
-            resultsTigerBeetle[transferId] = result
-            return
+        case 'MODIFIED': {
+          const finalized = finalizedPayments[transferId]
+          assert(finalized)
+          if (finalized.type !== LookupTransferResultType.FOUND) {
+            throw new Error(`failed to find finalizedPayment for id: ${transferId} with type: ${finalized.type}.`)
           }
+          const payload = finalized.transfer
+          result = {
+            type: PaymentPrepareResultType.DUPLICATE_FINAL,
+            effects: [this.helper.buildEffectNotificationDuplicate(prepare, payload)],
+            finalizedTransfer: {
+              completedTimestamp: payload.completedTimestamp.toISOString(),
+              transferState: 'ABORTED'
+            }
+          }
+          resultsTigerBeetle[transferId] = result
+          return
+        }
+        // It failed but was never created in the first place.
+        case 'ALREADY_FAILED': {
+
+          // TODO: where can we get this date from?
+          const payload: PayloadFinalizedTransfer = {
+            completedTimestamp: new Date(),
+            transferState: 'ABORTED'
+          }
+          
+          // Prepare has already failed. Override any other results.
+          result = {
+            type: PaymentPrepareResultType.DUPLICATE_FINAL,
+            effects: [this.helper.buildEffectNotificationDuplicate(prepare, payload)],
+            finalizedTransfer: {
+              completedTimestamp: payload.completedTimestamp.toISOString(),
+              transferState: 'ABORTED'
+            }
+          }
+          resultsTigerBeetle[transferId] = result
+          return
+
+        }
         default: {
           assert(resultsMap2[transferId], `Expected a result to already exist for transferId: ${transferId}.`)
         }
@@ -2034,12 +2071,11 @@ export class LedgerTigerBeetle implements Ledger {
       switch (firstError.type) {
         case 'FAIL_LIQUIDITY': {
           const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY,
-            `Payer insufficent liquidity.`
+            ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
           )
           result = {
             type: PaymentPrepareResultType.FAIL_LIQUIDITY,
-            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
+            effects: [this.helper.buildEffectNotificationErrorLiquidity(prepare, errorFspiop)],
             error: new Error(`Payer insufficent liquidity.`)
           }
           break;
@@ -2060,6 +2096,19 @@ export class LedgerTigerBeetle implements Ledger {
           result = {
             type: PaymentPrepareResultType.DUPLICATE_NON_FINAL,
             effects: [],
+          }
+          break;
+        }
+        case 'ALREADY_FAILED': {
+          // TODO: need to do another lookup to determine final or not, right?
+          result = {
+            type: PaymentPrepareResultType.DUPLICATE_FINAL,
+            effects: [],
+            finalizedTransfer: {
+              // TODO: get the timestamp of when we failed the original payment.
+              completedTimestamp: (new Date()).toISOString(),
+              transferState: 'ABORTED'
+            }
           }
           break;
         }
@@ -2278,22 +2327,26 @@ export class LedgerTigerBeetle implements Ledger {
       assert(specResult)
 
       if (!transfer) {
-        console.log(`warning - no TB transfer found for id: ${id}.`)
-        results[id] = { type: LookupTransferResultType.NOT_FOUND }
-        return
-      }
-      // Write Last, Read First. If the Transfer exists in TigerBeetle, then the spec MUST exist.
-      if (specResult.type !== 'SUCCESS') {
         results[id] = { type: LookupTransferResultType.NOT_FOUND }
         return
       }
 
-      results[id] = { 
+      // If the spec does not exist, then we must have only recorded the partial in TigerBeetle for
+      // idempotency checks
+      if (specResult.type !== 'SUCCESS') {
+        results[id] = {
+          type: LookupTransferResultType.FOUND,
+          transfer: this.hydrateTransferPartial(transfer)
+        }
+        return
+      }
+
+      results[id] = {
         type: LookupTransferResultType.FOUND,
         transfer: this.hydrateTransfer(transfer, specResult.result)
       }
     })
-  
+
     return results
   }
 
