@@ -756,6 +756,7 @@ export default class Helper {
         ilpPacket: prepare.payload.ilpPacket,
       })
 
+      // We know that we can at least create this transfer.
       transfers.push(
         {
           ...Helper.createTransferTemplate,
@@ -764,7 +765,8 @@ export default class Helper {
           credit_account_id: Helper.accountIds.prepareBurn,
           amount: 0n,
           user_data_128: prepareId,
-          user_data_64: 0n,
+          // Store the application-side prepare-burn time on the Root Account.
+          user_data_64: BigInt((new Date()).getTime()),
           user_data_32: transferHash,
           ledger: Helper.ledgerIds.globalControl,
           code: TransferCode.Clearing_Burn_Id,

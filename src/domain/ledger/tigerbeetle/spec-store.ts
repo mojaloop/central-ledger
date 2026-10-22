@@ -294,10 +294,6 @@ export type GetSpecTransferResult = {
 } | {
   type: 'NOT_FOUND',
   id: string
-} | {
-  type: 'ERROR',
-  id: string,
-  error: any
 }
 
 export type AttachFulfilmentResult = {
@@ -847,27 +843,30 @@ export default class SpecStore {
 
   public async getTransferSpecs(transferIds: Array<string>): Promise<Array<GetSpecTransferResult>> {
     try {
+      const resultMap: Record<string, GetSpecTransferResult> = {}
+      // Populate with not founds.
+      transferIds.forEach(id => resultMap[id] = {
+        type: 'NOT_FOUND' as 'NOT_FOUND',
+        id,
+      })
+
       const rows = await this.db.from(TABLE_TRANSFER)
         .whereIn('id', transferIds)
         .select('*')
 
-      assert.equal(rows.length, transferIds.length, 'Expected the same number of rows as transferIds.')
-
-      // TODO: how do we handle not found?
-      const results = rows.map(result => {
-        return {
+      rows.forEach(row => {
+        resultMap[row.id] = {
           type: 'SUCCESS' as 'SUCCESS',
-          id: result.id,
-          result: result,
+          id: row.id,
+          result: row,
         }
       })
-      return results
+
+      assert.equal(transferIds.length, Object.values(resultMap).length, 'Dropped a value.')
+      return Object.values(resultMap)
     } catch (err: any) {
-      return transferIds.map(transferId => ({
-        type: 'ERROR',
-        id: transferId,
-        error: err
-      }))
+      logger.error(`getTransferSpecs() failed with error: ${err.message}`)
+      throw err
     }
   }
 
