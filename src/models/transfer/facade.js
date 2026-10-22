@@ -516,13 +516,15 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       }
     } else {
       const participant = participants[payload.payerFsp]
-      assert(participant, `Expected participant ${payload.payerFsp} in participants map`)
-      assert(participant.id, `participant.id not defined.`)
+      if (hasPassedValidation) {
+        assert(participant, `Expected participant ${payload.payerFsp} in participants map`)
+        assert(participant.id, `participant.id not defined.`)
+      }
 
       payerTransferParticipantRecord = {
         transferId: payload.transferId,
-        participantId: participant.id,
-        participantCurrencyId: participant.participantCurrencyId,
+        participantId: participant?.id ?? null,
+        participantCurrencyId: participant?.participantCurrencyId ?? null,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
         amount: payload.amount.amount
@@ -535,7 +537,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       const externalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(proxyObligation.counterPartyFspProxyOrParticipantId)
       payeeTransferParticipantRecord = {
         transferId: payload.transferId,
-        participantId: participants[proxyObligation.counterPartyFspProxyOrParticipantId.proxyId].id,
+        participantId: participants[proxyObligation.counterPartyFspProxyOrParticipantId.proxyId]?.id ?? null,
         participantCurrencyId: null,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
@@ -545,8 +547,8 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     } else {
       payeeTransferParticipantRecord = {
         transferId: payload.transferId,
-        participantId: participants[payload.payeeFsp].id,
-        participantCurrencyId: participants[payload.payeeFsp].participantCurrencyId,
+        participantId: participants[payload.payeeFsp]?.id ?? null,
+        participantCurrencyId: participants[payload.payeeFsp]?.participantCurrencyId ?? null,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
         amount: -payload.amount.amount

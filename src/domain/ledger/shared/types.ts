@@ -245,6 +245,7 @@ export enum TransferCode {
   Clearing_Fulfil = 30003,
   Clearing_Credit = 30004,
   Clearing_Reverse = 30005,
+  Clearing_Burn_Id = 30006,
   Settlement_Deposit_Reduce = 40001,
   Settlement_Deposit_Increase = 40002,
   Net_Debit_Cap_Lock = 50001,
@@ -264,6 +265,7 @@ export const TransferCodeDescription = {
   [TransferCode.Clearing_Fulfil]: 'Fulfil payment.',
   [TransferCode.Clearing_Credit]: 'Make credit available for transfers',
   [TransferCode.Clearing_Reverse]: 'Reverse reservation.',
+  [TransferCode.Clearing_Burn_Id]: `Marks the payment as 'burned' so the id cannot be reused.`,
   [TransferCode.Settlement_Deposit_Reduce]: 'Reduce Deposit amount by sum of debits.',
   [TransferCode.Settlement_Deposit_Increase]: 'Increase Deposit amount by sum of credits.',
   [TransferCode.Net_Debit_Cap_Lock]: 'Temporarily lock up to the net debit cap amount.',
@@ -958,4 +960,14 @@ export interface Enums {
   transferStateEnums: Record<string, number>
   transferStates: Record<string, number>
   settlementInterchange: Record<string, number>
+}
+
+
+export type PayloadFinalizedTransfer = {
+  completedTimestamp: Date
+  transferState: 'ABORTED'
+} | {
+  completedTimestamp: Date
+  transferState: 'COMMITTED'
+  fulfilment: string
 }

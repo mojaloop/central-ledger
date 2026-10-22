@@ -79,6 +79,31 @@ export default class Helper {
     }
   }
 
+  /**
+   * Dummy proxy obligation for places we need it.
+   */
+  public static dummyProxyObligation(payload: { payerFsp: string, payeeFsp: string }): TransferProxyObligation {
+    return {
+      isFx: false,
+      payloadClone: { ...payload } as any,
+      isInitiatingFspProxy: false,
+      isCounterPartyFspProxy: false,
+      initiatingFspProxyOrParticipantId: { inScheme: false, proxyId: null, name: payload.payerFsp },
+      counterPartyFspProxyOrParticipantId: { inScheme: false, proxyId: null, name: payload.payeeFsp }
+    }
+  }
+
+  /**
+   * Dummy result.
+   */
+  public static dummyDeterminingTransferCheckResult(): TransferDeterminingCheckResult {
+    return {
+      determiningTransferExistsInWatchList: false,
+      watchListRecords: null,
+      participantCurrencyValidationList: []
+    }
+  }
+
   public static failure(error: any) {
     return {
       type: "FAILURE" as 'FAILURE',
