@@ -440,7 +440,7 @@ export class LedgerTigerBeetle implements Ledger {
         pending_id: lastClosingTransferId,
         amount: 0n,
         ledger: LedgerTigerBeetleHelper.ledgerIds.globalControl,
-        code: 100,
+        code: 0,
         flags: TransferFlags.void_pending_transfer
       }])
 
@@ -2055,10 +2055,11 @@ export class LedgerTigerBeetle implements Ledger {
     Object.entries(fatalErrorsOk).forEach(([transferId, errors]) => {
       let result: PaymentPrepareResult
       if (errors.length === 0) {
+        const prepare = preparesMap[transferId]
+        assert(prepare)
         result = {
           type: PaymentPrepareResultType.PASS,
-          // TODO: build me!
-          effects: [],
+          effects: [this.helper.buildEffectNotificationSuccess(prepare)],
         }
         resultsTigerBeetle[transferId] = result
         return

@@ -1132,14 +1132,13 @@ export default class Helper {
       return 0
     }
 
-    const realAmount = input / BigInt(valueDivisor)
-    if (realAmount > BigInt(Number.MAX_SAFE_INTEGER) ||
-      realAmount < BigInt(Number.MIN_SAFE_INTEGER)
+    if (input > BigInt(Number.MAX_SAFE_INTEGER) ||
+      input < BigInt(Number.MIN_SAFE_INTEGER)
     ) {
       throw new Error(`toRealAmount() failed: realAmount is outside of safe range.`)
     }
 
-    return Number(realAmount)
+    return Number(input) / valueDivisor
   }
 
   /**
@@ -1278,6 +1277,44 @@ export default class Helper {
       message,
       topicName: 'topic-notification-event',
       status: 'FAILURE',
+    }
+    return effect
+  }
+
+  public buildEffectNotificationSuccess(
+    input: PrepareHandlerInput
+  ): Effect {
+    const headers = { ...input.message.value.content.headers }
+    delete headers['content-length']
+
+    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
+      input.payload.transferId,
+      Enum.Kafka.Topics.TRANSFER,
+      Action.PREPARE,
+      {
+        status: 'success',
+        code: null,
+        description: null,
+      }
+    )
+
+    const message = Util.StreamingProtocol.createMessage(
+      input.payload.transferId,
+      input.payload.payeeFsp,
+      input.payload.payerFsp,
+      metadata,
+      headers,
+      input.payload,
+      {},
+      'application/json',
+    )
+
+    const effect: Effect = {
+      functionality: Type.NOTIFICATION,
+      action: Action.PREPARE,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'SUCCESS',
     }
     return effect
   }
