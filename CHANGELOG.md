@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.3.1](https://github.com/mojaloop/central-ledger/compare/v20.3.0...v20.3.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **settlement:** param coercion to integer due to API behavior change plus repo maintenance ([#1306](https://github.com/mojaloop/central-ledger/issues/1306)) ([6352d50](https://github.com/mojaloop/central-ledger/commit/6352d509d37cd0248b7e0288906ef07319b04a55)), closes [mojaloop/central-services-shared#539](https://github.com/mojaloop/central-services-shared/issues/539) [#1286](https://github.com/mojaloop/central-ledger/issues/1286) [#1307](https://github.com/mojaloop/central-ledger/issues/1307)
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([d095ab2](https://github.com/mojaloop/central-ledger/commit/d095ab2e9b9f78cf451de32306455a3ed2111d43))
+* update dependencies and remove legacy tap-spec formatter ([#1300](https://github.com/mojaloop/central-ledger/issues/1300)) ([593fad2](https://github.com/mojaloop/central-ledger/commit/593fad22c7d232b0bab4f5aac9b99e9de3bc20e1))
+
 ## [20.3.0](https://github.com/mojaloop/central-ledger/compare/v20.2.0...v20.3.0) (2026-10-01)
 
 
