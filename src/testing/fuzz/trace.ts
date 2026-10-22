@@ -9,7 +9,12 @@ export type TraceItem = {
   payload: any,
   code: number
   body: any
-  prngCalls: number
+  prngCalls: number,
+
+  /**
+   * A snapshot of the state after the thing that took place took place.
+   */
+  statePost?: string
 }
 
 export default class Trace {
@@ -120,15 +125,19 @@ export default class Trace {
   private formatItems(items: Array<TraceItem>): string {
     return items
       .map(item => {
-        return [
+        const lines = [
           `${item.step}`,
           `${item.action}:`,
           `path=${item.path}`,
           `payload=${JSON.stringify(item.payload, Trace.stringifyFormatter)}`,
           `body=${JSON.stringify(item.body, Trace.stringifyFormatter, 2)}`,
           `prngCalls=${item.prngCalls}`,
-          `-----`
-        ].join('\n')
+        ]
+        if (item.statePost) {
+          lines.push(`statePost=\n${item.statePost}`)
+        }
+        lines.push(`-----`)
+        return lines.join('\n')
       })
       .join('\n')
   }
@@ -136,14 +145,19 @@ export default class Trace {
   public toString(): string {
     return this.inner
       .map(item => {
-        return [
+        const lines = [
           `${item.step}`,
           `${item.action}:`,
           `\tpath=${item.path}`,
           `\tpayload=${JSON.stringify(item.payload, Trace.stringifyFormatter)}`,
           `\tbody=${JSON.stringify(item.body, Trace.stringifyFormatter, 2)}`,
           `\tprngCalls=${item.prngCalls}`,
-        ].join('\n')
+        ]
+        if (item.statePost) {
+          lines.push(`statePost=\n${item.statePost}`)
+        }
+        lines.push(`-----`)
+        return lines.join('\n')
       })
       .join('\n')
   }

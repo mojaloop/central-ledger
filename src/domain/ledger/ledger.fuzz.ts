@@ -121,6 +121,7 @@ describe('Ledger Fuzz', () => {
 })
 
 const run = async (stepsMax: number, config: Partial<ApplicationConfig>): Promise<Trace> => {
+  const start = performance.now()
   harness.clock.reset()
   harness.prng.reset()
 
@@ -172,6 +173,7 @@ const run = async (stepsMax: number, config: Partial<ApplicationConfig>): Promis
     const fuzzer = new LedgerFuzzer(options, harness)
     await fuzzer.run()
 
+    logger.warn(`run() took ${performance.now() - start}ms.`)
     return fuzzer.trace
   } catch (err: any) {
     logger.error(err.message)
@@ -382,7 +384,7 @@ class LedgerFuzzer {
     return this.actions[action]
   }
 
-  private traceResult(action: ActionName, input: any, output: any) {
+  private traceResult(action: ActionName, input: any, output: any, statePost?: string) {
 
     // For now, we don't care about the internals of the error if there is one in output.
     // Really its up to the outer layers to convert the response to something the API/messaging
@@ -399,7 +401,8 @@ class LedgerFuzzer {
       payload: input,
       code: 0,
       body: outputClone,
-      prngCalls: this.harness.prng.callCount
+      prngCalls: this.harness.prng.callCount,
+      statePost
     })
   }
 
@@ -712,7 +715,8 @@ class LedgerFuzzer {
 
       return clone
     })
-    this.traceResult('prepare', prepares, resultNormalized)
+    const statePost = await this.traceBalances()
+    this.traceResult('prepare', prepares, resultNormalized, statePost)
 
     result.forEach((prepareResult, idx) => {
       const prepare = prepares[idx]
@@ -720,17 +724,13 @@ class LedgerFuzzer {
         this.prepareIdsSuccess[prepare.transferId] = true
       }
     })
-
-    // After every money movement, produce a trace of the balances to help us assert
-    // equal balances between Ledger implementations.
-    await this.traceBalances()
   }
 
-  private async traceBalances(): Promise<void> {
+  private async traceBalances(): Promise<string> {
     const dfspAccounts: Record<string, Array<LegacyLedgerAccount>> = {}
     for (const dfspId of this.registeredDfsps) {
       const accountsResponse = await this.ledger.getAllDfspAccounts({dfspId})
-      if (accountsResponse.type !== 'SUCCESS') return
+      if (accountsResponse.type !== 'SUCCESS') return ''
       dfspAccounts[dfspId] = accountsResponse.accounts
     }
 
@@ -742,7 +742,6 @@ class LedgerFuzzer {
     const COL_VAL = 12
 
     let builder = ''
-
     for (const currency of currencies) {
       const dfspIds = Object.keys(dfspAccounts).sort()
       const width = COL_DFSP + 3 + COL_VAL + 3 + COL_VAL + 1
@@ -767,15 +766,7 @@ class LedgerFuzzer {
 
     // Hmm this is annoying but tracer expects json, not other types of objects.
     // For now we are can stick it in path so it doesn't get json stringified.
-    this.trace.push({
-      step: this.step,
-      action: 'balances',
-      path: '\n' + builder,
-      payload: '',
-      code: 0,
-      body: '',
-      prngCalls: this.harness.prng.callCount
-    })
+    return builder
   }
 
   private async fulfil(): Promise<void> {
