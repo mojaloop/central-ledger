@@ -336,8 +336,7 @@ export class PositionHandlerV2 {
     }
 
     return {
-      // TODO: should this be `notification`?
-      functionality: 'position',
+      functionality: 'notification',
       action: extractAction(action),
       message: item.message,
       topicName: 'topic-notification-event',

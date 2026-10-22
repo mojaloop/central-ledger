@@ -17,7 +17,7 @@ export type TransferFailureResult<T> = CreateTransferResult & {
 }
 
 export type PrepareFailureType = 'FAIL_LIQUIDITY' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | 'MODIFIED' |
-  'EXISTS' | 'UNKNOWN'
+  'EXISTS' | 'UNKNOWN' | 'ALREADY_FAILED'
 export type AbortFailureType = 'ALREADY_ABORTED' | 'ALREADY_FULFILLED' | 'NOT_FOUND' | 'UNKNOWN'
 export type FulfilFailureType = 'ALREADY_ABORTED' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | 'ALREADY_FULFILLED'
   | 'NOT_FOUND' | 'PAYER_ACCOUNT_CLOSED' | 'PAYEE_ACCOUNT_CLOSED' | 'METADATA_CORRUPTED' | 'UNKNOWN'
@@ -744,6 +744,9 @@ export default class Helper {
       const amountStr = prepare.payload.amount.amount
       const currency = prepare.payload.amount.currency
       const prepareId = Helper.fromMojaloopId(prepare.transferId)
+      if (prepare.transferId === '27d9a584-afff-4be8-a459-e6e35727986b') {
+        console.log(`mojaId: ${prepare.transferId} -> tbId: ${prepareId}`)
+      }
 
       // Hash key properties of the transfer for idempotency/modification detection
       const transferHash = Helper.hashTransferProperties({
@@ -915,7 +918,7 @@ export default class Helper {
             fatalErrors[transferId].push({ type: 'PAYEE_CLOSED', ...result })
             return
           case CreateTransferStatus.id_already_failed:
-            fatalErrors[transferId].push({ type: 'MODIFIED', ...result })
+            fatalErrors[transferId].push({ type: 'ALREADY_FAILED', ...result })
             return
         }
       }
@@ -1234,7 +1237,50 @@ export default class Helper {
     return effect
   }
 
-  
+  public buildEffectNotificationErrorLiquidity(
+    input: PrepareHandlerInput,
+    fspiopError: any
+  ): Effect {
+    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+
+    const headers = { ...input.message.value.content.headers }
+    headers['fspiop-destination'] = input.payload.payerFsp
+    headers['fspiop-source'] = this.deps.config.HUB_NAME
+    delete headers['content-length']
+
+    const state = Util.StreamingProtocol.createEventState(
+      Enum.Events.EventStatus.FAILURE.status,
+      apiFSPIOPError.errorInformation.errorCode,
+      apiFSPIOPError.errorInformation.errorDescription
+    )
+
+    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
+      input.payload.transferId,
+      Enum.Kafka.Topics.NOTIFICATION,
+      Action.PREPARE,
+      state
+    )
+
+    const message = Util.StreamingProtocol.createMessage(
+      input.payload.transferId,
+      input.payload.payerFsp,
+      this.deps.config.HUB_NAME,
+      metadata,
+      headers,
+      apiFSPIOPError,
+      { id: input.payload.transferId },
+      'application/json',
+    )
+
+    const effect: Effect = {
+      functionality: Type.NOTIFICATION,
+      action: Action.PREPARE,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+    }
+    return effect
+  }
 
   public buildEffectNotificationDuplicate(
     input: PrepareHandlerInput,
