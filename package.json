@@ -136,8 +136,8 @@
   "devDependencies": {
     "@mojaloop/license-scanner-tool": "1.1.2",
     "@mojaloop/sdk-standard-components": "19.19.3",
-    "@opentelemetry/api": "1.9.1",
-    "@opentelemetry/auto-instrumentations-node": "0.81.2",
+    "@opentelemetry/api": "1.10.0",
+    "@opentelemetry/auto-instrumentations-node": "0.82.0",
     "@types/mock-knex": "0.4.8",
     "@types/node": "26.6.5",
     "@types/rc": "1.2.4",
@@ -173,7 +173,7 @@
       "joi": "17.13.8"
     },
     "jsdoc": {
-      "markdown-it": "14.3.2"
+      "markdown-it": "14.3.3"
     },
     "linkify-it": "5.0.2",
     "protobufjs": "8.8.0",
@@ -258,7 +258,8 @@
     "yaml@1": "1.10.3",
     "yaml@2": "2.9.1",
     "argparse@1": "2.0.1",
-    "argparse@3": "3.0.0"
+    "argparse@3": "3.0.0",
+    "follow-redirects": "1.16.1"
   },
   "config": {
     "knex": "--knexfile ./dist/knexfile.js",
