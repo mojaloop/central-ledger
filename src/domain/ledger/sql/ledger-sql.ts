@@ -139,7 +139,7 @@ interface Dependencies {
 export class LedgerSql implements Ledger {
   private readonly db: Knex
   private readonly helper: Helper
-  
+
   constructor(private deps: Dependencies) {
     assert(deps)
     assert(deps.config)
@@ -353,9 +353,9 @@ export class LedgerSql implements Ledger {
    * This extracts the core logic from the participants handler create method
    */
   private async createParticipantWithCurrency(
-    dfspId: string, 
-    isProxy: boolean, 
-    currency: string, 
+    dfspId: string,
+    isProxy: boolean,
+    currency: string,
     ids: Array<number>
   ): Promise<void> {
     await Participant.validateHubAccounts(currency)
@@ -672,7 +672,7 @@ export class LedgerSql implements Ledger {
           type: 'NOT_FOUND',
           error: ErrorHandler.Factory.createFSPIOPError(
             ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND,
-            `getNetDebitCap() - no limits found for dfspId: ${query.dfspId}, ` + 
+            `getNetDebitCap() - no limits found for dfspId: ${query.dfspId}, ` +
             `currency: ${query.currency}, type: 'NET_DEBIT_CAP`
           )
         }
@@ -1004,7 +1004,7 @@ export class LedgerSql implements Ledger {
         cmd.currency,
         Enum.Accounts.LedgerAccountType.SETTLEMENT
       );
-      
+
       const positionAccount = await ParticipantFacade.getByNameAndCurrency(
         cmd.dfspId,
         cmd.currency,
@@ -1170,6 +1170,7 @@ export class LedgerSql implements Ledger {
       }
     }
 
+    // We should also look up the error we sent last time and if we have one, return that?
     if (hasDuplicateId) {
       return {
         type: PaymentPrepareResultType.DUPLICATE_NON_FINAL,
@@ -1187,6 +1188,15 @@ export class LedgerSql implements Ledger {
 
     // If proxy resolution failed, we can't continue - return accumulated errors.
     if (proxyResult.proxyObligation === null) {
+      allErrors.sort()
+      await remittance.savePreparedRequest(
+        input.payload,
+        allErrors.toString(),
+        false,
+        Helper.dummyDeterminingTransferCheckResult(),
+        Helper.dummyProxyObligation(input.payload)
+      )
+
       const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
         allErrors.toString()
@@ -1216,6 +1226,7 @@ export class LedgerSql implements Ledger {
     allErrors.push(...validationResult.reasons)
 
     if (allErrors.length > 0) {
+      allErrors.sort()
       await remittance.savePreparedRequest(
         input.payload,
         allErrors.toString(),
@@ -1938,7 +1949,15 @@ export class LedgerSql implements Ledger {
 
     // We need to double check the following validation logic incase of payee side currency
     // conversion.
-    const payerResult = await this.deps.proxyCache.getFSPProxy(payload.payerFsp)
+    const payerResult = await this.deps.proxyCache.getFSPProxy(payload.payerFsp, {
+      validateCurrencyAccounts: true,
+      accounts: [
+        {
+          currency: payload.amount.currency,
+          accountType: Enum.Accounts.LedgerAccountType.POSITION
+        }
+      ]
+    })
     const payeeResult = await this.deps.proxyCache.getFSPProxy(payload.payeeFsp, {
       validateCurrencyAccounts: true,
       accounts: [
@@ -1951,18 +1970,20 @@ export class LedgerSql implements Ledger {
     assert(payerResult)
     assert(payeeResult)
 
-    
     if (payerResult.inScheme === false && payerResult.proxyId === null) {
       errors.push(`Payer proxy or participant not found: payer: ${payload.payerFsp}.`)
     }
     if (payeeResult.inScheme === false && payeeResult.proxyId === null) {
       errors.push(`Payee proxy or participant not found: payee: ${payload.payeeFsp}.`)
     }
+    if ((!payerResult.inScheme && !payeeResult.inScheme) && payload.payerFsp === payload.payeeFsp) {
+      errors.push(`Payer FSP and Payee FSP should be different, unless on-us tranfers are allowed by the Scheme`)
+    }
 
     if (errors.length > 0) {
-      return { 
-        proxyObligation: null, 
-        errors 
+      return {
+        proxyObligation: null,
+        errors
       }
     }
 

@@ -1,5 +1,5 @@
 import { Enum, Util } from '@mojaloop/central-services-shared';
-import assert from "node:assert";
+import assert, { fail } from "node:assert";
 import {
   AccountFilterFlags,
   AccountFlags,
@@ -61,6 +61,7 @@ import {
   LegacyLimitItem,
   LookupTransferQuery,
   LookupTransferQueryResponse,
+  PayloadFinalizedTransfer,
   QueryResult,
   QueryResultWithNotFound,
   SetNetDebitCapCommand,
@@ -84,7 +85,7 @@ import {
 const { TransferState } = Enum.Transfers
 
 import SettlementDomain from '../../settlement';
-import { default as Helper, default as LedgerTigerBeetleHelper } from './helper';
+import { CloseDfspMasterAccountFailureType, DepositFailureType, DisableDfspAccountFailureType, EnableDfspAccountFailureType, FulfilFailureType, default as Helper, default as LedgerTigerBeetleHelper, PrepareFailureType, SetNetDebitCapFailureType, TransferFailureResult, WithdrawAbortFailureType, WithdrawCommitFailureType, WithdrawPrepareFailureType } from './helper';
 import SpecStore, { CmdHubCurrencyEnable, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecTransfer, SpecTransferUpdate } from './spec-store';
 import { currencyList } from '../../../seeds/currency';
 
@@ -97,27 +98,6 @@ interface Dependencies {
   enums: Enums,
   specStore: SpecStore,
 }
-
-
-type TransferFailureResult<T> = CreateTransferResult & {
-  type: T
-}
-
-type PrepareFailureType = 'FAIL_LIQUIDITY' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | 'MODIFIED' |
-  'EXISTS' | 'UNKNOWN'
-type AbortFailureType = 'ALREADY_ABORTED' | 'ALREADY_FULFILLED' | 'NOT_FOUND' | 'UNKNOWN'
-type FulfilFailureType = 'ALREADY_ABORTED' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | 'ALREADY_FULFILLED'
-  | 'NOT_FOUND' | 'PAYER_ACCOUNT_CLOSED' | 'PAYEE_ACCOUNT_CLOSED' | 'METADATA_CORRUPTED' | 'UNKNOWN'
-type WithdrawPrepareFailureType = 'DFSP_CLOSED' | 'ACCOUNT_CLOSED' | 'TRANSFER_ID_REUSED' | 'INSUFFICIENT_FUNDS' |
-  'UNKNOWN'
-type WithdrawCommitFailureType = 'NOT_FOUND' | 'UNKNOWN' | 'ALREADY_COMMITTED' | 'ALREADY_ABORTED'
-type WithdrawAbortFailureType = 'NOT_FOUND' | 'UNKNOWN' | 'ALREADY_COMMITTED' | 'ALREADY_ABORTED'
-type DepositFailureType = 'EXISTS' | 'MODIFIED' | 'UNKNOWN' | 'CLOSED'
-type SetNetDebitCapFailureType = 'UNKNOWN'
-type CloseDfspMasterAccountFailureType = 'DEBIT_ACCOUNT_NOT_FOUND' | 'ALREADY_CLOSED' | 'UNKNOWN'
-type EnableDfspAccountFailureType = 'ALREADY_ENABLED' | 'UNKNOWN'
-type DisableDfspAccountFailureType = 'ALREADY_CLOSED' | 'UNKNOWN'
-type SettlementPrepareCreateAccountsFailureType = 'UNKNOWN'
 
 export class LedgerTigerBeetle implements Ledger {
   private readonly config: ApplicationConfig
@@ -281,7 +261,7 @@ export class LedgerTigerBeetle implements Ledger {
 
         // If the master account was already created, then by definition it exists with a different
         // user_data_64.
-        if (idx === 2 &&
+        if (idx === 3 &&
           result.status === CreateAccountStatus.exists_with_different_user_data_64) return
 
         readableErrors.push(CreateAccountStatus[result.status])
@@ -770,7 +750,7 @@ export class LedgerTigerBeetle implements Ledger {
     const netDebitCapAccountIds = [...netDebitCapAccountIdSet]
     // Now lookup the DfspCurrency for these account ids.
     const dfspCurrencies = await this.specStore.dfspCurrenciesForNetDebitCapAccountIds(netDebitCapAccountIds)
-    
+
     const results: Record<string, NetDebitCap> = {}
     Object.entries(dfspCurrencies).forEach(([id, dfspCurrency]) => {
       const lastTransfer = lastTransferMap[id]
@@ -1192,7 +1172,7 @@ export class LedgerTigerBeetle implements Ledger {
       if (specAccounts.length === 0) {
         return {
           type: 'NOT_FOUND',
-          error: new Error(`Dfsp not found for dfspId: ${query.dfspId}`)
+          error: new Error(`Dfsp not found for dfclearspId: ${query.dfspId}`)
         }
       }
 
@@ -1787,11 +1767,15 @@ export class LedgerTigerBeetle implements Ledger {
     }
 
     // Initialize the results.
+    // This is id + idx, but I don't love that...
     const resultsMap: Record<string, PaymentPrepareResult | undefined> = {}
+    const resultsMap2: Record<string, PaymentPrepareResult | undefined> = {}
     const preparesMap: Record<string, PrepareHandlerInput> = {}
+    const preparesMapFailing: Record<string, PrepareHandlerInput> = {}
     inputs.forEach((prepare, idx) => {
       const key = prepare.transferId + `:` + idx
       resultsMap[key] = undefined
+      resultsMap2[prepare.transferId] = undefined
       preparesMap[prepare.transferId] = prepare
     })
 
@@ -1856,26 +1840,27 @@ export class LedgerTigerBeetle implements Ledger {
       }
 
       if (failValidation) {
+        // Backwards compatibility.
+        failureReasons.sort()
+
         // Update the results.
-        // const firstReason = failureReasons[0]
         const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           failureReasons.toString()
         )
-        resultsMap[key] = {
+        const result: PaymentPrepareResult = {
           type: PaymentPrepareResultType.FAIL_VALIDATION,
           effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
           failureReasons,
         }
+        resultsMap[key] = result
+        resultsMap2[prepare.transferId] = result
 
-        // Remove from the set of prepares to continue with.
-        // TODO: need to burn the transferId or something?
+        // Remove from the set of ok prepares, add to the failing map.
         delete preparesMap[prepare.transferId]
+        preparesMapFailing[prepare.transferId] = prepare
       }
     })
-
-    // TODO: Do we need to burn the errored transferId or something?
-    // TODO: more validation here.
 
     const currencies = await this.specStore.getCurrencyConfigsMap()
     const specs = this.helper.buildTransferSpecs(Object.values(preparesMap))
@@ -1889,101 +1874,106 @@ export class LedgerTigerBeetle implements Ledger {
         ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
         `Failed to save transfer spec for transfer: ${result.id}`
       )
-      resultsMap[result.id] = {
+      const resultFail: PaymentPrepareResult = {
         type: PaymentPrepareResultType.FAIL_OTHER,
         effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
         error: new Error(`Failed to save transfer spec for transfer: ${result.id}`)
       }
+      resultsMap[result.id] = resultFail
+      resultsMap2[prepare.transferId] = resultFail
 
-      // Remove from the preparesMap if it failed.
+      // Remove from the set of ok prepares, add to the failing map.
       delete preparesMap[result.id]
+      preparesMapFailing[prepare.transferId] = prepare
     })
 
-    const transfers = this.helper.buildTransfersPrepares(
+    const transfersOk = this.helper.buildPrepareTransfersOk(
       Object.values(preparesMap),
       currencies,
       dfspRoots,
       dfspCurrencyMap
     )
-
-    const fatalErrors: Record<string, Array<TransferFailureResult<PrepareFailureType>>> = {}
-    // Initialize the errors.
-    Object.values(preparesMap).forEach(prepare => {
-      fatalErrors[prepare.transferId] = []
-    })
-
-    const createTransferResults = await this.deps.client.createTransfers(transfers)
-    createTransferResults.forEach((result, idxAllTransfers) => {
-      // We can skip this.
-      if (result.status === CreateTransferStatus.created) return
-
-      // Figure out what prepare we're handling.
-      const idxPrepare = Math.floor(idxAllTransfers / amplificationFactor)
-      const prepare = Object.values(preparesMap)[idxPrepare]
-      assert(prepare)
-      const transferId = prepare.transferId
-
-      // The individual transfer within the prepare.
-      const idxTransfer = idxAllTransfers % amplificationFactor
-
-      // Ignore noisy errors
-      if (result.status === CreateTransferStatus.linked_event_failed) {
-        return
-      }
-
-      if (idxTransfer === 0) {
-        switch (result.status) {
-          case CreateTransferStatus.exists: {
-            fatalErrors[transferId].push({ type: 'EXISTS', ...result })
-            return
-          }
-          case CreateTransferStatus.exists_with_different_amount:
-          case CreateTransferStatus.exists_with_different_debit_account_id:
-          case CreateTransferStatus.exists_with_different_credit_account_id:
-          case CreateTransferStatus.exists_with_different_user_data_64:
-          case CreateTransferStatus.exists_with_different_user_data_32: {
-            fatalErrors[transferId].push({ type: 'MODIFIED', ...result })
-            return
-          }
-          case CreateTransferStatus.debit_account_already_closed:
-            fatalErrors[transferId].push({ type: 'PAYER_CLOSED', ...result })
-            return
-          case CreateTransferStatus.credit_account_already_closed:
-            fatalErrors[transferId].push({ type: 'PAYEE_CLOSED', ...result })
-            return
-          case CreateTransferStatus.id_already_failed:
-            fatalErrors[transferId].push({ type: 'MODIFIED', ...result })
-            return
-        }
-      }
-
-      if (idxTransfer === 3) {
-        switch (result.status) {
-          // Collapse the DFSP deactivated and DFSP account deactivated into the same error
-          case CreateTransferStatus.debit_account_already_closed:
-            fatalErrors[transferId].push({ type: 'PAYER_CLOSED', ...result })
-            return
-        }
-      }
-
-      if (idxTransfer === 5) {
-        switch (result.status) {
-          case CreateTransferStatus.exceeds_credits: {
-            fatalErrors[transferId].push({ type: 'FAIL_LIQUIDITY', ...result })
-            return
-          }
-        }
-      }
-
-      const msg = `unhandled transfer result: ${idxAllTransfers}, ${CreateTransferStatus[result.status]}`
-      console.error(msg)
-      logger.error(msg)
-      throw new Error(msg)
-    })
+    // For the prepares that failed validation, we store a Transfer in TigerBeetle to represent
+    // them, essentially 'burning' the id, so we don't later accept it.
+    const transfersBurn = this.helper.buildPrepareTransfersBurn(
+      Object.values(preparesMapFailing),
+    )
+    const results = await this.deps.client.createTransfers([
+      ...transfersOk, ...transfersBurn
+    ])
+    const createTransferResultsOk = results.slice(0, transfersOk.length)
+    const createTransferResultsBurn = results.slice(transfersOk.length)
+    assert.equal(transfersOk.length, createTransferResultsOk.length)
+    assert.equal(transfersBurn.length, createTransferResultsBurn.length)
+    const fatalErrorsOk = this.helper.mapResultsPrepareOk(createTransferResultsOk, preparesMap)
+    const fatalErrorsBurn = this.helper.mapResultsPrepareBurn(createTransferResultsBurn, preparesMapFailing)
 
     // Map from Transfer Results => PaymentPrepareResults.
     const resultsTigerBeetle: Record<string, PaymentPrepareResult> = {}
-    Object.entries(fatalErrors).forEach(([transferId, errors]) => {
+
+    // For any transfers that TigerBeetle flagged as modified, we need to look up those IDs to 
+    // get their completedTimestamp.
+    const lookupPrepareIds: Array<string> = []
+    Object.entries(fatalErrorsOk).forEach(([transferId, errors]) => {
+      if (errors.length === 0) return
+      const firstError = errors[0]
+      if (firstError.type === 'EXISTS' || firstError.type === 'MODIFIED') {
+        lookupPrepareIds.push(transferId)
+      }
+    })
+    Object.entries(fatalErrorsBurn).forEach(([transferId, errors]) => {
+      if (errors.length === 0) return
+      const firstError = errors[0]
+      if (firstError.type === 'EXISTS' || firstError.type === 'MODIFIED') {
+        lookupPrepareIds.push(transferId)
+      }
+    })
+  
+    if (lookupPrepareIds.length > 0) {
+      const transfers = await this.lookupTransfers(lookupPrepareIds)
+    }  
+
+    Object.entries(fatalErrorsBurn).forEach(([transferId, errors]) => {
+      if (errors.length === 0) {
+        assert(resultsMap2[transferId], `Expected a result to already exist for transferId: ${transferId}.`)
+        return
+      }
+
+      let result: PaymentPrepareResult
+      const prepare = preparesMapFailing[transferId]
+      assert(prepare)
+
+      const firstError = errors[0]
+      switch (firstError.type) {
+        case 'EXISTS':
+        case 'MODIFIED':
+          {
+            // TODO: need to now look this up in batch!
+            const payload: PayloadFinalizedTransfer = {
+              completedTimestamp: new Date(),
+              transferState: 'ABORTED'
+            }
+
+            // Prepare has already failed. Override any other results.
+            result = {
+              type: PaymentPrepareResultType.DUPLICATE_FINAL,
+              // TODO: build me!
+              effects: [this.helper.buildEffectNotificationDuplicate(prepare, payload)],
+              finalizedTransfer: {
+                completedTimestamp: payload.completedTimestamp.toISOString(),
+                transferState: 'ABORTED'
+              }
+            }
+            resultsTigerBeetle[transferId] = result
+            return
+          }
+        default: {
+          assert(resultsMap2[transferId], `Expected a result to already exist for transferId: ${transferId}.`)
+        }
+      }
+    })
+
+    Object.entries(fatalErrorsOk).forEach(([transferId, errors]) => {
       let result: PaymentPrepareResult
       if (errors.length === 0) {
         result = {
@@ -2212,6 +2202,16 @@ export class LedgerTigerBeetle implements Ledger {
   public async lookupTransfer(query: LookupTransferQuery): Promise<LookupTransferQueryResponse> {
     throw new Error('Method not implemented.');
   }
+
+  public async lookupTransfers(transferIds: Array<string>): Promise<Record<string, any>> {
+    // TODO: look them up! Also partials etc.
+    // Should be at most 2 round trips
+    // Look up TigerBeetle, then look up spec.
+
+
+    return []
+  }
+
   public async closeSettlementWindow(cmd: SettlementCloseWindowCommand): Promise<CommandResult<void>> {
     throw new Error('Method not implemented.');
   }
