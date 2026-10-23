@@ -109,9 +109,31 @@ exports.up = async (knex) => {
       })
     }
   })
+
+  await knex.schema.hasTable('specPrepare').then(function (exists) {
+    if (!exists) {
+      return knex.schema.createTable('specPrepare', (t) => {
+        t.string('id', 36).primary().notNullable()
+        t.integer('payloadHash').notNullable()
+        t.dateTime('abortedAt')
+      })
+    }
+  })
 }
 
 exports.down = async (knex) => {
+  await knex.schema.hasTable('specTransfer').then(function (exists) {
+    if (exists) {
+      return knex.schema.dropTableIfExists('specTransfer')
+    }
+  })
+
+  await knex.schema.hasTable('specPrepare').then(function (exists) {
+    if (exists) {
+      return knex.schema.dropTableIfExists('specPrepare')
+    }
+  })
+
   await knex.schema.hasTable('specCurrencyConfig').then(function (exists) {
     if (exists) {
       return knex.schema.dropTableIfExists('specCurrencyConfig')

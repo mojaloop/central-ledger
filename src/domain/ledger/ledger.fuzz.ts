@@ -43,6 +43,7 @@ import {
 } from "../ledger/shared/types"
 import { PaymentPrepareResultType, PrepareHandlerInput } from "../../handlers/payment-prepare"
 import { FulfilHandlerInput, PaymentFulfilResultType } from "../../handlers/payment-fulfil"
+import { Reporter } from "./shared/reporter"
 
 const logger = loggerFactory()
 
@@ -253,6 +254,7 @@ class LedgerFuzzer {
 
   private ledger: Ledger
   private prng: PRNG
+  private reporter: Reporter
 
   private weights: Record<string, number> = {
     createHubAccount: 2,
@@ -309,6 +311,11 @@ class LedgerFuzzer {
     this.stepsMax = options.stepsMax
     this.ledger = harness.ledger
     this.prng = harness.prng
+
+    this.reporter = new Reporter({
+      ledger: this.ledger,
+      config: this.harness.config
+    })
   }
 
   public async run() {
@@ -715,7 +722,10 @@ class LedgerFuzzer {
 
       return clone
     })
-    const statePost = await this.traceBalances()
+    // const statePost = await this.traceBalances()
+    const balanceSheet = await this.reporter.balanceSheet(new Date())
+    const statePost = balanceSheet.toStringAll()
+    // const statePost = undefined
     this.traceResult('prepare', prepares, resultNormalized, statePost)
 
     result.forEach((prepareResult, idx) => {
@@ -724,49 +734,6 @@ class LedgerFuzzer {
         this.prepareIdsSuccess[prepare.transferId] = true
       }
     })
-  }
-
-  private async traceBalances(): Promise<string> {
-    const dfspAccounts: Record<string, Array<LegacyLedgerAccount>> = {}
-    for (const dfspId of this.registeredDfsps) {
-      const accountsResponse = await this.ledger.getAllDfspAccounts({dfspId})
-      if (accountsResponse.type !== 'SUCCESS') return ''
-      dfspAccounts[dfspId] = accountsResponse.accounts
-    }
-
-    const currencies = [...new Set(
-      Object.values(dfspAccounts).flat().map(acc => acc.currency)
-    )]
-
-    const COL_DFSP = 12
-    const COL_VAL = 12
-
-    let builder = ''
-    for (const currency of currencies) {
-      const dfspIds = Object.keys(dfspAccounts).sort()
-      const width = COL_DFSP + 3 + COL_VAL + 3 + COL_VAL + 1
-
-      builder += `┌${'─'.repeat(width - 1)}┐\n`
-      builder += `│ ${currency.padEnd(width - 4)}  │\n`
-      builder += `├${'─'.repeat(COL_DFSP)}┬${'─'.repeat(COL_VAL + 2)}┬${'─'.repeat(COL_VAL + 2)}┤\n`
-      builder += `│${' DFSP'.padEnd(COL_DFSP)}│${'Position'.padStart(COL_VAL)}  │${'Settlement'.padStart(COL_VAL)}  │\n`
-      builder += `├${'─'.repeat(COL_DFSP)}┼${'─'.repeat(COL_VAL + 2)}┼${'─'.repeat(COL_VAL + 2)}┤\n`
-
-      for (const dfspId of dfspIds) {
-        const accounts = dfspAccounts[dfspId].filter(acc => acc.currency === currency)
-        const position = accounts.find(acc => acc.ledgerAccountType === 'POSITION')
-        const settlement = accounts.find(acc => acc.ledgerAccountType === 'SETTLEMENT')
-        const valuePosition = position ? position.value.toString().padStart(COL_VAL) : '-'.padStart(COL_VAL)
-        const valueSettlement = settlement ? settlement.value.toString().padStart(COL_VAL) : '-'.padStart(COL_VAL)
-        builder += `│ ${dfspId.padEnd(COL_DFSP - 1)}│${valuePosition}  │${valueSettlement}  │\n`
-      }
-
-      builder += `└${'─'.repeat(COL_DFSP)}┴${'─'.repeat(COL_VAL + 2)}┴${'─'.repeat(COL_VAL + 2)}┘\n`
-    }
-
-    // Hmm this is annoying but tracer expects json, not other types of objects.
-    // For now we are can stick it in path so it doesn't get json stringified.
-    return builder
   }
 
   private async fulfil(): Promise<void> {

@@ -100,6 +100,7 @@ interface Dependencies {
   specStore: SpecStore,
 }
 
+
 export class LedgerTigerBeetle implements Ledger {
   private readonly config: ApplicationConfig
   private readonly client: Client
@@ -1633,6 +1634,8 @@ export class LedgerTigerBeetle implements Ledger {
     }
   }
 
+
+
   public async setNetDebitCap(cmd: SetNetDebitCapCommand): Promise<CommandResult<void>> {
     assert(cmd.currency)
     assert(cmd.dfspId)
@@ -1820,11 +1823,16 @@ export class LedgerTigerBeetle implements Ledger {
     }
 
     // Initialize the results.
-    // This is id + idx, but I don't love that...
+    // TODO: This is id + idx, but I don't love that...
     const resultsMap: Record<string, PaymentPrepareResult | undefined> = {}
     const resultsMap2: Record<string, PaymentPrepareResult | undefined> = {}
     const preparesMap: Record<string, PrepareHandlerInput> = {}
     const preparesMapFailing: Record<string, PrepareHandlerInput> = {}
+    
+    // Keep track of the specPrepareIds that need to be manually aborted.
+    const specPrepareAbortIds: Array<string> = []
+    const specPrepareAbortTimestamps: Array<Date> = []
+
     inputs.forEach((prepare, idx) => {
       const key = prepare.transferId + `:` + idx
       resultsMap[key] = undefined
@@ -1912,12 +1920,14 @@ export class LedgerTigerBeetle implements Ledger {
         // Remove from the set of ok prepares, add to the failing map.
         delete preparesMap[prepare.transferId]
         preparesMapFailing[prepare.transferId] = prepare
+
+        specPrepareAbortIds.push(prepare.transferId)
+        specPrepareAbortTimestamps.push(new Date())
       }
     })
 
     const currencies = await this.specStore.getCurrencyConfigsMap()
-    // At the moment, we store the spec even if it's failed validation. 
-    // We may want to store it in a different place, or mark it as failed validation.
+    
     const specs = this.helper.buildTransferSpecs([
       ...Object.values(preparesMap),
       ...Object.values(preparesMapFailing),
@@ -1947,6 +1957,12 @@ export class LedgerTigerBeetle implements Ledger {
       delete preparesMap[result.id]
       preparesMapFailing[prepare.transferId] = prepare
     })
+
+    const specPrepares = this.helper.buildSpecsPrepare([
+      ...Object.values(preparesMap),
+      ...Object.values(preparesMapFailing),
+    ])
+    await this.specStore.saveSpecPrepares(specPrepares)
 
     const transfersOk = this.helper.buildPrepareTransfersOk(
       Object.values(preparesMap),
@@ -1985,12 +2001,13 @@ export class LedgerTigerBeetle implements Ledger {
     Object.entries(fatalErrorsBurn).forEach(([transferId, errors]) => {
       if (errors.length === 0) return
       const firstError = errors[0]
-      if (firstError.type === 'EXISTS' || firstError.type === 'MODIFIED') {
+      if (firstError.type === 'EXISTS' || firstError.type === 'MODIFIED' || firstError.type === 'ALREADY_FAILED') {
         lookupPrepareIds.push(transferId)
       }
     })
 
     const finalizedPayments = await this.lookupTransfers(lookupPrepareIds)
+    const savedSpecsPrepares = await this.specStore.getSpecPrepares(lookupPrepareIds)
     Object.entries(fatalErrorsBurn).forEach(([transferId, errors]) => {
       if (errors.length === 0) {
         assert(resultsMap2[transferId], `Expected a result to already exist for transferId: ${transferId}.`)
@@ -2005,8 +2022,7 @@ export class LedgerTigerBeetle implements Ledger {
       switch (firstError.type) {
         // It failed before, but we at least have the TigerBeetle Transfer, maybe we have the
         // SpecTranfer.
-        case 'EXISTS':
-        case 'MODIFIED': {
+        case 'EXISTS': {
           const finalized = finalizedPayments[transferId]
           assert(finalized)
           if (finalized.type !== LookupTransferResultType.FOUND) {
@@ -2024,27 +2040,65 @@ export class LedgerTigerBeetle implements Ledger {
           resultsTigerBeetle[transferId] = result
           return
         }
-        // It failed but was never created in the first place.
+        // It failed with a transient error in TigerBeetle, so there's no transfer to look up.
+        case 'MODIFIED': 
         case 'ALREADY_FAILED': {
-
-          // TODO: where can we get this date from?
-          const payload: PayloadFinalizedTransfer = {
-            completedTimestamp: new Date(),
-            transferState: 'ABORTED'
-          }
-          
-          // Prepare has already failed. Override any other results.
-          result = {
-            type: PaymentPrepareResultType.DUPLICATE_FINAL,
-            effects: [this.helper.buildEffectNotificationDuplicate(prepare, payload)],
-            finalizedTransfer: {
-              completedTimestamp: payload.completedTimestamp.toISOString(),
-              transferState: 'ABORTED'
+          const specPrepare = savedSpecsPrepares.find(spec => spec.id === prepare.transferId)
+          if (specPrepare && specPrepare.type === 'SUCCESS') {
+            const prepareHash = Helper.hashTransferProperties({
+              amount: prepare.payload.amount.amount,
+              currency: prepare.payload.amount.currency,
+              expiration: prepare.payload.expiration,
+              payeeFsp: prepare.payload.payeeFsp,
+              payerFsp: prepare.payload.payerFsp,
+              condition: prepare.payload.condition,
+              ilpPacket: prepare.payload.ilpPacket,
+            })
+            if (prepareHash !== specPrepare.result.payloadHash) {
+              const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+                ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
+              )
+              result = {
+                type: PaymentPrepareResultType.MODIFIED,
+                effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
+              }
+              resultsTigerBeetle[transferId] = result
+              return
             }
+
+            if (specPrepare.result.abortedAt) {
+              // Get a prepareFailed, with a timestamp and hash of the properties.
+              const payload: PayloadFinalizedTransfer = {
+                completedTimestamp: specPrepare.result.abortedAt,
+                transferState: 'ABORTED'
+              }
+
+              // Prepare has already failed. Override any other results.
+              result = {
+                type: PaymentPrepareResultType.DUPLICATE_FINAL,
+                effects: [this.helper.buildEffectNotificationDuplicate(prepare, payload)],
+                finalizedTransfer: {
+                  completedTimestamp: payload.completedTimestamp.toISOString(),
+                  transferState: 'ABORTED'
+                }
+              }
+              resultsTigerBeetle[transferId] = result
+              return
+            }
+          }
+
+          // Fatal transfer error - this shouldn't happen.
+          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+            ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+            `Already failed transfer ${transferId}`
+          )
+          result = {
+            type: PaymentPrepareResultType.FAIL_OTHER,
+            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
+            error: new Error(`Already failed transfer ${transferId}`)
           }
           resultsTigerBeetle[transferId] = result
           return
-
         }
         default: {
           assert(resultsMap2[transferId], `Expected a result to already exist for transferId: ${transferId}.`)
@@ -2151,10 +2205,16 @@ export class LedgerTigerBeetle implements Ledger {
       }
       assert(result)
       resultsTigerBeetle[transferId] = result
+
+      specPrepareAbortIds.push(transferId)
+      specPrepareAbortTimestamps.push(new Date())
     })
 
-    const resultsOrdered: Record<string, PaymentPrepareResult> = {}
+    // Update the SpecPrepares for the payments that failed either at validation or TigerBeetle step
+    // We need this to keep track of the abort timestamp.
+    await this.specStore.attachSpecPrepareAbortedAt(specPrepareAbortIds, specPrepareAbortTimestamps)
 
+    const resultsOrdered: Record<string, PaymentPrepareResult> = {}
     Object.entries(resultsMap).forEach(([key, result]) => {
       const [transferId, idx] = key.split(':')
       assert(transferId)
