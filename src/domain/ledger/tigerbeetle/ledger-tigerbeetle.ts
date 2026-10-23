@@ -1828,6 +1828,9 @@ export class LedgerTigerBeetle implements Ledger {
     const resultsMap2: Record<string, PaymentPrepareResult | undefined> = {}
     const preparesMap: Record<string, PrepareHandlerInput> = {}
     const preparesMapFailing: Record<string, PrepareHandlerInput> = {}
+    // Map from Transfer Results => PaymentPrepareResults.
+    const resultsTigerBeetle: Record<string, PaymentPrepareResult> = {}
+
     
     // Keep track of the specPrepareIds that need to be manually aborted.
     const specPrepareAbortIds: Array<string> = []
@@ -1850,6 +1853,63 @@ export class LedgerTigerBeetle implements Ledger {
     const dfsps = await this.specStore.getDfspCurrenciesAll(Object.keys(dfspIdMap))
     const dfspRoots = await this.specStore.getDfspRoots(Object.keys(dfspIdMap))
     const netDebitCaps = await this.getInternalNetDebitCaps()
+    
+    // Get all the existing specPrepares.
+    // Check to see if the ids have already been used and failed.
+    const savedSpecsPrepares = await this.specStore.getSpecPrepares(Object.keys(preparesMap))
+    savedSpecsPrepares.forEach(specPrepareResult => {
+      if (specPrepareResult.type === 'NOT_FOUND') return
+
+      const specPrepare = specPrepareResult.result
+      const prepare = preparesMap[specPrepare.id]
+      const prepareHash = Helper.hashTransferProperties({
+        amount: prepare.payload.amount.amount,
+        currency: prepare.payload.amount.currency,
+        expiration: prepare.payload.expiration,
+        payeeFsp: prepare.payload.payeeFsp,
+        payerFsp: prepare.payload.payerFsp,
+        condition: prepare.payload.condition,
+        ilpPacket: prepare.payload.ilpPacket,
+      })
+
+      // This new prepare is a modified version of an existing prepare.
+      if (prepareHash !== specPrepare.payloadHash) {
+        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
+        )
+        const result: PaymentPrepareResult = {
+          type: PaymentPrepareResultType.MODIFIED,
+          effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
+        }
+        resultsTigerBeetle[prepare.transferId] = result
+        // Remove from the set of ok prepares, add to the failing map.
+        delete preparesMap[prepare.transferId]
+        preparesMapFailing[prepare.transferId] = prepare
+        return
+      }
+
+      // This new prepare is identical, but was already aborted.
+      if (specPrepare.abortedAt) {
+        // Get a prepareFailed, with a timestamp and hash of the properties.
+        const payload: PayloadFinalizedTransfer = {
+          completedTimestamp: specPrepare.abortedAt,
+          transferState: 'ABORTED'
+        }
+
+        // Prepare has already failed. Override any other results.
+        const result: PaymentPrepareResult = {
+          type: PaymentPrepareResultType.DUPLICATE_FINAL,
+          effects: [this.helper.buildEffectNotificationDuplicate(prepare, payload)],
+          finalizedTransfer: {
+            completedTimestamp: payload.completedTimestamp.toISOString(),
+            transferState: 'ABORTED'
+          }
+        }
+        resultsTigerBeetle[prepare.transferId] = result
+        return
+      }
+    })
+
     const dfspCurrencyMap: Record<string, DfspCurrency> = {}
     dfsps.forEach(dfspCurrency => {
       dfspCurrencyMap[`${dfspCurrency.dfspId}:${dfspCurrency.currency}`] = dfspCurrency
@@ -1985,9 +2045,7 @@ export class LedgerTigerBeetle implements Ledger {
     const fatalErrorsOk = this.helper.mapResultsPrepareOk(createTransferResultsOk, preparesMap)
     const fatalErrorsBurn = this.helper.mapResultsPrepareBurn(createTransferResultsBurn, preparesMapFailing)
 
-    // Map from Transfer Results => PaymentPrepareResults.
-    const resultsTigerBeetle: Record<string, PaymentPrepareResult> = {}
-
+    
     // For any transfers that TigerBeetle flagged as modified, we need to look up those IDs to 
     // get their completedTimestamp.
     const lookupPrepareIds: Array<string> = []
@@ -2007,7 +2065,7 @@ export class LedgerTigerBeetle implements Ledger {
     })
 
     const finalizedPayments = await this.lookupTransfers(lookupPrepareIds)
-    const savedSpecsPrepares = await this.specStore.getSpecPrepares(lookupPrepareIds)
+    // const savedSpecsPrepares = await this.specStore.getSpecPrepares(lookupPrepareIds)
     Object.entries(fatalErrorsBurn).forEach(([transferId, errors]) => {
       if (errors.length === 0) {
         assert(resultsMap2[transferId], `Expected a result to already exist for transferId: ${transferId}.`)

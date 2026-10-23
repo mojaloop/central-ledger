@@ -320,7 +320,8 @@ const _handleParticipantPositionChange = (runningPosition, transferAmount, trans
   const transferStateChange = {
     transferId,
     transferStateId,
-    reason: undefined
+    reason: undefined,
+    createdDate: new Date()
   }
   return { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition }
 }

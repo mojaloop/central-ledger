@@ -315,7 +315,8 @@ const processPositionPrepareBin = async (
       const transferStateChange = {
         transferId: transfer.transferId,
         transferStateId,
-        reason
+        reason,
+        createdDate: new Date()
       }
       transferStateChanges.push(transferStateChange)
       Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferStateChange: ${JSON.stringify(transferStateChange)}`)

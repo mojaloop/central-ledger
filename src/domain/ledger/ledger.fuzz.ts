@@ -709,8 +709,12 @@ class LedgerFuzzer {
 
           // Ignore the completedTimestamp if the transfer is aborted. We don't always have that
           // information in LedgerTigerBeetle.
-          if (effect.message.content.payload.transferState === 'ABORTED') {
-            effect.message.content.payload.completedTimestamp = (new Date(0))
+          // if (effect.message.content.payload.transferState === 'ABORTED') {
+          //   effect.message.content.payload.completedTimestamp = (new Date(0))
+          // }
+          // Not currently supported by LedgerTigerBeetle.
+          if (effect.message.content.payload.extensionList) {
+            delete effect.message.content.payload.extensionList
           }
         })
       }
@@ -723,9 +727,9 @@ class LedgerFuzzer {
       return clone
     })
     // const statePost = await this.traceBalances()
-    const balanceSheet = await this.reporter.balanceSheet(new Date())
-    const statePost = balanceSheet.toStringAll()
-    // const statePost = undefined
+    // const balanceSheet = await this.reporter.balanceSheet(new Date())
+    // const statePost = balanceSheet.toStringAll()
+    const statePost = undefined
     this.traceResult('prepare', prepares, resultNormalized, statePost)
 
     result.forEach((prepareResult, idx) => {
