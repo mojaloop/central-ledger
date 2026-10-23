@@ -59,8 +59,10 @@ class BalanceSheet {
         const accounts = this.dfspAccounts[dfspId].filter(acc => acc.currency === currency)
         const position = accounts.find(acc => acc.ledgerAccountType === 'POSITION')
         const settlement = accounts.find(acc => acc.ledgerAccountType === 'SETTLEMENT')
-        assert(position, `No position account found for ${currency}, ${dfspId}`)
-        assert(settlement, `No settlement account found for ${currency}, ${dfspId}`)
+        
+        // This is fine, not every dfsp will have an account for every currency.
+        if (!position) continue
+        if (!settlement) continue
 
         // TODO: also handle TigerBeetle extended balances!
         const dfspBalance: DfspBalance = {
@@ -84,9 +86,7 @@ class BalanceSheet {
   }
 
   public toStringAll(): string {
-    const eachReport = this.currencies.map(currency => {
-      this.toStringCurrency(currency)
-    })
+    const eachReport = this.currencies.map(currency => this.toStringCurrency(currency))
 
 
     return eachReport.join('\n')
@@ -112,7 +112,7 @@ class BalanceSheet {
       const dfspBalance = dfspBalances.dfsps[dfspId]
       if (!dfspBalance) {
         // Print empty columns.
-        builder += `│ ${dfspId.padEnd(COL_DFSP - 1)}│${'-'.padStart(COL_VAL)}│${'-'.padStart(COL_VAL)}│\n`
+        builder += `│ ${dfspId.padEnd(COL_DFSP - 1)}│${'-'.padStart(COL_VAL)}  │${'-'.padStart(COL_VAL)}  │\n`
         continue
       }
       const valuePosition = dfspBalance.dfspAccountsLegacy.balancePosition.toString().padStart(COL_VAL)
@@ -126,6 +126,9 @@ class BalanceSheet {
   }
 }
 
+/**
+ * Utility for generating reports by executing queries on the Ledger.
+ */
 export class Reporter {
   private readonly ledger: Ledger
 

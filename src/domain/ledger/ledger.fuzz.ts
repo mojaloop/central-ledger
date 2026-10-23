@@ -736,50 +736,6 @@ class LedgerFuzzer {
     })
   }
 
-  private async traceBalances(): Promise<string> {
-    const dfspAccounts: Record<string, Array<LegacyLedgerAccount>> = {}
-    for (const dfspId of this.registeredDfsps) {
-      // TODO: need to implement a batch version of this!
-      const accountsResponse = await this.ledger.getAllDfspAccounts({dfspId})
-      if (accountsResponse.type !== 'SUCCESS') return ''
-      dfspAccounts[dfspId] = accountsResponse.accounts
-    }
-
-    const currencies = [...new Set(
-      Object.values(dfspAccounts).flat().map(acc => acc.currency)
-    )]
-
-    const COL_DFSP = 12
-    const COL_VAL = 12
-
-    let builder = ''
-    for (const currency of currencies) {
-      const dfspIds = Object.keys(dfspAccounts).sort()
-      const width = COL_DFSP + 3 + COL_VAL + 3 + COL_VAL + 1
-
-      builder += `┌${'─'.repeat(width - 1)}┐\n`
-      builder += `│ ${currency.padEnd(width - 4)}  │\n`
-      builder += `├${'─'.repeat(COL_DFSP)}┬${'─'.repeat(COL_VAL + 2)}┬${'─'.repeat(COL_VAL + 2)}┤\n`
-      builder += `│${' DFSP'.padEnd(COL_DFSP)}│${'Position'.padStart(COL_VAL)}  │${'Settlement'.padStart(COL_VAL)}  │\n`
-      builder += `├${'─'.repeat(COL_DFSP)}┼${'─'.repeat(COL_VAL + 2)}┼${'─'.repeat(COL_VAL + 2)}┤\n`
-
-      for (const dfspId of dfspIds) {
-        const accounts = dfspAccounts[dfspId].filter(acc => acc.currency === currency)
-        const position = accounts.find(acc => acc.ledgerAccountType === 'POSITION')
-        const settlement = accounts.find(acc => acc.ledgerAccountType === 'SETTLEMENT')
-        const valuePosition = position ? position.value.toString().padStart(COL_VAL) : '-'.padStart(COL_VAL)
-        const valueSettlement = settlement ? settlement.value.toString().padStart(COL_VAL) : '-'.padStart(COL_VAL)
-        builder += `│ ${dfspId.padEnd(COL_DFSP - 1)}│${valuePosition}  │${valueSettlement}  │\n`
-      }
-
-      builder += `└${'─'.repeat(COL_DFSP)}┴${'─'.repeat(COL_VAL + 2)}┴${'─'.repeat(COL_VAL + 2)}┘\n`
-    }
-
-    // Hmm this is annoying but tracer expects json, not other types of objects.
-    // For now we are can stick it in path so it doesn't get json stringified.
-    return builder
-  }
-
   private async fulfil(): Promise<void> {
     const fulfills: Array<FulfilHandlerInput> = [this.makeFulfilOrAbort()]
     // for (let index = 0; index < this.prng.intExclusive(1); index++) {
