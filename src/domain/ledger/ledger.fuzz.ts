@@ -43,6 +43,7 @@ import {
 } from "../ledger/shared/types"
 import { PaymentPrepareResultType, PrepareHandlerInput } from "../../handlers/payment-prepare"
 import { FulfilHandlerInput, PaymentFulfilResultType } from "../../handlers/payment-fulfil"
+import { Reporter } from "./shared/reporter"
 
 const logger = loggerFactory()
 
@@ -253,6 +254,7 @@ class LedgerFuzzer {
 
   private ledger: Ledger
   private prng: PRNG
+  private reporter: Reporter
 
   private weights: Record<string, number> = {
     createHubAccount: 2,
@@ -309,6 +311,11 @@ class LedgerFuzzer {
     this.stepsMax = options.stepsMax
     this.ledger = harness.ledger
     this.prng = harness.prng
+
+    this.reporter = new Reporter({
+      ledger: this.ledger,
+      config: this.harness.config
+    })
   }
 
   public async run() {
@@ -715,7 +722,10 @@ class LedgerFuzzer {
 
       return clone
     })
-    const statePost = await this.traceBalances()
+    // const statePost = await this.traceBalances()
+    const balanceSheet = await this.reporter.balanceSheet(new Date())
+    const statePost = balanceSheet.toStringAll()
+    // const statePost = undefined
     this.traceResult('prepare', prepares, resultNormalized, statePost)
 
     result.forEach((prepareResult, idx) => {
@@ -729,6 +739,7 @@ class LedgerFuzzer {
   private async traceBalances(): Promise<string> {
     const dfspAccounts: Record<string, Array<LegacyLedgerAccount>> = {}
     for (const dfspId of this.registeredDfsps) {
+      // TODO: need to implement a batch version of this!
       const accountsResponse = await this.ledger.getAllDfspAccounts({dfspId})
       if (accountsResponse.type !== 'SUCCESS') return ''
       dfspAccounts[dfspId] = accountsResponse.accounts

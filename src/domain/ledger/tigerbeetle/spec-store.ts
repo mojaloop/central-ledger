@@ -296,9 +296,32 @@ export type GetSpecTransferResult = {
   id: string
 }
 
+
+
 export type AttachFulfilmentResult = {
 
 }
+
+/**
+ * Store these parameters of a prepare so that we can keep track of the aborted timestamp, and
+ * the payload hash to check for modified prepares.
+ */
+export type SpecPrepare = {
+  id: string,
+  payloadHash: number,
+  abortedAt?: Date
+}
+
+export type GetSpecPrepareResult = {
+  type: 'SUCCESS'
+  id: string,
+  result: SpecPrepare
+} | {
+  type: 'NOT_FOUND',
+  id: string
+}
+
+
 
 export interface DepsSpecStore {
   config: ApplicationConfig
@@ -311,6 +334,7 @@ const TABLE_CURRENCY_CONFIG = 'specCurrencyConfig'
 const TABLE_CURRENCY_ACCOUNT = 'specLegacyHubCurrency'
 const TABLE_DFSP_ROOT = 'specDfspRoot'
 const TABLE_DFSP_CURRENCY = 'specDfspCurrency'
+const TABLE_PREPARE = 'specPrepare'
 const TABLE_TRANSFER = 'specTransfer'
 const TABLE_NET_DEBIT_CAP = 'specNetDebitCap'
 
@@ -729,10 +753,7 @@ export default class SpecStore {
       )
     }
 
-    return {
-      code,
-      currency
-    }
+    return { code, currency }
   }
 
   public async dfspCurrenciesForNetDebitCapAccountIds(ids: Array<bigint>):
@@ -802,18 +823,91 @@ export default class SpecStore {
     return
   }
 
+  public async saveSpecPrepares(prepares: Array<SpecPrepare>): Promise<void> {
+    try {
+      const records = prepares.map(prepare => {
+        const record: any = {
+          id: prepare.id,
+          payloadHash: prepare.payloadHash
+        }
+        if (prepare.abortedAt) {
+          record.abortedAt = record
+        }
+        return record
+      })
+
+      await this.db.from(TABLE_PREPARE)
+        .insert(records)
+        .onConflict('id')
+        .ignore()
+      
+    } catch (err: any) {
+      logger.error(`saveSpecPrepares() - failed with error: ${err.message}`)
+      throw err
+    }
+  }
+
+  public async getSpecPrepares(transferIds: Array<string>): Promise<Array<GetSpecPrepareResult>> {
+    try {
+      const resultMap: Record<string, GetSpecPrepareResult> = {}
+      // Populate with not founds.
+      transferIds.forEach(id => resultMap[id] = {
+        type: 'NOT_FOUND' as 'NOT_FOUND',
+        id,
+      })
+
+      const rows = await this.db.from(TABLE_PREPARE)
+        .whereIn('id', transferIds)
+        .select('*')
+
+      rows.forEach(row => {
+        resultMap[row.id] = {
+          type: 'SUCCESS' as 'SUCCESS',
+          id: row.id,
+          result: SpecStore.hydrateSpecPrepare(row),
+        }
+      })
+
+      assert.equal(transferIds.length, Object.values(resultMap).length, 'Dropped a value.')
+      return Object.values(resultMap)
+    } catch (err: any) {
+      logger.error(`getTransferSpecs() failed with error: ${err.message}`)
+      throw err
+    }
+  }
+
+  public async attachSpecPrepareAbortedAt(ids: Array<string>, dates: Array<Date>): Promise<void> {
+    assert.equal(ids.length, dates.length, 'Expected ids and dates to be the same length.')
+
+    if (ids.length === 0) {
+      return
+    }
+
+    const bindings: Array<string | Date> = []
+    const clauses = ids.map((id, idx) => {
+      bindings.push(id, dates[idx])
+      return `WHEN id = ? THEN ?`
+    })
+
+    await this.db.raw(
+      `UPDATE ?? SET abortedAt = CASE ${clauses.join(' ')} END` +
+      ` WHERE id in (${ids.map(() => '?').join(',')}) AND abortedAt IS NULL`,
+      [TABLE_PREPARE, ...bindings, ...ids]
+    )
+  }
+
   public async saveTransferSpecs(specs: Array<SpecTransferCreate>): Promise<Array<SaveSpecTransferResult>> {
     try {
-      const records = specs.map(m => {
+      const records = specs.map(spec => {
         const record = {
-          id: m.id,
-          currency: m.currency,
-          amount: m.amount,
-          expiration: m.expiration,
-          payerId: m.payerId,
-          payeeId: m.payeeId,
-          ilpCondition: m.ilpCondition,
-          ilpPacket: m.ilpPacket,
+          id: spec.id,
+          currency: spec.currency,
+          amount: spec.amount,
+          expiration: spec.expiration,
+          payerId: spec.payerId,
+          payeeId: spec.payeeId,
+          ilpCondition: spec.ilpCondition,
+          ilpPacket: spec.ilpPacket,
         }
 
         return record
@@ -988,6 +1082,18 @@ export default class SpecStore {
       createdDate: row.createdDate,
     }
     return dfspCurrency
+  }
+
+  private static hydrateSpecPrepare(row: any): SpecPrepare {
+    const specPrepare: SpecPrepare = {
+      id: row.id,
+      payloadHash: row.payloadHash
+    }
+    if (row.abortedAt) {
+      specPrepare.abortedAt = new Date(row.abortedAt)
+    }
+
+    return specPrepare
   }
 
   // private static hydrateNetDebitCap(row: any): NetDebitCap {

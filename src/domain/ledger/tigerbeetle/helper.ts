@@ -2,7 +2,7 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, CreateTransferResult, CreateTransferStatus, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto from "crypto";
 import assert from "assert";
-import { CurrencyConfig, DfspCurrency, DfspRoot, SpecTransfer } from "./spec-store";
+import { CurrencyConfig, DfspCurrency, DfspRoot, SpecPrepare, SpecTransfer } from "./spec-store";
 import { AccountCode, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
 import { PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { FulfilHandlerAction, FulfilHandlerInput } from "../../../handlers/payment-fulfil";
@@ -123,7 +123,6 @@ export default class Helper {
   /**
    * Hash transfer properties to detect modifications
    * Returns a 32-bit integer hash for use in user_data
-   *
    */
   public static hashTransferProperties(props: {
     amount: string,
@@ -565,7 +564,6 @@ export default class Helper {
 
   public buildTransferSpecs(prepares: Array<PrepareHandlerInput>): Array<SpecTransfer> {
     const specs: Array<SpecTransfer> = []
-
     prepares.forEach(prepare => {
       const spec: SpecTransfer = {
         id: prepare.transferId,
@@ -582,6 +580,23 @@ export default class Helper {
     })
 
     return specs
+  }
+
+  public buildSpecsPrepare(prepares: Array<PrepareHandlerInput>): Array<SpecPrepare> {
+    return prepares.map(prepare => {
+      return {
+        id: prepare.transferId,
+        payloadHash: Helper.hashTransferProperties({
+          amount: prepare.payload.amount.amount,
+          currency: prepare.payload.amount.currency,
+          expiration: prepare.payload.expiration,
+          payeeFsp: prepare.payload.payeeFsp,
+          payerFsp: prepare.payload.payerFsp,
+          condition: prepare.payload.condition,
+          ilpPacket: prepare.payload.ilpPacket,
+        })
+      }
+    })
   }
 
   /**
@@ -887,7 +902,7 @@ export default class Helper {
       const transferId = prepare.transferId
 
       // The individual transfer within the prepare.
-      const idxTransfer = idxAllTransfers % Helper.AmpFactorPrepare
+      const idxTransfer = idxAllTransfers % 1
 
       // Ignore noisy errors
       if (result.status === CreateTransferStatus.linked_event_failed) {
