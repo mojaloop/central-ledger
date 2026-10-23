@@ -69,8 +69,8 @@ describe('Ledger Fuzz', () => {
     console.log(`Fuzz trace written to ${pathTrace}.`)
   })
 
-  it('runs the fuzzer for LedgerTigerBeetle', async (context) => {
-    const stepsMax = envOrDefaultNumber('STEPS_MAX', 15)
+  it.only('runs the fuzzer for LedgerTigerBeetle', async (context) => {
+    const stepsMax = envOrDefaultNumber('STEPS_MAX', 1000)
     const trace = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
 
     const dirTrace = `.fuzz_output/${filename}/${sanitizeTestName(context.name)}`
@@ -80,7 +80,7 @@ describe('Ledger Fuzz', () => {
     console.log(`Fuzz trace written to ${pathTrace}.`)
   })
 
-  it.only('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
+  it('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 250)
     const traceA = await run(stepsMax, { LEDGER: 'SQL' })
     const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
@@ -262,7 +262,7 @@ class LedgerFuzzer {
     disableDfsp: 1,
     enableDfsp: 1,
     enableDfspAccount: 1,
-    disableDfspAccount: 0,
+    disableDfspAccount: 1,
     deposit: 1,
     withdrawPrepare: 2,
     withdrawCommit: 2,
@@ -288,7 +288,7 @@ class LedgerFuzzer {
     // getSettlementWindow: 1,
     // getSettlement: 1,
     // getSettlements: 1,
-    prepare: 1,
+    prepare: 0,
     fulfil: 0,
     sweepTimedOut: 0,
     lookupTransfer: 0,
@@ -391,7 +391,7 @@ class LedgerFuzzer {
     return this.actions[action]
   }
 
-  private traceResult(action: ActionName, input: any, output: any, statePost?: string) {
+  private traceResult(action: ActionName, input: any, output: any, statePost?: string, statePre?: string) {
 
     // For now, we don't care about the internals of the error if there is one in output.
     // Really its up to the outer layers to convert the response to something the API/messaging
@@ -409,7 +409,8 @@ class LedgerFuzzer {
       code: 0,
       body: outputClone,
       prngCalls: this.harness.prng.callCount,
-      statePost
+      statePost,
+      statePre,
     })
   }
 
@@ -556,7 +557,9 @@ class LedgerFuzzer {
     }
 
     const result = await this.ledger.withdrawPrepare(cmd)
-    this.traceResult('withdrawPrepare', cmd, result)
+
+    const balanceSheet = await this.reporter.balanceSheet(new Date())
+    this.traceResult('withdrawPrepare', cmd, result, balanceSheet.toStringAll())
 
     if (!this.withdrawIds[cmd.transferId]) {
       this.withdrawIds[cmd.transferId] = true
@@ -569,7 +572,8 @@ class LedgerFuzzer {
       transferId: this.randomWithdawId()
     }
     const result = await this.ledger.withdrawCommit(cmd)
-    this.traceResult('withdrawCommit', cmd, result)
+    const balanceSheet = await this.reporter.balanceSheet(new Date())
+    this.traceResult('withdrawCommit', cmd, result, balanceSheet.toStringAll())
   }
 
   private async withdrawAbort(): Promise<void> {
@@ -577,7 +581,9 @@ class LedgerFuzzer {
       transferId: this.randomWithdawId()
     }
     const result = await this.ledger.withdrawAbort(cmd)
-    this.traceResult('withdrawAbort', cmd, result)
+
+    const balanceSheet = await this.reporter.balanceSheet(new Date())
+    this.traceResult('withdrawAbort', cmd, result, balanceSheet.toStringAll())
   }
 
   private async setNetDebitCap(): Promise<void> {
@@ -683,10 +689,13 @@ class LedgerFuzzer {
     const prepares: Array<PrepareHandlerInput> = [
       this.makePrepare()
     ]
+    const firstPrepare = prepares[0]
     // for (let index = 0; index < this.prng.intExclusive(100); index++) {
     //   prepares.push(this.makePrepare())
     // }
 
+    const balanceSheetPre = await this.reporter.balanceSheet(new Date())
+    
     const result = await this.ledger.prepare(prepares)
     const resultNormalized = result.map(prepareResult => {
       const clone = structuredClone(prepareResult) as any
@@ -720,17 +729,27 @@ class LedgerFuzzer {
       }
       // Ignore the completedTimestamp if the transfer is aborted. We don't always have that
       // information in LedgerTigerBeetle.
-      if (clone.finalizedTransfer && clone.finalizedTransfer.transferState === 'ABORTED') {
-        clone.finalizedTransfer.completedTimestamp = (new Date(0))
-      }
+      // if (clone.finalizedTransfer && clone.finalizedTransfer.transferState === 'ABORTED') {
+      //   clone.finalizedTransfer.completedTimestamp = (new Date(0))
+      // }
 
       return clone
     })
-    // const statePost = await this.traceBalances()
-    // const balanceSheet = await this.reporter.balanceSheet(new Date())
-    // const statePost = balanceSheet.toStringAll()
-    const statePost = undefined
-    this.traceResult('prepare', prepares, resultNormalized, statePost)
+
+    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
+
+    // Get a T account statement!
+    const statePre = balanceSheetPre.toTAccounts(
+      [firstPrepare.payload.payerFsp, firstPrepare.payload.payeeFsp],
+      [firstPrepare.payload.amount.currency]
+    )
+    const statePost = balanceSheetPost.toTAccounts(
+      [firstPrepare.payload.payerFsp, firstPrepare.payload.payeeFsp],
+      [firstPrepare.payload.amount.currency]
+    )
+
+    // const statePost = undefined
+    this.traceResult('prepare', prepares, resultNormalized, statePost, statePre)
 
     result.forEach((prepareResult, idx) => {
       const prepare = prepares[idx]
@@ -785,8 +804,8 @@ class LedgerFuzzer {
 
   private mutatePrepare(payment: ApiHelpers.Payment): PrepareHandlerInput {
     const mutation = this.prng.randomElementWeighted([
-      'invalidIlpPacket', 'swapSrcDest', 'changeCurrency', 'changeAmount'
-    ], [1, 1, 1, 1])
+      'invalidIlpPacket', 'swapSrcDest', 'changeCurrency', 'changeAmount', 'invalidExpiration'
+    ], [2, 2, 2, 2, 1])
     const prepare = payment.toPrepare()
     switch (mutation) {
       case 'invalidIlpPacket': {
@@ -804,6 +823,9 @@ class LedgerFuzzer {
         return prepare
       case 'changeAmount':
         prepare.payload.amount.amount = this.randomAmount()
+        return prepare
+      case 'invalidExpiration':
+        prepare.payload.expiration = "invalid date"
         return prepare
     }
 

@@ -207,7 +207,7 @@ const processPositionPrepareBin = async (
         // Check if payer has surpassed their limit, produce an error message and abort transfer
       } else if (changePositions && availablePositionBasedOnPayerLimit.toNumber() < transferAmount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-        reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR.message
+        reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
 
         // forward same headers from the prepare message, except the content-length header
         // set destination to payerfsp and source to switch
@@ -217,7 +217,7 @@ const processPositionPrepareBin = async (
         delete headers['content-length']
 
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_LIMIT_ERROR
+          ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
         ).toApiErrorObject(Config.ERROR_HANDLING)
 
         const state = Utility.StreamingProtocol.createEventState(

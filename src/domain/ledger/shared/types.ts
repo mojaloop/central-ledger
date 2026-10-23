@@ -183,35 +183,16 @@ export type LegacyLedgerAccountNoValue = Omit<LegacyLedgerAccount, 'value' | 're
 
 /**
  * LedgerAccount with TigerBeetle Accounting Model
- *
- * Outside of the boundaries of the Ledger, we map from a BigInt represenation -> currency base
  */
 export interface LedgerAccount {
   id: bigint
   code: AccountCode
   currency: string
   status: 'ENABLED' | 'DISABLED'
-
-  // TODO: why did we prefix with `real`? This is bad naming.
-  /**
-   * sum(credits_pending)/assetScale
-   */
-  realCreditsPending: number
-
-  /**
-   * sum(debits_pending)/assetScale
-   */
-  realDebitsPending: number
-
-  /**
-   * sum(credits_posted)/assetScale
-   */
-  realCreditsPosted: number
-
-  /**
-   * sum(debits_posted)/assetScale
-   */
-  realDebitsPosted: number
+  creditsPending: bigint
+  debitsPending: bigint
+  creditsPosted: bigint
+  debitsPosted: bigint
 }
 
 export enum AccountCode {
