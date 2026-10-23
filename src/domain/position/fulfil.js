@@ -342,7 +342,8 @@ const _handleParticipantPositionChangeFx = (runningPosition, transferAmount, com
   const fxTransferStateChange = {
     commitRequestId,
     transferStateId,
-    reason: null
+    reason: null,
+    createdDate: new Date()
   }
   return { participantPositionChange, fxTransferStateChange, transferStateId, updatedRunningPosition }
 }
