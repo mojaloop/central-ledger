@@ -191,7 +191,8 @@ const _handleParticipantPositionChange = (runningPosition, transferAmount, commi
   const fxTransferStateChange = {
     commitRequestId,
     transferStateId,
-    reason: ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message
+    reason: ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message,
+    createdDate: new Date()
   }
   return { participantPositionChange, fxTransferStateChange, transferStateId, updatedRunningPosition }
 }

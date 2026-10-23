@@ -320,7 +320,8 @@ const _handleParticipantPositionChange = (runningPosition, transferAmount, trans
   const transferStateChange = {
     transferId,
     transferStateId,
-    reason: undefined
+    reason: undefined,
+    createdDate: new Date()
   }
   return { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition }
 }
@@ -341,7 +342,8 @@ const _handleParticipantPositionChangeFx = (runningPosition, transferAmount, com
   const fxTransferStateChange = {
     commitRequestId,
     transferStateId,
-    reason: null
+    reason: null,
+    createdDate: new Date()
   }
   return { participantPositionChange, fxTransferStateChange, transferStateId, updatedRunningPosition }
 }
