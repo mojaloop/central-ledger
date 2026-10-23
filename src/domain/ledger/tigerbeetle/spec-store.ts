@@ -330,6 +330,20 @@ export interface DepsSpecStore {
   helper: Helper,
 }
 
+export type ContextDfsps = {
+  currencies: Array<string>
+  dfspIds: Array<string>,
+  currencyConfigs: Array<CurrencyConfig>
+  dfspRoots: Array<DfspRoot>
+  dfspCurrencies: Array<DfspCurrency>
+}
+
+export type ContextPayments = {
+  prepareIds: Array<string>,
+  specPrepares: Array<SpecPrepare>,
+  specTransfers: Array<SpecTransfer>
+}
+
 const TABLE_CURRENCY_CONFIG = 'specCurrencyConfig'
 const TABLE_CURRENCY_ACCOUNT = 'specLegacyHubCurrency'
 const TABLE_DFSP_ROOT = 'specDfspRoot'
@@ -627,6 +641,94 @@ export default class SpecStore {
       }, {} as Record<string, DfspRoot>)
   }
 
+  public async getPrepareContextDfsps(
+    currencies: Array<string>,
+    dfspIds: Array<string>
+  ): Promise<ContextDfsps> {
+    const rows = await this.db('specDfspCurrency')
+      .join('specDfspRoot', 'specDfspCurrency.dfspId', 'specDfspRoot.dfspId')
+      .join('specCurrencyConfig', 'specDfspCurrency.currency', 'specCurrencyConfig.currency')
+      .whereIn('specDfspCurrency.dfspId', dfspIds)
+      .whereIn('specDfspCurrency.currency', currencies)
+      .select('*')
+
+    // Now map and deduplicate.
+    const currencyConfigIds: Record<string, true> = {}
+    const currencyConfigs: Array<CurrencyConfig> = []
+    const dfspRootIds: Record<string, true> = {}
+    const dfspRoots: Array<DfspRoot> = []
+    const dfspCurrencyIds: Record<string, true> = {}
+    const dfspCurrencies: Array<DfspCurrency> = []
+    rows.forEach(row => {
+      const currencyConfig = SpecStore.hydrateCurrencyConfig(row)
+      const dfspRoot = SpecStore.hydrateDfspRoot(row)
+      const dfspCurrency: DfspCurrency = SpecStore.hydrateDfspCurrency(row)
+
+      if (!currencyConfigIds[currencyConfig.currency]) {
+        currencyConfigIds[currencyConfig.currency] = true
+        currencyConfigs.push(currencyConfig)
+      }
+
+      if (!dfspRootIds[dfspRoot.dfspId]) {
+        dfspRootIds[dfspRoot.dfspId] = true
+        dfspRoots.push(dfspRoot)
+      }
+
+      const dfspAndCurrency = `${dfspCurrency.dfspId}:${dfspCurrency.currency}`
+      if (!dfspCurrencyIds[dfspAndCurrency]){
+        dfspCurrencyIds[dfspAndCurrency] = true
+        dfspCurrencies.push(dfspCurrency) 
+      }
+    })
+
+    const context: ContextDfsps = {
+      currencies: Object.keys(currencyConfigIds),
+      dfspIds: Object.keys(dfspRootIds),
+      currencyConfigs: currencyConfigs,
+      dfspRoots: dfspRoots,
+      dfspCurrencies: dfspCurrencies,
+    }
+
+    return context
+  }
+
+  public async getPrepareContextPayments(prepareIds: Array<string>): Promise<ContextPayments> {
+    const rows = await this.db('specTransfer')
+      .rightJoin('specPrepare', 'specTransfer.id', 'specPrepare.id')
+      .whereIn('specPrepare.id', prepareIds)
+      .select('*')
+
+    const prepareIdsFound: Array<string> = []
+    const idsSeen: Record<string, true> = {}
+    const specPrepares: Array<SpecPrepare> = []
+    const specTransfers: Array<SpecTransfer> = []
+    rows.forEach(row => {
+      // specPrepare should exist, specTransfer maybe not.
+      const specPrepare = SpecStore.hydrateSpecPrepare(row)
+      if (idsSeen[specPrepare.id]) return
+
+      idsSeen[specPrepare.id] = true
+      specPrepares.push(specPrepare)
+
+      if (row.amount) {
+        const specTransfer = SpecStore.hydrateSpecTransfer(row)
+        specTransfers.push(specTransfer)
+      }
+    })
+    
+    const context: ContextPayments = {
+      prepareIds: prepareIdsFound,
+      specPrepares,
+      specTransfers,
+    }
+    return context
+  }
+
+  public async savePreparesAndTransfers(prepares: Array<SpecPrepare>, transfers: Array<SpecTransfer>) {
+    await this.saveSpecPrepares(prepares)
+    await this.saveTransferSpecs(transfers)
+  }
+
   public async queryDfspRootsWithCurrencies(): Promise<{
     // All rows joined together.
     dfspRootAndCurrency: Array<DfspRoot & DfspCurrency>,
@@ -824,6 +926,8 @@ export default class SpecStore {
   }
 
   public async saveSpecPrepares(prepares: Array<SpecPrepare>): Promise<void> {
+    if (prepares.length === 0) return
+
     try {
       const records = prepares.map(prepare => {
         const record: any = {
@@ -831,7 +935,7 @@ export default class SpecStore {
           payloadHash: prepare.payloadHash
         }
         if (prepare.abortedAt) {
-          record.abortedAt = record
+          record.abortedAt = prepare.abortedAt
         }
         return record
       })
@@ -840,7 +944,7 @@ export default class SpecStore {
         .insert(records)
         .onConflict('id')
         .ignore()
-      
+
     } catch (err: any) {
       logger.error(`saveSpecPrepares() - failed with error: ${err.message}`)
       throw err
@@ -897,6 +1001,8 @@ export default class SpecStore {
   }
 
   public async saveTransferSpecs(specs: Array<SpecTransferCreate>): Promise<Array<SaveSpecTransferResult>> {
+    if (specs.length === 0) return []
+
     try {
       const records = specs.map(spec => {
         const record = {
@@ -1094,6 +1200,25 @@ export default class SpecStore {
     }
 
     return specPrepare
+  }
+
+  private static hydrateSpecTransfer(row: any): SpecTransfer {
+    const specTransfer: SpecTransfer = {
+      id: row.id,
+      currency: row.currency,
+      amount: row.amount,
+      expiration: row.expiration,
+      payerId: row.payerId,
+      payeeId: row.payeeId,
+      ilpCondition: row.ilpCondition,
+      ilpPacket: row.ilpPacket,
+    }
+
+    if (row.fulfilment) {
+      specTransfer.fulfilment = row.fulfilment
+    }
+
+    return specTransfer
   }
 
   // private static hydrateNetDebitCap(row: any): NetDebitCap {

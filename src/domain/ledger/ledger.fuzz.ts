@@ -262,7 +262,7 @@ class LedgerFuzzer {
     disableDfsp: 1,
     enableDfsp: 1,
     enableDfspAccount: 1,
-    disableDfspAccount: 0,
+    disableDfspAccount: 1,
     deposit: 1,
     withdrawPrepare: 2,
     withdrawCommit: 2,
@@ -288,7 +288,7 @@ class LedgerFuzzer {
     // getSettlementWindow: 1,
     // getSettlement: 1,
     // getSettlements: 1,
-    prepare: 1,
+    prepare: 0,
     fulfil: 0,
     sweepTimedOut: 0,
     lookupTransfer: 0,
@@ -720,9 +720,9 @@ class LedgerFuzzer {
       }
       // Ignore the completedTimestamp if the transfer is aborted. We don't always have that
       // information in LedgerTigerBeetle.
-      if (clone.finalizedTransfer && clone.finalizedTransfer.transferState === 'ABORTED') {
-        clone.finalizedTransfer.completedTimestamp = (new Date(0))
-      }
+      // if (clone.finalizedTransfer && clone.finalizedTransfer.transferState === 'ABORTED') {
+      //   clone.finalizedTransfer.completedTimestamp = (new Date(0))
+      // }
 
       return clone
     })
@@ -785,8 +785,8 @@ class LedgerFuzzer {
 
   private mutatePrepare(payment: ApiHelpers.Payment): PrepareHandlerInput {
     const mutation = this.prng.randomElementWeighted([
-      'invalidIlpPacket', 'swapSrcDest', 'changeCurrency', 'changeAmount'
-    ], [1, 1, 1, 1])
+      'invalidIlpPacket', 'swapSrcDest', 'changeCurrency', 'changeAmount', 'invalidExpiration'
+    ], [2, 2, 2, 2, 1])
     const prepare = payment.toPrepare()
     switch (mutation) {
       case 'invalidIlpPacket': {
@@ -804,6 +804,9 @@ class LedgerFuzzer {
         return prepare
       case 'changeAmount':
         prepare.payload.amount.amount = this.randomAmount()
+        return prepare
+      case 'invalidExpiration':
+        prepare.payload.expiration = "invalid date"
         return prepare
     }
 

@@ -1,20 +1,57 @@
 import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, CreateTransferResult, CreateTransferStatus, id, Transfer, TransferFlags } from "tigerbeetle-node";
-import crypto from "crypto";
+import crypto, { hash } from "crypto";
 import assert from "assert";
-import { CurrencyConfig, DfspCurrency, DfspRoot, SpecPrepare, SpecTransfer } from "./spec-store";
+import { ContextDfsps, CurrencyConfig, DfspCurrency, DfspRoot, SpecPrepare, SpecTransfer, SpecTransferCreate } from "./spec-store";
 import { AccountCode, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
-import { PrepareHandlerInput } from "../../../handlers/payment-prepare";
-import { FulfilHandlerAction, FulfilHandlerInput } from "../../../handlers/payment-fulfil";
+import { CreatePaymentDto, PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../../handlers/payment-prepare";
+import { FulfilHandlerAction, FulfilHandlerInput, PaymentFulfilResultType } from "../../../handlers/payment-fulfil";
 import { Effect } from "../../../messaging/message-bus";
 import { ApplicationConfig } from "../../../lib/config";
 import { Enum, Util } from '@mojaloop/central-services-shared';
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const { Type, Action } = Enum.Events.Event
 
 export type TransferFailureResult<T> = CreateTransferResult & {
   type: T
 }
+
+export type PrepareInternalStatus = {
+  tag: 'FAIL_VALIDATION'
+  // TODO:
+  context: {
+    failureReasons: Array<string>
+  }
+} | {
+  tag: 'MODIFIED',
+  context: {}
+} | {
+  tag: 'DUPLICATE_FINAL'
+  context: {
+    specPrepare: SpecPrepare,
+    specTransfer?: SpecTransfer,
+  }
+} | {
+  tag: 'DUPLICATE_NON_FINAL'
+  context: {}
+} | {
+  tag: 'FAIL_ACCOUNT_CLOSED'
+  context: {}
+} | {
+  tag: 'FAIL_LIQUIDITY'
+  context: {}
+} | {
+  tag: 'FAIL_OTHER'
+  context: {}
+}
+  | {
+    tag: 'OK'
+  }
+
+type PrepareInternalStatusTag = PrepareInternalStatus['tag']
+
+
 
 export type PrepareFailureType = 'FAIL_LIQUIDITY' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | 'MODIFIED' |
   'EXISTS' | 'UNKNOWN' | 'ALREADY_FAILED'
@@ -147,6 +184,40 @@ export default class Helper {
     // Hash with SHA-256 and take first 32 bits
     const hash = crypto.createHash('sha256').update(transferString).digest()
     const hash32 = hash.readInt32BE(0)
+    return hash32
+  }
+
+  /**
+   * Hash transfer properties to detect modifications
+   * Returns a 32-bit integer hash for use in user_data
+   */
+  public static hashTransferProperties2(props: {
+    amount: {
+      amount: string,
+      currency: string,
+    },
+    expiration: string,
+    payeeFsp: string,
+    payerFsp: string,
+    condition: string,
+    ilpPacket: string
+  }): number {
+    // Create a deterministic string representation of the transfer
+    const transferString = [
+      props.amount.amount,
+      props.amount.currency,
+      props.expiration,
+      props.payeeFsp,
+      props.payerFsp,
+      props.condition,
+      props.ilpPacket
+    ].join('|')
+
+    // Hash with SHA-256 and take first 32 bits
+    const hash = crypto.createHash('sha256').update(transferString).digest()
+    const hash32 = hash.readInt32BE(0)
+
+    // TODO: this is sometimes negative!
     return hash32
   }
 
@@ -602,7 +673,310 @@ export default class Helper {
   /**
    * How many TigerBeetle transfers for each Prepare.
    */
-  public static readonly AmpFactorPrepare = 6
+  public static readonly ampFactorPrepare = 6
+
+  /**
+   * Given a list of validated prepares, return a list of TigerBeetle transfers to be created.
+   */
+  public buildTransfersPrepare(
+    prepares: Array<PrepareHandlerInput>,
+    context: ContextDfsps,
+    hashes: Array<number>
+  ): Array<Transfer> {
+    assert(prepares.length === hashes.length)
+    const physicalTransfers = prepares.length * Helper.ampFactorPrepare
+    assert(physicalTransfers <= Helper.maxBatchSize,
+      `buildPrepareTransfersOk() called with: ${prepares.length} prepares === ${physicalTransfers} `
+      + `physical transfers. This exceeds the max batch size of ${Helper.maxBatchSize}.`
+    )
+
+    const currencyLedgersMap = Helper.toMapBy(context.currencyConfigs, item => item.currency)
+    const dfspRootsMap = Helper.toMapBy(
+      context.dfspRoots, item => item.dfspId
+    )
+    const dfspCurrenciesMap = Helper.toMapBy(
+      context.dfspCurrencies,
+      item => `${item.dfspId}:${item.currency}`
+    )
+
+    const transfers: Array<Transfer> = []
+    prepares.forEach((prepare, idx) => {
+      // Shortcut.
+      const amountStr = prepare.payload.amount.amount
+      const currency = prepare.payload.amount.currency
+      const masterAccountPayer = dfspRootsMap[prepare.payload.payerFsp]
+      assert(masterAccountPayer)
+      const masterAccountPayee = dfspRootsMap[prepare.payload.payeeFsp]
+      assert(masterAccountPayee)
+      const specPayer = dfspCurrenciesMap[prepare.payload.payerFsp + ':' + currency]
+      assert(specPayer)
+      const specPayee = dfspCurrenciesMap[prepare.payload.payeeFsp + ':' + currency]
+      assert(specPayee)
+
+      // TODO: come back to this - we need to ensure increasing ids.
+      const prepareId = Helper.fromMojaloopId(prepare.transferId)
+      const ledger = currencyLedgersMap[currency]
+      assert(ledger)
+      const assetScale = ledger.assetScale
+      const amountTigerBeetle = Helper.fromMojaloopAmount(amountStr, assetScale)
+
+      /**
+       * In future versions of the FSPIOP API, expiration will be defined in relative seconds,
+       * instead of absolute timestamps. That will make the below timeout calculations less error
+       * prone.
+       */
+      // TODO: validate these before this step.
+      const expirationMs = Date.parse(prepare.payload.expiration)
+      if (isNaN(expirationMs)) {
+        throw new Error(`invalid transfer expiration`)
+      }
+
+      // Hash key properties of the transfer for idempotency/modification detection
+      const transferHash = hashes[idx]
+      assert(transferHash)
+
+      // DRCR Example Snippet:
+      // GLB DR dfsp_a:root           CR dfsp_b:root             45 pending ^3
+      // USD DR dfsp_a:clearingSetup  CR dfsp_a:clearingLimit    45
+      // USD DR dfsp_a:clearingCredit CR dfsp_a:clearingSetup    45 balancing_debit
+      // USD DR dfsp_a:unrestricted   CR dfsp_a:clearingSetup    45 balancing_debit
+      // USD DR dfsp_a:clearingSetup  CR dfsp_a:reserved         45
+      // USD DR dfsp_a:clearingLimit  CR dfsp_a:clearingSetup 10000 balancing_credit
+
+      transfers.push(
+        // 1. Ensure both Participants are active.
+        {
+          ...Helper.createTransferTemplate,
+          id: prepareId,
+          debit_account_id: masterAccountPayer.id,
+          credit_account_id: masterAccountPayee.id,
+          amount: amountTigerBeetle,
+          user_data_128: prepareId,
+          user_data_64: BigInt(expirationMs),
+          user_data_32: transferHash,
+          ledger: Helper.ledgerIds.globalControl,
+          code: TransferCode.Clearing_Active_Check,
+          flags: TransferFlags.linked | TransferFlags.pending,
+        },
+        // Note: This is the Multi-Debit, single Credit pattern from TigerBeetle.
+        // https://docs.tigerbeetle.com/coding/recipes/multi-debit-credit-transfers/#multiple-debits-single-credit-balancing-debits
+        // 2. Setup the limit account for this payment.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          debit_account_id: specPayer.clearingSetup,
+          credit_account_id: specPayer.clearingLimit,
+          amount: amountTigerBeetle,
+          user_data_128: prepareId,
+          ledger: ledger.idOperation,
+          code: 1,
+          flags: TransferFlags.linked
+        },
+        // 3. Reserve funds for Participant A from Clearing Credit.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          debit_account_id: specPayer.clearingCredit,
+          credit_account_id: specPayer.clearingSetup,
+          amount: amountTigerBeetle,
+          user_data_128: prepareId,
+          ledger: ledger.idOperation,
+          code: TransferCode.Clearing_Reserve,
+          flags: TransferFlags.linked | TransferFlags.balancing_debit
+            | TransferFlags.balancing_credit
+        },
+        // 3. Reserve funds for Participant A from Unrestricted.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          debit_account_id: specPayer.unrestricted,
+          credit_account_id: specPayer.clearingSetup,
+          amount: amountTigerBeetle,
+          user_data_128: prepareId,
+          ledger: ledger.idOperation,
+          code: TransferCode.Clearing_Reserve,
+          flags: TransferFlags.linked | TransferFlags.balancing_debit
+            | TransferFlags.balancing_credit
+        },
+        // 4. The money movement.
+        {
+          ...Helper.createTransferTemplate,
+          id: prepareId + 3n,
+          debit_account_id: specPayer.clearingSetup,
+          credit_account_id: specPayer.reserved,
+          amount: amountTigerBeetle,
+          user_data_128: prepareId,
+          ledger: ledger.idOperation,
+          code: TransferCode.Clearing_Reserve,
+          flags: TransferFlags.linked
+        },
+        // 5. Close the loop, resetting clearingSetup.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          debit_account_id: specPayer.clearingLimit,
+          credit_account_id: specPayer.clearingSetup,
+          amount: amount_max,
+          user_data_128: prepareId,
+          ledger: ledger.idOperation,
+          code: 1,
+          flags: TransferFlags.balancing_credit
+        },
+      )
+    })
+
+    return transfers
+  }
+
+  /**
+   * Map from a PrepareInternalStatus -> PaymentPrepareResult.
+   */
+  public mapPrepareInternalToPrepareResult(
+    prepare: PrepareHandlerInput,
+    status: PrepareInternalStatus
+  ): PaymentPrepareResult {
+    switch (status.tag) {
+      case "OK": {
+        return {
+          type: PaymentPrepareResultType.PASS,
+          effects: [this.buildEffectNotificationSuccess(prepare)]
+        }
+      }
+      case "FAIL_VALIDATION": {
+        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          status.context.failureReasons.join(', ')
+        )
+        return {
+          type: PaymentPrepareResultType.FAIL_VALIDATION,
+          effects: [this.buildEffectNotificationError(prepare, errorFspiop)],
+          failureReasons: status.context.failureReasons
+        }
+      }
+      case "MODIFIED": {
+        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
+        )
+        return {
+          type: PaymentPrepareResultType.MODIFIED,
+          effects: [this.buildEffectNotificationError(prepare, errorFspiop)]
+        }
+      }
+      case "DUPLICATE_FINAL": {
+        const payload: PayloadFinalizedTransfer = {
+          completedTimestamp: status.context.specPrepare.abortedAt ?? new Date(0),
+          transferState: 'ABORTED'
+        }
+        return {
+          type: PaymentPrepareResultType.DUPLICATE_FINAL,
+          effects: [this.buildEffectNotificationDuplicate(prepare, payload)],
+          finalizedTransfer: {
+            completedTimestamp: payload.completedTimestamp.toISOString(),
+            transferState: 'ABORTED'
+          }
+        }
+      }
+      case "DUPLICATE_NON_FINAL": {
+        return {
+          type: PaymentPrepareResultType.DUPLICATE_NON_FINAL,
+          effects: []
+        }
+      }
+      case "FAIL_ACCOUNT_CLOSED": {
+        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          'Validation error'
+        )
+        return {
+          type: PaymentPrepareResultType.FAIL_VALIDATION,
+          effects: [this.buildEffectNotificationError(prepare, errorFspiop)],
+          failureReasons: ['Account closed.']
+        }
+      }
+      case "FAIL_LIQUIDITY": {
+        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
+        )
+        return {
+          type: PaymentPrepareResultType.FAIL_LIQUIDITY,
+          effects: [this.buildEffectNotificationErrorLiquidity(prepare, errorFspiop)],
+          error: errorFspiop
+        }
+      }
+      case "FAIL_OTHER": {
+        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
+        )
+        return {
+          type: PaymentPrepareResultType.FAIL_OTHER,
+          effects: [this.buildEffectNotificationError(prepare, errorFspiop)],
+          error: errorFspiop
+        }
+      }
+    }
+  }
+
+  public mapResultsPrepare(
+    results: Array<CreateTransferResult>,
+  ): Array<PrepareInternalStatus> {
+    const preparesCount = results.length / Helper.ampFactorPrepare
+    // Initialize all statuses as OK
+    const statuses: Array<PrepareInternalStatus> = Array.from(
+      { length: preparesCount },
+      () => ({ tag: 'OK' })
+    )
+
+    results.forEach((result, idxAllTransfers) => {
+      if (result.status === CreateTransferStatus.created) return
+
+      const idxPrepare = Math.floor(idxAllTransfers / Helper.ampFactorPrepare)
+      const idxTransfer = idxAllTransfers % Helper.ampFactorPrepare
+
+      // Ignore noisy errors
+      if (result.status === CreateTransferStatus.linked_event_failed) return
+
+      if (idxTransfer === 0) {
+        switch (result.status) {
+          case CreateTransferStatus.exists:
+            statuses[idxPrepare] = { tag: 'DUPLICATE_NON_FINAL', context: {} }
+            return
+          case CreateTransferStatus.exists_with_different_amount:
+          case CreateTransferStatus.exists_with_different_debit_account_id:
+          case CreateTransferStatus.exists_with_different_credit_account_id:
+          case CreateTransferStatus.exists_with_different_user_data_64:
+          case CreateTransferStatus.exists_with_different_user_data_32:
+          case CreateTransferStatus.id_already_failed:
+            statuses[idxPrepare] = { tag: 'MODIFIED', context: {} }
+            return
+          case CreateTransferStatus.debit_account_already_closed:
+          case CreateTransferStatus.credit_account_already_closed:
+            statuses[idxPrepare] = { tag: 'FAIL_ACCOUNT_CLOSED', context: {} }
+            return
+        }
+      }
+
+      if (idxTransfer === 3) {
+        switch (result.status) {
+          case CreateTransferStatus.debit_account_already_closed:
+            statuses[idxPrepare] = { tag: 'FAIL_ACCOUNT_CLOSED', context: {} }
+            return
+        }
+      }
+
+      if (idxTransfer === 5) {
+        switch (result.status) {
+          case CreateTransferStatus.exceeds_credits:
+            statuses[idxPrepare] = { tag: 'FAIL_LIQUIDITY', context: {} }
+            return
+        }
+      }
+
+      const msg = `mapResultsPrepare: unhandled transfer result at idx ${idxAllTransfers}: ${CreateTransferStatus[result.status]}`
+      throw new Error(msg)
+    })
+
+    return statuses
+  }
 
   public buildPrepareTransfersOk(
     prepares: Array<PrepareHandlerInput>,
@@ -610,6 +984,12 @@ export default class Helper {
     masterSpecs: Record<string, DfspRoot>,
     specAccounts: Record<string, DfspCurrency>
   ): Array<Transfer> {
+    const physicalTransfers = prepares.length * Helper.ampFactorPrepare
+    assert(physicalTransfers <= Helper.maxBatchSize,
+      `buildPrepareTransfersOk() called with: ${prepares.length} prepares === ${physicalTransfers} `
+      + `physical transfers. This exceeds the max batch size of ${Helper.maxBatchSize}.`
+    )
+
     const transfers: Array<Transfer> = []
     for (const prepare of prepares) {
       // Shortcut.
@@ -814,13 +1194,13 @@ export default class Helper {
       if (result.status === CreateTransferStatus.created) return
 
       // Figure out what prepare we're handling.
-      const idxPrepare = Math.floor(idxAllTransfers / Helper.AmpFactorPrepare)
+      const idxPrepare = Math.floor(idxAllTransfers / Helper.ampFactorPrepare)
       const prepare = Object.values(preparesMap)[idxPrepare]
       assert(prepare)
       const transferId = prepare.transferId
 
       // The individual transfer within the prepare.
-      const idxTransfer = idxAllTransfers % Helper.AmpFactorPrepare
+      const idxTransfer = idxAllTransfers % Helper.ampFactorPrepare
 
       // Ignore noisy errors
       if (result.status === CreateTransferStatus.linked_event_failed) {
@@ -916,11 +1296,10 @@ export default class Helper {
             fatalErrors[transferId].push({ type: 'EXISTS', ...result })
             return
           }
-          // TODO: exists_with_different_debit_account_id or exists_with_different_credit_account_id
-          // could indicate that it was burned.
           case CreateTransferStatus.exists_with_different_amount:
           case CreateTransferStatus.exists_with_different_debit_account_id:
           case CreateTransferStatus.exists_with_different_credit_account_id:
+          case CreateTransferStatus.exists_with_different_flags:
           case CreateTransferStatus.exists_with_different_user_data_64:
           case CreateTransferStatus.exists_with_different_user_data_32: {
             fatalErrors[transferId].push({ type: 'MODIFIED', ...result })
@@ -1368,6 +1747,29 @@ export default class Helper {
       topicName: 'topic-notification-event',
       status: 'SUCCESS',
     }
+  }
+
+  public static prepareToSpecTransferCreate(prepare: CreatePaymentDto): SpecTransferCreate {
+    return {
+      id: prepare.transferId,
+      currency: prepare.amount.currency,
+      amount: prepare.amount.amount,
+      expiration: prepare.expiration,
+      payerId: prepare.payerFsp,
+      payeeId: prepare.payeeFsp,
+      ilpCondition: prepare.condition,
+      ilpPacket: prepare.ilpPacket,
+    }
+  }
+
+  /**
+   * Utility function to convert from an Array<T> to a Record<string, T>.
+   */
+  public static toMapBy<T>(items: T[], key: (item: T) => string): Record<string, T> {
+    return items.reduce((acc, curr) => {
+      acc[key(curr)] = curr
+      return acc
+    }, {} as Record<string, T>)
   }
 }
 

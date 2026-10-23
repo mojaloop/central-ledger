@@ -706,6 +706,7 @@ export class LedgerSql implements Ledger {
     Promise<QueryResultWithNotFound<Array<LegacyLimitItem>>> {
     const legacyQuery = { type: 'NET_DEBIT_CAP' }
     try {
+      // This filters out the limit if the participantCurrency is inactive.
       const limitsResult = await Participant.getLimits(query.dfspId, legacyQuery)
       assert(Array.isArray(limitsResult))
       const result: Array<LegacyLimitItem> = limitsResult.map(item => {
