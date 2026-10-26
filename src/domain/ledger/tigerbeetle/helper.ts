@@ -2,8 +2,8 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, CreateTransferResult, CreateTransferStatus, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto, { hash } from "crypto";
 import assert from "assert";
-import { ContextDfsps, CurrencyConfig, DfspCurrency, DfspRoot, SpecPrepare, SpecTransfer, SpecTransferCreate } from "./spec-store";
-import { AccountCode, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
+import { ContextDfsps, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, SpecPrepare, SpecTransfer, SpecTransferCreate } from "./spec-store";
+import { AccountCode, LedgerAccount, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
 import { CreatePaymentDto, PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { FulfilHandlerAction, FulfilHandlerInput, PaymentFulfilResultType } from "../../../handlers/payment-fulfil";
 import { Effect } from "../../../messaging/message-bus";
@@ -1770,6 +1770,23 @@ export default class Helper {
       acc[key(curr)] = curr
       return acc
     }, {} as Record<string, T>)
+  }
+
+  public static toLedgerAccount(inputs: Array<InternalDfspCurrency>): Array<LedgerAccount> {
+    return inputs.map(input => {
+      const result: LedgerAccount = {
+        id: input.id,
+        code: input.accountCode,
+        currency: input.currency,
+        status: ((input.flags & AccountFlags.closed) === AccountFlags.closed) ? 'DISABLED' : 'ENABLED',
+        creditsPending: input.credits_pending,
+        creditsPosted: input.credits_posted,
+        debitsPending: input.debits_pending,
+        debitsPosted: input.debits_posted,
+      }
+
+      return result
+    })
   }
 }
 

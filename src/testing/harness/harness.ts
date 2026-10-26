@@ -202,8 +202,8 @@ export default class Harness {
       harnessId: this.options.id,
       pathToBinary: `.tigerbeetle/tigerbeetle`,
       // TODO: configure some fallback locations.
-      // dataDir: `/Volumes/RAMDisk/`,
-      dataDir: `.tigerbeetle/`,
+      dataDir: `/Volumes/RAMDisk/`,
+      // dataDir: `.tigerbeetle/`,
       version: '0.17.9'
     })
   }

@@ -989,11 +989,14 @@ const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTime
     logger.info(`AdminTransferHandler::${payload.action}::validationFailed::notFound`)
   } else if (transferState.transferStateId !== Enum.Transfers.TransferState.RESERVED) {
     logger.info(`AdminTransferHandler::${payload.action}::validationFailed::nonReservedState`)
-  } else if (new Date(existingTransfer.expirationDate) <= new Date()) {
-    logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)
   } else {
     logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
     if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT) {
+      // Only validate the expiry on commit.
+      if (new Date(existingTransfer.expirationDate) <= new Date()) {
+        logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)
+      }
+
       logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_COMMIT`)
       const payloadCommit = {
         ...payload,

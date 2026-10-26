@@ -12,9 +12,14 @@ export type TraceItem = {
   prngCalls: number,
 
   /**
+   * A snapshot of the state before the thing that took place.
+   */
+  statePre?: string
+
+  /**
    * A snapshot of the state after the thing that took place took place.
    */
-  statePost?: string
+  statePost?: string,
 }
 
 export default class Trace {
@@ -133,6 +138,9 @@ export default class Trace {
           `body=${JSON.stringify(item.body, Trace.stringifyFormatter, 2)}`,
           `prngCalls=${item.prngCalls}`,
         ]
+        if (item.statePre) {
+          lines.push(`statePre=\n${item.statePre}`)
+        }
         if (item.statePost) {
           lines.push(`statePost=\n${item.statePost}`)
         }
@@ -153,6 +161,9 @@ export default class Trace {
           `\tbody=${JSON.stringify(item.body, Trace.stringifyFormatter, 2)}`,
           `\tprngCalls=${item.prngCalls}`,
         ]
+        if (item.statePre) {
+          lines.push(`statePre=\n${item.statePre}`)
+        }
         if (item.statePost) {
           lines.push(`statePost=\n${item.statePost}`)
         }

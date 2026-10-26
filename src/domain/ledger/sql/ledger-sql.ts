@@ -973,7 +973,7 @@ export class LedgerSql implements Ledger {
         cmd.transferId,
         new Date(),
         this.deps.enums
-      );
+      )
       return Result.emptyCommandResultSuccess()
     } catch (err) {
       return Result.commandResultFailure(err)
@@ -1155,8 +1155,13 @@ export class LedgerSql implements Ledger {
             }
           }
         }
-        case TransferState.COMMITTED:
         case TransferState.RESERVED: {
+          return {
+            type: PaymentPrepareResultType.DUPLICATE_NON_FINAL,
+            effects: [],
+          }
+        }
+        case TransferState.COMMITTED: {
           const effect = this.helper.buildEffectNotificationDuplicate(input, payment)
           return {
             type: PaymentPrepareResultType.DUPLICATE_FINAL,
@@ -1303,7 +1308,7 @@ export class LedgerSql implements Ledger {
         error = resultPosition.error
         break
       case PositionResultType.FAIL_OTHER:
-        type = PaymentPrepareResultType.FAIL_OTHER
+        type = PaymentPrepareResultType.FAIL_LIQUIDITY
         error = resultPosition.error
         break
     }

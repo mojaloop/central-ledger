@@ -54,6 +54,7 @@ import {
   GetSettlementWindowsQueryResponse,
   HubAccountResponse,
   Ledger,
+  LedgerAccount,
   LegacyLedgerAccount,
   LegacyLedgerAccountNoValue,
   LegacyLedgerDfsp,
@@ -1634,7 +1635,35 @@ export class LedgerTigerBeetle implements Ledger {
     }
   }
 
+  /**
+   * Gets a detailed account balance of all dfsp accounts across all currencies.
+   */
+  public async getAllDfspAccountsExtended(): Promise<Record<string, Array<LedgerAccount>>> {
+    const { dfspCurrencies } = await this.specStore.queryDfspRootsWithCurrencies()
+    const dfspIds = [...new Set(dfspCurrencies.map(dfspCurrency => dfspCurrency.dfspId))]
+    const currencies = [...new Set(dfspCurrencies.map(dfspCurrency => dfspCurrency.currency))]
 
+    const results: Record<string, Array<LedgerAccount>> = {}
+    const internalLedgerAccounts = await this._internalDfspCurrencies(dfspCurrencies)
+    dfspIds.forEach(dfspId => {
+      const dfspCurrencyAccounts: Array<LedgerAccount> = []
+      currencies.forEach(currency => {
+        const internalLedgerAccountsPerCurrency = internalLedgerAccounts
+          .filter(account => account.dfspId === dfspId && account.currency === currency)
+
+        if (internalLedgerAccountsPerCurrency.length === 0) return
+        // If we have _some_ ledger accounts, we should have them all.
+        assert(internalLedgerAccountsPerCurrency.length === 9, 
+          `Expected dfsp + currency: ${dfspId}, ${currency} to have 9 accounts.`
+        )
+
+        dfspCurrencyAccounts.push(...Helper.toLedgerAccount(internalLedgerAccountsPerCurrency))
+      })
+      results[dfspId] = dfspCurrencyAccounts
+    })
+
+    return results
+  }
 
   public async setNetDebitCap(cmd: SetNetDebitCapCommand): Promise<CommandResult<void>> {
     assert(cmd.currency)
