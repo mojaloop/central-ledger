@@ -14,18 +14,6 @@ export type CmdHubCurrencyEnable = {
   accountIds: Array<number>
 }
 
-// export type CmdSetNetDebitCap = {
-//   dfspId: string,
-//   currency: string,
-//   type: 'UNLIMITED',
-// } | {
-//   dfspId: string,
-//   currency: string,
-//   alarmPercentage: number,
-//   amount: bigint,
-//   type: 'LIMITED'
-// }
-
 export type EnableHubCurrencyResponse = {
   type: 'OK'
 } | {
@@ -107,7 +95,12 @@ export interface DfspRoot {
 export interface DfspAccountIds {
   deposit: bigint,
   unrestricted: bigint,
+  /**
+   * @deprecated Replaced by netDebitCapSet and netDebitCapSetUtil.
+   */
   unrestrictedLock: bigint,
+  netDebitCapSet: bigint
+  netDebitCapSetUtil: bigint
   restricted: bigint,
   reserved: bigint,
   commitedOutgoing: bigint,
@@ -296,8 +289,6 @@ export type GetSpecTransferResult = {
   id: string
 }
 
-
-
 export type AttachFulfilmentResult = {
 
 }
@@ -320,8 +311,6 @@ export type GetSpecPrepareResult = {
   type: 'NOT_FOUND',
   id: string
 }
-
-
 
 export interface DepsSpecStore {
   config: ApplicationConfig
@@ -877,7 +866,7 @@ export default class SpecStore {
   public async createDfspCurrency(dfspId: string, currency: string, now: Date, ids: Array<number>):
     Promise<DfspCurrency> {
     let trx: Knex.Transaction | undefined
-    assert(ids.length >= 11)
+    assert(ids.length >= 12)
     try {
       trx = await this.db.transaction()
 
@@ -903,6 +892,8 @@ export default class SpecStore {
         clearingLimit: BigInt(ids[8]),
         control: BigInt(ids[9]),
         netDebitCap: BigInt(ids[10]),
+        netDebitCapSet: BigInt(ids[11]),
+        netDebitCapSetUtil: BigInt(ids[12]),
         changedDate: now,
         changedDatePosition: now,
         changedDateSettlement: now,
@@ -1182,6 +1173,8 @@ export default class SpecStore {
       clearingLimit: BigInt(row.clearingLimit),
       control: BigInt(row.control),
       netDebitCap: BigInt(row.netDebitCap),
+      netDebitCapSet: BigInt(row.netDebitCapSet),
+      netDebitCapSetUtil: BigInt(row.netDebitCapSetUtil),
       changedDate: row.changedDate,
       changedDatePosition: row.changedDatePosition,
       changedDateSettlement: row.changedDateSettlement,

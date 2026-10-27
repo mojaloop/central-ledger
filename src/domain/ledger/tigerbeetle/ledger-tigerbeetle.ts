@@ -23,7 +23,7 @@ import {
   PaymentPrepareResultType,
   PrepareHandlerInput
 } from "../../../handlers/payment-prepare";
-import { ApplicationConfig } from "../../../lib/config";
+import { ApplicationConfig, resetOverride } from "../../../lib/config";
 import { assertBoolean, assertOneOf, convertBigIntToNumber } from '../../../lib/config/util';
 import { logger } from "../../../shared/logger";
 import * as Result from '../shared/results';
@@ -90,6 +90,7 @@ import SettlementDomain from '../../settlement';
 import { CloseDfspMasterAccountFailureType, DepositFailureType, DisableDfspAccountFailureType, EnableDfspAccountFailureType, FulfilFailureType, default as Helper, default as LedgerTigerBeetleHelper, PrepareFailureType, PrepareInternalStatus, SetNetDebitCapFailureType, TransferFailureResult, WithdrawAbortFailureType, WithdrawCommitFailureType, WithdrawPrepareFailureType } from './helper';
 import SpecStore, { CmdHubCurrencyEnable, ContextDfsps, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecPrepare, SpecTransfer, SpecTransferCreate, SpecTransferUpdate } from './spec-store';
 import { currencyList } from '../../../seeds/currency';
+import { Reporter } from '../shared/reporter';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -630,6 +631,14 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   /**
+   * Get a list of all the CurrencyConfigs registered on the Ledger.
+   */
+  public async getCurrencyConfigs(): Promise<Array<CurrencyConfig>> {
+    const currencyConfigs = await this.specStore.getCurrencyConfigsMap()
+    return Object.values(currencyConfigs)
+  }
+
+  /**
    * Look up the net debit cap for the dfsp + currency based on the last credit transfer to the 
    * net debit cap control account.
    */
@@ -865,12 +874,16 @@ export class LedgerTigerBeetle implements Ledger {
         reason: cmd.reason
       }])
 
+      // const reporter = new Reporter({ledger: this, config: this.config})
+      // const bsPre = await reporter.balanceSheet(new Date())
+      // console.log("bsPre is \n" + bsPre.toTAccounts([cmd.dfspId], [cmd.currency]))
+
       let netDebitCapLockAmount = amount_max
       if (netDebitCap.type === 'LIMITED') {
         netDebitCapLockAmount = netDebitCap.amount
       }
       const transfers = this.helper.buildTransfersDeposit(
-        cmd.transferId, cmd.amount, netDebitCapLockAmount, dfspCurrency, currency
+        cmd.transferId, cmd.amount, netDebitCap, dfspCurrency, currency
       )
 
       const createTransfersResults = await this.deps.client.createTransfers(transfers)
@@ -933,6 +946,9 @@ export class LedgerTigerBeetle implements Ledger {
         }
       }
 
+      // const bsPost = await reporter.balanceSheet(new Date())
+      // console.log("bsPost is \n" + bsPost.toTAccounts([cmd.dfspId], [cmd.currency]))
+
       // Backwards compatibility: Keep track of last deposit time in specStore.
       await this.deps.specStore.updateChangedDateSettlement(
         cmd.dfspId, cmd.currency, new Date()
@@ -972,77 +988,28 @@ export class LedgerTigerBeetle implements Ledger {
         return Helper.failure(netDebitCapResult.error)
       }
       const netDebitCap = netDebitCapResult.result
-      let netDebitCapLockAmount = amount_max
-      if (netDebitCap.type === 'LIMITED') {
-        netDebitCapLockAmount = netDebitCap.amount
-      }
 
       // Save the funding metadata before writing to TigerBeetle (write last, read first)
       // await this.specStore.saveFundingSpec()
       const transfers = this.helper.buildTransfersWithdrawPrepare(
-        cmd.transferId, cmd.amount, netDebitCapLockAmount, spec.result, dfspRoot, currency
+        cmd.transferId, cmd.amount, netDebitCap, spec.result, dfspRoot, currency
       )
+      const reporter = new Reporter({ledger: this, config: this.config})
+      const bsPre = await reporter.balanceSheet(new Date())
+      // console.log("bsPre is \n" + bsPre.toTAccounts([cmd.dfspId], [cmd.currency]))
+      // console.log('NDC is:', netDebitCap)
+      // console.log('Transfers are:\n' + Helper.formatTransfersAsDRCR(transfers, [spec.result], [dfspRoot], currency))
+
       const createTransfersResults = await this.deps.client.createTransfers(transfers)
-      const fatalErrors: Array<TransferFailureResult<WithdrawPrepareFailureType>> = []
-      createTransfersResults.forEach((result, idx) => {
-        // Ignore noisy errors
-        if (result.status === CreateTransferStatus.linked_event_failed) return
-        if (result.status === CreateTransferStatus.created) return
-
-        if (idx === 0) {
-          switch (result.status) {
-            case CreateTransferStatus.credit_account_already_closed:
-              fatalErrors.push({ type: 'DFSP_CLOSED', ...result })
-              return
-          }
-        }
-
-        if (idx === 1) {
-          switch (result.status) {
-            case CreateTransferStatus.credit_account_already_closed:
-              fatalErrors.push({ type: 'ACCOUNT_CLOSED', ...result })
-              return
-          }
-        }
-
-        if (idx === 2) {
-          switch (result.status) {
-            // Insufficent funds masks the reusal error.
-            // And because we ignore the insufficent funds errors, we can't properly pull out the
-            // proper response.
-            case CreateTransferStatus.exceeds_credits:
-              fatalErrors.push({ type: 'INSUFFICIENT_FUNDS', ...result })
-              return
-            case CreateTransferStatus.debit_account_already_closed:
-              fatalErrors.push({ type: 'ACCOUNT_CLOSED', ...result })
-              return
-            case CreateTransferStatus.exists:
-              fatalErrors.push({ type: 'TRANSFER_ID_REUSED', ...result })
-              return
-            case CreateTransferStatus.exists_with_different_flags:
-            case CreateTransferStatus.exists_with_different_pending_id:
-            case CreateTransferStatus.exists_with_different_timeout:
-            case CreateTransferStatus.exists_with_different_debit_account_id:
-            case CreateTransferStatus.exists_with_different_credit_account_id:
-            case CreateTransferStatus.exists_with_different_amount:
-            case CreateTransferStatus.exists_with_different_user_data_128:
-            case CreateTransferStatus.exists_with_different_user_data_64:
-            case CreateTransferStatus.exists_with_different_user_data_32:
-            case CreateTransferStatus.exists_with_different_ledger:
-            case CreateTransferStatus.exists_with_different_code:
-              fatalErrors.push({ type: 'TRANSFER_ID_REUSED', ...result })
-              return
-          }
-        }
-
-        throw new Error(`unhandled transfer error: ${idx}, ${CreateTransferStatus[result.status]}`)
-      })
+      const fatalErrors = this.helper.mapWithdrawPrepareToPrepareResult(
+        createTransfersResults, netDebitCap
+      )
 
       if (fatalErrors.length > 0) {
         const firstError = fatalErrors[0]
         switch (firstError.type) {
           case 'INSUFFICIENT_FUNDS':
-            // Backwards compatability - always update the changed date for the settlement account?
+            // Backwards compatibility - always update the changed date for the settlement account?
             await this.deps.specStore.updateChangedDateSettlement(
               cmd.dfspId, cmd.currency, new Date()
             )
@@ -1060,6 +1027,9 @@ export class LedgerTigerBeetle implements Ledger {
             return Helper.failure(new Error(`withdrawPrepare() failed with error: ${CreateTransferStatus[firstError.status]}`))
         }
       }
+
+      const bsPost = await reporter.balanceSheet(new Date())
+      // console.log("bsPost is \n" + bsPost.toTAccounts([cmd.dfspId], [cmd.currency]))
 
       await this.deps.specStore.updateChangedDateSettlement(cmd.dfspId, cmd.currency, new Date())
 
@@ -1751,7 +1721,7 @@ export class LedgerTigerBeetle implements Ledger {
     assert(query.currency)
     assert(query.dfspId)
 
-    // Backwards compatiblity - if the currency isn't doesn't exist return NOT_FOUND instead of 
+    // Backwards compatibility - if the currency isn't doesn't exist return NOT_FOUND instead of
     // throwing an error
     let currency
     try {

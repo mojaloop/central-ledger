@@ -1,7 +1,7 @@
 import assert from "node:assert"
 import { ApplicationConfig } from "../../../lib/config"
 import { AccountCode, Ledger, LedgerAccount, LegacyLedgerAccount, LegacyLimitItem } from "./types"
-import { NetDebitCap } from "../tigerbeetle/spec-store"
+import { CurrencyConfig, NetDebitCap } from "../tigerbeetle/spec-store"
 import { LedgerTigerBeetle } from "../tigerbeetle/ledger-tigerbeetle"
 
 interface DepsReporter {
@@ -19,6 +19,7 @@ interface OptionsBalanceSheet {
   dfspAccounts: Record<string, Array<LegacyLedgerAccount>>
   netDebitCaps: Record<string, Array<LegacyLimitItem>>
   dfspAccountsExtended?: Record<string, Array<LedgerAccount>>
+  currencyConfigs?: Array<CurrencyConfig>
 }
 
 interface Balance {
@@ -76,6 +77,7 @@ class BalanceSheet {
   private dfspAccounts: Record<string, Array<LegacyLedgerAccount>>
   private netDebitCaps: Record<string, Array<LegacyLimitItem>>
   private dfspAccountsExtended: Record<string, Array<LedgerAccount>>
+  private currencyConfigs: Array<CurrencyConfig>
   private currencies: Array<string>
   private dfspIds: Array<string>
   private currencyBalances: Array<CurrencyBalance>
@@ -86,9 +88,16 @@ class BalanceSheet {
     assert(options.netDebitCaps)
     assert.equal(Object.keys(options.dfspAccounts).length, Object.keys(options.netDebitCaps).length)
 
+    this.generatedAt = options.generatedAt
+    this.dfspAccounts = options.dfspAccounts
+    this.netDebitCaps = options.netDebitCaps
+    this.currencies = [...new Set(
+      Object.values(this.dfspAccounts).flat().map(acc => acc.currency)
+    )].sort()
+
     if (options.dfspAccountsExtended) {
       assert.equal(
-        Object.keys(options.dfspAccounts).length, 
+        Object.keys(options.dfspAccounts).length,
         Object.keys(options.dfspAccountsExtended).length
       )
       this.dfspAccountsExtended = options.dfspAccountsExtended
@@ -96,12 +105,13 @@ class BalanceSheet {
       this.dfspAccountsExtended = {}
     }
 
-    this.generatedAt = options.generatedAt
-    this.dfspAccounts = options.dfspAccounts
-    this.netDebitCaps = options.netDebitCaps
-    this.currencies = [...new Set(
-      Object.values(this.dfspAccounts).flat().map(acc => acc.currency)
-    )].sort()
+    if (options.currencyConfigs && this.currencies.length > 0) {
+      assert(options.currencyConfigs)
+      assert(options.currencyConfigs.length >= this.currencies.length)
+      this.currencyConfigs = options.currencyConfigs
+    } else {
+      this.currencyConfigs = []
+    }
 
     this.currencyBalances = []
     this.dfspIds = Object.keys(this.dfspAccounts).sort()
@@ -191,13 +201,15 @@ class BalanceSheet {
 
     for (const currency of currencies) {
       const currencyBalance = this.currencyBalances.find(balance => balance.currency === currency)
+      const currencyConfig = this.currencyConfigs.find(config => config.currency === currency)
       if (!currencyBalance) continue
 
+      assert(currencyConfig)
       for (const dfsp of dfsps) {
         const dfspBalance = currencyBalance.dfsps[dfsp]
         if (!dfspBalance?.dfspAccountsDetailed) continue
 
-        builder += this.formatDfspTAccounts(dfsp, currency, dfspBalance.dfspAccountsDetailed)
+        builder += this.formatDfspTAccounts(dfsp, currencyConfig, dfspBalance.dfspAccountsDetailed)
         builder += '\n'
       }
     }
@@ -205,29 +217,39 @@ class BalanceSheet {
     return builder
   }
 
-  private formatDfspTAccounts(dfspId: string, currency: string, detailed: DfspAccountsDetailed): string {
+  private formatDfspTAccounts(dfspId: string, currencyConfig: CurrencyConfig, detailed: DfspAccountsDetailed): string {
     const COL = 10
     const NAME_COL = 26
     let builder = ''
+    const currency = currencyConfig.currency
+    const assetScale = currencyConfig.assetScale
+    const divisor = Math.pow(10, assetScale)
 
     builder += `${dfspId} (${currency})`.padEnd(NAME_COL) + 'DR'.padStart(COL) + '  ' + 'CR'.padStart(COL) + '\n'
     builder += '─'.repeat(NAME_COL + COL * 2 + 2) + '\n'
 
+    // Note: I've commented out some of the transient-only accounts here, since they will always be
+    // zero.
     const accounts: Array<{ name: string; balance: Balance }> = [
-      { name: 'asset:Deposit', balance: detailed.deposit },
+      { name: '    asset:Deposit', balance: detailed.deposit },
       { name: 'liability:Unrestricted', balance: detailed.unrestricted },
-      { name: 'liability:UnrestrictedLock', balance: detailed.unrestrictedLock },
+      // { name: 'liability:UnrestrictedLock', balance: detailed.unrestrictedLock },
       { name: 'liability:Restricted', balance: detailed.restricted },
       { name: 'liability:Reserved', balance: detailed.reserved },
-      { name: 'liability:CommitedOutgoing', balance: detailed.commitedOutgoing },
-      { name: 'liability:ClearingCredit', balance: detailed.clearingCredit },
-      { name: 'liability:ClearingSetup', balance: detailed.clearingSetup },
-      { name: 'liability:ClearingLimit', balance: detailed.clearingLimit },
+      // { name: 'liability:CommitedOutgoing', balance: detailed.commitedOutgoing },
+      // { name: 'liability:ClearingCredit', balance: detailed.clearingCredit },
+      // { name: 'liability:ClearingSetup', balance: detailed.clearingSetup },
+      // { name: 'liability:ClearingLimit', balance: detailed.clearingLimit },
     ]
 
     for (const { name, balance } of accounts) {
-      const drStr = this.formatBalanceCell(balance.debitsPosted, balance.debitsPending)
-      const crStr = this.formatBalanceCell(balance.creditsPosted, balance.creditsPending)
+      const drNet = Number(balance.debitsPosted - balance.creditsPosted) / divisor
+      const crNet = Number(balance.creditsPosted - balance.debitsPosted) / divisor
+      const drPendingNet = Number(balance.debitsPending - balance.creditsPending) / divisor
+      const crPendingNet = Number(balance.creditsPending - balance.debitsPending) / divisor
+
+      const drStr = this.formatBalanceCell(drNet > 0 ? drNet : 0, drPendingNet > 0 ? drPendingNet : 0)
+      const crStr = this.formatBalanceCell(crNet > 0 ? crNet : 0, crPendingNet > 0 ? crPendingNet : 0)
 
       builder += name.padEnd(NAME_COL) + drStr.padStart(COL) + '  ' + crStr.padStart(COL) + '\n'
     }
@@ -235,12 +257,18 @@ class BalanceSheet {
     return builder
   }
 
-  private formatBalanceCell(posted: bigint, pending: bigint): string {
-    if (posted === 0n && pending === 0n) return ''
+  private formatBalanceCell(posted: number, pending: number): string {
+    if (posted === 0 && pending === 0) return ''
 
     const parts: string[] = []
-    if (pending > 0n) parts.push(`${pending}p`)
-    if (posted > 0n) parts.push(`${posted}`)
+    if (pending > 0) parts.push(`${pending.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}p`)
+    if (posted > 0) parts.push(`${posted.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }) }`)
 
     return parts.join(' ')
   }
@@ -334,8 +362,10 @@ export class Reporter {
 
     // LedgerTigerBeetle supports detailed account balances.
     let dfspAccountsExtended: undefined | Record<string, Array<LedgerAccount>>
+    let currencyConfigs: undefined | Array<CurrencyConfig>
     if (this.ledger instanceof LedgerTigerBeetle) {
       dfspAccountsExtended = await this.ledger.getAllDfspAccountsExtended()
+      currencyConfigs = await this.ledger.getCurrencyConfigs()
     }
 
     // Get all of the dfsp accounts, across all currencies.
@@ -343,7 +373,8 @@ export class Reporter {
       generatedAt: now,
       dfspAccounts,
       netDebitCaps,
-      dfspAccountsExtended
+      dfspAccountsExtended,
+      currencyConfigs,
     })
 
     return balanceSheet
