@@ -3262,6 +3262,8 @@ CREATE TABLE `specDfspCurrency` (
   `clearingLimit` bigint(20) unsigned NOT NULL,
   `control` bigint(20) unsigned NOT NULL,
   `netDebitCap` bigint(20) unsigned NOT NULL,
+  `netDebitCapSet` bigint(20) unsigned NOT NULL,
+  `netDebitCapSetUtil` bigint(20) unsigned NOT NULL,
   `createdDate` datetime NOT NULL,
   `changedDatePosition` datetime NOT NULL,
   `changedDateSettlement` datetime NOT NULL,
@@ -4092,4 +4094,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-10-23 16:57:26
+-- Dump completed on 2026-10-27 12:06:57

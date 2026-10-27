@@ -2,7 +2,7 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, CreateTransferResult, CreateTransferStatus, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto, { hash } from "crypto";
 import assert from "assert";
-import { ContextDfsps, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, SpecPrepare, SpecTransfer, SpecTransferCreate } from "./spec-store";
+import { ContextDfsps, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, NetDebitCap, SpecPrepare, SpecTransfer, SpecTransferCreate } from "./spec-store";
 import { AccountCode, LedgerAccount, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
 import { CreatePaymentDto, PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { FulfilHandlerAction, FulfilHandlerInput, PaymentFulfilResultType } from "../../../handlers/payment-fulfil";
@@ -398,31 +398,60 @@ export default class Helper {
         code: AccountCode.Net_Debit_Cap,
         flags: 0,
       },
+      // Net Debit Cap Set
+      {
+        ...Helper.createAccountTemplate,
+        id: spec.netDebitCapSet,
+        ledger: currencyLedger.idOperation,
+        code: AccountCode.Net_Debit_Cap_Set,
+        flags: 0,
+      },
+      {
+        ...Helper.createAccountTemplate,
+        id: spec.netDebitCapSetUtil,
+        ledger: currencyLedger.idOperation,
+        code: AccountCode.Net_Debit_Cap_Set_Util,
+        flags: 0,
+      },
     ]
 
     return accounts
   }
 
-  public buildTransfersDeposit(
-    transferId: string,
-    amount: number,
+  /**
+   * Reusable transfer template for setting the net debit cap.
+   * This ensures we apply the net debit cap across the Unrestricted and Restricted account, 
+   * while also counting the Reserved funds against the net debit cap.
+   * 
+   * Example DRCR Snippet:
+   * 
+   * USD DR dfsp_a:ndc_set      CR dfsp_a:ndc_set_util   900
+   * USD DR dfsp_a:restricted   CR dfsp_a:unrestricted 10000 balancing_debit
+   * USD DR dfsp_a:reserved     CR dfsp_a:ndc_set      10000 balancing_debit,pending ^14
+   * USD DR dfsp_a:unrestricted CR dfsp_a:ndc_set      10000 balancing_credit,pending ^15
+   * USD DR dfsp_a:unrestricted CR dfsp_a:restricted   10000 balancing_debit
+   * USD DR dfsp_a:unrestricted CR dfsp_a:ndc_set          0 void_pending_transfer ^15
+   * USD DR dfsp_a:reserved     CR dfsp_a:ndc_set          0 void_pending_transfer ^14
+   * USD DR dfsp_a:ndc_set_util CR dfsp_a:ndc_set        900 balancing_debit
+   */
+  public transferTemplateNDC(
     netDebitCapLockAmount: bigint,
     spec: DfspCurrency,
-    ledger: CurrencyConfig
+    currencyConfig: CurrencyConfig
   ): Array<Transfer> {
-    const idLockTransfer = id()
+    const idLockReserved = id()
+    const idLockUnrestricted = id()
     return [
-      // Deposit funds into Unrestricted.
+      // Set the Net_Debit_Cap_Set account to the NDC Value.
       {
         ...Helper.createTransferTemplate,
-        id: Helper.fromMojaloopId(transferId),
-        debit_account_id: spec.deposit,
-        credit_account_id: spec.unrestricted,
-        amount: Helper.toTigerBeetleAmount(amount, ledger.assetScale),
-        ledger: ledger.idOperation,
-        code: TransferCode.Deposit,
+        id: id(),
+        debit_account_id: spec.netDebitCapSet,
+        credit_account_id: spec.netDebitCapSetUtil,
+        amount: netDebitCapLockAmount,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Lock,
         flags: TransferFlags.linked
-
       },
       // Sweep total balance from Restricted to Unrestricted.
       {
@@ -431,57 +460,147 @@ export default class Helper {
         debit_account_id: spec.restricted,
         credit_account_id: spec.unrestricted,
         amount: amount_max,
-        ledger: ledger.idOperation,
+        ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
         flags: TransferFlags.linked | TransferFlags.balancing_debit
       },
-      // Temporarily lock up to the net debit cap.
+      // Reduce the Net_Debit_Cap_Set amount by the reserved amount.
       {
         ...Helper.createTransferTemplate,
-        id: idLockTransfer,
-        debit_account_id: spec.unrestricted,
-        credit_account_id: spec.unrestrictedLock,
-        amount: netDebitCapLockAmount,
-        ledger: ledger.idOperation,
+        id: idLockReserved,
+        debit_account_id: spec.reserved,
+        credit_account_id: spec.netDebitCapSet,
+        amount: amount_max,
+        ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
         flags: TransferFlags.linked | TransferFlags.pending | TransferFlags.balancing_debit
       },
-      // Sweep whatever remains in Unrestricted to Restricted.
+      // Temporarily lock up the remaining net debit amount after subtracting reserved.
+      {
+        ...Helper.createTransferTemplate,
+        id: idLockUnrestricted,
+        debit_account_id: spec.unrestricted,
+        credit_account_id: spec.netDebitCapSet,
+        amount: amount_max,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Lock,
+        flags: TransferFlags.linked 
+          | TransferFlags.pending 
+          | TransferFlags.balancing_credit 
+          | TransferFlags.balancing_debit
+      },
+      // Sweep remaining funds in Unrestricted to Restricted.
       {
         ...Helper.createTransferTemplate,
         id: id(),
         debit_account_id: spec.unrestricted,
         credit_account_id: spec.restricted,
         amount: amount_max,
-        ledger: ledger.idOperation,
+        ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
         flags: TransferFlags.linked | TransferFlags.balancing_debit
       },
-      // Reset the pending limit transfer.
+      // Reset the pending locks.
       {
         ...Helper.createTransferTemplate,
         id: id(),
-        pending_id: idLockTransfer,
+        pending_id: idLockUnrestricted,
         debit_account_id: 0n,
         credit_account_id: 0n,
         amount: 0n,
-        ledger: ledger.idOperation,
+        ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
-        flags: TransferFlags.void_pending_transfer
+        flags: TransferFlags.linked | TransferFlags.void_pending_transfer
+      },
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        pending_id: idLockReserved,
+        debit_account_id: 0n,
+        credit_account_id: 0n,
+        amount: 0n,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Lock,
+        flags: TransferFlags.linked | TransferFlags.void_pending_transfer
+      },
+      // Reset the Net_Debit_Cap_Set account to zero.
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: spec.netDebitCapSetUtil,
+        credit_account_id: spec.netDebitCapSet,
+        amount: netDebitCapLockAmount,
+        ledger: currencyConfig.idOperation,
+        code: TransferCode.Net_Debit_Cap_Lock,
+        flags: TransferFlags.balancing_debit
       }
+    ]
+  }
+
+  public buildTransfersDeposit(
+    transferId: string,
+    amount: number,
+    netDebitCap: NetDebitCap,
+    spec: DfspCurrency,
+    currencyConfig: CurrencyConfig
+  ): Array<Transfer> {
+    const tranferDeposit = {
+      ...Helper.createTransferTemplate,
+      id: Helper.fromMojaloopId(transferId),
+      debit_account_id: spec.deposit,
+      credit_account_id: spec.unrestricted,
+      amount: Helper.toTigerBeetleAmount(amount, currencyConfig.assetScale),
+      ledger: currencyConfig.idOperation,
+      code: TransferCode.Deposit,
+      flags: 0
+    }
+    if (netDebitCap.type === 'UNLIMITED') {
+      return [tranferDeposit]
+    }
+
+    tranferDeposit.flags = TransferFlags.linked
+    return [
+      tranferDeposit,
+      ...this.transferTemplateNDC(netDebitCap.amount, spec, currencyConfig)
     ]
   }
 
   public buildTransfersWithdrawPrepare(
     transferId: string,
     amount: number,
-    netDebitCapLockAmount: bigint,
+    netDebitCap: NetDebitCap,
     spec: DfspCurrency,
     master: DfspRoot,
-    ledger: CurrencyConfig,
+    currencyConfig: CurrencyConfig,
   ): Array<Transfer> {
-    const idLockTransfer = id()
-    const transfers: Array<Transfer> = [
+    if (netDebitCap.type === 'UNLIMITED') {
+      return [
+        // Ensure DFSP is active.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          debit_account_id: Helper.accountIds.devNull,
+          credit_account_id: master.id,
+          amount: 0n,
+          ledger: Helper.ledgerIds.globalControl,
+          code: 1,
+          flags: TransferFlags.linked,
+        },
+        // Prepare the withdrawal.
+        {
+          ...Helper.createTransferTemplate,
+          id: Helper.fromMojaloopId(transferId),
+          debit_account_id: spec.unrestricted,
+          credit_account_id: spec.deposit,
+          amount: Helper.toTigerBeetleAmount(amount, currencyConfig.assetScale),
+          ledger: currencyConfig.idOperation,
+          code: TransferCode.Withdraw,
+          flags: TransferFlags.pending
+        },
+      ]
+    }
+
+    return [
       // Ensure DFSP is active.
       {
         ...Helper.createTransferTemplate,
@@ -493,14 +612,14 @@ export default class Helper {
         code: 1,
         flags: TransferFlags.linked,
       },
-      // Sweep total balance from Restricted to Unrestricted.
+      // Sweep Restricted funds to Unrestricted.
       {
         ...Helper.createTransferTemplate,
         id: id(),
         debit_account_id: spec.restricted,
         credit_account_id: spec.unrestricted,
         amount: amount_max,
-        ledger: ledger.idOperation,
+        ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
         flags: TransferFlags.linked | TransferFlags.balancing_debit
       },
@@ -510,49 +629,131 @@ export default class Helper {
         id: Helper.fromMojaloopId(transferId),
         debit_account_id: spec.unrestricted,
         credit_account_id: spec.deposit,
-        amount: Helper.toTigerBeetleAmount(amount, ledger.assetScale),
-        ledger: ledger.idOperation,
+        amount: Helper.toTigerBeetleAmount(amount, currencyConfig.assetScale),
+        ledger: currencyConfig.idOperation,
         code: TransferCode.Withdraw,
         flags: TransferFlags.linked | TransferFlags.pending
       },
-      // Temporarily lock up to the net debit cap amount.
-      {
-        ...Helper.createTransferTemplate,
-        id: idLockTransfer,
-        debit_account_id: spec.unrestricted,
-        credit_account_id: spec.unrestrictedLock,
-        amount: netDebitCapLockAmount,
-        ledger: ledger.idOperation,
-        code: TransferCode.Net_Debit_Cap_Lock,
-        flags: TransferFlags.linked | TransferFlags.balancing_debit | TransferFlags.pending
-      },
-      // Sweep whatever remains in Unrestricted to Restricted.
-      {
-        ...Helper.createTransferTemplate,
-        id: id(),
-        debit_account_id: spec.unrestricted,
-        credit_account_id: spec.restricted,
-        amount: amount_max,
-        ledger: ledger.idOperation,
-        code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
-        flags: TransferFlags.linked | TransferFlags.balancing_debit
-      },
-      // Void the pending limit lock transfer.
-      {
-        ...Helper.createTransferTemplate,
-        id: id(),
-        pending_id: idLockTransfer,
-        debit_account_id: 0n,
-        credit_account_id: 0n,
-        amount: 0n,
-        ledger: ledger.idOperation,
-        code: TransferCode.Net_Debit_Cap_Lock,
-        flags: TransferFlags.void_pending_transfer
-      },
+      ...this.transferTemplateNDC(netDebitCap.amount, spec, currencyConfig)
     ]
-
-    return transfers
   }
+
+  public mapWithdrawPrepareToPrepareResult(
+    results: Array<CreateTransferResult>,
+    netDebitCap: NetDebitCap,
+  ): Array<TransferFailureResult<WithdrawPrepareFailureType>> {
+    const fatalErrors: Array<TransferFailureResult<WithdrawPrepareFailureType>> = []
+    if (netDebitCap.type === 'UNLIMITED') {
+      assert(results.length === 2)
+      results.forEach((result, idx) => {
+        // Ignore noisy errors
+        if (result.status === CreateTransferStatus.linked_event_failed) return
+        if (result.status === CreateTransferStatus.created) return
+
+        if (idx === 0) {
+          switch (result.status) {
+            case CreateTransferStatus.credit_account_already_closed:
+              fatalErrors.push({ type: 'DFSP_CLOSED', ...result })
+              return
+          }
+        }
+
+        if (idx === 1) {
+          switch (result.status) {
+            // Insufficent funds masks the reusal error.
+            // And because we ignore the insufficent funds errors, we can't properly pull out the
+            // proper response.
+            case CreateTransferStatus.exceeds_credits:
+              fatalErrors.push({ type: 'INSUFFICIENT_FUNDS', ...result })
+              return
+            case CreateTransferStatus.debit_account_already_closed:
+              fatalErrors.push({ type: 'ACCOUNT_CLOSED', ...result })
+              return
+            case CreateTransferStatus.exists:
+              fatalErrors.push({ type: 'TRANSFER_ID_REUSED', ...result })
+              return
+            case CreateTransferStatus.exists_with_different_flags:
+            case CreateTransferStatus.exists_with_different_pending_id:
+            case CreateTransferStatus.exists_with_different_timeout:
+            case CreateTransferStatus.exists_with_different_debit_account_id:
+            case CreateTransferStatus.exists_with_different_credit_account_id:
+            case CreateTransferStatus.exists_with_different_amount:
+            case CreateTransferStatus.exists_with_different_user_data_128:
+            case CreateTransferStatus.exists_with_different_user_data_64:
+            case CreateTransferStatus.exists_with_different_user_data_32:
+            case CreateTransferStatus.exists_with_different_ledger:
+            case CreateTransferStatus.exists_with_different_code:
+            case CreateTransferStatus.id_already_failed:
+              fatalErrors.push({ type: 'TRANSFER_ID_REUSED', ...result })
+              return
+          }
+        }
+
+        throw new Error(`unhandled transfer error: ${idx}, ${CreateTransferStatus[result.status]}`)
+      })
+
+      return fatalErrors
+    }
+
+    assert(netDebitCap.type === 'LIMITED')
+    results.forEach((result, idx) => {
+      assert(results.length === 11)
+      // Ignore noisy errors
+      if (result.status === CreateTransferStatus.linked_event_failed) return
+      if (result.status === CreateTransferStatus.created) return
+
+      if (idx === 0) {
+        switch (result.status) {
+          case CreateTransferStatus.credit_account_already_closed:
+            fatalErrors.push({ type: 'DFSP_CLOSED', ...result })
+            return
+        }
+      }
+
+      if (idx === 1) {
+        switch (result.status) {
+          case CreateTransferStatus.credit_account_already_closed:
+            fatalErrors.push({ type: 'ACCOUNT_CLOSED', ...result })
+            return
+        }
+      }
+
+      if (idx === 2) {
+        switch (result.status) {
+          // Insufficent funds masks the reusal error.
+          // And because we ignore the insufficent funds errors, we can't properly pull out the
+          // proper response.
+          case CreateTransferStatus.exceeds_credits:
+            fatalErrors.push({ type: 'INSUFFICIENT_FUNDS', ...result })
+            return
+          case CreateTransferStatus.debit_account_already_closed:
+            fatalErrors.push({ type: 'ACCOUNT_CLOSED', ...result })
+            return
+          case CreateTransferStatus.exists:
+            fatalErrors.push({ type: 'TRANSFER_ID_REUSED', ...result })
+            return
+          case CreateTransferStatus.exists_with_different_flags:
+          case CreateTransferStatus.exists_with_different_pending_id:
+          case CreateTransferStatus.exists_with_different_timeout:
+          case CreateTransferStatus.exists_with_different_debit_account_id:
+          case CreateTransferStatus.exists_with_different_credit_account_id:
+          case CreateTransferStatus.exists_with_different_amount:
+          case CreateTransferStatus.exists_with_different_user_data_128:
+          case CreateTransferStatus.exists_with_different_user_data_64:
+          case CreateTransferStatus.exists_with_different_user_data_32:
+          case CreateTransferStatus.exists_with_different_ledger:
+          case CreateTransferStatus.exists_with_different_code:
+          case CreateTransferStatus.id_already_failed:
+            fatalErrors.push({ type: 'TRANSFER_ID_REUSED', ...result })
+            return
+        }
+      }
+
+      throw new Error(`unhandled transfer error: ${idx}, ${CreateTransferStatus[result.status]}`)
+    })
+    return fatalErrors
+  }
+
 
   public buildTranfersSetNetDebitCap(
     dfspCurrency: DfspCurrency,
@@ -561,14 +762,13 @@ export default class Helper {
     netDebitCapType: 'LIMITED' | 'UNLIMITED',
     alarmPercentage: number,
   ): Array<Transfer> {
-
     const idLockTransfer = id()
     const transfers: Array<Transfer> = [
       // TODO: add in the 
       // CTL DR dfsp_a:netDebitCap  CR dfsp_a:control          10000 balancing_debit
       // to reset the amount of netDebitCap
 
-      // NDC is encoded on the latest Transfer to the net debic cap control account.
+      // NDC is encoded on the latest Transfer to the net debit cap control account.
       {
         ...Helper.createTransferTemplate,
         id: id(),
@@ -581,53 +781,58 @@ export default class Helper {
         code: TransferCode.Set_Net_Debit_Cap,
         flags: TransferFlags.linked
       },
+      ...this.transferTemplateNDC(
+        netDebitCapType === 'LIMITED' ? amountNetDebitCap : amount_max,
+        dfspCurrency,
+        currencyConfig
+      )
 
-      // Sweep total balance from Restricted to Unrestricted
-      {
-        ...Helper.createTransferTemplate,
-        id: id(),
-        debit_account_id: dfspCurrency.restricted,
-        credit_account_id: dfspCurrency.unrestricted,
-        amount: amount_max,
-        ledger: currencyConfig.idOperation,
-        code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
-        flags: TransferFlags.linked | TransferFlags.balancing_debit
-      },
-      // Move the new NDC amount out to a temporary account.
-      // if the new NDC amount is unlimited, then move all into temporary account.
-      {
-        ...Helper.createTransferTemplate,
-        id: idLockTransfer,
-        debit_account_id: dfspCurrency.unrestricted,
-        credit_account_id: dfspCurrency.unrestrictedLock,
-        amount: netDebitCapType === 'LIMITED' ? amountNetDebitCap : amount_max,
-        ledger: currencyConfig.idOperation,
-        code: TransferCode.Net_Debit_Cap_Lock,
-        flags: TransferFlags.linked | TransferFlags.balancing_debit | TransferFlags.pending
-      },
-      // Sweep whatever remains in Unrestricted to Restricted.
-      {
-        ...Helper.createTransferTemplate,
-        id: id(),
-        debit_account_id: dfspCurrency.unrestricted,
-        credit_account_id: dfspCurrency.restricted,
-        amount: amount_max,
-        ledger: currencyConfig.idOperation,
-        code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
-        flags: TransferFlags.linked | TransferFlags.balancing_debit
-      },
-      // Void the pending limit lock transfer.
-      {
-        ...Helper.createTransferTemplate,
-        id: id(),
-        pending_id: idLockTransfer,
-        debit_account_id: 0n,
-        credit_account_id: 0n,
-        amount: 0n,
-        ledger: currencyConfig.idOperation,
-        code: TransferCode.Net_Debit_Cap_Lock,
-        flags: TransferFlags.void_pending_transfer
-      },
+      // // Sweep total balance from Restricted to Unrestricted
+      // {
+      //   ...Helper.createTransferTemplate,
+      //   id: id(),
+      //   debit_account_id: dfspCurrency.restricted,
+      //   credit_account_id: dfspCurrency.unrestricted,
+      //   amount: amount_max,
+      //   ledger: currencyConfig.idOperation,
+      //   code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
+      //   flags: TransferFlags.linked | TransferFlags.balancing_debit
+      // },
+      // // Move the new NDC amount out to a temporary account.
+      // // if the new NDC amount is unlimited, then move all into temporary account.
+      // {
+      //   ...Helper.createTransferTemplate,
+      //   id: idLockTransfer,
+      //   debit_account_id: dfspCurrency.unrestricted,
+      //   credit_account_id: dfspCurrency.unrestrictedLock,
+      //   amount: netDebitCapType === 'LIMITED' ? amountNetDebitCap : amount_max,
+      //   ledger: currencyConfig.idOperation,
+      //   code: TransferCode.Net_Debit_Cap_Lock,
+      //   flags: TransferFlags.linked | TransferFlags.balancing_debit | TransferFlags.pending
+      // },
+      // // Sweep whatever remains in Unrestricted to Restricted.
+      // {
+      //   ...Helper.createTransferTemplate,
+      //   id: id(),
+      //   debit_account_id: dfspCurrency.unrestricted,
+      //   credit_account_id: dfspCurrency.restricted,
+      //   amount: amount_max,
+      //   ledger: currencyConfig.idOperation,
+      //   code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
+      //   flags: TransferFlags.linked | TransferFlags.balancing_debit
+      // },
+      // // Void the pending limit lock transfer.
+      // {
+      //   ...Helper.createTransferTemplate,
+      //   id: id(),
+      //   pending_id: idLockTransfer,
+      //   debit_account_id: 0n,
+      //   credit_account_id: 0n,
+      //   amount: 0n,
+      //   ledger: currencyConfig.idOperation,
+      //   code: TransferCode.Net_Debit_Cap_Lock,
+      //   flags: TransferFlags.void_pending_transfer
+      // },
     ]
 
     return transfers
@@ -1787,6 +1992,119 @@ export default class Helper {
 
       return result
     })
+  }
+
+  /**
+   * Format a list of TigerBeetle transfers as a DRCR snippet.
+   */
+  public static formatTransfersAsDRCR(
+    transfers: Array<Transfer>,
+    dfspCurrencies: Array<DfspCurrency>,
+    dfspRoots: Array<DfspRoot>,
+    currencyConfig: CurrencyConfig
+  ): string {
+    // Build reverse mapping from account id -> account name
+    const accountIdToName: Record<string, string> = {
+      // Global control accounts
+      [Helper.accountIds.devNull.toString()]: 'dev_null',
+      [Helper.accountIds.prepareBurn.toString()]: 'prepare_burn',
+      [Helper.accountIds.bookmarkDebit.toString()]: 'bookmark_debit',
+      [Helper.accountIds.bookmarkCredit.toString()]: 'bookmark_credit',
+    }
+
+    // Add dfsp root accounts
+    for (const dfspRoot of dfspRoots) {
+      accountIdToName[dfspRoot.id.toString()] = `${dfspRoot.dfspId}:root`
+    }
+
+    // Add dfsp currency accounts
+    for (const dfspCurrency of dfspCurrencies) {
+      accountIdToName[dfspCurrency.deposit.toString()] = `${dfspCurrency.dfspId}:deposit`
+      accountIdToName[dfspCurrency.unrestricted.toString()] = `${dfspCurrency.dfspId}:unrestricted`
+      accountIdToName[dfspCurrency.unrestrictedLock.toString()] = `${dfspCurrency.dfspId}:unrestricted_lock`
+      accountIdToName[dfspCurrency.netDebitCapSet.toString()] = `${dfspCurrency.dfspId}:ndc_set`
+      accountIdToName[dfspCurrency.netDebitCapSetUtil.toString()] = `${dfspCurrency.dfspId}:ndc_set_util`
+      accountIdToName[dfspCurrency.restricted.toString()] = `${dfspCurrency.dfspId}:restricted`
+      accountIdToName[dfspCurrency.reserved.toString()] = `${dfspCurrency.dfspId}:reserved`
+      accountIdToName[dfspCurrency.commitedOutgoing.toString()] = `${dfspCurrency.dfspId}:committed_outgoing`
+      accountIdToName[dfspCurrency.clearingCredit.toString()] = `${dfspCurrency.dfspId}:clearing_credit`
+      accountIdToName[dfspCurrency.clearingSetup.toString()] = `${dfspCurrency.dfspId}:clearing_setup`
+      accountIdToName[dfspCurrency.clearingLimit.toString()] = `${dfspCurrency.dfspId}:clearing_limit`
+      accountIdToName[dfspCurrency.control.toString()] = `${dfspCurrency.dfspId}:control`
+      accountIdToName[dfspCurrency.netDebitCap.toString()] = `${dfspCurrency.dfspId}:net_debit_cap`
+    }
+
+    // Build mapping from transfer id -> index for pending references
+    const transferIdToIdx: Record<string, number> = {}
+    transfers.forEach((t, idx) => {
+      transferIdToIdx[t.id.toString()] = idx
+    })
+
+    const lines: Array<string> = []
+
+    for (let idx = 0; idx < transfers.length; idx++) {
+      const transfer = transfers[idx]
+
+      // Resolve account names
+      const debitName = accountIdToName[transfer.debit_account_id.toString()]
+        ?? `unknown(${transfer.debit_account_id})`
+      const creditName = accountIdToName[transfer.credit_account_id.toString()]
+        ?? `unknown(${transfer.credit_account_id})`
+
+      // Determine currency label based on ledger
+      let currencyLabel: string
+      if (transfer.ledger === Helper.ledgerIds.globalControl) {
+        currencyLabel = 'GLB'
+      } else if (transfer.ledger === currencyConfig.idOperation) {
+        currencyLabel = currencyConfig.currency
+      } else if (transfer.ledger === currencyConfig.idControl) {
+        currencyLabel = 'CTL'
+      } else {
+        currencyLabel = `L${transfer.ledger}`
+      }
+
+      // Format amount - use amount_max representation or scaled real amount
+      let amountStr: string
+      if (transfer.amount === amount_max) {
+        amountStr = 'MAX'
+      } else {
+        const realAmount = Helper.toRealAmount(transfer.amount, currencyConfig.assetScale)
+        amountStr = realAmount.toString()
+      }
+
+      // Decode flags
+      const flagNames: Array<string> = []
+      if (transfer.flags & TransferFlags.linked) flagNames.push('linked')
+      if (transfer.flags & TransferFlags.pending) flagNames.push('pending')
+      if (transfer.flags & TransferFlags.post_pending_transfer) flagNames.push('post_pending_transfer')
+      if (transfer.flags & TransferFlags.void_pending_transfer) flagNames.push('void_pending_transfer')
+      if (transfer.flags & TransferFlags.balancing_debit) flagNames.push('balancing_debit')
+      if (transfer.flags & TransferFlags.balancing_credit) flagNames.push('balancing_credit')
+      if (transfer.flags & TransferFlags.closing_debit) flagNames.push('closing_debit')
+      if (transfer.flags & TransferFlags.closing_credit) flagNames.push('closing_credit')
+
+      // Build the line
+      let line = `${currencyLabel} DR ${debitName.padEnd(25)} CR ${creditName.padEnd(25)} ${amountStr.padStart(10)}`
+
+      // Add flags if any
+      if (flagNames.length > 0) {
+        line += ` ${flagNames.join(',')}`
+      }
+
+      // Add pending reference if this refers to another transfer
+      if (transfer.pending_id !== 0n) {
+        const pendingIdx = transferIdToIdx[transfer.pending_id.toString()]
+        if (pendingIdx !== undefined) {
+          line += ` ^${pendingIdx}`
+        } else {
+          line += ` ^?`
+        }
+      }
+
+      lines.push(line)
+    }
+
+    return lines.join('\n')
   }
 }
 

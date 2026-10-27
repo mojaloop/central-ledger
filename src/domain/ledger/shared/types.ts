@@ -207,9 +207,14 @@ export enum AccountCode {
   Dfsp = 60100,
   Net_Debit_Cap = 60200,
   Net_Debit_Cap_Control = 60201,
+  Net_Debit_Cap_Set = 60210,
+  Net_Debit_Cap_Set_Util = 60211,
   Dev_Null = 60300,
   Clearing_Setup = 60400,
   Clearing_Limit = 60500,
+  /**
+   * @deprecated, replaced by Net_Debit_Cap_Set and Net_Debit_Cap_Set_Util
+   */
   Unrestricted_Lock = 60600,
   Settlement_Outgoing = 60701,
   Settlement_Incoming = 60702,

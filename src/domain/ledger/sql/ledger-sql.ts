@@ -112,6 +112,7 @@ import SettlementWindowDomain from '../../../domain/settlementWindow'
 import SettlementModel from '../../../models/settlement/settlement'
 import * as Result from '../shared/results'
 import Helper from './helper';
+import { CurrencyConfig } from '../tigerbeetle/spec-store';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
@@ -444,7 +445,7 @@ export class LedgerSql implements Ledger {
     )
     assert(cmd.dfspId)
     assert(cmd.currency)
-    assert(cmd.amount)
+    assert(typeof cmd.amount === 'number')
     assert(typeof cmd.alarmPercentage === 'number')
 
     try {

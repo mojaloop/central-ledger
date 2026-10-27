@@ -99,6 +99,31 @@ describe('Ledger Fuzz', () => {
     traceA.compare(traceB, { nameLeft: 'LEDGER=SQL', nameRight: 'LEDGER=TIGERBEETLE', seed })
   })
 
+  it('Searches for failing seeds', async (context) => {
+    const searches = envOrDefaultNumber('SEARCHES', 15)
+    const stepsMax = envOrDefaultNumber('STEPS_MAX', 250)
+
+    const failing: Array<number> = []
+
+    for (let idxSearch = 0; idxSearch < searches; idxSearch++) {
+      const seed = Math.floor(Math.random() * 1e8)
+      const prng = new PRNG(seed)
+      console.log(`idxSearch: ${idxSearch}, SEED=${seed}`)
+      Harness.injectPrngAndPatchDateGlobal(prng)
+
+      const traceA = await run(stepsMax, { LEDGER: 'SQL' })
+      const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
+      try {
+        traceA.compare(traceB, { nameLeft: 'LEDGER=SQL', nameRight: 'LEDGER=TIGERBEETLE', seed })
+      } catch (err) {
+        console.error(err)
+        failing.push(seed)
+      }
+    }
+
+    console.log(`Searched ${searches} times, found the following failing seeds: [${failing.join(',')}]`)
+  })
+
   it('is fully deterministic', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 2000)
     const traceA = await run(stepsMax, {})
@@ -524,6 +549,8 @@ class LedgerFuzzer {
   }
 
   private async deposit(): Promise<void> {
+    const balanceSheetPre = await this.reporter.balanceSheet(new Date())
+
     const name = this.randomDfspName()
     const cmd: DepositCommand = {
       dfspId: name,
@@ -533,10 +560,16 @@ class LedgerFuzzer {
       reason: this.prng.randomString()
     }
     const result = await this.ledger.deposit(cmd)
-    this.traceResult('deposit', cmd, result)
+    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
+    const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
+    const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
+
+    this.traceResult('deposit', cmd, result, statePost, statePre)
   }
 
   private async withdrawPrepare(): Promise<void> {
+    const balanceSheetPre = await this.reporter.balanceSheet(new Date())
+
     const name = this.randomDfspName()
     let cmd: WithdrawPrepareCommand = {
       dfspId: name,
@@ -557,9 +590,12 @@ class LedgerFuzzer {
     }
 
     const result = await this.ledger.withdrawPrepare(cmd)
+    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
+    const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
+    const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
 
     const balanceSheet = await this.reporter.balanceSheet(new Date())
-    this.traceResult('withdrawPrepare', cmd, result, balanceSheet.toStringAll())
+    this.traceResult('withdrawPrepare', cmd, result, statePost, statePre)
 
     if (!this.withdrawIds[cmd.transferId]) {
       this.withdrawIds[cmd.transferId] = true
@@ -587,6 +623,7 @@ class LedgerFuzzer {
   }
 
   private async setNetDebitCap(): Promise<void> {
+    const balanceSheetPre = await this.reporter.balanceSheet(new Date())
     let cmd: SetNetDebitCapCommand = {
       netDebitCapType: 'LIMITED',
       dfspId: this.randomDfspName(),
@@ -596,7 +633,11 @@ class LedgerFuzzer {
     }
 
     const result = await this.ledger.setNetDebitCap(cmd)
-    this.traceResult('setNetDebitCap', cmd, result)
+    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
+    const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
+    const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
+
+    this.traceResult('setNetDebitCap', cmd, result, statePost, statePre)
   }
 
   private async getHubAccounts(): Promise<void> {
