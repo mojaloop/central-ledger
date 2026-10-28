@@ -170,7 +170,7 @@ export interface ApplicationConfig {
 
   /**
    * Configures whether or not the Admin API uses the Ledger interface. This is a part of the
-   * overall refactor to switch to a TigerBeetle-based leder.
+   * overall refactor to switch to a TigerBeetle-based Ledger.
    * - `NONE`   uses the older implementation of the Admin API (default).
    * - `LEDGER` uses the ledger interface
    * 
@@ -180,7 +180,7 @@ export interface ApplicationConfig {
 
   /**
    * Configures whether or not the Settlement API uses the Ledger interface. This is a part of the
-   * overall refactor to switch to a TigerBeetle-based leder.
+   * overall refactor to switch to a TigerBeetle-based Ledger.
    * - `NONE`   uses the older implementation of the Settlement API (default).
    * - `LEDGER` uses the ledger interface
    * 

@@ -1244,7 +1244,7 @@ export default class Helper {
       const fulfil = fulfils[idxFulfil]
       assert(fulfil)
 
-      const ampFactor = fulfil.action === EventActionEnum.ABORT
+      const ampFactor = fulfil.action === Action.ABORT
         ? Helper.ampFactorFulfilAbort
         : Helper.ampFactorFulfilCommit
 
@@ -1262,20 +1262,20 @@ export default class Helper {
           switch (result.status) {
             case CreateTransferStatus.pending_transfer_already_posted:
               statuses[idxFulfil] = { tag: 'ALREADY_FULFILLED' }
-              break
+              continue
             case CreateTransferStatus.pending_transfer_already_voided:
               statuses[idxFulfil] = { tag: 'ALREADY_ABORTED' }
-              break
+              continue
             case CreateTransferStatus.pending_transfer_not_found:
               statuses[idxFulfil] = {
                 tag: 'FAIL_VALIDATION',
                 context: { failureReasons: ['Pending transfer not found'] }
               }
-              break
+              continue
             case CreateTransferStatus.pending_transfer_not_pending:
               // Transfer exists but is not pending - either already fulfilled or aborted
               statuses[idxFulfil] = { tag: 'ALREADY_FULFILLED' }
-              break
+              continue
           }
         }
 
@@ -1299,19 +1299,19 @@ export default class Helper {
       case 'OK':
         return {
           type: PaymentFulfilResultType.PASS,
-          effects: []
+          effects: [this.buildEffectFulfilNotificationSuccess(fulfil)]
         }
 
       case 'ALREADY_FULFILLED':
         return {
           type: PaymentFulfilResultType.DUPLICATE_FINAL,
-          effects: []
+          effects: [this.buildEffectFulfilDuplicate(fulfil)]
         }
 
       case 'ALREADY_ABORTED':
         return {
           type: PaymentFulfilResultType.DUPLICATE_FINAL,
-          effects: []
+          effects: [this.buildEffectAbortDuplicate(fulfil)]
         }
 
       case 'INVALID_FULFILMENT': {
@@ -1812,9 +1812,9 @@ export default class Helper {
       const netDebitCapPayer = netDebitCapMap[`${specTransfer.payerId}:${specTransfer.currency}`]
       assert(netDebitCapPayer, `net debit cap not found for payerId: ${specTransfer.payerId} and currency: ${specTransfer.currency}.`)
       const netDebitCapPayee = netDebitCapMap[`${specTransfer.payeeId}:${specTransfer.currency}`]
-      assert(netDebitCapPayer, `net debit cap not found for payeeId: ${specTransfer.payeeId} and currency: ${specTransfer.currency}.`)
+      assert(netDebitCapPayee, `net debit cap not found for payeeId: ${specTransfer.payeeId} and currency: ${specTransfer.currency}.`)
 
-      if (fulfil.action === EventActionEnum.ABORT) {
+      if (fulfil.action === Action.ABORT) {
         // DRCR Example Snippet:
         // GLB DR dfsp_a:root     CR dfsp_b:root           45 void_pending_transfer ^1
         // USD DR dfsp_a:reserved CR dfsp_a:unrestricted   45
@@ -2231,6 +2231,107 @@ export default class Helper {
     return {
       functionality: Type.NOTIFICATION,
       action: Action.PREPARE_DUPLICATE,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'SUCCESS',
+    }
+  }
+
+  public buildEffectFulfilNotificationSuccess(
+    input: FulfilHandlerInput
+  ): Effect {
+    const message = {
+      id: input.transferId,
+      type: 'application/json',
+      content: {
+        uriParams: { id: input.transferId },
+        headers: { ...input.message.value.content.headers },
+        payload: structuredClone(input.payload)
+      },
+      metadata: {
+        correlationId: input.transferId,
+        event: {
+          type: Type.TRANSFER,
+          action: input.action,
+          createdAt: new Date().toISOString(),
+          state: {
+            status: 'success',
+            code: null,
+            description: null
+          }
+        }
+      }
+    }
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: input.action,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'SUCCESS',
+    }
+  }
+
+  public buildEffectFulfilNotificationError(
+    input: FulfilHandlerInput,
+    fspiopError: any
+  ): Effect {
+    const message = structuredClone(input.message.value)
+    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+
+    message.content.payload = apiFSPIOPError
+    message.content.uriParams = { id: input.transferId }
+    message.to = message.from
+    message.from = this.deps.config.HUB_NAME
+    if (message.content.headers) {
+      message.content.headers['fspiop-source'] = message.from
+      message.content.headers['fspiop-destination'] = message.to
+    }
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: input.action,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+      fspiopError: apiFSPIOPError
+    }
+  }
+
+  public buildEffectFulfilDuplicate(input: FulfilHandlerInput): Effect {
+    const message = structuredClone(input.message.value)
+    message.content.uriParams = { id: input.transferId }
+
+    message.to = message.from
+    message.from = this.deps.config.HUB_NAME
+    if (message.content.headers) {
+      message.content.headers['fspiop-source'] = message.from
+      message.content.headers['fspiop-destination'] = message.to
+    }
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: Action.FULFIL_DUPLICATE,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'SUCCESS',
+    }
+  }
+
+  public buildEffectAbortDuplicate(input: FulfilHandlerInput): Effect {
+    const message = structuredClone(input.message.value)
+    message.content.uriParams = { id: input.transferId }
+
+    message.to = message.from
+    message.from = this.deps.config.HUB_NAME
+    if (message.content.headers) {
+      message.content.headers['fspiop-source'] = message.from
+      message.content.headers['fspiop-destination'] = message.to
+    }
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: Action.ABORT_DUPLICATE,
       message,
       topicName: 'topic-notification-event',
       status: 'SUCCESS',

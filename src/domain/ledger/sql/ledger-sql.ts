@@ -1327,7 +1327,7 @@ export class LedgerSql implements Ledger {
     const transfer = await TransferService.getById(transferId)
     if (!transfer) {
       return {
-        type: PaymentFulfilResultType.FAIL_OTHER,
+        type: PaymentFulfilResultType.FAIL_VALIDATION,
         effects: [],
         error: ErrorHandler.Factory.createInternalServerFSPIOPError(
           `transfer not found for id: ${transferId}.`
@@ -1355,8 +1355,24 @@ export class LedgerSql implements Ledger {
       payeeFieldName = 'externalPayeeName'
       payee = transfer.externalPayeeName
     }
-    assert(payer, 'Error resolving payer.')
-    assert(payee, 'Error resolving payee.')
+    if (!payer) {
+      return {
+        type: PaymentFulfilResultType.FAIL_VALIDATION,
+        effects: [],
+        error: ErrorHandler.Factory.createInternalServerFSPIOPError(
+          `Error resolving ${payerFieldName} for transfer: ${transferId}.`
+        )
+      }
+    }
+    if (!payee) {
+      return {
+        type: PaymentFulfilResultType.FAIL_VALIDATION,
+        effects: [],
+        error: ErrorHandler.Factory.createInternalServerFSPIOPError(
+          `Error resolving ${payeeFieldName} for transfer: ${transferId}.`
+        )
+      }
+    }
 
     // Ensure that the FSPIOP-Source matches the payee/externalPayeeName.
     let error: any
@@ -1473,7 +1489,7 @@ export class LedgerSql implements Ledger {
         )
         logger.error(error.message)
         return {
-          type: PaymentFulfilResultType.FAIL_OTHER,
+          type: PaymentFulfilResultType.FAIL_VALIDATION,
           effects: [],
           error,
         }
@@ -1517,6 +1533,37 @@ export class LedgerSql implements Ledger {
         }
       }
 
+      // Validate transfer is in RESERVED or RESERVED_FORWARDED state
+      // This check must happen AFTER duplicate checking to preserve legacy behavior.
+      if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
+          transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
+      ) {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          'non-RESERVED transfer state'
+        )
+        return {
+          type: PaymentFulfilResultType.FAIL_VALIDATION,
+          effects: [],
+          error: fspiopError
+        }
+      }
+
+      // Check if the transfer has expired
+      // For interscheme we ignore expiration for forwarded transfers
+      if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
+          transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
+      ) {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED
+        )
+        return {
+          type: PaymentFulfilResultType.FAIL_VALIDATION,
+          effects: [],
+          error: fspiopError
+        }
+      }
+
       await TransferService.handlePayeeResponse(
         transferId,
         errorPayload,
@@ -1536,15 +1583,6 @@ export class LedgerSql implements Ledger {
       payload.transferState === 'RESERVED' ||
       payload.transferState === 'RESERVED_FORWARDED'
     )
-    if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
-      return {
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects: [],
-        error: ErrorHandler.Factory.createInternalServerFSPIOPError(
-          `transfer timed out.`
-        )
-      }
-    }
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(
       transferId, payload, getTransferFulfilmentDuplicateCheck, saveTransferFulfilmentDuplicateCheck
@@ -1567,6 +1605,39 @@ export class LedgerSql implements Ledger {
         type: PaymentFulfilResultType.FAIL_VALIDATION,
         effects: [effect],
         error: modifiedError
+      }
+    }
+
+    // Validate transfer is in RESERVED or RESERVED_FORWARDED state
+    // This check must happen AFTER duplicate checking to preserve legacy behavior:
+    // duplicate fulfils for finalized transfers should return the finalized state,
+    // not a validation error.
+    if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
+        transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
+    ) {
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'non-RESERVED transfer state'
+      )
+      return {
+        type: PaymentFulfilResultType.FAIL_VALIDATION,
+        effects: [],
+        error: fspiopError
+      }
+    }
+
+    // Check if the transfer has expired
+    // For interscheme we ignore expiration for forwarded transfers
+    if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
+        transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
+    ) {
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED
+      )
+      return {
+        type: PaymentFulfilResultType.FAIL_VALIDATION,
+        effects: [],
+        error: fspiopError
       }
     }
 
@@ -1596,7 +1667,7 @@ export class LedgerSql implements Ledger {
     await TransferService.handlePayeeResponse(transferId, payload, input.action)
 
     // Build the position change effect.
-    const messageEffect = input.message
+    const messageEffect = structuredClone(input.message)
     const cyrilResult = await fxService.Cyril.processFulfilMessage(
       input.transferId,
       input.payload,
