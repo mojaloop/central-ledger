@@ -496,7 +496,7 @@ class LedgerFuzzer {
 
     if (this.registeredDfsps.length >= 5) {
       this.weights.prepare = 15
-      // this.weights.fulfil = 15
+      this.weights.fulfil = 15
     }
 
     if (this.registeredDfsps.length >= 25) {

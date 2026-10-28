@@ -333,6 +333,16 @@ export type ContextPayments = {
   specTransfers: Array<SpecTransfer>
 }
 
+export type ContextFulfil = {
+  currencies: Array<string>
+  dfspIds: Array<string>
+  currencyConfigs: Array<CurrencyConfig>
+  dfspRoots: Array<DfspRoot>
+  dfspCurrencies: Array<DfspCurrency>
+  specPrepares: Array<SpecPrepare>
+  specTransfers: Array<SpecTransfer>
+}
+
 const TABLE_CURRENCY_CONFIG = 'specCurrencyConfig'
 const TABLE_CURRENCY_ACCOUNT = 'specLegacyHubCurrency'
 const TABLE_DFSP_ROOT = 'specDfspRoot'
@@ -711,6 +721,90 @@ export default class SpecStore {
       specTransfers,
     }
     return context
+  }
+
+  public async getFulfilContext(fulfilIds: Array<string>): Promise<ContextFulfil> {
+    if (fulfilIds.length === 0) {
+      return {
+        currencies: [],
+        dfspIds: [],
+        currencyConfigs: [],
+        dfspRoots: [],
+        dfspCurrencies: [],
+        specPrepares: [],
+        specTransfers: [],
+      }
+    }
+
+    // Get specPrepares and specTransfers.
+    const rowsTransfer = await this.db(TABLE_PREPARE)
+      .join(TABLE_TRANSFER, `${TABLE_PREPARE}.id`, `${TABLE_TRANSFER}.id`)
+      .whereIn(`${TABLE_PREPARE}.id`, fulfilIds)
+      .select('*')
+
+    const specPrepares: Array<SpecPrepare> = []
+    const specTransfers: Array<SpecTransfer> = []
+    const currencies: Set<string> = new Set()
+    const dfspIdSet: Set<string> = new Set()
+
+    rowsTransfer.forEach(row => {
+      specPrepares.push(SpecStore.hydrateSpecPrepare(row))
+      specTransfers.push(SpecStore.hydrateSpecTransfer(row))
+      currencies.add(row.currency)
+      dfspIdSet.add(row.payerId)
+      dfspIdSet.add(row.payeeId)
+    })
+
+    const currencyList = Array.from(currencies)
+    const dfspIds = Array.from(dfspIdSet)
+
+    // Get the dfspCurrencies, dfspRoots, currencyConfig.
+    const rowsDfspCurrency = await this.db(TABLE_DFSP_CURRENCY)
+      .join(TABLE_DFSP_ROOT, `${TABLE_DFSP_CURRENCY}.dfspId`, `${TABLE_DFSP_ROOT}.dfspId`)
+      .join(TABLE_CURRENCY_CONFIG, `${TABLE_DFSP_CURRENCY}.currency`, `${TABLE_CURRENCY_CONFIG}.currency`)
+      .whereIn(`${TABLE_DFSP_CURRENCY}.dfspId`, dfspIds)
+      .whereIn(`${TABLE_DFSP_CURRENCY}.currency`, currencyList)
+      .select('*')
+
+    // Deduplicate and hydrate
+    const currencyConfigIds: Record<string, true> = {}
+    const currencyConfigs: Array<CurrencyConfig> = []
+    const dfspRootIds: Record<string, true> = {}
+    const dfspRoots: Array<DfspRoot> = []
+    const dfspCurrencyIds: Record<string, true> = {}
+    const dfspCurrencies: Array<DfspCurrency> = []
+
+    rowsDfspCurrency.forEach(row => {
+      const currencyConfig = SpecStore.hydrateCurrencyConfig(row)
+      const dfspRoot = SpecStore.hydrateDfspRoot(row)
+      const dfspCurrency = SpecStore.hydrateDfspCurrency(row)
+
+      if (!currencyConfigIds[currencyConfig.currency]) {
+        currencyConfigIds[currencyConfig.currency] = true
+        currencyConfigs.push(currencyConfig)
+      }
+
+      if (!dfspRootIds[dfspRoot.dfspId]) {
+        dfspRootIds[dfspRoot.dfspId] = true
+        dfspRoots.push(dfspRoot)
+      }
+
+      const dfspCurrencyKey = `${dfspCurrency.dfspId}:${dfspCurrency.currency}`
+      if (!dfspCurrencyIds[dfspCurrencyKey]) {
+        dfspCurrencyIds[dfspCurrencyKey] = true
+        dfspCurrencies.push(dfspCurrency)
+      }
+    })
+
+    return {
+      currencies: currencyList,
+      dfspIds,
+      currencyConfigs,
+      dfspRoots,
+      dfspCurrencies,
+      specPrepares,
+      specTransfers,
+    }
   }
 
   public async savePreparesAndTransfers(prepares: Array<SpecPrepare>, transfers: Array<SpecTransfer>) {
