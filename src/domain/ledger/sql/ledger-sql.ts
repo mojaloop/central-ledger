@@ -1327,7 +1327,7 @@ export class LedgerSql implements Ledger {
     const transfer = await TransferService.getById(transferId)
     if (!transfer) {
       return {
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
+        type: PaymentFulfilResultType.FAIL_OTHER,
         effects: [],
         error: ErrorHandler.Factory.createInternalServerFSPIOPError(
           `transfer not found for id: ${transferId}.`
@@ -1489,7 +1489,7 @@ export class LedgerSql implements Ledger {
         )
         logger.error(error.message)
         return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
+          type: PaymentFulfilResultType.FAIL_OTHER,
           effects: [],
           error,
         }
@@ -1605,24 +1605,6 @@ export class LedgerSql implements Ledger {
         type: PaymentFulfilResultType.FAIL_VALIDATION,
         effects: [effect],
         error: modifiedError
-      }
-    }
-
-    // Validate transfer is in RESERVED or RESERVED_FORWARDED state
-    // This check must happen AFTER duplicate checking to preserve legacy behavior:
-    // duplicate fulfils for finalized transfers should return the finalized state,
-    // not a validation error.
-    if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
-        transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
-    ) {
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'non-RESERVED transfer state'
-      )
-      return {
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects: [],
-        error: fspiopError
       }
     }
 
