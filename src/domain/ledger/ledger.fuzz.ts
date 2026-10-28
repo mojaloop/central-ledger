@@ -160,41 +160,41 @@ const run = async (stepsMax: number, config: Partial<ApplicationConfig>): Promis
     const Db = await import('../../lib/db')
     const knex = Db._knex
 
-    // Change the participantCurrencyId to an unsigned bigint, and remove the auto incrementing id.
-    // This allows us to match the id implementation between LedgerSql and LedgerTigerBeetle.
-    const statements = [
-      `ALTER TABLE participantPosition DROP FOREIGN KEY participantposition_participantcurrencyid_foreign`,
-      `ALTER TABLE participantLimit DROP FOREIGN KEY participantlimit_participantcurrencyid_foreign`,
-      `ALTER TABLE settlementTransferParticipant DROP FOREIGN KEY settlementtransferparticipant_participantcurrencyid_foreign`,
-      `ALTER TABLE participantPositionChange DROP FOREIGN KEY participantpositionchange_participantcurrencyid_foreign`,
-      `ALTER TABLE settlementParticipantCurrency DROP FOREIGN KEY settlementparticipantcurrency_participantcurrencyid_foreign`,
-      `ALTER TABLE settlementContentAggregation DROP FOREIGN KEY settlementcontentaggregation_participantcurrencyid_foreign`,
-      `ALTER TABLE transferParticipant DROP FOREIGN KEY transferparticipant_participantcurrencyid_foreign`,
-      `ALTER TABLE fxTransferParticipant DROP FOREIGN KEY fxtransferparticipant_participantcurrencyid_foreign`,
-      `ALTER TABLE participantCurrency MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-      `ALTER TABLE participantPosition MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-      `ALTER TABLE participantLimit MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-      `ALTER TABLE settlementTransferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-      `ALTER TABLE participantPositionChange MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-      `ALTER TABLE settlementParticipantCurrency MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-      `ALTER TABLE settlementContentAggregation MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-      `ALTER TABLE transferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-      `ALTER TABLE fxTransferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-      `ALTER TABLE participantPosition ADD CONSTRAINT participantposition_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-      `ALTER TABLE participantLimit ADD CONSTRAINT participantlimit_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-      `ALTER TABLE settlementTransferParticipant ADD CONSTRAINT settlementtransferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-      `ALTER TABLE participantPositionChange ADD CONSTRAINT participantpositionchange_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-      `ALTER TABLE settlementParticipantCurrency ADD CONSTRAINT settlementparticipantcurrency_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-      `ALTER TABLE settlementContentAggregation ADD CONSTRAINT settlementcontentaggregation_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-      `ALTER TABLE transferParticipant ADD CONSTRAINT transferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-      `ALTER TABLE fxTransferParticipant ADD CONSTRAINT fxtransferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-    ]
+    // // Change the participantCurrencyId to an unsigned bigint, and remove the auto incrementing id.
+    // // This allows us to match the id implementation between LedgerSql and LedgerTigerBeetle.
+    // const statements = [
+    //   `ALTER TABLE participantPosition DROP FOREIGN KEY participantposition_participantcurrencyid_foreign`,
+    //   `ALTER TABLE participantLimit DROP FOREIGN KEY participantlimit_participantcurrencyid_foreign`,
+    //   `ALTER TABLE settlementTransferParticipant DROP FOREIGN KEY settlementtransferparticipant_participantcurrencyid_foreign`,
+    //   `ALTER TABLE participantPositionChange DROP FOREIGN KEY participantpositionchange_participantcurrencyid_foreign`,
+    //   `ALTER TABLE settlementParticipantCurrency DROP FOREIGN KEY settlementparticipantcurrency_participantcurrencyid_foreign`,
+    //   `ALTER TABLE settlementContentAggregation DROP FOREIGN KEY settlementcontentaggregation_participantcurrencyid_foreign`,
+    //   `ALTER TABLE transferParticipant DROP FOREIGN KEY transferparticipant_participantcurrencyid_foreign`,
+    //   `ALTER TABLE fxTransferParticipant DROP FOREIGN KEY fxtransferparticipant_participantcurrencyid_foreign`,
+    //   `ALTER TABLE participantCurrency MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+    //   `ALTER TABLE participantPosition MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+    //   `ALTER TABLE participantLimit MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+    //   `ALTER TABLE settlementTransferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+    //   `ALTER TABLE participantPositionChange MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+    //   `ALTER TABLE settlementParticipantCurrency MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+    //   `ALTER TABLE settlementContentAggregation MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+    //   `ALTER TABLE transferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+    //   `ALTER TABLE fxTransferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
+    //   `ALTER TABLE participantPosition ADD CONSTRAINT participantposition_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+    //   `ALTER TABLE participantLimit ADD CONSTRAINT participantlimit_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+    //   `ALTER TABLE settlementTransferParticipant ADD CONSTRAINT settlementtransferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+    //   `ALTER TABLE participantPositionChange ADD CONSTRAINT participantpositionchange_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+    //   `ALTER TABLE settlementParticipantCurrency ADD CONSTRAINT settlementparticipantcurrency_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+    //   `ALTER TABLE settlementContentAggregation ADD CONSTRAINT settlementcontentaggregation_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+    //   `ALTER TABLE transferParticipant ADD CONSTRAINT transferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+    //   `ALTER TABLE fxTransferParticipant ADD CONSTRAINT fxtransferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
+    // ]
 
-    await knex.transaction(async (trx: any) => {
-      for (const statement of statements) {
-        await trx.raw(statement)
-      }
-    })
+    // await knex.transaction(async (trx: any) => {
+    //   for (const statement of statements) {
+    //     await trx.raw(statement)
+    //   }
+    // })
 
     const fuzzer = new LedgerFuzzer(options, harness)
     await fuzzer.run()

@@ -66,12 +66,12 @@ describe('handlers/tranfers/handlers', () => {
       "expirationDate": :ignore
       "createdDate": :ignore
       "currency": "USD",
-      "payerParticipantCurrencyId": 3,
+      "payerParticipantCurrencyId": 1321756595922374,
       "payerAmount": "100.0000",
       "payerParticipantId": 2,
       "payerFsp": "dfsp_a",
       "payerIsProxy": 0,
-      "payeeParticipantCurrencyId": null,
+      "payeeParticipantCurrencyId": 7864520907175030,
       "payeeAmount": "-100.0000",
       "payeeParticipantId": 3,
       "payeeFsp": "dfsp_b",
@@ -136,12 +136,12 @@ describe('handlers/tranfers/handlers', () => {
       "expirationDate": :ignore
       "createdDate": :ignore
       "currency": "USD",
-      "payerParticipantCurrencyId": 3,
+      "payerParticipantCurrencyId": 1321756595922374,
       "payerAmount": "100.0000",
       "payerParticipantId": 2,
       "payerFsp": "dfsp_a",
       "payerIsProxy": 0,
-      "payeeParticipantCurrencyId": null,
+      "payeeParticipantCurrencyId": 7864520907175030,
       "payeeAmount": "-100.0000",
       "payeeParticipantId": 3,
       "payeeFsp": "dfsp_b",
