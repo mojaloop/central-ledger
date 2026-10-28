@@ -2204,7 +2204,7 @@ export class LedgerTigerBeetle implements Ledger {
   public async fulfil(fulfils: Array<FulfilHandlerInput>): Promise<Array<PaymentFulfilResult>> {
     const fulfilIds = [...new Set(fulfils.map(fulfil => fulfil.transferId))].sort()
     const context = await this.specStore.getFulfilContext(fulfilIds)
-    const netDebitCaps = await this.getNetDebitCapsForDfsps(context.dfspIds)
+    const netDebitCaps = Object.values(await this.getInternalNetDebitCaps())
 
     // Results are arrays that line up with the fulfils
     const resultsValidation = this.fulfilCheckValid(fulfils, context, netDebitCaps)
