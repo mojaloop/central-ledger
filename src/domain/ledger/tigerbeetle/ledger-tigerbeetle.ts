@@ -1,4 +1,4 @@
-import { Enum, Util } from '@mojaloop/central-services-shared';
+import { Enum, EventActionEnum, Util } from '@mojaloop/central-services-shared';
 import assert, { fail } from "node:assert";
 import {
   AccountFilterFlags,
@@ -87,8 +87,8 @@ import {
 const { TransferState } = Enum.Transfers
 
 import SettlementDomain from '../../settlement';
-import { CloseDfspMasterAccountFailureType, DepositFailureType, DisableDfspAccountFailureType, EnableDfspAccountFailureType, FulfilFailureType, default as Helper, default as LedgerTigerBeetleHelper, PrepareFailureType, PrepareInternalStatus, SetNetDebitCapFailureType, TransferFailureResult, WithdrawAbortFailureType, WithdrawCommitFailureType, WithdrawPrepareFailureType } from './helper';
-import SpecStore, { CmdHubCurrencyEnable, ContextDfsps, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecPrepare, SpecTransfer, SpecTransferCreate, SpecTransferUpdate } from './spec-store';
+import { CloseDfspMasterAccountFailureType, DepositFailureType, DisableDfspAccountFailureType, EnableDfspAccountFailureType, FulfilFailureType, FulfilInternalStatus, default as Helper, default as LedgerTigerBeetleHelper, PrepareFailureType, PrepareInternalStatus, SetNetDebitCapFailureType, TransferFailureResult, WithdrawAbortFailureType, WithdrawCommitFailureType, WithdrawPrepareFailureType } from './helper';
+import SpecStore, { CmdHubCurrencyEnable, ContextDfsps, ContextFulfil, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecPrepare, SpecTransfer, SpecTransferCreate, SpecTransferUpdate } from './spec-store';
 import { currencyList } from '../../../seeds/currency';
 import { Reporter } from '../shared/reporter';
 
@@ -2072,7 +2072,25 @@ export class LedgerTigerBeetle implements Ledger {
     return results
   }
 
-  public async prepareNew(prepares: Array<PrepareHandlerInput>):
+  /**
+   * Prepare a batch of payments.
+   * 
+   * Performance characteristics:
+   * 
+   * Amplification factor = 8 (let's say 10 to be safe). That means that for the TigerBeetle batch
+   * size of 8189 transfers, we can do 818 prepares per TigerBeetle batch.
+   * If TigerBeetle can do 500,000 TPS, then we can reach a theoretical maximum of 50,000 Prepares
+   * per second.
+   * 
+   * 1. Get the Dfsp + Payment context.                (2x MySQL Round Trips)
+   * 2. Look up the net debit caps.                    (1x TigerBeetle Round Trip best case)
+   * 3. Save Payment context.                          (2x MySQL Round Trips)
+   * 4. Create TigerBeetle Transfers.                  (1x TigerBeetle Round Trip)
+   * 5. For the failed prepares, save abort timestamp. (1x MySQL Round Trips)
+   * 
+   * = 7 round trips per batch of 818 prepares.
+   */
+  public async prepare(prepares: Array<PrepareHandlerInput>):
     Promise<Array<PaymentPrepareResult>> {
 
     const dfspIds = [...new Set(
@@ -2119,7 +2137,7 @@ export class LedgerTigerBeetle implements Ledger {
       specTransfersToSave.push(Helper.prepareToSpecTransferCreate(prepare.payload))
 
       // Mark as passed the valid and idempotency check.
-      preparesOk.push({ idx, prepare: prepares[idx] })
+      preparesOk.push({ idx, prepare })
       hashesOk.push(prepareHashes[idx])
     }
     await this.specStore.savePreparesAndTransfers(specPreparesToSave, specTransfersToSave)
@@ -2127,8 +2145,8 @@ export class LedgerTigerBeetle implements Ledger {
     const transfers = this.helper.buildTransfersPrepare(
       preparesOk.map(item => item.prepare), contextDfsps, hashesOk
     )
-    const createTransferResults = await this.client.createTransfers(transfers)
-    const resultsTigerBeetleSubset = this.helper.mapResultsPrepare(createTransferResults)
+    const resultsTigerBeetle = await this.client.createTransfers(transfers)
+    const resultsTigerBeetleSubset = this.helper.mapResultsPrepare(resultsTigerBeetle)
 
     // Project from results to the full sized array.
     const resultsCreateTransfers: Array<PrepareInternalStatus | undefined>
@@ -2183,486 +2201,151 @@ export class LedgerTigerBeetle implements Ledger {
     return results
   }
 
-  public async prepare(inputs: Array<PrepareHandlerInput>): Promise<Array<PaymentPrepareResult>> {
-    return this.prepareNew(inputs)
+  public async fulfil(fulfils: Array<FulfilHandlerInput>): Promise<Array<PaymentFulfilResult>> {
+    const fulfilIds = [...new Set(fulfils.map(fulfil => fulfil.transferId))].sort()
+    const context = await this.specStore.getFulfilContext(fulfilIds)
+    const netDebitCaps = await this.getNetDebitCapsForDfsps(context.dfspIds)
 
-    // Initialize the results.
-    // TODO: This is id + idx, but I don't love that...
-    const resultsMap: Record<string, PaymentPrepareResult | undefined> = {}
-    const resultsMap2: Record<string, PaymentPrepareResult | undefined> = {}
-    const preparesMap: Record<string, PrepareHandlerInput> = {}
-    const preparesMapFailing: Record<string, PrepareHandlerInput> = {}
-    // Map from Transfer Results => PaymentPrepareResults.
-    const resultsTigerBeetle: Record<string, PaymentPrepareResult> = {}
+    // Results are arrays that line up with the fulfils
+    const resultsValidation = this.fulfilCheckValid(fulfils, context, netDebitCaps)
+    assert.equal(fulfils.length, resultsValidation.length)
 
-    // Keep track of the specPrepareIds that need to be manually aborted.
-    const specPrepareAbortIds: Array<string> = []
-    const specPrepareAbortTimestamps: Array<Date> = []
+    // Keep track of what to save to the spec store?
+    // 1. Aborted at timestamp for prepare?
+    // 2. For succesful payments, attach the fulfilment.
+    const specPreparesAborted: Array<string> =  []
+    // Keep track of the original position of the prepare.
+    const fulfilsNext: Array<{ fulfil: FulfilHandlerInput, idx: number }> = []
+    for (let idx = 0; idx < fulfils.length; idx++) {
+      const resultValidation = resultsValidation[idx]
+      assert(resultValidation)
+      
+      const fulfil = fulfils[idx]
+      assert(fulfil)
 
-    inputs.forEach((prepare, idx) => {
-      const key = prepare.transferId + `:` + idx
-      resultsMap[key] = undefined
-      resultsMap2[prepare.transferId] = undefined
-      preparesMap[prepare.transferId] = prepare
-    })
+      if (resultValidation.tag !== 'OK') {
+        specPreparesAborted.push(fulfil.transferId)
 
-    // Collect all dfsps + currencies.
-    const dfspIdMap = inputs.reduce((acc, curr) => {
-      acc[curr.payload.payerFsp] = true
-      acc[curr.payload.payeeFsp] = true
-      return acc
-    }, {} as Record<string, true>)
-
-    const dfsps = await this.specStore.getDfspCurrenciesAll(Object.keys(dfspIdMap))
-    const dfspRoots = await this.specStore.getDfspRoots(Object.keys(dfspIdMap))
-    const netDebitCaps = await this.getInternalNetDebitCaps()
-
-    // Get all the existing specPrepares.
-    // Check to see if the ids have already been used and failed.
-    const savedSpecsPrepares = await this.specStore.getSpecPrepares(Object.keys(preparesMap))
-    savedSpecsPrepares.forEach(specPrepareResult => {
-      if (specPrepareResult.type === 'NOT_FOUND') return
-
-      const specPrepare = specPrepareResult.result
-      const prepare = preparesMap[specPrepare.id]
-      const prepareHash = Helper.hashTransferProperties({
-        amount: prepare.payload.amount.amount,
-        currency: prepare.payload.amount.currency,
-        expiration: prepare.payload.expiration,
-        payeeFsp: prepare.payload.payeeFsp,
-        payerFsp: prepare.payload.payerFsp,
-        condition: prepare.payload.condition,
-        ilpPacket: prepare.payload.ilpPacket,
-      })
-
-      // This new prepare is a modified version of an existing prepare.
-      if (prepareHash !== specPrepare.payloadHash) {
-        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-        )
-        const result: PaymentPrepareResult = {
-          type: PaymentPrepareResultType.MODIFIED,
-          effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
-        }
-        resultsTigerBeetle[prepare.transferId] = result
-        // Remove from the set of ok prepares, add to the failing map.
-        delete preparesMap[prepare.transferId]
-        preparesMapFailing[prepare.transferId] = prepare
-        return
+        continue
       }
 
-      // This new prepare is identical, but was already aborted.
-      if (specPrepare.abortedAt) {
-        // Get a prepareFailed, with a timestamp and hash of the properties.
-        const payload: PayloadFinalizedTransfer = {
-          completedTimestamp: specPrepare.abortedAt,
-          transferState: 'ABORTED'
-        }
-
-        // Prepare has already failed. Override any other results.
-        const result: PaymentPrepareResult = {
-          type: PaymentPrepareResultType.DUPLICATE_FINAL,
-          effects: [this.helper.buildEffectNotificationDuplicate(prepare, payload)],
-          finalizedTransfer: {
-            completedTimestamp: payload.completedTimestamp.toISOString(),
-            transferState: 'ABORTED'
-          }
-        }
-        resultsTigerBeetle[prepare.transferId] = result
-
-        // Remove from the set of ok prepares, add to the failing map.
-        delete preparesMap[prepare.transferId]
-        preparesMapFailing[prepare.transferId] = prepare
-        return
-      }
-    })
-
-    const dfspCurrencyMap: Record<string, DfspCurrency> = {}
-    dfsps.forEach(dfspCurrency => {
-      dfspCurrencyMap[`${dfspCurrency.dfspId}:${dfspCurrency.currency}`] = dfspCurrency
-    })
-
-    inputs.forEach((prepare, idx) => {
-      const key = prepare.transferId + `:` + idx
-      const payer = dfspCurrencyMap[`${prepare.payload.payerFsp}:${prepare.payload.amount.currency}`]
-      const payee = dfspCurrencyMap[`${prepare.payload.payeeFsp}:${prepare.payload.amount.currency}`]
-      const netDebitCapPayer = netDebitCaps[`${prepare.payload.payerFsp}:${prepare.payload.amount.currency}`]
-      const netDebitCapPayee = netDebitCaps[`${prepare.payload.payeeFsp}:${prepare.payload.amount.currency}`]
-
-      let failValidation = false
-      let failureReasons: Array<string> = []
-      if (!payer) {
-        failValidation = true
-        failureReasons.push(`Payer proxy or participant not found: payer: ${prepare.payload.payerFsp}.`)
-      }
-      if (!payee) {
-        failValidation = true
-        failureReasons.push(`Payee proxy or participant not found: payee: ${prepare.payload.payeeFsp}.`)
-      }
-
-      // Backwards compatibility: Check that the net debit cap is defined for the participants.
-      if (!netDebitCapPayer) {
-        failValidation = true
-        failureReasons.push(`Payer net debit cap not defined.`)
-      }
-
-      if (!netDebitCapPayee) {
-        failValidation = true
-        failureReasons.push(`Payee net debit cap not defined.`)
-      }
-
-      if (prepare.payload.payerFsp === prepare.payload.payeeFsp) {
-        failValidation = true
-        failureReasons.push(`Payer FSP and Payee FSP should be different, unless on-us tranfers are allowed by the Scheme`)
-      }
-
-      const expirationMs = Date.parse(prepare.payload.expiration)
-      if (isNaN(expirationMs)) {
-        failValidation = true
-        failureReasons.push(`invalid transfer expiration`)
-      }
-      const nowMs = (new Date()).getTime()
-      if (nowMs > expirationMs) {
-        failValidation = true
-        failureReasons.push(`Expiration date already in the past.`)
-      }
-
-      if (failValidation) {
-        // Backwards compatibility.
-        failureReasons.sort()
-
-        // Update the results.
-        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-          failureReasons.toString()
-        )
-        const result: PaymentPrepareResult = {
-          type: PaymentPrepareResultType.FAIL_VALIDATION,
-          effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
-          failureReasons,
-        }
-        resultsMap[key] = result
-        resultsMap2[prepare.transferId] = result
-
-        // Remove from the set of ok prepares, add to the failing map.
-        delete preparesMap[prepare.transferId]
-        preparesMapFailing[prepare.transferId] = prepare
-
-        specPrepareAbortIds.push(prepare.transferId)
-        specPrepareAbortTimestamps.push(new Date())
-      }
-    })
-
-    const currencies = await this.specStore.getCurrencyConfigsMap()
-
-    const specs = this.helper.buildTransferSpecs([
-      ...Object.values(preparesMap),
-      ...Object.values(preparesMapFailing),
-    ])
-    const saveSpecResults = await this.specStore.saveTransferSpecs(specs)
-    saveSpecResults.forEach(result => {
-      if (result.type === 'SUCCESS') return
-
-      let prepare = preparesMap[result.id]
-      if (!prepare) {
-        prepare = preparesMapFailing[result.id]
-      }
-      assert(prepare)
-      const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-        `Failed to save transfer spec for transfer: ${result.id}`
-      )
-      const resultFail: PaymentPrepareResult = {
-        type: PaymentPrepareResultType.FAIL_OTHER,
-        effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
-        error: new Error(`Failed to save transfer spec for transfer: ${result.id}`)
-      }
-      resultsMap[result.id] = resultFail
-      resultsMap2[prepare.transferId] = resultFail
-
-      // Remove from the set of ok prepares, add to the failing map.
-      delete preparesMap[result.id]
-      preparesMapFailing[prepare.transferId] = prepare
-    })
-
-    const specPrepares = this.helper.buildSpecsPrepare([
-      ...Object.values(preparesMap),
-      ...Object.values(preparesMapFailing),
-    ])
-    await this.specStore.saveSpecPrepares(specPrepares)
-
-    const transfersOk = this.helper.buildPrepareTransfersOk(
-      Object.values(preparesMap),
-      currencies,
-      dfspRoots,
-      dfspCurrencyMap
+      // Mark as passed the checks.
+      fulfilsNext.push({idx, fulfil})
+    }
+    const transfers = this.helper.buildTransfersFulfil2(
+      fulfilsNext.map(item => item.fulfil), context, netDebitCaps
     )
-    // For the prepares that failed validation, we store a Transfer in TigerBeetle to represent
-    // them, essentially 'burning' the id, so we don't later accept it.
-    const transfersBurn = this.helper.buildPrepareTransfersBurn(
-      Object.values(preparesMapFailing),
+    const resultsTigerBeetle = await this.client.createTransfers(transfers)
+    const resultsTigerBeetleSubset = this.helper.mapResultsFulfil(
+      resultsTigerBeetle, fulfilsNext.map(item => item.fulfil)
     )
-    const results = await this.deps.client.createTransfers([
-      ...transfersOk, ...transfersBurn
-    ])
-    const createTransferResultsOk = results.slice(0, transfersOk.length)
-    const createTransferResultsBurn = results.slice(transfersOk.length)
-    assert.equal(transfersOk.length, createTransferResultsOk.length)
-    assert.equal(transfersBurn.length, createTransferResultsBurn.length)
-    const fatalErrorsOk = this.helper.mapResultsPrepareOk(createTransferResultsOk, preparesMap)
-    const fatalErrorsBurn = this.helper.mapResultsPrepareBurn(createTransferResultsBurn, preparesMapFailing)
 
-    // For any transfers that TigerBeetle flagged as modified, we need to look up those IDs to 
-    // get their completedTimestamp.
-    const lookupPrepareIds: Array<string> = []
-    Object.entries(fatalErrorsOk).forEach(([transferId, errors]) => {
-      if (errors.length === 0) return
-      const firstError = errors[0]
-      if (firstError.type === 'EXISTS' || firstError.type === 'MODIFIED') {
-        lookupPrepareIds.push(transferId)
-      }
-    })
-    Object.entries(fatalErrorsBurn).forEach(([transferId, errors]) => {
-      if (errors.length === 0) return
-      const firstError = errors[0]
-      if (firstError.type === 'EXISTS' || firstError.type === 'MODIFIED' || firstError.type === 'ALREADY_FAILED') {
-        lookupPrepareIds.push(transferId)
-      }
+    // Project from results to the full sized array.
+    const resultsCreateTransfers: Array<FulfilInternalStatus | undefined>
+      = new Array(fulfils.length).fill(undefined)
+    fulfilsNext.forEach(({ fulfil, idx }, idxSubset) => {
+      resultsCreateTransfers[idx] = resultsTigerBeetleSubset[idxSubset]
     })
 
-    const finalizedPayments = await this.lookupTransfers(lookupPrepareIds)
-    // const savedSpecsPrepares = await this.specStore.getSpecPrepares(lookupPrepareIds)
-    Object.entries(fatalErrorsBurn).forEach(([transferId, errors]) => {
-      if (errors.length === 0) {
-        assert(resultsMap2[transferId], `Expected a result to already exist for transferId: ${transferId}.`)
-        return
+    const results: Array<PaymentFulfilResult> = []
+
+    // Now we iterate through the different result arrays.
+    const specTransferUpdates: Array<SpecTransferUpdate> = []
+    for (let idx = 0; idx < fulfils.length; idx++) {
+      const fulfil = fulfils[idx]
+      const resultValidation = resultsValidation[idx]
+      assert(resultValidation)
+      const resultCreateTransfers = resultsCreateTransfers[idx]
+
+      if (resultCreateTransfers && resultCreateTransfers.tag !== 'OK') {
+        specPreparesAborted.push(fulfil.transferId)
       }
 
-      let result: PaymentPrepareResult
-      const prepare = preparesMapFailing[transferId]
-      assert(prepare)
-
-      const firstError = errors[0]
-      switch (firstError.type) {
-        // It failed before, but we at least have the TigerBeetle Transfer, maybe we have the
-        // SpecTranfer.
-        case 'EXISTS': {
-          const finalized = finalizedPayments[transferId]
-          assert(finalized)
-          if (finalized.type !== LookupTransferResultType.FOUND) {
-            throw new Error(`failed to find finalizedPayment for id: ${transferId} with type: ${finalized.type}.`)
-          }
-          const payload = finalized.transfer
-          result = {
-            type: PaymentPrepareResultType.DUPLICATE_FINAL,
-            effects: [this.helper.buildEffectNotificationDuplicate(prepare, payload)],
-            finalizedTransfer: {
-              completedTimestamp: payload.completedTimestamp.toISOString(),
-              transferState: 'ABORTED'
-            }
-          }
-          resultsTigerBeetle[transferId] = result
-          return
-        }
-        // It failed with a transient error in TigerBeetle, so there's no transfer to look up.
-        case 'MODIFIED':
-        case 'ALREADY_FAILED': {
-          const specPrepare = savedSpecsPrepares.find(spec => spec.id === prepare.transferId)
-          if (specPrepare && specPrepare.type === 'SUCCESS') {
-            const prepareHash = Helper.hashTransferProperties({
-              amount: prepare.payload.amount.amount,
-              currency: prepare.payload.amount.currency,
-              expiration: prepare.payload.expiration,
-              payeeFsp: prepare.payload.payeeFsp,
-              payerFsp: prepare.payload.payerFsp,
-              condition: prepare.payload.condition,
-              ilpPacket: prepare.payload.ilpPacket,
-            })
-            if (prepareHash !== specPrepare.result.payloadHash) {
-              const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-                ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-              )
-              result = {
-                type: PaymentPrepareResultType.MODIFIED,
-                effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
-              }
-              resultsTigerBeetle[transferId] = result
-              return
-            }
-
-            if (specPrepare.result.abortedAt) {
-              // Get a prepareFailed, with a timestamp and hash of the properties.
-              const payload: PayloadFinalizedTransfer = {
-                completedTimestamp: specPrepare.result.abortedAt,
-                transferState: 'ABORTED'
-              }
-
-              // Prepare has already failed. Override any other results.
-              result = {
-                type: PaymentPrepareResultType.DUPLICATE_FINAL,
-                effects: [this.helper.buildEffectNotificationDuplicate(prepare, payload)],
-                finalizedTransfer: {
-                  completedTimestamp: payload.completedTimestamp.toISOString(),
-                  transferState: 'ABORTED'
-                }
-              }
-              resultsTigerBeetle[transferId] = result
-              return
-            }
-          }
-
-          // Fatal transfer error - this shouldn't happen.
-          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-            `Already failed transfer ${transferId}`
-          )
-          result = {
-            type: PaymentPrepareResultType.FAIL_OTHER,
-            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
-            error: new Error(`Already failed transfer ${transferId}`)
-          }
-          resultsTigerBeetle[transferId] = result
-          return
-        }
-        default: {
-          assert(resultsMap2[transferId], `Expected a result to already exist for transferId: ${transferId}.`)
-        }
+      let failure
+      if (resultValidation.tag !== 'OK') {
+        failure = resultValidation
+      } else if (resultsCreateTransfers && resultCreateTransfers?.tag !== 'OK') {
+        failure = resultCreateTransfers
       }
-    })
-
-    Object.entries(fatalErrorsOk).forEach(([transferId, errors]) => {
-      let result: PaymentPrepareResult
-      if (errors.length === 0) {
-        const prepare = preparesMap[transferId]
-        assert(prepare)
-        result = {
-          type: PaymentPrepareResultType.PASS,
-          effects: [this.helper.buildEffectNotificationSuccess(prepare)],
-        }
-        resultsTigerBeetle[transferId] = result
-        return
-      }
-      const firstError = errors[0]
-
-      const prepare = preparesMap[transferId]
-      assert(prepare)
-
-      switch (firstError.type) {
-        case 'FAIL_LIQUIDITY': {
-          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
-          )
-          result = {
-            type: PaymentPrepareResultType.FAIL_LIQUIDITY,
-            effects: [this.helper.buildEffectNotificationErrorLiquidity(prepare, errorFspiop)],
-            error: new Error(`Payer insufficent liquidity.`)
-          }
-          break;
-        }
-        case 'MODIFIED': {
-          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-            `Modified`
-          )
-          result = {
-            type: PaymentPrepareResultType.MODIFIED,
-            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
-          }
-          break;
-        }
-        case 'EXISTS': {
-          // TODO: need to do another lookup to determine final or not, right?
-          result = {
-            type: PaymentPrepareResultType.DUPLICATE_NON_FINAL,
-            effects: [],
-          }
-          break;
-        }
-        case 'ALREADY_FAILED': {
-          // TODO: need to do another lookup to determine final or not, right?
-          result = {
-            type: PaymentPrepareResultType.DUPLICATE_FINAL,
-            effects: [],
-            finalizedTransfer: {
-              // TODO: get the timestamp of when we failed the original payment.
-              completedTimestamp: (new Date()).toISOString(),
-              transferState: 'ABORTED'
-            }
-          }
-          break;
-        }
-        case 'PAYER_CLOSED': {
-          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-            'Validation error'
-          )
-          result = {
-            type: PaymentPrepareResultType.FAIL_VALIDATION,
-            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
-            failureReasons: [`Payer account closed.`]
-          }
-          break
-        }
-        case 'PAYEE_CLOSED': {
-          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-            'Validation error'
-          )
-          result = {
-            type: PaymentPrepareResultType.FAIL_VALIDATION,
-            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
-            failureReasons: [`Payee account closed.`]
-          }
-          break
-        }
-        case 'UNKNOWN': {
-          const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-            ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
-            `TigerBeetle transfer failed with: ${CreateTransferStatus[firstError.status]}`
-          )
-          result = {
-            type: PaymentPrepareResultType.FAIL_OTHER,
-            effects: [this.helper.buildEffectNotificationError(prepare, errorFspiop)],
-            error: new Error(`TigerBeetle transfer failed with: ${CreateTransferStatus[firstError.status]}`)
-          }
-        }
-      }
-      assert(result)
-      resultsTigerBeetle[transferId] = result
-
-      specPrepareAbortIds.push(transferId)
-      specPrepareAbortTimestamps.push(new Date())
-    })
-
-    // Update the SpecPrepares for the payments that failed either at validation or TigerBeetle step
-    // We need this to keep track of the abort timestamp.
-    await this.specStore.attachSpecPrepareAbortedAt(specPrepareAbortIds, specPrepareAbortTimestamps)
-
-    const resultsOrdered: Record<string, PaymentPrepareResult> = {}
-    Object.entries(resultsMap).forEach(([key, result]) => {
-      const [transferId, idx] = key.split(':')
-      assert(transferId)
-      assert(idx)
-
-      // Check the failedTigerBeetle.
-      if (resultsTigerBeetle[transferId]) {
-        resultsOrdered[idx] = resultsTigerBeetle[transferId]
-        return
+      if (failure) {
+        results.push(this.helper.mapFulfilInternalToFulfilResult(fulfil, failure))
+        continue
       }
 
-      if (result === undefined) {
-        logger.error(`no result found for transferId: ${transferId} (idx: ${idx})`)
-        return
+      // No errors found for this Prepare!
+      assert(resultCreateTransfers)
+      assert(resultCreateTransfers.tag === 'OK')
+      const success = resultCreateTransfers
+      results.push(this.helper.mapFulfilInternalToFulfilResult(fulfil, success))
+      if (fulfil.payload.transferState !== 'ABORTED') {
+        specTransferUpdates.push({
+          id: fulfil.transferId,
+          fulfilment: fulfil.payload.fulfilment
+        })
       }
+    }
 
-      resultsOrdered[idx] = result
-    })
+    assert.equal(fulfils.length, results.length)
+    await this.specStore.attachSpecPrepareAbortedAt(specPreparesAborted, specPreparesAborted.map(_ => new Date()))
+    await this.specStore.attachFulfillments(specTransferUpdates)
 
-    assert.equal(inputs.length, Object.values(resultsOrdered).length, 'We dropped a result somewhere.')
-    return Object.values(resultsOrdered)
+    return results
   }
 
-  public async fulfil(inputs: Array<FulfilHandlerInput>): Promise<Array<PaymentFulfilResult>> {
+  private fulfilCheckValid(
+    fulfils: Array<FulfilHandlerInput>,
+    context: ContextFulfil,
+    netDebitCaps: Array<NetDebitCap>
+  ): Array<FulfilInternalStatus> {
+    const specTransfersMap = Helper.toMapBy(context.specTransfers, item => item.id)
+    const dfspRootsMap = Helper.toMapBy(context.dfspRoots, item => item.dfspId)
+    const netDebitCapsMap = Helper.toMapBy(netDebitCaps, item => `${item.dfspId}:${item.currency}`)
+
+    return fulfils.map(fulfil => {
+      const failureReasons: Array<string> = []
+      const specTransfer = specTransfersMap[fulfil.transferId]
+      if (!specTransfer) {
+        return {
+          tag: 'FAIL_VALIDATION' as const,
+          context: { failureReasons: ['Transfer not found'] }
+        }
+      }
+
+      const rootPayer = dfspRootsMap[specTransfer.payerId]
+      const rootPayee = dfspRootsMap[specTransfer.payeeId]
+      const netDebitCapPayer = netDebitCapsMap[`${specTransfer.payerId}:${specTransfer.currency}`]
+      const netDebitCapPayee = netDebitCapsMap[`${specTransfer.payeeId}:${specTransfer.currency}`]
+
+      if (!rootPayer) failureReasons.push(`Payer DFSP '${specTransfer.payerId}' not found`)
+      if (!rootPayee) failureReasons.push(`Payee DFSP '${specTransfer.payeeId}' not found`)
+      if (!netDebitCapPayer) failureReasons.push(`net debit cap not found for: ${specTransfer.payerId} + ${specTransfer.currency}.`)
+      if (!netDebitCapPayee) failureReasons.push(`net debit cap not found for: ${specTransfer.payeeId} + ${specTransfer.currency}.`)
+      if (fulfil.callerDfspId !== specTransfer.payeeId) {
+        failureReasons.push(`Caller FSP '${fulfil.callerDfspId}' does not match payee '${specTransfer.payeeId}'`)
+      }
+      if (fulfil.destinationDfspId !== specTransfer.payerId) {
+        failureReasons.push(`Destination FSP '${fulfil.destinationDfspId}' does not match payer '${specTransfer.payerId}'`)
+      }
+      if (failureReasons.length > 0) {
+        return { tag: 'FAIL_VALIDATION', context: { failureReasons } }
+      }
+
+      // Validate fulfilment matches condition.
+      if (fulfil.payload.transferState !== 'ABORTED') {
+        const fulfilmentResult = Helper.validateFulfilmentAndCondition(
+          fulfil.payload.fulfilment,
+          specTransfer.ilpCondition
+        )
+        if (fulfilmentResult.type === 'FAIL') {
+          return { tag: 'INVALID_FULFILMENT' }
+        }
+      }
+
+      return { tag: 'OK'}
+    })
+  }
+
+  public async fulfilOld(inputs: Array<FulfilHandlerInput>): Promise<Array<PaymentFulfilResult>> {
     const amplificationFactor = 3 // How many physical transfers per fulfil.
     const physicalTransfers = inputs.length * amplificationFactor
     if (physicalTransfers > Helper.maxBatchSize) {
@@ -2694,16 +2377,6 @@ export class LedgerTigerBeetle implements Ledger {
         }
         return
       }
-
-      // if (specResult.type === 'ERROR') {
-      //   delete fulfilsMap[specResult.id]
-      //   resultsMap[specResult.id] = {
-      //     type: PaymentFulfilResultType.FAIL_OTHER,
-      //     effects: [],
-      //     error: specResult.error
-      //   }
-      //   return
-      // }
 
       specsMap[specResult.id] = specResult.result
 

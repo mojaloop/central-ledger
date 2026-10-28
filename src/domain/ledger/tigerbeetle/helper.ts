@@ -2,13 +2,13 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, CreateTransferResult, CreateTransferStatus, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto, { hash } from "crypto";
 import assert from "assert";
-import { ContextDfsps, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, NetDebitCap, SpecPrepare, SpecTransfer, SpecTransferCreate } from "./spec-store";
+import { ContextDfsps, ContextFulfil, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, NetDebitCap, SpecPrepare, SpecTransfer, SpecTransferCreate } from "./spec-store";
 import { AccountCode, LedgerAccount, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
 import { CreatePaymentDto, PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../../handlers/payment-prepare";
-import { FulfilHandlerAction, FulfilHandlerInput, PaymentFulfilResultType } from "../../../handlers/payment-fulfil";
+import { FulfilHandlerAction, FulfilHandlerInput, PaymentFulfilResult, PaymentFulfilResultType } from "../../../handlers/payment-fulfil";
 import { Effect } from "../../../messaging/message-bus";
 import { ApplicationConfig } from "../../../lib/config";
-import { Enum, Util } from '@mojaloop/central-services-shared';
+import { Enum, EventActionEnum, Util } from '@mojaloop/central-services-shared';
 import { rootCertificates } from "tls";
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -51,6 +51,24 @@ export type PrepareInternalStatus = {
   }
 
 type PrepareInternalStatusTag = PrepareInternalStatus['tag']
+
+
+export type FulfilInternalStatus = {
+  tag: 'FAIL_VALIDATION'
+  // TODO:
+  context: {
+    failureReasons: Array<string>
+  }
+} | {
+  tag: 'ALREADY_FULFILLED'
+} | {
+  tag: 'ALREADY_ABORTED'
+} | {
+  tag: 'INVALID_FULFILMENT'
+} | {
+  tag: 'OK'
+}
+type FulfilInternalStatusTag = FulfilInternalStatus['tag']
 
 
 
@@ -485,9 +503,9 @@ export default class Helper {
         amount: amount_max,
         ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
-        flags: TransferFlags.linked 
-          | TransferFlags.pending 
-          | TransferFlags.balancing_credit 
+        flags: TransferFlags.linked
+          | TransferFlags.pending
+          | TransferFlags.balancing_credit
           | TransferFlags.balancing_debit
       },
       // Sweep remaining funds in Unrestricted to Restricted.
@@ -880,6 +898,8 @@ export default class Helper {
    * How many TigerBeetle transfers for each Prepare.
    */
   public static readonly ampFactorPrepare = 7
+  public static readonly ampFactorFulfilCommit = 2
+  public static readonly ampFactorFulfilAbort = 10
 
   /**
    * Given a list of validated prepares, return a list of TigerBeetle transfers to be created.
@@ -1205,6 +1225,126 @@ export default class Helper {
     })
 
     return statuses
+  }
+
+  public mapResultsFulfil(
+    results: Array<CreateTransferResult>,
+    fulfils: Array<FulfilHandlerInput>
+  ): Array<FulfilInternalStatus> {
+
+    // The results will be different lengths depending on if we ABORTED or FULFILLED.
+    // Initialize all statuses as OK
+    const statuses: Array<FulfilInternalStatus> = Array.from(
+      { length: fulfils.length },
+      () => ({ tag: 'OK' })
+    )
+
+    let idxResult = 0
+    for (let idxFulfil = 0; idxFulfil < fulfils.length; idxFulfil++) {
+      const fulfil = fulfils[idxFulfil]
+      assert(fulfil)
+
+      const ampFactor = fulfil.action === EventActionEnum.ABORT
+        ? Helper.ampFactorFulfilAbort
+        : Helper.ampFactorFulfilCommit
+
+      for (let idx = 0; idx < ampFactor; idx++) {
+        idxResult += 1
+        const result = results[idx]
+        assert(result)
+
+        if (result.status === CreateTransferStatus.created) continue
+        if (result.status === CreateTransferStatus.linked_event_failed) continue
+
+        // Map TigerBeetle errors to FulfilInternalStatus
+        // The first transfer in each batch is the post/void pending transfer
+        if (idx === 0) {
+          switch (result.status) {
+            case CreateTransferStatus.pending_transfer_already_posted:
+              statuses[idxFulfil] = { tag: 'ALREADY_FULFILLED' }
+              break
+            case CreateTransferStatus.pending_transfer_already_voided:
+              statuses[idxFulfil] = { tag: 'ALREADY_ABORTED' }
+              break
+            case CreateTransferStatus.pending_transfer_not_found:
+              statuses[idxFulfil] = {
+                tag: 'FAIL_VALIDATION',
+                context: { failureReasons: ['Pending transfer not found'] }
+              }
+              break
+            case CreateTransferStatus.pending_transfer_not_pending:
+              // Transfer exists but is not pending - either already fulfilled or aborted
+              statuses[idxFulfil] = { tag: 'ALREADY_FULFILLED' }
+              break
+          }
+        }
+
+        throw new Error(`Unhandled error at: ${idx}: ${CreateTransferStatus[result.status]}`)
+      }
+    }
+
+    return statuses
+  }
+
+  /**
+   * Map a FulfilInternalStatus to a PaymentFulfilResult.
+   *
+   * This is the final step in converting TigerBeetle results to the handler response format.
+   */
+  public mapFulfilInternalToFulfilResult(
+    fulfil: FulfilHandlerInput,
+    status: FulfilInternalStatus
+  ): PaymentFulfilResult {
+    switch (status.tag) {
+      case 'OK':
+        return {
+          type: PaymentFulfilResultType.PASS,
+          effects: []
+        }
+
+      case 'ALREADY_FULFILLED':
+        return {
+          type: PaymentFulfilResultType.DUPLICATE_FINAL,
+          effects: []
+        }
+
+      case 'ALREADY_ABORTED':
+        return {
+          type: PaymentFulfilResultType.DUPLICATE_FINAL,
+          effects: []
+        }
+
+      case 'INVALID_FULFILMENT': {
+        const error = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          'Invalid fulfilment'
+        )
+        return {
+          type: PaymentFulfilResultType.FAIL_VALIDATION,
+          effects: [],
+          error
+        }
+      }
+
+      case 'FAIL_VALIDATION': {
+        const errorMessage = status.context.failureReasons.join(', ')
+        const error = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          errorMessage
+        )
+        return {
+          type: PaymentFulfilResultType.FAIL_VALIDATION,
+          effects: [],
+          error
+        }
+      }
+
+      default: {
+        // Exhaustive check
+        const _exhaustive: never = status
+        throw new Error(`Unhandled FulfilInternalStatus tag: ${(_exhaustive as FulfilInternalStatus).tag}`)
+      }
+    }
   }
 
   public buildPrepareTransfersOk(
@@ -1630,6 +1770,126 @@ export default class Helper {
     return transfers
   }
 
+  /**
+   * Build the TigerBeetle Transfers for the fulfil inputs.
+   * Note that this is using the existing accounting model, which gives the payee dfsp clearing
+   * credit above their net debit cap. 
+   * 
+   * In future implementations we would use the transfers in `transferTemplateNDC()` to sweep any
+   * extra amounts over the net debit cap into the Payee's unrestricted account.
+   */
+  public buildTransfersFulfil2(
+    fulfils: Array<FulfilHandlerInput>,
+    context: ContextFulfil,
+    netDebitCaps: Array<NetDebitCap>
+  ): Array<Transfer> {
+
+    const specTransfers = Helper.toMapBy(context.specTransfers, item => item.id)
+    const dfspCurrencies = Helper.toMapBy(context.dfspCurrencies, item => `${item.dfspId}:${item.currency}`)
+    const currencyConfigs = Helper.toMapBy(context.currencyConfigs, item => item.currency)
+    const netDebitCapMap = Helper.toMapBy(netDebitCaps, item => `${item.dfspId}:${item.currency}`)
+
+    const transfers: Array<Transfer> = []
+    for (let idx = 0; idx < fulfils.length; idx++) {
+      const fulfil = fulfils[idx]
+      const specTransfer = specTransfers[fulfil.transferId]
+
+      assert(fulfil)
+      assert(specTransfer)
+
+      const currencyConfig = currencyConfigs[specTransfer.currency]
+      assert(currencyConfig, `No currencyConfig found for specTransfer.currency: ${specTransfer.currency}.`)
+
+      // TODO: ideally we wouldn't have to have the amount in the spec store.
+      const amountTigerBeetle = Helper.fromMojaloopAmount(specTransfer.amount, currencyConfig.assetScale)
+
+      const prepareId = Helper.fromMojaloopId(fulfil.transferId)
+      const dfspCurrencyPayer = dfspCurrencies[`${specTransfer.payerId}:${specTransfer.currency}`]
+      assert(dfspCurrencyPayer, `dfspCurrency not found for payerId: ${specTransfer.payerId} and currency: ${specTransfer.currency}.`)
+      const dfspCurrencyPayee = dfspCurrencies[`${specTransfer.payeeId}:${specTransfer.currency}`]
+      assert(dfspCurrencyPayee, `dfspCurrency not found for payeeId: ${specTransfer.payeeId} and currency: ${specTransfer.currency}.`)
+
+      const netDebitCapPayer = netDebitCapMap[`${specTransfer.payerId}:${specTransfer.currency}`]
+      assert(netDebitCapPayer, `net debit cap not found for payerId: ${specTransfer.payerId} and currency: ${specTransfer.currency}.`)
+      const netDebitCapPayee = netDebitCapMap[`${specTransfer.payeeId}:${specTransfer.currency}`]
+      assert(netDebitCapPayer, `net debit cap not found for payeeId: ${specTransfer.payeeId} and currency: ${specTransfer.currency}.`)
+
+      if (fulfil.action === EventActionEnum.ABORT) {
+        // DRCR Example Snippet:
+        // GLB DR dfsp_a:root     CR dfsp_b:root           45 void_pending_transfer ^1
+        // USD DR dfsp_a:reserved CR dfsp_a:unrestricted   45
+        transfers.push(
+          // 1. Complete the logical payment.
+          {
+            ...Helper.createTransferTemplate,
+            id: id(),
+            pending_id: prepareId,
+            debit_account_id: 0n,
+            credit_account_id: 0n,
+            user_data_128: prepareId,
+            amount: 0n,
+            ledger: 0,
+            code: 0,
+            flags: TransferFlags.linked | TransferFlags.void_pending_transfer,
+          },
+          // 2. Move funds back to unrestricted.
+          {
+            ...Helper.createTransferTemplate,
+            id: id(),
+            debit_account_id: dfspCurrencyPayer.reserved,
+            credit_account_id: dfspCurrencyPayee.unrestricted,
+            amount: amountTigerBeetle,
+            user_data_128: prepareId,
+            ledger: currencyConfig.idOperation,
+            code: TransferCode.Clearing_Credit,
+            flags: 0
+          },
+          // 3. Run the NDC template.
+          ...this.transferTemplateNDC(
+            netDebitCapPayer.type === 'LIMITED' ? netDebitCapPayer.amount : amount_max,
+            dfspCurrencyPayer,
+            currencyConfig
+          )
+        )
+        continue
+      }
+
+      // DRCR Example Snippet:
+      // GLB DR dfsp_a:root     CR dfsp_b:root           45 post_pending_transfer ^1
+      // USD DR dfsp_a:reserved CR dfsp_b:clearingCredit 45
+      transfers.push(
+        // 1. Complete the logical payment.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          pending_id: prepareId,
+          debit_account_id: 0n,
+          credit_account_id: 0n,
+          user_data_128: prepareId,
+          amount: amountTigerBeetle,
+          ledger: 0,
+          code: 0,
+          flags: TransferFlags.linked | TransferFlags.post_pending_transfer,
+        },
+        // 2. Make credit available for transfers.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          debit_account_id: dfspCurrencyPayer.reserved,
+          credit_account_id: dfspCurrencyPayee.unrestricted,
+          amount: amountTigerBeetle,
+          user_data_128: prepareId,
+          ledger: currencyConfig.idOperation,
+          code: TransferCode.Clearing_Credit,
+          flags: 0
+        },
+        // TODO: do we need to run the NDC template now? 
+        // I'm not sure how ledger-sql treats the limit/position for a net reciever DFSP.
+      )
+    }
+    return transfers
+  }
+
   public static fromMojaloopId(mojaloopId: string): bigint {
     assert(mojaloopId)
     // TODO: assert that this actually is a uuid
@@ -1650,7 +1910,6 @@ export default class Helper {
     // Insert dashes to create UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
   }
-
 
   /**
     * Converts a Mojaloop amount string to a bigint representation based on the currency's scale
