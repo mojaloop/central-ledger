@@ -9,6 +9,7 @@ import { FulfilHandlerAction, FulfilHandlerInput, PaymentFulfilResultType } from
 import { Effect } from "../../../messaging/message-bus";
 import { ApplicationConfig } from "../../../lib/config";
 import { Enum, Util } from '@mojaloop/central-services-shared';
+import { rootCertificates } from "tls";
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const { Type, Action } = Enum.Events.Event
@@ -60,7 +61,7 @@ export type FulfilFailureType = 'ALREADY_ABORTED' | 'PAYER_CLOSED' | 'PAYEE_CLOS
   | 'NOT_FOUND' | 'PAYER_ACCOUNT_CLOSED' | 'PAYEE_ACCOUNT_CLOSED' | 'METADATA_CORRUPTED' | 'UNKNOWN'
 export type WithdrawPrepareFailureType = 'DFSP_CLOSED' | 'ACCOUNT_CLOSED' | 'TRANSFER_ID_REUSED' | 'INSUFFICIENT_FUNDS' |
   'UNKNOWN'
-export type WithdrawCommitFailureType = 'NOT_FOUND' | 'UNKNOWN' | 'ALREADY_COMMITTED' | 'ALREADY_ABORTED'
+export type WithdrawCommitFailureType = 'NOT_FOUND' | 'UNKNOWN' | 'ALREADY_COMMITTED' | 'ALREADY_ABORTED' | 'ACCOUNT_CLOSED'
 export type WithdrawAbortFailureType = 'NOT_FOUND' | 'UNKNOWN' | 'ALREADY_COMMITTED' | 'ALREADY_ABORTED'
 export type DepositFailureType = 'EXISTS' | 'MODIFIED' | 'UNKNOWN' | 'CLOSED'
 export type SetNetDebitCapFailureType = 'UNKNOWN'
@@ -878,7 +879,7 @@ export default class Helper {
   /**
    * How many TigerBeetle transfers for each Prepare.
    */
-  public static readonly ampFactorPrepare = 6
+  public static readonly ampFactorPrepare = 7
 
   /**
    * Given a list of validated prepares, return a list of TigerBeetle transfers to be created.
@@ -948,7 +949,7 @@ export default class Helper {
       // USD DR dfsp_a:clearingSetup  CR dfsp_a:reserved         45
       // USD DR dfsp_a:clearingLimit  CR dfsp_a:clearingSetup 10000 balancing_credit
 
-      transfers.push(
+      const transfersPrepare = [
         // 1. Ensure both Participants are active.
         {
           ...Helper.createTransferTemplate,
@@ -963,9 +964,21 @@ export default class Helper {
           code: TransferCode.Clearing_Active_Check,
           flags: TransferFlags.linked | TransferFlags.pending,
         },
+        // 2. Ensure both Participant's currency accounts are active
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          debit_account_id: specPayer.unrestricted,
+          credit_account_id: specPayee.unrestricted,
+          amount: 0n,
+          user_data_128: prepareId,
+          ledger: ledger.idOperation,
+          code: TransferCode.Clearing_Active_Check,
+          flags: TransferFlags.linked,
+        },
         // Note: This is the Multi-Debit, single Credit pattern from TigerBeetle.
         // https://docs.tigerbeetle.com/coding/recipes/multi-debit-credit-transfers/#multiple-debits-single-credit-balancing-debits
-        // 2. Setup the limit account for this payment.
+        // 3. Setup the limit account for this payment.
         {
           ...Helper.createTransferTemplate,
           id: id(),
@@ -977,7 +990,7 @@ export default class Helper {
           code: 1,
           flags: TransferFlags.linked
         },
-        // 3. Reserve funds for Participant A from Clearing Credit.
+        // 4. Reserve funds for Participant A from Clearing Credit.
         {
           ...Helper.createTransferTemplate,
           id: id(),
@@ -988,9 +1001,8 @@ export default class Helper {
           ledger: ledger.idOperation,
           code: TransferCode.Clearing_Reserve,
           flags: TransferFlags.linked | TransferFlags.balancing_debit
-            | TransferFlags.balancing_credit
         },
-        // 3. Reserve funds for Participant A from Unrestricted.
+        // 5. Reserve funds for Participant A from Unrestricted.
         {
           ...Helper.createTransferTemplate,
           id: id(),
@@ -1001,9 +1013,8 @@ export default class Helper {
           ledger: ledger.idOperation,
           code: TransferCode.Clearing_Reserve,
           flags: TransferFlags.linked | TransferFlags.balancing_debit
-            | TransferFlags.balancing_credit
         },
-        // 4. The money movement.
+        // 6. The money movement.
         {
           ...Helper.createTransferTemplate,
           id: prepareId + 3n,
@@ -1015,7 +1026,7 @@ export default class Helper {
           code: TransferCode.Clearing_Reserve,
           flags: TransferFlags.linked
         },
-        // 5. Close the loop, resetting clearingSetup.
+        // 7. Close the loop, resetting clearingSetup.
         {
           ...Helper.createTransferTemplate,
           id: id(),
@@ -1027,8 +1038,12 @@ export default class Helper {
           code: 1,
           flags: TransferFlags.balancing_credit
         },
-      )
+      ]
+
+      // console.log(Helper.formatTransfersAsDRCR(transfersPrepare, [specPayer], [masterAccountPayer], ledger))
+      transfers.push(...transfersPrepare)
     })
+
 
     return transfers
   }
@@ -1160,7 +1175,16 @@ export default class Helper {
         }
       }
 
-      if (idxTransfer === 3) {
+      if (idxTransfer === 1) {
+        switch (result.status) {
+          case CreateTransferStatus.debit_account_already_closed:
+          case CreateTransferStatus.credit_account_already_closed:
+            statuses[idxPrepare] = { tag: 'FAIL_ACCOUNT_CLOSED', context: {} }
+            return
+        }
+      }
+
+      if (idxTransfer === 4) {
         switch (result.status) {
           case CreateTransferStatus.debit_account_already_closed:
             statuses[idxPrepare] = { tag: 'FAIL_ACCOUNT_CLOSED', context: {} }
@@ -1168,7 +1192,7 @@ export default class Helper {
         }
       }
 
-      if (idxTransfer === 5) {
+      if (idxTransfer === 6) {
         switch (result.status) {
           case CreateTransferStatus.exceeds_credits:
             statuses[idxPrepare] = { tag: 'FAIL_LIQUIDITY', context: {} }

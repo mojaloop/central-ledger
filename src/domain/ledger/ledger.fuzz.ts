@@ -69,7 +69,7 @@ describe('Ledger Fuzz', () => {
     console.log(`Fuzz trace written to ${pathTrace}.`)
   })
 
-  it.only('runs the fuzzer for LedgerTigerBeetle', async (context) => {
+  it('runs the fuzzer for LedgerTigerBeetle', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 1000)
     const trace = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
 
@@ -80,7 +80,7 @@ describe('Ledger Fuzz', () => {
     console.log(`Fuzz trace written to ${pathTrace}.`)
   })
 
-  it('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
+  it.only('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 250)
     const traceA = await run(stepsMax, { LEDGER: 'SQL' })
     const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
@@ -549,7 +549,7 @@ class LedgerFuzzer {
   }
 
   private async deposit(): Promise<void> {
-    const balanceSheetPre = await this.reporter.balanceSheet(new Date())
+    // const balanceSheetPre = await this.reporter.balanceSheet(new Date())
 
     const name = this.randomDfspName()
     const cmd: DepositCommand = {
@@ -561,10 +561,11 @@ class LedgerFuzzer {
     }
     const result = await this.ledger.deposit(cmd)
     const balanceSheetPost = await this.reporter.balanceSheet(new Date())
-    const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
-    const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
+    // const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
+    // const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
 
-    this.traceResult('deposit', cmd, result, statePost, statePre)
+    // this.traceResult('deposit', cmd, result, statePost, statePre)
+    this.traceResult('deposit', cmd, result)
   }
 
   private async withdrawPrepare(): Promise<void> {
@@ -590,12 +591,13 @@ class LedgerFuzzer {
     }
 
     const result = await this.ledger.withdrawPrepare(cmd)
-    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
-    const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
-    const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
+    // const balanceSheetPost = await this.reporter.balanceSheet(new Date())
+    // const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
+    // const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
 
-    const balanceSheet = await this.reporter.balanceSheet(new Date())
-    this.traceResult('withdrawPrepare', cmd, result, statePost, statePre)
+    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
+    // this.traceResult('withdrawPrepare', cmd, result, statePost, statePre)
+    this.traceResult('withdrawPrepare', cmd, result, balanceSheetPost.toStringAll(), balanceSheetPre.toStringAll())
 
     if (!this.withdrawIds[cmd.transferId]) {
       this.withdrawIds[cmd.transferId] = true
@@ -613,17 +615,19 @@ class LedgerFuzzer {
   }
 
   private async withdrawAbort(): Promise<void> {
+    const balanceSheetPre = await this.reporter.balanceSheet(new Date())
+
     const cmd: WithdrawAbortCommand = {
       transferId: this.randomWithdawId()
     }
     const result = await this.ledger.withdrawAbort(cmd)
 
-    const balanceSheet = await this.reporter.balanceSheet(new Date())
-    this.traceResult('withdrawAbort', cmd, result, balanceSheet.toStringAll())
+    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
+    this.traceResult('withdrawAbort', cmd, result, balanceSheetPost.toStringAll(), balanceSheetPre.toStringAll())
   }
 
   private async setNetDebitCap(): Promise<void> {
-    const balanceSheetPre = await this.reporter.balanceSheet(new Date())
+    // const balanceSheetPre = await this.reporter.balanceSheet(new Date())
     let cmd: SetNetDebitCapCommand = {
       netDebitCapType: 'LIMITED',
       dfspId: this.randomDfspName(),
@@ -633,11 +637,12 @@ class LedgerFuzzer {
     }
 
     const result = await this.ledger.setNetDebitCap(cmd)
-    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
-    const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
-    const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
+    // const balanceSheetPost = await this.reporter.balanceSheet(new Date())
+    // const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
+    // const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
 
-    this.traceResult('setNetDebitCap', cmd, result, statePost, statePre)
+    // this.traceResult('setNetDebitCap', cmd, result, statePost, statePre)
+    this.traceResult('setNetDebitCap', cmd, result)
   }
 
   private async getHubAccounts(): Promise<void> {
@@ -777,20 +782,21 @@ class LedgerFuzzer {
       return clone
     })
 
-    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
+    // const balanceSheetPost = await this.reporter.balanceSheet(new Date())
 
-    // Get a T account statement!
-    const statePre = balanceSheetPre.toTAccounts(
-      [firstPrepare.payload.payerFsp, firstPrepare.payload.payeeFsp],
-      [firstPrepare.payload.amount.currency]
-    )
-    const statePost = balanceSheetPost.toTAccounts(
-      [firstPrepare.payload.payerFsp, firstPrepare.payload.payeeFsp],
-      [firstPrepare.payload.amount.currency]
-    )
+    // // Get a T account statement!
+    // const statePre = balanceSheetPre.toTAccounts(
+    //   [firstPrepare.payload.payerFsp, firstPrepare.payload.payeeFsp],
+    //   [firstPrepare.payload.amount.currency]
+    // )
+    // const statePost = balanceSheetPost.toTAccounts(
+    //   [firstPrepare.payload.payerFsp, firstPrepare.payload.payeeFsp],
+    //   [firstPrepare.payload.amount.currency]
+    // )
 
     // const statePost = undefined
-    this.traceResult('prepare', prepares, resultNormalized, statePost, statePre)
+    // this.traceResult('prepare', prepares, resultNormalized, statePost, statePre)
+    this.traceResult('prepare', prepares, resultNormalized)
 
     result.forEach((prepareResult, idx) => {
       const prepare = prepares[idx]

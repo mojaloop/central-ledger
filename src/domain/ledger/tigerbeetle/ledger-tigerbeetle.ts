@@ -549,14 +549,9 @@ export class LedgerTigerBeetle implements Ledger {
         throw new Error(`Unhandled transfer error: ${idx}, ${CreateTransferStatus[result.status]}.`)
       })
 
-      return {
-        type: 'SUCCESS'
-      }
+      return Helper.successEmpty()
     } catch (err: any) {
-      return {
-        type: 'FAILURE',
-        error: err
-      }
+      return Helper.failure(err)
     }
   }
 
@@ -994,7 +989,7 @@ export class LedgerTigerBeetle implements Ledger {
       const transfers = this.helper.buildTransfersWithdrawPrepare(
         cmd.transferId, cmd.amount, netDebitCap, spec.result, dfspRoot, currency
       )
-      const reporter = new Reporter({ledger: this, config: this.config})
+      const reporter = new Reporter({ ledger: this, config: this.config })
       const bsPre = await reporter.balanceSheet(new Date())
       // console.log("bsPre is \n" + bsPre.toTAccounts([cmd.dfspId], [cmd.currency]))
       // console.log('NDC is:', netDebitCap)
@@ -1059,6 +1054,7 @@ export class LedgerTigerBeetle implements Ledger {
       ]
 
       const createTransfersResult = await this.deps.client.createTransfers(transfers)
+      let retryAccountWasClosed = false
       const fatalErrors: Array<TransferFailureResult<WithdrawCommitFailureType>> = []
       createTransfersResult.forEach((result, idx) => {
         // Ignore noisy errors
@@ -1067,6 +1063,10 @@ export class LedgerTigerBeetle implements Ledger {
 
         if (idx === 0) {
           switch (result.status) {
+            case CreateTransferStatus.debit_account_already_closed:
+              // This is retryable, we need to open the account and close it again.
+              retryAccountWasClosed = true
+              return
             case CreateTransferStatus.pending_transfer_not_found:
               fatalErrors.push({ type: 'NOT_FOUND', ...result })
               return
@@ -1082,9 +1082,103 @@ export class LedgerTigerBeetle implements Ledger {
         throw new Error(`unhandled transfer error: ${idx}, ${CreateTransferStatus[result.status]}`)
       })
 
+      if (retryAccountWasClosed) {
+        return this.withdrawCommitClosedAccount(cmd)
+      }
+
       // Backwards compatibility: always return success.
       return Helper.successEmpty()
     } catch (err) {
+      return Helper.failure(err)
+    }
+  }
+
+  /**
+   * The same as withdrawCommit, but we atomically (1) reopen the closed account, (2) post the
+   * pending transfer to apply the withdrawal, (3) reclose the account.
+   */
+  private async withdrawCommitClosedAccount(cmd: WithdrawCommitCommand):
+    Promise<WithdrawCommitResponse> {
+
+    try {
+      const idPendingWithdrawal = Helper.fromMojaloopId(cmd.transferId)
+      const transferPendingWithdrawal = await this.client.lookupTransfers([idPendingWithdrawal])
+      assert(transferPendingWithdrawal.length === 1, `Expected only 1 transfer for id: ${idPendingWithdrawal}.`)
+      const accountIdUnrestricted = transferPendingWithdrawal[0].debit_account_id
+      const {
+        code, currency
+      } = await this.specStore.lookupDfspCurrencyByAccountId2(accountIdUnrestricted)
+      const currencyConfig = await this.specStore.getCurrencyConfig(currency.currency)
+
+      // Look up the closing transfer.
+      const closingTransfers = (await this.deps.client.getAccountTransfers({
+        account_id: accountIdUnrestricted,
+        user_data_128: 0n,
+        user_data_64: 0n,
+        user_data_32: 0,
+        code: TransferCode.Close_Account,
+        timestamp_min: 0n,
+        timestamp_max: 0n,
+        limit: 10,
+        flags: AccountFilterFlags.credits |
+          AccountFilterFlags.reversed,
+      })).filter(transfer => transfer.flags & TransferFlags.closing_credit)
+
+      if (closingTransfers.length === 0) {
+        const error = new Error(`withdrawCommitClosedAccount tried to reopen a closed account but`
+          + ` no closing transfer found.`
+        )
+        return Helper.failure(error)
+      }
+      const lastClosingTransfer = closingTransfers[0]
+      const transfers = [
+        // Void the closing transfer to reopen this account.
+        {
+          ...LedgerTigerBeetleHelper.createTransferTemplate,
+          id: id(),
+          pending_id: lastClosingTransfer.id,
+          debit_account_id: currency.unrestrictedLock,
+          credit_account_id: currency.unrestricted,
+          amount: 0n,
+          ledger: currencyConfig.idOperation,
+          code: TransferCode.Close_Account,
+          flags: TransferFlags.linked | TransferFlags.void_pending_transfer
+        },
+        // Apply the withdrawal
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          pending_id: idPendingWithdrawal,
+          debit_account_id: 0n,
+          credit_account_id: 0n,
+          amount: amount_max,
+          ledger: 0,
+          code: TransferCode.Withdraw,
+          flags: TransferFlags.linked | TransferFlags.post_pending_transfer
+        },
+        // Close the account again
+        {
+          ...LedgerTigerBeetleHelper.createTransferTemplate,
+          id: id(),
+          debit_account_id: currency.unrestrictedLock,
+          credit_account_id: currency.unrestricted,
+          amount: 0n,
+          ledger: currencyConfig.idOperation,
+          code: TransferCode.Close_Account,
+          flags: TransferFlags.pending | TransferFlags.closing_credit
+        }
+      ]
+      const transferResults = await this.deps.client.createTransfers(transfers)
+      const fatalErrors: Array<TransferFailureResult<WithdrawCommitFailureType>> = []
+      transferResults.forEach((result, idx) => {
+        if (result.status === CreateTransferStatus.created) return
+        if (result.status === CreateTransferStatus.linked_event_failed) return
+
+        throw new Error(`Unhandled transfer error: ${idx}, ${CreateTransferStatus[result.status]}.`)
+      })
+
+      return Helper.successEmpty()
+    } catch (err: any) {
       return Helper.failure(err)
     }
   }
@@ -1623,7 +1717,7 @@ export class LedgerTigerBeetle implements Ledger {
 
         if (internalLedgerAccountsPerCurrency.length === 0) return
         // If we have _some_ ledger accounts, we should have them all.
-        assert(internalLedgerAccountsPerCurrency.length === 9, 
+        assert(internalLedgerAccountsPerCurrency.length === 9,
           `Expected dfsp + currency: ${dfspId}, ${currency} to have 9 accounts.`
         )
 
@@ -1644,8 +1738,7 @@ export class LedgerTigerBeetle implements Ledger {
       let amountNetDebitCap: bigint
       switch (cmd.netDebitCapType) {
         case 'LIMITED': {
-          assert(cmd.amount)
-          assert(cmd.amount >= 0, 'expected amount to 0 or a positive integer')
+          assert(typeof cmd.amount === 'number')
           amountNetDebitCap = Helper.toTigerBeetleAmount(cmd.amount, currencyConfig.assetScale)
           break;
         }
@@ -1846,7 +1939,7 @@ export class LedgerTigerBeetle implements Ledger {
       item => `${item.dfspId}:${item.currency}`
     )
     const netDebitCapsMap = Helper.toMapBy(
-      netDebitCaps, 
+      netDebitCaps,
       item => `${item.dfspId}:${item.currency}`
     )
 
@@ -1925,7 +2018,7 @@ export class LedgerTigerBeetle implements Ledger {
   ): Array<PrepareInternalStatus> {
     const specPreparesMap = Helper.toMapBy(context.specPrepares, item => item.id)
     const specTransfersMap = Helper.toMapBy(context.specTransfers, item => item.id)
-    
+
     const results: Array<PrepareInternalStatus> = []
     prepares.forEach((prepare, idx) => {
       const hash = hashes[idx]
@@ -2003,7 +2096,7 @@ export class LedgerTigerBeetle implements Ledger {
     const specPreparesToSave: Array<SpecPrepare> = []
     const specTransfersToSave: Array<SpecTransferCreate> = []
     // Keep track of the original position of the prepare.
-    const preparesOk: Array<{prepare: PrepareHandlerInput, idx: number}> = []
+    const preparesOk: Array<{ prepare: PrepareHandlerInput, idx: number }> = []
     const hashesOk: Array<number> = []
     for (let idx = 0; idx < prepares.length; idx++) {
       const resultIdempotent = resultsIdempotent[idx]
@@ -2020,13 +2113,13 @@ export class LedgerTigerBeetle implements Ledger {
         specPreparesToSave.push({ id: prepare.transferId, payloadHash, abortedAt: new Date() })
         continue
       }
-      
+
       // Save the valid specPrepare and transfer payload.
-      specPreparesToSave.push({ id: prepare.transferId, payloadHash})
+      specPreparesToSave.push({ id: prepare.transferId, payloadHash })
       specTransfersToSave.push(Helper.prepareToSpecTransferCreate(prepare.payload))
 
       // Mark as passed the valid and idempotency check.
-      preparesOk.push({ idx, prepare: prepares[idx]})
+      preparesOk.push({ idx, prepare: prepares[idx] })
       hashesOk.push(prepareHashes[idx])
     }
     await this.specStore.savePreparesAndTransfers(specPreparesToSave, specTransfersToSave)
@@ -2036,11 +2129,11 @@ export class LedgerTigerBeetle implements Ledger {
     )
     const createTransferResults = await this.client.createTransfers(transfers)
     const resultsTigerBeetleSubset = this.helper.mapResultsPrepare(createTransferResults)
-    
+
     // Project from results to the full sized array.
-    const resultsCreateTransfers: Array<PrepareInternalStatus | undefined> 
+    const resultsCreateTransfers: Array<PrepareInternalStatus | undefined>
       = new Array(prepares.length).fill(undefined)
-    preparesOk.forEach(({prepare, idx}, idxSubset) => {
+    preparesOk.forEach(({ prepare, idx }, idxSubset) => {
       resultsCreateTransfers[idx] = resultsTigerBeetleSubset[idxSubset]
     })
 
@@ -2062,7 +2155,7 @@ export class LedgerTigerBeetle implements Ledger {
             break;
         }
       }
-      
+
       // Error order of precedence.
       let failure
       if (resultIdempotent.tag !== 'OK') {

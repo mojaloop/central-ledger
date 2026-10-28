@@ -992,6 +992,8 @@ const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTime
   } else {
     logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
     if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT) {
+      // Ensure account is open.
+      
       // Only validate the expiry on commit.
       if (new Date(existingTransfer.expirationDate) <= new Date()) {
         logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)

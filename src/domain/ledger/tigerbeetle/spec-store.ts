@@ -847,6 +847,60 @@ export default class SpecStore {
     return { code, currency }
   }
 
+  public async lookupDfspCurrencyByAccountId2(accountId: bigint):
+    Promise<{ code: AccountCode; currency: DfspCurrency; }> {
+
+    const accountIdStr = accountId.toString()
+    const row = await this.db(TABLE_DFSP_CURRENCY)
+      .where(function () {
+        this.where('deposit', accountIdStr)
+          .orWhere('unrestricted', accountIdStr)
+          .orWhere('unrestrictedLock', accountIdStr)
+          .orWhere('restricted', accountIdStr)
+          .orWhere('reserved', accountIdStr)
+          .orWhere('commitedOutgoing', accountIdStr)
+          .orWhere('clearingCredit', accountIdStr)
+          .orWhere('clearingSetup', accountIdStr)
+          .orWhere('clearingLimit', accountIdStr)
+      })
+      .select('*')
+      .first()
+
+    if (!row) {
+      throw new Error(`lookupDfspCurrencyByAccountId() not found for accountId: ${accountId}.`)
+    }
+
+    const currency = SpecStore.hydrateDfspCurrency(row)
+
+    // Check which field matched.
+    let code: AccountCode
+    if (currency.deposit === accountId) {
+      code = AccountCode.Deposit
+    } else if (currency.unrestricted === accountId) {
+      code = AccountCode.Unrestricted
+    } else if (currency.unrestrictedLock === accountId) {
+      code = AccountCode.Unrestricted_Lock
+    } else if (currency.restricted === accountId) {
+      code = AccountCode.Restricted
+    } else if (currency.reserved === accountId) {
+      code = AccountCode.Reserved
+    } else if (currency.commitedOutgoing === accountId) {
+      code = AccountCode.Committed_Outgoing
+    } else if (currency.clearingCredit === accountId) {
+      code = AccountCode.Clearing_Credit
+    } else if (currency.clearingSetup === accountId) {
+      code = AccountCode.Clearing_Setup
+    } else if (currency.clearingLimit === accountId) {
+      code = AccountCode.Clearing_Limit
+    } else {
+      throw new Error(`lookupDfspCurrencyByAccountId() - matched row ` +
+        `but no field matched accountId: ${accountId}`
+      )
+    }
+
+    return { code, currency }
+  }
+
   public async dfspCurrenciesForNetDebitCapAccountIds(ids: Array<bigint>):
     Promise<Record<string, DfspCurrency>> {
 
