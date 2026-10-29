@@ -224,13 +224,13 @@ export type SpecTransfer = {
   payeeId: string
   ilpCondition: string
   ilpPacket: string
-  fulfilment?: string
 }
 
 export type SpecTransferCreate = Omit<SpecTransfer, 'fulfilment'>
-export type SpecTransferUpdate = {
+export type SpecFulfilUpdate = {
   id: string,
-  fulfilment: string
+  fulfilment: string,
+  fulfiledAt: Date
 }
 
 export type SaveSpecTransferResult = {
@@ -241,7 +241,8 @@ export type SaveSpecTransferResult = {
 export type GetSpecTransferResult = {
   type: 'SUCCESS'
   id: string,
-  result: SpecTransfer
+  specTransfer: SpecTransfer,
+  specFulfil: SpecFulfil
 } | {
   type: 'NOT_FOUND',
   id: string
@@ -271,6 +272,9 @@ export type GetSpecPrepareResult = {
 export type SpecFulfil = {
   id: string,
   payloadHash: number,
+  fulfilment?: string,
+  fulfiledAt?: Date,
+  abortedAt?: Date
 }
 
 export interface DepsSpecStore {
@@ -664,6 +668,9 @@ export default class SpecStore {
         'specPrepare.payloadHash as preparePayloadHash',
         'specPrepare.abortedAt as abortedAt',
         'specFulfil.payloadHash as fulfilPayloadHash',
+        'specFulfil.abortedAt as fulfilAbortedAt',
+        'specFulfil.fulfiledAt as fulfilFulfiledAt',
+        'specFulfil.fulfilment as fulfilFulfilment',
         'specTransfer.currency as currency',
         'specTransfer.amount as amount',
         'specTransfer.expiration as expiration',
@@ -694,10 +701,14 @@ export default class SpecStore {
       specPrepares.push(specPrepare)
 
       if (row.fulfilPayloadHash != null) {
-        const specFulfil: SpecFulfil = {
+        const specFulfil = SpecStore.hydrateSpecFulfil({
           id: row.id,
-          payloadHash: row.fulfilPayloadHash
-        }
+          payloadHash: row.fulfilPayloadHash,
+          abortedAt: row.fulfilAbortedAt,
+          fulfiledAt: row.fulfilFulfiledAt,
+          fulfilment: row.fulfilFulfilment,
+        })
+
         specFulfils.push(specFulfil)
       }
 
@@ -744,13 +755,13 @@ export default class SpecStore {
       .leftJoin('specFulfil', 'specPrepare.id', 'specFulfil.id')
       .whereIn('specPrepare.id', fulfilIds)
       .select(
-        // specPrepare columns.
         'specPrepare.id as id',
         'specPrepare.payloadHash as preparePayloadHash',
         'specPrepare.abortedAt as abortedAt',
-        // specFulfil columns.
         'specFulfil.payloadHash as fulfilPayloadHash',
-        // specTransfer columns.
+        'specFulfil.abortedAt as fulfilAbortedAt',
+        'specFulfil.fulfiledAt as fulfilFulfiledAt',
+        'specFulfil.fulfilment as fulfilFulfilment',
         'specTransfer.currency as currency',
         'specTransfer.amount as amount',
         'specTransfer.expiration as expiration',
@@ -771,7 +782,6 @@ export default class SpecStore {
       if (idsSeen[row.id]) return
       idsSeen[row.id] = true
 
-      // specPrepare should always exist (it's the base table).
       const specPrepare = SpecStore.hydrateSpecPrepare({
         id: row.id,
         payloadHash: row.preparePayloadHash,
@@ -779,16 +789,18 @@ export default class SpecStore {
       })
       specPrepares.push(specPrepare)
 
-      // specFulfil may or may not exist.
       if (row.fulfilPayloadHash != null) {
         const specFulfil = SpecStore.hydrateSpecFulfil({
           id: row.id,
-          payloadHash: row.fulfilPayloadHash
+          payloadHash: row.fulfilPayloadHash,
+          abortedAt: row.fulfilAbortedAt,
+          fulfiledAt: row.fulfilFulfiledAt,
+          fulfilment: row.fulfilFulfilment,
         })
+
         specFulfils.push(specFulfil)
       }
 
-      // specTransfer may or may not exist.
       if (row.amount != null) {
         const specTransfer = SpecStore.hydrateSpecTransfer(row)
         specTransfers.push(specTransfer)
@@ -1207,6 +1219,26 @@ export default class SpecStore {
     )
   }
 
+  public async attachSpecFulfillDates(ids: Array<string>, dates: Array<Date>): Promise<void> {
+    assert.equal(ids.length, dates.length, 'Expected ids and dates to be the same length.')
+
+    if (ids.length === 0) {
+      return
+    }
+
+    const bindings: Array<string | Date> = []
+    const clauses = ids.map((id, idx) => {
+      bindings.push(id, dates[idx])
+      return `WHEN id = ? THEN ?`
+    })
+
+    await this.db.raw(
+      `UPDATE ?? SET abortedAt = CASE ${clauses.join(' ')} END` +
+      ` WHERE id in (${ids.map(() => '?').join(',')}) AND abortedAt IS NULL`,
+      [TABLE_PREPARE, ...bindings, ...ids]
+    )
+  }
+
   public async saveTransferSpecs(specs: Array<SpecTransferCreate>): Promise<Array<SaveSpecTransferResult>> {
     if (specs.length === 0) return []
 
@@ -1258,6 +1290,7 @@ export default class SpecStore {
       })
 
       const rows = await this.db.from(TABLE_TRANSFER)
+        .leftJoin('specFulfil', 'specFulfil.id', 'specTransfer.id')
         .whereIn('id', transferIds)
         .select('*')
 
@@ -1265,7 +1298,8 @@ export default class SpecStore {
         resultMap[row.id] = {
           type: 'SUCCESS' as 'SUCCESS',
           id: row.id,
-          result: row,
+          specTransfer: SpecStore.hydrateSpecTransfer(row),
+          specFulfil: SpecStore.hydrateSpecFulfil(row)
         }
       })
 
@@ -1277,26 +1311,34 @@ export default class SpecStore {
     }
   }
 
-  public async attachFulfillments(updates: Array<SpecTransferUpdate>): Promise<Array<AttachFulfilmentResult>> {
+  public async attachFulfillments(updates: Array<SpecFulfilUpdate>):
+    Promise<Array<AttachFulfilmentResult>> {
     try {
       if (updates.length === 0) {
         return []
       }
 
-      // Build with raw for efficient bulk update.
-
+      // Bulk insert.
       const ids: Array<string> = []
-      const bindings: Array<string> = []
+      const bindings: Array<any> = []
+    
       const clauses = updates.map(update => {
         ids.push(update.id)
-        bindings.push(update.id, update.fulfilment)
-        return `WHEN id = ? THEN ?`
+        bindings.push(update.id, update.fulfilment, update.id, update.fulfiledAt)
+
+        return {
+          fulfilment: `WHEN id = ? THEN ?`,
+          fulfiledAt: `WHEN id = ? THEN ?`,
+        }
       })
+      const fulfilmentClauses = clauses.map(c => c.fulfilment).join(' ')
+      const fulfiledAtClauses = clauses.map(c => c.fulfiledAt).join(' ')
 
       await this.db.raw(
-        `UPDATE ?? SET fulfilment = CASE ${clauses.join(' ')} END` +
+        `UPDATE ?? SET fulfilment = CASE ${fulfilmentClauses} END,` +
+        `fulfiledAt = CASE ${fulfiledAtClauses} END` +
         ` WHERE id in (${ids.map(() => '?').join(',')})`,
-        [TABLE_TRANSFER, ...bindings, ...ids]
+        ['specFulfil', ...bindings , ...ids]
       )
 
       return updates.map(update => ({
@@ -1417,6 +1459,18 @@ export default class SpecStore {
       payloadHash: row.payloadHash
     }
 
+    if (row.abortedAt) specFulfil.abortedAt = new Date(row.abortedAt)
+    if (row.fulfiledAt) specFulfil.fulfiledAt = new Date(row.fulfiledAt)
+    if (row.fulfilment) specFulfil.fulfilment = row.fulfilment
+
+    assert(
+      !(specFulfil.fulfiledAt && specFulfil.abortedAt),
+      'specFulfil must have either fulfiledAt or abortedAt, not both.'
+    )
+    if (specFulfil.fulfiledAt) {
+      assert(specFulfil.fulfilment, 'Fulfilment is required if the spec is fulfiled.')
+    }
+
     return specFulfil
   }
 
@@ -1430,10 +1484,6 @@ export default class SpecStore {
       payeeId: row.payeeId,
       ilpCondition: row.ilpCondition,
       ilpPacket: row.ilpPacket,
-    }
-
-    if (row.fulfilment) {
-      specTransfer.fulfilment = row.fulfilment
     }
 
     return specTransfer

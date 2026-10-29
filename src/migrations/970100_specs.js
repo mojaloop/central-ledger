@@ -103,7 +103,6 @@ exports.up = async (knex) => {
         t.string('amount', 16).notNullable()
         t.string('currency', 3).notNullable()
         t.dateTime('expiration').notNullable()
-        t.string('fulfilment', 256)
 
         t.foreign('payerId').references('dfspId').inTable('specDfspRoot')
         t.foreign('payeeId').references('dfspId').inTable('specDfspRoot')
@@ -127,6 +126,9 @@ exports.up = async (knex) => {
       return knex.schema.createTable('specFulfil', (t) => {
         t.string('id', 36).primary().notNullable()
         t.integer('payloadHash').notNullable()
+        t.dateTime('abortedAt')
+        t.dateTime('fulfiledAt')
+        t.string('fulfilment', 256)
       })
     }
   })
