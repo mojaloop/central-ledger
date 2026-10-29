@@ -121,6 +121,15 @@ exports.up = async (knex) => {
       })
     }
   })
+
+  await knex.schema.hasTable('specFulfil').then(function (exists) {
+    if (!exists) {
+      return knex.schema.createTable('specFulfil', (t) => {
+        t.string('id', 36).primary().notNullable()
+        t.integer('payloadHash').notNullable()
+      })
+    }
+  })
 }
 
 exports.down = async (knex) => {
@@ -133,6 +142,12 @@ exports.down = async (knex) => {
   await knex.schema.hasTable('specPrepare').then(function (exists) {
     if (exists) {
       return knex.schema.dropTableIfExists('specPrepare')
+    }
+  })
+
+  await knex.schema.hasTable('specFulfil').then(function (exists) {
+    if (exists) {
+      return knex.schema.dropTableIfExists('specFulfil')
     }
   })
 

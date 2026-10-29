@@ -1,5 +1,5 @@
-import { Enum, EventActionEnum, Util } from '@mojaloop/central-services-shared';
-import assert, { fail } from "node:assert";
+import { Enum } from '@mojaloop/central-services-shared';
+import assert from "node:assert";
 import {
   AccountFilterFlags,
   AccountFlags,
@@ -88,7 +88,7 @@ const { TransferState } = Enum.Transfers
 
 import SettlementDomain from '../../settlement';
 import { CloseDfspMasterAccountFailureType, DepositFailureType, DisableDfspAccountFailureType, EnableDfspAccountFailureType, FulfilFailureType, FulfilInternalStatus, default as Helper, default as LedgerTigerBeetleHelper, PrepareFailureType, PrepareInternalStatus, SetNetDebitCapFailureType, TransferFailureResult, WithdrawAbortFailureType, WithdrawCommitFailureType, WithdrawPrepareFailureType } from './helper';
-import SpecStore, { CmdHubCurrencyEnable, ContextDfsps, ContextFulfil, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecPrepare, SpecTransfer, SpecTransferCreate, SpecTransferUpdate } from './spec-store';
+import SpecStore, { CmdHubCurrencyEnable, ContextDfsps, ContextFulfil, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecFulfil, SpecPrepare, SpecTransfer, SpecTransferCreate, SpecTransferUpdate } from './spec-store';
 import { currencyList } from '../../../seeds/currency';
 import { Reporter } from '../shared/reporter';
 
@@ -2205,35 +2205,42 @@ export class LedgerTigerBeetle implements Ledger {
     const fulfilIds = [...new Set(fulfils.map(fulfil => fulfil.transferId))].sort()
     const context = await this.specStore.getFulfilContext(fulfilIds)
     const netDebitCaps = Object.values(await this.getInternalNetDebitCaps())
+    const fulfilHashes = fulfils.map(input => Helper.hashFulfil(input.transferId, input.payload))
 
-    // Results are arrays that line up with the fulfils
-    const resultsValidation = this.fulfilCheckValid(fulfils, context, netDebitCaps)
+    // Results are arrays that line up with the fulfils.
+    const resultsValidation = this.fulfilCheckValid(fulfils, context, netDebitCaps, fulfilHashes)
     assert.equal(fulfils.length, resultsValidation.length)
 
     // Keep track of what to save to the spec store?
     // 1. Aborted at timestamp for prepare?
     // 2. For succesful payments, attach the fulfilment.
-    const specPreparesAborted: Array<string> =  []
+    const specPreparesAborted: Array<string> = []
+    const specFulfils: Array<SpecFulfil> = []
     // Keep track of the original position of the prepare.
     const fulfilsNext: Array<{ fulfil: FulfilHandlerInput, idx: number }> = []
+    const hashesNext: Array<number> = []
     for (let idx = 0; idx < fulfils.length; idx++) {
       const resultValidation = resultsValidation[idx]
-      assert(resultValidation)
-      
       const fulfil = fulfils[idx]
-      assert(fulfil)
+      const hash = fulfilHashes[idx]
 
+      assert(resultValidation)
+      assert(fulfil)
+      assert(hash)
+
+      specFulfils.push({ id: fulfil.transferId, payloadHash: hash })
       if (resultValidation.tag !== 'OK') {
         specPreparesAborted.push(fulfil.transferId)
-
         continue
       }
 
       // Mark as passed the checks.
-      fulfilsNext.push({idx, fulfil})
+      fulfilsNext.push({ idx, fulfil })
+      hashesNext.push(hash)
     }
-    const transfers = this.helper.buildTransfersFulfil2(
-      fulfilsNext.map(item => item.fulfil), context, netDebitCaps
+    await this.specStore.saveSpecFulfils(specFulfils)
+    const transfers = this.helper.buildTransfersFulfil(
+      fulfilsNext.map(item => item.fulfil), context, netDebitCaps, hashesNext
     )
     const resultsTigerBeetle = await this.client.createTransfers(transfers)
     const resultsTigerBeetleSubset = this.helper.mapResultsFulfil(
@@ -2286,7 +2293,8 @@ export class LedgerTigerBeetle implements Ledger {
     }
 
     assert.equal(fulfils.length, results.length)
-    await this.specStore.attachSpecPrepareAbortedAt(specPreparesAborted, specPreparesAborted.map(_ => new Date()))
+    // TODO: abort the specFulfil, not the specPrepares!
+    // await this.specStore.attachSpecPrepareAbortedAt(specPreparesAborted, specPreparesAborted.map(_ => new Date()))
     await this.specStore.attachFulfillments(specTransferUpdates)
 
     return results
@@ -2295,19 +2303,53 @@ export class LedgerTigerBeetle implements Ledger {
   private fulfilCheckValid(
     fulfils: Array<FulfilHandlerInput>,
     context: ContextFulfil,
-    netDebitCaps: Array<NetDebitCap>
+    netDebitCaps: Array<NetDebitCap>,
+    hashes: Array<number>
   ): Array<FulfilInternalStatus> {
+    const specPreparesMap = Helper.toMapBy(context.specPrepares, item => item.id)
+    const specFulfilsMap = Helper.toMapBy(context.specFulfils, item => item.id)
     const specTransfersMap = Helper.toMapBy(context.specTransfers, item => item.id)
     const dfspRootsMap = Helper.toMapBy(context.dfspRoots, item => item.dfspId)
     const netDebitCapsMap = Helper.toMapBy(netDebitCaps, item => `${item.dfspId}:${item.currency}`)
 
-    return fulfils.map(fulfil => {
+    return fulfils.map((fulfil, idx) => {
+      const hash = hashes[idx]
+      assert(hash)
+
       const failureReasons: Array<string> = []
+      const specPrepare = specPreparesMap[fulfil.transferId]
+      if (!specPrepare) {
+        return {
+          tag: 'PREPARE_NOT_FOUND',
+          context: { failureReasons: ['SpecPrepare not found'] }
+        }
+      }
+
       const specTransfer = specTransfersMap[fulfil.transferId]
       if (!specTransfer) {
         return {
-          tag: 'FAIL_VALIDATION' as const,
-          context: { failureReasons: ['Transfer not found'] }
+          tag: 'PREPARE_NOT_FOUND',
+          context: { failureReasons: ['SpecTransfer not found'] }
+        }
+      }
+
+      if (specPrepare.abortedAt) {
+        // TODO: we may want to keep ALREADY_ABORTED AND do the validation.
+        // For example in the case where we send a duplicate abort.
+        // But I think we should possibly separate out a specPrepare and a specFulfil to do this
+        // properly.
+        return {
+          tag: 'PREPARE_ALREADY_ABORTED',
+          context: { failureReasons: ['SpecPrepare was already aborted.'] }
+        }
+      }
+
+      const specFulfil = specFulfilsMap[fulfil.transferId]
+      if (specFulfil) {
+        if (specFulfil.payloadHash === hash) {
+          return { tag: 'ALREADY_FULFILLED' }
+        } else {
+          return { tag: 'MODIFIED' }
         }
       }
 
@@ -2341,110 +2383,10 @@ export class LedgerTigerBeetle implements Ledger {
         }
       }
 
-      return { tag: 'OK'}
+      return { tag: 'OK' }
     })
   }
 
-  public async fulfilOld(inputs: Array<FulfilHandlerInput>): Promise<Array<PaymentFulfilResult>> {
-    const amplificationFactor = 3 // How many physical transfers per fulfil.
-    const physicalTransfers = inputs.length * amplificationFactor
-    if (physicalTransfers > Helper.maxBatchSize) {
-      throw new Error(`fulfil() called with: ${inputs.length} fulfil === ${physicalTransfers} `
-        + `physical transfers. This exceeds the max batch size of ${Helper.maxBatchSize}.`);
-    }
-
-    // Initialize the results.
-    const resultsMap: Record<string, PaymentFulfilResult | undefined> = {}
-    const fulfilsMap: Record<string, FulfilHandlerInput> = {}
-    const transferIds: Array<string> = []
-    inputs.forEach((fulfil, idx) => {
-      resultsMap[fulfil.transferId] = undefined
-      fulfilsMap[fulfil.transferId] = fulfil
-      transferIds.push(fulfil.transferId)
-    })
-
-    // Lookup all specs in batch.
-    const specLookupResult = await this.specStore.getTransferSpecs(transferIds)
-    const specsMap: Record<string, SpecTransfer> = {}
-    specLookupResult.forEach(specResult => {
-      if (specResult.type === 'NOT_FOUND') {
-        delete fulfilsMap[specResult.id]
-
-        resultsMap[specResult.id] = {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [],
-          error: new Error(`Spec not found for id: ${specResult.id}`)
-        }
-        return
-      }
-
-      specsMap[specResult.id] = specResult.result
-
-      // TODO: validate the condition + fulfilment here!
-    })
-    const currencies = await this.specStore.getCurrencyConfigsMap()
-    // const masterAccounts = (await this.specStore.getAllDfspMasterAccounts()).reduce((acc, curr) => {
-    //   acc[curr.dfspId] = curr
-    //   return acc
-    // }, {} as Record<string, MasterAccount>)
-    const dfspIdMap = Object.values(specsMap).reduce((acc, curr) => {
-      acc[curr.payerId] = true
-      acc[curr.payeeId] = true
-      return acc
-    }, {} as Record<string, true>)
-    const dfspIds = Object.keys(dfspIdMap)
-    const specCurrencyAccounts = (await this.specStore.getDfspCurrenciesAll(dfspIds)).reduce((acc, curr) => {
-      const key = `${curr.dfspId}:${curr.currency}`
-      acc[key] = curr
-      return acc
-    }, {} as Record<string, DfspCurrency>)
-
-    // Now save transfers.
-    const transfers = this.helper.buildTransfersFulfil(
-      Object.values(fulfilsMap),
-      Object.values(specsMap),
-      currencies,
-      specCurrencyAccounts
-    )
-
-    const fatalErrors: Record<string, Array<TransferFailureResult<FulfilFailureType>>> = {}
-    // Initialize the errors.
-    Object.values(fulfilsMap).forEach(fulfil => {
-      fatalErrors[fulfil.transferId] = []
-    })
-
-    const createTransferResults = await this.deps.client.createTransfers(transfers)
-    createTransferResults.forEach((result, idxAllTransfers) => {
-      if (result.status === CreateTransferStatus.created) return
-
-      // Ignore noisy errors.
-      if (result.status === CreateTransferStatus.linked_event_failed) return
-
-      const msg = `unhandled transfer result: ${idxAllTransfers}, ${CreateTransferStatus[result.status]}`
-      console.error(msg)
-      logger.error(msg)
-      throw new Error(msg)
-    })
-
-    // Now save the fulfilments.
-    const fulfilmentUpdates: Array<SpecTransferUpdate> = inputs.map(fulfil => {
-      // TODO: filter out the failed ones.
-      assert(fulfil.payload.transferState !== 'ABORTED')
-      return {
-        id: fulfil.transferId,
-        fulfilment: fulfil.payload.fulfilment
-      }
-    })
-
-    const attachFulfilmentResults = await this.specStore.attachFulfillments(fulfilmentUpdates)
-    return inputs.map(input => {
-      return {
-        type: PaymentFulfilResultType.PASS,
-        // TODO: build me!
-        effects: []
-      }
-    })
-  }
   public async sweepTimedOut(now: Date): Promise<SweepResult> {
     throw new Error('Method not implemented.');
   }

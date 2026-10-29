@@ -116,9 +116,7 @@ const transformTransferToFulfil = (transfer, isFx) => {
       throw new Error('transformTransferToFulfil: transfer is required')
     }
 
-    const result = {
-      completedTimestamp: transfer.completedTimestamp
-    }
+    const result = {}
     if (isFx) {
       result.conversionState = transfer.fxTransferStateEnumeration
     } else {
@@ -126,6 +124,8 @@ const transformTransferToFulfil = (transfer, isFx) => {
     }
 
     if (transfer.fulfilment !== '0') result.fulfilment = transfer.fulfilment
+
+    result.completedTimestamp = transfer.completedTimestamp
 
     if (transfer.extensionList) {
       const extension = transformExtensionList(transfer.extensionList)
