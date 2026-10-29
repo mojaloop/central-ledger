@@ -2,7 +2,7 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, CreateTransferResult, CreateTransferStatus, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto, { hash } from "crypto";
 import assert from "assert";
-import { ContextDfsps, ContextFulfil, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, NetDebitCap, SpecPrepare, SpecTransfer, SpecTransferCreate } from "./spec-store";
+import { ContextDfsps, ContextFulfil, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, NetDebitCap, SpecFulfil, SpecPrepare, SpecTransfer, SpecTransferCreate } from "./spec-store";
 import { AccountCode, LedgerAccount, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
 import { CreatePaymentDto, PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { CommitPaymentDto, FulfilHandlerAction, FulfilHandlerInput, PaymentFulfilResult, PaymentFulfilResultType } from "../../../handlers/payment-fulfil";
@@ -20,10 +20,7 @@ export type TransferFailureResult<T> = CreateTransferResult & {
 
 export type PrepareInternalStatus = {
   tag: 'FAIL_VALIDATION'
-  // TODO:
-  context: {
-    failureReasons: Array<string>
-  }
+  failureReasons: Array<string>
 } | {
   tag: 'MODIFIED',
   context: {}
@@ -31,6 +28,7 @@ export type PrepareInternalStatus = {
   tag: 'DUPLICATE_FINAL'
   context: {
     specPrepare: SpecPrepare,
+    specFulfil: SpecFulfil,
     specTransfer?: SpecTransfer,
   }
 } | {
@@ -45,27 +43,20 @@ export type PrepareInternalStatus = {
 } | {
   tag: 'FAIL_OTHER'
   context: {}
+} | {
+  tag: 'OK'
 }
-  | {
-    tag: 'OK'
-  }
-
-type PrepareInternalStatusTag = PrepareInternalStatus['tag']
-
 
 export type FulfilInternalStatus = {
   tag: 'FAIL_VALIDATION'
-  // TODO:
-  context: {
-    failureReasons: Array<string>
-  }
+  failureReasons: Array<string>
 } | {
   tag: 'PREPARE_NOT_FOUND'
 } | {
   tag: 'PREPARE_ALREADY_ABORTED'
 } | {
   tag: 'ALREADY_FULFILLED',
-  timestamp: Date
+  specFulfil: SpecFulfil,
 } | {
   tag: 'MODIFIED'
 } | {
@@ -73,11 +64,9 @@ export type FulfilInternalStatus = {
 } | {
   tag: 'INVALID_FULFILMENT'
 } | {
-  tag: 'OK'
+  tag: 'OK',
+  specFulfil: SpecFulfil
 }
-type FulfilInternalStatusTag = FulfilInternalStatus['tag']
-
-
 
 export type PrepareFailureType = 'FAIL_LIQUIDITY' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | 'MODIFIED' |
   'EXISTS' | 'UNKNOWN' | 'ALREADY_FAILED'
@@ -249,19 +238,15 @@ export default class Helper {
 
   public static hashFulfil(id: string, payload: CommitPaymentDto): number {
     const joined = [
-      id, 
-      payload.transferState, 
-      payload.completedTimestamp, 
+      id,
+      payload.transferState,
+      payload.completedTimestamp,
       payload.transferState !== 'ABORTED' ? payload.fulfilment : ''
     ].join('|')
 
     // Hash with SHA-256 and take first 32 bits.
     const hash = crypto.createHash('sha256').update(joined).digest()
     const hash32 = hash.readInt32BE(0)
-
-    if (id === '353f48e2-fd06-465b-9a9c-866f94430b0f') {
-      console.log(`hashFulfil in: ${joined}, out: ${hash32}`)
-    }
 
     // TODO: this is sometimes negative!
     return hash32
@@ -1112,12 +1097,12 @@ export default class Helper {
       case "FAIL_VALIDATION": {
         const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-          status.context.failureReasons.join(', ')
+          status.failureReasons.join(', ')
         )
         return {
           type: PaymentPrepareResultType.FAIL_VALIDATION,
           effects: [this.buildEffectNotificationError(prepare, errorFspiop)],
-          failureReasons: status.context.failureReasons
+          failureReasons: status.failureReasons
         }
       }
       case "MODIFIED": {
@@ -1256,19 +1241,15 @@ export default class Helper {
 
   public mapResultsFulfil(
     results: Array<CreateTransferResult>,
-    fulfils: Array<FulfilHandlerInput>
+    fulfils: Array<FulfilHandlerInput>,
+    specFulfils: Array<SpecFulfil>
   ): Array<FulfilInternalStatus> {
-
-    // The results will be different lengths depending on if we ABORTED or FULFILLED.
-    // Initialize all statuses as OK
-    const statuses: Array<FulfilInternalStatus> = Array.from(
-      { length: fulfils.length },
-      () => ({ tag: 'OK' })
-    )
+    const statuses: Array<FulfilInternalStatus> = []
 
     let idxResult = 0
     for (let idxFulfil = 0; idxFulfil < fulfils.length; idxFulfil++) {
       const fulfil = fulfils[idxFulfil]
+      const specFulfil = specFulfils[idxFulfil]
       assert(fulfil)
 
       const ampFactor = fulfil.action === Action.ABORT
@@ -1287,32 +1268,49 @@ export default class Helper {
         // The first transfer in each batch is the post/void pending transfer
         if (idx === 0) {
           switch (result.status) {
-            case CreateTransferStatus.pending_transfer_already_posted:
-              statuses[idxFulfil] = { tag: 'ALREADY_FULFILLED' }
+            case CreateTransferStatus.pending_transfer_already_posted: {
+              // There is a small chance we had racing fulfils.
+              statuses.push({
+                tag: 'ALREADY_FULFILLED',
+                specFulfil,
+              })
               continue
-            case CreateTransferStatus.pending_transfer_already_voided:
-              statuses[idxFulfil] = { tag: 'ALREADY_ABORTED' }
+            }
+            case CreateTransferStatus.pending_transfer_already_voided: {
+              // const abortedAt = specFulfil && specFulfil.fulfiledAt ? specFulfil.fulfiledAt : new Date()
+              statuses.push({ tag: 'ALREADY_ABORTED' })
               continue
+            }
             case CreateTransferStatus.pending_transfer_not_found:
-              statuses[idxFulfil] = {
+              statuses.push({
                 tag: 'FAIL_VALIDATION',
-                context: { failureReasons: ['Pending transfer not found'] }
-              }
-              continue
-            case CreateTransferStatus.pending_transfer_not_pending:
-              // Transfer exists but is not pending - either already fulfilled or aborted
-              statuses[idxFulfil] = { tag: 'ALREADY_FULFILLED' }
+                failureReasons: ['Pending transfer not found']
+              })
               continue
           }
         }
 
         // Hmm we will never be able to get exists_with_different_user_data_32, since it will be
-        // masked by pending_transfer_already_posted or pending_transfer_already_voided
-
+        // masked by pending_transfer_already_posted or pending_transfer_already_voided.
         throw new Error(`Unhandled error at: ${idx}: ${CreateTransferStatus[result.status]}`)
       }
+
+      // Fulfil succesfully committed or aborted. Mark it as fulfilled.
+      // We need to decide if we should use the TigerBeetle timestamp here, or the application
+      // timestamp.
+      const specFulfilNew = { ...specFulfil }
+      if (fulfil.payload.transferState === 'ABORTED') {
+        specFulfilNew.abortedAt = new Date()
+      } else {
+        specFulfilNew.fulfiledAt = new Date()
+        specFulfilNew.fulfilment = fulfil.payload.fulfilment
+      }
+      statuses.push({
+        tag: 'OK', specFulfil: specFulfilNew
+      })
     }
 
+    assert(statuses.length === fulfils.length)
     return statuses
   }
 
@@ -1329,7 +1327,7 @@ export default class Helper {
       case 'OK':
         return {
           type: PaymentFulfilResultType.PASS,
-          effects: [this.buildEffectFulfilNotificationSuccess(fulfil)]
+          effects: [this.buildEffectFulfilNotificationSuccess(fulfil, status.specFulfil)]
         }
       case 'PREPARE_NOT_FOUND':
         return {
@@ -1346,7 +1344,7 @@ export default class Helper {
       case 'ALREADY_FULFILLED':
         return {
           type: PaymentFulfilResultType.DUPLICATE_FINAL,
-          effects: [this.buildEffectFulfilDuplicate(fulfil, status.timestamp)]
+          effects: [this.buildEffectFulfilDuplicate(fulfil, status.specFulfil)]
         }
 
       case 'ALREADY_ABORTED':
@@ -1377,7 +1375,7 @@ export default class Helper {
         }
       }
       case 'FAIL_VALIDATION': {
-        const errorMessage = status.context.failureReasons.join(', ')
+        const errorMessage = status.failureReasons.join(', ')
         const error = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           errorMessage
@@ -1870,21 +1868,29 @@ export default class Helper {
   }
 
   public buildEffectFulfilNotificationSuccess(
-    input: FulfilHandlerInput
+    input: FulfilHandlerInput,
+    specFulfil: SpecFulfil,
   ): Effect {
+    assert(specFulfil)
+    assert(specFulfil.fulfiledAt)
+
     const message = {
       id: input.transferId,
       type: 'application/json',
       content: {
         uriParams: { id: input.transferId },
         headers: { ...input.message.value.content.headers },
-        payload: structuredClone(input.payload)
+        payload: {
+          transferState: 'COMMITTED',
+          fulfilment: specFulfil.fulfilment,
+          completedTimestamp: specFulfil.fulfiledAt
+        }
       },
       metadata: {
         correlationId: input.transferId,
         event: {
           type: Type.TRANSFER,
-          action: input.action,
+          action: 'commit',
           createdAt: new Date().toISOString(),
           state: {
             status: 'success',
@@ -1930,7 +1936,7 @@ export default class Helper {
     }
   }
 
-  public buildEffectFulfilDuplicate(input: FulfilHandlerInput, timestamp: Date): Effect {
+  public buildEffectFulfilDuplicate(input: FulfilHandlerInput, specFulfil: SpecFulfil): Effect {
     const message = structuredClone(input.message.value)
     message.content.uriParams = { id: input.transferId }
 
@@ -1941,7 +1947,12 @@ export default class Helper {
       message.content.headers['fspiop-destination'] = message.to
     }
 
-    // Override the message.content.payload.completedTimestamp with the date of the original 
+    // Override the message.content.payload.completedTimestamp with the date of the original
+    message.content.payload = {
+      transferState: 'COMMITTED',
+      fulfilment: specFulfil.fulfilment,
+      completedTimestamp: specFulfil.fulfiledAt,
+    }
 
     return {
       functionality: Type.NOTIFICATION,

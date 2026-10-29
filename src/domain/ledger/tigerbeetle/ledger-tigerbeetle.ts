@@ -88,7 +88,7 @@ const { TransferState } = Enum.Transfers
 
 import SettlementDomain from '../../settlement';
 import { CloseDfspMasterAccountFailureType, DepositFailureType, DisableDfspAccountFailureType, EnableDfspAccountFailureType, FulfilFailureType, FulfilInternalStatus, default as Helper, default as LedgerTigerBeetleHelper, PrepareFailureType, PrepareInternalStatus, SetNetDebitCapFailureType, TransferFailureResult, WithdrawAbortFailureType, WithdrawCommitFailureType, WithdrawPrepareFailureType } from './helper';
-import SpecStore, { CmdHubCurrencyEnable, ContextDfsps, ContextFulfil, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecFulfil, SpecPrepare, SpecTransfer, SpecTransferCreate, SpecTransferUpdate } from './spec-store';
+import SpecStore, { CmdHubCurrencyEnable, ContextDfsps, ContextFulfil, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecFulfil, SpecFulfilUpdate, SpecPrepare, SpecTransfer, SpecTransferCreate } from './spec-store';
 import { currencyList } from '../../../seeds/currency';
 import { Reporter } from '../shared/reporter';
 
@@ -723,7 +723,7 @@ export class LedgerTigerBeetle implements Ledger {
   }
 
   // TODO: this really should be called a 'Payment' to avoid confusion elsewhere.
-  private hydrateTransfer(transfer: Transfer, spec: SpecTransfer): PayloadFinalizedTransfer {
+  private hydrateTransfer(transfer: Transfer, spec: SpecTransfer, fulfil: SpecFulfil): PayloadFinalizedTransfer {
     // Finalized burned prepare.
     if (transfer.code === TransferCode.Clearing_Burn_Id) {
       const timestamp = transfer.user_data_64
@@ -741,12 +741,11 @@ export class LedgerTigerBeetle implements Ledger {
 
     // If we have a spec fulfilment, then we know the Payment is complete.
     // Ideally we would be able to check the TigerBeetle payment status.
-    if (spec.fulfilment) {
+    if (fulfil && fulfil.fulfilment) {
+      assert(fulfil.fulfiledAt)
       return {
-        fulfilment: spec.fulfilment,
-        // TODO: figure out where to get this date, ideally it comes from TigerBeetle.
-        // Although it is an application date....
-        completedTimestamp: new Date(),
+        fulfilment: fulfil.fulfilment,
+        completedTimestamp: fulfil.fulfiledAt,
         transferState: 'COMMITTED'
       }
     }
@@ -2000,7 +1999,7 @@ export class LedgerTigerBeetle implements Ledger {
           failureReasons.toString()
         )
 
-        results.push({ tag: 'FAIL_VALIDATION', context: { failureReasons } })
+        results.push({ tag: 'FAIL_VALIDATION', failureReasons })
         return
       }
 
@@ -2017,12 +2016,14 @@ export class LedgerTigerBeetle implements Ledger {
     hashes: Array<number>
   ): Array<PrepareInternalStatus> {
     const specPreparesMap = Helper.toMapBy(context.specPrepares, item => item.id)
+    const specFulfilsMap = Helper.toMapBy(context.specFulfils, item => item.id)
     const specTransfersMap = Helper.toMapBy(context.specTransfers, item => item.id)
 
     const results: Array<PrepareInternalStatus> = []
     prepares.forEach((prepare, idx) => {
       const hash = hashes[idx]
       const specPrepare = specPreparesMap[prepare.transferId]
+      const specFulfil = specFulfilsMap[prepare.transferId]
       const specTransfer = specTransfersMap[prepare.transferId]
 
       // Brand new Prepare.
@@ -2044,15 +2045,17 @@ export class LedgerTigerBeetle implements Ledger {
           tag: 'DUPLICATE_FINAL',
           context: {
             specPrepare,
+            specFulfil,
           }
         })
         return
       }
-      if (specTransfer && specTransfer.fulfilment) {
+      if (specFulfil && specFulfil.fulfilment) {
         results.push({
           tag: 'DUPLICATE_FINAL',
           context: {
             specPrepare,
+            specFulfil,
             specTransfer
           }
         })
@@ -2244,7 +2247,7 @@ export class LedgerTigerBeetle implements Ledger {
     )
     const resultsTigerBeetle = await this.client.createTransfers(transfers)
     const resultsTigerBeetleSubset = this.helper.mapResultsFulfil(
-      resultsTigerBeetle, fulfilsNext.map(item => item.fulfil)
+      resultsTigerBeetle, fulfilsNext.map(item => item.fulfil), specFulfils
     )
 
     // Project from results to the full sized array.
@@ -2257,7 +2260,7 @@ export class LedgerTigerBeetle implements Ledger {
     const results: Array<PaymentFulfilResult> = []
 
     // Now we iterate through the different result arrays.
-    const specTransferUpdates: Array<SpecTransferUpdate> = []
+    const specTransferUpdates: Array<SpecFulfilUpdate> = []
     for (let idx = 0; idx < fulfils.length; idx++) {
       const fulfil = fulfils[idx]
       const resultValidation = resultsValidation[idx]
@@ -2284,10 +2287,15 @@ export class LedgerTigerBeetle implements Ledger {
       assert(resultCreateTransfers.tag === 'OK')
       const success = resultCreateTransfers
       results.push(this.helper.mapFulfilInternalToFulfilResult(fulfil, success))
+
       if (fulfil.payload.transferState !== 'ABORTED') {
+        // TODO: I think this should be something other than specFulfil attached to the result.
+        assert(success.specFulfil.fulfilment)
+        assert(success.specFulfil.fulfiledAt)
         specTransferUpdates.push({
           id: fulfil.transferId,
-          fulfilment: fulfil.payload.fulfilment
+          fulfilment: success.specFulfil.fulfilment,
+          fulfiledAt: success.specFulfil.fulfiledAt,
         })
       }
     }
@@ -2296,6 +2304,7 @@ export class LedgerTigerBeetle implements Ledger {
     // TODO: abort the specFulfil, not the specPrepares!
     // await this.specStore.attachSpecPrepareAbortedAt(specPreparesAborted, specPreparesAborted.map(_ => new Date()))
     await this.specStore.attachFulfillments(specTransferUpdates)
+    // await this.specStore.attachSpecFulfillDates(specFulfilsFulfilled, specFulfilsFulfilled.map(_ => new Date()))
 
     return results
   }
@@ -2321,7 +2330,7 @@ export class LedgerTigerBeetle implements Ledger {
       if (!specPrepare) {
         return {
           tag: 'PREPARE_NOT_FOUND',
-          context: { failureReasons: ['SpecPrepare not found'] }
+          failureReasons: ['SpecPrepare not found']
         }
       }
 
@@ -2329,7 +2338,7 @@ export class LedgerTigerBeetle implements Ledger {
       if (!specTransfer) {
         return {
           tag: 'PREPARE_NOT_FOUND',
-          context: { failureReasons: ['SpecTransfer not found'] }
+          failureReasons: ['SpecTransfer not found']
         }
       }
 
@@ -2340,15 +2349,21 @@ export class LedgerTigerBeetle implements Ledger {
         // properly.
         return {
           tag: 'PREPARE_ALREADY_ABORTED',
-          context: { failureReasons: ['SpecPrepare was already aborted.'] }
+          failureReasons: ['SpecPrepare was already aborted.']
         }
       }
 
       const specFulfil = specFulfilsMap[fulfil.transferId]
       if (specFulfil) {
         if (specFulfil.payloadHash === hash) {
-          return { tag: 'ALREADY_FULFILLED' }
-        } else {
+          if (specFulfil.fulfiledAt) {
+            return { tag: 'ALREADY_FULFILLED', specFulfil }
+          }
+          if (specFulfil.abortedAt) {
+            return { tag: 'ALREADY_ABORTED', timestamp: specFulfil.abortedAt }
+          }
+        }
+        else {
           return { tag: 'MODIFIED' }
         }
       }
@@ -2369,7 +2384,7 @@ export class LedgerTigerBeetle implements Ledger {
         failureReasons.push(`Destination FSP '${fulfil.destinationDfspId}' does not match payer '${specTransfer.payerId}'`)
       }
       if (failureReasons.length > 0) {
-        return { tag: 'FAIL_VALIDATION', context: { failureReasons } }
+        return { tag: 'FAIL_VALIDATION', failureReasons }
       }
 
       // Validate fulfilment matches condition.
@@ -2383,7 +2398,7 @@ export class LedgerTigerBeetle implements Ledger {
         }
       }
 
-      return { tag: 'OK' }
+      return { tag: 'OK', specFulfil }
     })
   }
 
@@ -2443,7 +2458,7 @@ export class LedgerTigerBeetle implements Ledger {
 
       results[id] = {
         type: LookupTransferResultType.FOUND,
-        transfer: this.hydrateTransfer(transfer, specResult.result)
+        transfer: this.hydrateTransfer(transfer, specResult.specTransfer, specResult.specFulfil)
       }
     })
 

@@ -3326,6 +3326,9 @@ DROP TABLE IF EXISTS `specFulfil`;
 CREATE TABLE `specFulfil` (
   `id` varchar(36) NOT NULL,
   `payloadHash` int(11) NOT NULL,
+  `abortedAt` datetime DEFAULT NULL,
+  `fulfiledAt` datetime DEFAULT NULL,
+  `fulfilment` varchar(256) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -3416,7 +3419,6 @@ CREATE TABLE `specTransfer` (
   `amount` varchar(16) NOT NULL,
   `currency` varchar(3) NOT NULL,
   `expiration` datetime NOT NULL,
-  `fulfilment` varchar(256) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `spectransfer_payerid_foreign` (`payerId`),
   KEY `spectransfer_payeeid_foreign` (`payeeId`),
@@ -4121,4 +4123,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-10-29 12:21:16
+-- Dump completed on 2026-10-29 19:21:14
