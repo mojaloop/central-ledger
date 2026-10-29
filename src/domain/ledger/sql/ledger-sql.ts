@@ -1321,10 +1321,10 @@ export class LedgerSql implements Ledger {
     }
   }
 
-  private async fulfilOne(input: FulfilHandlerInput): Promise<PaymentFulfilResult> {
-    // Shortcut.
+  private async fulfilOne2(input: FulfilHandlerInput): Promise<PaymentFulfilResult> {
     const { transferId, payload } = input
     const transfer = await TransferService.getById(transferId)
+
     if (!transfer) {
       return {
         type: PaymentFulfilResultType.FAIL_OTHER,
@@ -1334,6 +1334,45 @@ export class LedgerSql implements Ledger {
         )
       }
     }
+
+    const errorsParticipants = this.validateFulfilParticipants(transfer, input)
+    if (errorsParticipants.length > 0) {
+      const errorsStr = errorsParticipants.join(',')
+      const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        errorsStr
+      )
+      const error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+
+      // Mark the payment as aborted in db.
+      await TransferService.handlePayeeResponse(
+        transferId,
+        payload,
+        'abort-validation',
+        error
+      )
+
+      const effects = [
+        await this.helper.buildEffectPositionRollback(input, transfer, error),
+      ]
+      if (input.action === Action.RESERVE) {
+        // When the payee set the action to `RESERVE`, we also notify them about the status.
+        effects.push(this.helper.buildEffectReservedAbortedNotification(input, transfer))
+      }
+      return this.fulfilNext({
+        type: PaymentFulfilResultType.FAIL_VALIDATION,
+        effects,
+        error
+      })
+    }
+
+    throw new Error('Not implemented.')
+  }
+
+  private validateFulfilParticipants(transfer: any, input: FulfilHandlerInput): Array<string> {
+    const { transferId } = input
+
+    const errors: Array<string> = []
 
     // Dimensions:
     // payeeIsProxy true/false
@@ -1355,65 +1394,57 @@ export class LedgerSql implements Ledger {
       payeeFieldName = 'externalPayeeName'
       payee = transfer.externalPayeeName
     }
-    if (!payer) {
-      return {
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects: [],
-        error: ErrorHandler.Factory.createInternalServerFSPIOPError(
-          `Error resolving ${payerFieldName} for transfer: ${transferId}.`
-        )
-      }
-    }
-    if (!payee) {
-      return {
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects: [],
-        error: ErrorHandler.Factory.createInternalServerFSPIOPError(
-          `Error resolving ${payeeFieldName} for transfer: ${transferId}.`
-        )
-      }
-    }
+    if (!payer) errors.push(`Error resolving ${payerFieldName} for transfer: ${transferId}.`)
+    if (!payee) errors.push(`Error resolving ${payeeFieldName} for transfer: ${transferId}.`)
 
     // Ensure that the FSPIOP-Source matches the payee/externalPayeeName.
-    let error: any
     if (input.callerDfspId !== payee) {
+      errors.push(`callerDfspId does not match payment.${payeeFieldName}.`)
+    }
+
+    if (input.destinationDfspId !== payer) {
+      errors.push(`destinationDfspId does not match payment.${payerFieldName}.`)
+    }
+
+    return errors
+  }
+
+  private async fulfilOne(input: FulfilHandlerInput): Promise<PaymentFulfilResult> {
+    const { transferId, payload } = input
+    const transfer = await TransferService.getById(transferId)
+
+    if (!transfer || transfer.transferState === 'INVALID') {
+      return {
+        type: PaymentFulfilResultType.FAIL_VALIDATION,
+        effects: [],
+        error: ErrorHandler.Factory.createInternalServerFSPIOPError(
+          `transfer not found for id: ${transferId}.`
+        )
+      }
+    }
+
+    const errorsParticipants = this.validateFulfilParticipants(transfer, input)
+    if (errorsParticipants.length > 0) {
+      const errorsStr = errorsParticipants.join(',')
       const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        `caller fsp does not match payment.${payeeFieldName}.`
+        errorsStr
       )
-      error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-      // Transfer aborted.
+      const error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+
+      // Mark the payment as aborted in db.
       await TransferService.handlePayeeResponse(
         transferId,
         payload,
         'abort-validation',
         error
       )
-    }
 
-    // Ensure that the FSPIOP-Destination matches the payer/externalPayerName.
-    // Only call this if we haven't failed the validation on the first step, to match the legacy 
-    // error handling behavior.
-    if (!error && input.destinationDfspId !== payer) {
-      const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        `caller fsp does not match payment.${payerFieldName}.`
-      )
-      error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-      // Transfer aborted.
-      await TransferService.handlePayeeResponse(
-        transferId,
-        payload,
-        'abort-validation',
-        error
-      )
-    }
-
-    if (error) {
       const effects = [
         await this.helper.buildEffectPositionRollback(input, transfer, error),
       ]
       if (input.action === Action.RESERVE) {
+        // When the payee set the action to `RESERVE`, we also notify them about the status.
         effects.push(this.helper.buildEffectReservedAbortedNotification(input, transfer))
       }
       return this.fulfilNext({
@@ -1461,19 +1492,21 @@ export class LedgerSql implements Ledger {
     }
 
     if (transfer.transferStateEnumeration === 'ABORTED') {
-      // Payment is finalized. Check to see if this is an exact duplicate Fulfil message, or if the
-      // fulfil message was modified in some way.
-      let savedHash
-      try {
-        savedHash = (await getTransferErrorDuplicateCheck(transferId)).hash
-        if (savedHash === payloadHash) {
-          const effect = this.helper.buildEffectFulfilDuplicateNotification(input, transfer, true)
-          return {
-            type: PaymentFulfilResultType.DUPLICATE_FINAL,
-            effects: [effect],
-          }
+      // Payment is finalized. Check to see if this is an exact duplicate Fulfil message,
+      // or if the fulfil message was modified in some way.
+      const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(
+        transferId, payload, getTransferErrorDuplicateCheck, saveTransferErrorDuplicateCheck
+      )
+
+      if (hasDuplicateId && hasDuplicateHash) {
+        const effect = this.helper.buildEffectFulfilDuplicateNotification(input, transfer, true)
+        return {
+          type: PaymentFulfilResultType.DUPLICATE_FINAL,
+          effects: [effect],
         }
-        // Modified message.
+      }
+
+      if (hasDuplicateId && !hasDuplicateHash) {
         const errorModified = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
         )
@@ -1483,16 +1516,17 @@ export class LedgerSql implements Ledger {
           effects: [effect],
           error: errorModified
         }
-      } catch (err) {
-        const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
-          'found finalized transfer, but no `getTransferFulfilmentDuplicateCheck`'
-        )
-        logger.error(error.message)
-        return {
-          type: PaymentFulfilResultType.FAIL_OTHER,
-          effects: [],
-          error,
-        }
+      }
+
+      // No duplicate - this is the first fulfil for a transfer that was aborted.
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'non-RESERVED transfer state'
+      )
+      return {
+        type: PaymentFulfilResultType.FAIL_VALIDATION,
+        effects: [],
+        error: fspiopError
       }
     }
 
@@ -1536,7 +1570,7 @@ export class LedgerSql implements Ledger {
       // Validate transfer is in RESERVED or RESERVED_FORWARDED state
       // This check must happen AFTER duplicate checking to preserve legacy behavior.
       if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
-          transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
+        transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
       ) {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
@@ -1552,7 +1586,7 @@ export class LedgerSql implements Ledger {
       // Check if the transfer has expired
       // For interscheme we ignore expiration for forwarded transfers
       if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
-          transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
+        transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
       ) {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED
@@ -1611,7 +1645,7 @@ export class LedgerSql implements Ledger {
     // Check if the transfer has expired
     // For interscheme we ignore expiration for forwarded transfers
     if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
-        transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
+      transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
     ) {
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED
@@ -1718,6 +1752,15 @@ export class LedgerSql implements Ledger {
         type = PaymentFulfilResultType.PASS
         break
       case PositionResultType.FAIL_OTHER:
+        // Sometimes the position change fails with FAIL_OTHER because the fulfil result fails
+        // validation + prepare was invalid, in which case the cyril becomes empty and the
+        // position change fails.
+        if (result.type === 'FAIL_VALIDATION') {
+          type = PaymentFulfilResultType.FAIL_VALIDATION
+          error = result.error
+          break
+        }
+
         type = PaymentFulfilResultType.FAIL_OTHER
         error = resultPosition.error
         break

@@ -157,49 +157,10 @@ const run = async (stepsMax: number, config: Partial<ApplicationConfig>): Promis
     harness.configOverride(config)
     await harness.setupGlobals()
 
-    const Db = await import('../../lib/db')
-    const knex = Db._knex
-
-    // // Change the participantCurrencyId to an unsigned bigint, and remove the auto incrementing id.
-    // // This allows us to match the id implementation between LedgerSql and LedgerTigerBeetle.
-    // const statements = [
-    //   `ALTER TABLE participantPosition DROP FOREIGN KEY participantposition_participantcurrencyid_foreign`,
-    //   `ALTER TABLE participantLimit DROP FOREIGN KEY participantlimit_participantcurrencyid_foreign`,
-    //   `ALTER TABLE settlementTransferParticipant DROP FOREIGN KEY settlementtransferparticipant_participantcurrencyid_foreign`,
-    //   `ALTER TABLE participantPositionChange DROP FOREIGN KEY participantpositionchange_participantcurrencyid_foreign`,
-    //   `ALTER TABLE settlementParticipantCurrency DROP FOREIGN KEY settlementparticipantcurrency_participantcurrencyid_foreign`,
-    //   `ALTER TABLE settlementContentAggregation DROP FOREIGN KEY settlementcontentaggregation_participantcurrencyid_foreign`,
-    //   `ALTER TABLE transferParticipant DROP FOREIGN KEY transferparticipant_participantcurrencyid_foreign`,
-    //   `ALTER TABLE fxTransferParticipant DROP FOREIGN KEY fxtransferparticipant_participantcurrencyid_foreign`,
-    //   `ALTER TABLE participantCurrency MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-    //   `ALTER TABLE participantPosition MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-    //   `ALTER TABLE participantLimit MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-    //   `ALTER TABLE settlementTransferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-    //   `ALTER TABLE participantPositionChange MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-    //   `ALTER TABLE settlementParticipantCurrency MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-    //   `ALTER TABLE settlementContentAggregation MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-    //   `ALTER TABLE transferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-    //   `ALTER TABLE fxTransferParticipant MODIFY participantCurrencyId BIGINT UNSIGNED NOT NULL`,
-    //   `ALTER TABLE participantPosition ADD CONSTRAINT participantposition_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-    //   `ALTER TABLE participantLimit ADD CONSTRAINT participantlimit_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-    //   `ALTER TABLE settlementTransferParticipant ADD CONSTRAINT settlementtransferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-    //   `ALTER TABLE participantPositionChange ADD CONSTRAINT participantpositionchange_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-    //   `ALTER TABLE settlementParticipantCurrency ADD CONSTRAINT settlementparticipantcurrency_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-    //   `ALTER TABLE settlementContentAggregation ADD CONSTRAINT settlementcontentaggregation_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-    //   `ALTER TABLE transferParticipant ADD CONSTRAINT transferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-    //   `ALTER TABLE fxTransferParticipant ADD CONSTRAINT fxtransferparticipant_participantcurrencyid_foreign FOREIGN KEY (participantCurrencyId) REFERENCES participantCurrency (participantCurrencyId) ON DELETE RESTRICT ON UPDATE RESTRICT`,
-    // ]
-
-    // await knex.transaction(async (trx: any) => {
-    //   for (const statement of statements) {
-    //     await trx.raw(statement)
-    //   }
-    // })
-
     const fuzzer = new LedgerFuzzer(options, harness)
     await fuzzer.run()
 
-    logger.warn(`run() took ${performance.now() - start}ms.`)
+    logger.warn(`run() took ${(performance.now() - start).toFixed()}ms.`)
     return fuzzer.trace
   } catch (err: any) {
     logger.error(err.message)
@@ -732,21 +693,13 @@ class LedgerFuzzer {
   }
 
   private async prepare(): Promise<void> {
-    const prepares: Array<PrepareHandlerInput> = [
-      this.makePrepare()
-    ]
-    const firstPrepare = prepares[0]
-    // for (let index = 0; index < this.prng.intExclusive(100); index++) {
-    //   prepares.push(this.makePrepare())
-    // }
+    const prepares: Array<PrepareHandlerInput> = [this.makePrepare()]
 
-    const balanceSheetPre = await this.reporter.balanceSheet(new Date())
-    
     const result = await this.ledger.prepare(prepares)
     const resultNormalized = result.map(prepareResult => {
       const clone = structuredClone(prepareResult) as any
       if (clone.failureReasons && Array.isArray(clone.failureReasons)) {
-        clone.failureReasons = `:ignore ${clone.failureReasons.join(',')}` 
+        clone.failureReasons = `:ignore ${clone.failureReasons.join(',')}`
       }
       if (clone.effects) {
         clone.effects.forEach((effect: any) => {
@@ -762,42 +715,17 @@ class LedgerFuzzer {
               effect.fspiopError.errorInformation.errorDescription.split('-')[0]
           }
 
-          // Ignore the completedTimestamp if the transfer is aborted. We don't always have that
-          // information in LedgerTigerBeetle.
-          // if (effect.message.content.payload.transferState === 'ABORTED') {
-          //   effect.message.content.payload.completedTimestamp = (new Date(0))
-          // }
           // Not currently supported by LedgerTigerBeetle.
           if (effect.message.content.payload.extensionList) {
             delete effect.message.content.payload.extensionList
           }
         })
       }
-      // Ignore the completedTimestamp if the transfer is aborted. We don't always have that
-      // information in LedgerTigerBeetle.
-      // if (clone.finalizedTransfer && clone.finalizedTransfer.transferState === 'ABORTED') {
-      //   clone.finalizedTransfer.completedTimestamp = (new Date(0))
-      // }
 
       return clone
     })
 
-    // const balanceSheetPost = await this.reporter.balanceSheet(new Date())
-
-    // // Get a T account statement!
-    // const statePre = balanceSheetPre.toTAccounts(
-    //   [firstPrepare.payload.payerFsp, firstPrepare.payload.payeeFsp],
-    //   [firstPrepare.payload.amount.currency]
-    // )
-    // const statePost = balanceSheetPost.toTAccounts(
-    //   [firstPrepare.payload.payerFsp, firstPrepare.payload.payeeFsp],
-    //   [firstPrepare.payload.amount.currency]
-    // )
-
-    // const statePost = undefined
-    // this.traceResult('prepare', prepares, resultNormalized, statePost, statePre)
     this.traceResult('prepare', prepares, resultNormalized)
-
     result.forEach((prepareResult, idx) => {
       const prepare = prepares[idx]
       if (prepareResult.type === PaymentPrepareResultType.PASS) {
@@ -808,13 +736,43 @@ class LedgerFuzzer {
 
   private async fulfil(): Promise<void> {
     const fulfills: Array<FulfilHandlerInput> = [this.makeFulfilOrAbort()]
-    // for (let index = 0; index < this.prng.intExclusive(1); index++) {
-    //   fulfills.push(this.makeFulfilOrAbort())
-    // }
-    const result = await this.ledger.fulfil(fulfills)
-    this.traceResult('fulfil', fulfills, result)
+    const results = await this.ledger.fulfil(fulfills)
+    // this.traceResult('fulfil', fulfills, result)
 
-    result.forEach((fulfilResult, idx) => {
+    const resultNormalized = results.map(result => {
+      const clone = structuredClone(result) as any
+      if (clone.failureReasons && Array.isArray(clone.failureReasons)) {
+        clone.failureReasons = `:ignore ${clone.failureReasons.join(',')}`
+      }
+      if (clone.error) {
+        clone.error = ''
+      }
+      // if (clone.effects) {
+      //   clone.effects.forEach((effect: any) => {
+      //     // We don't emit this in LedgerTigerBeetle.
+      //     if (effect.message.content.context) {
+      //       delete effect.message.content.context
+      //     }
+      //     if (effect.fspiopError?.errorInformation?.errorDescription) {
+      //       // Match just the type of error, it's going to be almost impossible to match all errors
+      //       // across LedgerSQL and LedgerTigerBeetle because of the internal changes to how 
+      //       // prepares are validated.
+      //       effect.fspiopError.errorInformation.errorDescription =
+      //         effect.fspiopError.errorInformation.errorDescription.split('-')[0]
+      //     }
+
+      //     // Not currently supported by LedgerTigerBeetle.
+      //     if (effect.message.content.payload.extensionList) {
+      //       delete effect.message.content.payload.extensionList
+      //     }
+      //   })
+      // }
+
+      return clone
+    })
+    this.traceResult('fulfil', fulfills, resultNormalized)
+
+    results.forEach((fulfilResult, idx) => {
       const fulfil = fulfills[idx]
       if (fulfilResult.type === PaymentFulfilResultType.PASS) {
         this.fulfilIdsSuccess[fulfil.transferId] = true

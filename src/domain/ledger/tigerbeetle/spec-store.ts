@@ -108,7 +108,6 @@ export interface DfspAccountIds {
   clearingSetup: bigint
   clearingLimit: bigint
 
-
   /**
    * Control account to act as counterparty for netDebitCap.
    */
@@ -200,47 +199,6 @@ export interface CurrencyLedger {
   assetScale: number
 }
 
-/**
- * The Hub account's representation of each individual accounts. 
- * This is mainly used to maintain backwards compatibility with LedgerSQL.
- * 
- * TODO: rename to HubCurrency?
- * @deprecated
- */
-export type CurrencyAccount = {
-  /**
-   * The id of the currency account.
-   */
-  id: number,
-
-  currency: string,
-  /**
-   * The Legacy account type.
-   */
-  accountType: string,
-
-  /**
-   * When the CurrencyAccount was created.
-   */
-  createdDate: Date,
-
-  /**
-   * When the CurrencyAccount was last updated.
-   */
-  changedDate: Date,
-}
-
-/**
- * Stores the mapping between the dfspId => MasterAccount Id on TigerBeetle.
- * TODO: rename to SpecMaster?
- * @deprecated
- */
-export interface MasterSpec {
-  dfspId: string,
-  id: bigint,
-  isProxy: boolean
-}
-
 export type NetDebitCap = {
   type: 'UNLIMITED',
   dfspId: string,
@@ -289,9 +247,7 @@ export type GetSpecTransferResult = {
   id: string
 }
 
-export type AttachFulfilmentResult = {
-
-}
+export type AttachFulfilmentResult = {}
 
 /**
  * Store these parameters of a prepare so that we can keep track of the aborted timestamp, and
@@ -312,6 +268,11 @@ export type GetSpecPrepareResult = {
   id: string
 }
 
+export type SpecFulfil = {
+  id: string,
+  payloadHash: number,
+}
+
 export interface DepsSpecStore {
   config: ApplicationConfig
   enums: Enums,
@@ -330,6 +291,7 @@ export type ContextDfsps = {
 export type ContextPayments = {
   prepareIds: Array<string>,
   specPrepares: Array<SpecPrepare>,
+  specFulfils: Array<SpecFulfil>
   specTransfers: Array<SpecTransfer>
 }
 
@@ -340,6 +302,7 @@ export type ContextFulfil = {
   dfspRoots: Array<DfspRoot>
   dfspCurrencies: Array<DfspCurrency>
   specPrepares: Array<SpecPrepare>
+  specFulfils: Array<SpecFulfil>
   specTransfers: Array<SpecTransfer>
 }
 
@@ -674,9 +637,9 @@ export default class SpecStore {
       }
 
       const dfspAndCurrency = `${dfspCurrency.dfspId}:${dfspCurrency.currency}`
-      if (!dfspCurrencyIds[dfspAndCurrency]){
+      if (!dfspCurrencyIds[dfspAndCurrency]) {
         dfspCurrencyIds[dfspAndCurrency] = true
-        dfspCurrencies.push(dfspCurrency) 
+        dfspCurrencies.push(dfspCurrency)
       }
     })
 
@@ -692,32 +655,71 @@ export default class SpecStore {
   }
 
   public async getPrepareContextPayments(prepareIds: Array<string>): Promise<ContextPayments> {
-    const rows = await this.db('specTransfer')
-      .rightJoin('specPrepare', 'specTransfer.id', 'specPrepare.id')
+    const rows = await this.db('specPrepare')
+      .leftJoin('specTransfer', 'specPrepare.id', 'specTransfer.id')
+      .leftJoin('specFulfil', 'specPrepare.id', 'specFulfil.id')
       .whereIn('specPrepare.id', prepareIds)
-      .select('*')
+      .select(
+        'specPrepare.id as id',
+        'specPrepare.payloadHash as preparePayloadHash',
+        'specPrepare.abortedAt as abortedAt',
+        'specFulfil.payloadHash as fulfilPayloadHash',
+        'specTransfer.currency as currency',
+        'specTransfer.amount as amount',
+        'specTransfer.expiration as expiration',
+        'specTransfer.payerId as payerId',
+        'specTransfer.payeeId as payeeId',
+        'specTransfer.ilpCondition as ilpCondition',
+        'specTransfer.ilpPacket as ilpPacket'
+      )
 
     const prepareIdsFound: Array<string> = []
     const idsSeen: Record<string, true> = {}
     const specPrepares: Array<SpecPrepare> = []
+    const specFulfils: Array<SpecFulfil> = []
     const specTransfers: Array<SpecTransfer> = []
-    rows.forEach(row => {
-      // specPrepare should exist, specTransfer maybe not.
-      const specPrepare = SpecStore.hydrateSpecPrepare(row)
-      if (idsSeen[specPrepare.id]) return
 
-      idsSeen[specPrepare.id] = true
+    rows.forEach(row => {
+      if (idsSeen[row.id]) return
+      idsSeen[row.id] = true
+      prepareIdsFound.push(row.id)
+
+      const specPrepare: SpecPrepare = {
+        id: row.id,
+        payloadHash: row.preparePayloadHash
+      }
+      if (row.abortedAt) {
+        specPrepare.abortedAt = new Date(row.abortedAt)
+      }
       specPrepares.push(specPrepare)
 
-      if (row.amount) {
-        const specTransfer = SpecStore.hydrateSpecTransfer(row)
+      if (row.fulfilPayloadHash != null) {
+        const specFulfil: SpecFulfil = {
+          id: row.id,
+          payloadHash: row.fulfilPayloadHash
+        }
+        specFulfils.push(specFulfil)
+      }
+
+      if (row.amount != null) {
+        const specTransfer: SpecTransfer = {
+          id: row.id,
+          currency: row.currency,
+          amount: row.amount,
+          expiration: row.expiration,
+          payerId: row.payerId,
+          payeeId: row.payeeId,
+          ilpCondition: row.ilpCondition,
+          ilpPacket: row.ilpPacket
+        }
         specTransfers.push(specTransfer)
       }
     })
-    
+
     const context: ContextPayments = {
       prepareIds: prepareIdsFound,
       specPrepares,
+      specFulfils,
       specTransfers,
     }
     return context
@@ -733,29 +735,70 @@ export default class SpecStore {
         dfspCurrencies: [],
         specPrepares: [],
         specTransfers: [],
+        specFulfils: [],
       }
     }
 
-    // Get specPrepares and specTransfers.
-    const rowsTransfer = await this.db(TABLE_PREPARE)
-      .join(TABLE_TRANSFER, `${TABLE_PREPARE}.id`, `${TABLE_TRANSFER}.id`)
-      .whereIn(`${TABLE_PREPARE}.id`, fulfilIds)
-      .select('*')
+    const rowsTransfer = await this.db('specPrepare')
+      .leftJoin('specTransfer', 'specPrepare.id', 'specTransfer.id')
+      .leftJoin('specFulfil', 'specPrepare.id', 'specFulfil.id')
+      .whereIn('specPrepare.id', fulfilIds)
+      .select(
+        // specPrepare columns.
+        'specPrepare.id as id',
+        'specPrepare.payloadHash as preparePayloadHash',
+        'specPrepare.abortedAt as abortedAt',
+        // specFulfil columns.
+        'specFulfil.payloadHash as fulfilPayloadHash',
+        // specTransfer columns.
+        'specTransfer.currency as currency',
+        'specTransfer.amount as amount',
+        'specTransfer.expiration as expiration',
+        'specTransfer.payerId as payerId',
+        'specTransfer.payeeId as payeeId',
+        'specTransfer.ilpCondition as ilpCondition',
+        'specTransfer.ilpPacket as ilpPacket'
+      )
 
+    const idsSeen: Record<string, true> = {}
     const specPrepares: Array<SpecPrepare> = []
+    const specFulfils: Array<SpecFulfil> = []
     const specTransfers: Array<SpecTransfer> = []
-    const currencies: Set<string> = new Set()
+    const currencySet: Set<string> = new Set()
     const dfspIdSet: Set<string> = new Set()
 
     rowsTransfer.forEach(row => {
-      specPrepares.push(SpecStore.hydrateSpecPrepare(row))
-      specTransfers.push(SpecStore.hydrateSpecTransfer(row))
-      currencies.add(row.currency)
-      dfspIdSet.add(row.payerId)
-      dfspIdSet.add(row.payeeId)
+      if (idsSeen[row.id]) return
+      idsSeen[row.id] = true
+
+      // specPrepare should always exist (it's the base table).
+      const specPrepare = SpecStore.hydrateSpecPrepare({
+        id: row.id,
+        payloadHash: row.preparePayloadHash,
+        abortedAt: row.abortedAt
+      })
+      specPrepares.push(specPrepare)
+
+      // specFulfil may or may not exist.
+      if (row.fulfilPayloadHash != null) {
+        const specFulfil = SpecStore.hydrateSpecFulfil({
+          id: row.id,
+          payloadHash: row.fulfilPayloadHash
+        })
+        specFulfils.push(specFulfil)
+      }
+
+      // specTransfer may or may not exist.
+      if (row.amount != null) {
+        const specTransfer = SpecStore.hydrateSpecTransfer(row)
+        specTransfers.push(specTransfer)
+        currencySet.add(specTransfer.currency)
+        dfspIdSet.add(specTransfer.payerId)
+        dfspIdSet.add(specTransfer.payeeId)
+      }
     })
 
-    const currencyList = Array.from(currencies)
+    const currencies = Array.from(currencySet)
     const dfspIds = Array.from(dfspIdSet)
 
     // Get the dfspCurrencies, dfspRoots, currencyConfig.
@@ -763,10 +806,10 @@ export default class SpecStore {
       .join(TABLE_DFSP_ROOT, `${TABLE_DFSP_CURRENCY}.dfspId`, `${TABLE_DFSP_ROOT}.dfspId`)
       .join(TABLE_CURRENCY_CONFIG, `${TABLE_DFSP_CURRENCY}.currency`, `${TABLE_CURRENCY_CONFIG}.currency`)
       .whereIn(`${TABLE_DFSP_CURRENCY}.dfspId`, dfspIds)
-      .whereIn(`${TABLE_DFSP_CURRENCY}.currency`, currencyList)
+      .whereIn(`${TABLE_DFSP_CURRENCY}.currency`, currencies)
       .select('*')
 
-    // Deduplicate and hydrate
+    // Deduplicate and hydrate.
     const currencyConfigIds: Record<string, true> = {}
     const currencyConfigs: Array<CurrencyConfig> = []
     const dfspRootIds: Record<string, true> = {}
@@ -797,13 +840,14 @@ export default class SpecStore {
     })
 
     return {
-      currencies: currencyList,
+      currencies,
       dfspIds,
       currencyConfigs,
       dfspRoots,
       dfspCurrencies,
       specPrepares,
       specTransfers,
+      specFulfils
     }
   }
 
@@ -1090,6 +1134,30 @@ export default class SpecStore {
     }
   }
 
+  public async saveSpecFulfils(fulfils: Array<SpecFulfil>): Promise<void> {
+    if (fulfils.length === 0) return
+
+    try {
+      const records = fulfils.map(fulfil => {
+        const record: any = {
+          id: fulfil.id,
+          payloadHash: fulfil.payloadHash
+        }
+
+        return record
+      })
+
+      await this.db.from('specFulfil')
+        .insert(records)
+        .onConflict('id')
+        .ignore()
+
+    } catch (err: any) {
+      logger.error(`saveSpecFulfils() - failed with error: ${err.message}`)
+      throw err
+    }
+  }
+
   public async getSpecPrepares(transferIds: Array<string>): Promise<Array<GetSpecPrepareResult>> {
     try {
       const resultMap: Record<string, GetSpecPrepareResult> = {}
@@ -1341,6 +1409,15 @@ export default class SpecStore {
     }
 
     return specPrepare
+  }
+
+  private static hydrateSpecFulfil(row: any): SpecFulfil {
+    const specFulfil: SpecFulfil = {
+      id: row.id,
+      payloadHash: row.payloadHash
+    }
+
+    return specFulfil
   }
 
   private static hydrateSpecTransfer(row: any): SpecTransfer {
