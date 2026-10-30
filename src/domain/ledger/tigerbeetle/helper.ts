@@ -2,7 +2,7 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, CreateTransferResult, CreateTransferStatus, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto, { hash } from "crypto";
 import assert from "assert";
-import { ContextDfsps, ContextFulfil, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, NetDebitCap, SpecFulfil, SpecPrepare, SpecTransfer, SpecTransferCreate } from "./spec-store";
+import { ContextDfsps, ContextFulfil, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, NetDebitCap, ParticipantLocation, SpecFulfil, SpecPrepare, SpecTransfer } from "./spec-store";
 import { AccountCode, LedgerAccount, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
 import { CreatePaymentDto, PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { CommitPaymentDto, FulfilHandlerAction, FulfilHandlerInput, PaymentFulfilResult, PaymentFulfilResultType } from "../../../handlers/payment-fulfil";
@@ -44,7 +44,11 @@ export type PrepareInternalStatus = {
   tag: 'FAIL_OTHER'
   context: {}
 } | {
-  tag: 'OK'
+  tag: 'OK',
+  context: {
+    payerLocation: ParticipantLocation,
+    payeeLocation: ParticipantLocation,
+  }
 }
 
 export type FulfilInternalStatus = {
@@ -880,7 +884,9 @@ export default class Helper {
         payerId: prepare.payload.payerFsp,
         payeeId: prepare.payload.payeeFsp,
         ilpCondition: prepare.payload.condition,
-        ilpPacket: prepare.payload.ilpPacket
+        ilpPacket: prepare.payload.ilpPacket,
+        payerLocation: "LOCAL",
+        payeeLocation: "LOCAL"
       }
 
       specs.push(spec)
@@ -1175,7 +1181,9 @@ export default class Helper {
     // Initialize all statuses as OK
     const statuses: Array<PrepareInternalStatus> = Array.from(
       { length: preparesCount },
-      () => ({ tag: 'OK' })
+      // TODO: this is not ideal, we don't really need to keep this context around. 
+      // Or generate it here.
+      () => ({ tag: 'OK', context: {payerLocation: 'LOCAL', payeeLocation: 'LOCAL'} })
     )
 
     results.forEach((result, idxAllTransfers) => {
@@ -2035,7 +2043,12 @@ export default class Helper {
     }
   }
 
-  public static prepareToSpecTransferCreate(prepare: CreatePaymentDto): SpecTransferCreate {
+  public static prepareToSpecTransferCreate(
+    prepare: CreatePaymentDto, 
+    context: {
+      payerLocation: ParticipantLocation,
+      payeeLocation: ParticipantLocation,
+    }): SpecTransfer {
     return {
       id: prepare.transferId,
       currency: prepare.amount.currency,
@@ -2043,6 +2056,8 @@ export default class Helper {
       expiration: prepare.expiration,
       payerId: prepare.payerFsp,
       payeeId: prepare.payeeFsp,
+      payerLocation: context.payerLocation,
+      payeeLocation: context.payeeLocation,
       ilpCondition: prepare.condition,
       ilpPacket: prepare.ilpPacket,
     }
@@ -2052,6 +2067,14 @@ export default class Helper {
    * Utility function to convert from an Array<T> to a Record<string, T>.
    */
   public static toMapBy<T>(items: T[], key: (item: T) => string): Record<string, T> {
+    return items.reduce((acc, curr) => {
+      acc[key(curr)] = curr
+      return acc
+    }, {} as Record<string, T>)
+  }
+
+  public static toMapByDfspAndCurrency<T extends {dfspId: string, currency: string}>(items: T[]): Record<string, T> {
+    const key = (item: T) => `${item.dfspId}:${item.currency}`
     return items.reduce((acc, curr) => {
       acc[key(curr)] = curr
       return acc

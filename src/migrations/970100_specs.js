@@ -98,6 +98,8 @@ exports.up = async (knex) => {
         t.string('id', 36).primary().notNullable()
         t.string('payerId', 256).notNullable()
         t.string('payeeId', 256).notNullable()
+        t.enu('payerLocation', ['local', 'proxy'])
+        t.enu('payeeLocation', ['local', 'proxy'])
         t.string('ilpCondition', 256).notNullable()
         t.text('ilpPacket').notNullable()
         t.string('amount', 16).notNullable()

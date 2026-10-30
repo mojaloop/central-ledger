@@ -88,8 +88,7 @@ const { TransferState } = Enum.Transfers
 
 import SettlementDomain from '../../settlement';
 import { CloseDfspMasterAccountFailureType, DepositFailureType, DisableDfspAccountFailureType, EnableDfspAccountFailureType, FulfilFailureType, FulfilInternalStatus, default as Helper, default as LedgerTigerBeetleHelper, PrepareFailureType, PrepareInternalStatus, SetNetDebitCapFailureType, TransferFailureResult, WithdrawAbortFailureType, WithdrawCommitFailureType, WithdrawPrepareFailureType } from './helper';
-import SpecStore, { CmdHubCurrencyEnable, ContextDfsps, ContextFulfil, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, SpecFulfil, SpecFulfilUpdate, SpecPrepare, SpecTransfer, SpecTransferCreate } from './spec-store';
-import { currencyList } from '../../../seeds/currency';
+import SpecStore, { CmdHubCurrencyEnable, ContextDfsps, ContextFulfil, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, ParticipantLocation, SpecFulfil, SpecFulfilUpdate, SpecPrepare, SpecTransfer } from './spec-store';
 import { Reporter } from '../shared/reporter';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -1933,19 +1932,17 @@ export class LedgerTigerBeetle implements Ledger {
     context: ContextDfsps,
     netDebitCaps: Array<NetDebitCap>
   ): Array<PrepareInternalStatus> {
-    const dfspCurrenciesMap = Helper.toMapBy(
-      context.dfspCurrencies,
-      item => `${item.dfspId}:${item.currency}`
-    )
-    const netDebitCapsMap = Helper.toMapBy(
-      netDebitCaps,
-      item => `${item.dfspId}:${item.currency}`
-    )
+    const dfspRootsMap = Helper.toMapBy(context.dfspRoots, item => item.dfspId)
+    const dfspCurrenciesMap = Helper.toMapByDfspAndCurrency(context.dfspCurrencies)
+    const netDebitCapsMap = Helper.toMapByDfspAndCurrency(netDebitCaps)
+
 
     const results: Array<PrepareInternalStatus> = []
     prepares.forEach(prepare => {
       const keyPayer = `${prepare.payload.payerFsp}:${prepare.payload.amount.currency}`
       const keyPayee = `${prepare.payload.payeeFsp}:${prepare.payload.amount.currency}`
+      const rootPayer = dfspRootsMap[prepare.payload.payerFsp]
+      const rootPayee = dfspRootsMap[prepare.payload.payeeFsp]
       const payer = dfspCurrenciesMap[keyPayer]
       const payee = dfspCurrenciesMap[keyPayee]
       const netDebitCapPayer = netDebitCapsMap[keyPayer]
@@ -1971,6 +1968,16 @@ export class LedgerTigerBeetle implements Ledger {
       if (!netDebitCapPayee) {
         failValidation = true
         failureReasons.push(`Payee net debit cap not defined.`)
+      }
+
+      if (!rootPayer) {
+        failValidation = true
+        failureReasons.push(`Payer root account not found: payer: ${prepare.payload.payerFsp}.`)
+      }
+
+      if (!rootPayee) {
+        failValidation = true
+        failureReasons.push(`Payee root account not found: payee: ${prepare.payload.payeeFsp}.`)
       }
 
       if (prepare.payload.payerFsp === prepare.payload.payeeFsp) {
@@ -2003,7 +2010,10 @@ export class LedgerTigerBeetle implements Ledger {
         return
       }
 
-      results.push({ tag: 'OK' })
+      const payerLocation: ParticipantLocation = rootPayer.isProxy ? 'PROXY' : 'LOCAL'
+      const payeeLocation: ParticipantLocation = rootPayee.isProxy ? 'PROXY' : 'LOCAL'
+
+      results.push({ tag: 'OK', context: { payerLocation, payeeLocation } })
     })
 
     assert.equal(prepares.length, results.length)
@@ -2028,7 +2038,8 @@ export class LedgerTigerBeetle implements Ledger {
 
       // Brand new Prepare.
       if (!specPrepare && !specTransfer) {
-        results.push({ tag: 'OK' })
+        // TODO: better typing!
+        results.push({ tag: 'OK', context: {payerLocation: 'LOCAL', payeeLocation: 'LOCAL'}})
         return
       }
 
@@ -2085,11 +2096,11 @@ export class LedgerTigerBeetle implements Ledger {
    * If TigerBeetle can do 500,000 TPS, then we can reach a theoretical maximum of 50,000 Prepares
    * per second.
    * 
-   * 1. Get the Dfsp + Payment context.                (2x MySQL Round Trips)
-   * 2. Look up the net debit caps.                    (1x TigerBeetle Round Trip best case)
-   * 3. Save Payment context.                          (2x MySQL Round Trips)
-   * 4. Create TigerBeetle Transfers.                  (1x TigerBeetle Round Trip)
-   * 5. For the failed prepares, save abort timestamp. (1x MySQL Round Trips)
+   * 1. Get the Dfsp + Payment context.                2x MySQL Round Trips.
+   * 2. Look up the net debit caps.                    1x TigerBeetle Round Trip (best case).
+   * 3. Save Payment context.                          2x MySQL Round Trips.
+   * 4. Create TigerBeetle Transfers.                  1x TigerBeetle Round Trip.
+   * 5. For the failed prepares, save abort timestamp. 1x MySQL Round Trips.
    * 
    * = 7 round trips per batch of 818 prepares.
    */
@@ -2107,7 +2118,7 @@ export class LedgerTigerBeetle implements Ledger {
     const netDebitCaps = Object.values(await this.getInternalNetDebitCaps())
     const prepareHashes = prepares.map(input => Helper.hashTransferProperties2(input.payload))
 
-    // Results are sparse arrays. Undefined if we passed the check, the failure if not.
+    // Results are arrays matching the prepares list.
     const resultsValidation = this.prepareCheckValid(prepares, contextDfsps, netDebitCaps)
     const resultsIdempotent = this.prepareCheckIdempotent(prepares, contextPayments, prepareHashes)
     assert.equal(prepares.length, resultsValidation.length)
@@ -2115,7 +2126,7 @@ export class LedgerTigerBeetle implements Ledger {
 
     // Save the results and inputs to the spec store.
     const specPreparesToSave: Array<SpecPrepare> = []
-    const specTransfersToSave: Array<SpecTransferCreate> = []
+    const specTransfersToSave: Array<SpecTransfer> = []
     // Keep track of the original position of the prepare.
     const preparesOk: Array<{ prepare: PrepareHandlerInput, idx: number }> = []
     const hashesOk: Array<number> = []
@@ -2137,7 +2148,9 @@ export class LedgerTigerBeetle implements Ledger {
 
       // Save the valid specPrepare and transfer payload.
       specPreparesToSave.push({ id: prepare.transferId, payloadHash })
-      specTransfersToSave.push(Helper.prepareToSpecTransferCreate(prepare.payload))
+      specTransfersToSave.push(Helper.prepareToSpecTransferCreate(
+        prepare.payload, resultValidation.context 
+      ))
 
       // Mark as passed the valid and idempotency check.
       preparesOk.push({ idx, prepare })
@@ -2260,7 +2273,7 @@ export class LedgerTigerBeetle implements Ledger {
     const results: Array<PaymentFulfilResult> = []
 
     // Now we iterate through the different result arrays.
-    const specTransferUpdates: Array<SpecFulfilUpdate> = []
+    const specFulfilUpdates: Array<SpecFulfilUpdate> = []
     for (let idx = 0; idx < fulfils.length; idx++) {
       const fulfil = fulfils[idx]
       const resultValidation = resultsValidation[idx]
@@ -2292,7 +2305,7 @@ export class LedgerTigerBeetle implements Ledger {
         // TODO: I think this should be something other than specFulfil attached to the result.
         assert(success.specFulfil.fulfilment)
         assert(success.specFulfil.fulfiledAt)
-        specTransferUpdates.push({
+        specFulfilUpdates.push({
           id: fulfil.transferId,
           fulfilment: success.specFulfil.fulfilment,
           fulfiledAt: success.specFulfil.fulfiledAt,
@@ -2303,7 +2316,7 @@ export class LedgerTigerBeetle implements Ledger {
     assert.equal(fulfils.length, results.length)
     // TODO: abort the specFulfil, not the specPrepares!
     // await this.specStore.attachSpecPrepareAbortedAt(specPreparesAborted, specPreparesAborted.map(_ => new Date()))
-    await this.specStore.attachFulfillments(specTransferUpdates)
+    await this.specStore.attachFulfillments(specFulfilUpdates)
     // await this.specStore.attachSpecFulfillDates(specFulfilsFulfilled, specFulfilsFulfilled.map(_ => new Date()))
 
     return results
@@ -2319,7 +2332,7 @@ export class LedgerTigerBeetle implements Ledger {
     const specFulfilsMap = Helper.toMapBy(context.specFulfils, item => item.id)
     const specTransfersMap = Helper.toMapBy(context.specTransfers, item => item.id)
     const dfspRootsMap = Helper.toMapBy(context.dfspRoots, item => item.dfspId)
-    const netDebitCapsMap = Helper.toMapBy(netDebitCaps, item => `${item.dfspId}:${item.currency}`)
+    const netDebitCapsMap = Helper.toMapByDfspAndCurrency(netDebitCaps)
 
     return fulfils.map((fulfil, idx) => {
       const hash = hashes[idx]
@@ -2367,6 +2380,9 @@ export class LedgerTigerBeetle implements Ledger {
           return { tag: 'MODIFIED' }
         }
       }
+
+      // 'Error resolving externalPayerName for transfer: 206c4c5b-39d9-43e0-a5a2-70b5a51977cf.'
+      // 'destinationDfspId does not match payment.externalPayerName.'
 
       const rootPayer = dfspRootsMap[specTransfer.payerId]
       const rootPayee = dfspRootsMap[specTransfer.payeeId]

@@ -86,6 +86,11 @@ export type LegacyHubCurrency = {
 export interface DfspRoot {
   dfspId: string,
   id: bigint,
+
+  /**
+   * TODO: refactor to ParticipantLocation
+   * @deprecated
+   */
   isProxy: boolean
 }
 
@@ -215,6 +220,12 @@ export type NetDebitCap = {
   alarmPercentage: number,
 }
 
+/**
+ * Keep track of whether or not the payer or payee is directly connected to the Hub (LOCAL) or 
+ * proxied through another Participant (PROXY).
+ */
+export type ParticipantLocation = 'LOCAL' | 'PROXY'
+
 export type SpecTransfer = {
   id: string
   currency: string
@@ -222,11 +233,12 @@ export type SpecTransfer = {
   expiration: string
   payerId: string
   payeeId: string
+  payerLocation: ParticipantLocation,
+  payeeLocation: ParticipantLocation,
   ilpCondition: string
   ilpPacket: string
 }
 
-export type SpecTransferCreate = Omit<SpecTransfer, 'fulfilment'>
 export type SpecFulfilUpdate = {
   id: string,
   fulfilment: string,
@@ -675,7 +687,8 @@ export default class SpecStore {
         'specTransfer.amount as amount',
         'specTransfer.expiration as expiration',
         'specTransfer.payerId as payerId',
-        'specTransfer.payeeId as payeeId',
+        'specTransfer.payerLocation as payerLocation',
+        'specTransfer.payeeLocation as payeeLocation',
         'specTransfer.ilpCondition as ilpCondition',
         'specTransfer.ilpPacket as ilpPacket'
       )
@@ -713,16 +726,7 @@ export default class SpecStore {
       }
 
       if (row.amount != null) {
-        const specTransfer: SpecTransfer = {
-          id: row.id,
-          currency: row.currency,
-          amount: row.amount,
-          expiration: row.expiration,
-          payerId: row.payerId,
-          payeeId: row.payeeId,
-          ilpCondition: row.ilpCondition,
-          ilpPacket: row.ilpPacket
-        }
+        const specTransfer = SpecStore.hydrateSpecTransfer(row)
         specTransfers.push(specTransfer)
       }
     })
@@ -767,6 +771,8 @@ export default class SpecStore {
         'specTransfer.expiration as expiration',
         'specTransfer.payerId as payerId',
         'specTransfer.payeeId as payeeId',
+        'specTransfer.payerLocation as payerLocation',
+        'specTransfer.payeeLocation as payeeLocation',
         'specTransfer.ilpCondition as ilpCondition',
         'specTransfer.ilpPacket as ilpPacket'
       )
@@ -1239,7 +1245,7 @@ export default class SpecStore {
     )
   }
 
-  public async saveTransferSpecs(specs: Array<SpecTransferCreate>): Promise<Array<SaveSpecTransferResult>> {
+  public async saveTransferSpecs(specs: Array<SpecTransfer>): Promise<Array<SaveSpecTransferResult>> {
     if (specs.length === 0) return []
 
     try {
@@ -1251,6 +1257,8 @@ export default class SpecStore {
           expiration: spec.expiration,
           payerId: spec.payerId,
           payeeId: spec.payeeId,
+          payerLocation: SpecStore.dehydrateLocation(spec.payerLocation),
+          payeeLocation: SpecStore.dehydrateLocation(spec.payeeLocation),
           ilpCondition: spec.ilpCondition,
           ilpPacket: spec.ilpPacket,
         }
@@ -1482,11 +1490,32 @@ export default class SpecStore {
       expiration: row.expiration,
       payerId: row.payerId,
       payeeId: row.payeeId,
+      payerLocation: SpecStore.hydrateLocation(row.payerLocation),
+      payeeLocation: SpecStore.hydrateLocation(row.payeeLocation),
       ilpCondition: row.ilpCondition,
       ilpPacket: row.ilpPacket,
     }
 
     return specTransfer
+  }
+
+  private static hydrateLocation(location: any): ParticipantLocation {
+    switch (location) {
+      case 'local': return 'LOCAL'
+      case 'proxy': return 'PROXY'
+      default: {
+        throw new Error(`hydrateLocation - invalid location: ${location}`)
+      }
+    }
+  }
+
+  private static dehydrateLocation(location: ParticipantLocation): string {
+    assertOneOf(location, ['LOCAL', 'PROXY'])
+
+    switch (location) {
+      case 'LOCAL': return 'local'
+      case 'PROXY': return 'proxy'
+    }
   }
 
   // private static hydrateNetDebitCap(row: any): NetDebitCap {

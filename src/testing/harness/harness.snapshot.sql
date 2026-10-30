@@ -3414,6 +3414,8 @@ CREATE TABLE `specTransfer` (
   `id` varchar(36) NOT NULL,
   `payerId` varchar(256) NOT NULL,
   `payeeId` varchar(256) NOT NULL,
+  `payerLocation` enum('local','proxy') DEFAULT NULL,
+  `payeeLocation` enum('local','proxy') DEFAULT NULL,
   `ilpCondition` varchar(256) NOT NULL,
   `ilpPacket` text NOT NULL,
   `amount` varchar(16) NOT NULL,
@@ -4123,4 +4125,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-10-29 19:21:14
+-- Dump completed on 2026-10-30 10:04:15
