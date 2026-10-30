@@ -904,6 +904,105 @@ Test('Admin handler', adminHandlerTest => {
         test.end()
       }
     })
+    // mojaloop/project#4588: a recordFundsOut reservation must stay abortable once it has expired,
+    // including after the timeout handler has marked it RESERVED_TIMEOUT (it never releases the position).
+    const recordFundsOutMessage = (action, transferId) => ({
+      topic: topicName,
+      value: Object.assign({}, messageProtocolRecordFundsOutAbort, {
+        id: transferId,
+        content: {
+          header: '',
+          payload: Object.assign({}, transferRecordOutAbort, { action })
+        }
+      })
+    })
+    const expiredReservation = (transferId) => ({
+      transferId,
+      amount: 433.88,
+      currencyId: 'USD',
+      expirationDate: '2016-05-24T08:38:08.699-04:00'
+    })
+
+    await transferTest.test('abort an expired recordFundsOut reservation that is still RESERVED (#4588)', async (test) => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+        const transferId = randomUUID()
+        TransferService.getTransferById.withArgs(transferId).returns(expiredReservation(transferId))
+        TransferService.getTransferState.withArgs(transferId).returns({ transferStateId: TransferState.RESERVED })
+        const result = await AdminHandler.transfer(null, recordFundsOutMessage('recordFundsOutAbort', transferId))
+        test.equal(result, true)
+        test.ok(TransferService.reconciliationTransferAbort.calledOnce, 'reconciliationTransferAbort called once')
+        test.deepEqual(TransferService.reconciliationTransferAbort.firstCall.args[0].amount, { amount: 433.88, currency: 'USD' }, 'abort releases the reserved amount')
+        test.ok(TransferService.reconciliationTransferCommit.notCalled, 'reconciliationTransferCommit not called')
+        test.end()
+      } catch (e) {
+        test.fail(`${e} error thrown`)
+        test.end()
+      }
+    })
+
+    await transferTest.test('abort an expired recordFundsOut reservation marked RESERVED_TIMEOUT by the timeout handler (#4588)', async (test) => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+        const transferId = randomUUID()
+        TransferService.getTransferById.withArgs(transferId).returns(expiredReservation(transferId))
+        TransferService.getTransferState.withArgs(transferId).returns({ transferStateId: TransferInternalState.RESERVED_TIMEOUT })
+        const result = await AdminHandler.transfer(null, recordFundsOutMessage('recordFundsOutAbort', transferId))
+        test.equal(result, true)
+        test.ok(TransferService.reconciliationTransferAbort.calledOnce, 'reconciliationTransferAbort called once')
+        test.deepEqual(TransferService.reconciliationTransferAbort.firstCall.args[0].amount, { amount: 433.88, currency: 'USD' }, 'abort releases the reserved amount')
+        test.end()
+      } catch (e) {
+        test.fail(`${e} error thrown`)
+        test.end()
+      }
+    })
+
+    await transferTest.test('not abort a recordFundsOut transfer that is already finalised (#4588)', async (test) => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+        for (const transferStateId of [TransferState.COMMITTED, TransferInternalState.ABORTED_REJECTED, TransferInternalState.EXPIRED_RESERVED]) {
+          const transferId = randomUUID()
+          TransferService.getTransferById.withArgs(transferId).returns(expiredReservation(transferId))
+          TransferService.getTransferState.withArgs(transferId).returns({ transferStateId })
+          const result = await AdminHandler.transfer(null, recordFundsOutMessage('recordFundsOutAbort', transferId))
+          test.equal(result, true, `${transferStateId}: handler completes`)
+        }
+        test.ok(TransferService.reconciliationTransferAbort.notCalled, 'reconciliationTransferAbort not called')
+        test.end()
+      } catch (e) {
+        test.fail(`${e} error thrown`)
+        test.end()
+      }
+    })
+
+    await transferTest.test('not commit an expired recordFundsOut reservation (#4588)', async (test) => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+        for (const transferStateId of [TransferState.RESERVED, TransferInternalState.RESERVED_TIMEOUT]) {
+          const transferId = randomUUID()
+          TransferService.getTransferById.withArgs(transferId).returns(expiredReservation(transferId))
+          TransferService.getTransferState.withArgs(transferId).returns({ transferStateId })
+          const result = await AdminHandler.transfer(null, recordFundsOutMessage('recordFundsOutCommit', transferId))
+          test.equal(result, true, `${transferStateId}: handler completes`)
+        }
+        test.ok(TransferService.reconciliationTransferCommit.notCalled, 'reconciliationTransferCommit not called')
+        test.ok(TransferService.reconciliationTransferAbort.notCalled, 'reconciliationTransferAbort not called')
+        test.end()
+      } catch (e) {
+        test.fail(`${e} error thrown`)
+        test.end()
+      }
+    })
+
     transferTest.end()
   })
   adminHandlerTest.end()
