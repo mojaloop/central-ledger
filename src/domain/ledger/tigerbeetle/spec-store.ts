@@ -230,7 +230,7 @@ export type SpecTransfer = {
   id: string
   currency: string
   amount: string
-  expiration: string
+  expiration: Date
   payerId: string
   payeeId: string
   payerLocation: ParticipantLocation,
