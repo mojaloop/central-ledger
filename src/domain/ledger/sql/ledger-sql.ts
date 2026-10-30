@@ -1321,54 +1321,6 @@ export class LedgerSql implements Ledger {
     }
   }
 
-  private async fulfilOne2(input: FulfilHandlerInput): Promise<PaymentFulfilResult> {
-    const { transferId, payload } = input
-    const transfer = await TransferService.getById(transferId)
-
-    if (!transfer) {
-      return {
-        type: PaymentFulfilResultType.FAIL_OTHER,
-        effects: [],
-        error: ErrorHandler.Factory.createInternalServerFSPIOPError(
-          `transfer not found for id: ${transferId}.`
-        )
-      }
-    }
-
-    const errorsParticipants = this.validateFulfilParticipants(transfer, input)
-    if (errorsParticipants.length > 0) {
-      const errorsStr = errorsParticipants.join(',')
-      const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        errorsStr
-      )
-      const error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-
-      // Mark the payment as aborted in db.
-      await TransferService.handlePayeeResponse(
-        transferId,
-        payload,
-        'abort-validation',
-        error
-      )
-
-      const effects = [
-        await this.helper.buildEffectPositionRollback(input, transfer, error),
-      ]
-      if (input.action === Action.RESERVE) {
-        // When the payee set the action to `RESERVE`, we also notify them about the status.
-        effects.push(this.helper.buildEffectReservedAbortedNotification(input, transfer))
-      }
-      return this.fulfilNext({
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects,
-        error
-      })
-    }
-
-    throw new Error('Not implemented.')
-  }
-
   private validateFulfilParticipants(transfer: any, input: FulfilHandlerInput): Array<string> {
     const { transferId } = input
 
@@ -1413,12 +1365,14 @@ export class LedgerSql implements Ledger {
     const { transferId, payload } = input
     const transfer = await TransferService.getById(transferId)
 
-    if (!transfer || transfer.transferState === 'INVALID') {
+    if (!transfer || 
+      (transfer.transferState === 'INVALID' || transfer.transferState === 'ABORTED_REJECTED')
+    ) {
       return {
         type: PaymentFulfilResultType.FAIL_VALIDATION,
         effects: [],
         error: ErrorHandler.Factory.createInternalServerFSPIOPError(
-          `transfer not found for id: ${transferId}.`
+          `transfer not found or invalid for id: ${transferId}.`
         )
       }
     }
@@ -2139,15 +2093,12 @@ export class LedgerSql implements Ledger {
     assert(cmd.windowIds)
 
     try {
-      const triggerResult = await SettlementDomain.settlementEventTrigger(
-        {
-          settlementModel: cmd.model,
-          reason: cmd.reason,
-          // rewrap in a format the function expects
-          settlementWindows: cmd.windowIds.map(id => {
-            return { id }
-          })
-        },
+      const triggerResult = await SettlementDomain.settlementEventTrigger({
+        settlementModel: cmd.model,
+        reason: cmd.reason,
+        // Rewrap in a format the function expects.
+        settlementWindows: cmd.windowIds.map(id => ({ id }))
+      },
         this.deps.enums
       )
       assert(triggerResult.id, 'expected settlementEventTrigger() to return an id')
