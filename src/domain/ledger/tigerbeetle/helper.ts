@@ -179,66 +179,21 @@ export default class Helper {
 
   /**
    * Hash transfer properties to detect modifications
-   * Returns a 32-bit integer hash for use in user_data
+   * Returns a 32-bit unsigned integer hash for use in user_data
    */
-  public static hashTransferProperties(props: {
-    amount: string,
-    currency: string,
-    expiration: string,
-    payeeFsp: string,
-    payerFsp: string,
-    condition: string,
-    ilpPacket: string
-  }): number {
+  public static hashPrepare(prepare: CreatePaymentDto): number {
     // Create a deterministic string representation of the transfer
     const transferString = [
-      props.amount,
-      props.currency,
-      props.expiration,
-      props.payeeFsp,
-      props.payerFsp,
-      props.condition,
-      props.ilpPacket
+      prepare.amount.amount,
+      prepare.amount.currency,
+      prepare.expiration,
+      prepare.payeeFsp,
+      prepare.payerFsp,
+      prepare.condition,
+      prepare.ilpPacket
     ].join('|')
 
-    // Hash with SHA-256 and take first 32 bits
-    const hash = crypto.createHash('sha256').update(transferString).digest()
-    const hash32 = hash.readInt32BE(0)
-    return hash32
-  }
-
-  /**
-   * Hash transfer properties to detect modifications
-   * Returns a 32-bit integer hash for use in user_data
-   */
-  public static hashTransferProperties2(props: {
-    amount: {
-      amount: string,
-      currency: string,
-    },
-    expiration: string,
-    payeeFsp: string,
-    payerFsp: string,
-    condition: string,
-    ilpPacket: string
-  }): number {
-    // Create a deterministic string representation of the transfer
-    const transferString = [
-      props.amount.amount,
-      props.amount.currency,
-      props.expiration,
-      props.payeeFsp,
-      props.payerFsp,
-      props.condition,
-      props.ilpPacket
-    ].join('|')
-
-    // Hash with SHA-256 and take first 32 bits
-    const hash = crypto.createHash('sha256').update(transferString).digest()
-    const hash32 = hash.readInt32BE(0)
-
-    // TODO: this is sometimes negative!
-    return hash32
+    return Helper.hashString(transferString)
   }
 
   public static hashFulfil(id: string, payload: CommitPaymentDto): number {
@@ -249,12 +204,13 @@ export default class Helper {
       payload.transferState !== 'ABORTED' ? payload.fulfilment : ''
     ].join('|')
 
-    // Hash with SHA-256 and take first 32 bits.
-    const hash = crypto.createHash('sha256').update(joined).digest()
-    const hash32 = hash.readInt32BE(0)
+    return Helper.hashString(joined)
+  }
 
-    // TODO: this is sometimes negative!
-    return hash32
+  private static hashString(input: string): number {
+    // Hash with SHA-256 and take first 32 bits
+    const hash = crypto.createHash('sha256').update(input).digest()
+    return hash.readUInt32BE(0)
   }
 
   public static async safeLookupAccounts(client: Client, accountIds: Array<bigint>):

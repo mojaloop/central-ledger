@@ -2022,7 +2022,7 @@ export class LedgerTigerBeetle implements Ledger {
 
     const context = await this.metaStore.getPaymentContext(prepareIds, currencies, dfspIds)
     const netDebitCaps = Object.values(await this.getInternalNetDebitCaps())
-    const prepareHashes = prepares.map(input => Helper.hashTransferProperties2(input.payload))
+    const prepareHashes = prepares.map(input => Helper.hashPrepare(input.payload))
 
     // Results are arrays matching the prepares list.
     const resultsValidation = this.prepareCheckValid(prepares, context, netDebitCaps)
