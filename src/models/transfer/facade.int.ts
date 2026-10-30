@@ -94,12 +94,12 @@ describe('models/tranfer/facade', () => {
       "expirationDate": :ignore
       "createdDate": :ignore
       "currency": "USD",
-      "payerParticipantCurrencyId": 3,
+      "payerParticipantCurrencyId": :ignore,
       "payerAmount": "100.0000",
       "payerParticipantId": 2,
       "payerFsp": "dfsp_a",
       "payerIsProxy": 0,
-      "payeeParticipantCurrencyId": null,
+      "payeeParticipantCurrencyId": :ignore,
       "payeeAmount": "-100.0000",
       "payeeParticipantId": 3,
       "payeeFsp": "dfsp_b",

@@ -33,7 +33,6 @@ const { Comparators, resourceVersions } = Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 
-
 interface Dependencies {
   randomBytes: (length: number) => Buffer,
   config: ApplicationConfig

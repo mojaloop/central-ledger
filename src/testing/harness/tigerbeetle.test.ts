@@ -7,7 +7,7 @@ describe('harness/tigerbeetle', () => {
     const tb = new TigerBeetle({
       harnessId: 21,
       pathToBinary: `.tigerbeetle/tigerbeetle`,
-      dataDir: `/Volumes/RAMDisk/`,
+      dataDirs: [`/Volumes/RAMDisk/`, './tigerbeetle'],
       version: '0.17.9'
     })
 

@@ -800,7 +800,7 @@ const addHubAccountAndInitPosition = async (id, participantId, currencyId, ledge
         participantCurrencyId: id,
         value: 0,
         reservedValue: 0,
-        changedDate: createdDate,
+        changedDate: createdDate
       }
       result = await knex('participantPosition').transacting(trx).insert(participantPosition)
       participantPosition.participantPositionId = result[0]

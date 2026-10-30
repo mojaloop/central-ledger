@@ -475,6 +475,10 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       const proxyParticipant = await ParticipantCachedModel.getByName(proxyId)
       participants[proxyId] = {}
       participants[proxyId].id = proxyParticipant.participantId
+      const participantCurrencyRecord = await ParticipantFacade.getByNameAndCurrency(
+        proxyId, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION
+      )
+      participants[proxyId].participantCurrencyId = participantCurrencyRecord?.participantCurrencyId
     }
 
     const transferRecord = {
@@ -503,7 +507,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       const externalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(proxyObligation.initiatingFspProxyOrParticipantId)
       const participant = participants[proxyObligation.initiatingFspProxyOrParticipantId.proxyId]
       assert(participant, `Expected participant ${proxyObligation.initiatingFspProxyOrParticipantId.proxyId} in participants map`)
-      assert(participant.id, `participant.id not defined.`)
+      assert(participant.id, 'participant.id not defined.')
 
       payerTransferParticipantRecord = {
         transferId: payload.transferId,
@@ -518,7 +522,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       const participant = participants[payload.payerFsp]
       if (hasPassedValidation) {
         assert(participant, `Expected participant ${payload.payerFsp} in participants map`)
-        assert(participant.id, `participant.id not defined.`)
+        assert(participant.id, 'participant.id not defined.')
       }
 
       payerTransferParticipantRecord = {
@@ -535,10 +539,11 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     let payeeTransferParticipantRecord
     if (proxyObligation?.isCounterPartyFspProxy) {
       const externalParticipantId = await ParticipantFacade.getExternalParticipantIdByNameOrCreate(proxyObligation.counterPartyFspProxyOrParticipantId)
+      const participant = participants[proxyObligation.counterPartyFspProxyOrParticipantId.proxyId]
       payeeTransferParticipantRecord = {
         transferId: payload.transferId,
-        participantId: participants[proxyObligation.counterPartyFspProxyOrParticipantId.proxyId]?.id ?? null,
-        participantCurrencyId: null,
+        participantId: participant?.id ?? null,
+        participantCurrencyId: participant?.participantCurrencyId ?? null,
         transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
         ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
         amount: -payload.amount.amount,

@@ -928,8 +928,7 @@ export class LedgerSql implements Ledger {
       const result = await Participant.createRecordFundsInOut(payload, new Date(), this.deps.enums)
       if (result.abortedDueToInsufficientFunds) {
         return {
-          type: 'FAILURE',
-          error: new Error('withdrawPrepare() failed with insufficent funds.')
+          type: 'INSUFFICIENT_FUNDS',
         }
       }
 
@@ -1188,11 +1187,6 @@ export class LedgerSql implements Ledger {
     const proxyResult = await this.calculateProxyObligation(input.payload)
     const allErrors = [...proxyResult.errors]
 
-    // Ensure the Net Debit Caps are defined, otherwise position handler fails
-    // silently.
-    const ndcErrors = await this.validateNetDebitCaps(input.payload)
-    allErrors.push(...ndcErrors)
-
     // If proxy resolution failed, we can't continue - return accumulated errors.
     if (proxyResult.proxyObligation === null) {
       allErrors.sort()
@@ -1217,6 +1211,10 @@ export class LedgerSql implements Ledger {
     }
 
     const proxyObligation = proxyResult.proxyObligation
+    // Ensure the Net Debit Caps are defined, otherwise position handler fails
+    // silently. Check the payload with the resolved payer and payee.
+    const ndcErrors = await this.validateNetDebitCaps(proxyObligation.payloadClone)
+    allErrors.push(...ndcErrors)
     const determiningTransferCheckResult = await remittance.checkIfDeterminingTransferExists(
       proxyObligation.payloadClone,
       proxyObligation

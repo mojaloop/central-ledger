@@ -201,9 +201,7 @@ export default class Harness {
     this.dependencyTigerBeetle = new TigerBeetle({
       harnessId: this.options.id,
       pathToBinary: `.tigerbeetle/tigerbeetle`,
-      // TODO: configure some fallback locations.
-      dataDir: `/Volumes/RAMDisk/`,
-      // dataDir: `.tigerbeetle/`,
+      dataDirs: [`/Volumes/RAMDisk/`, `.tigerbeetle/`],
       version: '0.17.9'
     })
   }

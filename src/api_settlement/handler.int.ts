@@ -165,7 +165,7 @@ describe('settlement api handlers', () => {
           "id": 2,
           "accounts": [
             {
-              "id": 3,
+              "id": :ignore,
               "state": "PENDING_SETTLEMENT",
               "reason": "Test settlement",
               "netSettlementAmount": {
@@ -179,7 +179,7 @@ describe('settlement api handlers', () => {
           "id": 3,
           "accounts": [
             {
-              "id": 5,
+              "id": :ignore,
               "state": "PENDING_SETTLEMENT",
               "reason": "Test settlement",
               "netSettlementAmount": {
@@ -545,7 +545,7 @@ describe('settlement api handlers', () => {
           "id": 2,
           "accounts": [
             {
-              "id": 3,
+              "id": :ignore,
               "state": "PENDING_SETTLEMENT",
               "reason": "Test Settlement.",
               "netSettlementAmount": {
@@ -559,7 +559,7 @@ describe('settlement api handlers', () => {
           "id": 3,
           "accounts": [
             {
-              "id": 5,
+              "id": :ignore,
               "state": "PENDING_SETTLEMENT",
               "reason": "Test Settlement.",
               "netSettlementAmount": {
@@ -573,7 +573,7 @@ describe('settlement api handlers', () => {
           "id": 4,
           "accounts": [
             {
-              "id": 7,
+              "id": :ignore,
               "state": "PENDING_SETTLEMENT",
               "reason": "Test Settlement.",
               "netSettlementAmount": {
@@ -790,7 +790,7 @@ describe('settlement api handlers', () => {
           "id": 2,
           "accounts": [
             {
-              "id": 3,
+              "id": :ignore,
               "state": "PS_TRANSFERS_RECORDED",
               "reason": "Settlement transfer recorded",
               "externalReference": "tr123456789",

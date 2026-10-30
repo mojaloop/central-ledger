@@ -32,11 +32,11 @@ const rethrow = require('../../shared/rethrow')
 
 exports.create = async (
   id,
-  participantId, 
-  currencyId, 
-  ledgerAccountTypeId, 
-  isActive = true, 
-  createdDate = new Date(),
+  participantId,
+  currencyId,
+  ledgerAccountTypeId,
+  isActive = true,
+  createdDate = new Date()
 ) => {
   try {
     return await Db.from('participantCurrency').insert({

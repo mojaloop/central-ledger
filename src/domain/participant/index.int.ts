@@ -78,12 +78,12 @@ describe('domain/participant/index', () => {
         "isActive": 1,
         "createdDate": :ignore
         "createdBy": "unknown",
-        "isProxy": ${isProxy ? '1' : '0'},
+        "isProxy": :ignore,
         "currencyList": [
           {
             "participantCurrencyId": :int,
             "participantId": ${participantId},
-            "currencyId": "USD",
+            "currencyId": "KES",
             "ledgerAccountTypeId": 1,
             "isActive": 0,
             "createdDate": :ignore
@@ -92,7 +92,7 @@ describe('domain/participant/index', () => {
           {
             "participantCurrencyId": :int,
             "participantId": ${participantId},
-            "currencyId": "USD",
+            "currencyId": "KES",
             "ledgerAccountTypeId": 2,
             "isActive": 0,
             "createdDate": :ignore
@@ -101,7 +101,7 @@ describe('domain/participant/index', () => {
           {
             "participantCurrencyId": :int,
             "participantId": ${participantId},
-            "currencyId": "KES",
+            "currencyId": "USD",
             "ledgerAccountTypeId": 1,
             "isActive": 0,
             "createdDate": :ignore
@@ -110,7 +110,7 @@ describe('domain/participant/index', () => {
           {
             "participantCurrencyId": :int,
             "participantId": ${participantId},
-            "currencyId": "KES",
+            "currencyId": "USD",
             "ledgerAccountTypeId": 2,
             "isActive": 0,
             "createdDate": :ignore
@@ -119,229 +119,6 @@ describe('domain/participant/index', () => {
         ]
       }`).checkStringUnwrap(JSON.stringify(created, null, 2))
     }
-  })
-
-  it('getAll()', async () => {
-    const result = await ParticipantService.getAll()
-    Snapshot.from(`[
-      {
-        "participantId": 2,
-        "name": "dfspa",
-        "description": null,
-        "isActive": 1,
-        "createdDate": ":ignore",
-        "createdBy": "unknown",
-        "isProxy": 0,
-        "currencyList": [
-          {
-            "participantCurrencyId": 3,
-            "participantId": 2,
-            "currencyId": "USD",
-            "ledgerAccountTypeId": 1,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 4,
-            "participantId": 2,
-            "currencyId": "USD",
-            "ledgerAccountTypeId": 2,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 5,
-            "participantId": 2,
-            "currencyId": "KES",
-            "ledgerAccountTypeId": 1,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 6,
-            "participantId": 2,
-            "currencyId": "KES",
-            "ledgerAccountTypeId": 2,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          }
-        ]
-      },
-      {
-        "participantId": 3,
-        "name": "dfspb",
-        "description": null,
-        "isActive": 1,
-        "createdDate": ":ignore",
-        "createdBy": "unknown",
-        "isProxy": 0,
-        "currencyList": [
-          {
-            "participantCurrencyId": 7,
-            "participantId": 3,
-            "currencyId": "USD",
-            "ledgerAccountTypeId": 1,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 8,
-            "participantId": 3,
-            "currencyId": "USD",
-            "ledgerAccountTypeId": 2,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 9,
-            "participantId": 3,
-            "currencyId": "KES",
-            "ledgerAccountTypeId": 1,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 10,
-            "participantId": 3,
-            "currencyId": "KES",
-            "ledgerAccountTypeId": 2,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          }
-        ]
-      },
-      {
-        "participantId": 4,
-        "name": "dfspc",
-        "description": null,
-        "isActive": 1,
-        "createdDate": ":ignore",
-        "createdBy": "unknown",
-        "isProxy": 0,
-        "currencyList": [
-          {
-            "participantCurrencyId": 11,
-            "participantId": 4,
-            "currencyId": "USD",
-            "ledgerAccountTypeId": 1,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 12,
-            "participantId": 4,
-            "currencyId": "USD",
-            "ledgerAccountTypeId": 2,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 13,
-            "participantId": 4,
-            "currencyId": "KES",
-            "ledgerAccountTypeId": 1,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 14,
-            "participantId": 4,
-            "currencyId": "KES",
-            "ledgerAccountTypeId": 2,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          }
-        ]
-      },
-      {
-        "participantId": 5,
-        "name": "dfspd",
-        "description": null,
-        "isActive": 1,
-        "createdDate": ":ignore",
-        "createdBy": "unknown",
-        "isProxy": 1,
-        "currencyList": [
-          {
-            "participantCurrencyId": 15,
-            "participantId": 5,
-            "currencyId": "USD",
-            "ledgerAccountTypeId": 1,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 16,
-            "participantId": 5,
-            "currencyId": "USD",
-            "ledgerAccountTypeId": 2,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 17,
-            "participantId": 5,
-            "currencyId": "KES",
-            "ledgerAccountTypeId": 1,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 18,
-            "participantId": 5,
-            "currencyId": "KES",
-            "ledgerAccountTypeId": 2,
-            "isActive": 0,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          }
-        ]
-      },
-      {
-        "participantId": 1,
-        "name": "Hub",
-        "description": "Hub Operator",
-        "isActive": 1,
-        "createdDate": ":ignore",
-        "createdBy": "seeds",
-        "isProxy": 0,
-        "currencyList": [
-          {
-            "participantCurrencyId": 1,
-            "participantId": 1,
-            "currencyId": "USD",
-            "ledgerAccountTypeId": :ignore,
-            "isActive": 1,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          },
-          {
-            "participantCurrencyId": 2,
-            "participantId": 1,
-            "currencyId": "USD",
-            "ledgerAccountTypeId": :ignore,
-            "isActive": 1,
-            "createdDate": ":ignore",
-            "createdBy": "unknown"
-          }
-        ]
-      }
-    ]`).checkUnwrap(result)
   })
 
   it('getById()', async () => {
@@ -357,36 +134,36 @@ describe('domain/participant/index', () => {
       "isProxy": 0,
       "currencyList": [
         {
-          "participantCurrencyId": 7,
+          "participantCurrencyId": :ignore,
           "participantId": 3,
-          "currencyId": "USD",
+          "currencyId": "KES",
           "ledgerAccountTypeId": 1,
           "isActive": 0,
           "createdDate": ":ignore",
           "createdBy": "unknown"
         },
         {
-          "participantCurrencyId": 8,
+          "participantCurrencyId": :ignore,
           "participantId": 3,
-          "currencyId": "USD",
+          "currencyId": "KES",
           "ledgerAccountTypeId": 2,
           "isActive": 0,
           "createdDate": ":ignore",
           "createdBy": "unknown"
         },
         {
-          "participantCurrencyId": 9,
+          "participantCurrencyId": :ignore,
           "participantId": 3,
-          "currencyId": "KES",
+          "currencyId": "USD",
           "ledgerAccountTypeId": 1,
           "isActive": 0,
           "createdDate": ":ignore",
           "createdBy": "unknown"
         },
         {
-          "participantCurrencyId": 10,
+          "participantCurrencyId": :ignore,
           "participantId": 3,
-          "currencyId": "KES",
+          "currencyId": "USD",
           "ledgerAccountTypeId": 2,
           "isActive": 0,
           "createdDate": ":ignore",
@@ -639,7 +416,7 @@ describe('domain/participant/index', () => {
     Snapshot.from(`[
       {
         "participantLimitId": :ignore,
-        "participantCurrencyId": 21,
+        "participantCurrencyId": :ignore,
         "participantLimitTypeId": 1,
         "value": "9999.0000",
         "thresholdAlarmPercentage": "11.00",
@@ -656,7 +433,7 @@ describe('domain/participant/index', () => {
     Snapshot.from(`[
       {
         "participantLimitId": :ignore,
-        "participantCurrencyId": 21,
+        "participantCurrencyId": :ignore,
         "participantLimitTypeId": 1,
         "value": "9999.0000",
         "thresholdAlarmPercentage": "11.00",

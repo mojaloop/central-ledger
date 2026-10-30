@@ -193,7 +193,7 @@ export class LedgerTigerBeetle implements Ledger {
     assertBoolean(cmd.isProxy)
 
     if (!cmd.ids) {
-      const idsToCreate = cmd.currencies.length * 10
+      const idsToCreate = cmd.currencies.length * 13
       cmd.ids = Array.from({ length: idsToCreate }, (_) => Number(this.deps.helper.idSmall()))
     }
     try {
@@ -2022,7 +2022,7 @@ export class LedgerTigerBeetle implements Ledger {
 
     const context = await this.metaStore.getPaymentContext(prepareIds, currencies, dfspIds)
     const netDebitCaps = Object.values(await this.getInternalNetDebitCaps())
-    const prepareHashes = prepares.map(input => Helper.hashTransferProperties2(input.payload))
+    const prepareHashes = prepares.map(input => Helper.hashPrepare(input.payload))
 
     // Results are arrays matching the prepares list.
     const resultsValidation = this.prepareCheckValid(prepares, context, netDebitCaps)

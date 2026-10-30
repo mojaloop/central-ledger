@@ -28,7 +28,7 @@ describe('ledger benchmark', () => {
     }, { LEDGER: 'SQL' })
     const resultB = await run({
       ...options,
-      bucketSize: 1250,
+      bucketSize: 1150,
     }, { LEDGER: 'TIGERBEETLE' })
 
     const left = printResult(resultA)
@@ -48,7 +48,7 @@ describe('ledger benchmark', () => {
     }, { LEDGER: 'SQL' })
     const resultB = await run({
       ...options,
-      bucketSize: 1250,
+      bucketSize: 1150,
     }, { LEDGER: 'TIGERBEETLE' })
 
     const left = printResult(resultA)
@@ -59,12 +59,12 @@ describe('ledger benchmark', () => {
   it.only('TigerBeetle solo, prepare() + fulfil()', async () => {
     const options = {
       mode: 'E2E' as 'E2E',
-      payments: envOrDefaultNumber('PAYMENTS', 100000),
+      payments: envOrDefaultNumber('PAYMENTS', 50_000),
     }
     printOptions(options)
     const result = await run({
       ...options,
-      bucketSize: 1300,
+      bucketSize: 1150,
     }, { 
       LEDGER: 'TIGERBEETLE', 
       // Set these to be able to connect to a specific cluster!
@@ -175,7 +175,6 @@ const printSideBySide = (
     console.log(left.padEnd(paddingLeft) + ` | ` + right)
   })
 }
-
 
 const run = async (
   options: BenchmarkOptions,

@@ -486,6 +486,14 @@ export default class HandlerV2 {
       createdDate: acc.createdDate,
       createdBy: 'unknown',
     }))
+    // Sort accounts by currency, then ledgerAccountType to be consistent.
+    hubAccounts.sort((a, b) => {
+      if (a.currency === b.currency) {
+        return a.ledgerAccountType.localeCompare(b.ledgerAccountType)
+      }
+
+      return a.currency.localeCompare(b.currency)
+    })
     reply.push({
       name: 'Hub',
       id: hubUrl,
@@ -499,7 +507,6 @@ export default class HandlerV2 {
       isProxy: 0,
     })
 
-    // Order by name to be consistent between NONE and LEDGER implementations.
     reply.sort((a, b) => a.name.localeCompare(b.name))
     return reply
   }
@@ -779,7 +786,11 @@ export default class HandlerV2 {
       })
 
       if (limitResponse.type === 'NOT_FOUND') {
-        throw limitResponse.error
+        // Backwards compatiblity , just return [] unless error was the following
+        if (limitResponse.error.message === 'participant not found') {
+          throw limitResponse.error
+        }
+        return []
       }
 
       // Special case to match legacy implementation. If type !== NET_DEBIT_CAP, simply return [].
@@ -959,7 +970,8 @@ export default class HandlerV2 {
       })
 
       if (result.type === 'FAILURE') {
-        throw result.error
+        // Backwards compatiblity, expects a 400 status code.
+        throw fspiopErrorFactory.participantNotFound()
       }
 
       // The Ledger doesn't return anything, but the API Expects a response body.
@@ -1365,6 +1377,14 @@ export default class HandlerV2 {
         createdDate: new Date(currentValue.createdDate),
         createdBy: currentValue.createdBy
       }
+    })
+    // Sort accounts by currency, then ledgerAccountType to be consistent.
+    accounts.sort((a, b) => {
+      if (a.currency === b.currency) {
+        return a.ledgerAccountType.localeCompare(b.ledgerAccountType)
+      }
+
+      return a.currency.localeCompare(b.currency)
     })
     return {
       name,

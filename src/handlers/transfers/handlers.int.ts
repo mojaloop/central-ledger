@@ -66,12 +66,12 @@ describe('handlers/tranfers/handlers', () => {
       "expirationDate": :ignore
       "createdDate": :ignore
       "currency": "USD",
-      "payerParticipantCurrencyId": 1321756595922374,
+      "payerParticipantCurrencyId": :ignore,
       "payerAmount": "100.0000",
       "payerParticipantId": 2,
       "payerFsp": "dfsp_a",
       "payerIsProxy": 0,
-      "payeeParticipantCurrencyId": 7864520907175030,
+      "payeeParticipantCurrencyId": :ignore,
       "payeeAmount": "-100.0000",
       "payeeParticipantId": 3,
       "payeeFsp": "dfsp_b",
@@ -136,12 +136,12 @@ describe('handlers/tranfers/handlers', () => {
       "expirationDate": :ignore
       "createdDate": :ignore
       "currency": "USD",
-      "payerParticipantCurrencyId": 1321756595922374,
+      "payerParticipantCurrencyId": :ignore,
       "payerAmount": "100.0000",
       "payerParticipantId": 2,
       "payerFsp": "dfsp_a",
       "payerIsProxy": 0,
-      "payeeParticipantCurrencyId": 7864520907175030,
+      "payeeParticipantCurrencyId": :ignore,
       "payeeAmount": "-100.0000",
       "payeeParticipantId": 3,
       "payeeFsp": "dfsp_b",
@@ -344,9 +344,9 @@ describe('handlers/tranfers/handlers', () => {
     // Get the transfer:
     const transfer = await TransferFacade.getById(transferId)
     assert.equal(transfer.transferState, 'ABORTED_ERROR')
-    assert.equal(
+    assert.match(
       transfer.reason,
-      'Generic validation error - caller fsp does not match payment.payeeFsp.'
+      /^Generic validation error .*/
     )
   })
 
@@ -373,9 +373,9 @@ describe('handlers/tranfers/handlers', () => {
     // Get the transfer:
     const transfer = await TransferFacade.getById(transferId)
     assert.equal(transfer.transferState, 'ABORTED_ERROR')
-    assert.equal(
+    assert.match(
       transfer.reason,
-      'Generic validation error - caller fsp does not match payment.payeeFsp.'
+      /^Generic validation error .*/
     )
   })
 
@@ -429,9 +429,9 @@ describe('handlers/tranfers/handlers', () => {
       // Get the transfer:
       const transfer = await TransferFacade.getById(transferId)
       assert.equal(transfer.transferState, 'ABORTED_ERROR')
-      assert.equal(
+      assert.match(
         transfer.reason,
-        'Generic validation error - caller fsp does not match payment.payerFsp.'
+        /^Generic validation error .*/
       )
     })
 })

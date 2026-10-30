@@ -88,7 +88,9 @@ export const createDfsp = async (harness: Harness, payload: CreateDfspPayload): 
       const result = await harness.ledger.deposit({
         // Derived id: dfspId + currency + deposit_opening
         // transferId: `${payload.name}_${currency}_deposit_opening`,
-        transferId: harness.prng.intExclusive(10000).toString(),
+        // TODO: why did we change this to a random number?
+        // Maybe this breaks the fuzzer?
+        transferId: harness.prng.uuidv4(),
         dfspId: payload.name,
         currency,
         amount: deposit,

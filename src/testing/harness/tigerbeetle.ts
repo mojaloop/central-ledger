@@ -17,7 +17,14 @@ const logger = Logger.child({ scope: 'harness' })
 
 interface DependencyOptionsTigerBeetle extends DependencyOptions {
   pathToBinary: string,
-  dataDir: string,
+
+  /**
+   * Data file location. If you provide more than one, then it will fall back to other 
+   * directories in case the previous fails or runs out of space etc. This is helpful for using 
+   * RAMDisk for some installs, but automatically falling back to disk in case the RAMDisk is 
+   * not available.
+   */
+  dataDirs: Array<string>,
   version: string
 }
 
@@ -36,7 +43,8 @@ export class TigerBeetle {
   private _connectionOptions: ConnectionOptionsTigerBeetle | null = null
   private pathToBinary: string
   private dataFileName: string
-  private pathToDataFile: string
+  private pathToDataFile: string | null = null
+  private pathToDataFiles: Array<string>
   private child: ChildProcess | null = null
 
   private readonly releases = [
@@ -68,7 +76,7 @@ export class TigerBeetle {
     }
 
     this.dataFileName = `0_0.${options.harnessId}.tigerbeetle`
-    this.pathToDataFile = path.join(this.options.dataDir, this.dataFileName)
+    this.pathToDataFiles = this.options.dataDirs.map(dir => path.join(dir, this.dataFileName))
     this.pathToBinary = options.pathToBinary
   }
 
@@ -79,6 +87,7 @@ export class TigerBeetle {
 
     await this.checkBinaryOrDownload()
     await this.createDataFileIfNotExists()
+    assert(this.pathToDataFile, 'Expected pathToDataFile to exist.')
 
     this.logger.info(`TigerBeetle starting at localhost:${port}`)
     this.logger.debug(`$ ${this.pathToBinary} start --addresses=${port} ${this.pathToDataFile}`)
@@ -119,7 +128,9 @@ export class TigerBeetle {
     }
 
     // Clean up the datafile.
-    fs.rmSync(this.pathToDataFile, { force: true})
+    if (this.pathToDataFile) {
+      fs.rmSync(this.pathToDataFile, { force: true})
+    }
   }
 
   private async checkBinaryOrDownload(): Promise<void> {
@@ -135,21 +146,49 @@ export class TigerBeetle {
     await this.downloadRelease(release.url, this.pathToBinary, release.checksum)
   } 
 
+  /**
+   * Try and make a data file at the pathToDataFiles[0], falling back to other paths if it fails
+   * and others are provided.
+   */
   private async createDataFileIfNotExists(): Promise<void> {
-    fs.mkdirSync(this.options.dataDir, {recursive: true})
-    const stats = fs.statSync(this.pathToDataFile, { throwIfNoEntry: false })
-    if (stats) {
-      this.logger.info(`createDataFileIfNotExists() - datafile exists at ${this.options.dataDir}.`)
-      // Data file already exists. Don't do anything.
-      return
+    assert(this.options.dataDirs.length === this.pathToDataFiles.length)
+    for (let idx = 0; idx < this.pathToDataFiles.length; idx++) {
+      const pathToDataFile = this.pathToDataFiles[idx]
+      const dataDir = this.options.dataDirs[idx]
+      
+      try {
+        fs.mkdirSync(dataDir, { recursive: true })
+      } catch (err) {
+        continue
+      }
+      const stats = fs.statSync(pathToDataFile, { throwIfNoEntry: false })
+      if (stats) {
+        this.logger.info(`createDataFileIfNotExists() - datafile exists at ${dataDir}.`)
+        // Data file already exists. Don't do anything.
+        return
+      }
+
+      this.logger.info(`createDataFileIfNotExists() - no datafile found at ${dataDir}. `
+        + `Creating a new one with\n`
+        + `'tigerbeetle format --cluster=0 --replica=0 --replia-count=1 --development ${pathToDataFile}'.`
+      )
+      try {
+        await execAsync(`${this.pathToBinary} format --cluster=0 ` +
+          `--replica=0 --replica-count=1 --development ${pathToDataFile}`
+        )
+        // We made a data file.
+        this.pathToDataFile = pathToDataFile
+      } catch (err) {
+        continue
+      }
     }
 
-    this.logger.info(`createDataFileIfNotExists() - no datafile found at ${this.options.dataDir}. ` 
-      + `Creating a new one with\n`
-      + `'tigerbeetle format --cluster=0 --replica=0 --replia-count=1 --development ${this.pathToDataFile}'.`)
-    await execAsync(`${this.pathToBinary} format --cluster=0 `+
-      `--replica=0 --replica-count=1 --development ${this.pathToDataFile}`
-    )
+    if (!this.pathToDataFile) {
+      const msg = `Failed to create data file in the following locations: ` + 
+      `[${this.pathToDataFiles.join(',')}]`
+      this.logger.error(msg)
+      throw new Error(msg)
+    }
   }
 
   private async downloadRelease(url: string, to: string, checksum: string): Promise<void> {

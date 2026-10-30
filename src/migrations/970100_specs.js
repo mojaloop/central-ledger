@@ -86,7 +86,7 @@ exports.up = async (knex) => {
         t.dateTime('changedDate').notNullable()
 
         t.primary(['dfspId', 'currency'])
-        t.foreign('dfspId').references('dfspId').inTable('metaDfspRoot') 
+        t.foreign('dfspId').references('dfspId').inTable('metaDfspRoot')
         t.foreign('currency').references('currencyId').inTable('currency')
       })
     }

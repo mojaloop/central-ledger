@@ -69,6 +69,8 @@ const HandlerParticipantsV2 = require('../api_admin/participants/handler-v2').de
 const HandlerTransactionsV2 = require('../api_admin/transactions/handler-v2').default
 const routesAdminBuilder = require('../api_admin/routes-v2').default
 const routesSettlementBuilder = require('../api_settlement/routes-v2').default
+const Helper = require('../domain/ledger/sql/helper').default
+const { randomBytes } = require('node:crypto')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
@@ -233,7 +235,11 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
       createRemittanceEntity: createRemittanceEntityPayment,
       definePositionParticipant,
       effectToKafkaMessage: helper.effectToKafkaMessage.bind(helper),
-      db: Db._knex
+      db: Db._knex,
+      helper: new Helper({
+        randomBytes,
+        config: Config
+      })
     })
     const dispatchHandler = new DispatchTransferHandler(Config, ledger)
     const timeoutHandlerV2 = new TimeoutHandlerV2(Config, ledger)

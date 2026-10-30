@@ -338,8 +338,12 @@ export const unwrapResponseWithError = async (asyncFunction: (reply: any) => any
   } catch (err: any) {
     // Handle FSPIOP errors
     if (err.httpStatusCode && typeof err.toApiErrorObject === 'function') {
+      const apiError = err.toApiErrorObject()
+      if (apiError.errorInformation?.extensionList) {
+        delete apiError.errorInformation.extensionList
+      }
       return {
-        responseBody: err.toApiErrorObject({ includeCauseExtension: false, truncateExtensions: false }),
+        responseBody: apiError,
         responseCode: err.httpStatusCode
       }
     }

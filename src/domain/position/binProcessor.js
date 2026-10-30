@@ -149,7 +149,7 @@ const processBins = async (bins, trx) => {
     let changePositions = false
 
     if (accountID !== '0') {
-      // TODO(LD): this positions is undefined when the account is inactive!
+      // TODO(LD): this position is undefined when the account is inactive!
       settlementParticipantPosition = positions[accountIdMap[accountID].settlementCurrencyId].value
 
       // TODO(LD): This is undefined when the participanLimit and/or participantCurrency is disabled.

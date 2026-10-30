@@ -102,6 +102,12 @@ const getById = async (id) => {
   if (participant) {
     const currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     if (currencyList) {
+      currencyList.sort((a, b) => {
+        if (a.currencyId === b.currencyId) {
+          return a.ledgerAccountTypeId - b.ledgerAccountTypeId
+        }
+        return a.currencyId.localeCompare(b.currencyId)
+      })
       participant.currencyList = currencyList
     } else {
       participant.currencyList = []
@@ -158,8 +164,8 @@ const createParticipantCurrency = async (participantId, currencyId, ledgerAccoun
     if (!id) {
       id = Number(randomBytes(8).readBigInt64BE() & 0x1FFFFFFFFFFFFFn)
     }
-    const participantCurrency = await ParticipantCurrencyModel.create(id, participantId, currencyId, ledgerAccountTypeId, isActive)
-    return participantCurrency
+    await ParticipantCurrencyModel.create(id, participantId, currencyId, ledgerAccountTypeId, isActive)
+    return id
   } catch (err) {
     log.error('error creating participant currency', err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -993,7 +999,7 @@ const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTime
     logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
     if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT) {
       // Ensure account is open.
-      
+
       // Only validate the expiry on commit.
       if (new Date(existingTransfer.expirationDate) <= new Date()) {
         logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)
