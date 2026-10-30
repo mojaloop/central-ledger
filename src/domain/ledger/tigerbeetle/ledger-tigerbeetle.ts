@@ -2039,7 +2039,7 @@ export class LedgerTigerBeetle implements Ledger {
       // Brand new Prepare.
       if (!specPrepare && !specTransfer) {
         // TODO: better typing!
-        results.push({ tag: 'OK', context: {payerLocation: 'LOCAL', payeeLocation: 'LOCAL'}})
+        results.push({ tag: 'OK', context: { payerLocation: 'LOCAL', payeeLocation: 'LOCAL' } })
         return
       }
 
@@ -2149,7 +2149,7 @@ export class LedgerTigerBeetle implements Ledger {
       // Save the valid specPrepare and transfer payload.
       specPreparesToSave.push({ id: prepare.transferId, payloadHash })
       specTransfersToSave.push(Helper.prepareToSpecTransferCreate(
-        prepare.payload, resultValidation.context 
+        prepare.payload, resultValidation.context
       ))
 
       // Mark as passed the valid and idempotency check.
@@ -2412,6 +2412,12 @@ export class LedgerTigerBeetle implements Ledger {
         if (fulfilmentResult.type === 'FAIL') {
           return { tag: 'INVALID_FULFILMENT' }
         }
+      }
+
+      // Check the expiration of the prepare.
+      // TODO: for forwarded prepares, we need to ignore the expiration.
+      if (specTransfer.expiration < new Date()) {
+        return { tag: 'PREPARE_EXPIRED' }
       }
 
       return { tag: 'OK', specFulfil }

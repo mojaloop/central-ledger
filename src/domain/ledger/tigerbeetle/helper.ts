@@ -66,6 +66,8 @@ export type FulfilInternalStatus = {
 } | {
   tag: 'ALREADY_ABORTED'
 } | {
+  tag: 'PREPARE_EXPIRED'
+} | {
   tag: 'INVALID_FULFILMENT'
 } | {
   tag: 'OK',
@@ -880,7 +882,7 @@ export default class Helper {
         id: prepare.transferId,
         currency: prepare.payload.amount.currency,
         amount: prepare.payload.amount.amount,
-        expiration: prepare.payload.expiration,
+        expiration: new Date(prepare.payload.expiration),
         payerId: prepare.payload.payerFsp,
         payeeId: prepare.payload.payeeFsp,
         ilpCondition: prepare.payload.condition,
@@ -1183,7 +1185,7 @@ export default class Helper {
       { length: preparesCount },
       // TODO: this is not ideal, we don't really need to keep this context around. 
       // Or generate it here.
-      () => ({ tag: 'OK', context: {payerLocation: 'LOCAL', payeeLocation: 'LOCAL'} })
+      () => ({ tag: 'OK', context: { payerLocation: 'LOCAL', payeeLocation: 'LOCAL' } })
     )
 
     results.forEach((result, idxAllTransfers) => {
@@ -1338,6 +1340,7 @@ export default class Helper {
           effects: [this.buildEffectFulfilNotificationSuccess(fulfil, status.specFulfil)]
         }
       case 'PREPARE_NOT_FOUND':
+      case 'PREPARE_EXPIRED':
         return {
           type: PaymentFulfilResultType.FAIL_VALIDATION,
           effects: [],
@@ -2044,7 +2047,7 @@ export default class Helper {
   }
 
   public static prepareToSpecTransferCreate(
-    prepare: CreatePaymentDto, 
+    prepare: CreatePaymentDto,
     context: {
       payerLocation: ParticipantLocation,
       payeeLocation: ParticipantLocation,
@@ -2053,7 +2056,7 @@ export default class Helper {
       id: prepare.transferId,
       currency: prepare.amount.currency,
       amount: prepare.amount.amount,
-      expiration: prepare.expiration,
+      expiration: new Date(prepare.expiration),
       payerId: prepare.payerFsp,
       payeeId: prepare.payeeFsp,
       payerLocation: context.payerLocation,
@@ -2073,7 +2076,7 @@ export default class Helper {
     }, {} as Record<string, T>)
   }
 
-  public static toMapByDfspAndCurrency<T extends {dfspId: string, currency: string}>(items: T[]): Record<string, T> {
+  public static toMapByDfspAndCurrency<T extends { dfspId: string, currency: string }>(items: T[]): Record<string, T> {
     const key = (item: T) => `${item.dfspId}:${item.currency}`
     return items.reduce((acc, curr) => {
       acc[key(curr)] = curr

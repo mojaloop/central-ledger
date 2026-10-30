@@ -242,52 +242,7 @@ class LedgerFuzzer {
   private prng: PRNG
   private reporter: Reporter
 
-  private weights: Record<string, number> = {
-    createHubAccount: 2,
-    createDfsp: 6,
-    disableDfsp: 1,
-    enableDfsp: 1,
-    enableDfspAccount: 1,
-    disableDfspAccount: 1,
-    deposit: 1,
-    withdrawPrepare: 2,
-    withdrawCommit: 2,
-    withdrawAbort: 2,
-    getHubAccounts: 1,
-    getDfsp: 1,
-    getAllDfsps: 1,
-    getDfspAccounts: 2,
-    getAllDfspAccounts: 1,
-    setNetDebitCap: 2,
-    getNetDebitCap: 2,
-    getNetDebitCaps: 2,
-    // prepare: 1,
-    // fulfil: 1,
-    // sweepTimedOut: 1,
-    // lookupTransfer: 1,
-    // closeSettlementWindow: 1,
-    // settlementPrepare: 1,
-    // settlementAbort: 1,
-    // settlementCommit: 1,
-    // settlementUpdate: 1,
-    // getSettlementWindows: 1,
-    // getSettlementWindow: 1,
-    // getSettlement: 1,
-    // getSettlements: 1,
-    prepare: 0,
-    fulfil: 0,
-    sweepTimedOut: 0,
-    lookupTransfer: 0,
-    closeSettlementWindow: 0,
-    settlementPrepare: 0,
-    settlementAbort: 0,
-    settlementCommit: 0,
-    settlementUpdate: 0,
-    getSettlementWindows: 0,
-    getSettlementWindow: 0,
-    getSettlement: 0,
-    getSettlements: 0,
-  }
+  private weights: Record<string, number> = {}
 
   constructor(
     private options: FuzzOptions,
@@ -297,6 +252,9 @@ class LedgerFuzzer {
     this.stepsMax = options.stepsMax
     this.ledger = harness.ledger
     this.prng = harness.prng
+
+    // Initial weights.
+    this.applyWeightsPhaseBootstrap()
 
     this.reporter = new Reporter({
       ledger: this.ledger,
@@ -429,8 +387,8 @@ class LedgerFuzzer {
 
     const cmd: CreateDfspCommand = {
       dfspId: name,
-      // We previously set this to true, but it caused silent errors in ledger-sql where we
-      // had Transfers saved to the database with payerIsProxy=1 and payeeIsProxy=1, but the
+      // We previously set this to random true/false, but it caused silent errors in ledger-sql where
+      // we had Transfers saved to the database with payerIsProxy=1 and payeeIsProxy=1, but the
       // 'externalParticipants' weren't resolving correctly, and failing on fulfil().
       // So for now, we're making all of the DFSPs local to the switch, and can return to fuzz
       // testing with proxies later on.
@@ -460,14 +418,117 @@ class LedgerFuzzer {
       }
     }
 
-    if (this.registeredDfsps.length >= 5) {
-      this.weights.prepare = 15
-      this.weights.fulfil = 15
+    // TODO: also need to check for net debit caps etc.
+    if (this.registeredDfsps.length >= 10) {
+      this.applyWeightsPhaseOne()
     }
+  }
 
-    if (this.registeredDfsps.length >= 25) {
-      // No more need to more dfsps.
-      this.weights.createDfsp = 0
+  private applyWeightsPhaseBootstrap() {
+    this.weights = {
+      createHubAccount: 2,
+      createDfsp: 6,
+      disableDfsp: 1,
+      enableDfsp: 1,
+      enableDfspAccount: 1,
+      disableDfspAccount: 1,
+      deposit: 1,
+      withdrawPrepare: 2,
+      withdrawCommit: 2,
+      withdrawAbort: 2,
+      getHubAccounts: 1,
+      getDfsp: 1,
+      getAllDfsps: 1,
+      getDfspAccounts: 1,
+      getAllDfspAccounts: 1,
+      setNetDebitCap: 2,
+      getNetDebitCap: 1,
+      getNetDebitCaps: 1,
+      prepare: 0,
+      fulfil: 0,
+      sweepTimedOut: 0,
+      lookupTransfer: 0,
+      closeSettlementWindow: 0,
+      settlementPrepare: 0,
+      settlementAbort: 0,
+      settlementCommit: 0,
+      settlementUpdate: 0,
+      getSettlementWindows: 0,
+      getSettlementWindow: 0,
+      getSettlement: 0,
+      getSettlements: 0,
+    }
+  }
+
+  private applyWeightsPhaseOne() {
+    this.weights = {
+      createHubAccount: 0,
+      createDfsp: 1,
+      disableDfsp: 1,
+      enableDfsp: 1,
+      enableDfspAccount: 1,
+      disableDfspAccount: 1,
+      deposit: 1,
+      withdrawPrepare: 2,
+      withdrawCommit: 2,
+      withdrawAbort: 2,
+      getHubAccounts: 1,
+      getDfsp: 1,
+      getAllDfsps: 1,
+      getDfspAccounts: 1,
+      getAllDfspAccounts: 1,
+      setNetDebitCap: 2,
+      getNetDebitCap: 1,
+      getNetDebitCaps: 1,
+      prepare: 100,
+      fulfil: 50,
+      sweepTimedOut: 0,
+      lookupTransfer: 0,
+      closeSettlementWindow: 0,
+      settlementPrepare: 0,
+      settlementAbort: 0,
+      settlementCommit: 0,
+      settlementUpdate: 0,
+      getSettlementWindows: 0,
+      getSettlementWindow: 0,
+      getSettlement: 0,
+      getSettlements: 0,
+    }
+  }
+
+  private applyWeightsPhaseTwo() {
+    this.weights = {
+      createHubAccount: 0,
+      createDfsp: 0,
+      disableDfsp: 1,
+      enableDfsp: 1,
+      enableDfspAccount: 1,
+      disableDfspAccount: 1,
+      deposit: 1,
+      withdrawPrepare: 2,
+      withdrawCommit: 2,
+      withdrawAbort: 2,
+      getHubAccounts: 0,
+      getDfsp: 1,
+      getAllDfsps: 1,
+      getDfspAccounts: 1,
+      getAllDfspAccounts: 1,
+      setNetDebitCap: 2,
+      getNetDebitCap: 1,
+      getNetDebitCaps: 1,
+      prepare: 100,
+      fulfil: 50,
+      sweepTimedOut: 0,
+      lookupTransfer: 0,
+      closeSettlementWindow: 0,
+      settlementPrepare: 0,
+      settlementAbort: 0,
+      settlementCommit: 0,
+      settlementUpdate: 0,
+      getSettlementWindows: 0,
+      getSettlementWindow: 0,
+      getSettlement: 0,
+      getSettlements: 0,
     }
   }
 
