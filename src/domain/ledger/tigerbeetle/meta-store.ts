@@ -19,7 +19,7 @@ export type EnableHubCurrencyResponse = {
 } | {
   type: 'EXISTS'
 } | {
-  type: 'FAILURE',
+  type: 'FAILURE'
   error: any
 }
 
@@ -34,23 +34,23 @@ export interface CurrencyConfig {
   /**
    * ISO 4217 Currency code for this Ledger.
    */
-  currency: string,
+  currency: string
 
   /**
    * The TigerBeetle ledger where 'real' funds are tracked. 
    * Used for financial reporting.
    */
-  idOperation: number,
+  idOperation: number
 
   /**
    * A separate 'control' ledger for non-financial operations.
    */
-  idControl: number,
+  idControl: number
 
   /**
    * Backwards Compatibility: The AccountId for the settlement balance account.
    */
-  settlementBalance: bigint,
+  settlementBalance: bigint
 }
 
 /**
@@ -61,31 +61,30 @@ export type LegacyHubCurrency = {
   /**
    * The id of the currency account.
    */
-  id: number,
-
-  currency: string,
+  id: number
+  currency: string
   /**
    * The Legacy account type.
    */
-  accountType: string,
+  accountType: string
 
   /**
    * When the LegacyHubCurrency was created.
    */
-  createdDate: Date,
+  createdDate: Date
 
   /**
    * When the LegacyHubCurrency was last updated.
    */
-  changedDate: Date,
+  changedDate: Date
 }
 
 /**
  * Stores the mapping between the dfspId => DfspRoot Id on TigerBeetle.
  */
 export interface DfspRoot {
-  dfspId: string,
-  id: bigint,
+  dfspId: string
+  id: bigint
 
   /**
    * TODO: refactor to ParticipantLocation
@@ -98,17 +97,17 @@ export interface DfspRoot {
  * The set of TigerBeetle Account ids.
  */
 export interface DfspAccountIds {
-  deposit: bigint,
-  unrestricted: bigint,
+  deposit: bigint
+  unrestricted: bigint
   /**
    * @deprecated Replaced by netDebitCapSet and netDebitCapSetUtil.
    */
-  unrestrictedLock: bigint,
+  unrestrictedLock: bigint
   netDebitCapSet: bigint
   netDebitCapSetUtil: bigint
-  restricted: bigint,
-  reserved: bigint,
-  commitedOutgoing: bigint,
+  restricted: bigint
+  reserved: bigint
+  commitedOutgoing: bigint
   clearingCredit: bigint
   clearingSetup: bigint
   clearingLimit: bigint
@@ -116,7 +115,7 @@ export interface DfspAccountIds {
   /**
    * Control account to act as counterparty for netDebitCap.
    */
-  control: bigint,
+  control: bigint
 
   /**
    * TigerBeetle account id of the net debit cap control account.
@@ -128,38 +127,38 @@ export interface DfspAccountIds {
  * Defines the TigerBeetle Accounts for a dfspId + currency.
  */
 export interface DfspCurrency extends DfspAccountIds {
-  dfspId: string,
-  currency: string,
+  dfspId: string
+  currency: string
 
   /**
    * When the account was last activated/deactivated.
    */
-  changedDate: Date,
+  changedDate: Date
 
   /**
    * Backwards compatibility: Keep track of the application timestamp when the position
    * account was last changed.
    */
-  changedDatePosition: Date,
+  changedDatePosition: Date
 
   /**
    * Backwards compatibility: Keep track of the application timestamp when the settlement
    * account was last changed.
    */
-  changedDateSettlement: Date,
+  changedDateSettlement: Date
 
   /**
    * When the account was created.
    */
-  createdDate: Date,
+  createdDate: Date
 }
 
 /**
  * Internal representation of the DfspRoot account.
  */
 export interface InternalDfspRoot extends Account {
-  dfspId: string,
-  isProxy: boolean,
+  dfspId: string
+  isProxy: boolean
 }
 
 /**
@@ -167,7 +166,7 @@ export interface InternalDfspRoot extends Account {
  */
 export interface InternalDfspCurrency extends Account {
   dfspId: string,
-  currency: string,
+  currency: string
 
   /**
    * Technically we don't need this since it lives on the account.code, but as a number,
@@ -176,48 +175,20 @@ export interface InternalDfspCurrency extends Account {
   accountCode: AccountCode
 }
 
-/**
- * Mapping from a currency => Set of TigerBeetle Ledger Ids.
- * 
- * TODO: rename to just Ledger?
- * @deprecated
- */
-export interface CurrencyLedger {
-  currency: string,
-  /**
-   * The TigerBeetle ledger where 'real' funds are tracked. 
-   * Used for financial reporting.
-   */
-  ledgerOperation: number,
-
-  /**
-   * A separate 'control' ledger for non-financial operations.
-   */
-  ledgerControl: number,
-
-  /** 
-   * The AccountId for the settlement balance account.
-   * This isn't really the best place for this, but we need to put it somewhere!
-   */
-  settlementBalance: bigint,
-
-  assetScale: number
-}
-
 export type NetDebitCap = {
-  type: 'UNLIMITED',
-  dfspId: string,
-  currency: string,
+  type: 'UNLIMITED'
+  dfspId: string
+  currency: string
 } | {
-  type: 'LIMITED',
+  type: 'LIMITED'
 
   /**
    * The amount to cap at. This is stored as a currency-native bigint, same as TigerBeetle.
    */
-  amount: bigint,
-  dfspId: string,
-  currency: string,
-  alarmPercentage: number,
+  amount: bigint
+  dfspId: string
+  currency: string
+  alarmPercentage: number
 }
 
 /**
@@ -226,76 +197,90 @@ export type NetDebitCap = {
  */
 export type ParticipantLocation = 'LOCAL' | 'PROXY'
 
-export type SpecTransfer = {
+
+/**
+ * Metadata relating to the payment.
+ */
+export type PaymentMeta = {
   id: string
   currency: string
   amount: string
   expiration: Date
   payerId: string
   payeeId: string
-  payerLocation: ParticipantLocation,
-  payeeLocation: ParticipantLocation,
+  payerLocation: ParticipantLocation
+  payeeLocation: ParticipantLocation
   ilpCondition: string
   ilpPacket: string
 }
 
-export type SpecFulfilUpdate = {
+export type FulfilMetaUpdate = {
   id: string,
   fulfilment: string,
   fulfiledAt: Date
 }
 
-export type SaveSpecTransferResult = {
+export type SavePaymentMetaResult = {
   id: string,
   type: 'SUCCESS' | 'FAILURE'
 }
 
-export type GetSpecTransferResult = {
+
+export type GetPaymentMetaResult = {
   type: 'SUCCESS'
   id: string,
-  specTransfer: SpecTransfer,
-  specFulfil: SpecFulfil
+  paymentMeta: PaymentMeta
+  fulfilMeta: FulfilMeta
 } | {
-  type: 'NOT_FOUND',
+  type: 'NOT_FOUND'
   id: string
 }
 
-export type AttachFulfilmentResult = {}
+export type PrepareMeta = {
+  id: string
+  payloadHash: number
 
-/**
- * Store these parameters of a prepare so that we can keep track of the aborted timestamp, and
- * the payload hash to check for modified prepares.
- */
-export type SpecPrepare = {
-  id: string,
-  payloadHash: number,
+  /**
+   * When the Prepare was aborted by the application.
+   */
   abortedAt?: Date
 }
 
-export type GetSpecPrepareResult = {
+export type GetPrepareMetaResult = {
   type: 'SUCCESS'
   id: string,
-  result: SpecPrepare
+  result: PrepareMeta
 } | {
-  type: 'NOT_FOUND',
+  type: 'NOT_FOUND'
   id: string
 }
 
-export type SpecFulfil = {
+export type FulfilMeta = {
   id: string,
-  payloadHash: number,
+  payloadHash: number
   fulfilment?: string,
   fulfiledAt?: Date,
   abortedAt?: Date
 }
 
-export interface DepsSpecStore {
-  config: ApplicationConfig
-  enums: Enums,
-  db: Knex,
-  helper: Helper,
+/**
+ * Combined context object which contains all of the metadata for processing prepare() + fulfil().
+ */
+export type ContextPayments = {
+  currencies: Array<string>
+  dfspIds: Array<string>
+  currencyConfigs: Array<CurrencyConfig>
+  dfspRoots: Array<DfspRoot>
+  dfspCurrencies: Array<DfspCurrency>
+  prepareMetas: Record<string, PrepareMeta>
+  fulfilMetas: Record<string, FulfilMeta>
+  paymentMetas: Record<string, PaymentMeta>
 }
 
+/**
+ * Combined context object which contains all of the metadata for processing ledger lifecycle
+ * methods.
+ */
 export type ContextDfsps = {
   currencies: Array<string>
   dfspIds: Array<string>,
@@ -304,41 +289,22 @@ export type ContextDfsps = {
   dfspCurrencies: Array<DfspCurrency>
 }
 
-export type ContextPayments = {
-  prepareIds: Array<string>,
-  specPrepares: Array<SpecPrepare>,
-  specFulfils: Array<SpecFulfil>
-  specTransfers: Array<SpecTransfer>
+export interface DepsMetaStore {
+  config: ApplicationConfig
+  enums: Enums,
+  db: Knex,
+  helper: Helper,
 }
-
-export type ContextFulfil = {
-  currencies: Array<string>
-  dfspIds: Array<string>
-  currencyConfigs: Array<CurrencyConfig>
-  dfspRoots: Array<DfspRoot>
-  dfspCurrencies: Array<DfspCurrency>
-  specPrepares: Array<SpecPrepare>
-  specFulfils: Array<SpecFulfil>
-  specTransfers: Array<SpecTransfer>
-}
-
-const TABLE_CURRENCY_CONFIG = 'specCurrencyConfig'
-const TABLE_CURRENCY_ACCOUNT = 'specLegacyHubCurrency'
-const TABLE_DFSP_ROOT = 'specDfspRoot'
-const TABLE_DFSP_CURRENCY = 'specDfspCurrency'
-const TABLE_PREPARE = 'specPrepare'
-const TABLE_TRANSFER = 'specTransfer'
-const TABLE_NET_DEBIT_CAP = 'specNetDebitCap'
 
 /**
- * @class SpecStore
- * @description Metadata store for TigerBeetle Account, Transfer and Hub metadata: 'Specifications'.
+ * @class MetaStore
+ * @description Metadata store for TigerBeetle Accounts, and Transfers.
  */
-export default class SpecStore {
+export default class MetaStore {
   private db: Knex;
   private readonly helper: Helper
 
-  constructor(private deps: DepsSpecStore) {
+  constructor(private deps: DepsMetaStore) {
     this.db = deps.db;
     this.helper = deps.helper
   }
@@ -359,7 +325,7 @@ export default class SpecStore {
 
       assert(cmd.accountIds.length >= 2, 'enableHubCurrency expects accountIds to be provided.')
 
-      // If accounts is empty, we just assume it's these two.
+      // If accounts is empty, assume it's these two.
       if (cmd.accountTypes.length === 0) {
         cmd.accountTypes.push(
           'HUB_MULTILATERAL_SETTLEMENT',
@@ -415,7 +381,7 @@ export default class SpecStore {
       trx = await this.db.transaction()
 
       // Look up the CurrencyConfig.
-      const existing = await trx(TABLE_CURRENCY_CONFIG)
+      const existing = await trx('metaCurrencyConfig')
         .select('currency')
         .where({ currency })
       if (existing.length > 0) {
@@ -424,14 +390,14 @@ export default class SpecStore {
       }
 
       // Create a new CurrencyConfig, ids are based on the number of existing currencies.
-      const currencyCountResult = await trx(TABLE_CURRENCY_CONFIG).count('* as count')
+      const currencyCountResult = await trx('metaCurrencyConfig').count('* as count')
       const currencyCount = Number(currencyCountResult[0].count)
       const [
         ledgerOperation,
         ledgerControl
       ] = LedgerTigerBeetleHelper.generateLedgerIds(currencyCount);
 
-      await trx(TABLE_CURRENCY_CONFIG).insert({
+      await trx('metaCurrencyConfig').insert({
         currency,
         ledgerOperation,
         ledgerControl,
@@ -457,7 +423,7 @@ export default class SpecStore {
       trx = await this.db.transaction()
 
       // Look up the LegacyHubCurrency.
-      const existing = await trx(TABLE_CURRENCY_ACCOUNT)
+      const existing = await trx('metaLegacyHubCurrency')
         .select('currency')
         .where({ currency: account.currency, accountType: account.accountType })
       if (existing.length > 0) {
@@ -467,7 +433,7 @@ export default class SpecStore {
         }
       }
 
-      await trx(TABLE_CURRENCY_ACCOUNT)
+      await trx('metaLegacyHubCurrency')
         .insert({
           id: account.id,
           currency: account.currency,
@@ -491,7 +457,7 @@ export default class SpecStore {
   }
 
   public async getCurrencyConfig(currency: string): Promise<CurrencyConfig> {
-    const rows = await this.db(TABLE_CURRENCY_CONFIG).where({ currency }).select('*')
+    const rows = await this.db('metaCurrencyConfig').where({ currency }).select('*')
     if (rows.length === 0) {
       throw new Error(`getCurrencyConfig() - no CurrencyConfig found for currency: ${currency}`);
     }
@@ -499,13 +465,13 @@ export default class SpecStore {
     assert(rows.length === 1, 'Expected only 1 row.')
     const row = rows[0]
 
-    return SpecStore.hydrateCurrencyConfig(row)
+    return MetaStore.hydrateCurrencyConfig(row)
   }
 
   public async getCurrencyConfigsMap(): Promise<Record<string, CurrencyConfig>> {
-    const rows = await this.db(TABLE_CURRENCY_CONFIG).select('*')
+    const rows = await this.db('metaCurrencyConfig').select('*')
 
-    return rows.map(SpecStore.hydrateCurrencyConfig)
+    return rows.map(MetaStore.hydrateCurrencyConfig)
       .reduce((acc, curr) => {
         acc[curr.currency] = curr
         return acc
@@ -513,13 +479,13 @@ export default class SpecStore {
   }
 
   public async getLegacyHubCurrenciesAll(): Promise<Array<LegacyHubCurrency>> {
-    const rows = await this.db(TABLE_CURRENCY_ACCOUNT).select('*')
-    return rows.map(SpecStore.hydrateLegacyHubCurrency)
+    const rows = await this.db('metaLegacyHubCurrency').select('*')
+    return rows.map(MetaStore.hydrateLegacyHubCurrency)
   }
 
   public async getLegacyHubCurrency(currency: string): Promise<Array<LegacyHubCurrency>> {
-    const rows = await this.db(TABLE_CURRENCY_ACCOUNT).where({ currency }).select('*')
-    return rows.map(SpecStore.hydrateLegacyHubCurrency)
+    const rows = await this.db('metaLegacyHubCurrency').where({ currency }).select('*')
+    return rows.map(MetaStore.hydrateLegacyHubCurrency)
   }
 
   public async assertCurrenciesEnabled(currencies: Array<string>): Promise<void> {
@@ -564,23 +530,23 @@ export default class SpecStore {
    * Create the TigerBeetle DfspRoot id for this DFSP.
    * Pass in an id to use if this is a new DfspRoot.
    */
-  public async getOrCreateDfspRoot(dfspId: string, isProxy: boolean, id: bigint): Promise<DfspRoot> {
+  public async getOrCreateDfspRoot(dfspId: string, isProxy: boolean, id: bigint):
+    Promise<DfspRoot> {
     let trx: Knex.Transaction | undefined
     try {
       trx = await this.db.transaction()
 
-      const row = await trx(TABLE_DFSP_ROOT).where({ dfspId }).select('*').first()
+      const row = await trx('metaDfspRoot').where({ dfspId }).select('*').first()
       if (row) {
         await trx.commit()
         return {
           dfspId: row.dfspId,
-          // TODO: rename.
-          id: row.masterAccountId,
+          id: row.id,
           isProxy: Boolean(row.isProxy),
         }
       }
 
-      await trx(TABLE_DFSP_ROOT).insert({ dfspId, masterAccountId: id, isProxy })
+      await trx('metaDfspRoot').insert({ dfspId, id, isProxy })
 
       await trx.commit()
       return {
@@ -598,12 +564,12 @@ export default class SpecStore {
   }
 
   public async getDfspRoot(dfspId: string): Promise<DfspRoot> {
-    const row = await this.db(TABLE_DFSP_ROOT).where({ dfspId }).select('*').first()
+    const row = await this.db('metaDfspRoot').where({ dfspId }).select('*').first()
     if (!row) {
       throw new Error(`No dfsp found for id: ${dfspId}`)
     }
 
-    return SpecStore.hydrateDfspRoot(row)
+    return MetaStore.hydrateDfspRoot(row)
   }
 
   /**
@@ -611,23 +577,130 @@ export default class SpecStore {
    * If a dfspid could not be found, it is not returned (doesn't throw an error).
    */
   public async getDfspRoots(dfspIds: Array<string>): Promise<Record<string, DfspRoot>> {
-    const rows = await this.db(TABLE_DFSP_ROOT).whereIn('dfspId', dfspIds).select('*')
-    return rows.map(SpecStore.hydrateDfspRoot)
+    const rows = await this.db('metaDfspRoot').whereIn('dfspId', dfspIds).select('*')
+    return rows.map(MetaStore.hydrateDfspRoot)
       .reduce((acc, curr) => {
         acc[curr.dfspId] = curr
         return acc
       }, {} as Record<string, DfspRoot>)
   }
 
-  public async getPrepareContextDfsps(
+  /**
+   * Given a list of paymentIds which may or not exist, and a list of currencies, lookup all of the 
+   * required metadata for processing payments.
+   * 
+   * This implementation does it in 2 round trips to the database, but could be optimized by:
+   * 1. Caching the Dfsp context results, since they will change only very slowly.
+   * 2. Combining into one mega query, at the cost of making that query very hard to understand.
+   */
+  public async getPaymentContext(
+    paymentIds: Array<string>, 
+    currencies: Array<string> = [], 
+    dfspIds: Array<string> = []
+  ): Promise<ContextPayments> {
+    if (paymentIds.length === 0 && currencies.length === 0 && dfspIds.length === 0) {
+      return {
+        currencies: [],
+        dfspIds: [],
+        currencyConfigs: [],
+        dfspRoots: [],
+        dfspCurrencies: [],
+        prepareMetas: {},
+        fulfilMetas: {},
+        paymentMetas: {},
+      }
+    }
+
+    const rowsTransfer = await this.db('metaPrepare')
+      .leftJoin('metaPayment', 'metaPrepare.id', 'metaPayment.id')
+      .leftJoin('metaFulfil', 'metaPrepare.id', 'metaFulfil.id')
+      .whereIn('metaPrepare.id', paymentIds)
+      .select(
+        'metaPrepare.id as id',
+        'metaPrepare.payloadHash as preparePayloadHash',
+        'metaPrepare.abortedAt as abortedAt',
+        'metaFulfil.payloadHash as fulfilPayloadHash',
+        'metaFulfil.abortedAt as fulfilAbortedAt',
+        'metaFulfil.fulfiledAt as fulfilFulfiledAt',
+        'metaFulfil.fulfilment as fulfilFulfilment',
+        'metaPayment.currency as currency',
+        'metaPayment.amount as amount',
+        'metaPayment.expiration as expiration',
+        'metaPayment.payerId as payerId',
+        'metaPayment.payeeId as payeeId',
+        'metaPayment.payerLocation as payerLocation',
+        'metaPayment.payeeLocation as payeeLocation',
+        'metaPayment.ilpCondition as ilpCondition',
+        'metaPayment.ilpPacket as ilpPacket'
+      )
+
+    const idsSeen: Record<string, true> = {}
+    const prepareMetas: Record<string, PrepareMeta> = {}
+    const fulfilMetas: Record<string, FulfilMeta> = {}
+    const paymentMetas: Record<string, PaymentMeta> = {}
+    const currencySet: Set<string> = new Set()
+    const dfspIdSet: Set<string> = new Set()
+
+    rowsTransfer.forEach(row => {
+      if (idsSeen[row.id]) return
+      idsSeen[row.id] = true
+
+      const prepareMeta = MetaStore.hydratePrepareMeta({
+        id: row.id,
+        payloadHash: row.preparePayloadHash,
+        abortedAt: row.abortedAt
+      })
+      prepareMetas[row.id] = prepareMeta
+
+      if (row.fulfilPayloadHash != null) {
+        const fulfilMeta = MetaStore.hydrateFulfilMeta({
+          id: row.id,
+          payloadHash: row.fulfilPayloadHash,
+          abortedAt: row.fulfilAbortedAt,
+          fulfiledAt: row.fulfilFulfiledAt,
+          fulfilment: row.fulfilFulfilment,
+        })
+
+        fulfilMetas[row.id] = fulfilMeta
+      }
+
+      if (row.amount != null) {
+        const paymentMeta = MetaStore.hydratePaymentMeta(row)
+        paymentMetas[row.id] = paymentMeta
+        currencySet.add(paymentMeta.currency)
+        dfspIdSet.add(paymentMeta.payerId)
+        dfspIdSet.add(paymentMeta.payeeId)
+      }
+    })
+
+    const paymentCurrencies = Array.from(currencySet)
+    const paymentDfspIds = Array.from(dfspIdSet)
+
+    const allCurrencies = [...currencies, ...paymentCurrencies]
+    const allDfspIds = [...dfspIds, ...paymentDfspIds]
+    const dfspContext = await this.getContextDfsps(allCurrencies, allDfspIds)
+
+    return {
+      currencies: allCurrencies,
+      dfspIds,
+      currencyConfigs: dfspContext.currencyConfigs,
+      dfspRoots: dfspContext.dfspRoots,
+      dfspCurrencies: dfspContext.dfspCurrencies,
+      prepareMetas,
+      fulfilMetas,
+      paymentMetas,
+    }
+  }
+
+  public async getContextDfsps(
     currencies: Array<string>,
     dfspIds: Array<string>
   ): Promise<ContextDfsps> {
-    const rows = await this.db('specDfspCurrency')
-      .join('specDfspRoot', 'specDfspCurrency.dfspId', 'specDfspRoot.dfspId')
-      .join('specCurrencyConfig', 'specDfspCurrency.currency', 'specCurrencyConfig.currency')
-      .whereIn('specDfspCurrency.dfspId', dfspIds)
-      .whereIn('specDfspCurrency.currency', currencies)
+    const rows = await this.db('metaDfspCurrency')
+      .join('metaDfspRoot', 'metaDfspCurrency.dfspId', 'metaDfspRoot.dfspId')
+      .join('metaCurrencyConfig', 'metaDfspCurrency.currency', 'metaCurrencyConfig.currency')
+      .whereIn('metaDfspCurrency.dfspId', dfspIds)
+      .whereIn('metaDfspCurrency.currency', currencies)
       .select('*')
 
     // Now map and deduplicate.
@@ -638,9 +711,9 @@ export default class SpecStore {
     const dfspCurrencyIds: Record<string, true> = {}
     const dfspCurrencies: Array<DfspCurrency> = []
     rows.forEach(row => {
-      const currencyConfig = SpecStore.hydrateCurrencyConfig(row)
-      const dfspRoot = SpecStore.hydrateDfspRoot(row)
-      const dfspCurrency: DfspCurrency = SpecStore.hydrateDfspCurrency(row)
+      const currencyConfig = MetaStore.hydrateCurrencyConfig(row)
+      const dfspRoot = MetaStore.hydrateDfspRoot(row)
+      const dfspCurrency: DfspCurrency = MetaStore.hydrateDfspCurrency(row)
 
       if (!currencyConfigIds[currencyConfig.currency]) {
         currencyConfigIds[currencyConfig.currency] = true
@@ -670,208 +743,9 @@ export default class SpecStore {
     return context
   }
 
-  public async getPrepareContextPayments(prepareIds: Array<string>): Promise<ContextPayments> {
-    const rows = await this.db('specPrepare')
-      .leftJoin('specTransfer', 'specPrepare.id', 'specTransfer.id')
-      .leftJoin('specFulfil', 'specPrepare.id', 'specFulfil.id')
-      .whereIn('specPrepare.id', prepareIds)
-      .select(
-        'specPrepare.id as id',
-        'specPrepare.payloadHash as preparePayloadHash',
-        'specPrepare.abortedAt as abortedAt',
-        'specFulfil.payloadHash as fulfilPayloadHash',
-        'specFulfil.abortedAt as fulfilAbortedAt',
-        'specFulfil.fulfiledAt as fulfilFulfiledAt',
-        'specFulfil.fulfilment as fulfilFulfilment',
-        'specTransfer.currency as currency',
-        'specTransfer.amount as amount',
-        'specTransfer.expiration as expiration',
-        'specTransfer.payerId as payerId',
-        'specTransfer.payerLocation as payerLocation',
-        'specTransfer.payeeLocation as payeeLocation',
-        'specTransfer.ilpCondition as ilpCondition',
-        'specTransfer.ilpPacket as ilpPacket'
-      )
-
-    const prepareIdsFound: Array<string> = []
-    const idsSeen: Record<string, true> = {}
-    const specPrepares: Array<SpecPrepare> = []
-    const specFulfils: Array<SpecFulfil> = []
-    const specTransfers: Array<SpecTransfer> = []
-
-    rows.forEach(row => {
-      if (idsSeen[row.id]) return
-      idsSeen[row.id] = true
-      prepareIdsFound.push(row.id)
-
-      const specPrepare: SpecPrepare = {
-        id: row.id,
-        payloadHash: row.preparePayloadHash
-      }
-      if (row.abortedAt) {
-        specPrepare.abortedAt = new Date(row.abortedAt)
-      }
-      specPrepares.push(specPrepare)
-
-      if (row.fulfilPayloadHash != null) {
-        const specFulfil = SpecStore.hydrateSpecFulfil({
-          id: row.id,
-          payloadHash: row.fulfilPayloadHash,
-          abortedAt: row.fulfilAbortedAt,
-          fulfiledAt: row.fulfilFulfiledAt,
-          fulfilment: row.fulfilFulfilment,
-        })
-
-        specFulfils.push(specFulfil)
-      }
-
-      if (row.amount != null) {
-        const specTransfer = SpecStore.hydrateSpecTransfer(row)
-        specTransfers.push(specTransfer)
-      }
-    })
-
-    const context: ContextPayments = {
-      prepareIds: prepareIdsFound,
-      specPrepares,
-      specFulfils,
-      specTransfers,
-    }
-    return context
-  }
-
-  public async getFulfilContext(fulfilIds: Array<string>): Promise<ContextFulfil> {
-    if (fulfilIds.length === 0) {
-      return {
-        currencies: [],
-        dfspIds: [],
-        currencyConfigs: [],
-        dfspRoots: [],
-        dfspCurrencies: [],
-        specPrepares: [],
-        specTransfers: [],
-        specFulfils: [],
-      }
-    }
-
-    const rowsTransfer = await this.db('specPrepare')
-      .leftJoin('specTransfer', 'specPrepare.id', 'specTransfer.id')
-      .leftJoin('specFulfil', 'specPrepare.id', 'specFulfil.id')
-      .whereIn('specPrepare.id', fulfilIds)
-      .select(
-        'specPrepare.id as id',
-        'specPrepare.payloadHash as preparePayloadHash',
-        'specPrepare.abortedAt as abortedAt',
-        'specFulfil.payloadHash as fulfilPayloadHash',
-        'specFulfil.abortedAt as fulfilAbortedAt',
-        'specFulfil.fulfiledAt as fulfilFulfiledAt',
-        'specFulfil.fulfilment as fulfilFulfilment',
-        'specTransfer.currency as currency',
-        'specTransfer.amount as amount',
-        'specTransfer.expiration as expiration',
-        'specTransfer.payerId as payerId',
-        'specTransfer.payeeId as payeeId',
-        'specTransfer.payerLocation as payerLocation',
-        'specTransfer.payeeLocation as payeeLocation',
-        'specTransfer.ilpCondition as ilpCondition',
-        'specTransfer.ilpPacket as ilpPacket'
-      )
-
-    const idsSeen: Record<string, true> = {}
-    const specPrepares: Array<SpecPrepare> = []
-    const specFulfils: Array<SpecFulfil> = []
-    const specTransfers: Array<SpecTransfer> = []
-    const currencySet: Set<string> = new Set()
-    const dfspIdSet: Set<string> = new Set()
-
-    rowsTransfer.forEach(row => {
-      if (idsSeen[row.id]) return
-      idsSeen[row.id] = true
-
-      const specPrepare = SpecStore.hydrateSpecPrepare({
-        id: row.id,
-        payloadHash: row.preparePayloadHash,
-        abortedAt: row.abortedAt
-      })
-      specPrepares.push(specPrepare)
-
-      if (row.fulfilPayloadHash != null) {
-        const specFulfil = SpecStore.hydrateSpecFulfil({
-          id: row.id,
-          payloadHash: row.fulfilPayloadHash,
-          abortedAt: row.fulfilAbortedAt,
-          fulfiledAt: row.fulfilFulfiledAt,
-          fulfilment: row.fulfilFulfilment,
-        })
-
-        specFulfils.push(specFulfil)
-      }
-
-      if (row.amount != null) {
-        const specTransfer = SpecStore.hydrateSpecTransfer(row)
-        specTransfers.push(specTransfer)
-        currencySet.add(specTransfer.currency)
-        dfspIdSet.add(specTransfer.payerId)
-        dfspIdSet.add(specTransfer.payeeId)
-      }
-    })
-
-    const currencies = Array.from(currencySet)
-    const dfspIds = Array.from(dfspIdSet)
-
-    // Get the dfspCurrencies, dfspRoots, currencyConfig.
-    const rowsDfspCurrency = await this.db(TABLE_DFSP_CURRENCY)
-      .join(TABLE_DFSP_ROOT, `${TABLE_DFSP_CURRENCY}.dfspId`, `${TABLE_DFSP_ROOT}.dfspId`)
-      .join(TABLE_CURRENCY_CONFIG, `${TABLE_DFSP_CURRENCY}.currency`, `${TABLE_CURRENCY_CONFIG}.currency`)
-      .whereIn(`${TABLE_DFSP_CURRENCY}.dfspId`, dfspIds)
-      .whereIn(`${TABLE_DFSP_CURRENCY}.currency`, currencies)
-      .select('*')
-
-    // Deduplicate and hydrate.
-    const currencyConfigIds: Record<string, true> = {}
-    const currencyConfigs: Array<CurrencyConfig> = []
-    const dfspRootIds: Record<string, true> = {}
-    const dfspRoots: Array<DfspRoot> = []
-    const dfspCurrencyIds: Record<string, true> = {}
-    const dfspCurrencies: Array<DfspCurrency> = []
-
-    rowsDfspCurrency.forEach(row => {
-      const currencyConfig = SpecStore.hydrateCurrencyConfig(row)
-      const dfspRoot = SpecStore.hydrateDfspRoot(row)
-      const dfspCurrency = SpecStore.hydrateDfspCurrency(row)
-
-      if (!currencyConfigIds[currencyConfig.currency]) {
-        currencyConfigIds[currencyConfig.currency] = true
-        currencyConfigs.push(currencyConfig)
-      }
-
-      if (!dfspRootIds[dfspRoot.dfspId]) {
-        dfspRootIds[dfspRoot.dfspId] = true
-        dfspRoots.push(dfspRoot)
-      }
-
-      const dfspCurrencyKey = `${dfspCurrency.dfspId}:${dfspCurrency.currency}`
-      if (!dfspCurrencyIds[dfspCurrencyKey]) {
-        dfspCurrencyIds[dfspCurrencyKey] = true
-        dfspCurrencies.push(dfspCurrency)
-      }
-    })
-
-    return {
-      currencies,
-      dfspIds,
-      currencyConfigs,
-      dfspRoots,
-      dfspCurrencies,
-      specPrepares,
-      specTransfers,
-      specFulfils
-    }
-  }
-
-  public async savePreparesAndTransfers(prepares: Array<SpecPrepare>, transfers: Array<SpecTransfer>) {
-    await this.saveSpecPrepares(prepares)
-    await this.saveTransferSpecs(transfers)
+  public async savePreparesAndPayments(prepares: Array<PrepareMeta>, payments: Array<PaymentMeta>) {
+    await this.savePrepareMetas(prepares)
+    await this.savePaymentMetas(payments)
   }
 
   public async queryDfspRootsWithCurrencies(): Promise<{
@@ -880,8 +754,8 @@ export default class SpecStore {
     dfspRoots: Array<DfspRoot>,
     dfspCurrencies: Array<DfspCurrency>
   }> {
-    const result = await this.db(TABLE_DFSP_CURRENCY)
-      .join(TABLE_DFSP_ROOT, `${TABLE_DFSP_CURRENCY}.dfspId`, `${TABLE_DFSP_ROOT}.dfspId`)
+    const result = await this.db('metaDfspCurrency')
+      .join('metaDfspRoot', `${'metaDfspCurrency'}.dfspId`, `${'metaDfspRoot'}.dfspId`)
       .select('*')
 
     const dfspRoots: Array<DfspRoot> = []
@@ -892,8 +766,8 @@ export default class SpecStore {
 
     const rows: Array<DfspRoot & DfspCurrency> = []
     result.forEach(row => {
-      const dfspRoot = SpecStore.hydrateDfspRoot(row)
-      const dfspCurrency: DfspCurrency = SpecStore.hydrateDfspCurrency(row)
+      const dfspRoot = MetaStore.hydrateDfspRoot(row)
+      const dfspCurrency: DfspCurrency = MetaStore.hydrateDfspCurrency(row)
 
       if (!uniqueRootIds[dfspRoot.dfspId]) {
         uniqueRootIds[dfspRoot.dfspId] = true
@@ -918,30 +792,30 @@ export default class SpecStore {
 
   public async getDfspCurrency(dfspId: string, currency: string):
     Promise<QueryResultWithNotFound<DfspCurrency>> {
-    const row = await this.db(TABLE_DFSP_CURRENCY).where({ dfspId, currency }).select('*').first()
+    const row = await this.db('metaDfspCurrency').where({ dfspId, currency }).select('*').first()
     if (!row) {
       return {
         type: 'NOT_FOUND',
-        error: new Error(`getDfspCurrency no spec found for id:${dfspId} + currency: ${currency}.`)
+        error: new Error(`getDfspCurrency no meta found for id:${dfspId} + currency: ${currency}.`)
       };
     }
 
     return {
       type: 'SUCCESS',
-      result: SpecStore.hydrateDfspCurrency(row)
+      result: MetaStore.hydrateDfspCurrency(row)
     };
   }
 
   public async getDfspCurrencies(id: string): Promise<Array<DfspCurrency>> {
-    const rows = await this.db(TABLE_DFSP_CURRENCY).where({ dfspId: id }).select('*')
-    return rows.map(SpecStore.hydrateDfspCurrency)
+    const rows = await this.db('metaDfspCurrency').where({ dfspId: id }).select('*')
+    return rows.map(MetaStore.hydrateDfspCurrency)
   }
 
   // TODO: should we auto transform this to be a map of (dfspId,currency) => DfspCurrency ?
   // Or even better a proper data structure?
   public async getDfspCurrenciesAll(dfsps: Array<string>): Promise<Array<DfspCurrency>> {
-    const rows = await this.db(TABLE_DFSP_CURRENCY).whereIn('dfspId', dfsps).select('*')
-    return rows.map(SpecStore.hydrateDfspCurrency)
+    const rows = await this.db('metaDfspCurrency').whereIn('dfspId', dfsps).select('*')
+    return rows.map(MetaStore.hydrateDfspCurrency)
   }
 
   /**
@@ -951,7 +825,7 @@ export default class SpecStore {
     Promise<{ code: AccountCode; currency: DfspCurrency; }> {
 
     const accountIdStr = accountId.toString()
-    const row = await this.db(TABLE_DFSP_CURRENCY)
+    const row = await this.db('metaDfspCurrency')
       .where({ dfspId })
       .andWhere(function () {
         this.where('deposit', accountIdStr)
@@ -972,7 +846,7 @@ export default class SpecStore {
         + `accountId: ${accountId}.`)
     }
 
-    const currency = SpecStore.hydrateDfspCurrency(row)
+    const currency = MetaStore.hydrateDfspCurrency(row)
 
     // Check which field matched.
     let code: AccountCode
@@ -1007,7 +881,7 @@ export default class SpecStore {
     Promise<{ code: AccountCode; currency: DfspCurrency; }> {
 
     const accountIdStr = accountId.toString()
-    const row = await this.db(TABLE_DFSP_CURRENCY)
+    const row = await this.db('metaDfspCurrency')
       .where(function () {
         this.where('deposit', accountIdStr)
           .orWhere('unrestricted', accountIdStr)
@@ -1026,7 +900,7 @@ export default class SpecStore {
       throw new Error(`lookupDfspCurrencyByAccountId() not found for accountId: ${accountId}.`)
     }
 
-    const currency = SpecStore.hydrateDfspCurrency(row)
+    const currency = MetaStore.hydrateDfspCurrency(row)
 
     // Check which field matched.
     let code: AccountCode
@@ -1060,11 +934,11 @@ export default class SpecStore {
   public async dfspCurrenciesForNetDebitCapAccountIds(ids: Array<bigint>):
     Promise<Record<string, DfspCurrency>> {
 
-    const rows = await this.db(TABLE_DFSP_CURRENCY)
+    const rows = await this.db('metaDfspCurrency')
       .whereIn('netDebitCap', ids.map(id => id.toString()))
       .select('*')
 
-    const dfspCurrencies = rows.map(SpecStore.hydrateDfspCurrency)
+    const dfspCurrencies = rows.map(MetaStore.hydrateDfspCurrency)
     const resultMap: Record<string, DfspCurrency> = {}
     dfspCurrencies.forEach(currency => {
       resultMap[currency.netDebitCap.toString()] = currency
@@ -1080,10 +954,10 @@ export default class SpecStore {
     try {
       trx = await this.db.transaction()
 
-      const row = await trx(TABLE_DFSP_CURRENCY).where({ dfspId, currency }).select('*').first()
+      const row = await trx('metaDfspCurrency').where({ dfspId, currency }).select('*').first()
       if (row) {
         await trx.commit()
-        return SpecStore.hydrateDfspCurrency(row)
+        return MetaStore.hydrateDfspCurrency(row)
       }
 
       const dfspCurrency: DfspCurrency = {
@@ -1109,7 +983,7 @@ export default class SpecStore {
         changedDateSettlement: now,
         createdDate: now,
       };
-      await trx(TABLE_DFSP_CURRENCY).insert(dfspCurrency)
+      await trx('metaDfspCurrency').insert(dfspCurrency)
 
       await trx.commit()
       return dfspCurrency
@@ -1122,11 +996,7 @@ export default class SpecStore {
     }
   }
 
-  public async saveFundingSpec(funding: any): Promise<void> {
-    return
-  }
-
-  public async saveSpecPrepares(prepares: Array<SpecPrepare>): Promise<void> {
+  public async savePrepareMetas(prepares: Array<PrepareMeta>): Promise<void> {
     if (prepares.length === 0) return
 
     try {
@@ -1141,18 +1011,18 @@ export default class SpecStore {
         return record
       })
 
-      await this.db.from(TABLE_PREPARE)
+      await this.db.from('metaPrepare')
         .insert(records)
         .onConflict('id')
         .ignore()
 
     } catch (err: any) {
-      logger.error(`saveSpecPrepares() - failed with error: ${err.message}`)
+      logger.error(`savePrepareMetas() - failed with error: ${err.message}`)
       throw err
     }
   }
 
-  public async saveSpecFulfils(fulfils: Array<SpecFulfil>): Promise<void> {
+  public async saveFulfilMetas(fulfils: Array<FulfilMeta>): Promise<void> {
     if (fulfils.length === 0) return
 
     try {
@@ -1165,47 +1035,18 @@ export default class SpecStore {
         return record
       })
 
-      await this.db.from('specFulfil')
+      await this.db.from('metaFulfil')
         .insert(records)
         .onConflict('id')
         .ignore()
 
     } catch (err: any) {
-      logger.error(`saveSpecFulfils() - failed with error: ${err.message}`)
+      logger.error(`saveFulfilMetas() - failed with error: ${err.message}`)
       throw err
     }
   }
 
-  public async getSpecPrepares(transferIds: Array<string>): Promise<Array<GetSpecPrepareResult>> {
-    try {
-      const resultMap: Record<string, GetSpecPrepareResult> = {}
-      // Populate with not founds.
-      transferIds.forEach(id => resultMap[id] = {
-        type: 'NOT_FOUND' as 'NOT_FOUND',
-        id,
-      })
-
-      const rows = await this.db.from(TABLE_PREPARE)
-        .whereIn('id', transferIds)
-        .select('*')
-
-      rows.forEach(row => {
-        resultMap[row.id] = {
-          type: 'SUCCESS' as 'SUCCESS',
-          id: row.id,
-          result: SpecStore.hydrateSpecPrepare(row),
-        }
-      })
-
-      assert.equal(transferIds.length, Object.values(resultMap).length, 'Dropped a value.')
-      return Object.values(resultMap)
-    } catch (err: any) {
-      logger.error(`getTransferSpecs() failed with error: ${err.message}`)
-      throw err
-    }
-  }
-
-  public async attachSpecPrepareAbortedAt(ids: Array<string>, dates: Array<Date>): Promise<void> {
+  public async attachPrepareMetaAbortedAt(ids: Array<string>, dates: Array<Date>): Promise<void> {
     assert.equal(ids.length, dates.length, 'Expected ids and dates to be the same length.')
 
     if (ids.length === 0) {
@@ -1221,84 +1062,64 @@ export default class SpecStore {
     await this.db.raw(
       `UPDATE ?? SET abortedAt = CASE ${clauses.join(' ')} END` +
       ` WHERE id in (${ids.map(() => '?').join(',')}) AND abortedAt IS NULL`,
-      [TABLE_PREPARE, ...bindings, ...ids]
+      ['metaPrepare', ...bindings, ...ids]
     )
   }
 
-  public async attachSpecFulfillDates(ids: Array<string>, dates: Array<Date>): Promise<void> {
-    assert.equal(ids.length, dates.length, 'Expected ids and dates to be the same length.')
-
-    if (ids.length === 0) {
-      return
-    }
-
-    const bindings: Array<string | Date> = []
-    const clauses = ids.map((id, idx) => {
-      bindings.push(id, dates[idx])
-      return `WHEN id = ? THEN ?`
-    })
-
-    await this.db.raw(
-      `UPDATE ?? SET abortedAt = CASE ${clauses.join(' ')} END` +
-      ` WHERE id in (${ids.map(() => '?').join(',')}) AND abortedAt IS NULL`,
-      [TABLE_PREPARE, ...bindings, ...ids]
-    )
-  }
-
-  public async saveTransferSpecs(specs: Array<SpecTransfer>): Promise<Array<SaveSpecTransferResult>> {
-    if (specs.length === 0) return []
+  public async savePaymentMetas(metas: Array<PaymentMeta>): Promise<Array<SavePaymentMetaResult>> {
+    if (metas.length === 0) return []
 
     try {
-      const records = specs.map(spec => {
+      const records = metas.map(meta => {
         const record = {
-          id: spec.id,
-          currency: spec.currency,
-          amount: spec.amount,
-          expiration: spec.expiration,
-          payerId: spec.payerId,
-          payeeId: spec.payeeId,
-          payerLocation: SpecStore.dehydrateLocation(spec.payerLocation),
-          payeeLocation: SpecStore.dehydrateLocation(spec.payeeLocation),
-          ilpCondition: spec.ilpCondition,
-          ilpPacket: spec.ilpPacket,
+          id: meta.id,
+          currency: meta.currency,
+          amount: meta.amount,
+          expiration: meta.expiration,
+          payerId: meta.payerId,
+          payeeId: meta.payeeId,
+          payerLocation: MetaStore.dehydrateLocation(meta.payerLocation),
+          payeeLocation: MetaStore.dehydrateLocation(meta.payeeLocation),
+          ilpCondition: meta.ilpCondition,
+          ilpPacket: meta.ilpPacket,
         }
 
         return record
       })
 
-      await this.db.from(TABLE_TRANSFER)
+      await this.db.from('metaPayment')
         .insert(records)
         .onConflict('id')
         .ignore()
 
-      return specs.map(spec => {
+      return metas.map(meta => {
         return {
           type: 'SUCCESS',
-          id: spec.id
+          id: meta.id
         }
       })
     } catch (err: any) {
-      logger.error(`saveTransferSpecs() - failed with error: ${err.message}`)
-      return specs.map(spec => {
+      logger.error(`savePaymentMetas() - failed with error: ${err.message}`)
+      return metas.map(meta => {
         return {
           type: 'FAILURE',
-          id: spec.id
+          id: meta.id
         }
       })
     }
   }
 
-  public async getTransferSpecs(transferIds: Array<string>): Promise<Array<GetSpecTransferResult>> {
+  public async getPaymentMetas(transferIds: Array<string>): Promise<Array<GetPaymentMetaResult>> {
     try {
-      const resultMap: Record<string, GetSpecTransferResult> = {}
+      const resultMap: Record<string, GetPaymentMetaResult> = {}
       // Populate with not founds.
       transferIds.forEach(id => resultMap[id] = {
         type: 'NOT_FOUND' as 'NOT_FOUND',
         id,
       })
 
-      const rows = await this.db.from(TABLE_TRANSFER)
-        .leftJoin('specFulfil', 'specFulfil.id', 'specTransfer.id')
+      const rows = await this.db.from('metaPayment')
+        .leftJoin('metaFulfil', 'metaFulfil.id', 'metaPayment.id')
         .whereIn('id', transferIds)
         .select('*')
 
@@ -1306,21 +1127,21 @@ export default class SpecStore {
         resultMap[row.id] = {
           type: 'SUCCESS' as 'SUCCESS',
           id: row.id,
-          specTransfer: SpecStore.hydrateSpecTransfer(row),
-          specFulfil: SpecStore.hydrateSpecFulfil(row)
+          paymentMeta: MetaStore.hydratePaymentMeta(row),
+          fulfilMeta: MetaStore.hydrateFulfilMeta(row),
         }
       })
 
       assert.equal(transferIds.length, Object.values(resultMap).length, 'Dropped a value.')
       return Object.values(resultMap)
     } catch (err: any) {
-      logger.error(`getTransferSpecs() failed with error: ${err.message}`)
+      logger.error(`getPaymentMetas() failed with error: ${err.message}`)
       throw err
     }
   }
 
-  public async attachFulfillments(updates: Array<SpecFulfilUpdate>):
-    Promise<Array<AttachFulfilmentResult>> {
+  public async attachFulfillments(updates: Array<FulfilMetaUpdate>):
+    Promise<Array<SavePaymentMetaResult>> {
     try {
       if (updates.length === 0) {
         return []
@@ -1329,7 +1150,7 @@ export default class SpecStore {
       // Bulk insert.
       const ids: Array<string> = []
       const bindings: Array<any> = []
-    
+
       const clauses = updates.map(update => {
         ids.push(update.id)
         bindings.push(update.id, update.fulfilment, update.id, update.fulfiledAt)
@@ -1346,7 +1167,7 @@ export default class SpecStore {
         `UPDATE ?? SET fulfilment = CASE ${fulfilmentClauses} END,` +
         `fulfiledAt = CASE ${fulfiledAtClauses} END` +
         ` WHERE id in (${ids.map(() => '?').join(',')})`,
-        ['specFulfil', ...bindings , ...ids]
+        ['metaFulfil', ...bindings, ...ids]
       )
 
       return updates.map(update => ({
@@ -1364,31 +1185,10 @@ export default class SpecStore {
     }
   }
 
-  public async updateChangedDatePositionAndSettlement(
-    dfspId: string, currency: string, now: Date
-  ): Promise<void> {
-    await this.db(TABLE_DFSP_CURRENCY)
-      .where({ dfspId, currency })
-      .update({
-        changedDatePosition: now,
-        changedDateSettlement: now
-      })
-  }
-
-  public async updateChangedDatePosition(
-    dfspId: string, currency: string, now: Date
-  ): Promise<void> {
-    await this.db(TABLE_DFSP_CURRENCY)
-      .where({ dfspId, currency })
-      .update({
-        changedDatePosition: now,
-      })
-  }
-
   public async updateChangedDateSettlement(
     dfspId: string, currency: string, now: Date
   ): Promise<void> {
-    await this.db(TABLE_DFSP_CURRENCY)
+    await this.db('metaDfspCurrency')
       .where({ dfspId, currency })
       .update({
         changedDateSettlement: now,
@@ -1418,8 +1218,7 @@ export default class SpecStore {
   private static hydrateDfspRoot(row: any): DfspRoot {
     return {
       dfspId: row.dfspId,
-      // TODO: rename.
-      id: BigInt(row.masterAccountId),
+      id: BigInt(row.id),
       isProxy: Boolean(row.isProxy),
     }
   }
@@ -1449,54 +1248,54 @@ export default class SpecStore {
     return dfspCurrency
   }
 
-  private static hydrateSpecPrepare(row: any): SpecPrepare {
-    const specPrepare: SpecPrepare = {
+  private static hydratePrepareMeta(row: any): PrepareMeta {
+    const meta: PrepareMeta = {
       id: row.id,
       payloadHash: row.payloadHash
     }
     if (row.abortedAt) {
-      specPrepare.abortedAt = new Date(row.abortedAt)
+      meta.abortedAt = new Date(row.abortedAt)
     }
 
-    return specPrepare
+    return meta
   }
 
-  private static hydrateSpecFulfil(row: any): SpecFulfil {
-    const specFulfil: SpecFulfil = {
+  private static hydrateFulfilMeta(row: any): FulfilMeta {
+    const meta: FulfilMeta = {
       id: row.id,
       payloadHash: row.payloadHash
     }
 
-    if (row.abortedAt) specFulfil.abortedAt = new Date(row.abortedAt)
-    if (row.fulfiledAt) specFulfil.fulfiledAt = new Date(row.fulfiledAt)
-    if (row.fulfilment) specFulfil.fulfilment = row.fulfilment
+    if (row.abortedAt) meta.abortedAt = new Date(row.abortedAt)
+    if (row.fulfiledAt) meta.fulfiledAt = new Date(row.fulfiledAt)
+    if (row.fulfilment) meta.fulfilment = row.fulfilment
 
     assert(
-      !(specFulfil.fulfiledAt && specFulfil.abortedAt),
-      'specFulfil must have either fulfiledAt or abortedAt, not both.'
+      !(meta.fulfiledAt && meta.abortedAt),
+      'FulfilMeta must have either fulfiledAt or abortedAt, not both.'
     )
-    if (specFulfil.fulfiledAt) {
-      assert(specFulfil.fulfilment, 'Fulfilment is required if the spec is fulfiled.')
+    if (meta.fulfiledAt) {
+      assert(meta.fulfilment, 'meta.fulfilment is required if the Payment is fulfiled.')
     }
 
-    return specFulfil
+    return meta
   }
 
-  private static hydrateSpecTransfer(row: any): SpecTransfer {
-    const specTransfer: SpecTransfer = {
+  private static hydratePaymentMeta(row: any): PaymentMeta {
+    const meta: PaymentMeta = {
       id: row.id,
       currency: row.currency,
       amount: row.amount,
       expiration: row.expiration,
       payerId: row.payerId,
       payeeId: row.payeeId,
-      payerLocation: SpecStore.hydrateLocation(row.payerLocation),
-      payeeLocation: SpecStore.hydrateLocation(row.payeeLocation),
+      payerLocation: MetaStore.hydrateLocation(row.payerLocation),
+      payeeLocation: MetaStore.hydrateLocation(row.payeeLocation),
       ilpCondition: row.ilpCondition,
       ilpPacket: row.ilpPacket,
     }
 
-    return specTransfer
+    return meta
   }
 
   private static hydrateLocation(location: any): ParticipantLocation {
@@ -1517,27 +1316,4 @@ export default class SpecStore {
       case 'PROXY': return 'proxy'
     }
   }
-
-  // private static hydrateNetDebitCap(row: any): NetDebitCap {
-  //   assertOneOf(row.type, ['LIMITED', 'UNLIMITED'])
-  //   if (row.type === 'UNLIMITED') {
-  //     assert(row.amount === null,
-  //       `hydrateNetDebitCap - expected amount to be null when type == UNLIMITED.`
-  //     )
-
-  //     return {
-  //       type: 'UNLIMITED',
-  //       dfspId: row.dfspId,
-  //       currency: row.currency,
-  //     }
-  //   }
-
-  //   return {
-  //     type: 'LIMITED',
-  //     dfspId: row.dfspId,
-  //     amount: BigInt(row.amount),
-  //     currency: row.currency,
-  //     alarmPercentage: Number.parseFloat(row.alarmPercentage),
-  //   }
-  // }
 }

@@ -1,7 +1,7 @@
 import assert from "node:assert"
 import { ApplicationConfig } from "../../../lib/config"
 import { AccountCode, Ledger, LedgerAccount, LegacyLedgerAccount, LegacyLimitItem } from "./types"
-import { CurrencyConfig, NetDebitCap } from "../tigerbeetle/spec-store"
+import { CurrencyConfig, NetDebitCap } from "../tigerbeetle/meta-store"
 import { LedgerTigerBeetle } from "../tigerbeetle/ledger-tigerbeetle"
 
 interface DepsReporter {
