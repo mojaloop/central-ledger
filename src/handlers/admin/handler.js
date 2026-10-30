@@ -70,27 +70,47 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   }
 }
 
+// A recordFundsOut reservation can be aborted from these states. The timeout handler marks an expired
+// reservation RESERVED_TIMEOUT but never releases its position: its timed-out transfer list only covers
+// PAYER_DFSP/PAYEE_DFSP transfers, not the HUB/DFSP_SETTLEMENT pair a reconciliation transfer has.
+const abortableRecordFundsOutStates = [
+  Enum.Transfers.TransferState.RESERVED,
+  Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
+]
+
 const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTimestamp, enums) => {
   const existingTransfer = await TransferService.getTransferById(transferId)
   const transferState = await TransferService.getTransferState(transferId)
   if (!existingTransfer) {
     Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::notFound`)
-  } else if (transferState.transferStateId !== Enum.Transfers.TransferState.RESERVED) {
+    return true
+  }
+  const hasExpired = new Date(existingTransfer.expirationDate) <= new Date()
+  if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT) {
+    // An abort releases the DFSP's reserved funds, so it is accepted after the reservation has expired:
+    // nothing else releases them (mojaloop/project#4588).
+    if (!abortableRecordFundsOutStates.includes(transferState.transferStateId)) {
+      Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::nonReservedState`)
+      return true
+    }
+    Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed${hasExpired ? '::expiredReservation' : ''}`)
+    Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_ABORT`)
+    payload.amount = {
+      amount: existingTransfer.amount,
+      currency: existingTransfer.currencyId
+    }
+    await TransferService.reconciliationTransferAbort(payload, transactionTimestamp, enums)
+    return true
+  }
+  if (transferState.transferStateId !== Enum.Transfers.TransferState.RESERVED) {
     Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::nonReservedState`)
-  } else if (new Date(existingTransfer.expirationDate) <= new Date()) {
+  } else if (hasExpired) {
     Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)
   } else {
     Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
     if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT) {
       Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_COMMIT`)
       await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums)
-    } else if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT) {
-      Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_ABORT`)
-      payload.amount = {
-        amount: existingTransfer.amount,
-        currency: existingTransfer.currencyId
-      }
-      await TransferService.reconciliationTransferAbort(payload, transactionTimestamp, enums)
     }
   }
   return true
