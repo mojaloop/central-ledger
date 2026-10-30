@@ -25,9 +25,9 @@
  **********/
 
 exports.up = async (knex) => {
-  await knex.schema.hasTable('specCurrencyConfig').then(function (exists) {
+  await knex.schema.hasTable('metaCurrencyConfig').then(function (exists) {
     if (!exists) {
-      return knex.schema.createTable('specCurrencyConfig', (t) => {
+      return knex.schema.createTable('metaCurrencyConfig', (t) => {
         t.string('currency', 3).primary().notNullable()
         t.integer('ledgerOperation').unsigned().notNullable()
         t.integer('ledgerControl').unsigned().notNullable()
@@ -38,9 +38,9 @@ exports.up = async (knex) => {
     }
   })
 
-  await knex.schema.hasTable('specLegacyHubCurrency').then(function (exists) {
+  await knex.schema.hasTable('metaLegacyHubCurrency').then(function (exists) {
     if (!exists) {
-      return knex.schema.createTable('specLegacyHubCurrency', (t) => {
+      return knex.schema.createTable('metaLegacyHubCurrency', (t) => {
         t.bigInteger('id').primary().notNullable()
         t.string('currency', 3).notNullable()
         t.string('accountType').notNullable()
@@ -52,19 +52,19 @@ exports.up = async (knex) => {
     }
   })
 
-  await knex.schema.hasTable('specDfspRoot').then(function (exists) {
+  await knex.schema.hasTable('metaDfspRoot').then(function (exists) {
     if (!exists) {
-      return knex.schema.createTable('specDfspRoot', (t) => {
+      return knex.schema.createTable('metaDfspRoot', (t) => {
         t.string('dfspId').primary().notNullable()
-        t.bigInteger('masterAccountId').unsigned().notNullable().unique()
+        t.bigInteger('id').unsigned().notNullable().unique()
         t.boolean('isProxy').notNullable()
       })
     }
   })
 
-  await knex.schema.hasTable('specDfspCurrency').then(function (exists) {
+  await knex.schema.hasTable('metaDfspCurrency').then(function (exists) {
     if (!exists) {
-      return knex.schema.createTable('specDfspCurrency', (t) => {
+      return knex.schema.createTable('metaDfspCurrency', (t) => {
         t.string('dfspId').notNullable()
         t.string('currency', 3).notNullable()
         t.bigInteger('deposit').unsigned().notNullable()
@@ -86,15 +86,15 @@ exports.up = async (knex) => {
         t.dateTime('changedDate').notNullable()
 
         t.primary(['dfspId', 'currency'])
-        t.foreign('dfspId').references('dfspId').inTable('specDfspRoot') 
+        t.foreign('dfspId').references('dfspId').inTable('metaDfspRoot') 
         t.foreign('currency').references('currencyId').inTable('currency')
       })
     }
   })
 
-  await knex.schema.hasTable('specTransfer').then(function (exists) {
+  await knex.schema.hasTable('metaPayment').then(function (exists) {
     if (!exists) {
-      return knex.schema.createTable('specTransfer', (t) => {
+      return knex.schema.createTable('metaPayment', (t) => {
         t.string('id', 36).primary().notNullable()
         t.string('payerId', 256).notNullable()
         t.string('payeeId', 256).notNullable()
@@ -106,16 +106,16 @@ exports.up = async (knex) => {
         t.string('currency', 3).notNullable()
         t.dateTime('expiration').notNullable()
 
-        t.foreign('payerId').references('dfspId').inTable('specDfspRoot')
-        t.foreign('payeeId').references('dfspId').inTable('specDfspRoot')
+        t.foreign('payerId').references('dfspId').inTable('metaDfspRoot')
+        t.foreign('payeeId').references('dfspId').inTable('metaDfspRoot')
         t.foreign('currency').references('currencyId').inTable('currency')
       })
     }
   })
 
-  await knex.schema.hasTable('specPrepare').then(function (exists) {
+  await knex.schema.hasTable('metaPrepare').then(function (exists) {
     if (!exists) {
-      return knex.schema.createTable('specPrepare', (t) => {
+      return knex.schema.createTable('metaPrepare', (t) => {
         t.string('id', 36).primary().notNullable()
         t.integer('payloadHash').notNullable()
         t.dateTime('abortedAt')
@@ -123,9 +123,9 @@ exports.up = async (knex) => {
     }
   })
 
-  await knex.schema.hasTable('specFulfil').then(function (exists) {
+  await knex.schema.hasTable('metaFulfil').then(function (exists) {
     if (!exists) {
-      return knex.schema.createTable('specFulfil', (t) => {
+      return knex.schema.createTable('metaFulfil', (t) => {
         t.string('id', 36).primary().notNullable()
         t.integer('payloadHash').notNullable()
         t.dateTime('abortedAt')
@@ -137,51 +137,51 @@ exports.up = async (knex) => {
 }
 
 exports.down = async (knex) => {
-  await knex.schema.hasTable('specTransfer').then(function (exists) {
+  await knex.schema.hasTable('metaTransfer').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specTransfer')
+      return knex.schema.dropTableIfExists('metaTransfer')
     }
   })
 
-  await knex.schema.hasTable('specPrepare').then(function (exists) {
+  await knex.schema.hasTable('metaPrepare').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specPrepare')
+      return knex.schema.dropTableIfExists('metaPrepare')
     }
   })
 
-  await knex.schema.hasTable('specFulfil').then(function (exists) {
+  await knex.schema.hasTable('metaFulfil').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specFulfil')
+      return knex.schema.dropTableIfExists('metaFulfil')
     }
   })
 
-  await knex.schema.hasTable('specCurrencyConfig').then(function (exists) {
+  await knex.schema.hasTable('metaCurrencyConfig').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specCurrencyConfig')
+      return knex.schema.dropTableIfExists('metaCurrencyConfig')
     }
   })
 
-  await knex.schema.hasTable('specDfspCurrency').then(function (exists) {
+  await knex.schema.hasTable('metaDfspCurrency').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specDfspCurrency')
+      return knex.schema.dropTableIfExists('metaDfspCurrency')
     }
   })
 
-  await knex.schema.hasTable('specDfspRoot').then(function (exists) {
+  await knex.schema.hasTable('metaDfspRoot').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specDfspRoot')
+      return knex.schema.dropTableIfExists('metaDfspRoot')
     }
   })
 
-  await knex.schema.hasTable('specLegacyHubCurrency').then(function (exists) {
+  await knex.schema.hasTable('metaLegacyHubCurrency').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specLegacyHubCurrency')
+      return knex.schema.dropTableIfExists('metaLegacyHubCurrency')
     }
   })
 
-  await knex.schema.hasTable('specCurrencyLedger').then(function (exists) {
+  await knex.schema.hasTable('metaCurrencyLedger').then(function (exists) {
     if (exists) {
-      return knex.schema.dropTableIfExists('specCurrencyLedger')
+      return knex.schema.dropTableIfExists('metaCurrencyLedger')
     }
   })
 }

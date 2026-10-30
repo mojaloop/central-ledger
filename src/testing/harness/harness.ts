@@ -85,10 +85,10 @@ import { Client, createClient } from "tigerbeetle-node"
 import { ConnectionOptionsTigerBeetle, TigerBeetle } from "./tigerbeetle"
 import { ClientApi } from "@hapi/catbox"
 import LedgerTigerBeetleHelper from "../../domain/ledger/tigerbeetle/helper"
-import SpecStore from "../../domain/ledger/tigerbeetle/spec-store"
 import { LedgerSql } from "../../domain/ledger/sql/ledger-sql"
 import { Ledger } from "../../domain/ledger/shared/types"
 import Helper from "../../domain/ledger/sql/helper"
+import MetaStore from "../../domain/ledger/tigerbeetle/meta-store"
 
 const logger = Logger.child({ scope: 'harness' })
 
@@ -625,7 +625,7 @@ export default class Harness {
     })
 
     // TODO: move to dependencies.
-    const specStore = new SpecStore({
+    const metaStore = new MetaStore({
       config: this.config,
       enums: this._enums,
       helper: helperTigerBeetle,
@@ -673,7 +673,7 @@ export default class Harness {
           config: this.config, 
           client: this._clientTigerBeetle,
           enums: this._enums,
-          specStore,
+          metaStore,
           helper: helperTigerBeetle
         })
         break;

@@ -112,7 +112,7 @@ import SettlementWindowDomain from '../../../domain/settlementWindow'
 import SettlementModel from '../../../models/settlement/settlement'
 import * as Result from '../shared/results'
 import Helper from './helper';
-import { CurrencyConfig } from '../tigerbeetle/spec-store';
+import { CurrencyConfig } from '../tigerbeetle/meta-store';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler

@@ -2,7 +2,7 @@ import { failureWithError, QueryResult } from "../../../shared/results"
 import { Account, AccountFlags, amount_max, Client, CreateTransferResult, CreateTransferStatus, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto, { hash } from "crypto";
 import assert from "assert";
-import { ContextDfsps, ContextFulfil, CurrencyConfig, DfspCurrency, DfspRoot, InternalDfspCurrency, NetDebitCap, ParticipantLocation, SpecFulfil, SpecPrepare, SpecTransfer } from "./spec-store";
+import { ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, FulfilMeta, InternalDfspCurrency, NetDebitCap, ParticipantLocation, PaymentMeta, PrepareMeta } from "./meta-store";
 import { AccountCode, LedgerAccount, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
 import { CreatePaymentDto, PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../../handlers/payment-prepare";
 import { CommitPaymentDto, FulfilHandlerAction, FulfilHandlerInput, PaymentFulfilResult, PaymentFulfilResultType } from "../../../handlers/payment-fulfil";
@@ -27,9 +27,9 @@ export type PrepareInternalStatus = {
 } | {
   tag: 'DUPLICATE_FINAL'
   context: {
-    specPrepare: SpecPrepare,
-    specFulfil: SpecFulfil,
-    specTransfer?: SpecTransfer,
+    prepareMeta: PrepareMeta,
+    fulfilMeta: FulfilMeta,
+    paymentMeta?: PaymentMeta,
   }
 } | {
   tag: 'DUPLICATE_NON_FINAL'
@@ -60,7 +60,7 @@ export type FulfilInternalStatus = {
   tag: 'PREPARE_ALREADY_ABORTED'
 } | {
   tag: 'ALREADY_FULFILLED',
-  specFulfil: SpecFulfil,
+  fulfilMeta: FulfilMeta,
 } | {
   tag: 'MODIFIED'
 } | {
@@ -71,7 +71,7 @@ export type FulfilInternalStatus = {
   tag: 'INVALID_FULFILMENT'
 } | {
   tag: 'OK',
-  specFulfil: SpecFulfil
+  fulfilMeta: FulfilMeta
 }
 
 export type PrepareFailureType = 'FAIL_LIQUIDITY' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | 'MODIFIED' |
@@ -116,10 +116,9 @@ export default class Helper {
   }
 
   /**
-   * Global account ids that persist across all Ledgers
+   * Global account ids that persist across all Ledgers.
    */
   public static accountIds = {
-    // TODO(LD): Find better account ids
     bookmarkDebit: 1000n,
     bookmarkCredit: 1001n,
 
@@ -136,7 +135,7 @@ export default class Helper {
   }
 
   /**
-   * Fixed ledger ids
+   * Fixed ledger ids.
    */
   public static ledgerIds = {
     globalControl: 9000,
@@ -306,7 +305,7 @@ export default class Helper {
   }
 
   public buildAccountsDfsp(
-    spec: DfspCurrency,
+    dfspCurrency: DfspCurrency,
     currencyLedger: CurrencyConfig,
     masterAccountId: bigint
   ): Array<Account> {
@@ -350,7 +349,7 @@ export default class Helper {
       // Deposit
       {
         ...Helper.createAccountTemplate,
-        id: spec.deposit,
+        id: dfspCurrency.deposit,
         ledger: ledgerOperation,
         code: AccountCode.Deposit,
         flags: AccountFlags.linked | AccountFlags.credits_must_not_exceed_debits
@@ -358,7 +357,7 @@ export default class Helper {
       // Unrestricted
       {
         ...Helper.createAccountTemplate,
-        id: spec.unrestricted,
+        id: dfspCurrency.unrestricted,
         ledger: ledgerOperation,
         code: AccountCode.Unrestricted,
         flags: AccountFlags.linked | AccountFlags.debits_must_not_exceed_credits,
@@ -366,7 +365,7 @@ export default class Helper {
       // Unrestricted_Lock
       {
         ...Helper.createAccountTemplate,
-        id: spec.unrestrictedLock,
+        id: dfspCurrency.unrestrictedLock,
         ledger: ledgerOperation,
         code: AccountCode.Unrestricted_Lock,
         flags: AccountFlags.linked | AccountFlags.debits_must_not_exceed_credits,
@@ -374,7 +373,7 @@ export default class Helper {
       // Restricted
       {
         ...Helper.createAccountTemplate,
-        id: spec.restricted,
+        id: dfspCurrency.restricted,
         ledger: ledgerOperation,
         code: AccountCode.Restricted,
         flags: AccountFlags.linked | AccountFlags.debits_must_not_exceed_credits,
@@ -382,7 +381,7 @@ export default class Helper {
       // Reserved
       {
         ...Helper.createAccountTemplate,
-        id: spec.reserved,
+        id: dfspCurrency.reserved,
         ledger: ledgerOperation,
         code: AccountCode.Reserved,
         flags: AccountFlags.linked | AccountFlags.debits_must_not_exceed_credits,
@@ -390,7 +389,7 @@ export default class Helper {
       // Committed_Outgoing
       {
         ...Helper.createAccountTemplate,
-        id: spec.commitedOutgoing,
+        id: dfspCurrency.commitedOutgoing,
         ledger: ledgerOperation,
         code: AccountCode.Committed_Outgoing,
         flags: AccountFlags.debits_must_not_exceed_credits,
@@ -398,7 +397,7 @@ export default class Helper {
       // Clearing_Setup
       {
         ...Helper.createAccountTemplate,
-        id: spec.clearingSetup,
+        id: dfspCurrency.clearingSetup,
         ledger: ledgerOperation,
         code: AccountCode.Clearing_Setup,
         flags: 0,
@@ -406,7 +405,7 @@ export default class Helper {
       // Clearing_Limit
       {
         ...Helper.createAccountTemplate,
-        id: spec.clearingLimit,
+        id: dfspCurrency.clearingLimit,
         ledger: ledgerOperation,
         code: AccountCode.Clearing_Limit,
         flags: AccountFlags.debits_must_not_exceed_credits,
@@ -414,7 +413,7 @@ export default class Helper {
       // Clearing_Credit
       {
         ...Helper.createAccountTemplate,
-        id: spec.clearingCredit,
+        id: dfspCurrency.clearingCredit,
         ledger: ledgerOperation,
         code: AccountCode.Clearing_Credit,
         flags: AccountFlags.debits_must_not_exceed_credits,
@@ -422,7 +421,7 @@ export default class Helper {
       // Control 
       {
         ...Helper.createAccountTemplate,
-        id: spec.control,
+        id: dfspCurrency.control,
         ledger: currencyLedger.idControl,
         code: AccountCode.Net_Debit_Cap_Control,
         flags: 0,
@@ -430,7 +429,7 @@ export default class Helper {
       // Net Debit Cap
       {
         ...Helper.createAccountTemplate,
-        id: spec.netDebitCap,
+        id: dfspCurrency.netDebitCap,
         ledger: currencyLedger.idControl,
         code: AccountCode.Net_Debit_Cap,
         flags: 0,
@@ -438,14 +437,14 @@ export default class Helper {
       // Net Debit Cap Set
       {
         ...Helper.createAccountTemplate,
-        id: spec.netDebitCapSet,
+        id: dfspCurrency.netDebitCapSet,
         ledger: currencyLedger.idOperation,
         code: AccountCode.Net_Debit_Cap_Set,
         flags: 0,
       },
       {
         ...Helper.createAccountTemplate,
-        id: spec.netDebitCapSetUtil,
+        id: dfspCurrency.netDebitCapSetUtil,
         ledger: currencyLedger.idOperation,
         code: AccountCode.Net_Debit_Cap_Set_Util,
         flags: 0,
@@ -473,7 +472,7 @@ export default class Helper {
    */
   public transferTemplateNDC(
     netDebitCapLockAmount: bigint,
-    spec: DfspCurrency,
+    dfspCurrency: DfspCurrency,
     currencyConfig: CurrencyConfig
   ): Array<Transfer> {
     const idLockReserved = id()
@@ -483,8 +482,8 @@ export default class Helper {
       {
         ...Helper.createTransferTemplate,
         id: id(),
-        debit_account_id: spec.netDebitCapSet,
-        credit_account_id: spec.netDebitCapSetUtil,
+        debit_account_id: dfspCurrency.netDebitCapSet,
+        credit_account_id: dfspCurrency.netDebitCapSetUtil,
         amount: netDebitCapLockAmount,
         ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
@@ -494,8 +493,8 @@ export default class Helper {
       {
         ...Helper.createTransferTemplate,
         id: id(),
-        debit_account_id: spec.restricted,
-        credit_account_id: spec.unrestricted,
+        debit_account_id: dfspCurrency.restricted,
+        credit_account_id: dfspCurrency.unrestricted,
         amount: amount_max,
         ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
@@ -505,8 +504,8 @@ export default class Helper {
       {
         ...Helper.createTransferTemplate,
         id: idLockReserved,
-        debit_account_id: spec.reserved,
-        credit_account_id: spec.netDebitCapSet,
+        debit_account_id: dfspCurrency.reserved,
+        credit_account_id: dfspCurrency.netDebitCapSet,
         amount: amount_max,
         ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
@@ -516,8 +515,8 @@ export default class Helper {
       {
         ...Helper.createTransferTemplate,
         id: idLockUnrestricted,
-        debit_account_id: spec.unrestricted,
-        credit_account_id: spec.netDebitCapSet,
+        debit_account_id: dfspCurrency.unrestricted,
+        credit_account_id: dfspCurrency.netDebitCapSet,
         amount: amount_max,
         ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
@@ -530,8 +529,8 @@ export default class Helper {
       {
         ...Helper.createTransferTemplate,
         id: id(),
-        debit_account_id: spec.unrestricted,
-        credit_account_id: spec.restricted,
+        debit_account_id: dfspCurrency.unrestricted,
+        credit_account_id: dfspCurrency.restricted,
         amount: amount_max,
         ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
@@ -564,8 +563,8 @@ export default class Helper {
       {
         ...Helper.createTransferTemplate,
         id: id(),
-        debit_account_id: spec.netDebitCapSetUtil,
-        credit_account_id: spec.netDebitCapSet,
+        debit_account_id: dfspCurrency.netDebitCapSetUtil,
+        credit_account_id: dfspCurrency.netDebitCapSet,
         amount: netDebitCapLockAmount,
         ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
@@ -578,14 +577,14 @@ export default class Helper {
     transferId: string,
     amount: number,
     netDebitCap: NetDebitCap,
-    spec: DfspCurrency,
+    dfspCurrency: DfspCurrency,
     currencyConfig: CurrencyConfig
   ): Array<Transfer> {
     const tranferDeposit = {
       ...Helper.createTransferTemplate,
       id: Helper.fromMojaloopId(transferId),
-      debit_account_id: spec.deposit,
-      credit_account_id: spec.unrestricted,
+      debit_account_id: dfspCurrency.deposit,
+      credit_account_id: dfspCurrency.unrestricted,
       amount: Helper.toTigerBeetleAmount(amount, currencyConfig.assetScale),
       ledger: currencyConfig.idOperation,
       code: TransferCode.Deposit,
@@ -598,7 +597,7 @@ export default class Helper {
     tranferDeposit.flags = TransferFlags.linked
     return [
       tranferDeposit,
-      ...this.transferTemplateNDC(netDebitCap.amount, spec, currencyConfig)
+      ...this.transferTemplateNDC(netDebitCap.amount, dfspCurrency, currencyConfig)
     ]
   }
 
@@ -606,8 +605,8 @@ export default class Helper {
     transferId: string,
     amount: number,
     netDebitCap: NetDebitCap,
-    spec: DfspCurrency,
-    master: DfspRoot,
+    dfspCurrency: DfspCurrency,
+    dfspRoot: DfspRoot,
     currencyConfig: CurrencyConfig,
   ): Array<Transfer> {
     if (netDebitCap.type === 'UNLIMITED') {
@@ -617,7 +616,7 @@ export default class Helper {
           ...Helper.createTransferTemplate,
           id: id(),
           debit_account_id: Helper.accountIds.devNull,
-          credit_account_id: master.id,
+          credit_account_id: dfspRoot.id,
           amount: 0n,
           ledger: Helper.ledgerIds.globalControl,
           code: 1,
@@ -627,8 +626,8 @@ export default class Helper {
         {
           ...Helper.createTransferTemplate,
           id: Helper.fromMojaloopId(transferId),
-          debit_account_id: spec.unrestricted,
-          credit_account_id: spec.deposit,
+          debit_account_id: dfspCurrency.unrestricted,
+          credit_account_id: dfspCurrency.deposit,
           amount: Helper.toTigerBeetleAmount(amount, currencyConfig.assetScale),
           ledger: currencyConfig.idOperation,
           code: TransferCode.Withdraw,
@@ -643,7 +642,7 @@ export default class Helper {
         ...Helper.createTransferTemplate,
         id: id(),
         debit_account_id: Helper.accountIds.devNull,
-        credit_account_id: master.id,
+        credit_account_id: dfspRoot.id,
         amount: 0n,
         ledger: Helper.ledgerIds.globalControl,
         code: 1,
@@ -653,8 +652,8 @@ export default class Helper {
       {
         ...Helper.createTransferTemplate,
         id: id(),
-        debit_account_id: spec.restricted,
-        credit_account_id: spec.unrestricted,
+        debit_account_id: dfspCurrency.restricted,
+        credit_account_id: dfspCurrency.unrestricted,
         amount: amount_max,
         ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
@@ -664,14 +663,14 @@ export default class Helper {
       {
         ...Helper.createTransferTemplate,
         id: Helper.fromMojaloopId(transferId),
-        debit_account_id: spec.unrestricted,
-        credit_account_id: spec.deposit,
+        debit_account_id: dfspCurrency.unrestricted,
+        credit_account_id: dfspCurrency.deposit,
         amount: Helper.toTigerBeetleAmount(amount, currencyConfig.assetScale),
         ledger: currencyConfig.idOperation,
         code: TransferCode.Withdraw,
         flags: TransferFlags.linked | TransferFlags.pending
       },
-      ...this.transferTemplateNDC(netDebitCap.amount, spec, currencyConfig)
+      ...this.transferTemplateNDC(netDebitCap.amount, dfspCurrency, currencyConfig)
     ]
   }
 
@@ -823,96 +822,11 @@ export default class Helper {
         dfspCurrency,
         currencyConfig
       )
-
-      // // Sweep total balance from Restricted to Unrestricted
-      // {
-      //   ...Helper.createTransferTemplate,
-      //   id: id(),
-      //   debit_account_id: dfspCurrency.restricted,
-      //   credit_account_id: dfspCurrency.unrestricted,
-      //   amount: amount_max,
-      //   ledger: currencyConfig.idOperation,
-      //   code: TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted,
-      //   flags: TransferFlags.linked | TransferFlags.balancing_debit
-      // },
-      // // Move the new NDC amount out to a temporary account.
-      // // if the new NDC amount is unlimited, then move all into temporary account.
-      // {
-      //   ...Helper.createTransferTemplate,
-      //   id: idLockTransfer,
-      //   debit_account_id: dfspCurrency.unrestricted,
-      //   credit_account_id: dfspCurrency.unrestrictedLock,
-      //   amount: netDebitCapType === 'LIMITED' ? amountNetDebitCap : amount_max,
-      //   ledger: currencyConfig.idOperation,
-      //   code: TransferCode.Net_Debit_Cap_Lock,
-      //   flags: TransferFlags.linked | TransferFlags.balancing_debit | TransferFlags.pending
-      // },
-      // // Sweep whatever remains in Unrestricted to Restricted.
-      // {
-      //   ...Helper.createTransferTemplate,
-      //   id: id(),
-      //   debit_account_id: dfspCurrency.unrestricted,
-      //   credit_account_id: dfspCurrency.restricted,
-      //   amount: amount_max,
-      //   ledger: currencyConfig.idOperation,
-      //   code: TransferCode.Net_Debit_Cap_Sweep_To_Restricted,
-      //   flags: TransferFlags.linked | TransferFlags.balancing_debit
-      // },
-      // // Void the pending limit lock transfer.
-      // {
-      //   ...Helper.createTransferTemplate,
-      //   id: id(),
-      //   pending_id: idLockTransfer,
-      //   debit_account_id: 0n,
-      //   credit_account_id: 0n,
-      //   amount: 0n,
-      //   ledger: currencyConfig.idOperation,
-      //   code: TransferCode.Net_Debit_Cap_Lock,
-      //   flags: TransferFlags.void_pending_transfer
-      // },
     ]
 
     return transfers
   }
 
-  public buildTransferSpecs(prepares: Array<PrepareHandlerInput>): Array<SpecTransfer> {
-    const specs: Array<SpecTransfer> = []
-    prepares.forEach(prepare => {
-      const spec: SpecTransfer = {
-        id: prepare.transferId,
-        currency: prepare.payload.amount.currency,
-        amount: prepare.payload.amount.amount,
-        expiration: new Date(prepare.payload.expiration),
-        payerId: prepare.payload.payerFsp,
-        payeeId: prepare.payload.payeeFsp,
-        ilpCondition: prepare.payload.condition,
-        ilpPacket: prepare.payload.ilpPacket,
-        payerLocation: "LOCAL",
-        payeeLocation: "LOCAL"
-      }
-
-      specs.push(spec)
-    })
-
-    return specs
-  }
-
-  public buildSpecsPrepare(prepares: Array<PrepareHandlerInput>): Array<SpecPrepare> {
-    return prepares.map(prepare => {
-      return {
-        id: prepare.transferId,
-        payloadHash: Helper.hashTransferProperties({
-          amount: prepare.payload.amount.amount,
-          currency: prepare.payload.amount.currency,
-          expiration: prepare.payload.expiration,
-          payeeFsp: prepare.payload.payeeFsp,
-          payerFsp: prepare.payload.payerFsp,
-          condition: prepare.payload.condition,
-          ilpPacket: prepare.payload.ilpPacket,
-        })
-      }
-    })
-  }
 
   /**
    * How many TigerBeetle transfers for each Prepare.
@@ -926,7 +840,7 @@ export default class Helper {
    */
   public buildTransfersPrepare(
     prepares: Array<PrepareHandlerInput>,
-    context: ContextDfsps,
+    context: ContextPayments,
     hashes: Array<number>
   ): Array<Transfer> {
     assert(prepares.length === hashes.length)
@@ -950,14 +864,14 @@ export default class Helper {
       // Shortcut.
       const amountStr = prepare.payload.amount.amount
       const currency = prepare.payload.amount.currency
-      const masterAccountPayer = dfspRootsMap[prepare.payload.payerFsp]
-      assert(masterAccountPayer)
-      const masterAccountPayee = dfspRootsMap[prepare.payload.payeeFsp]
-      assert(masterAccountPayee)
-      const specPayer = dfspCurrenciesMap[prepare.payload.payerFsp + ':' + currency]
-      assert(specPayer)
-      const specPayee = dfspCurrenciesMap[prepare.payload.payeeFsp + ':' + currency]
-      assert(specPayee)
+      const rootAccountPayer = dfspRootsMap[prepare.payload.payerFsp]
+      assert(rootAccountPayer)
+      const rootAccountPayee = dfspRootsMap[prepare.payload.payeeFsp]
+      assert(rootAccountPayee)
+      const dfspCurrencyPayer = dfspCurrenciesMap[prepare.payload.payerFsp + ':' + currency]
+      assert(dfspCurrencyPayer)
+      const dfspCurrencyPayee = dfspCurrenciesMap[prepare.payload.payeeFsp + ':' + currency]
+      assert(dfspCurrencyPayee)
 
       // TODO: come back to this - we need to ensure increasing ids.
       const prepareId = Helper.fromMojaloopId(prepare.transferId)
@@ -994,8 +908,8 @@ export default class Helper {
         {
           ...Helper.createTransferTemplate,
           id: prepareId,
-          debit_account_id: masterAccountPayer.id,
-          credit_account_id: masterAccountPayee.id,
+          debit_account_id: rootAccountPayer.id,
+          credit_account_id: rootAccountPayee.id,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
           user_data_64: BigInt(expirationMs),
@@ -1008,8 +922,8 @@ export default class Helper {
         {
           ...Helper.createTransferTemplate,
           id: id(),
-          debit_account_id: specPayer.unrestricted,
-          credit_account_id: specPayee.unrestricted,
+          debit_account_id: dfspCurrencyPayer.unrestricted,
+          credit_account_id: dfspCurrencyPayee.unrestricted,
           amount: 0n,
           user_data_128: prepareId,
           ledger: ledger.idOperation,
@@ -1022,8 +936,8 @@ export default class Helper {
         {
           ...Helper.createTransferTemplate,
           id: id(),
-          debit_account_id: specPayer.clearingSetup,
-          credit_account_id: specPayer.clearingLimit,
+          debit_account_id: dfspCurrencyPayer.clearingSetup,
+          credit_account_id: dfspCurrencyPayer.clearingLimit,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
           ledger: ledger.idOperation,
@@ -1034,8 +948,8 @@ export default class Helper {
         {
           ...Helper.createTransferTemplate,
           id: id(),
-          debit_account_id: specPayer.clearingCredit,
-          credit_account_id: specPayer.clearingSetup,
+          debit_account_id: dfspCurrencyPayer.clearingCredit,
+          credit_account_id: dfspCurrencyPayer.clearingSetup,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
           ledger: ledger.idOperation,
@@ -1046,8 +960,8 @@ export default class Helper {
         {
           ...Helper.createTransferTemplate,
           id: id(),
-          debit_account_id: specPayer.unrestricted,
-          credit_account_id: specPayer.clearingSetup,
+          debit_account_id: dfspCurrencyPayer.unrestricted,
+          credit_account_id: dfspCurrencyPayer.clearingSetup,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
           ledger: ledger.idOperation,
@@ -1058,8 +972,8 @@ export default class Helper {
         {
           ...Helper.createTransferTemplate,
           id: prepareId + 3n,
-          debit_account_id: specPayer.clearingSetup,
-          credit_account_id: specPayer.reserved,
+          debit_account_id: dfspCurrencyPayer.clearingSetup,
+          credit_account_id: dfspCurrencyPayer.reserved,
           amount: amountTigerBeetle,
           user_data_128: prepareId,
           ledger: ledger.idOperation,
@@ -1070,8 +984,8 @@ export default class Helper {
         {
           ...Helper.createTransferTemplate,
           id: id(),
-          debit_account_id: specPayer.clearingLimit,
-          credit_account_id: specPayer.clearingSetup,
+          debit_account_id: dfspCurrencyPayer.clearingLimit,
+          credit_account_id: dfspCurrencyPayer.clearingSetup,
           amount: amount_max,
           user_data_128: prepareId,
           ledger: ledger.idOperation,
@@ -1080,10 +994,10 @@ export default class Helper {
         },
       ]
 
-      // console.log(Helper.formatTransfersAsDRCR(transfersPrepare, [specPayer], [masterAccountPayer], ledger))
+      // Enable be for greatness!
+      // console.log(Helper.formatTransfersAsDRCR(transfersPrepare, [dfspCurrencyPayet], [rootAccountPayer], ledger))
       transfers.push(...transfersPrepare)
     })
-
 
     return transfers
   }
@@ -1125,7 +1039,7 @@ export default class Helper {
       case "DUPLICATE_FINAL": {
         const payload: PayloadFinalizedTransfer = {
           transferState: 'ABORTED',
-          completedTimestamp: status.context.specPrepare.abortedAt ?? new Date(0),
+          completedTimestamp: status.context.prepareMeta.abortedAt ?? new Date(0),
         }
         return {
           type: PaymentPrepareResultType.DUPLICATE_FINAL,
@@ -1252,14 +1166,14 @@ export default class Helper {
   public mapResultsFulfil(
     results: Array<CreateTransferResult>,
     fulfils: Array<FulfilHandlerInput>,
-    specFulfils: Array<SpecFulfil>
+    fulfilMetas: Array<FulfilMeta>
   ): Array<FulfilInternalStatus> {
     const statuses: Array<FulfilInternalStatus> = []
 
     let idxResult = 0
     for (let idxFulfil = 0; idxFulfil < fulfils.length; idxFulfil++) {
       const fulfil = fulfils[idxFulfil]
-      const specFulfil = specFulfils[idxFulfil]
+      const fulfilMeta = fulfilMetas[idxFulfil]
       assert(fulfil)
 
       const ampFactor = fulfil.action === Action.ABORT
@@ -1282,12 +1196,11 @@ export default class Helper {
               // There is a small chance we had racing fulfils.
               statuses.push({
                 tag: 'ALREADY_FULFILLED',
-                specFulfil,
+                fulfilMeta,
               })
               continue
             }
             case CreateTransferStatus.pending_transfer_already_voided: {
-              // const abortedAt = specFulfil && specFulfil.fulfiledAt ? specFulfil.fulfiledAt : new Date()
               statuses.push({ tag: 'ALREADY_ABORTED' })
               continue
             }
@@ -1308,15 +1221,15 @@ export default class Helper {
       // Fulfil succesfully committed or aborted. Mark it as fulfilled.
       // We need to decide if we should use the TigerBeetle timestamp here, or the application
       // timestamp.
-      const specFulfilNew = { ...specFulfil }
+      const fulfilMetaNew = { ...fulfilMeta }
       if (fulfil.payload.transferState === 'ABORTED') {
-        specFulfilNew.abortedAt = new Date()
+        fulfilMetaNew.abortedAt = new Date()
       } else {
-        specFulfilNew.fulfiledAt = new Date()
-        specFulfilNew.fulfilment = fulfil.payload.fulfilment
+        fulfilMetaNew.fulfiledAt = new Date()
+        fulfilMetaNew.fulfilment = fulfil.payload.fulfilment
       }
       statuses.push({
-        tag: 'OK', specFulfil: specFulfilNew
+        tag: 'OK', fulfilMeta: fulfilMetaNew
       })
     }
 
@@ -1337,7 +1250,7 @@ export default class Helper {
       case 'OK':
         return {
           type: PaymentFulfilResultType.PASS,
-          effects: [this.buildEffectFulfilNotificationSuccess(fulfil, status.specFulfil)]
+          effects: [this.buildEffectFulfilNotificationSuccess(fulfil, status.fulfilMeta)]
         }
       case 'PREPARE_NOT_FOUND':
       case 'PREPARE_EXPIRED':
@@ -1355,7 +1268,7 @@ export default class Helper {
       case 'ALREADY_FULFILLED':
         return {
           type: PaymentFulfilResultType.DUPLICATE_FINAL,
-          effects: [this.buildEffectFulfilDuplicate(fulfil, status.specFulfil)]
+          effects: [this.buildEffectFulfilDuplicate(fulfil, status.fulfilMeta)]
         }
 
       case 'ALREADY_ABORTED':
@@ -1416,12 +1329,11 @@ export default class Helper {
    */
   public buildTransfersFulfil(
     fulfils: Array<FulfilHandlerInput>,
-    context: ContextFulfil,
+    context: ContextPayments,
     netDebitCaps: Array<NetDebitCap>,
     hashes: Array<number>
   ): Array<Transfer> {
 
-    const specTransfers = Helper.toMapBy(context.specTransfers, item => item.id)
     const dfspCurrencies = Helper.toMapBy(context.dfspCurrencies, item => `${item.dfspId}:${item.currency}`)
     const currencyConfigs = Helper.toMapBy(context.currencyConfigs, item => item.currency)
     const netDebitCapMap = Helper.toMapBy(netDebitCaps, item => `${item.dfspId}:${item.currency}`)
@@ -1429,29 +1341,27 @@ export default class Helper {
     const transfers: Array<Transfer> = []
     for (let idx = 0; idx < fulfils.length; idx++) {
       const fulfil = fulfils[idx]
-      const specTransfer = specTransfers[fulfil.transferId]
+      const paymentMeta = context.paymentMetas[fulfil.transferId]
       const hash = hashes[idx]
 
       assert(fulfil)
-      assert(specTransfer)
+      assert(paymentMeta)
       assert(hash)
 
-      const currencyConfig = currencyConfigs[specTransfer.currency]
-      assert(currencyConfig, `No currencyConfig found for specTransfer.currency: ${specTransfer.currency}.`)
+      const currencyConfig = currencyConfigs[paymentMeta.currency]
+      assert(currencyConfig, `No currencyConfig found for paymentMeta.currency: ${paymentMeta.currency}.`)
 
-      // TODO: ideally we wouldn't have to have the amount in the spec store.
-      const amountTigerBeetle = Helper.fromMojaloopAmount(specTransfer.amount, currencyConfig.assetScale)
-
+      const amountTigerBeetle = Helper.fromMojaloopAmount(paymentMeta.amount, currencyConfig.assetScale)
       const prepareId = Helper.fromMojaloopId(fulfil.transferId)
-      const dfspCurrencyPayer = dfspCurrencies[`${specTransfer.payerId}:${specTransfer.currency}`]
-      assert(dfspCurrencyPayer, `dfspCurrency not found for payerId: ${specTransfer.payerId} and currency: ${specTransfer.currency}.`)
-      const dfspCurrencyPayee = dfspCurrencies[`${specTransfer.payeeId}:${specTransfer.currency}`]
-      assert(dfspCurrencyPayee, `dfspCurrency not found for payeeId: ${specTransfer.payeeId} and currency: ${specTransfer.currency}.`)
+      const dfspCurrencyPayer = dfspCurrencies[`${paymentMeta.payerId}:${paymentMeta.currency}`]
+      assert(dfspCurrencyPayer, `dfspCurrency not found for payerId: ${paymentMeta.payerId} and currency: ${paymentMeta.currency}.`)
+      const dfspCurrencyPayee = dfspCurrencies[`${paymentMeta.payeeId}:${paymentMeta.currency}`]
+      assert(dfspCurrencyPayee, `dfspCurrency not found for payeeId: ${paymentMeta.payeeId} and currency: ${paymentMeta.currency}.`)
 
-      const netDebitCapPayer = netDebitCapMap[`${specTransfer.payerId}:${specTransfer.currency}`]
-      assert(netDebitCapPayer, `net debit cap not found for payerId: ${specTransfer.payerId} and currency: ${specTransfer.currency}.`)
-      const netDebitCapPayee = netDebitCapMap[`${specTransfer.payeeId}:${specTransfer.currency}`]
-      assert(netDebitCapPayee, `net debit cap not found for payeeId: ${specTransfer.payeeId} and currency: ${specTransfer.currency}.`)
+      const netDebitCapPayer = netDebitCapMap[`${paymentMeta.payerId}:${paymentMeta.currency}`]
+      assert(netDebitCapPayer, `net debit cap not found for payerId: ${paymentMeta.payerId} and currency: ${paymentMeta.currency}.`)
+      const netDebitCapPayee = netDebitCapMap[`${paymentMeta.payeeId}:${paymentMeta.currency}`]
+      assert(netDebitCapPayee, `net debit cap not found for payeeId: ${paymentMeta.payeeId} and currency: ${paymentMeta.currency}.`)
 
       if (fulfil.action === Action.ABORT) {
         // DRCR Example Snippet:
@@ -1880,10 +1790,10 @@ export default class Helper {
 
   public buildEffectFulfilNotificationSuccess(
     input: FulfilHandlerInput,
-    specFulfil: SpecFulfil,
+    fulfilMeta: FulfilMeta,
   ): Effect {
-    assert(specFulfil)
-    assert(specFulfil.fulfiledAt)
+    assert(fulfilMeta)
+    assert(fulfilMeta.fulfiledAt)
 
     const message = {
       id: input.transferId,
@@ -1893,8 +1803,8 @@ export default class Helper {
         headers: { ...input.message.value.content.headers },
         payload: {
           transferState: 'COMMITTED',
-          fulfilment: specFulfil.fulfilment,
-          completedTimestamp: specFulfil.fulfiledAt
+          fulfilment: fulfilMeta.fulfilment,
+          completedTimestamp: fulfilMeta.fulfiledAt
         }
       },
       metadata: {
@@ -1947,7 +1857,7 @@ export default class Helper {
     }
   }
 
-  public buildEffectFulfilDuplicate(input: FulfilHandlerInput, specFulfil: SpecFulfil): Effect {
+  public buildEffectFulfilDuplicate(input: FulfilHandlerInput, fulfilMeta: FulfilMeta): Effect {
     const message = structuredClone(input.message.value)
     message.content.uriParams = { id: input.transferId }
 
@@ -1961,8 +1871,8 @@ export default class Helper {
     // Override the message.content.payload.completedTimestamp with the date of the original
     message.content.payload = {
       transferState: 'COMMITTED',
-      fulfilment: specFulfil.fulfilment,
-      completedTimestamp: specFulfil.fulfiledAt,
+      fulfilment: fulfilMeta.fulfilment,
+      completedTimestamp: fulfilMeta.fulfiledAt,
     }
 
     return {
@@ -2046,12 +1956,15 @@ export default class Helper {
     }
   }
 
-  public static prepareToSpecTransferCreate(
+  /**
+   * Util to map from a PrepareDTO -> PaymentMeta.
+   */
+  public static prepareDtoToPaymentMeta(
     prepare: CreatePaymentDto,
     context: {
       payerLocation: ParticipantLocation,
       payeeLocation: ParticipantLocation,
-    }): SpecTransfer {
+    }): PaymentMeta {
     return {
       id: prepare.transferId,
       currency: prepare.amount.currency,
@@ -2100,6 +2013,58 @@ export default class Helper {
       return result
     })
   }
+
+  public static hydratePayment(transfer: Transfer, paymentMeta: PaymentMeta, fulfil: FulfilMeta): PayloadFinalizedTransfer {
+    // Finalized burned prepare.
+    if (transfer.code === TransferCode.Clearing_Burn_Id) {
+      const timestamp = transfer.user_data_64
+      const completedTimestamp = new Date(Number(timestamp))
+      // Backwards compatibilty - MySQL stores timestamp to seconds precision.
+      completedTimestamp.setMilliseconds(0)
+
+      return {
+        completedTimestamp,
+        transferState: 'ABORTED'
+      }
+    }
+
+    assert.equal(transfer.code, TransferCode.Clearing_Active_Check, 'Invalid transfer code.')
+
+    // If we have a FulfilMeta, then we know the Payment is complete.
+    // Ideally we would be able to check the TigerBeetle payment status.
+    if (fulfil && fulfil.fulfilment) {
+      assert(fulfil.fulfiledAt)
+      return {
+        fulfilment: fulfil.fulfilment,
+        completedTimestamp: fulfil.fulfiledAt,
+        transferState: 'COMMITTED'
+      }
+    }
+
+    throw new Error('Lewis didnt finish implementing me yet!')
+  }
+
+  /**
+   * If we don't have the FulfilMeta, we still have enough information to imply an aborted Payment.
+   */
+  public static hydratePaymentPartial(transfer: Transfer): PayloadFinalizedTransfer {
+    assert(transfer.code === TransferCode.Clearing_Burn_Id)
+    if (transfer.code === TransferCode.Clearing_Burn_Id) {
+      const timestamp = transfer.user_data_64
+      const completedTimestamp = new Date(Number(timestamp))
+      // Backwards compatibilty - MySQL stores timestamp to seconds precision.
+      completedTimestamp.setMilliseconds(0)
+
+      return {
+        completedTimestamp,
+        transferState: 'ABORTED'
+      }
+    }
+
+    throw new Error('Lewis didnt finish implementing me yet!')
+  }
+
+
 
   /**
    * Format a list of TigerBeetle transfers as a DRCR snippet.
@@ -2213,6 +2178,8 @@ export default class Helper {
 
     return lines.join('\n')
   }
+
+
 }
 
 const bigIntReplacer = (_key: string, value: unknown) =>

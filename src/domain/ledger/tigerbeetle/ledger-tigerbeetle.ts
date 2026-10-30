@@ -88,8 +88,9 @@ const { TransferState } = Enum.Transfers
 
 import SettlementDomain from '../../settlement';
 import { CloseDfspMasterAccountFailureType, DepositFailureType, DisableDfspAccountFailureType, EnableDfspAccountFailureType, FulfilFailureType, FulfilInternalStatus, default as Helper, default as LedgerTigerBeetleHelper, PrepareFailureType, PrepareInternalStatus, SetNetDebitCapFailureType, TransferFailureResult, WithdrawAbortFailureType, WithdrawCommitFailureType, WithdrawPrepareFailureType } from './helper';
-import SpecStore, { CmdHubCurrencyEnable, ContextDfsps, ContextFulfil, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, GetSpecTransferResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, ParticipantLocation, SpecFulfil, SpecFulfilUpdate, SpecPrepare, SpecTransfer } from './spec-store';
+import  { CmdHubCurrencyEnable, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, FulfilMeta, FulfilMetaUpdate, GetPaymentMetaResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, ParticipantLocation, PaymentMeta, PrepareMeta } from './meta-store';
 import { Reporter } from '../shared/reporter';
+import MetaStore from './meta-store';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -98,21 +99,20 @@ interface Dependencies {
   client: Client,
   helper: Helper,
   enums: Enums,
-  specStore: SpecStore,
+  metaStore: MetaStore,
 }
-
 
 export class LedgerTigerBeetle implements Ledger {
   private readonly config: ApplicationConfig
   private readonly client: Client
   private readonly helper: Helper
-  private specStore: SpecStore
+  private metaStore: MetaStore
 
   constructor(private deps: Dependencies) {
     this.config = deps.config
     this.client = deps.client
     this.helper = deps.helper
-    this.specStore = deps.specStore
+    this.metaStore = deps.metaStore
   }
 
   /**
@@ -145,7 +145,7 @@ export class LedgerTigerBeetle implements Ledger {
 
     try {
       // Validate the currency is valid.
-      await this.specStore.validateCurrency(cmd.currency)
+      await this.metaStore.validateCurrency(cmd.currency)
 
       const cmdEnableHubCurrency: CmdHubCurrencyEnable = {
         currency: cmd.currency,
@@ -154,7 +154,7 @@ export class LedgerTigerBeetle implements Ledger {
         ] : [],
         accountIds: cmd.ids
       }
-      const enableHubCurrencyResponse = await this.specStore.enableHubCurrency(cmdEnableHubCurrency)
+      const enableHubCurrencyResponse = await this.metaStore.enableHubCurrency(cmdEnableHubCurrency)
 
       if (enableHubCurrencyResponse.type === 'FAILURE') {
         throw enableHubCurrencyResponse.error
@@ -197,12 +197,12 @@ export class LedgerTigerBeetle implements Ledger {
       cmd.ids = Array.from({ length: idsToCreate }, (_) => Number(this.deps.helper.idSmall()))
     }
     try {
-      await this.specStore.assertCurrenciesEnabled(cmd.currencies)
-      await this.specStore.assertHubAccountsCreatedForCurrencies(cmd.currencies)
+      await this.metaStore.assertCurrenciesEnabled(cmd.currencies)
+      await this.metaStore.assertHubAccountsCreatedForCurrencies(cmd.currencies)
 
-      // Get or create the specDfsp.
-      await this.specStore.getOrCreateDfspRoot(cmd.dfspId, cmd.isProxy, this.deps.helper.idSmall())
-      const resultDfspCurrency = await this.specStore.getDfspCurrency(cmd.dfspId, currency)
+      // Get or create the dfspRoot.
+      await this.metaStore.getOrCreateDfspRoot(cmd.dfspId, cmd.isProxy, this.deps.helper.idSmall())
+      const resultDfspCurrency = await this.metaStore.getDfspCurrency(cmd.dfspId, currency)
 
       if (resultDfspCurrency.type === 'FAILURE') {
         return resultDfspCurrency
@@ -210,14 +210,14 @@ export class LedgerTigerBeetle implements Ledger {
 
       // Lookup accounts in TigerBeetle, ensure they exist.
       if (resultDfspCurrency.type === 'SUCCESS') {
-        const spec = resultDfspCurrency.result
+        const dfspCurrency = resultDfspCurrency.result
         const accounts = await this.deps.client.lookupAccounts([
-          spec.deposit,
-          spec.unrestricted,
-          spec.unrestrictedLock,
-          spec.restricted,
-          spec.reserved,
-          spec.commitedOutgoing,
+          dfspCurrency.deposit,
+          dfspCurrency.unrestricted,
+          dfspCurrency.unrestrictedLock,
+          dfspCurrency.restricted,
+          dfspCurrency.reserved,
+          dfspCurrency.commitedOutgoing,
         ])
         // TODO: it's probably safe to create them now.
         if (accounts.length !== 6) {
@@ -244,9 +244,9 @@ export class LedgerTigerBeetle implements Ledger {
   private async createDfspAccounts(id: string, currency: string, ids: Array<number>): Promise<CreateDfspResponse> {
     try {
       // First we create the DfspCurrency.
-      const dfspCurrency = await this.specStore.createDfspCurrency(id, currency, new Date(), ids)
-      const dfspRoot = await this.specStore.getDfspRoot(id)
-      const currencyConfig = await this.specStore.getCurrencyConfig(currency)
+      const dfspCurrency = await this.metaStore.createDfspCurrency(id, currency, new Date(), ids)
+      const dfspRoot = await this.metaStore.getDfspRoot(id)
+      const currencyConfig = await this.metaStore.getCurrencyConfig(currency)
 
       const accounts = this.helper.buildAccountsDfsp(
         dfspCurrency, currencyConfig, dfspRoot.id
@@ -298,7 +298,7 @@ export class LedgerTigerBeetle implements Ledger {
     assert(cmd.dfspId)
 
     try {
-      const dfspRoot = await this.specStore.getDfspRoot(cmd.dfspId)
+      const dfspRoot = await this.metaStore.getDfspRoot(cmd.dfspId)
       let closeAccountResult = await this.closeDfspMasterAccount(dfspRoot.id)
 
       if (closeAccountResult.type === DeactivateDfspResponseType.CREATE_ACCOUNT) {
@@ -411,7 +411,7 @@ export class LedgerTigerBeetle implements Ledger {
     assert(cmd.dfspId)
 
     try {
-      const dfspRoot = await this.specStore.getDfspRoot(cmd.dfspId)
+      const dfspRoot = await this.metaStore.getDfspRoot(cmd.dfspId)
       const transfers = await this.deps.client.getAccountTransfers({
         account_id: dfspRoot.id,
         user_data_128: 0n,
@@ -476,7 +476,7 @@ export class LedgerTigerBeetle implements Ledger {
 
     try {
       // Only the Deposit and Unrestricted Accounts can be enabled/disabled
-      const dfspCurrencies = await this.specStore.getDfspCurrencies(cmd.dfspId)
+      const dfspCurrencies = await this.metaStore.getDfspCurrencies(cmd.dfspId)
       if (dfspCurrencies.length === 0) {
         return {
           type: 'FAILURE',
@@ -484,7 +484,7 @@ export class LedgerTigerBeetle implements Ledger {
         }
       }
 
-      const { currency, code } = await this.specStore.lookupDfspCurrencyByAccountId(cmd.dfspId, accountId)
+      const { currency, code } = await this.metaStore.lookupDfspCurrencyByAccountId(cmd.dfspId, accountId)
       switch (code) {
         case AccountCode.Unrestricted:
           break;
@@ -495,7 +495,7 @@ export class LedgerTigerBeetle implements Ledger {
           }
       }
 
-      const currencyConfig = await this.specStore.getCurrencyConfig(currency.currency)
+      const currencyConfig = await this.metaStore.getCurrencyConfig(currency.currency)
       // Look up the closing transfer to void it.
       const closingTransfers = (await this.deps.client.getAccountTransfers({
         account_id: accountId,
@@ -562,7 +562,7 @@ export class LedgerTigerBeetle implements Ledger {
 
     try {
       // Only the Deposit and Unrestricted Accounts can be enabled/disabled
-      const dfspCurrencies = await this.specStore.getDfspCurrencies(cmd.dfspId)
+      const dfspCurrencies = await this.metaStore.getDfspCurrencies(cmd.dfspId)
       if (dfspCurrencies.length === 0) {
         return {
           type: 'FAILURE',
@@ -570,7 +570,7 @@ export class LedgerTigerBeetle implements Ledger {
         }
       }
 
-      const { currency, code } = await this.specStore.lookupDfspCurrencyByAccountId(cmd.dfspId, accountId)
+      const { currency, code } = await this.metaStore.lookupDfspCurrencyByAccountId(cmd.dfspId, accountId)
       switch (code) {
         case AccountCode.Unrestricted:
           break;
@@ -581,7 +581,7 @@ export class LedgerTigerBeetle implements Ledger {
           }
       }
 
-      const currencyConfig = await this.specStore.getCurrencyConfig(currency.currency)
+      const currencyConfig = await this.metaStore.getCurrencyConfig(currency.currency)
 
       // Create a closing transfer to mark this Account as deactivated
       const closingTransfer: Transfer = {
@@ -628,7 +628,7 @@ export class LedgerTigerBeetle implements Ledger {
    * Get a list of all the CurrencyConfigs registered on the Ledger.
    */
   public async getCurrencyConfigs(): Promise<Array<CurrencyConfig>> {
-    const currencyConfigs = await this.specStore.getCurrencyConfigsMap()
+    const currencyConfigs = await this.metaStore.getCurrencyConfigsMap()
     return Object.values(currencyConfigs)
   }
 
@@ -638,7 +638,7 @@ export class LedgerTigerBeetle implements Ledger {
    */
   private async getInternalNetDebitCap(dfspId: string, currency: string):
     Promise<QueryResultWithNotFound<NetDebitCap>> {
-    const dfspCurrencyResult = await this.specStore.getDfspCurrency(dfspId, currency)
+    const dfspCurrencyResult = await this.metaStore.getDfspCurrency(dfspId, currency)
     if (dfspCurrencyResult.type !== 'SUCCESS') {
       return dfspCurrencyResult
     }
@@ -721,56 +721,7 @@ export class LedgerTigerBeetle implements Ledger {
     }
   }
 
-  // TODO: this really should be called a 'Payment' to avoid confusion elsewhere.
-  private hydrateTransfer(transfer: Transfer, spec: SpecTransfer, fulfil: SpecFulfil): PayloadFinalizedTransfer {
-    // Finalized burned prepare.
-    if (transfer.code === TransferCode.Clearing_Burn_Id) {
-      const timestamp = transfer.user_data_64
-      const completedTimestamp = new Date(Number(timestamp))
-      // Backwards compatibilty - MySQL stores timestamp to seconds precision.
-      completedTimestamp.setMilliseconds(0)
-
-      return {
-        completedTimestamp,
-        transferState: 'ABORTED'
-      }
-    }
-
-    assert.equal(transfer.code, TransferCode.Clearing_Active_Check, 'Invalid transfer code.')
-
-    // If we have a spec fulfilment, then we know the Payment is complete.
-    // Ideally we would be able to check the TigerBeetle payment status.
-    if (fulfil && fulfil.fulfilment) {
-      assert(fulfil.fulfiledAt)
-      return {
-        fulfilment: fulfil.fulfilment,
-        completedTimestamp: fulfil.fulfiledAt,
-        transferState: 'COMMITTED'
-      }
-    }
-
-    throw new Error('Lewis didnt finish implementing me yet!')
-  }
-
-  /**
-   * If we don't have the spec, we still have enough information to imply an aborted Payment.
-   */
-  private hydrateTransferPartial(transfer: Transfer): PayloadFinalizedTransfer {
-    assert(transfer.code === TransferCode.Clearing_Burn_Id)
-    if (transfer.code === TransferCode.Clearing_Burn_Id) {
-      const timestamp = transfer.user_data_64
-      const completedTimestamp = new Date(Number(timestamp))
-      // Backwards compatibilty - MySQL stores timestamp to seconds precision.
-      completedTimestamp.setMilliseconds(0)
-
-      return {
-        completedTimestamp,
-        transferState: 'ABORTED'
-      }
-    }
-
-    throw new Error('Lewis didnt finish implementing me yet!')
-  }
+  
 
   /**
    * Returns a map of 'dfspId:currency' => NetDebitCap.
@@ -806,7 +757,7 @@ export class LedgerTigerBeetle implements Ledger {
     // Get unique accountIds.
     const netDebitCapAccountIds = [...netDebitCapAccountIdSet]
     // Now lookup the DfspCurrency for these account ids.
-    const dfspCurrencies = await this.specStore.dfspCurrenciesForNetDebitCapAccountIds(netDebitCapAccountIds)
+    const dfspCurrencies = await this.metaStore.dfspCurrenciesForNetDebitCapAccountIds(netDebitCapAccountIds)
 
     const results: Record<string, NetDebitCap> = {}
     Object.entries(dfspCurrencies).forEach(([id, dfspCurrency]) => {
@@ -830,7 +781,7 @@ export class LedgerTigerBeetle implements Ledger {
     try {
       // Backwards compatibility - first check if the Dfsp exists.
       try {
-        await this.specStore.getDfspRoot(cmd.dfspId)
+        await this.metaStore.getDfspRoot(cmd.dfspId)
       } catch (err) {
         return {
           type: 'NOT_FOUND'
@@ -846,7 +797,7 @@ export class LedgerTigerBeetle implements Ledger {
         return Helper.failure(netDebitCapResult.error)
       }
       const netDebitCap = netDebitCapResult.result
-      const dfspCurrencyResult = await this.deps.specStore.getDfspCurrency(cmd.dfspId, cmd.currency)
+      const dfspCurrencyResult = await this.metaStore.getDfspCurrency(cmd.dfspId, cmd.currency)
       if (dfspCurrencyResult.type === 'NOT_FOUND') {
         return {
           type: 'NOT_FOUND'
@@ -856,16 +807,7 @@ export class LedgerTigerBeetle implements Ledger {
         throw dfspCurrencyResult.error
       }
       const dfspCurrency = dfspCurrencyResult.result
-      const currency = await this.deps.specStore.getCurrencyConfig(cmd.currency)
-
-      // Save the funding spec before writing to TigerBeetle (write last, read first).
-      await this.deps.specStore.saveFundingSpec([{
-        transferId: cmd.transferId,
-        dfspId: cmd.dfspId,
-        currency: cmd.currency,
-        action: 'DEPOSIT',
-        reason: cmd.reason
-      }])
+      const currency = await this.metaStore.getCurrencyConfig(cmd.currency)
 
       // const reporter = new Reporter({ledger: this, config: this.config})
       // const bsPre = await reporter.balanceSheet(new Date())
@@ -942,8 +884,8 @@ export class LedgerTigerBeetle implements Ledger {
       // const bsPost = await reporter.balanceSheet(new Date())
       // console.log("bsPost is \n" + bsPost.toTAccounts([cmd.dfspId], [cmd.currency]))
 
-      // Backwards compatibility: Keep track of last deposit time in specStore.
-      await this.deps.specStore.updateChangedDateSettlement(
+      // Backwards compatibility: Keep track of last deposit time in MetaStore.
+      await this.metaStore.updateChangedDateSettlement(
         cmd.dfspId, cmd.currency, new Date()
       )
 
@@ -965,33 +907,30 @@ export class LedgerTigerBeetle implements Ledger {
     assert(cmd.amount)
     assert(cmd.reason)
     try {
-      // TODO: make all these lookups atomic!
-      const spec = await this.specStore.getDfspCurrency(cmd.dfspId, cmd.currency)
-      if (spec.type === 'NOT_FOUND') {
+      const dfspContext = await this.metaStore.getContextDfsps([cmd.currency], [cmd.dfspId])
+      if (dfspContext.dfspCurrencies.length === 0) {
         return Helper.failure(new Error(`No dfspCurrency found for dfsp: ${cmd.dfspId}, ${cmd.currency}.`))
       }
-      if (spec.type === 'FAILURE') {
-        return Helper.failure(spec.error)
+      const dfspCurrency = dfspContext.dfspCurrencies[0]
+      if (dfspContext.dfspRoots.length === 0) {
+        return Helper.failure(new Error(`No dfspRoots found for dfsp: ${cmd.dfspId}.`))
       }
-      const currency = await this.specStore.getCurrencyConfig(cmd.currency)
+      const dfspRoot = dfspContext.dfspRoots[0]
+      if (dfspContext.currencyConfigs.length === 0) {
+        return Helper.failure(new Error(`No currencyConfig found for currency: ${cmd.currency}.`))
+      }
+      const currency = dfspContext.currencyConfigs[0]
+
       const netDebitCapResult = await this.getInternalNetDebitCap(cmd.dfspId, cmd.currency)
-      const dfspRoot = await this.specStore.getDfspRoot(cmd.dfspId)
 
       if (netDebitCapResult.type !== 'SUCCESS') {
         return Helper.failure(netDebitCapResult.error)
       }
       const netDebitCap = netDebitCapResult.result
 
-      // Save the funding metadata before writing to TigerBeetle (write last, read first)
-      // await this.specStore.saveFundingSpec()
       const transfers = this.helper.buildTransfersWithdrawPrepare(
-        cmd.transferId, cmd.amount, netDebitCap, spec.result, dfspRoot, currency
+        cmd.transferId, cmd.amount, netDebitCap, dfspCurrency, dfspRoot, currency
       )
-      const reporter = new Reporter({ ledger: this, config: this.config })
-      const bsPre = await reporter.balanceSheet(new Date())
-      // console.log("bsPre is \n" + bsPre.toTAccounts([cmd.dfspId], [cmd.currency]))
-      // console.log('NDC is:', netDebitCap)
-      // console.log('Transfers are:\n' + Helper.formatTransfersAsDRCR(transfers, [spec.result], [dfspRoot], currency))
 
       const createTransfersResults = await this.deps.client.createTransfers(transfers)
       const fatalErrors = this.helper.mapWithdrawPrepareToPrepareResult(
@@ -1003,7 +942,7 @@ export class LedgerTigerBeetle implements Ledger {
         switch (firstError.type) {
           case 'INSUFFICIENT_FUNDS':
             // Backwards compatibility - always update the changed date for the settlement account?
-            await this.deps.specStore.updateChangedDateSettlement(
+            await this.metaStore.updateChangedDateSettlement(
               cmd.dfspId, cmd.currency, new Date()
             )
             // In the future, we should return this error.
@@ -1021,10 +960,7 @@ export class LedgerTigerBeetle implements Ledger {
         }
       }
 
-      const bsPost = await reporter.balanceSheet(new Date())
-      // console.log("bsPost is \n" + bsPost.toTAccounts([cmd.dfspId], [cmd.currency]))
-
-      await this.deps.specStore.updateChangedDateSettlement(cmd.dfspId, cmd.currency, new Date())
+      await this.metaStore.updateChangedDateSettlement(cmd.dfspId, cmd.currency, new Date())
 
       return Helper.successEmpty()
     } catch (err: any) {
@@ -1105,8 +1041,8 @@ export class LedgerTigerBeetle implements Ledger {
       const accountIdUnrestricted = transferPendingWithdrawal[0].debit_account_id
       const {
         code, currency
-      } = await this.specStore.lookupDfspCurrencyByAccountId2(accountIdUnrestricted)
-      const currencyConfig = await this.specStore.getCurrencyConfig(currency.currency)
+      } = await this.metaStore.lookupDfspCurrencyByAccountId2(accountIdUnrestricted)
+      const currencyConfig = await this.metaStore.getCurrencyConfig(currency.currency)
 
       // Look up the closing transfer.
       const closingTransfers = (await this.deps.client.getAccountTransfers({
@@ -1237,7 +1173,7 @@ export class LedgerTigerBeetle implements Ledger {
    */
   public async getHubAccounts(_: AnyQuery): Promise<HubAccountResponse> {
     try {
-      const legacyHubCurrencies = await this.specStore.getLegacyHubCurrenciesAll()
+      const legacyHubCurrencies = await this.metaStore.getLegacyHubCurrenciesAll()
       const accounts: Array<LegacyLedgerAccount> = []
       legacyHubCurrencies.forEach(currency => {
         accounts.push({
@@ -1278,15 +1214,15 @@ export class LedgerTigerBeetle implements Ledger {
       let dfspRoot: DfspRoot | null
       // Backwards compatibility.
       try {
-        dfspRoot = await this.specStore.getDfspRoot(query.dfspId)
+        dfspRoot = await this.metaStore.getDfspRoot(query.dfspId)
       } catch (err) {
         return {
           type: 'NOT_FOUND',
           error: new Error(`Dfsp not found for dfspId: ${query.dfspId}`)
         }
       }
-      const specAccounts = await this.deps.specStore.getDfspCurrencies(query.dfspId)
-      if (specAccounts.length === 0) {
+      const dfspCurrencies = await this.metaStore.getDfspCurrencies(query.dfspId)
+      if (dfspCurrencies.length === 0) {
         return {
           type: 'NOT_FOUND',
           error: new Error(`Dfsp not found for dfclearspId: ${query.dfspId}`)
@@ -1294,15 +1230,15 @@ export class LedgerTigerBeetle implements Ledger {
       }
 
       // For this query we need:
-      // 1. Master Account for the DFSP
-      // 2. The SpecAccounts for the DFSP
-      // 3. Iterate through all specAccounts and get the TigerBeetle Account ids (we're currently
+      // 1. dfspRoot for the DFSP
+      // 2. The dfspCurrencies for the DFSP
+      // 3. Iterate through all dfspCurrencies and get the TigerBeetle Account ids (we're currently
       //    doing this in 2 steps).
       // 4. Lookup Accounts in TigerBeetle
       // 5. Join it all together into a 'virtual' POSITION and SETTLEMENT Account.
       assert(dfspRoot)
       const masterAccount = (await this._internalDfspRoots([dfspRoot]))[0]
-      const internalLedgerAccounts = await this._internalDfspCurrencies(specAccounts)
+      const internalLedgerAccounts = await this._internalDfspCurrencies(dfspCurrencies)
 
       // Group by currency and convert to legacy accounts.
       const internalLedgerAccountsPerCurrency = internalLedgerAccounts.reduce((acc, ila) => {
@@ -1311,17 +1247,17 @@ export class LedgerTigerBeetle implements Ledger {
       }, {} as Record<string, Array<InternalDfspCurrency>>);
 
       // Lookup the currencies.
-      const currencyConfigs = await this.specStore.getCurrencyConfigsMap()
+      const currencyConfigs = await this.metaStore.getCurrencyConfigsMap()
       const legacyLedgerAccounts = Object.entries(internalLedgerAccountsPerCurrency)
         .flatMap(([currency, accounts]) => {
           const currencyLedger = currencyConfigs[currency]
           assert(currencyLedger)
 
           // TODO: find something more optimal.
-          const specAccount = specAccounts.find(specAccount => specAccount.currency === currency)
-          assert(specAccount)
+          const dfspCurrency = dfspCurrencies.find(dfspCurrency => dfspCurrency.currency === currency)
+          assert(dfspCurrency)
 
-          const legacyAccounts = this._fromInternalAccountsToLegacyLedgerAccounts(accounts, currencyLedger, specAccount)
+          const legacyAccounts = this._fromInternalAccountsToLegacyLedgerAccounts(accounts, currencyLedger, dfspCurrency)
           // Strip the values for backwards compatibility.
           const legacyAccountsNoValue = legacyAccounts.map((acc: any) => {
             delete acc['reservedValue']
@@ -1336,7 +1272,6 @@ export class LedgerTigerBeetle implements Ledger {
 
       // Backwards compatibility, sort by createdDate, then Currency, then ledgerAccountType.
       legacyLedgerAccounts.sort(Helper.legacyAccountComparator)
-
 
       const dfspCreatedDate = new Date(Number(masterAccount.user_data_64))
       if (Number.isNaN(dfspCreatedDate.getTime())) {
@@ -1368,26 +1303,26 @@ export class LedgerTigerBeetle implements Ledger {
 
   private async _internalDfspRoots(dfspRoots: Array<DfspRoot>):
     Promise<Array<InternalDfspRoot>> {
-    const masterAccountIds = dfspRoots.map(spec => spec.id)
-    const accountResult = await Helper.safeLookupAccounts(this.deps.client, masterAccountIds)
+    const rootAccountIds = dfspRoots.map(meta => meta.id)
+    const accountResult = await Helper.safeLookupAccounts(this.deps.client, rootAccountIds)
     if (accountResult.type === 'FAILURE') {
       logger.error(`_internalDfspRoots() - failed with error: ${accountResult.error.message}`)
       throw accountResult.error
     }
 
     return accountResult.result.map((account, idx) => {
-      const spec = dfspRoots[idx]
-      assert(spec)
+      const meta = dfspRoots[idx]
+      assert(meta)
 
       return {
         ...account,
-        dfspId: spec.dfspId,
-        isProxy: spec.isProxy,
+        dfspId: meta.dfspId,
+        isProxy: meta.isProxy,
       }
     })
   }
 
-  private async _internalDfspCurrencies(specAccounts: Array<DfspCurrency>):
+  private async _internalDfspCurrencies(dfspCurrencies: Array<DfspCurrency>):
     Promise<Array<InternalDfspCurrency>> {
     // Flat map.
     const buildKey = (dfspId: string, currency: string, code: AccountCode) =>
@@ -1396,43 +1331,43 @@ export class LedgerTigerBeetle implements Ledger {
     const accountKeys: Array<string> = []
     const accountIds: Array<bigint> = []
 
-    specAccounts.forEach(specAccount => {
-      dfspIdMap[specAccount.dfspId] = null
+    dfspCurrencies.forEach(dfspCurrency => {
+      dfspIdMap[dfspCurrency.dfspId] = null
       const keys = [
-        buildKey(specAccount.dfspId, specAccount.currency, AccountCode.Deposit),
-        buildKey(specAccount.dfspId, specAccount.currency, AccountCode.Unrestricted),
-        buildKey(specAccount.dfspId, specAccount.currency, AccountCode.Clearing_Credit),
-        buildKey(specAccount.dfspId, specAccount.currency, AccountCode.Restricted),
-        buildKey(specAccount.dfspId, specAccount.currency, AccountCode.Reserved),
-        buildKey(specAccount.dfspId, specAccount.currency, AccountCode.Committed_Outgoing),
-        buildKey(specAccount.dfspId, specAccount.currency, AccountCode.Unrestricted_Lock),
-        buildKey(specAccount.dfspId, specAccount.currency, AccountCode.Clearing_Setup),
-        buildKey(specAccount.dfspId, specAccount.currency, AccountCode.Clearing_Limit),
+        buildKey(dfspCurrency.dfspId, dfspCurrency.currency, AccountCode.Deposit),
+        buildKey(dfspCurrency.dfspId, dfspCurrency.currency, AccountCode.Unrestricted),
+        buildKey(dfspCurrency.dfspId, dfspCurrency.currency, AccountCode.Clearing_Credit),
+        buildKey(dfspCurrency.dfspId, dfspCurrency.currency, AccountCode.Restricted),
+        buildKey(dfspCurrency.dfspId, dfspCurrency.currency, AccountCode.Reserved),
+        buildKey(dfspCurrency.dfspId, dfspCurrency.currency, AccountCode.Committed_Outgoing),
+        buildKey(dfspCurrency.dfspId, dfspCurrency.currency, AccountCode.Unrestricted_Lock),
+        buildKey(dfspCurrency.dfspId, dfspCurrency.currency, AccountCode.Clearing_Setup),
+        buildKey(dfspCurrency.dfspId, dfspCurrency.currency, AccountCode.Clearing_Limit),
       ]
       const ids = [
-        specAccount.deposit,
-        specAccount.unrestricted,
-        specAccount.clearingCredit,
-        specAccount.restricted,
-        specAccount.reserved,
-        specAccount.commitedOutgoing,
-        specAccount.unrestrictedLock,
-        specAccount.clearingSetup,
-        specAccount.clearingLimit,
+        dfspCurrency.deposit,
+        dfspCurrency.unrestricted,
+        dfspCurrency.clearingCredit,
+        dfspCurrency.restricted,
+        dfspCurrency.reserved,
+        dfspCurrency.commitedOutgoing,
+        dfspCurrency.unrestrictedLock,
+        dfspCurrency.clearingSetup,
+        dfspCurrency.clearingLimit,
       ]
 
       accountKeys.push(...keys)
       accountIds.push(...ids)
     })
     const dfspIds = Object.keys(dfspIdMap)
-    logger.debug(`_internalAccountsForSpecAccounts() - found: ${dfspIds.length} unique dfsps.`)
+    logger.debug(`_internalDfspCurrencies() - found: ${dfspIds.length} unique dfsps.`)
 
     assert(accountIds.length < 8000, 'Exceeded maximum number of accounts.')
 
     // Look up TigerBeetle Accounts
     const accountResult = await Helper.safeLookupAccounts(this.deps.client, accountIds)
     if (accountResult.type === 'FAILURE') {
-      logger.error(`_internalAccountsForSpecAccounts() - failed with error: ${accountResult.error.message}`)
+      logger.error(`_internalDfspCurrencies() - failed with error: ${accountResult.error.message}`)
       throw accountResult.error
     }
 
@@ -1460,13 +1395,11 @@ export class LedgerTigerBeetle implements Ledger {
   /**
    * @description Map from an internal TigerBeetle Ledger representation of a LedgerAccount to a
    *   backwards compatible representation.
-   * 
-   * TODO: we need to inject the account specs as context.
    */
   private _fromInternalAccountsToLegacyLedgerAccounts(
     input: Array<InternalDfspCurrency>,
     currencyLedger: CurrencyConfig,
-    spec: DfspCurrency
+    dfspCurrency: DfspCurrency
   ):
     Array<LegacyLedgerAccount> {
 
@@ -1513,10 +1446,10 @@ export class LedgerTigerBeetle implements Ledger {
       ledgerAccountType: 'POSITION',
       currency,
       isActive: !((accountUnrestricted.flags & AccountFlags.closed) === AccountFlags.closed),
-      // TODO: This might diverge given that we have just 1 spec per virtual POSITION and 
+      // TODO: This might diverge given that we have just 1 dfspCurrency per virtual POSITION and 
       // SETTLEMENT account
-      changedDate: spec.changedDatePosition,
-      createdDate: spec.createdDate,
+      changedDate: dfspCurrency.changedDatePosition,
+      createdDate: dfspCurrency.createdDate,
       value: Helper.toRealAmount(legacyPositionBalancePosted, currencyLedger.assetScale),
       reservedValue: Helper.toRealAmount(legacyPositionBalancePending, currencyLedger.assetScale),
     })
@@ -1526,10 +1459,10 @@ export class LedgerTigerBeetle implements Ledger {
       ledgerAccountType: 'SETTLEMENT',
       currency,
       isActive: !((accountDeposit.flags & AccountFlags.closed) === AccountFlags.closed),
-      // TODO: This might diverge given that we have just 1 spec per virtual POSITION and 
+      // TODO: This might diverge given that we have just 1 dfspCurrency per virtual POSITION and
       // SETTLEMENT account
-      changedDate: spec.changedDateSettlement,
-      createdDate: spec.createdDate,
+      changedDate: dfspCurrency.changedDateSettlement,
+      createdDate: dfspCurrency.createdDate,
       // TODO: Set this to match the LedgerSQL, but I think ledgerSQL is wrong!
       value: Helper.toRealAmount(settlementValue, currencyLedger.assetScale),
       // value: 0,
@@ -1539,21 +1472,21 @@ export class LedgerTigerBeetle implements Ledger {
     return accounts.sort(Helper.legacyAccountComparator)
   }
 
-  public async getAllDfsps(query: AnyQuery): Promise<QueryResult<GetAllDfspsResponse>> {
+  public async getAllDfsps(_: AnyQuery): Promise<QueryResult<GetAllDfspsResponse>> {
     try {
       // Look up all metadata: 
       // 1. Master Accounts joined with DfspCurrencies
-      const result = await this.specStore.queryDfspRootsWithCurrencies()
+      const result = await this.metaStore.queryDfspRootsWithCurrencies()
 
       // Join together all TB Accounts to look up into a single account array.
-      const masterSpecs = await this._internalDfspRoots(result.dfspRoots)
+      const rootAccounts = await this._internalDfspRoots(result.dfspRoots)
       const internalLedgerAccounts = await this._internalDfspCurrencies(result.dfspCurrencies)
 
       // Lookup the currencies //TODO: we can put this in the same query as above.
-      const currencyLedgerMap = await this.specStore.getCurrencyConfigsMap()
+      const currencyLedgerMap = await this.metaStore.getCurrencyConfigsMap()
 
       // Initialize per dfsp.
-      const internalAccountsPerDfsp: Record<string, Array<InternalDfspCurrency>> = masterSpecs.reduce((acc, curr) => {
+      const internalAccountsPerDfsp: Record<string, Array<InternalDfspCurrency>> = rootAccounts.reduce((acc, curr) => {
         acc[curr.dfspId] = []
         return acc
       }, {} as Record<string, Array<InternalDfspCurrency>>)
@@ -1573,13 +1506,13 @@ export class LedgerTigerBeetle implements Ledger {
           const currencyLedger = currencyLedgerMap[currency]
           assert(currencyLedger)
 
-          const specAccount = result.dfspCurrencies.find(specAccount =>
-            specAccount.currency === currency && specAccount.dfspId === dfspId
+          const dfspCurrency = result.dfspCurrencies.find(meta =>
+            meta.currency === currency && meta.dfspId === dfspId
           )
-          assert(specAccount)
+          assert(dfspCurrency)
 
           const legacyAccounts = this._fromInternalAccountsToLegacyLedgerAccounts(
-            accountsPerCurrency, currencyLedger, specAccount
+            accountsPerCurrency, currencyLedger, dfspCurrency
           )
           // Strip the values for backwards compatibility.
           const legacyAccountsNoValue = legacyAccounts.map((acc: any) => {
@@ -1594,20 +1527,20 @@ export class LedgerTigerBeetle implements Ledger {
       })
 
       const dfsps: Array<LegacyLedgerDfsp> = []
-      masterSpecs.forEach(spec => {
-        const created = new Date(Number(spec.user_data_64))
+      rootAccounts.forEach(root => {
+        const created = new Date(Number(root.user_data_64))
         // Legacy has accuracy only to seconds.
         created.setMilliseconds(0)
 
-        const accounts = accountsPerDfsp[spec.dfspId]
+        const accounts = accountsPerDfsp[root.dfspId]
         accounts.sort(Helper.legacyAccountComparator)
 
         dfsps.push({
-          name: spec.dfspId,
-          isActive: !((spec.flags & AccountFlags.closed) === AccountFlags.closed),
+          name: root.dfspId,
+          isActive: !((root.flags & AccountFlags.closed) === AccountFlags.closed),
           created,
           accounts,
-          isProxy: spec.isProxy,
+          isProxy: root.isProxy,
         })
       })
 
@@ -1627,24 +1560,22 @@ export class LedgerTigerBeetle implements Ledger {
 
   public async getDfspAccounts(query: GetDfspAccountsQuery): Promise<DfspAccountResponse> {
     try {
-      const specCurrencyResult = await this.deps.specStore.getDfspCurrency(query.dfspId, query.currency)
-      if (specCurrencyResult.type === 'NOT_FOUND') {
+      const dfspCurrenciesResult = await this.metaStore.getDfspCurrency(query.dfspId, query.currency)
+      if (dfspCurrenciesResult.type === 'NOT_FOUND') {
         return {
           // Backwards compatibility. This used to be a failure.
           type: 'FAILURE',
           error: new Error(`No dfspAccount found for dfspId: ${query.dfspId}, currency: ${query.currency}.`)
         }
       }
-      if (specCurrencyResult.type === 'FAILURE') {
-        return specCurrencyResult
+      if (dfspCurrenciesResult.type === 'FAILURE') {
+        return dfspCurrenciesResult
       }
-      const currency = await this.deps.specStore.getCurrencyConfig(query.currency)
-      const internalDfspCurrencies = await this._internalDfspCurrencies([specCurrencyResult.result])
-
+      const currency = await this.metaStore.getCurrencyConfig(query.currency)
+      const internalDfspCurrencies = await this._internalDfspCurrencies([dfspCurrenciesResult.result])
       const legacyAccounts = this._fromInternalAccountsToLegacyLedgerAccounts(
-        internalDfspCurrencies, currency, specCurrencyResult.result
+        internalDfspCurrencies, currency, dfspCurrenciesResult.result
       )
-      // .sort(Helper.legacyAccountComparator)
 
       return {
         type: 'SUCCESS',
@@ -1657,18 +1588,18 @@ export class LedgerTigerBeetle implements Ledger {
 
   public async getAllDfspAccounts(query: GetAllDfspAccountsQuery): Promise<DfspAccountResponse> {
     try {
-      await this.deps.specStore.getDfspRoot(query.dfspId)
-      // Lookup all specCurrency for the dfsp.
+      await this.metaStore.getDfspRoot(query.dfspId)
+      // Lookup all dfspCurrencies for the dfsp.
       // Now need to iterate over the currencies for this dfsp.
-      const specCurrencies = await this.deps.specStore.getDfspCurrencies(query.dfspId)
-      if (specCurrencies.length === 0) {
+      const dfspCurrencies = await this.metaStore.getDfspCurrencies(query.dfspId)
+      if (dfspCurrencies.length === 0) {
         return {
           type: 'FAILURE',
           error: new Error(`No dfspAccounts found for dfspId: ${query.dfspId}.`)
         }
       }
-      const internalLedgerAccounts = await this._internalDfspCurrencies(specCurrencies)
-      const currencyConfigs = await this.deps.specStore.getCurrencyConfigsMap()
+      const internalLedgerAccounts = await this._internalDfspCurrencies(dfspCurrencies)
+      const currencyConfigs = await this.metaStore.getCurrencyConfigsMap()
 
       const internalLedgerAccountsPerCurrency = internalLedgerAccounts.reduce((acc, ledgerAccount) => {
         (acc[ledgerAccount.currency] = acc[ledgerAccount.currency] || []).push(ledgerAccount)
@@ -1679,9 +1610,9 @@ export class LedgerTigerBeetle implements Ledger {
         .flatMap(([currency, accounts]) => {
           const currencyLedger = currencyConfigs[currency]
           assert(currencyLedger)
-          const specAccount = specCurrencies.find(spec => spec.currency === currency)
-          assert(specAccount)
-          return this._fromInternalAccountsToLegacyLedgerAccounts(accounts, currencyLedger, specAccount)
+          const dfspCurrency = dfspCurrencies.find(meta => meta.currency === currency)
+          assert(dfspCurrency)
+          return this._fromInternalAccountsToLegacyLedgerAccounts(accounts, currencyLedger, dfspCurrency)
         })
         .sort(Helper.legacyAccountComparator)
 
@@ -1701,7 +1632,7 @@ export class LedgerTigerBeetle implements Ledger {
    * Gets a detailed account balance of all dfsp accounts across all currencies.
    */
   public async getAllDfspAccountsExtended(): Promise<Record<string, Array<LedgerAccount>>> {
-    const { dfspCurrencies } = await this.specStore.queryDfspRootsWithCurrencies()
+    const { dfspCurrencies } = await this.metaStore.queryDfspRootsWithCurrencies()
     const dfspIds = [...new Set(dfspCurrencies.map(dfspCurrency => dfspCurrency.dfspId))]
     const currencies = [...new Set(dfspCurrencies.map(dfspCurrency => dfspCurrency.currency))]
 
@@ -1732,7 +1663,7 @@ export class LedgerTigerBeetle implements Ledger {
     assert(cmd.dfspId)
 
     try {
-      const currencyConfig = await this.specStore.getCurrencyConfig(cmd.currency)
+      const currencyConfig = await this.metaStore.getCurrencyConfig(cmd.currency)
       let amountNetDebitCap: bigint
       switch (cmd.netDebitCapType) {
         case 'LIMITED': {
@@ -1745,7 +1676,7 @@ export class LedgerTigerBeetle implements Ledger {
           break;
         }
       }
-      const dfspCurrencyResult = await this.specStore.getDfspCurrency(cmd.dfspId, cmd.currency)
+      const dfspCurrencyResult = await this.metaStore.getDfspCurrency(cmd.dfspId, cmd.currency)
       if (dfspCurrencyResult.type === 'NOT_FOUND') {
         return Helper.failure(new Error(`no dfspId + currency found: ${cmd.dfspId} + ${cmd.currency}`))
       }
@@ -1753,17 +1684,6 @@ export class LedgerTigerBeetle implements Ledger {
         return Helper.failure(dfspCurrencyResult.error)
       }
       const dfspCurrency = dfspCurrencyResult.result
-
-      // Write Last, Read First.
-      // This is subtle, but we only want to store this record iff the TigerBeetle transfers
-      // succeed.
-      // await this.deps.specStore.saveNetDebitCap({
-      //   type: cmd.netDebitCapType,
-      //   amount: amountNetDebitCap,
-      //   alarmPercentage: cmd.netDebitCapType === 'LIMITED' ? cmd.alarmPercentage : 0,
-      //   dfspId: cmd.dfspId,
-      //   currency: cmd.currency
-      // })
 
       const transfers = this.helper.buildTranfersSetNetDebitCap(
         dfspCurrency,
@@ -1779,14 +1699,6 @@ export class LedgerTigerBeetle implements Ledger {
         // Ignore noisy statuses.
         if (result.status === CreateTransferStatus.linked_event_failed) return
         if (result.status === CreateTransferStatus.created) return
-
-        // if (idx === 0) {
-        //   switch (result.status) {
-        //     default:
-        //       fatalErrors.push({ type: 'UNKNOWN', ...error })
-        //       return
-        //   }
-        // }
 
         throw new Error(`unhandled transfer status at index: ${idx}, ` +
           `${CreateTransferStatus[result.status]}`
@@ -1816,7 +1728,7 @@ export class LedgerTigerBeetle implements Ledger {
     // throwing an error
     let currency
     try {
-      currency = await this.deps.specStore.getCurrencyConfig(query.currency)
+      currency = await this.metaStore.getCurrencyConfig(query.currency)
     } catch (err: any) {
       return {
         type: 'NOT_FOUND',
@@ -1875,7 +1787,7 @@ export class LedgerTigerBeetle implements Ledger {
 
     // Backwards compatibility, return NOT_FOUND if the dfsp does not exist.
     try {
-      await this.specStore.getDfspRoot(query.dfspId)
+      await this.metaStore.getDfspRoot(query.dfspId)
     } catch (err) {
       return {
         type: 'NOT_FOUND',
@@ -1884,7 +1796,7 @@ export class LedgerTigerBeetle implements Ledger {
     }
 
     try {
-      const dfspCurrencies = await this.specStore.getDfspCurrencies(query.dfspId)
+      const dfspCurrencies = await this.metaStore.getDfspCurrencies(query.dfspId)
       const currencies = dfspCurrencies.map(dfspCurrency => dfspCurrency.currency)
       const netDebitCaps: Array<LegacyLimitItem> = []
 
@@ -1929,13 +1841,12 @@ export class LedgerTigerBeetle implements Ledger {
    */
   private prepareCheckValid(
     prepares: Array<PrepareHandlerInput>,
-    context: ContextDfsps,
+    context: ContextPayments,
     netDebitCaps: Array<NetDebitCap>
   ): Array<PrepareInternalStatus> {
     const dfspRootsMap = Helper.toMapBy(context.dfspRoots, item => item.dfspId)
     const dfspCurrenciesMap = Helper.toMapByDfspAndCurrency(context.dfspCurrencies)
     const netDebitCapsMap = Helper.toMapByDfspAndCurrency(netDebitCaps)
-
 
     const results: Array<PrepareInternalStatus> = []
     prepares.forEach(prepare => {
@@ -2025,49 +1936,45 @@ export class LedgerTigerBeetle implements Ledger {
     context: ContextPayments,
     hashes: Array<number>
   ): Array<PrepareInternalStatus> {
-    const specPreparesMap = Helper.toMapBy(context.specPrepares, item => item.id)
-    const specFulfilsMap = Helper.toMapBy(context.specFulfils, item => item.id)
-    const specTransfersMap = Helper.toMapBy(context.specTransfers, item => item.id)
-
     const results: Array<PrepareInternalStatus> = []
     prepares.forEach((prepare, idx) => {
       const hash = hashes[idx]
-      const specPrepare = specPreparesMap[prepare.transferId]
-      const specFulfil = specFulfilsMap[prepare.transferId]
-      const specTransfer = specTransfersMap[prepare.transferId]
+      const prepareMeta = context.prepareMetas[prepare.transferId]
+      const fulfilMeta = context.fulfilMetas[prepare.transferId]
+      const paymentMeta = context.paymentMetas[prepare.transferId]
 
       // Brand new Prepare.
-      if (!specPrepare && !specTransfer) {
+      if (!prepareMeta && !paymentMeta) {
         // TODO: better typing!
         results.push({ tag: 'OK', context: { payerLocation: 'LOCAL', payeeLocation: 'LOCAL' } })
         return
       }
 
-      assert(specPrepare)
+      assert(prepareMeta)
       // Seen the id, but the payload is different!
-      if (specPrepare.payloadHash !== hash) {
+      if (prepareMeta.payloadHash !== hash) {
         results.push({ tag: 'MODIFIED', context: {} })
         return
       }
 
       // Already been finalized.
-      if (specPrepare.abortedAt) {
+      if (prepareMeta.abortedAt) {
         results.push({
           tag: 'DUPLICATE_FINAL',
           context: {
-            specPrepare,
-            specFulfil,
+            prepareMeta,
+            fulfilMeta,
           }
         })
         return
       }
-      if (specFulfil && specFulfil.fulfilment) {
+      if (fulfilMeta && fulfilMeta.fulfilment) {
         results.push({
           tag: 'DUPLICATE_FINAL',
           context: {
-            specPrepare,
-            specFulfil,
-            specTransfer
+            prepareMeta,
+            fulfilMeta,
+            paymentMeta,
           }
         })
         return
@@ -2113,20 +2020,19 @@ export class LedgerTigerBeetle implements Ledger {
     const currencies = [...new Set(prepares.map(prepare => prepare.payload.amount.currency))].sort()
     const prepareIds = [...new Set(prepares.map(prepare => prepare.transferId))].sort()
 
-    const contextDfsps = await this.specStore.getPrepareContextDfsps(currencies, dfspIds)
-    const contextPayments = await this.specStore.getPrepareContextPayments(prepareIds)
+    const context = await this.metaStore.getPaymentContext(prepareIds, currencies, dfspIds)
     const netDebitCaps = Object.values(await this.getInternalNetDebitCaps())
     const prepareHashes = prepares.map(input => Helper.hashTransferProperties2(input.payload))
 
     // Results are arrays matching the prepares list.
-    const resultsValidation = this.prepareCheckValid(prepares, contextDfsps, netDebitCaps)
-    const resultsIdempotent = this.prepareCheckIdempotent(prepares, contextPayments, prepareHashes)
+    const resultsValidation = this.prepareCheckValid(prepares, context, netDebitCaps)
+    const resultsIdempotent = this.prepareCheckIdempotent(prepares, context, prepareHashes)
     assert.equal(prepares.length, resultsValidation.length)
     assert.equal(prepares.length, resultsIdempotent.length)
 
-    // Save the results and inputs to the spec store.
-    const specPreparesToSave: Array<SpecPrepare> = []
-    const specTransfersToSave: Array<SpecTransfer> = []
+    // Save the results and inputs to the meta store.
+    const prepareMetasToSave: Array<PrepareMeta> = []
+    const paymentMetasToSave: Array<PaymentMeta> = []
     // Keep track of the original position of the prepare.
     const preparesOk: Array<{ prepare: PrepareHandlerInput, idx: number }> = []
     const hashesOk: Array<number> = []
@@ -2142,13 +2048,13 @@ export class LedgerTigerBeetle implements Ledger {
       if (resultValidation.tag !== 'OK') {
         // The prepare is invalid, but we still need to save it to ensure we don't allow it to succeed
         // in the future.
-        specPreparesToSave.push({ id: prepare.transferId, payloadHash, abortedAt: new Date() })
+        prepareMetasToSave.push({ id: prepare.transferId, payloadHash, abortedAt: new Date() })
         continue
       }
 
-      // Save the valid specPrepare and transfer payload.
-      specPreparesToSave.push({ id: prepare.transferId, payloadHash })
-      specTransfersToSave.push(Helper.prepareToSpecTransferCreate(
+      // Save the valid prepareMetas and transfer payload.
+      prepareMetasToSave.push({ id: prepare.transferId, payloadHash })
+      paymentMetasToSave.push(Helper.prepareDtoToPaymentMeta(
         prepare.payload, resultValidation.context
       ))
 
@@ -2156,10 +2062,10 @@ export class LedgerTigerBeetle implements Ledger {
       preparesOk.push({ idx, prepare })
       hashesOk.push(prepareHashes[idx])
     }
-    await this.specStore.savePreparesAndTransfers(specPreparesToSave, specTransfersToSave)
+    await this.metaStore.savePreparesAndPayments(prepareMetasToSave, paymentMetasToSave)
 
     const transfers = this.helper.buildTransfersPrepare(
-      preparesOk.map(item => item.prepare), contextDfsps, hashesOk
+      preparesOk.map(item => item.prepare), context, hashesOk
     )
     const resultsTigerBeetle = await this.client.createTransfers(transfers)
     const resultsTigerBeetleSubset = this.helper.mapResultsPrepare(resultsTigerBeetle)
@@ -2171,7 +2077,7 @@ export class LedgerTigerBeetle implements Ledger {
       resultsCreateTransfers[idx] = resultsTigerBeetleSubset[idxSubset]
     })
 
-    const specPreparesAborted: Array<string> = []
+    const idsAborted: Array<string> = []
     const results: Array<PaymentPrepareResult> = []
     for (let idx = 0; idx < prepares.length; idx++) {
       const prepare = prepares[idx]
@@ -2179,13 +2085,13 @@ export class LedgerTigerBeetle implements Ledger {
       const resultValidation = resultsValidation[idx]
       const resultCreateTransfers = resultsCreateTransfers[idx]
 
-      // Make sure we update the specPrepare to aborted.
+      // Make sure we update the PrepareMetas to aborted.
       if (resultCreateTransfers) {
         switch (resultCreateTransfers.tag) {
           case 'FAIL_LIQUIDITY':
           case 'FAIL_ACCOUNT_CLOSED':
           case 'FAIL_OTHER':
-            specPreparesAborted.push(prepare.transferId)
+            idsAborted.push(prepare.transferId)
             break;
         }
       }
@@ -2211,15 +2117,15 @@ export class LedgerTigerBeetle implements Ledger {
       results.push(this.helper.mapPrepareInternalToPrepareResult(prepare, success))
     }
     assert.equal(prepares.length, results.length)
-    await this.specStore.attachSpecPrepareAbortedAt(
-      specPreparesAborted, specPreparesAborted.map(id => new Date())
+    await this.metaStore.attachPrepareMetaAbortedAt(
+      idsAborted, idsAborted.map(id => new Date())
     )
     return results
   }
 
   public async fulfil(fulfils: Array<FulfilHandlerInput>): Promise<Array<PaymentFulfilResult>> {
     const fulfilIds = [...new Set(fulfils.map(fulfil => fulfil.transferId))].sort()
-    const context = await this.specStore.getFulfilContext(fulfilIds)
+    const context = await this.metaStore.getPaymentContext(fulfilIds)
     const netDebitCaps = Object.values(await this.getInternalNetDebitCaps())
     const fulfilHashes = fulfils.map(input => Helper.hashFulfil(input.transferId, input.payload))
 
@@ -2227,11 +2133,8 @@ export class LedgerTigerBeetle implements Ledger {
     const resultsValidation = this.fulfilCheckValid(fulfils, context, netDebitCaps, fulfilHashes)
     assert.equal(fulfils.length, resultsValidation.length)
 
-    // Keep track of what to save to the spec store?
-    // 1. Aborted at timestamp for prepare?
-    // 2. For succesful payments, attach the fulfilment.
-    const specPreparesAborted: Array<string> = []
-    const specFulfils: Array<SpecFulfil> = []
+    const idsAborted: Array<string> = []
+    const fulfilMetas: Array<FulfilMeta> = []
     // Keep track of the original position of the prepare.
     const fulfilsNext: Array<{ fulfil: FulfilHandlerInput, idx: number }> = []
     const hashesNext: Array<number> = []
@@ -2244,9 +2147,9 @@ export class LedgerTigerBeetle implements Ledger {
       assert(fulfil)
       assert(hash)
 
-      specFulfils.push({ id: fulfil.transferId, payloadHash: hash })
+      fulfilMetas.push({ id: fulfil.transferId, payloadHash: hash })
       if (resultValidation.tag !== 'OK') {
-        specPreparesAborted.push(fulfil.transferId)
+        idsAborted.push(fulfil.transferId)
         continue
       }
 
@@ -2254,13 +2157,13 @@ export class LedgerTigerBeetle implements Ledger {
       fulfilsNext.push({ idx, fulfil })
       hashesNext.push(hash)
     }
-    await this.specStore.saveSpecFulfils(specFulfils)
+    await this.metaStore.saveFulfilMetas(fulfilMetas)
     const transfers = this.helper.buildTransfersFulfil(
       fulfilsNext.map(item => item.fulfil), context, netDebitCaps, hashesNext
     )
     const resultsTigerBeetle = await this.client.createTransfers(transfers)
     const resultsTigerBeetleSubset = this.helper.mapResultsFulfil(
-      resultsTigerBeetle, fulfilsNext.map(item => item.fulfil), specFulfils
+      resultsTigerBeetle, fulfilsNext.map(item => item.fulfil), fulfilMetas
     )
 
     // Project from results to the full sized array.
@@ -2273,7 +2176,7 @@ export class LedgerTigerBeetle implements Ledger {
     const results: Array<PaymentFulfilResult> = []
 
     // Now we iterate through the different result arrays.
-    const specFulfilUpdates: Array<SpecFulfilUpdate> = []
+    const fulfilMetaUpdates: Array<FulfilMetaUpdate> = []
     for (let idx = 0; idx < fulfils.length; idx++) {
       const fulfil = fulfils[idx]
       const resultValidation = resultsValidation[idx]
@@ -2281,7 +2184,7 @@ export class LedgerTigerBeetle implements Ledger {
       const resultCreateTransfers = resultsCreateTransfers[idx]
 
       if (resultCreateTransfers && resultCreateTransfers.tag !== 'OK') {
-        specPreparesAborted.push(fulfil.transferId)
+        idsAborted.push(fulfil.transferId)
       }
 
       let failure
@@ -2302,35 +2205,28 @@ export class LedgerTigerBeetle implements Ledger {
       results.push(this.helper.mapFulfilInternalToFulfilResult(fulfil, success))
 
       if (fulfil.payload.transferState !== 'ABORTED') {
-        // TODO: I think this should be something other than specFulfil attached to the result.
-        assert(success.specFulfil.fulfilment)
-        assert(success.specFulfil.fulfiledAt)
-        specFulfilUpdates.push({
+        assert(success.fulfilMeta.fulfilment)
+        assert(success.fulfilMeta.fulfiledAt)
+        fulfilMetaUpdates.push({
           id: fulfil.transferId,
-          fulfilment: success.specFulfil.fulfilment,
-          fulfiledAt: success.specFulfil.fulfiledAt,
+          fulfilment: success.fulfilMeta.fulfilment,
+          fulfiledAt: success.fulfilMeta.fulfiledAt,
         })
       }
     }
 
     assert.equal(fulfils.length, results.length)
-    // TODO: abort the specFulfil, not the specPrepares!
-    // await this.specStore.attachSpecPrepareAbortedAt(specPreparesAborted, specPreparesAborted.map(_ => new Date()))
-    await this.specStore.attachFulfillments(specFulfilUpdates)
-    // await this.specStore.attachSpecFulfillDates(specFulfilsFulfilled, specFulfilsFulfilled.map(_ => new Date()))
+    await this.metaStore.attachFulfillments(fulfilMetaUpdates)
 
     return results
   }
 
   private fulfilCheckValid(
     fulfils: Array<FulfilHandlerInput>,
-    context: ContextFulfil,
+    context: ContextPayments,
     netDebitCaps: Array<NetDebitCap>,
     hashes: Array<number>
   ): Array<FulfilInternalStatus> {
-    const specPreparesMap = Helper.toMapBy(context.specPrepares, item => item.id)
-    const specFulfilsMap = Helper.toMapBy(context.specFulfils, item => item.id)
-    const specTransfersMap = Helper.toMapBy(context.specTransfers, item => item.id)
     const dfspRootsMap = Helper.toMapBy(context.dfspRoots, item => item.dfspId)
     const netDebitCapsMap = Helper.toMapByDfspAndCurrency(netDebitCaps)
 
@@ -2339,41 +2235,37 @@ export class LedgerTigerBeetle implements Ledger {
       assert(hash)
 
       const failureReasons: Array<string> = []
-      const specPrepare = specPreparesMap[fulfil.transferId]
-      if (!specPrepare) {
+      const prepareMeta = context.prepareMetas[fulfil.transferId]
+      if (!prepareMeta) {
         return {
           tag: 'PREPARE_NOT_FOUND',
-          failureReasons: ['SpecPrepare not found']
+          failureReasons: ['PrepareMeta not found']
         }
       }
 
-      const specTransfer = specTransfersMap[fulfil.transferId]
-      if (!specTransfer) {
+      const paymentMeta = context.paymentMetas[fulfil.transferId]
+      if (!paymentMeta) {
         return {
           tag: 'PREPARE_NOT_FOUND',
-          failureReasons: ['SpecTransfer not found']
+          failureReasons: ['PaymentMeta not found']
         }
       }
 
-      if (specPrepare.abortedAt) {
-        // TODO: we may want to keep ALREADY_ABORTED AND do the validation.
-        // For example in the case where we send a duplicate abort.
-        // But I think we should possibly separate out a specPrepare and a specFulfil to do this
-        // properly.
+      if (prepareMeta.abortedAt) {
         return {
           tag: 'PREPARE_ALREADY_ABORTED',
-          failureReasons: ['SpecPrepare was already aborted.']
+          failureReasons: ['PrepareMeta was already aborted.']
         }
       }
 
-      const specFulfil = specFulfilsMap[fulfil.transferId]
-      if (specFulfil) {
-        if (specFulfil.payloadHash === hash) {
-          if (specFulfil.fulfiledAt) {
-            return { tag: 'ALREADY_FULFILLED', specFulfil }
+      const fulfilMeta = context.fulfilMetas[fulfil.transferId]
+      if (fulfilMeta) {
+        if (fulfilMeta.payloadHash === hash) {
+          if (fulfilMeta.fulfiledAt) {
+            return { tag: 'ALREADY_FULFILLED', fulfilMeta }
           }
-          if (specFulfil.abortedAt) {
-            return { tag: 'ALREADY_ABORTED', timestamp: specFulfil.abortedAt }
+          if (fulfilMeta.abortedAt) {
+            return { tag: 'ALREADY_ABORTED', timestamp: fulfilMeta.abortedAt }
           }
         }
         else {
@@ -2381,23 +2273,20 @@ export class LedgerTigerBeetle implements Ledger {
         }
       }
 
-      // 'Error resolving externalPayerName for transfer: 206c4c5b-39d9-43e0-a5a2-70b5a51977cf.'
-      // 'destinationDfspId does not match payment.externalPayerName.'
+      const rootPayer = dfspRootsMap[paymentMeta.payerId]
+      const rootPayee = dfspRootsMap[paymentMeta.payeeId]
+      const netDebitCapPayer = netDebitCapsMap[`${paymentMeta.payerId}:${paymentMeta.currency}`]
+      const netDebitCapPayee = netDebitCapsMap[`${paymentMeta.payeeId}:${paymentMeta.currency}`]
 
-      const rootPayer = dfspRootsMap[specTransfer.payerId]
-      const rootPayee = dfspRootsMap[specTransfer.payeeId]
-      const netDebitCapPayer = netDebitCapsMap[`${specTransfer.payerId}:${specTransfer.currency}`]
-      const netDebitCapPayee = netDebitCapsMap[`${specTransfer.payeeId}:${specTransfer.currency}`]
-
-      if (!rootPayer) failureReasons.push(`Payer DFSP '${specTransfer.payerId}' not found`)
-      if (!rootPayee) failureReasons.push(`Payee DFSP '${specTransfer.payeeId}' not found`)
-      if (!netDebitCapPayer) failureReasons.push(`net debit cap not found for: ${specTransfer.payerId} + ${specTransfer.currency}.`)
-      if (!netDebitCapPayee) failureReasons.push(`net debit cap not found for: ${specTransfer.payeeId} + ${specTransfer.currency}.`)
-      if (fulfil.callerDfspId !== specTransfer.payeeId) {
-        failureReasons.push(`Caller FSP '${fulfil.callerDfspId}' does not match payee '${specTransfer.payeeId}'`)
+      if (!rootPayer) failureReasons.push(`Payer DFSP '${paymentMeta.payerId}' not found`)
+      if (!rootPayee) failureReasons.push(`Payee DFSP '${paymentMeta.payeeId}' not found`)
+      if (!netDebitCapPayer) failureReasons.push(`net debit cap not found for: ${paymentMeta.payerId} + ${paymentMeta.currency}.`)
+      if (!netDebitCapPayee) failureReasons.push(`net debit cap not found for: ${paymentMeta.payeeId} + ${paymentMeta.currency}.`)
+      if (fulfil.callerDfspId !== paymentMeta.payeeId) {
+        failureReasons.push(`Caller FSP '${fulfil.callerDfspId}' does not match payee '${paymentMeta.payeeId}'`)
       }
-      if (fulfil.destinationDfspId !== specTransfer.payerId) {
-        failureReasons.push(`Destination FSP '${fulfil.destinationDfspId}' does not match payer '${specTransfer.payerId}'`)
+      if (fulfil.destinationDfspId !== paymentMeta.payerId) {
+        failureReasons.push(`Destination FSP '${fulfil.destinationDfspId}' does not match payer '${paymentMeta.payerId}'`)
       }
       if (failureReasons.length > 0) {
         return { tag: 'FAIL_VALIDATION', failureReasons }
@@ -2407,7 +2296,7 @@ export class LedgerTigerBeetle implements Ledger {
       if (fulfil.payload.transferState !== 'ABORTED') {
         const fulfilmentResult = Helper.validateFulfilmentAndCondition(
           fulfil.payload.fulfilment,
-          specTransfer.ilpCondition
+          paymentMeta.ilpCondition
         )
         if (fulfilmentResult.type === 'FAIL') {
           return { tag: 'INVALID_FULFILMENT' }
@@ -2416,11 +2305,11 @@ export class LedgerTigerBeetle implements Ledger {
 
       // Check the expiration of the prepare.
       // TODO: for forwarded prepares, we need to ignore the expiration.
-      if (specTransfer.expiration < new Date()) {
+      if (paymentMeta.expiration < new Date()) {
         return { tag: 'PREPARE_EXPIRED' }
       }
 
-      return { tag: 'OK', specFulfil }
+      return { tag: 'OK', fulfilMeta }
     })
   }
 
@@ -2435,16 +2324,14 @@ export class LedgerTigerBeetle implements Ledger {
     if (transferIds.length === 0) {
       return {}
     }
-    // TODO: look them up! Also partials etc.
-    // Should be at most 2 round trips
-    // Look up TigerBeetle, then look up spec.
+
     const tbIds = transferIds.map(Helper.fromMojaloopId)
     const idTransferMap: Record<string, Transfer | undefined> = {}
-    const idSpecMap: Record<string, GetSpecTransferResult | undefined> = {}
+    const idPaymentMetaMap: Record<string, GetPaymentMetaResult | undefined> = {}
     // Set up out id maps.
     transferIds.forEach(id => {
       idTransferMap[id] = undefined
-      idSpecMap[id] = undefined
+      idPaymentMetaMap[id] = undefined
     })
 
     const transfers = await this.client.lookupTransfers(tbIds)
@@ -2453,34 +2340,34 @@ export class LedgerTigerBeetle implements Ledger {
       idTransferMap[idMoja] = transfer
     })
 
-    const specs = await this.specStore.getTransferSpecs(transferIds)
-    specs.forEach(spec => idSpecMap[spec.id] = spec)
+    const metas = await this.metaStore.getPaymentMetas(transferIds)
+    metas.forEach(meta => idPaymentMetaMap[meta.id] = meta)
 
-    assert.equal(Object.values(idTransferMap).length, Object.values(idSpecMap).length)
+    assert.equal(Object.values(idTransferMap).length, Object.values(idPaymentMetaMap).length)
     const results: Record<string, LookupTransferQueryResponse> = {}
     transferIds.forEach(id => {
       const transfer = idTransferMap[id]
-      const specResult = idSpecMap[id]
-      assert(specResult)
+      const paymentMetaResult = idPaymentMetaMap[id]
+      assert(paymentMetaResult)
 
       if (!transfer) {
         results[id] = { type: LookupTransferResultType.NOT_FOUND }
         return
       }
 
-      // If the spec does not exist, then we must have only recorded the partial in TigerBeetle for
+      // If the metadata does not exist, then we must have only recorded the partial in TigerBeetle for
       // idempotency checks
-      if (specResult.type !== 'SUCCESS') {
+      if (paymentMetaResult.type !== 'SUCCESS') {
         results[id] = {
           type: LookupTransferResultType.FOUND,
-          transfer: this.hydrateTransferPartial(transfer)
+          transfer: Helper.hydratePaymentPartial(transfer)
         }
         return
       }
 
       results[id] = {
         type: LookupTransferResultType.FOUND,
-        transfer: this.hydrateTransfer(transfer, specResult.specTransfer, specResult.specFulfil)
+        transfer: Helper.hydratePayment(transfer, paymentMetaResult.paymentMeta, paymentMetaResult.fulfilMeta)
       }
     })
 
