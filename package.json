@@ -167,11 +167,15 @@
   "overrides": {
     "@hapi/wreck": "18.1.2",
     "@now-ims/hapi-now-auth": {
-      "joi": "17.13.8"
+      "joi": "17.13.9"
     },
     "blipp": {
-      "joi": "17.13.8"
+      "joi": "17.13.9"
     },
+    "gcp-metadata": {
+      "gaxios": "7.3.1"
+    },
+    "glob@13": "14.0.3",
     "jsdoc": {
       "markdown-it": "14.3.3"
     },
@@ -220,7 +224,8 @@
     "qs": "6.16.1",
     "js-yaml@^4.0.0": "4.3.2",
     "@grpc/grpc-js": "1.14.5",
-    "joi@^17.0.0": "17.13.8",
+    "joi@^17.0.0": "17.13.9",
+    "joi@18.2.9": "18.3.1",
     "@mojaloop/central-services-shared": {
       ".": "$@mojaloop/central-services-shared",
       "ajv": "8.20.0",
@@ -259,7 +264,7 @@
     "yaml@2": "2.9.1",
     "argparse@1": "2.0.1",
     "argparse@3": "3.0.0",
-    "follow-redirects": "1.16.1"
+    "follow-redirects": "1.16.2"
   },
   "config": {
     "knex": "--knexfile ./dist/knexfile.js",

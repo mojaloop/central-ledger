@@ -5,10 +5,10 @@
   "moderate": true,
   "allowlist": [ // NOTE": Please add as much information as possible to any items added to the allowList
     {
-      "GHSA-vfj7-8cjw-p6xm": {
+      "GHSA-g3hv-75wg-m249": {
         "active": true,
-        "notes": "No patched braces release exists as of 2026-10-05; usage is limited to local glob processing. Reassess when upstream publishes a fix.",
-        "expiry": "2026-11-05"
+        "notes": "minimatch globparts DoS, fixed only in minimatch 11 (named-export API). The copies still on 3.x and 5.x are pinned by eslint 8 and its plugins (standard), tape, tapes, replace, dotgitignore (standard-version), flat-cache and @redocly/openapi-core (via @mojaloop/api-snippets), which call minimatch as a function and cannot take 11. Not reachable at runtime: lint, test, release and openapi codegen tooling only. Reassess when those move to minimatch 11.",
+        "expiry": "2026-12-31"
       }
     }
   ]
