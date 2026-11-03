@@ -31,7 +31,7 @@ export default class PRNG {
       }
     }
 
-    return array[array.length - 1]
+    return array.at(-1)
   }
 
   public intExclusive(bound: number): number {

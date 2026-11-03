@@ -22,10 +22,10 @@ export class Clock {
  *   able to tick backwas
  */
 export default class MockClock extends Clock {
-  private dateStart: Date
+  private readonly dateStart: Date
   private _now: Date
 
-  constructor (private prng: PRNG, start: Date) {
+  constructor (private readonly prng: PRNG, start: Date) {
     super()
     assert(prng instanceof PRNG)
     assert.ok(start instanceof Date)

@@ -669,11 +669,8 @@ Found only ${markNew - markLast} new messages.`
    * Replaces the global `Date` with one that reads a MockClock, so the application only sees time pass
    * when a test ticks the clock. Call it at the top of the test file, before anything captures `Date`.
    */
-  public static injectPrngAndPatchDateGlobal(prng: PRNG, now?: Date): MockClock {
+  public static injectPrngAndPatchDateGlobal(prng: PRNG, now: Date = new Date('2026-02-01T00:00:00.000Z')): MockClock {
     Harness._prng = prng
-    if (!now) {
-      now = new Date('2026-02-01T00:00:00.000Z')
-    }
     const clock = new MockClock(prng, now)
 
     const OriginalDate = global.Date

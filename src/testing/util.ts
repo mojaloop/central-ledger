@@ -343,9 +343,9 @@ export const futureDate = (
 ): Date => {
   assert(amount > 0, `Invalid amount: ${amount}.`)
   if (Number.isNaN(now.getTime())) {
-    throw new Error(`now must be a valid date.`)
+    throw new TypeError(`now must be a valid date.`)
   }
-  let multiplier = 1
+  let multiplier: number
   switch (unit) {
     case 'ms': 
       multiplier = 1;
