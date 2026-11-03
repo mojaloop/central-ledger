@@ -51,16 +51,21 @@ const currency = 'USD'
  * The admin handler registered by harness.setupGlobals() consumes `topic-admin-transfer` in the
  * background, so the outcome of a recordFunds request shows up in the database a moment later.
  */
-const waitForTransferState = async (transferId: string, transferStateId: string, attempts = 50): Promise<void> => {
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    const transferState = await TransferService.getTransferState(transferId)
-    if (transferState?.transferStateId === transferStateId) {
-      return
+const waitForTransferState = (transferId: string, transferStateId: string, attempts = 50): Promise<void> =>
+  new Promise((resolve, reject) => {
+    let remaining = attempts
+    const poll = async () => {
+      const transferState = await TransferService.getTransferState(transferId)
+      if (transferState?.transferStateId === transferStateId) {
+        resolve()
+      } else if (--remaining === 0) {
+        reject(new Error(`Transfer ${transferId} did not reach state ${transferStateId} after ${attempts} attempts.`))
+      } else {
+        setTimeout(() => poll().catch(reject), 100)
+      }
     }
-    await new Promise(resolve => setTimeout(resolve, 100))
-  }
-  throw new Error(`Transfer ${transferId} did not reach state ${transferStateId} after ${attempts} attempts.`)
-}
+    poll().catch(reject)
+  })
 
 const getTransferStateId = async (transferId: string): Promise<string> => {
   const transferState = await TransferService.getTransferState(transferId)
@@ -145,15 +150,15 @@ describe('handlers/admin/handler', () => {
         autoPositionReset: true
       }]
     })
-    for (const name of ['dfsp_a', 'dfsp_b']) {
-      await ApiHelpers.createDfsp(harness, {
-        name,
-        currencies: [currency],
-        isProxy: false,
-        initialPostionsAndLimits: [{ initialPosition: 0, value: 100000 }],
-        deposits: [10000]
-      })
-    }
+    const dfsp = (name: string): ApiHelpers.CreateDfspPayload => ({
+      name,
+      currencies: [currency],
+      isProxy: false,
+      initialPostionsAndLimits: [{ initialPosition: 0, value: 100000 }],
+      deposits: [10000]
+    })
+    await ApiHelpers.createDfsp(harness, dfsp('dfsp_a'))
+    await ApiHelpers.createDfsp(harness, dfsp('dfsp_b'))
   })
 
   after(async () => {
