@@ -327,8 +327,8 @@ Test('Admin handler', adminHandlerTest => {
     sandbox.stub(TransferService, 'getTransferStateChange')
     sandbox.stub(TransferService, 'getTransferState')
     sandbox.stub(TransferService, 'getTransferById')
-    // Every fixture addresses settlement account 1, so by default the transfer is a recordFundsOut reservation
-    // made on that account. Tests override this for other transfers and accounts.
+    // Every fixture addresses settlement account 1, so the transfer is a recordFundsOut reservation made on that
+    // account. The other cases (a P2P transfer, another account) are in src/handlers/admin/handler.int.ts.
     sandbox.stub(TransferService, 'getTransferInfoToChangePosition').returns({ participantCurrencyId: 1 })
     sandbox.stub(Kafka)
     sandbox.stub(Comparators)
@@ -914,137 +914,6 @@ Test('Admin handler', adminHandlerTest => {
         test.end()
       }
     })
-    // mojaloop/project#4588: a recordFundsOut reservation must stay abortable once it has expired,
-    // including after the timeout handler has marked it RESERVED_TIMEOUT (it never releases the position).
-    // Review of PR #1310: the admin API accepts any transfer id, so the handler must also check that the
-    // transfer is a recordFundsOut reservation made on the settlement account named in the request URL.
-    const recordFundsOutMessage = (action, transferId, participantCurrencyId) => ({
-      topic: topicName,
-      value: Object.assign({}, messageProtocolRecordFundsOutAbort, {
-        id: transferId,
-        content: {
-          header: '',
-          payload: Object.assign({}, transferRecordOutAbort, { action })
-        },
-        metadata: Object.assign({}, messageProtocolRecordFundsOutAbort.metadata, {
-          request: { params: { id: participantCurrencyId }, enums: requestEnums }
-        })
-      })
-    })
-    const expiredReservation = (transferId) => ({
-      transferId,
-      amount: 433.88,
-      currencyId: 'USD',
-      expirationDate: '2016-05-24T08:38:08.699-04:00'
-    })
-    const liveReservation = (transferId) => Object.assign(expiredReservation(transferId), { expirationDate: transferRecordOutPrepare.expirationDate })
-
-    // Sends one recordFundsOutCommit / recordFundsOutAbort for a new transfer in the given state.
-    // settlementParticipant is what the DFSP_SETTLEMENT / RECORD_FUNDS_OUT lookup returns for it (null when the
-    // transfer has no such row, like a P2P transfer); accountId is the settlement account in the request URL.
-    const changeRecordFundsOut = async (action, { transferStateId, transfer = expiredReservation, settlementParticipant = { participantCurrencyId: 1 }, accountId = 1 }) => {
-      await Consumer.createHandler(topicName, config, command)
-      Kafka.transformGeneralTopicName.returns(topicName)
-      Kafka.getKafkaConfig.returns(config)
-      const transferId = randomUUID()
-      TransferService.getTransferById.withArgs(transferId).returns(transfer(transferId))
-      TransferService.getTransferState.withArgs(transferId).returns({ transferStateId })
-      TransferService.getTransferInfoToChangePosition
-        .withArgs(transferId, requestEnums.transferParticipantRoleType.DFSP_SETTLEMENT, requestEnums.ledgerEntryType.RECORD_FUNDS_OUT)
-        .returns(settlementParticipant)
-      return AdminHandler.transfer(null, recordFundsOutMessage(action, transferId, accountId))
-    }
-
-    await transferTest.test('abort an expired recordFundsOut reservation, still RESERVED or marked RESERVED_TIMEOUT by the timeout handler (#4588)', async (test) => {
-      try {
-        for (const transferStateId of [TransferState.RESERVED, TransferInternalState.RESERVED_TIMEOUT]) {
-          TransferService.reconciliationTransferAbort.resetHistory()
-          const result = await changeRecordFundsOut('recordFundsOutAbort', { transferStateId })
-          test.equal(result, true, `${transferStateId}: handler completes`)
-          test.ok(TransferService.reconciliationTransferAbort.calledOnce, `${transferStateId}: reconciliationTransferAbort called once`)
-          test.deepEqual(TransferService.reconciliationTransferAbort.firstCall.args[0].amount, { amount: 433.88, currency: 'USD' }, `${transferStateId}: abort releases the reserved amount`)
-        }
-        test.ok(TransferService.reconciliationTransferCommit.notCalled, 'reconciliationTransferCommit not called')
-        test.end()
-      } catch (e) {
-        test.fail(`${e} error thrown`)
-        test.end()
-      }
-    })
-
-    await transferTest.test('not abort a recordFundsOut transfer that is already finalised (#4588)', async (test) => {
-      try {
-        for (const transferStateId of [TransferState.COMMITTED, TransferInternalState.ABORTED_REJECTED, TransferInternalState.EXPIRED_RESERVED]) {
-          const result = await changeRecordFundsOut('recordFundsOutAbort', { transferStateId })
-          test.equal(result, true, `${transferStateId}: handler completes`)
-        }
-        test.ok(TransferService.reconciliationTransferAbort.notCalled, 'reconciliationTransferAbort not called')
-        test.end()
-      } catch (e) {
-        test.fail(`${e} error thrown`)
-        test.end()
-      }
-    })
-
-    await transferTest.test('not commit an expired recordFundsOut reservation (#4588)', async (test) => {
-      try {
-        for (const transferStateId of [TransferState.RESERVED, TransferInternalState.RESERVED_TIMEOUT]) {
-          const result = await changeRecordFundsOut('recordFundsOutCommit', { transferStateId })
-          test.equal(result, true, `${transferStateId}: handler completes`)
-        }
-        test.ok(TransferService.reconciliationTransferCommit.notCalled, 'reconciliationTransferCommit not called')
-        test.ok(TransferService.reconciliationTransferAbort.notCalled, 'reconciliationTransferAbort not called')
-        test.end()
-      } catch (e) {
-        test.fail(`${e} error thrown`)
-        test.end()
-      }
-    })
-
-    await transferTest.test('not abort a transfer that is not a recordFundsOut reservation, such as a timed-out P2P transfer (#4588)', async (test) => {
-      try {
-        // A P2P transfer only has PAYER_DFSP and PAYEE_DFSP participant rows, so the lookup finds nothing
-        for (const transferStateId of [TransferState.RESERVED, TransferInternalState.RESERVED_TIMEOUT]) {
-          const result = await changeRecordFundsOut('recordFundsOutAbort', { transferStateId, settlementParticipant: null })
-          test.equal(result, true, `${transferStateId}: handler completes`)
-        }
-        test.ok(TransferService.reconciliationTransferAbort.notCalled, 'reconciliationTransferAbort not called')
-        test.end()
-      } catch (e) {
-        test.fail(`${e} error thrown`)
-        test.end()
-      }
-    })
-
-    await transferTest.test('not abort or commit a recordFundsOut reservation made on another settlement account (#4588)', async (test) => {
-      try {
-        // The reservation was made on account 2; the request names account 1
-        for (const action of ['recordFundsOutAbort', 'recordFundsOutCommit']) {
-          const result = await changeRecordFundsOut(action, { transferStateId: TransferState.RESERVED, transfer: liveReservation, settlementParticipant: { participantCurrencyId: 2 }, accountId: 1 })
-          test.equal(result, true, `${action}: handler completes`)
-        }
-        test.ok(TransferService.reconciliationTransferAbort.notCalled, 'reconciliationTransferAbort not called')
-        test.ok(TransferService.reconciliationTransferCommit.notCalled, 'reconciliationTransferCommit not called')
-        test.end()
-      } catch (e) {
-        test.fail(`${e} error thrown`)
-        test.end()
-      }
-    })
-
-    await transferTest.test('abort a recordFundsOut reservation when the request names its settlement account, whatever the id type (#4588)', async (test) => {
-      try {
-        // The URL parameter is a number; the database column may come back as a string
-        const result = await changeRecordFundsOut('recordFundsOutAbort', { transferStateId: TransferInternalState.RESERVED_TIMEOUT, settlementParticipant: { participantCurrencyId: '7' }, accountId: 7 })
-        test.equal(result, true)
-        test.ok(TransferService.reconciliationTransferAbort.calledOnce, 'reconciliationTransferAbort called once')
-        test.end()
-      } catch (e) {
-        test.fail(`${e} error thrown`)
-        test.end()
-      }
-    })
-
     transferTest.end()
   })
   adminHandlerTest.end()
