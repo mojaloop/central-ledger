@@ -331,3 +331,42 @@ export const prettyPrintPosition = (
   pending | ${start.reservedValue.padEnd(lenColumns)}| ${end.reservedValue.padEnd(lenColumns)}
   posted  | ${start.value.padEnd(lenColumns)}| ${end.value.padEnd(lenColumns)}`
 }
+export type TimeUnit = 'ms' | 's' | 'm' | 'h' | 'd'
+
+/**
+ * @description Returns a date a specified amount of time in the future.
+ */
+export const futureDate = (
+  amount: number, 
+  unit: TimeUnit = 'ms', 
+  now: Date = new Date(),
+): Date => {
+  assert(amount > 0, `Invalid amount: ${amount}.`)
+  if (Number.isNaN(now.getTime())) {
+    throw new Error(`now must be a valid date.`)
+  }
+  let multiplier = 1
+  switch (unit) {
+    case 'ms': 
+      multiplier = 1;
+      break;
+    case 's': 
+      multiplier = 1000;
+      break;
+    case 'm':
+      multiplier = 1000 * 60;
+      break;
+    case 'h':
+      multiplier = 1000 * 60 * 60;
+      break;
+    case 'd':
+      multiplier = 1000 * 60 * 60 * 24;
+      break;
+    default:
+      throw new Error(`unit must be one of: 'ms' | 's' | 'm' | 'h' | 'd'`)
+  }
+  const msToJump = Math.floor(amount * multiplier)
+  const then = new Date(now.getTime() + msToJump)
+
+  return then
+}
