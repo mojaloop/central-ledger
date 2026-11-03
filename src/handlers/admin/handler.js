@@ -78,66 +78,43 @@ const abortableRecordFundsOutStates = new Set([
   Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
 ])
 
-const hasReservationExpired = (transfer) => new Date(transfer.expirationDate) <= new Date()
-
-/**
- * Checks that the transfer a recordFundsOutCommit / recordFundsOutAbort names is a recordFundsOut
- * reservation made on the settlement account in the request URL. The admin API accepts any transfer id,
- * so without this check a P2P transfer in RESERVED_TIMEOUT could be aborted here while the position
- * handler releases the same payer position. Returns the reason the request is rejected, or null.
- */
-const getTargetRejection = (existingTransfer, settlementParticipant, participantCurrencyId) => {
-  if (!existingTransfer) {
-    return 'notFound'
-  }
-  const isRecordFundsOutForAccount = !!settlementParticipant &&
-    String(settlementParticipant.participantCurrencyId) === String(participantCurrencyId)
-  return isRecordFundsOutForAccount ? null : 'notRecordFundsOutForAccount'
-}
-
-/**
- * Checks that the action may be applied to the reservation in its current state.
- * Returns the reason the request is rejected, or null when it may proceed.
- */
-const getStateRejection = (action, existingTransfer, transferState) => {
-  const isAbort = action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT
-  const stateAllowed = isAbort
-    ? abortableRecordFundsOutStates.has(transferState.transferStateId)
-    : transferState.transferStateId === Enum.Transfers.TransferState.RESERVED
-  if (!stateAllowed) {
-    return 'nonReservedState'
-  }
-  // A commit needs a live reservation. An abort is accepted after the reservation has expired because
-  // nothing else releases the DFSP's reserved funds (mojaloop/project#4588).
-  return !isAbort && hasReservationExpired(existingTransfer) ? 'transferExpired' : null
+const logAdminTransfer = (action, outcome) => {
+  Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${action}::${outcome}`)
 }
 
 const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTimestamp, enums) => {
   const existingTransfer = await TransferService.getTransferById(transferId)
   const transferState = await TransferService.getTransferState(transferId)
-  // reconciliationTransferPrepare writes the DFSP_SETTLEMENT / RECORD_FUNDS_OUT participant row that names
-  // the settlement account the reservation was made on.
+  // The transfer must be a recordFundsOut reservation made on the settlement account in the request URL:
+  // reconciliationTransferPrepare writes its DFSP_SETTLEMENT / RECORD_FUNDS_OUT participant row. The admin
+  // API accepts any transfer id, and a P2P transfer's position is the position handler's to release.
   const settlementParticipant = await TransferService.getTransferInfoToChangePosition(transferId,
     enums.transferParticipantRoleType.DFSP_SETTLEMENT, enums.ledgerEntryType.RECORD_FUNDS_OUT)
-  const rejection = getTargetRejection(existingTransfer, settlementParticipant, payload.participantCurrencyId) ||
-    getStateRejection(payload.action, existingTransfer, transferState)
-  if (rejection) {
-    Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::${rejection}`)
+  if (!existingTransfer) {
+    logAdminTransfer(payload.action, 'validationFailed::notFound')
+  } else if (!settlementParticipant || String(settlementParticipant.participantCurrencyId) !== String(payload.participantCurrencyId)) {
+    logAdminTransfer(payload.action, 'validationFailed::notRecordFundsOutForAccount')
+  } else if (!abortableRecordFundsOutStates.has(transferState.transferStateId)) {
+    logAdminTransfer(payload.action, 'validationFailed::nonReservedState')
   } else if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT) {
-    Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
-    Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_COMMIT`)
-    await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums)
+    // A commit needs a live reservation. An abort is accepted after the reservation has expired because
+    // nothing else releases the DFSP's reserved funds (mojaloop/project#4588).
+    if (transferState.transferStateId !== Enum.Transfers.TransferState.RESERVED || new Date(existingTransfer.expirationDate) <= new Date()) {
+      logAdminTransfer(payload.action, 'validationFailed::transferExpired')
+    } else {
+      logAdminTransfer(payload.action, 'validationPassed')
+      logAdminTransfer(payload.action, 'validationPassed::RECORD_FUNDS_OUT_COMMIT')
+      await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums)
+    }
   } else if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT) {
-    const expired = hasReservationExpired(existingTransfer) ? '::expiredReservation' : ''
-    Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed${expired}`)
-    Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_ABORT`)
+    logAdminTransfer(payload.action, 'validationPassed')
+    logAdminTransfer(payload.action, 'validationPassed::RECORD_FUNDS_OUT_ABORT')
     payload.amount = {
       amount: existingTransfer.amount,
       currency: existingTransfer.currencyId
     }
     await TransferService.reconciliationTransferAbort(payload, transactionTimestamp, enums)
   }
-  return true
 }
 
 const transferExists = async (payload, transferId) => {
