@@ -81,13 +81,25 @@ const abortableRecordFundsOutStates = new Set([
 const hasReservationExpired = (transfer) => new Date(transfer.expirationDate) <= new Date()
 
 /**
- * Validates a recordFundsOutCommit / recordFundsOutAbort against the reservation it targets.
- * Returns the reason the request is rejected, or null when it may proceed.
+ * Checks that the transfer a recordFundsOutCommit / recordFundsOutAbort names is a recordFundsOut
+ * reservation made on the settlement account in the request URL. The admin API accepts any transfer id,
+ * so without this check a P2P transfer in RESERVED_TIMEOUT could be aborted here while the position
+ * handler releases the same payer position. Returns the reason the request is rejected, or null.
  */
-const getRecordFundsOutRejection = (action, existingTransfer, transferState) => {
+const getTargetRejection = (existingTransfer, settlementParticipant, participantCurrencyId) => {
   if (!existingTransfer) {
     return 'notFound'
   }
+  const isRecordFundsOutForAccount = !!settlementParticipant &&
+    String(settlementParticipant.participantCurrencyId) === String(participantCurrencyId)
+  return isRecordFundsOutForAccount ? null : 'notRecordFundsOutForAccount'
+}
+
+/**
+ * Checks that the action may be applied to the reservation in its current state.
+ * Returns the reason the request is rejected, or null when it may proceed.
+ */
+const getStateRejection = (action, existingTransfer, transferState) => {
   const isAbort = action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT
   const stateAllowed = isAbort
     ? abortableRecordFundsOutStates.has(transferState.transferStateId)
@@ -103,7 +115,12 @@ const getRecordFundsOutRejection = (action, existingTransfer, transferState) => 
 const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTimestamp, enums) => {
   const existingTransfer = await TransferService.getTransferById(transferId)
   const transferState = await TransferService.getTransferState(transferId)
-  const rejection = getRecordFundsOutRejection(payload.action, existingTransfer, transferState)
+  // reconciliationTransferPrepare writes the DFSP_SETTLEMENT / RECORD_FUNDS_OUT participant row that names
+  // the settlement account the reservation was made on.
+  const settlementParticipant = await TransferService.getTransferInfoToChangePosition(transferId,
+    enums.transferParticipantRoleType.DFSP_SETTLEMENT, enums.ledgerEntryType.RECORD_FUNDS_OUT)
+  const rejection = getTargetRejection(existingTransfer, settlementParticipant, payload.participantCurrencyId) ||
+    getStateRejection(payload.action, existingTransfer, transferState)
   if (rejection) {
     Logger.isInfoEnabled && Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::${rejection}`)
   } else if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT) {

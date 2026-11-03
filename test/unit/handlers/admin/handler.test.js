@@ -16,6 +16,13 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
 
+// The admin API attaches the database enums to every message (ParticipantService.recordFundsInOut). The
+// handler needs these two to look up the settlement account a recordFundsOut reservation was made on.
+const requestEnums = {
+  transferParticipantRoleType: { HUB: 3, DFSP_SETTLEMENT: 4 },
+  ledgerEntryType: { RECORD_FUNDS_IN: 9, RECORD_FUNDS_OUT: 10 }
+}
+
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
   payerFsp: 'dfsp1',
@@ -95,7 +102,7 @@ const messageProtocolRecordFundsIn = {
       params: {
         id: 1
       },
-      enums: {}
+      enums: requestEnums
     }
   },
   pp: ''
@@ -125,7 +132,7 @@ const messageProtocolrecordFundsOutPrepareReserve = {
       params: {
         id: 1
       },
-      enums: {}
+      enums: requestEnums
     }
   },
   pp: ''
@@ -163,7 +170,7 @@ const messageProtocolRecordFundsOutCommit = {
       params: {
         id: 1
       },
-      enums: {}
+      enums: requestEnums
     }
   },
   pp: ''
@@ -203,7 +210,7 @@ const messageProtocolRecordFundsOutAbort = {
       params: {
         id: 1
       },
-      enums: {}
+      enums: requestEnums
     }
   },
   pp: ''
@@ -246,7 +253,7 @@ const messageProtocolWrongAction = {
         params: {
           id: 1
         },
-        enums: {}
+        enums: requestEnums
       }
     },
     pp: ''
@@ -320,6 +327,9 @@ Test('Admin handler', adminHandlerTest => {
     sandbox.stub(TransferService, 'getTransferStateChange')
     sandbox.stub(TransferService, 'getTransferState')
     sandbox.stub(TransferService, 'getTransferById')
+    // Every fixture addresses settlement account 1, so by default the transfer is a recordFundsOut reservation
+    // made on that account. Tests override this for other transfers and accounts.
+    sandbox.stub(TransferService, 'getTransferInfoToChangePosition').returns({ participantCurrencyId: 1 })
     sandbox.stub(Kafka)
     sandbox.stub(Comparators)
     Kafka.transformAccountToTopicName.returns(topicName)
@@ -906,14 +916,17 @@ Test('Admin handler', adminHandlerTest => {
     })
     // mojaloop/project#4588: a recordFundsOut reservation must stay abortable once it has expired,
     // including after the timeout handler has marked it RESERVED_TIMEOUT (it never releases the position).
-    const recordFundsOutMessage = (action, transferId) => ({
+    const recordFundsOutMessage = (action, transferId, participantCurrencyId = 1) => ({
       topic: topicName,
       value: Object.assign({}, messageProtocolRecordFundsOutAbort, {
         id: transferId,
         content: {
           header: '',
           payload: Object.assign({}, transferRecordOutAbort, { action })
-        }
+        },
+        metadata: Object.assign({}, messageProtocolRecordFundsOutAbort.metadata, {
+          request: { params: { id: participantCurrencyId }, enums: requestEnums }
+        })
       })
     })
     const expiredReservation = (transferId) => ({
@@ -996,6 +1009,78 @@ Test('Admin handler', adminHandlerTest => {
         }
         test.ok(TransferService.reconciliationTransferCommit.notCalled, 'reconciliationTransferCommit not called')
         test.ok(TransferService.reconciliationTransferAbort.notCalled, 'reconciliationTransferAbort not called')
+        test.end()
+      } catch (e) {
+        test.fail(`${e} error thrown`)
+        test.end()
+      }
+    })
+
+    // Review of PR #1310: the admin API accepts any transfer id, so the handler must check that the transfer
+    // is a recordFundsOut reservation made on the settlement account named in the request URL before it
+    // commits or aborts it. The lookup is stubbed per transfer with the exact role and ledger entry type ids.
+    const settlementParticipantFor = (transferId) => TransferService.getTransferInfoToChangePosition.withArgs(
+      transferId, requestEnums.transferParticipantRoleType.DFSP_SETTLEMENT, requestEnums.ledgerEntryType.RECORD_FUNDS_OUT)
+    const liveReservation = (transferId) => Object.assign(expiredReservation(transferId), { expirationDate: transferRecordOutPrepare.expirationDate })
+
+    await transferTest.test('not abort a transfer that is not a recordFundsOut reservation, such as a timed-out P2P transfer (#4588)', async (test) => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+        for (const transferStateId of [TransferState.RESERVED, TransferInternalState.RESERVED_TIMEOUT]) {
+          const transferId = randomUUID()
+          TransferService.getTransferById.withArgs(transferId).returns(expiredReservation(transferId))
+          TransferService.getTransferState.withArgs(transferId).returns({ transferStateId })
+          // A P2P transfer only has PAYER_DFSP and PAYEE_DFSP participant rows
+          settlementParticipantFor(transferId).returns(undefined)
+          const result = await AdminHandler.transfer(null, recordFundsOutMessage('recordFundsOutAbort', transferId))
+          test.equal(result, true, `${transferStateId}: handler completes`)
+        }
+        test.ok(TransferService.reconciliationTransferAbort.notCalled, 'reconciliationTransferAbort not called')
+        test.end()
+      } catch (e) {
+        test.fail(`${e} error thrown`)
+        test.end()
+      }
+    })
+
+    await transferTest.test('not abort or commit a recordFundsOut reservation made on another settlement account (#4588)', async (test) => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+        for (const action of ['recordFundsOutAbort', 'recordFundsOutCommit']) {
+          const transferId = randomUUID()
+          TransferService.getTransferById.withArgs(transferId).returns(liveReservation(transferId))
+          TransferService.getTransferState.withArgs(transferId).returns({ transferStateId: TransferState.RESERVED })
+          // The reservation was made on account 2; the request names account 1
+          settlementParticipantFor(transferId).returns({ participantCurrencyId: 2 })
+          const result = await AdminHandler.transfer(null, recordFundsOutMessage(action, transferId, 1))
+          test.equal(result, true, `${action}: handler completes`)
+        }
+        test.ok(TransferService.reconciliationTransferAbort.notCalled, 'reconciliationTransferAbort not called')
+        test.ok(TransferService.reconciliationTransferCommit.notCalled, 'reconciliationTransferCommit not called')
+        test.end()
+      } catch (e) {
+        test.fail(`${e} error thrown`)
+        test.end()
+      }
+    })
+
+    await transferTest.test('abort a recordFundsOut reservation when the request names its settlement account, whatever the id type (#4588)', async (test) => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+        const transferId = randomUUID()
+        TransferService.getTransferById.withArgs(transferId).returns(expiredReservation(transferId))
+        TransferService.getTransferState.withArgs(transferId).returns({ transferStateId: TransferInternalState.RESERVED_TIMEOUT })
+        // The URL parameter is a number; the database column may come back as a string
+        settlementParticipantFor(transferId).returns({ participantCurrencyId: '7' })
+        const result = await AdminHandler.transfer(null, recordFundsOutMessage('recordFundsOutAbort', transferId, 7))
+        test.equal(result, true)
+        test.ok(TransferService.reconciliationTransferAbort.calledOnce, 'reconciliationTransferAbort called once')
         test.end()
       } catch (e) {
         test.fail(`${e} error thrown`)
