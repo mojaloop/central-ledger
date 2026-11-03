@@ -36,8 +36,8 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
 import { Effect } from "../messaging/message-bus";
 import { PositionHandlerV2 } from "./position-v2";
-import { assertNestedFields } from "../lib/config/util";
-import { Ledger } from '../domain/ledger/shared/types';
+import { assertNestedFields } from "../lib/config/util"
+import { Ledger } from '../domain/ledger/shared/types'
 
 interface Dependencies {
   config: ApplicationConfig
@@ -124,25 +124,49 @@ export enum PaymentFulfilResultType {
   FAIL_OTHER = 'FAIL_OTHER',
 }
 
-export type PaymentFulfilResult = {
-  type: PaymentFulfilResultType.PASS,
-  effects: Array<Effect>
-} | {
-  type: PaymentFulfilResultType.DUPLICATE_FINAL,
-  effects: Array<Effect>
-} | {
-  type: PaymentFulfilResultType.DUPLICATE_NON_FINAL,
-  effects: Array<Effect>
-  // TODO: is there a body for this?
-} | {
-  type: PaymentFulfilResultType.FAIL_VALIDATION,
-  effects: Array<Effect>
-  error: typeof FSPIOPError
-} | {
-  type: PaymentFulfilResultType.FAIL_OTHER
-  effects: Array<Effect>
-  error: typeof FSPIOPError
+export type FulfilContextAborted = {
+  id: string,
+  abortedAt: Date
 }
+
+export type FulfilContextFulfiled = {
+  id: string,
+  fulfilment: string,
+  fulfiledAt: Date,
+}
+
+export type FulfilContext = FulfilContextAborted | FulfilContextFulfiled
+
+export type PaymentFulfilResultPartial = {
+  tag: 'OK',
+  context: FulfilContext
+  // TODO: refactor me away, we should be able to generate the fx effects based on the context.
+  fxEffect?: Effect
+} | {
+  tag: 'DUPLICATE_FINAL'
+  context: FulfilContext,
+} | {
+  tag: 'DUPLICATE_NON_FINAL'
+} | {
+  tag: 'FAIL_VALIDATION',
+  failureReasons: Array<string>
+} | {
+  tag: 'FAIL_OTHER'
+} | { 
+  tag: 'INVALID_FULFILMENT'
+} | {
+  tag: 'MODIFIED'
+} | {
+  tag: 'EXPIRED'
+} | {
+  // A special 'internal' state for unfused fulfil + position handlers.
+  tag: 'FULFIL_NEXT',
+  effects: Array<Effect>
+}
+
+export type PaymentFulfilResult = {
+  input: FulfilHandlerInput
+} & PaymentFulfilResultPartial
 
 export class PaymentFulfilHandler {
   constructor(private deps: Dependencies) { }
@@ -150,7 +174,7 @@ export class PaymentFulfilHandler {
   /**
    * Handle a batch of messages coming off of Kafka.
    */
-  async handle( error: any, messages: any): Promise<Array<PaymentFulfilResult>> {
+  async handle(error: any, messages: any): Promise<Array<PaymentFulfilResult>> {
     if (error) {
       throw error
     }

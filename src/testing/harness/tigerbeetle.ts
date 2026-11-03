@@ -13,7 +13,7 @@ import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import { ChildProcess, spawn } from "node:child_process";
 
-const logger = Logger.child({ scope: 'harness' }) 
+const logger = Logger.child({ scope: 'harness' })
 
 interface DependencyOptionsTigerBeetle extends DependencyOptions {
   pathToBinary: string,
@@ -65,8 +65,8 @@ export class TigerBeetle {
       checksum: 'aaac96a69380b33a0e63f981635c24924d610f28c3f41637f9e57b8caa0e5e77'
     }
   ]
-  
-  constructor (private options: DependencyOptionsTigerBeetle) {
+
+  constructor(private options: DependencyOptionsTigerBeetle) {
     assert(options)
     assert(options.harnessId)
     assert(options.pathToBinary)
@@ -96,9 +96,20 @@ export class TigerBeetle {
       `--addresses=${port}`,
       this.pathToDataFile
     ], {
-      stdio: 'ignore',
+      // stdio: 'ignore',
+      // stdio: 'pipe',
+      stdio: ['pipe', 'pipe', 'pipe'],
       detached: false
     })
+
+    // this.child.stdout && this.child.stdout.on('data', (data) => {
+    //   console.log(`stdout: ${data}`);
+    // });
+
+    this.child.stderr && this.child.stderr.on('data', (data) => {
+      this.logger.info(`tigerbeetle stderr: ${data}`);
+    });
+
 
     this._connectionOptions = { clusterId: 0n, port }
 
@@ -127,15 +138,19 @@ export class TigerBeetle {
       this.child = null
     }
 
+    // TODO: LD disabled this for now, when we run one after the other, we seem to get a race
+    // condition where the down from the previous harness runs after the next harness up, meaning
+    // that the file is deleted after `createDataFileIfNotExists()` runs.
+
     // Clean up the datafile.
     if (this.pathToDataFile) {
-      fs.rmSync(this.pathToDataFile, { force: true})
+      fs.rmSync(this.pathToDataFile, { force: false })
     }
   }
 
   private async checkBinaryOrDownload(): Promise<void> {
     const dir = path.dirname(this.pathToBinary)
-    fs.mkdirSync(dir, {recursive: true})
+    fs.mkdirSync(dir, { recursive: true })
     const stats = fs.statSync(this.pathToBinary, { throwIfNoEntry: false })
     if (stats) {
       // We have a TigerBeetle binary. 
@@ -144,7 +159,7 @@ export class TigerBeetle {
 
     const release = this.getRelease()
     await this.downloadRelease(release.url, this.pathToBinary, release.checksum)
-  } 
+  }
 
   /**
    * Try and make a data file at the pathToDataFiles[0], falling back to other paths if it fails
@@ -155,7 +170,7 @@ export class TigerBeetle {
     for (let idx = 0; idx < this.pathToDataFiles.length; idx++) {
       const pathToDataFile = this.pathToDataFiles[idx]
       const dataDir = this.options.dataDirs[idx]
-      
+
       try {
         fs.mkdirSync(dataDir, { recursive: true })
       } catch (err) {
@@ -163,8 +178,9 @@ export class TigerBeetle {
       }
       const stats = fs.statSync(pathToDataFile, { throwIfNoEntry: false })
       if (stats) {
-        this.logger.info(`createDataFileIfNotExists() - datafile exists at ${dataDir}.`)
+        this.logger.info(`createDataFileIfNotExists() - datafile exists at ${pathToDataFile}.`)
         // Data file already exists. Don't do anything.
+        this.pathToDataFile = pathToDataFile
         return
       }
 
@@ -178,14 +194,15 @@ export class TigerBeetle {
         )
         // We made a data file.
         this.pathToDataFile = pathToDataFile
+        continue
       } catch (err) {
         continue
       }
     }
 
     if (!this.pathToDataFile) {
-      const msg = `Failed to create data file in the following locations: ` + 
-      `[${this.pathToDataFiles.join(',')}]`
+      const msg = `Failed to create data file in the following locations: ` +
+        `[${this.pathToDataFiles.join(',')}]`
       this.logger.error(msg)
       throw new Error(msg)
     }
@@ -198,7 +215,7 @@ export class TigerBeetle {
     }
     const hash = crypto.createHash('sha256')
     const hashTransform = new Transform({
-      transform(chunk, encoding, callback ) {
+      transform(chunk, encoding, callback) {
         hash.update(chunk)
         callback(null, chunk)
       }
@@ -227,7 +244,7 @@ export class TigerBeetle {
 
     // Make executable.
     fs.chmodSync(toUnzip, '0755')
-    
+
     try {
       // Move file to destination atomically with rename.
       fs.renameSync(toUnzip, to)
@@ -241,7 +258,7 @@ export class TigerBeetle {
     }
   }
 
-  private getRelease(): { url: string, checksum: string} {
+  private getRelease(): { url: string, checksum: string } {
     let suffix = ''
     switch (process.arch) {
       case "arm":
@@ -254,8 +271,8 @@ export class TigerBeetle {
             suffix = 'aarch64-linux.zip'
             break;
           default:
-            throw new Error(`getRelease() unsupported arch: ${process.arch} + platform: ${process.platform}`)        
-        } 
+            throw new Error(`getRelease() unsupported arch: ${process.arch} + platform: ${process.platform}`)
+        }
         break;
       case "x64":
         switch (process.platform) {
@@ -265,17 +282,17 @@ export class TigerBeetle {
           case "linux":
             suffix = 'x86_64-linux.zip'
             break;
-          case "win32": 
+          case "win32":
             suffix = 'x86_64-windows.zip'
           default:
             throw new Error(`getRelease() unsupported arch: ${process.arch} + platform: ${process.platform}`)
         }
         break;
       default:
-        throw new Error(`getRelease() unsupported arch: ${process.arch}`)        
+        throw new Error(`getRelease() unsupported arch: ${process.arch}`)
     }
 
-    assert(suffix)  
+    assert(suffix)
     const filtered = this.releases.find(release => release.url.endsWith(suffix))
     assert(filtered, `No release found in list for ${suffix}`)
 

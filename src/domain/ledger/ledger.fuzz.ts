@@ -29,7 +29,6 @@ import {
   GetSettlementWindowQuery,
   GetSettlementWindowsQuery,
   Ledger,
-  LegacyLedgerAccount,
   LookupTransferQuery,
   SetNetDebitCapCommand,
   Settlement,
@@ -41,7 +40,7 @@ import {
   WithdrawCommitCommand,
   WithdrawPrepareCommand
 } from "../ledger/shared/types"
-import { PaymentPrepareResultType, PrepareHandlerInput } from "../../handlers/payment-prepare"
+import { PrepareHandlerInput } from "../../handlers/payment-prepare"
 import { FulfilHandlerInput, PaymentFulfilResultType } from "../../handlers/payment-fulfil"
 import { Reporter } from "./shared/reporter"
 
@@ -764,6 +763,7 @@ class LedgerFuzzer {
     const result = await this.ledger.prepare(prepares)
     const resultNormalized = result.map(prepareResult => {
       const clone = structuredClone(prepareResult) as any
+      delete clone['input']
       if (clone.failureReasons && Array.isArray(clone.failureReasons)) {
         clone.failureReasons = `:ignore ${clone.failureReasons.join(',')}`
       }
@@ -794,7 +794,7 @@ class LedgerFuzzer {
     this.traceResult('prepare', prepares, resultNormalized)
     result.forEach((prepareResult, idx) => {
       const prepare = prepares[idx]
-      if (prepareResult.type === PaymentPrepareResultType.PASS) {
+      if (prepareResult.tag === 'OK') {
         this.prepareIdsSuccess[prepare.transferId] = true
       }
     })
@@ -803,10 +803,10 @@ class LedgerFuzzer {
   private async fulfil(): Promise<void> {
     const fulfills: Array<FulfilHandlerInput> = [this.makeFulfilOrAbort()]
     const results = await this.ledger.fulfil(fulfills)
-    // this.traceResult('fulfil', fulfills, result)
 
     const resultNormalized = results.map(result => {
       const clone = structuredClone(result) as any
+      delete clone['input']
       if (clone.failureReasons && Array.isArray(clone.failureReasons)) {
         clone.failureReasons = `:ignore ${clone.failureReasons.join(',')}`
       }
@@ -814,35 +814,9 @@ class LedgerFuzzer {
         clone.error = ''
       }
       // Bug in ledger-sql which makes the completedTimestamp change on a DUPLICATE_FINAL.
-      // For PASS, I'm not 100% sure what timestamp we want on ledger-tigerbeetle, but for now, it's
-      // when the application gets the response back from TigerBeetle.
-      if (clone.type === 'DUPLICATE_FINAL' || clone.type === 'PASS') {
-        clone.effects.forEach((effect: any) => {
-          if (effect.message.content.payload) {
-            effect.message.content.payload.completedTimestamp = new Date(0)
-          }
-        })
+      if (clone.tag === 'DUPLICATE_FINAL') {
+        // clone.context.fulfiledAt = new Date(0)
       }
-      // if (clone.effects) {
-      //   clone.effects.forEach((effect: any) => {
-      //     // We don't emit this in LedgerTigerBeetle.
-      //     if (effect.message.content.context) {
-      //       delete effect.message.content.context
-      //     }
-      //     if (effect.fspiopError?.errorInformation?.errorDescription) {
-      //       // Match just the type of error, it's going to be almost impossible to match all errors
-      //       // across LedgerSQL and LedgerTigerBeetle because of the internal changes to how 
-      //       // prepares are validated.
-      //       effect.fspiopError.errorInformation.errorDescription =
-      //         effect.fspiopError.errorInformation.errorDescription.split('-')[0]
-      //     }
-
-      //     // Not currently supported by LedgerTigerBeetle.
-      //     if (effect.message.content.payload.extensionList) {
-      //       delete effect.message.content.payload.extensionList
-      //     }
-      //   })
-      // }
 
       return clone
     })
@@ -850,7 +824,7 @@ class LedgerFuzzer {
 
     results.forEach((fulfilResult, idx) => {
       const fulfil = fulfills[idx]
-      if (fulfilResult.type === PaymentFulfilResultType.PASS) {
+      if (fulfilResult.tag === 'OK') {
         this.fulfilIdsSuccess[fulfil.transferId] = true
       }
     })

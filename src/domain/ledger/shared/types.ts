@@ -1,4 +1,3 @@
-import { FSPIOPError } from '@mojaloop/central-services-error-handling'
 import { PrepareHandlerInput, PaymentPrepareResult } from '../../../handlers/payment-prepare';
 import { FulfilHandlerInput, PaymentFulfilResult } from '../../../handlers/payment-fulfil';
 import { TimeoutResult } from '../../../handlers/timeout-v2';

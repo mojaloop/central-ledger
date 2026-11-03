@@ -496,6 +496,7 @@ export function assertRange(input: any, minInclusive: number, maxInclusive: numb
 /**
  * @function assertNestedFields
  * @description Assert that a nested field is defined in the raw config.
+ * @param path - `.` separated paths, e.g. a.b.c gets object[a][b][c].
  */
 export function assertNestedFields(object: any, path: string, message: string = ''): void {
   const parts = path.split('.')

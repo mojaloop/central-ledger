@@ -131,109 +131,6 @@ export default class Helper {
     return effectPosition
   }
 
-  public buildEffectNotificationError(
-    input: PrepareHandlerInput,
-    fspiopError: any
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-
-    message.content.payload = apiFSPIOPError
-    message.content.uriParams = { id: input.payload.transferId }
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    const effect: Effect = {
-      functionality: Type.NOTIFICATION,
-      action: Action.PREPARE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-      fspiopError: apiFSPIOPError
-    }
-    return effect
-  }
-
-  public buildEffectNotificationDuplicate(
-    input: PrepareHandlerInput,
-    transfer: any
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    message.content.payload = TransferObjectTransform.toFulfil(transfer, false)
-    message.content.uriParams = { id: input.payload.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: Action.PREPARE_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'SUCCESS',
-    }
-  }
-
-  public buildEffectFulfilDuplicateNotification(
-    input: FulfilHandlerInput,
-    transfer: any,
-    isTransferError: boolean
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    message.content.payload = TransferObjectTransform.toFulfil(transfer, false)
-    message.content.uriParams = { id: input.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: isTransferError ? Action.ABORT_DUPLICATE : Action.FULFIL_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'SUCCESS',
-    }
-  }
-
-  public buildEffectFulfilDuplicateError(
-    input: FulfilHandlerInput,
-    fspiopError: any,
-    isTransferError: boolean
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-    message.content.payload = apiFSPIOPError
-    message.content.uriParams = { id: input.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: isTransferError ? Action.ABORT_DUPLICATE : Action.FULFIL_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-      fspiopError: apiFSPIOPError
-    }
-  }
-
   // TODO: make non-async.
   public async buildEffectPositionRollback(
     input: FulfilHandlerInput,
@@ -244,9 +141,6 @@ export default class Helper {
         errorDescription: string,
       }
     },
-    /**
-     * If true, will use action=ABORT_VALIDATION, otherwise ABORT.
-     */
     isValidationFailure: boolean = true
   ): Promise<Effect> {
     const cyrilResult = await fxService.Cyril.processAbortMessage(input.transferId)

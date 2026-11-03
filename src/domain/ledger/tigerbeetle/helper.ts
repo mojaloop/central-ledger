@@ -4,8 +4,8 @@ import crypto, { hash } from "crypto";
 import assert from "assert";
 import { ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, FulfilMeta, InternalDfspCurrency, NetDebitCap, ParticipantLocation, PaymentMeta, PrepareMeta } from "./meta-store";
 import { AccountCode, LedgerAccount, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
-import { CreatePaymentDto, PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../../handlers/payment-prepare";
-import { CommitPaymentDto, FulfilHandlerAction, FulfilHandlerInput, PaymentFulfilResult, PaymentFulfilResultType } from "../../../handlers/payment-fulfil";
+import { CreatePaymentDto, PaymentPrepareResult, PrepareHandlerInput } from "../../../handlers/payment-prepare";
+import { CommitPaymentDto, FulfilHandlerInput, PaymentFulfilResult } from "../../../handlers/payment-fulfil";
 import { Effect } from "../../../messaging/message-bus";
 import { ApplicationConfig } from "../../../lib/config";
 import { Enum, EventActionEnum, Util } from '@mojaloop/central-services-shared';
@@ -25,11 +25,17 @@ export type PrepareInternalStatus = {
   tag: 'MODIFIED',
   context: {}
 } | {
-  tag: 'DUPLICATE_FINAL'
+  tag: 'DUPLICATE_FINAL_ABORTED'
   context: {
     prepareMeta: PrepareMeta,
     fulfilMeta: FulfilMeta,
-    paymentMeta?: PaymentMeta,
+  }
+} | {
+  tag: 'DUPLICATE_FINAL_FULFILED'
+  context: {
+    prepareMeta: PrepareMeta,
+    fulfilMeta: FulfilMeta,
+    paymentMeta: PaymentMeta
   }
 } | {
   tag: 'DUPLICATE_NON_FINAL'
@@ -64,7 +70,8 @@ export type FulfilInternalStatus = {
 } | {
   tag: 'MODIFIED'
 } | {
-  tag: 'ALREADY_ABORTED'
+  tag: 'ALREADY_ABORTED',
+  fulfilMeta: FulfilMeta,
 } | {
   tag: 'PREPARE_EXPIRED'
 } | {
@@ -958,89 +965,86 @@ export default class Helper {
     return transfers
   }
 
+
   /**
-   * Map from a PrepareInternalStatus -> PaymentPrepareResult.
-   */
-  public mapPrepareInternalToPrepareResult(
+  * Map from a PrepareInternalStatus -> PaymentPrepareResult.
+  */
+  public mapPrepareInternalToPrepareResult2(
     prepare: PrepareHandlerInput,
     status: PrepareInternalStatus
   ): PaymentPrepareResult {
     switch (status.tag) {
       case "OK": {
         return {
-          type: PaymentPrepareResultType.PASS,
-          effects: [this.buildEffectNotificationSuccess(prepare)]
+          tag: 'OK',
+          input: prepare
         }
       }
       case "FAIL_VALIDATION": {
-        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-          status.failureReasons.join(', ')
-        )
         return {
-          type: PaymentPrepareResultType.FAIL_VALIDATION,
-          effects: [this.buildEffectNotificationError(prepare, errorFspiop)],
-          failureReasons: status.failureReasons
+          tag: 'FAIL_VALIDATION',
+          failureReasons: status.failureReasons,
+          input: prepare,
         }
       }
       case "MODIFIED": {
-        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
-        )
         return {
-          type: PaymentPrepareResultType.MODIFIED,
-          effects: [this.buildEffectNotificationError(prepare, errorFspiop)]
+          tag: 'MODIFIED',
+          input: prepare,
         }
       }
-      case "DUPLICATE_FINAL": {
-        const payload: PayloadFinalizedTransfer = {
-          transferState: 'ABORTED',
-          completedTimestamp: status.context.prepareMeta.abortedAt ?? new Date(0),
-        }
+      case "DUPLICATE_FINAL_ABORTED": {
+        // Payment was either aborted at prepareMeta.abortedAt or fulfilMeta.abortedAt.
+        const abortedAt = status.context.prepareMeta.abortedAt || status.context.fulfilMeta.abortedAt
+        assert(abortedAt, 'Expected either prepareMeta.abortedAt or fulfilMeta.abortedAt.')
         return {
-          type: PaymentPrepareResultType.DUPLICATE_FINAL,
-          effects: [this.buildEffectNotificationDuplicate(prepare, payload)],
-          finalizedTransfer: {
-            completedTimestamp: payload.completedTimestamp.toISOString(),
-            transferState: 'ABORTED'
-          }
+          tag: 'DUPLICATE_FINAL',
+          context: {
+            id: status.context.prepareMeta.id,
+            abortedAt
+          },
+          input: prepare,
+        }
+      }
+      case "DUPLICATE_FINAL_FULFILED": {
+        const fulfiledAt = status.context.fulfilMeta.fulfiledAt
+        const fulfilment = status.context.fulfilMeta.fulfilment
+        assert(fulfiledAt)
+        assert(fulfilment)
+        return {
+          tag: 'DUPLICATE_FINAL',
+          context: {
+            id: status.context.prepareMeta.id,
+            fulfiledAt,
+            fulfilment,
+          },
+          input: prepare,
         }
       }
       case "DUPLICATE_NON_FINAL": {
         return {
-          type: PaymentPrepareResultType.DUPLICATE_NON_FINAL,
-          effects: []
+          tag: 'DUPLICATE_NON_FINAL',
+          input: prepare,
         }
       }
       case "FAIL_ACCOUNT_CLOSED": {
-        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-          'Validation error'
-        )
+        // Backwards compatibility. LedgerSql doesn't keep the closed account validation around.
         return {
-          type: PaymentPrepareResultType.FAIL_VALIDATION,
-          effects: [this.buildEffectNotificationError(prepare, errorFspiop)],
-          failureReasons: ['Account closed.']
+          tag: 'FAIL_VALIDATION',
+          failureReasons: ['account closed'],
+          input: prepare,
         }
       }
       case "FAIL_LIQUIDITY": {
-        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
-        )
         return {
-          type: PaymentPrepareResultType.FAIL_LIQUIDITY,
-          effects: [this.buildEffectNotificationErrorLiquidity(prepare, errorFspiop)],
-          error: errorFspiop
+          tag: 'FAIL_LIQUIDITY',
+          input: prepare,
         }
       }
       case "FAIL_OTHER": {
-        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
-        )
         return {
-          type: PaymentPrepareResultType.FAIL_OTHER,
-          effects: [this.buildEffectNotificationError(prepare, errorFspiop)],
-          error: errorFspiop
+          tag: 'FAIL_OTHER',
+          input: prepare,
         }
       }
     }
@@ -1157,7 +1161,7 @@ export default class Helper {
               continue
             }
             case CreateTransferStatus.pending_transfer_already_voided: {
-              statuses.push({ tag: 'ALREADY_ABORTED' })
+              statuses.push({ tag: 'ALREADY_ABORTED', fulfilMeta })
               continue
             }
             case CreateTransferStatus.pending_transfer_not_found:
@@ -1174,14 +1178,20 @@ export default class Helper {
         throw new Error(`Unhandled error at: ${idx}: ${CreateTransferStatus[result.status]}`)
       }
 
-      // Fulfil succesfully committed or aborted. Mark it as fulfilled.
-      // We need to decide if we should use the TigerBeetle timestamp here, or the application
-      // timestamp.
       const fulfilMetaNew = { ...fulfilMeta }
+      let now = new Date()
+      now.setMilliseconds(0) // LedgerSql has only second precision.
+
+      if (fulfil.payload.transferState === 'COMMITTED') {
+        // If the payload.transferState was 'COMMITTED', we use the payee's 'completedTimestamp'
+        // as the fulfiledAt, otherwise we use the application's now.
+        now = new Date(fulfil.payload.completedTimestamp)
+      }
+
       if (fulfil.payload.transferState === 'ABORTED') {
-        fulfilMetaNew.abortedAt = new Date()
+        fulfilMetaNew.abortedAt = now
       } else {
-        fulfilMetaNew.fulfiledAt = new Date()
+        fulfilMetaNew.fulfiledAt = now
         fulfilMetaNew.fulfilment = fulfil.payload.fulfilment
       }
       statuses.push({
@@ -1203,72 +1213,81 @@ export default class Helper {
     status: FulfilInternalStatus
   ): PaymentFulfilResult {
     switch (status.tag) {
-      case 'OK':
+      case 'OK': {
+        assert(status.fulfilMeta.fulfiledAt)
+        assert(status.fulfilMeta.fulfilment)
+
         return {
-          type: PaymentFulfilResultType.PASS,
-          effects: [this.buildEffectFulfilNotificationSuccess(fulfil, status.fulfilMeta)]
+          tag: 'OK',
+          context: {
+            id: status.fulfilMeta.id,
+            fulfilment: status.fulfilMeta.fulfilment,
+            fulfiledAt: status.fulfilMeta.fulfiledAt,
+          },
+          input: fulfil,
         }
+      }
       case 'PREPARE_NOT_FOUND':
-      case 'PREPARE_EXPIRED':
-        return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [],
-          error: ''
-        }
       case 'PREPARE_ALREADY_ABORTED':
         return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [],
-          error: ''
+          tag: 'FAIL_VALIDATION',
+          failureReasons: ['Invalid or missing prepare.'],
+          input: fulfil
         }
-      case 'ALREADY_FULFILLED':
+      case 'PREPARE_EXPIRED': {
         return {
-          type: PaymentFulfilResultType.DUPLICATE_FINAL,
-          effects: [this.buildEffectFulfilDuplicate(fulfil, status.fulfilMeta)]
+          // Backwards compatibility. LedgerSql doesn't keep the expired context around
+          // through the position handler.
+          tag: 'FAIL_OTHER',
+          input: fulfil,
         }
+      }
+      case 'ALREADY_FULFILLED': {
+        assert(status.fulfilMeta.fulfiledAt)
+        assert(status.fulfilMeta.fulfilment)
 
+        return {
+          tag: 'DUPLICATE_FINAL',
+          context: {
+            id: status.fulfilMeta.id,
+            fulfilment: status.fulfilMeta.fulfilment,
+            fulfiledAt: status.fulfilMeta.fulfiledAt
+          },
+          input: fulfil,
+        }
+      }
       case 'ALREADY_ABORTED':
-        return {
-          type: PaymentFulfilResultType.DUPLICATE_FINAL,
-          effects: [this.buildEffectAbortDuplicate(fulfil)]
-        }
+        assert(status.fulfilMeta.abortedAt)
 
-      case 'INVALID_FULFILMENT': {
-        const error = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-          'Invalid fulfilment'
-        )
         return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [this.buildEffectFulfilNotificationError(fulfil, error)],
-          error
+          tag: 'DUPLICATE_FINAL',
+          context: {
+            id: status.fulfilMeta.id,
+            abortedAt: status.fulfilMeta.abortedAt
+          },
+          input: fulfil,
+        }
+      case 'INVALID_FULFILMENT': {
+        return {
+          tag: 'INVALID_FULFILMENT',
+          input: fulfil
         }
       }
       case 'MODIFIED': {
-        const error = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-        )
         return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [this.buildEffectFulfilDuplicateError(fulfil, error)],
-          error
+          tag: 'MODIFIED',
+          input: fulfil
         }
       }
       case 'FAIL_VALIDATION': {
-        const errorMessage = status.failureReasons.join(', ')
-        const error = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-          errorMessage
-        )
         return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [this.buildEffectFulfilNotificationError(fulfil, error)],
-          error
+          tag: 'FAIL_VALIDATION',
+          failureReasons: status.failureReasons,
+          input: fulfil
         }
       }
-
       default: {
-        // Exhaustive check
+        // Exhaustive check.
         const _exhaustive: never = status
         throw new Error(`Unhandled FulfilInternalStatus tag: ${(_exhaustive as FulfilInternalStatus).tag}`)
       }
@@ -1529,48 +1548,7 @@ export default class Helper {
 
     return Number(input) / valueDivisor
   }
-
-  /**
-   * Convert an absolute FSPIOP expiration time to a TigerBeetle-compatible
-   * seconds timeout
-   * @deprecated
-   */
-  public static toTigerBeetleTimeout(now: Date, expiration: string):
-    'INVALID' | 'ALREADY_EXPIRED' | 'ROUNDED_DOWN_TO_ZERO' | number {
-    const nowMs = (now).getTime()
-    const expirationMs = Date.parse(expiration)
-    if (isNaN(expirationMs)) {
-      return 'INVALID'
-    }
-
-    if (nowMs > expirationMs) {
-      return 'ALREADY_EXPIRED'
-    }
-
-    // TigerBeetle timeouts are specified in seconds. I'm not sure if we should round this up or
-    // down. For now, let's be pessimistic and round down.
-    const timeoutMs = expirationMs - nowMs
-    assert(timeoutMs > 0)
-    const timeoutSeconds = Math.floor(timeoutMs / 1000)
-    if (timeoutSeconds === 0) {
-      return 'ROUNDED_DOWN_TO_ZERO'
-    }
-
-    return timeoutSeconds
-  }
-
-  public static mergeWith<T>(
-    a: Record<string, T>,
-    b: Record<string, T>,
-    onConflict: (aVal: T, bVal: T) => T
-  ): Record<string, T> {
-    const result = { ...a }
-    for (const key of Object.keys(b)) {
-      result[key] = key in a ? onConflict(a[key], b[key]) : b[key]
-    }
-    return result
-  }
-
+  
   public static stringify(accountOrTransfer: Account | Transfer): string {
     // We could make this context aware to map the ledger ids etc.
     return JSON.stringify(accountOrTransfer, bigIntReplacer, 2)
@@ -1595,320 +1573,6 @@ export default class Helper {
     return {
       type: "FAILURE" as 'FAILURE',
       error
-    }
-  }
-
-  public buildEffectNotificationError(
-    input: PrepareHandlerInput,
-    fspiopError: any
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-
-    message.content.payload = apiFSPIOPError
-    message.content.uriParams = { id: input.payload.transferId }
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    const effect: Effect = {
-      functionality: Type.NOTIFICATION,
-      action: Action.PREPARE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-      fspiopError: apiFSPIOPError
-    }
-    return effect
-  }
-
-  public buildEffectNotificationErrorLiquidity(
-    input: PrepareHandlerInput,
-    fspiopError: any
-  ): Effect {
-    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-
-    const headers = { ...input.message.value.content.headers }
-    headers['fspiop-destination'] = input.payload.payerFsp
-    headers['fspiop-source'] = this.deps.config.HUB_NAME
-    delete headers['content-length']
-
-    const state = Util.StreamingProtocol.createEventState(
-      Enum.Events.EventStatus.FAILURE.status,
-      apiFSPIOPError.errorInformation.errorCode,
-      apiFSPIOPError.errorInformation.errorDescription
-    )
-
-    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
-      input.payload.transferId,
-      Enum.Kafka.Topics.NOTIFICATION,
-      Action.PREPARE,
-      state
-    )
-
-    const message = Util.StreamingProtocol.createMessage(
-      input.payload.transferId,
-      input.payload.payerFsp,
-      this.deps.config.HUB_NAME,
-      metadata,
-      headers,
-      apiFSPIOPError,
-      { id: input.payload.transferId },
-      'application/json',
-    )
-
-    const effect: Effect = {
-      functionality: Type.NOTIFICATION,
-      action: Action.PREPARE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-    }
-    return effect
-  }
-
-  public buildEffectNotificationSuccess(
-    input: PrepareHandlerInput
-  ): Effect {
-    const headers = { ...input.message.value.content.headers }
-    delete headers['content-length']
-
-    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
-      input.payload.transferId,
-      Enum.Kafka.Topics.TRANSFER,
-      Action.PREPARE,
-      {
-        status: 'success',
-        code: null,
-        description: null,
-      }
-    )
-
-    const message = Util.StreamingProtocol.createMessage(
-      input.payload.transferId,
-      input.payload.payeeFsp,
-      input.payload.payerFsp,
-      metadata,
-      headers,
-      input.payload,
-      {},
-      'application/json',
-    )
-
-    const effect: Effect = {
-      functionality: Type.NOTIFICATION,
-      action: Action.PREPARE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'SUCCESS',
-    }
-    return effect
-  }
-
-  public buildEffectNotificationDuplicate(
-    input: PrepareHandlerInput,
-    payload: PayloadFinalizedTransfer
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    if (payload.transferState === 'ABORTED') {
-      message.content.payload = {
-        transferState: payload.transferState,
-        completedTimestamp: payload.completedTimestamp.toISOString(),
-      }
-    } else {
-      message.content.payload = {
-        completedTimestamp: payload.completedTimestamp.toISOString(),
-        transferState: payload.transferState,
-        fulfilment: payload.fulfilment,
-      }
-    }
-
-    message.content.uriParams = { id: input.payload.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: Action.PREPARE_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'SUCCESS',
-    }
-  }
-
-  public buildEffectFulfilNotificationSuccess(
-    input: FulfilHandlerInput,
-    fulfilMeta: FulfilMeta,
-  ): Effect {
-    assert(fulfilMeta)
-    assert(fulfilMeta.fulfiledAt)
-
-    const message = {
-      id: input.transferId,
-      type: 'application/json',
-      content: {
-        uriParams: { id: input.transferId },
-        headers: { ...input.message.value.content.headers },
-        payload: {
-          transferState: 'COMMITTED',
-          fulfilment: fulfilMeta.fulfilment,
-          completedTimestamp: fulfilMeta.fulfiledAt
-        }
-      },
-      metadata: {
-        correlationId: input.transferId,
-        event: {
-          type: Type.TRANSFER,
-          action: 'commit',
-          createdAt: new Date().toISOString(),
-          state: {
-            status: 'success',
-            code: null,
-            description: null
-          }
-        }
-      }
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: input.action,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'SUCCESS',
-    }
-  }
-
-  public buildEffectFulfilNotificationError(
-    input: FulfilHandlerInput,
-    fspiopError: any
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-
-    message.content.payload = apiFSPIOPError
-    message.content.uriParams = { id: input.transferId }
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: input.action,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-      fspiopError: apiFSPIOPError
-    }
-  }
-
-  public buildEffectFulfilDuplicate(input: FulfilHandlerInput, fulfilMeta: FulfilMeta): Effect {
-    const message = structuredClone(input.message.value)
-    message.content.uriParams = { id: input.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    // Override the message.content.payload.completedTimestamp with the date of the original
-    message.content.payload = {
-      transferState: 'COMMITTED',
-      fulfilment: fulfilMeta.fulfilment,
-      completedTimestamp: fulfilMeta.fulfiledAt,
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: Action.FULFIL_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'SUCCESS',
-    }
-  }
-
-  public buildEffectAbortDuplicate(input: FulfilHandlerInput): Effect {
-    const message = structuredClone(input.message.value)
-    message.content.uriParams = { id: input.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: Action.ABORT_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'SUCCESS',
-    }
-  }
-
-  public buildEffectFulfilDuplicateError(
-    input: FulfilHandlerInput,
-    fspiopError: any
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-    message.content.payload = apiFSPIOPError
-    message.content.uriParams = { id: input.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: Action.FULFIL_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-      fspiopError: apiFSPIOPError
-    }
-  }
-
-  public buildEffectAbortDuplicateError(
-    input: FulfilHandlerInput,
-    fspiopError: any
-  ): Effect {
-    const message = structuredClone(input.message.value)
-    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-    message.content.payload = apiFSPIOPError
-    message.content.uriParams = { id: input.transferId }
-
-    message.to = message.from
-    message.from = this.deps.config.HUB_NAME
-    if (message.content.headers) {
-      message.content.headers['fspiop-source'] = message.from
-      message.content.headers['fspiop-destination'] = message.to
-    }
-
-    return {
-      functionality: Type.NOTIFICATION,
-      action: Action.ABORT_DUPLICATE,
-      message,
-      topicName: 'topic-notification-event',
-      status: 'FAILURE',
-      fspiopError: apiFSPIOPError
     }
   }
 

@@ -395,7 +395,7 @@ export default class MetaStore {
       const [
         ledgerOperation,
         ledgerControl
-      ] = LedgerTigerBeetleHelper.generateLedgerIds(currencyCount);
+      ] = Helper.generateLedgerIds(currencyCount);
 
       await trx('metaCurrencyConfig').insert({
         currency,
@@ -1140,7 +1140,7 @@ export default class MetaStore {
     }
   }
 
-  public async attachFulfillments(updates: Array<FulfilMetaUpdate>):
+  public async attachFulfilments(updates: Array<FulfilMetaUpdate>):
     Promise<Array<SavePaymentMetaResult>> {
     try {
       if (updates.length === 0) {
@@ -1183,6 +1183,26 @@ export default class MetaStore {
         }
       })
     }
+  }
+
+  public async attachFulfilAborts(ids: Array<string>, dates: Array<Date>): Promise<void> {
+    assert.equal(ids.length, dates.length, 'Expected ids and dates to be the same length.')
+
+    if (ids.length === 0) {
+      return
+    }
+
+    const bindings: Array<string | Date> = []
+    const clauses = ids.map((id, idx) => {
+      bindings.push(id, dates[idx])
+      return `WHEN id = ? THEN ?`
+    })
+
+    await this.db.raw(
+      `UPDATE ?? SET abortedAt = CASE ${clauses.join(' ')} END` +
+      ` WHERE id in (${ids.map(() => '?').join(',')}) AND abortedAt IS NULL AND fulfiledAt IS NULL`,
+      ['metaFulfil', ...bindings, ...ids]
+    )
   }
 
   public async updateChangedDateSettlement(

@@ -74,7 +74,7 @@ import { PositionHandlerV2 } from "../../handlers/position-v2"
 import Expect from "../expect"
 import { TimeoutHandlerV2 } from "../../handlers/timeout-v2"
 import PRNG from "../prng"
-import {Clock} from "../mock-clock"
+import { Clock } from "../mock-clock"
 import MockClock from "../mock-clock"
 import { Redpanda, RedpandaConnectionOptions } from "./redpanda"
 import { Redis } from "./redis"
@@ -487,6 +487,8 @@ export default class Harness {
           case 'forwarded':
           case 'fx-forwarded':
           case 'fx-fulfil':
+          case 'abort':
+          case 'commit':
             {
               assertNestedFields(parsed, 'content.uriParams.id')
               correlationId = parsed.content.uriParams.id
@@ -651,7 +653,7 @@ export default class Harness {
       case "TIGERBEETLE": {
         // Either use the harness TigerBeetle or the provided TigerBeetle.
         if (this.config.TIGERBEETLE_ADDRESSES) {
-          assert(typeof this.config.TIGERBEETLE_CLUSTER_ID === 'bigint', 
+          assert(typeof this.config.TIGERBEETLE_CLUSTER_ID === 'bigint',
             'Expected TIGERBEETLE_CLUSTER_ID to be set.'
           )
           logger.warn(`connecting to TigerBeetle client at: ${this.config.TIGERBEETLE_ADDRESSES}.`)
@@ -666,9 +668,9 @@ export default class Harness {
             replica_addresses: [this.dependencyTigerBeetle.connectionOptions.port]
           })
         }
-        
+
         this._ledger = new LedgerTigerBeetle({
-          config: this.config, 
+          config: this.config,
           client: this._clientTigerBeetle,
           enums: this._enums,
           metaStore,
@@ -710,7 +712,7 @@ export default class Harness {
   }): Promise<void> {
     try {
       logger.info('teardownGlobals()')
-    
+
       // MessageBus always created, just not always inited.
       assert(this.messageBus)
       if (options?.skipMessageBus) {
@@ -722,7 +724,7 @@ export default class Harness {
       if (this._clientTigerBeetle) {
         this._clientTigerBeetle.destroy()
       }
-      
+
       // Reset the caches.
       await ParticipantCached.invalidateParticipantsCache()
       await ParticipantCurrencyCached.invalidateParticipantCurrencyCache()
@@ -730,7 +732,7 @@ export default class Harness {
       await ExternalParticipantCached.invalidateCache()
       await SettlementModelCached.invalidateSettlementModelsCache()
       await Enums.invalidateEnumCache()
-  
+
       // Disconnect the caches.
       await ProxyCache.disconnect()
       await Cache.destroyCache()

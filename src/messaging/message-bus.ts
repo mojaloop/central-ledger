@@ -7,6 +7,8 @@ import { TimeoutHandlerV2 } from "../handlers/timeout-v2";
 import { CronJob } from "cron";
 import { randomUUID } from "node:crypto";
 import MessagingHelper from "./helper";
+import { PaymentPrepareResult } from "../handlers/payment-prepare";
+import { PaymentFulfilResult } from "../handlers/payment-fulfil";
 
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { StreamingProtocol } = Util
@@ -267,13 +269,34 @@ export class MessageBus {
 
   public async prepare(error: any, messages: Array<any>): Promise<void> {
     const results = await this.deps.handlers.dispatchTransferHandler.prepare(error, messages)
-    await this.emit(this.collectEffects(results))
+    // Separate out the PaymentPrepareResult from the others.
+    const effects: Array<Effect> = []
+    for (const result of results) {
+      if ('input' in result && 'tag' in result) {
+        effects.push(...this.deps.helper.buildEffectsPrepare(result as PaymentPrepareResult))
+      } else {
+        // TODO: migrate all of these to the above pattern.
+        effects.push(...(result as { effects: Array<Effect> }).effects)
+      }
+    }
+    await this.emit(effects)
     await this.commit('topic-transfer-prepare', messages)
   }
 
   public async fulfil(error: any, messages: Array<any>): Promise<void> {
     const results = await this.deps.handlers.dispatchTransferHandler.fulfil(error, messages)
-    await this.emit(this.collectEffects(results))
+    // Separate out the PaymentFulfilResult from the others.
+    const effects: Array<Effect> = []
+    for (const result of results) {
+      if ('input' in result && 'tag' in result) {
+        effects.push(...this.deps.helper.buildEffectsFulfil(result as PaymentFulfilResult))
+      } else {
+        // TODO: migrate all of these to the above pattern.
+        effects.push(...(result as { effects: Array<Effect> }).effects)
+      }
+    }
+
+    await this.emit(effects)
     await this.commit('topic-transfer-fulfil', messages)
   }
 

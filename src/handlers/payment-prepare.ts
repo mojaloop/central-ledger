@@ -43,6 +43,7 @@ import { Effect, MessageBus } from '../messaging/message-bus';
 import { assertNestedFields } from '../lib/config/util';
 import { PositionHandlerV2, PositionResultType } from './position-v2';
 import { Ledger } from '../domain/ledger/shared/types';
+import { FulfilContext } from './payment-fulfil';
 const { Comparators } = Util
 const { decodePayload } = Util.StreamingProtocol
 const Participant = require('../domain/participant')
@@ -89,73 +90,33 @@ export interface PrepareHandlerInput {
   actionEnum: string;
 }
 
-export enum PaymentPrepareResultType {
-  /**
-   * Prepare step completed validation.
-   */
-  PASS = 'PASS',
-
-  /**
-   * Duplicate transfer found in a finalized state.
-   */
-  DUPLICATE_FINAL = 'DUPLICATE_FINAL',
-
-  /**
-   * Duplicate transfer found that is still being processed.
-   */
-  DUPLICATE_NON_FINAL = 'DUPLICATE_NON_FINAL',
-
-  /**
-   * An existing transfer exists with this id but different parameters.
-   */
-  MODIFIED = 'MODIFIED',
-
-  /**
-   * Transfer failed validation.
-   */
-  FAIL_VALIDATION = 'FAIL_VALIDATION',
-
-  /**
-   * Transfer failed as payee didn't have sufficent liquidity.
-   */
-  FAIL_LIQUIDITY = 'FAIL_LIQUIDITY',
-
-  /**
-   * Catch-all Transfer failed for another reason.
-   */
-  FAIL_OTHER = 'FAIL_OTHER',
+export type PaymentPrepareResultPartial = {
+  tag: 'FAIL_VALIDATION'
+  failureReasons: Array<string>
+} | {
+  tag: 'MODIFIED',
+} | {
+  tag: 'DUPLICATE_FINAL'
+  context: FulfilContext
+} | {
+  tag: 'DUPLICATE_NON_FINAL'
+} | {
+  tag: 'FAIL_ACCOUNT_CLOSED'
+} | {
+  tag: 'FAIL_LIQUIDITY'
+} | {
+  tag: 'FAIL_OTHER'
+} | {
+  tag: 'OK'
+} | {
+  // Special case for unfuse + LedgerSQL
+  tag: 'PREPARE_NEXT',
+  effectPosition: Effect
 }
 
 export type PaymentPrepareResult = {
-  type: PaymentPrepareResultType.PASS,
-  effects: Array<Effect>
-} | {
-  type: PaymentPrepareResultType.DUPLICATE_FINAL
-  effects: Array<Effect>
-  finalizedTransfer: {
-    completedTimestamp: string
-    transferState: 'COMMITTED' | 'ABORTED'
-    fulfilment?: string
-  }
-} | {
-  type: PaymentPrepareResultType.DUPLICATE_NON_FINAL
-  effects: Array<Effect>
-} | {
-  type: PaymentPrepareResultType.MODIFIED
-  effects: Array<Effect>
-} | {
-  type: PaymentPrepareResultType.FAIL_VALIDATION
-  effects: Array<Effect>
-  failureReasons: Array<string>
-} | {
-  type: PaymentPrepareResultType.FAIL_LIQUIDITY
-  effects: Array<Effect>
-  error: typeof FSPIOPError
-} | {
-  type: PaymentPrepareResultType.FAIL_OTHER
-  effects: Array<Effect>
-  error: typeof FSPIOPError
-}
+  input: PrepareHandlerInput
+} & PaymentPrepareResultPartial
 
 export class PaymentPrepareHandler {
   constructor(private deps: Dependencies) { }

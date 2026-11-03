@@ -6,12 +6,13 @@ import {
   CommitPaymentDtoAborted,
   FulfilHandlerInput,
   PaymentFulfilResult,
+  PaymentFulfilResultPartial,
   PaymentFulfilResultType
 } from '../../../handlers/payment-fulfil';
 import {
   CreatePaymentDto,
   PaymentPrepareResult,
-  PaymentPrepareResultType,
+  PaymentPrepareResultPartial,
   PrepareHandlerInput
 } from "../../../handlers/payment-prepare";
 import { PositionHandlerV2, PositionResultType } from "../../../handlers/position-v2";
@@ -94,7 +95,7 @@ const FxTransferStateChangeModel = require('../../../models/fxTransfer/stateChan
 import { Knex } from 'knex';
 import { TimeoutResultPayment, TimeoutResultPaymentForward } from '../../../handlers/timeout-v2';
 import { TransferHelper } from '../../../handlers/transfer-helper'
-import { assertBoolean, safeStringToNumber } from '../../../lib/config/util'
+import { assertBoolean, assertNestedFields, safeStringToNumber } from '../../../lib/config/util'
 import db from "../../../lib/db";
 import {
   ForwardedFxTransfer,
@@ -1072,7 +1073,7 @@ export class LedgerSql implements Ledger {
   public async prepare(inputs: Array<PrepareHandlerInput>): Promise<Array<PaymentPrepareResult>> {
     const results = await Promise.allSettled(inputs.map(async input => this.prepareOne(input)))
     results.forEach(result => {
-      if (result.status === 'fulfilled' && result.value.type !== PaymentPrepareResultType.PASS) {
+      if (result.status === 'fulfilled' && result.value.tag !== 'OK') {
         logger.info(`LedgerSql.prepare() returned non-success: \n\t${JSON.stringify(result.value)}`)
       }
       if (result.status === 'rejected') {
@@ -1081,14 +1082,19 @@ export class LedgerSql implements Ledger {
       }
     })
 
-    return results.map(result => {
+    return results.map((result, idx) => {
+      const input = inputs[idx]
+      assert(input)
+
       switch (result.status) {
         case 'rejected': return {
-          type: PaymentPrepareResultType.FAIL_OTHER,
-          error: result.reason,
-          effects: []
+          input,
+          tag: 'FAIL_OTHER'
         }
-        case 'fulfilled': return result.value
+        case 'fulfilled': return {
+          input,
+          ...result.value
+        }
       }
     })
   }
@@ -1096,7 +1102,7 @@ export class LedgerSql implements Ledger {
   public async fulfil(inputs: Array<FulfilHandlerInput>): Promise<Array<PaymentFulfilResult>> {
     const results = await Promise.allSettled(inputs.map(async input => this.fulfilOne(input)))
     results.forEach(result => {
-      if (result.status === 'fulfilled' && result.value.type !== PaymentFulfilResultType.PASS) {
+      if (result.status === 'fulfilled' && result.value.tag !== 'OK') {
         logger.info(`LedgerSql.fulfil() returned non-success: \n\t${JSON.stringify(result.value)}`)
       }
       if (result.status === 'rejected') {
@@ -1105,19 +1111,24 @@ export class LedgerSql implements Ledger {
       }
     })
 
-    return results.map(result => {
+    return results.map((result, idx) => {
+      const input = inputs[idx]
+      assert(input)
+
       switch (result.status) {
         case 'rejected': return {
-          type: PaymentFulfilResultType.FAIL_OTHER,
-          error: result.reason,
-          effects: []
+          tag: 'FAIL_OTHER',
+          input
         }
-        case 'fulfilled': return result.value
+        case 'fulfilled': return {
+          input,
+          ...result.value
+        }
       }
     })
   }
 
-  private async prepareOne(input: PrepareHandlerInput): Promise<PaymentPrepareResult> {
+  private async prepareOne(input: PrepareHandlerInput): Promise<PaymentPrepareResultPartial> {
     // Check Duplication
     const remittance = this.deps.createRemittanceEntity()
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(
@@ -1128,15 +1139,7 @@ export class LedgerSql implements Ledger {
     )
 
     if (hasDuplicateId && !hasDuplicateHash) {
-      // Id was reused for a different request.
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
-      )
-      const effect = this.helper.buildEffectNotificationError(input, fspiopError)
-      return {
-        type: PaymentPrepareResultType.MODIFIED,
-        effects: [effect]
-      }
+      return { tag: 'MODIFIED' }
       // Original also covers case for BULK_PREPARE, but we don't handle that here.
     }
 
@@ -1144,45 +1147,31 @@ export class LedgerSql implements Ledger {
     const payment = await remittance.getByIdLight(input.payload.transferId)
     if (payment && payment.transferStateEnumeration) {
       switch (payment.transferStateEnumeration) {
-        case TransferState.ABORTED: {
-          const effect = this.helper.buildEffectNotificationDuplicate(input, payment)
-          return {
-            type: PaymentPrepareResultType.DUPLICATE_FINAL,
-            effects: [effect],
-            finalizedTransfer: {
-              completedTimestamp: payment.completedTimestamp,
-              transferState: payment.transferStateEnumeration,
-            }
-          }
-        }
-        case TransferState.RESERVED: {
-          return {
-            type: PaymentPrepareResultType.DUPLICATE_NON_FINAL,
-            effects: [],
-          }
-        }
         case TransferState.COMMITTED: {
-          const effect = this.helper.buildEffectNotificationDuplicate(input, payment)
           return {
-            type: PaymentPrepareResultType.DUPLICATE_FINAL,
-            effects: [effect],
-            finalizedTransfer: {
-              completedTimestamp: payment.completedTimestamp,
-              transferState: payment.transferStateEnumeration,
+            tag: 'DUPLICATE_FINAL',
+            context: {
+              id: input.payload.transferId,
+              fulfiledAt: new Date(0),
               fulfilment: payment.fulfilment
-            }
+            },
           }
         }
+        case TransferState.ABORTED: {
+          return {
+            tag: 'DUPLICATE_FINAL',
+            context: {
+              id: input.payload.transferId,
+              abortedAt: payment.createdDate
+            },
+          }
+        }
+        case TransferState.RESERVED: return { tag: 'DUPLICATE_NON_FINAL' }
       }
     }
 
     // We should also look up the error we sent last time and if we have one, return that?
-    if (hasDuplicateId) {
-      return {
-        type: PaymentPrepareResultType.DUPLICATE_NON_FINAL,
-        effects: []
-      }
-    }
+    if (hasDuplicateId) return { tag: 'DUPLICATE_NON_FINAL' }
 
     const proxyResult = await this.calculateProxyObligation(input.payload)
     const allErrors = [...proxyResult.errors]
@@ -1198,14 +1187,8 @@ export class LedgerSql implements Ledger {
         Helper.dummyProxyObligation(input.payload)
       )
 
-      const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        allErrors.toString()
-      )
-      const effect = this.helper.buildEffectNotificationError(input, errorFspiop)
       return {
-        type: PaymentPrepareResultType.FAIL_VALIDATION,
-        effects: [effect],
+        tag: 'FAIL_VALIDATION',
         failureReasons: allErrors
       }
     }
@@ -1239,15 +1222,8 @@ export class LedgerSql implements Ledger {
         determiningTransferCheckResult,
         proxyObligation,
       )
-      const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        allErrors.toString()
-      )
-
-      const effect = this.helper.buildEffectNotificationError(input, errorFspiop)
       return {
-        type: PaymentPrepareResultType.FAIL_VALIDATION,
-        effects: [effect],
+        tag: 'FAIL_VALIDATION',
         failureReasons: allErrors
       }
     }
@@ -1270,52 +1246,33 @@ export class LedgerSql implements Ledger {
     const effectPosition = this.helper.buildEffectPosition(
       input, messageKey, cyrilResult
     )
-
-    return this.prepareNext({
-      type: PaymentPrepareResultType.PASS,
-      effects: [
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
+      return {
+        tag: 'PREPARE_NEXT',
         effectPosition
-      ]
-    })
+      }
+    }
+
+    return this.prepareNext(effectPosition, input)
   }
 
-  private async prepareNext(result: PaymentPrepareResult): Promise<PaymentPrepareResult> {
-    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
-      return result
-    }
-
+  private async prepareNext(effectPosition: Effect, input: PrepareHandlerInput): Promise<PaymentPrepareResult> {
     assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
-    const notifications = result.effects.filter(effect => effect.functionality === 'notification')
-    const positions = result.effects
-      .filter(effect => effect.functionality === 'position')
-      .map(this.deps.effectToKafkaMessage)
-    const resultsPosition = await this.deps.positionHandler.handle(null, positions)
+
+    assert(effectPosition.functionality === 'position')
+    const msgPosition = this.deps.effectToKafkaMessage(effectPosition)
+    const resultsPosition = await this.deps.positionHandler.handle(null, [msgPosition])
     assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
+
     // Look just at the first one to map the result type.
     const resultPosition = resultsPosition[0]
-    const positionEffects = resultsPosition
-      .reduce((acc: Array<Effect>, curr) => acc.concat(...curr.effects), [])
+    // const positionEffects = resultsPosition
+    //   .reduce((acc: Array<Effect>, curr) => acc.concat(...curr.effects), [])
 
-    let type: PaymentPrepareResultType
-    let error
     switch (resultPosition.type) {
-      case PositionResultType.PASS:
-        type = PaymentPrepareResultType.PASS
-        break
-      case PositionResultType.FAIL_LIQUIDITY:
-        type = PaymentPrepareResultType.FAIL_LIQUIDITY
-        error = resultPosition.error
-        break
-      case PositionResultType.FAIL_OTHER:
-        type = PaymentPrepareResultType.FAIL_LIQUIDITY
-        error = resultPosition.error
-        break
-    }
-
-    return {
-      type,
-      effects: [...notifications, ...positionEffects],
-      error,
+      case PositionResultType.PASS: return { input, tag: 'OK' }
+      case PositionResultType.FAIL_LIQUIDITY: return { input, tag: 'FAIL_LIQUIDITY' }
+      case PositionResultType.FAIL_OTHER: return { input, tag: 'FAIL_OTHER' }
     }
   }
 
@@ -1359,19 +1316,16 @@ export class LedgerSql implements Ledger {
     return errors
   }
 
-  private async fulfilOne(input: FulfilHandlerInput): Promise<PaymentFulfilResult> {
+  private async fulfilOne(input: FulfilHandlerInput): Promise<PaymentFulfilResultPartial> {
     const { transferId, payload } = input
     const transfer = await TransferService.getById(transferId)
 
-    if (!transfer || 
+    if (!transfer ||
       (transfer.transferState === 'INVALID' || transfer.transferState === 'ABORTED_REJECTED')
     ) {
       return {
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects: [],
-        error: ErrorHandler.Factory.createInternalServerFSPIOPError(
-          `transfer not found or invalid for id: ${transferId}.`
-        )
+        tag: 'FAIL_VALIDATION',
+        failureReasons: [`transfer not found or invalid for id: ${transferId}.`]
       }
     }
 
@@ -1399,11 +1353,7 @@ export class LedgerSql implements Ledger {
         // When the payee set the action to `RESERVE`, we also notify them about the status.
         effects.push(this.helper.buildEffectReservedAbortedNotification(input, transfer))
       }
-      return this.fulfilNext({
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects,
-        error
-      })
+      return this.fulfilNext(effects, input)
     }
 
     const payloadHash = Util.Hash.generateSha256(payload)
@@ -1414,32 +1364,23 @@ export class LedgerSql implements Ledger {
       try {
         savedFulfilHash = (await getTransferFulfilmentDuplicateCheck(transferId)).hash
         if (savedFulfilHash === payloadHash) {
-          const effect = this.helper.buildEffectFulfilDuplicateNotification(input, transfer, false)
           return {
-            type: PaymentFulfilResultType.DUPLICATE_FINAL,
-            effects: [effect],
+            tag: 'DUPLICATE_FINAL',
+            context: {
+              id: transferId,
+              fulfilment: transfer.fulfilment,
+              fulfiledAt: transfer.completedTimestamp
+            }
           }
         }
-        // Modified message.
-        const errorModified = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
-        )
-        const effect = this.helper.buildEffectFulfilDuplicateError(input, errorModified, false)
-        return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [effect],
-          error: errorModified
-        }
+
+        return { tag: 'MODIFIED' }
       } catch (err) {
         const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
           'found finalized transfer, but no `getTransferFulfilmentDuplicateCheck`'
         )
         logger.error(error.message)
-        return {
-          type: PaymentFulfilResultType.FAIL_OTHER,
-          effects: [],
-          error,
-        }
+        return { tag: 'FAIL_OTHER' }
       }
     }
 
@@ -1451,34 +1392,21 @@ export class LedgerSql implements Ledger {
       )
 
       if (hasDuplicateId && hasDuplicateHash) {
-        const effect = this.helper.buildEffectFulfilDuplicateNotification(input, transfer, true)
         return {
-          type: PaymentFulfilResultType.DUPLICATE_FINAL,
-          effects: [effect],
+          tag: 'DUPLICATE_FINAL',
+          // TODO: find me!
+          context: {
+            id: transferId,
+            abortedAt: new Date()
+          }
         }
       }
 
-      if (hasDuplicateId && !hasDuplicateHash) {
-        const errorModified = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
-        )
-        const effect = this.helper.buildEffectFulfilDuplicateError(input, errorModified, true)
-        return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [effect],
-          error: errorModified
-        }
-      }
+      if (hasDuplicateId && !hasDuplicateHash) return { tag: 'MODIFIED' }
 
-      // No duplicate - this is the first fulfil for a transfer that was aborted.
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'non-RESERVED transfer state'
-      )
       return {
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects: [],
-        error: fspiopError
+        tag: 'FAIL_VALIDATION',
+        failureReasons: ['non-RESERVED transfer state']
       }
     }
 
@@ -1500,54 +1428,36 @@ export class LedgerSql implements Ledger {
       )
 
       if (hasDuplicateId && hasDuplicateHash) {
-        const effect = this.helper.buildEffectFulfilDuplicateNotification(input, transfer, true)
         return {
-          type: PaymentFulfilResultType.DUPLICATE_FINAL,
-          effects: [effect]
+          tag: 'DUPLICATE_FINAL',
+          // TODO: find me!
+          context: {
+            id: transferId,
+            fulfilment: '1000',
+            fulfiledAt: new Date()
+          }
         }
       }
 
-      if (hasDuplicateId && !hasDuplicateHash) {
-        const modifiedError = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
-        )
-        const effect = this.helper.buildEffectFulfilDuplicateError(input, modifiedError, true)
-        return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [effect],
-          error: modifiedError
-        }
-      }
+      if (hasDuplicateId && !hasDuplicateHash) return { tag: 'MODIFIED' }
 
       // Validate transfer is in RESERVED or RESERVED_FORWARDED state
       // This check must happen AFTER duplicate checking to preserve legacy behavior.
       if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
         transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
       ) {
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-          'non-RESERVED transfer state'
-        )
         return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [],
-          error: fspiopError
+          tag: 'FAIL_VALIDATION',
+          failureReasons: ['non-RESERVED transfer state']
         }
       }
 
       // Check if the transfer has expired
       // For interscheme we ignore expiration for forwarded transfers
       if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
-        transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
+        transfer.expirationDate <= new Date()
       ) {
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED
-        )
-        return {
-          type: PaymentFulfilResultType.FAIL_VALIDATION,
-          effects: [],
-          error: fspiopError
-        }
+        return { tag: 'EXPIRED' }
       }
 
       await TransferService.handlePayeeResponse(
@@ -1558,10 +1468,7 @@ export class LedgerSql implements Ledger {
       )
 
       const effects = [await this.helper.buildEffectPositionRollback(input, transfer, errorApi, false)]
-      return this.fulfilNext({
-        type: PaymentFulfilResultType.PASS,
-        effects,
-      })
+      return this.fulfilNext(effects, input)
     }
 
     assert(
@@ -1575,38 +1482,37 @@ export class LedgerSql implements Ledger {
     )
 
     if (hasDuplicateId && hasDuplicateHash) {
-      const effect = this.helper.buildEffectFulfilDuplicateNotification(input, transfer, false)
       return {
-        type: PaymentFulfilResultType.DUPLICATE_FINAL,
-        effects: [effect]
+        tag: 'DUPLICATE_FINAL',
+        context: {
+          id: transferId,
+          fulfilment: payload.fulfilment,
+          fulfiledAt: new Date(payload.completedTimestamp)
+        }
       }
     }
 
-    if (hasDuplicateId && !hasDuplicateHash) {
-      const modifiedError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
-      )
-      const effect = this.helper.buildEffectFulfilDuplicateError(input, modifiedError, false)
-      return {
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects: [effect],
-        error: modifiedError
-      }
-    }
+    if (hasDuplicateId && !hasDuplicateHash) return { tag: 'MODIFIED' }
 
-    // Check if the transfer has expired
-    // For interscheme we ignore expiration for forwarded transfers
+    // Check if the transfer has expired. For interscheme we ignore expiration for forwarded 
+    // transfers.
     if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
-      transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))
+      transfer.expirationDate <= new Date()
     ) {
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED
+      const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'prepare expired'
       )
-      return {
-        type: PaymentFulfilResultType.FAIL_VALIDATION,
-        effects: [],
-        error: fspiopError
-      }
+      const error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+      await TransferService.handlePayeeResponse(
+        transferId,
+        payload,
+        'abort-validation',
+        error
+      )
+
+      const effects = [await this.helper.buildEffectPositionRollback(input, transfer, error)]
+      return this.fulfilNext(effects, input)
     }
 
     if (!TransferHelper.fulfilmentMatchesCondition(payload.fulfilment, transfer.condition)) {
@@ -1628,7 +1534,7 @@ export class LedgerSql implements Ledger {
       if (input.action === Action.RESERVE) {
         effects.push(this.helper.buildEffectReservedAbortedNotification(input, transfer))
       }
-      return this.fulfilNext({ type: PaymentFulfilResultType.FAIL_VALIDATION, effects, error })
+      return this.fulfilNext(effects, input)
     }
 
     // Happy path - validation passed.
@@ -1669,60 +1575,85 @@ export class LedgerSql implements Ledger {
       status: 'SUCCESS'
     }
 
-    return this.fulfilNext({
-      type: PaymentFulfilResultType.PASS,
-      effects: [effectPosition],
-    })
+    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
+      return {
+        tag: 'FULFIL_NEXT',
+        effects: [effectPosition]
+      }
+    }
+
+    return this.fulfilNext([effectPosition], input)
   }
 
   /**
    * In UNFUSE mode, returns the result.
    * In FUSE   mode, applies the position change then returns that result.
    */
-  private async fulfilNext(result: PaymentFulfilResult): Promise<PaymentFulfilResult> {
-    if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
-      return result
-    }
-
+  private async fulfilNext(effects: Array<Effect>, input: FulfilHandlerInput): Promise<PaymentFulfilResult> {
     assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
-    const notifications = result.effects
-      .filter(effect => effect.functionality === 'notification')
-    const positions = result.effects
-      .filter(effect => effect.functionality === 'position')
+    const notifications = effects.filter(effect => effect.functionality === 'notification')
+    const positions = effects.filter(effect => effect.functionality === 'position')
       .map(this.deps.effectToKafkaMessage)
     const resultsPosition = await this.deps.positionHandler.handle(null, positions)
     assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
-    // Look just at the first one to map the result type.
+    
+    // TODO: this breaks the fx case - handle() returns multiple resultsPosition, we can't simply
+    // take the first one. 
     const resultPosition = resultsPosition[0]
-    const positionEffects = resultsPosition
-      .reduce((acc: Array<Effect>, curr) => acc.concat(...curr.effects), [])
 
-    let type: PaymentFulfilResultType
-    let error
+    const effectsFxNotify = resultsPosition.flatMap(thing => thing.effects)
+      .filter(effect => effect.action === 'fx-notify')
+
+    // TODO: handle aborted case!
     switch (resultPosition.type) {
-      case PositionResultType.PASS:
-        type = PaymentFulfilResultType.PASS
-        break
-      case PositionResultType.FAIL_OTHER:
-        // Sometimes the position change fails with FAIL_OTHER because the fulfil result fails
-        // validation + prepare was invalid, in which case the cyril becomes empty and the
-        // position change fails.
-        if (result.type === 'FAIL_VALIDATION') {
-          type = PaymentFulfilResultType.FAIL_VALIDATION
-          error = result.error
-          break
+      case PositionResultType.PASS: {
+        assert(resultPosition.effects[0])
+        const effectPosition = resultPosition.effects[0]
+        assertNestedFields(effectPosition, 'message.content.payload')
+        const payload = effectPosition.message.content.payload
+        // TODO: payload is only 'ABORTED' for the abort fx flow...
+        assert(payload.completedTimestamp)
+        assert(payload.fulfilment)
+        assertNestedFields(effectPosition, 'message.id')
+        const id = effectPosition.message.id
+
+        // Ok so for a linked payment we need to include the context to generate the 
+        // 0: action=fx-notify, functionality=notification
+        // 1: action=commit,    functionality=notification
+        const response: PaymentFulfilResult = {
+          input,
+          tag: 'OK',
+          context: {
+            id,
+            fulfilment: payload.fulfilment,
+            fulfiledAt: payload.completedTimestamp
+          },
         }
 
-        type = PaymentFulfilResultType.FAIL_OTHER
-        error = resultPosition.error
-        break
-      default: throw new Error(`fulfilNext() unhandled resultPosition.type: ${resultPosition.type}.`)
-    }
+        // Ok so for a linked payment we need to include the context to generate the fx-notify.
+        // We haven't yet implemented that so for now just pass through the fx effect.
+        if (effectsFxNotify.length > 0) {
+          response.fxEffect = effectsFxNotify[0]
+        }
+        return response
+      }
+      case PositionResultType.FAIL_OTHER: {
 
-    return {
-      type,
-      effects: [...notifications, ...positionEffects],
-      error,
+        return { input, tag: 'FAIL_OTHER' }
+      }
+      // // Sometimes the position change fails with FAIL_OTHER because the fulfil result fails
+      // // validation + prepare was invalid, in which case the cyril becomes empty and the
+      // // position change fails.
+      // if (result.type === 'FAIL_VALIDATION') {
+      //   type = PaymentFulfilResultType.FAIL_VALIDATION
+      //   error = result.error
+      //   break
+      // }
+
+      // type = PaymentFulfilResultType.FAIL_OTHER
+      // error = resultPosition.error
+      // break
+      default: throw new Error(`fulfilNext() unhandled resultPosition.type: ${resultPosition.type}.`)
     }
   }
 

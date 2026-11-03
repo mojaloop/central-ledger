@@ -117,7 +117,7 @@ exports.up = async (knex) => {
     if (!exists) {
       return knex.schema.createTable('metaPrepare', (t) => {
         t.string('id', 36).primary().notNullable()
-        t.integer('payloadHash').notNullable()
+        t.integer('payloadHash').unsigned().notNullable()
         t.dateTime('abortedAt')
       })
     }
@@ -127,7 +127,7 @@ exports.up = async (knex) => {
     if (!exists) {
       return knex.schema.createTable('metaFulfil', (t) => {
         t.string('id', 36).primary().notNullable()
-        t.integer('payloadHash').notNullable()
+        t.integer('payloadHash').unsigned().notNullable()
         t.dateTime('abortedAt')
         t.dateTime('fulfiledAt')
         t.string('fulfilment', 256)

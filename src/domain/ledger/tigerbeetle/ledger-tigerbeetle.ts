@@ -6,7 +6,6 @@ import {
   amount_max,
   Client,
   CreateAccountStatus,
-  CreateTransferResult,
   CreateTransferStatus,
   id,
   QueryFilterFlags,
@@ -16,15 +15,13 @@ import {
 import {
   FulfilHandlerInput,
   PaymentFulfilResult,
-  PaymentFulfilResultType
 } from '../../../handlers/payment-fulfil';
 import {
   PaymentPrepareResult,
-  PaymentPrepareResultType,
   PrepareHandlerInput
 } from "../../../handlers/payment-prepare";
-import { ApplicationConfig, resetOverride } from "../../../lib/config";
-import { assertBoolean, assertOneOf, convertBigIntToNumber } from '../../../lib/config/util';
+import { ApplicationConfig } from "../../../lib/config";
+import { assertBoolean, convertBigIntToNumber } from '../../../lib/config/util';
 import { logger } from "../../../shared/logger";
 import * as Result from '../shared/results';
 import {
@@ -946,8 +943,10 @@ export class LedgerTigerBeetle implements Ledger {
               cmd.dfspId, cmd.currency, new Date()
             )
             // In the future, we should return this error.
-            return Helper.failure(new Error(`withdrawPrepare() failed - insufficent funds.`))
-
+            // return Helper.failure(new Error(`withdrawPrepare() failed - insufficent funds.`))
+            return {
+              type: 'INSUFFICIENT_FUNDS'
+            }
           case 'ACCOUNT_CLOSED':
             // In the future, we should return this error.
             return Helper.failure(new Error(`withdrawPrepare() failed - account closed.`))
@@ -1960,7 +1959,7 @@ export class LedgerTigerBeetle implements Ledger {
       // Already been finalized.
       if (prepareMeta.abortedAt) {
         results.push({
-          tag: 'DUPLICATE_FINAL',
+          tag: 'DUPLICATE_FINAL_ABORTED',
           context: {
             prepareMeta,
             fulfilMeta,
@@ -1970,7 +1969,7 @@ export class LedgerTigerBeetle implements Ledger {
       }
       if (fulfilMeta && fulfilMeta.fulfilment) {
         results.push({
-          tag: 'DUPLICATE_FINAL',
+          tag: 'DUPLICATE_FINAL_FULFILED',
           context: {
             prepareMeta,
             fulfilMeta,
@@ -2106,7 +2105,7 @@ export class LedgerTigerBeetle implements Ledger {
         failure = resultCreateTransfers
       }
       if (failure) {
-        results.push(this.helper.mapPrepareInternalToPrepareResult(prepare, failure))
+        results.push(this.helper.mapPrepareInternalToPrepareResult2(prepare, failure))
         continue
       }
 
@@ -2114,7 +2113,7 @@ export class LedgerTigerBeetle implements Ledger {
       assert(resultCreateTransfers)
       assert(resultCreateTransfers.tag === 'OK')
       const success = resultCreateTransfers
-      results.push(this.helper.mapPrepareInternalToPrepareResult(prepare, success))
+      results.push(this.helper.mapPrepareInternalToPrepareResult2(prepare, success))
     }
     assert.equal(prepares.length, results.length)
     await this.metaStore.attachPrepareMetaAbortedAt(
@@ -2216,7 +2215,9 @@ export class LedgerTigerBeetle implements Ledger {
     }
 
     assert.equal(fulfils.length, results.length)
-    await this.metaStore.attachFulfillments(fulfilMetaUpdates)
+    // TODO: can we combine these into 1 round trip?
+    await this.metaStore.attachFulfilments(fulfilMetaUpdates)
+    await this.metaStore.attachFulfilAborts(idsAborted, idsAborted.map(_ => new Date()))
 
     return results
   }
@@ -2265,8 +2266,9 @@ export class LedgerTigerBeetle implements Ledger {
             return { tag: 'ALREADY_FULFILLED', fulfilMeta }
           }
           if (fulfilMeta.abortedAt) {
-            return { tag: 'ALREADY_ABORTED', timestamp: fulfilMeta.abortedAt }
+            return { tag: 'ALREADY_ABORTED', fulfilMeta, timestamp: fulfilMeta.abortedAt }
           }
+          throw new Error('fulfilMeta expected either abortedAt or fulfiledAt!')
         }
         else {
           return { tag: 'MODIFIED' }
@@ -2305,7 +2307,7 @@ export class LedgerTigerBeetle implements Ledger {
 
       // Check the expiration of the prepare.
       // TODO: for forwarded prepares, we need to ignore the expiration.
-      if (paymentMeta.expiration < new Date()) {
+      if (new Date() > paymentMeta.expiration) {
         return { tag: 'PREPARE_EXPIRED' }
       }
 

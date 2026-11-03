@@ -1,10 +1,14 @@
-import { ApplicationConfig } from "../lib/config";
+import assert from "node:assert";
 import { randomUUID } from "node:crypto";
+import { FulfilContextFulfiled, FulfilHandlerInput, PaymentFulfilResult } from "../handlers/payment-fulfil";
+import { PaymentPrepareResult, PrepareHandlerInput } from "../handlers/payment-prepare";
+import { ApplicationConfig } from "../lib/config";
+import { Effect } from "./message-bus";
 
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { StreamingProtocol } = Util
-
-import { Effect } from "./message-bus"
+const { Type, Action } = Enum.Events.Event
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 interface Dependencies {
   config: ApplicationConfig,
@@ -40,11 +44,355 @@ export default class MessagingHelper {
     }
   }
 
-  private randomUUID(): string {
-    if (!this.deps.randomUUID) {
-      return randomUUID()
+  public buildEffectsPrepare(result: PaymentPrepareResult): Array<Effect> {
+    // Shortcut.
+    const input = result.input
+    switch (result.tag) {
+      case 'FAIL_VALIDATION': {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          result.failureReasons.join(', ')
+        )
+        return [this.buildEffectPrepareNotificationError(input, fspiopError)]
+      }
+      case 'MODIFIED': {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
+        )
+        return [this.buildEffectPrepareNotificationError(input, fspiopError)]
+      }
+      case 'DUPLICATE_FINAL': {
+        return [this.buildEffectPrepareNotificationDuplicate(input, result.context)]
+      }
+      case 'DUPLICATE_NON_FINAL': return []
+      case 'FAIL_ACCOUNT_CLOSED': {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          'Account closed'
+        )
+        return [this.buildEffectPrepareNotificationError(input, fspiopError)]
+      }
+      case 'FAIL_LIQUIDITY': {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
+        )
+        return [this.buildEffectPrepareNotificationErrorLiquidity(input, fspiopError)]
+      }
+      case 'FAIL_OTHER': {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
+        )
+        return [this.buildEffectPrepareNotificationError(input, fspiopError)]
+      }
+      // Special case for UNFUSE handler. We need to emit a prepare position message.
+      case 'PREPARE_NEXT': return [result.effectPosition]
+      case 'OK': return [
+        this.buildEffectPrepareNotificationSuccess(input)
+      ]
+      default: {
+        const _exhaustive: never = result
+        throw new Error(`Unhandled result tag: ${(_exhaustive as PaymentPrepareResult).tag}`)
+      }
+    }
+  }
+
+  public buildEffectsFulfil(result: PaymentFulfilResult): Array<Effect> {
+    // Shortcut.
+    const input = result.input
+    switch (result.tag) {
+      case 'FAIL_VALIDATION': {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          result.failureReasons.join(', ')
+        )
+        return [this.buildEffectFulfilNotificationError(input, fspiopError)]
+      }
+      case 'EXPIRED': {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED
+        )
+        return [this.buildEffectFulfilNotificationError(input, fspiopError)]
+      }
+      case 'INVALID_FULFILMENT': {
+        const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          'invalid fulfilment'
+        )
+
+        return [this.buildEffectFulfilNotificationError(input, errorFspiop)]
+      }
+      case 'MODIFIED': {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
+        )
+        return [this.buildEffectFulfilNotificationError(input, fspiopError)]
+      }
+      case 'DUPLICATE_FINAL': {
+        // TODO: what about duplicate aborted?
+        // @ts-ignore
+        return [this.buildEffectFulfilDuplicate(input, result.context)]
+      }
+      case 'DUPLICATE_NON_FINAL': return []
+
+
+      case 'FAIL_OTHER': {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
+        )
+        return [this.buildEffectFulfilNotificationError(input, fspiopError)]
+      }
+      // Special case for UNFUSE handler. We need to emit a fulfil position + notification message.
+      case 'FULFIL_NEXT': return result.effects
+
+      // TODO: what about aborted succesfully?
+      case 'OK': {
+        const effects = [
+          // @ts-ignore
+          this.buildEffectFulfilNotificationSuccess(input, result.context),
+        ]
+        // TODO(LD): this is a hack since we haven't implemented fx yet in LedgerTigerBeetle.
+        // We need to adjust buildEffectNotificationSuccess, to include the linked Payment context.
+        if (result.fxEffect) effects.push(result.fxEffect)
+        return effects
+      }
+      default: {
+        const _exhaustive: never = result
+        throw new Error(`Unhandled result tag: ${(_exhaustive as PaymentPrepareResult).tag}`)
+      }
+    }
+  }
+
+  public buildEffectFulfilNotificationError(
+    input: FulfilHandlerInput,
+    fspiopError: any
+  ): Effect {
+    const message = structuredClone(input.message.value)
+    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+
+    message.content.payload = apiFSPIOPError
+    message.content.uriParams = { id: input.transferId }
+    message.to = message.from
+    message.from = this.deps.config.HUB_NAME
+    if (message.content.headers) {
+      message.content.headers['fspiop-source'] = message.from
+      message.content.headers['fspiop-destination'] = message.to
     }
 
+    return {
+      functionality: Type.NOTIFICATION,
+      action: input.action,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+      fspiopError: apiFSPIOPError
+    }
+  }
+
+  public buildEffectFulfilDuplicate(input: FulfilHandlerInput, context: FulfilContextFulfiled): Effect {
+    const message = structuredClone(input.message.value)
+    message.content.uriParams = { id: input.transferId }
+
+    message.to = message.from
+    message.from = this.deps.config.HUB_NAME
+    if (message.content.headers) {
+      message.content.headers['fspiop-source'] = message.from
+      message.content.headers['fspiop-destination'] = message.to
+    }
+
+    // Override the message.content.payload.completedTimestamp with the date of the original
+    message.content.payload = {
+      transferState: 'COMMITTED',
+      fulfilment: context.fulfilment,
+      completedTimestamp: context.fulfiledAt,
+    }
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: Action.FULFIL_DUPLICATE,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'SUCCESS',
+    }
+  }
+
+  public buildEffectFulfilNotificationSuccess(
+    input: FulfilHandlerInput,
+    context: FulfilContextFulfiled,
+  ): Effect {
+    assert(context)
+    assert(context.fulfiledAt)
+    assert(context.fulfilment)
+
+    const message = {
+      id: input.transferId,
+      type: 'application/json',
+      content: {
+        uriParams: { id: input.transferId },
+        headers: { ...input.message.value.content.headers },
+        payload: {
+          transferState: 'COMMITTED',
+          fulfilment: context.fulfilment,
+          completedTimestamp: context.fulfiledAt
+        }
+      },
+      metadata: {
+        correlationId: input.transferId,
+        event: {
+          type: Type.TRANSFER,
+          action: 'commit',
+          createdAt: new Date().toISOString(),
+          state: {
+            status: 'success',
+            code: null,
+            description: null
+          }
+        }
+      }
+    }
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: input.action,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'SUCCESS',
+    }
+  }
+
+  private buildEffectPrepareNotificationError(
+    input: PrepareHandlerInput,
+    fspiopError: any
+  ): Effect {
+    const message = structuredClone(input.message.value)
+    const apiFSPIOPError = fspiopError.toApiErrorObject(this.config.ERROR_HANDLING)
+
+    message.content.payload = apiFSPIOPError
+    message.content.uriParams = { id: input.payload.transferId }
+    message.to = message.from
+    message.from = this.config.HUB_NAME
+    if (message.content.headers) {
+      message.content.headers['fspiop-source'] = message.from
+      message.content.headers['fspiop-destination'] = message.to
+    }
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: Action.PREPARE,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+      fspiopError: apiFSPIOPError
+    }
+  }
+
+  private buildEffectPrepareNotificationErrorLiquidity(
+    input: PrepareHandlerInput,
+    fspiopError: any
+  ): Effect {
+    const apiFSPIOPError = fspiopError.toApiErrorObject(this.config.ERROR_HANDLING)
+
+    const headers = { ...input.message.value.content.headers }
+    headers['fspiop-destination'] = input.payload.payerFsp
+    headers['fspiop-source'] = this.config.HUB_NAME
+    delete headers['content-length']
+
+    const state = StreamingProtocol.createEventState(
+      Enum.Events.EventStatus.FAILURE.status,
+      apiFSPIOPError.errorInformation.errorCode,
+      apiFSPIOPError.errorInformation.errorDescription
+    )
+
+    const metadata = StreamingProtocol.createMetadataWithCorrelatedEvent(
+      input.payload.transferId,
+      Enum.Kafka.Topics.NOTIFICATION,
+      Action.PREPARE,
+      state
+    )
+
+    const message = StreamingProtocol.createMessage(
+      input.payload.transferId,
+      input.payload.payerFsp,
+      this.config.HUB_NAME,
+      metadata,
+      headers,
+      apiFSPIOPError,
+      { id: input.payload.transferId },
+      'application/json',
+    )
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: Action.PREPARE,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+    }
+  }
+
+  private buildEffectPrepareNotificationDuplicate(
+    input: PrepareHandlerInput,
+    payload: any
+  ): Effect {
+    const message = structuredClone(input.message.value)
+    message.content.payload = payload
+    message.content.uriParams = { id: input.payload.transferId }
+
+    message.to = message.from
+    message.from = this.config.HUB_NAME
+    if (message.content.headers) {
+      message.content.headers['fspiop-source'] = message.from
+      message.content.headers['fspiop-destination'] = message.to
+    }
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: Action.PREPARE_DUPLICATE,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'SUCCESS',
+    }
+  }
+
+  public buildEffectPrepareNotificationSuccess(
+    input: PrepareHandlerInput
+  ): Effect {
+    const headers = { ...input.message.value.content.headers }
+    delete headers['content-length']
+
+    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
+      input.payload.transferId,
+      Enum.Kafka.Topics.TRANSFER,
+      Action.PREPARE,
+      {
+        status: 'success',
+        code: null,
+        description: null,
+      }
+    )
+
+    const message = Util.StreamingProtocol.createMessage(
+      input.payload.transferId,
+      input.payload.payeeFsp,
+      input.payload.payerFsp,
+      metadata,
+      headers,
+      input.payload,
+      {},
+      'application/json',
+    )
+
+    const effect: Effect = {
+      functionality: Type.NOTIFICATION,
+      action: Action.PREPARE,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'SUCCESS',
+    }
+    return effect
+  }
+
+  private randomUUID(): string {
+    if (!this.deps.randomUUID) return randomUUID()
     return this.deps.randomUUID()
   }
 }

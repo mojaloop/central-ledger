@@ -4,7 +4,7 @@ import { ApplicationConfig } from "../../lib/config";
 import PRNG from "../prng";
 import Harness from "../harness/harness";
 import * as ApiHelpers from '../../testing/api-helpers'
-import { PaymentPrepareResult, PaymentPrepareResultType, PrepareHandlerInput } from "../../handlers/payment-prepare";
+import { PrepareHandlerInput } from "../../handlers/payment-prepare";
 import assert from "node:assert";
 import { optional } from "joi";
 import { PrepareResultType } from "../../domain/ledger/shared/types";
@@ -252,7 +252,7 @@ class LedgerBenchmark {
           const resultsPrepare = await this.harness.ledger.prepare(prepares)
           
           for (const result of resultsPrepare) {
-            if (result.type === PaymentPrepareResultType.PASS) {
+            if (result.tag === 'OK') {
               results.push('PASS')
               continue
             }
@@ -271,7 +271,7 @@ class LedgerBenchmark {
           const resultsFulfil = await this.harness.ledger.fulfil(fulfils)
 
           for (const result of resultsFulfil) {
-            if (result.type === PaymentFulfilResultType.PASS) {
+            if (result.tag === 'OK') {
               results.push('PASS')
               continue
             }
