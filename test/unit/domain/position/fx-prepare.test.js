@@ -546,6 +546,88 @@ Test('FX Prepare domain', positionIndexTest => {
       test.end()
     })
 
+    // Three fx transfers of `sourceAmount` (5) for the same payer, all RECEIVED_PREPARE
+    const headroomTestBin = () => {
+      const testData = [1, 2, 3].map(() => constructFxTransferTestData('perffsp1', 'perffsp2', sourceAmount.toString(), 'USD', '50', 'XXX'))
+      return {
+        items: testData.map(data => ({ message: data.message, span, decodedPayload: data.decodedPayload })),
+        states: Object.fromEntries(testData.map(data => [data.message.value.id, Enum.Transfers.TransferInternalState.RECEIVED_PREPARE]))
+      }
+    }
+    const highLimit = {
+      participantCurrencyId: 1,
+      participantLimitTypeId: 1,
+      value: 1000,
+      isActive: 1,
+      createdBy: 'unknown',
+      participantLimitId: 1,
+      thresholdAlarmPercentage: 0.5
+    }
+
+    changeParticipantPositionTest.test('reduce the available liquidity after each reservation in the bin', async (test) => {
+      // Liquidity cover 7, three fx transfers of 5: only the first fits
+      const { items, states } = headroomTestBin()
+      const processedMessages = await processFxPositionPrepareBin(items, {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedFxTransferStates: states,
+        settlementParticipantPosition: -7,
+        participantLimit: { ...highLimit }
+      })
+
+      test.deepEqual(
+        processedMessages.accumulatedFxTransferStateChanges.map(change => change.transferStateId),
+        [Enum.Transfers.TransferInternalState.RESERVED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED],
+        'first fx transfer reserved, the other two rejected'
+      )
+      test.equal(processedMessages.notifyMessages[1].message.content.payload?.errorInformation?.errorCode, '4001', 'second fx transfer rejected for insufficient liquidity')
+      test.equal(processedMessages.notifyMessages[2].message.content.payload?.errorInformation?.errorCode, '4001', 'third fx transfer rejected for insufficient liquidity')
+      test.equal(processedMessages.accumulatedPositionValue, sourceAmount, 'position stays within the liquidity cover')
+      test.end()
+    })
+
+    changeParticipantPositionTest.test('reduce the available net debit cap after each reservation in the bin', async (test) => {
+      // Net debit cap 7, three fx transfers of 5: only the first fits
+      const { items, states } = headroomTestBin()
+      const processedMessages = await processFxPositionPrepareBin(items, {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedFxTransferStates: states,
+        settlementParticipantPosition: -1000,
+        participantLimit: { ...highLimit, value: 7 }
+      })
+
+      test.deepEqual(
+        processedMessages.accumulatedFxTransferStateChanges.map(change => change.transferStateId),
+        [Enum.Transfers.TransferInternalState.RESERVED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED],
+        'first fx transfer reserved, the other two rejected'
+      )
+      test.equal(processedMessages.notifyMessages[1].message.content.payload?.errorInformation?.errorCode, '4200', 'second fx transfer rejected for the payer limit')
+      test.equal(processedMessages.notifyMessages[2].message.content.payload?.errorInformation?.errorCode, '4200', 'third fx transfer rejected for the payer limit')
+      test.equal(processedMessages.accumulatedPositionValue, sourceAmount, 'position stays within the net debit cap')
+      test.end()
+    })
+
+    changeParticipantPositionTest.test('reserve up to the exact available liquidity in the bin', async (test) => {
+      // Liquidity cover 10, three fx transfers of 5: the first two fit exactly
+      const { items, states } = headroomTestBin()
+      const processedMessages = await processFxPositionPrepareBin(items, {
+        accumulatedPositionValue: 0,
+        accumulatedPositionReservedValue: 0,
+        accumulatedFxTransferStates: states,
+        settlementParticipantPosition: -10,
+        participantLimit: { ...highLimit }
+      })
+
+      test.deepEqual(
+        processedMessages.accumulatedFxTransferStateChanges.map(change => change.transferStateId),
+        [Enum.Transfers.TransferInternalState.RESERVED, Enum.Transfers.TransferInternalState.RESERVED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED],
+        'first two fx transfers reserved, the third rejected'
+      )
+      test.equal(processedMessages.accumulatedPositionValue, sourceAmount * 2, 'position equals the liquidity cover')
+      test.end()
+    })
+
     changeParticipantPositionTest.end()
   })
 
