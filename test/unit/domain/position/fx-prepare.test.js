@@ -628,6 +628,30 @@ Test('FX Prepare domain', positionIndexTest => {
       test.end()
     })
 
+    changeParticipantPositionTest.test('not use up available liquidity for a rejected fx transfer', async (test) => {
+      // Liquidity cover 7, fx transfers of 5, 5 and 2: the second is rejected, the third still fits
+      const testData = [5, 5, 2].map(amount => constructFxTransferTestData('perffsp1', 'perffsp2', amount.toString(), 'USD', '50', 'XXX'))
+      const processedMessages = await processFxPositionPrepareBin(
+        testData.map(data => ({ message: data.message, span, decodedPayload: data.decodedPayload })),
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates: Object.fromEntries(testData.map(data => [data.message.value.id, Enum.Transfers.TransferInternalState.RECEIVED_PREPARE])),
+          settlementParticipantPosition: -7,
+          participantLimit: { ...highLimit }
+        }
+      )
+
+      test.deepEqual(
+        processedMessages.accumulatedFxTransferStateChanges.map(change => change.transferStateId),
+        [Enum.Transfers.TransferInternalState.RESERVED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED, Enum.Transfers.TransferInternalState.RESERVED],
+        'fx transfers of 5 and 2 reserved, the second fx transfer of 5 rejected'
+      )
+      test.equal(processedMessages.notifyMessages[1].message.content.payload?.errorInformation?.errorCode, '4001', 'second fx transfer rejected for insufficient liquidity')
+      test.equal(processedMessages.accumulatedPositionValue, 7, 'position equals the liquidity cover')
+      test.end()
+    })
+
     changeParticipantPositionTest.end()
   })
 

@@ -224,7 +224,7 @@
     "js-yaml@^4.0.0": "4.3.2",
     "@grpc/grpc-js": "1.14.5",
     "joi@^17.0.0": "17.13.9",
-    "joi@18.2.9": "18.3.1",
+    "joi@18.2.9": "18.3.2",
     "@mojaloop/central-services-shared": {
       ".": "$@mojaloop/central-services-shared",
       "ajv": "8.20.0",
