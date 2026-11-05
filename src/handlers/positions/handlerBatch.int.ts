@@ -20,7 +20,8 @@
  optionally within square brackets <email>.
 
  * Mojaloop Foundation
- - Shashikant Hirugade
+ - Name Surname <name.surname@mojaloop.io>
+ - Shashikant Hirugade <shashi.mojaloop@gmail.com>
 
  --------------
  ******/
