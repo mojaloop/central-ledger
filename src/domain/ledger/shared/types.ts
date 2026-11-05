@@ -55,7 +55,7 @@ export interface Ledger {
    * @description Looks through the ledger timed out transfers. Once a transfer has been swept,
    *  it will not be returned again with sweepForTimedOutTransfers()
    */
-  sweepTimedOut(now: Date): Promise<SweepResult>;
+  sweepTimedOut(now: Date): Promise<CommandResult<TimeoutResult>>;
 
   /**
    * @method lookupTransfer

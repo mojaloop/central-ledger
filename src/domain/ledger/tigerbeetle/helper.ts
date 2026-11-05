@@ -79,6 +79,9 @@ export type FulfilInternalStatus = {
 } | {
   tag: 'OK',
   fulfilMeta: FulfilMeta
+} | {
+  tag: 'ABORT_OK',
+  fulfilMeta: FulfilMeta
 }
 
 export type PrepareFailureType = 'FAIL_LIQUIDITY' | 'PAYER_CLOSED' | 'PAYEE_CLOSED' | 'MODIFIED' |
@@ -1190,13 +1193,15 @@ export default class Helper {
 
       if (fulfil.payload.transferState === 'ABORTED') {
         fulfilMetaNew.abortedAt = now
-      } else {
-        fulfilMetaNew.fulfiledAt = now
-        fulfilMetaNew.fulfilment = fulfil.payload.fulfilment
+        statuses.push({ tag: 'ABORT_OK', fulfilMeta: fulfilMetaNew })
+        continue
       }
+      fulfilMetaNew.fulfiledAt = now
+      fulfilMetaNew.fulfilment = fulfil.payload.fulfilment
       statuses.push({
         tag: 'OK', fulfilMeta: fulfilMetaNew
       })
+
     }
 
     assert(statuses.length === fulfils.length)
@@ -1214,9 +1219,9 @@ export default class Helper {
   ): PaymentFulfilResult {
     switch (status.tag) {
       case 'OK': {
+        // Was fulfiled.
         assert(status.fulfilMeta.fulfiledAt)
         assert(status.fulfilMeta.fulfilment)
-
         return {
           tag: 'OK',
           context: {
@@ -1225,6 +1230,19 @@ export default class Helper {
             fulfiledAt: status.fulfilMeta.fulfiledAt,
           },
           input: fulfil,
+        }
+      }
+      case 'ABORT_OK': {
+        // Was aborted.
+        assert(status.fulfilMeta.abortedAt)
+
+        return {
+          tag: 'ABORT_OK',
+          context: {
+            id: status.fulfilMeta.id,
+            abortedAt: status.fulfilMeta.abortedAt
+          },
+          input: fulfil
         }
       }
       case 'PREPARE_NOT_FOUND':
@@ -1236,9 +1254,7 @@ export default class Helper {
         }
       case 'PREPARE_EXPIRED': {
         return {
-          // Backwards compatibility. LedgerSql doesn't keep the expired context around
-          // through the position handler.
-          tag: 'FAIL_OTHER',
+          tag: 'EXPIRED',
           input: fulfil,
         }
       }
@@ -1343,7 +1359,7 @@ export default class Helper {
         // GLB DR dfsp_a:root     CR dfsp_b:root           45 void_pending_transfer ^1
         // USD DR dfsp_a:reserved CR dfsp_a:unrestricted   45
         transfers.push(
-          // 1. Complete the logical payment.
+          // 1. Abort the logical payment.
           {
             ...Helper.createTransferTemplate,
             id: id(),
@@ -1361,7 +1377,7 @@ export default class Helper {
             ...Helper.createTransferTemplate,
             id: id(),
             debit_account_id: dfspCurrencyPayer.reserved,
-            credit_account_id: dfspCurrencyPayee.unrestricted,
+            credit_account_id: dfspCurrencyPayer.unrestricted,
             amount: amountTigerBeetle,
             user_data_128: prepareId,
             user_data_32: hash,
@@ -1548,7 +1564,7 @@ export default class Helper {
 
     return Number(input) / valueDivisor
   }
-  
+
   public static stringify(accountOrTransfer: Account | Transfer): string {
     // We could make this context aware to map the ledger ids etc.
     return JSON.stringify(accountOrTransfer, bigIntReplacer, 2)

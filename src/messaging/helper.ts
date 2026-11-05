@@ -1,12 +1,14 @@
 import assert from "node:assert";
 import { randomUUID } from "node:crypto";
-import { FulfilContextFulfiled, FulfilHandlerInput, PaymentFulfilResult } from "../handlers/payment-fulfil";
+import { CommitPaymentDtoAborted, FulfilContextFulfiled, FulfilHandlerInput, PaymentFulfilResult } from "../handlers/payment-fulfil";
 import { PaymentPrepareResult, PrepareHandlerInput } from "../handlers/payment-prepare";
 import { ApplicationConfig } from "../lib/config";
 import { Effect } from "./message-bus";
+import { ForwardedFxTransfer, ForwardedTransfer, TimedOutFxTransfer, TimedOutTransfer } from "../models/transfer/facade";
+import { TimeoutResultPayment, TimeoutResultPaymentForward } from "../handlers/timeout-v2";
 
 const { Enum, Util } = require('@mojaloop/central-services-shared')
-const { StreamingProtocol } = Util
+const { StreamingProtocol, resourceVersions } = Util
 const { Type, Action } = Enum.Events.Event
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -17,9 +19,15 @@ interface Dependencies {
 
 export default class MessagingHelper {
   private config: ApplicationConfig
+  private readonly timeoutError
+
 
   constructor(private deps: Dependencies) {
     this.config = deps.config
+
+    this.timeoutError = ErrorHandler.Factory
+      .createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
+      .toApiErrorObject(this.deps.config.ERROR_HANDLING)
   }
 
   public effectToKafkaMessage(effect: Effect) {
@@ -144,7 +152,13 @@ export default class MessagingHelper {
       // Special case for UNFUSE handler. We need to emit a fulfil position + notification message.
       case 'FULFIL_NEXT': return result.effects
 
-      // TODO: what about aborted succesfully?
+      case 'ABORT_OK': {
+        const payload = input.payload as CommitPaymentDtoAborted
+        const fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(
+          payload.errorInformation
+        )
+        return [this.buildEffectAbortNotification(input, fspiopError)]
+      }
       case 'OK': {
         const effects = [
           // @ts-ignore
@@ -173,6 +187,32 @@ export default class MessagingHelper {
     message.content.uriParams = { id: input.transferId }
     message.to = message.from
     message.from = this.deps.config.HUB_NAME
+    if (message.content.headers) {
+      message.content.headers['fspiop-source'] = message.from
+      message.content.headers['fspiop-destination'] = message.to
+    }
+
+    return {
+      functionality: Type.NOTIFICATION,
+      action: input.action,
+      message,
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+      fspiopError: apiFSPIOPError
+    }
+  }
+
+  public buildEffectAbortNotification(
+    input: FulfilHandlerInput,
+    fspiopError: any
+  ): Effect {
+    const message = structuredClone(input.message.value)
+    const apiFSPIOPError = fspiopError.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+
+    message.content.payload = apiFSPIOPError
+    message.content.uriParams = { id: input.transferId }
+    message.to = input.destinationDfspId
+    message.from = input.callerDfspId
     if (message.content.headers) {
       message.content.headers['fspiop-source'] = message.from
       message.content.headers['fspiop-destination'] = message.to
@@ -389,6 +429,294 @@ export default class MessagingHelper {
       status: 'SUCCESS',
     }
     return effect
+  }
+
+  public buildEffectsTimedOutPayments(payments: Array<TimedOutTransfer>):
+    Array<TimeoutResultPayment> {
+    return payments.map(payment => {
+      if (payment.bulkTransferId) {
+        throw new Error('TimeoutHandlerV2 - timeouts for bulk transfers not yet supported.')
+      }
+
+      switch (payment.transferStateId) {
+        // Payment expired _before_ the position was reserved.
+        case 'EXPIRED_PREPARED': {
+          return {
+            context: payment,
+            effect: this.buildEffectPaymentTimeoutNotification(payment)
+          }
+        }
+        // Payment expired _after_ the position was reserved.
+        case 'RESERVED_TIMEOUT':
+          return {
+            context: payment,
+            effect: this.buildEffectPaymentPositionTimeout(payment)
+          }
+        default: {
+          throw new Error(`timeoutPaymentEffects - unhandled transferStateId: ${payment.transferStateId}`)
+        }
+      }
+    })
+  }
+
+  public forwardedPaymentEffects(payments: Array<ForwardedTransfer>):
+    Array<TimeoutResultPaymentForward> {
+    return payments.map(payment => {
+      const effect: Effect = {
+        functionality: Type.NOTIFICATION,
+        action: Action.GET,
+        message: this.buildForwardedPaymentMessage(payment),
+        topicName: 'topic-notification-event',
+        status: 'FAILURE',
+        fspiopError: this.timeoutError
+      }
+
+      return {
+        context: payment,
+        effect,
+      }
+    })
+  }
+
+  public forwardedForexEffects(forexes: Array<ForwardedFxTransfer>):
+    Array<TimeoutResultPaymentForward> {
+    return forexes.map(forex => {
+      const effect: Effect = {
+        functionality: Type.NOTIFICATION,
+        action: Action.GET,
+        message: this.buildForwardedForexMessage(forex),
+        topicName: 'topic-notification-event',
+        status: 'FAILURE',
+        fspiopError: this.timeoutError
+      }
+
+      return {
+        context: forex,
+        effect,
+      }
+    })
+  }
+
+  public buildEffectsTimedOutForexes(forexes: Array<TimedOutFxTransfer>):
+    Array<TimeoutResultPayment> {
+    return forexes.map(forex => {
+      switch (forex.transferStateId) {
+        // Payment expired _before_ the position was reserved.
+        case 'EXPIRED_PREPARED': {
+          return {
+            context: forex,
+            effect: this.buildEffectForexTimeoutNotification(forex)
+          }
+        }
+        // Payment expired _after_ the position was reserved.
+        case 'RESERVED_TIMEOUT':
+          return {
+            context: forex,
+            effect: this.buildEffectForexPositionTimeout(forex)
+          }
+        default: {
+          throw new Error(`timeoutForexEffects - unhandled transferStateId: ${forex.transferStateId}`)
+        }
+      }
+    })
+  }
+
+  public buildEffectForexTimeoutNotification(forex: TimedOutFxTransfer): Effect {
+    const effect: Effect = {
+      functionality: Type.NOTIFICATION,
+      action: Action.FX_TIMEOUT_RECEIVED,
+      message: this.buildForexTimeoutMessage(forex),
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+      fspiopError: this.timeoutError
+    }
+
+    return effect
+  }
+
+  public buildEffectForexPositionTimeout(forex: TimedOutFxTransfer): Effect {
+    return {
+      functionality: Type.POSITION,
+      action: Action.FX_TIMEOUT_RESERVED,
+      message: this.buildForexTimeoutMessage(forex),
+      messageKey: forex.effectedParticipantCurrencyId.toString(),
+      topicName: 'topic-transfer-position-batch',
+      status: 'FAILURE',
+      fspiopError: this.timeoutError
+    }
+  }
+
+  public buildEffectPaymentTimeoutNotification(payment: TimedOutTransfer): Effect {
+    const effect: Effect = {
+      functionality: Type.NOTIFICATION,
+      action: Action.TIMEOUT_RECEIVED,
+      message: this.buildTimeoutMessagePayment(payment),
+      topicName: 'topic-notification-event',
+      status: 'FAILURE',
+      fspiopError: this.timeoutError
+    }
+
+    return effect
+  }
+
+  public buildEffectPaymentPositionTimeout(payment: TimedOutTransfer): Effect {
+    return {
+      functionality: Type.POSITION,
+      action: Action.TIMEOUT_RESERVED,
+      message: this.buildTimeoutMessagePayment(payment),
+      messageKey: payment.effectedParticipantCurrencyId.toString(),
+      topicName: 'topic-transfer-position-batch',
+      status: 'FAILURE',
+      fspiopError: this.timeoutError
+    }
+  }
+
+  public buildTimeoutMessagePayment(payment: TimedOutTransfer) {
+    const destination = payment.externalPayerName || payment.payerFsp
+    const source = payment.externalPayeeName || payment.payeeFsp
+    const transfersResource = Enum.Http.HeaderResources.TRANSFERS
+    const contentVersion = resourceVersions[transfersResource].contentVersion
+
+    const state = Util.StreamingProtocol.createEventState(
+      Enum.Events.EventStatus.FAILURE.status,
+      this.timeoutError.errorInformation.errorCode,
+      this.timeoutError.errorInformation.errorDescription
+    )
+    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
+      payment.transferId,
+      Enum.Kafka.Topics.NOTIFICATION,
+      Action.TIMEOUT_RECEIVED,
+      state
+    )
+    const headers = Util.Http.SwitchDefaultHeaders(
+      destination, transfersResource, this.deps.config.HUB_NAME, contentVersion
+    )
+    const message = Util.StreamingProtocol.createMessage(
+      payment.transferId,
+      destination,
+      source,
+      metadata,
+      headers,
+      this.timeoutError,
+      { id: payment.transferId },
+      `application/vnd.interoperability.${transfersResource}+json;version=${contentVersion}`
+    )
+    message.from = this.deps.config.HUB_NAME
+    message.content.context = {
+      payer: payment.externalPayerName || payment.payerFsp,
+      payee: payment.externalPayeeName || payment.payeeFsp
+    }
+
+    return message
+  }
+
+  public buildForexTimeoutMessage(forex: TimedOutFxTransfer) {
+    const destination = forex.externalInitiatingFspName || forex.initiatingFsp
+    const source = forex.externalCounterPartyFspName || forex.counterPartyFsp
+    const fxTransfersResource = Enum.Http.HeaderResources.FX_TRANSFERS
+    const contentVersion = resourceVersions[fxTransfersResource].contentVersion
+
+    const state = Util.StreamingProtocol.createEventState(
+      Enum.Events.EventStatus.FAILURE.status,
+      this.timeoutError.errorInformation.errorCode,
+      this.timeoutError.errorInformation.errorDescription
+    )
+    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
+      forex.commitRequestId,
+      Enum.Kafka.Topics.NOTIFICATION,
+      Action.FX_TIMEOUT_RECEIVED,
+      state
+    )
+    const headers = Util.Http.SwitchDefaultHeaders(
+      destination, fxTransfersResource, this.deps.config.HUB_NAME, contentVersion
+    )
+    const message = Util.StreamingProtocol.createMessage(
+      forex.commitRequestId,
+      destination,
+      source,
+      metadata,
+      headers,
+      this.timeoutError,
+      { id: forex.commitRequestId },
+      `application/vnd.interoperability.${fxTransfersResource}+json;version=${contentVersion}`
+    )
+    message.from = this.deps.config.HUB_NAME
+    message.content.context = {
+      payer: forex.externalInitiatingFspName || forex.initiatingFsp,
+      payee: forex.externalCounterPartyFspName || forex.counterPartyFsp
+    }
+
+    return message
+  }
+
+  public buildForwardedPaymentMessage(payment: ForwardedTransfer) {
+    const destination = payment.externalPayerName || payment.payeeFsp
+    const source = payment.externalPayeeName || payment.payerFsp
+    const transfersResource = Enum.Http.HeaderResources.TRANSFERS
+    const contentVersion = resourceVersions[transfersResource].contentVersion
+
+    const state = Util.StreamingProtocol.createEventState(
+      Enum.Events.EventStatus.FAILURE.status,
+      this.timeoutError.errorInformation.errorCode,
+      this.timeoutError.errorInformation.errorDescription
+    )
+    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
+      payment.transferId,
+      Enum.Kafka.Topics.NOTIFICATION,
+      Action.GET,
+      state
+    )
+    const headers = Util.Http.SwitchDefaultHeaders(
+      destination, transfersResource, source, contentVersion
+    )
+    const message = Util.StreamingProtocol.createMessage(
+      payment.transferId,
+      destination,
+      source,
+      metadata,
+      headers,
+      null,
+      { id: payment.transferId },
+      `application/vnd.interoperability.${transfersResource}+json;version=${contentVersion}`
+    )
+    message.from = this.deps.config.HUB_NAME
+
+    return message
+  }
+
+  public buildForwardedForexMessage(forex: ForwardedFxTransfer) {
+    const destination = forex.externalCounterPartyFspName || forex.counterPartyFsp
+    const source = forex.externalInitiatingFspName || forex.initiatingFsp
+    const fxTransfersResource = Enum.Http.HeaderResources.FX_TRANSFERS
+    const contentVersion = resourceVersions[fxTransfersResource].contentVersion
+
+    const state = Util.StreamingProtocol.createEventState(
+      Enum.Events.EventStatus.FAILURE.status,
+      this.timeoutError.errorInformation.errorCode,
+      this.timeoutError.errorInformation.errorDescription
+    )
+    const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
+      forex.commitRequestId,
+      Enum.Kafka.Topics.NOTIFICATION,
+      Action.GET,
+      state
+    )
+    const headers = Util.Http.SwitchDefaultHeaders(
+      destination, fxTransfersResource, source, contentVersion
+    )
+    const message = Util.StreamingProtocol.createMessage(
+      forex.commitRequestId,
+      destination,
+      source,
+      metadata,
+      headers,
+      null,
+      { id: forex.commitRequestId },
+      `application/vnd.interoperability.${fxTransfersResource}+json;version=${contentVersion}`
+    )
+    message.from = this.deps.config.HUB_NAME
+
+    return message
   }
 
   private randomUUID(): string {

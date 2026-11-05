@@ -88,6 +88,7 @@ import { CloseDfspMasterAccountFailureType, DepositFailureType, DisableDfspAccou
 import  { CmdHubCurrencyEnable, ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, FulfilMeta, FulfilMetaUpdate, GetPaymentMetaResult, InternalDfspCurrency, InternalDfspRoot, NetDebitCap, ParticipantLocation, PaymentMeta, PrepareMeta } from './meta-store';
 import { Reporter } from '../shared/reporter';
 import MetaStore from './meta-store';
+import { TimeoutResult } from '../../../handlers/timeout-v2';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -2315,7 +2316,7 @@ export class LedgerTigerBeetle implements Ledger {
     })
   }
 
-  public async sweepTimedOut(now: Date): Promise<SweepResult> {
+  public async sweepTimedOut(now: Date): Promise<CommandResult<TimeoutResult>> {
     throw new Error('Method not implemented.');
   }
   public async lookupTransfer(query: LookupTransferQuery): Promise<LookupTransferQueryResponse> {

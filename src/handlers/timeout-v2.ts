@@ -2,6 +2,7 @@ import { ApplicationConfig } from "../lib/config";
 import { Effect } from "../messaging/message-bus";
 import { logger } from "../shared/logger";
 import { Ledger } from "../domain/ledger/shared/types";
+import { ForwardedFxTransfer, ForwardedTransfer, TimedOutFxTransfer, TimedOutTransfer } from "../models/transfer/facade";
 
 export type TimeoutResultPayment = {
   context: any,
@@ -26,12 +27,10 @@ export type TimeoutResultForexForward = {
 export type TimeoutResult = {
   intervalPayment: [number, number],
   intervalForex: [number, number],
-  results: Array<
-    TimeoutResultPayment |
-    TimeoutResultForex |
-    TimeoutResultPaymentForward |
-    TimeoutResultForexForward
-  >
+  payments: Array<TimedOutTransfer>
+  forexes: Array<TimedOutFxTransfer>
+  paymentForwards: Array<ForwardedTransfer>
+  forexForwards: Array<ForwardedFxTransfer>
 }
 
 /**

@@ -69,6 +69,7 @@ export enum HandlerName {
  */
 export class MessageBus {
   private config: ApplicationConfig
+  private helper: MessagingHelper
 
   constructor(private deps: Dependencies) {
     assert(deps.config)
@@ -79,6 +80,7 @@ export class MessageBus {
     assert(deps.helper)
     
     this.config = deps.config
+    this.helper = deps.helper
   }
 
   /**
@@ -313,7 +315,12 @@ export class MessageBus {
   public async timeout(now: Date): Promise<void> {
     logger.info(`MessageBus.timeout() called for date: ${now.toISOString()}.`)
     const result = await this.deps.handlers.timeoutHandler.run(now)
-    const effects = result.results.map(result => result.effect)
+    const effects = [
+      ...this.helper.buildEffectsTimedOutPayments(result.payments),
+      ...this.helper.buildEffectsTimedOutForexes(result.forexes),
+      ...this.helper.forwardedPaymentEffects(result.paymentForwards),
+      ...this.helper.forwardedForexEffects(result.forexForwards),
+    ].map(result => result.effect)
 
     if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
       await this.emit(effects)

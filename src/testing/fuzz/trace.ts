@@ -1,6 +1,5 @@
 import { isDeepStrictEqual } from "node:util"
 import { logger } from "../../shared/logger"
-import assert from "node:assert"
 
 export type TraceItem = {
   step: number,
@@ -71,8 +70,8 @@ export default class Trace {
 
         this.printSideBySide(lastNLeft, lastNRight, options)
 
-        throw new Error(`compare() traces mismatched at step: ${idx + 1}.`
-          + `\nRerun with SEED=${options.seed} to reproduce this case.`
+        throw new Error(`compare() traces mismatched at step: ${itemLeft.step}.`
+          + `\nRerun with SEED=${options.seed} MAX_STEPS=${itemLeft.step} to reproduce this case.`
         )
       }
     }

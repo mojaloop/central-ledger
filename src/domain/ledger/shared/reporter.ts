@@ -208,6 +208,7 @@ class BalanceSheet {
       for (const dfsp of dfsps) {
         const dfspBalance = currencyBalance.dfsps[dfsp]
         if (!dfspBalance?.dfspAccountsDetailed) continue
+        if (this.emptyAccounts(dfspBalance.dfspAccountsDetailed)) continue
 
         builder += this.formatDfspTAccounts(dfsp, currencyConfig, dfspBalance.dfspAccountsDetailed)
         builder += '\n'
@@ -215,6 +216,20 @@ class BalanceSheet {
     }
 
     return builder
+  }
+
+  // Reduce noise by filtering out accounts with empty values.
+  private emptyAccounts(detailed: DfspAccountsDetailed): boolean {
+    return Object.values(detailed).reduce((acc, curr) => {
+      if (!acc) return false
+
+      if (curr.debitsPending) return false
+      if (curr.debitsPosted) return false
+      if (curr.creditsPending) return false
+      if (curr.creditsPosted) return false
+
+      return true
+    }, true)
   }
 
   private formatDfspTAccounts(dfspId: string, currencyConfig: CurrencyConfig, detailed: DfspAccountsDetailed): string {
@@ -226,7 +241,8 @@ class BalanceSheet {
     const divisor = Math.pow(10, assetScale)
 
     builder += `${dfspId} (${currency})`.padEnd(NAME_COL) + 'DR'.padStart(COL) + '  ' + 'CR'.padStart(COL) + '\n'
-    builder += '─'.repeat(NAME_COL + COL * 2 + 2) + '\n'
+    builder += '─'.repeat(NAME_COL + COL * 2
+       + 2) + '\n'
 
     // Note: I've commented out some of the transient-only accounts here, since they will always be
     // zero.

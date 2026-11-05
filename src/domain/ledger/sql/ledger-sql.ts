@@ -93,7 +93,6 @@ const fxService = require('../../fx')
 const FxTransferStateChangeModel = require('../../../models/fxTransfer/stateChange')
 
 import { Knex } from 'knex';
-import { TimeoutResultPayment, TimeoutResultPaymentForward } from '../../../handlers/timeout-v2';
 import { TransferHelper } from '../../../handlers/transfer-helper'
 import { assertBoolean, assertNestedFields, safeStringToNumber } from '../../../lib/config/util'
 import db from "../../../lib/db";
@@ -114,6 +113,7 @@ import SettlementModel from '../../../models/settlement/settlement'
 import * as Result from '../shared/results'
 import Helper from './helper';
 import { CurrencyConfig } from '../tigerbeetle/meta-store';
+import { TimeoutResult } from '../../../handlers/timeout-v2';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
@@ -1266,8 +1266,6 @@ export class LedgerSql implements Ledger {
 
     // Look just at the first one to map the result type.
     const resultPosition = resultsPosition[0]
-    // const positionEffects = resultsPosition
-    //   .reduce((acc: Array<Effect>, curr) => acc.concat(...curr.effects), [])
 
     switch (resultPosition.type) {
       case PositionResultType.PASS: return { input, tag: 'OK' }
@@ -1384,25 +1382,40 @@ export class LedgerSql implements Ledger {
       }
     }
 
-    if (transfer.transferStateEnumeration === 'ABORTED') {
+    if (transfer.transferStateEnumeration === 'ABORTED' || transfer.transferState === 'RECEIVED_ERROR') {
       // Payment is finalized. Check to see if this is an exact duplicate Fulfil message,
       // or if the fulfil message was modified in some way.
-      const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(
-        transferId, payload, getTransferErrorDuplicateCheck, saveTransferErrorDuplicateCheck
-      )
-
-      if (hasDuplicateId && hasDuplicateHash) {
-        return {
-          tag: 'DUPLICATE_FINAL',
-          // TODO: find me!
-          context: {
-            id: transferId,
-            abortedAt: new Date()
-          }
-        }
+      let hasDuplicateId = true
+      let hasDuplicateHash = true
+      // We should also check to see if the duplocate hash exists with getTransferDuplicateCheck
+      const duplicateHashError = await getTransferErrorDuplicateCheck(transferId)
+      // We saved the duplicate check, _then_ the payment failed.
+      const duplicateHashOk = await getTransferFulfilmentDuplicateCheck(transferId)
+      let duplicateHash
+      if (!duplicateHashError && !duplicateHashOk) {
+        hasDuplicateId = false
+        hasDuplicateHash = false
+        await saveTransferErrorDuplicateCheck(transferId, payloadHash)
+      } else {
+        duplicateHash = duplicateHashError ? duplicateHashError.hash : duplicateHashOk.hash
+        assert(duplicateHash, 'expected duplicateHashError or duplicateHashOk to be defined.')
       }
 
-      if (hasDuplicateId && !hasDuplicateHash) return { tag: 'MODIFIED' }
+      // We've seen this id + payload before.
+      if (hasDuplicateId) {
+        if (payloadHash === duplicateHash) {
+          return {
+            tag: 'DUPLICATE_FINAL',
+            context: {
+              id: transferId,
+              abortedAt: transfer.completedTimestamp
+            }
+          }
+        } else {
+          // We've seen this id, payload was modified.
+          return { tag: 'MODIFIED' }
+        }
+      }
 
       return {
         tag: 'FAIL_VALIDATION',
@@ -1511,8 +1524,7 @@ export class LedgerSql implements Ledger {
         error
       )
 
-      const effects = [await this.helper.buildEffectPositionRollback(input, transfer, error)]
-      return this.fulfilNext(effects, input)
+      return { tag: 'EXPIRED' }
     }
 
     if (!TransferHelper.fulfilmentMatchesCondition(payload.fulfilment, transfer.condition)) {
@@ -1591,33 +1603,31 @@ export class LedgerSql implements Ledger {
    */
   private async fulfilNext(effects: Array<Effect>, input: FulfilHandlerInput): Promise<PaymentFulfilResult> {
     assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
-    const notifications = effects.filter(effect => effect.functionality === 'notification')
     const positions = effects.filter(effect => effect.functionality === 'position')
       .map(this.deps.effectToKafkaMessage)
     const resultsPosition = await this.deps.positionHandler.handle(null, positions)
     assert(resultsPosition.length > 0, 'Expected at least one result from positionHandler.')
-    
+
     // TODO: this breaks the fx case - handle() returns multiple resultsPosition, we can't simply
     // take the first one. 
     const resultPosition = resultsPosition[0]
-
     const effectsFxNotify = resultsPosition.flatMap(thing => thing.effects)
       .filter(effect => effect.action === 'fx-notify')
 
-    // TODO: handle aborted case!
     switch (resultPosition.type) {
       case PositionResultType.PASS: {
         assert(resultPosition.effects[0])
         const effectPosition = resultPosition.effects[0]
+        assertNestedFields(effectPosition, 'message.id')
         assertNestedFields(effectPosition, 'message.content.payload')
+
+        const id = effectPosition.message.id
         const payload = effectPosition.message.content.payload
-        // TODO: payload is only 'ABORTED' for the abort fx flow...
+
         assert(payload.completedTimestamp)
         assert(payload.fulfilment)
-        assertNestedFields(effectPosition, 'message.id')
-        const id = effectPosition.message.id
 
-        // Ok so for a linked payment we need to include the context to generate the 
+        // Ok so for a linked payment we need to include the context to generate the:
         // 0: action=fx-notify, functionality=notification
         // 1: action=commit,    functionality=notification
         const response: PaymentFulfilResult = {
@@ -1638,21 +1648,27 @@ export class LedgerSql implements Ledger {
         return response
       }
       case PositionResultType.FAIL_OTHER: {
+        assert(resultPosition.effects[0])
+        const effectPosition = resultPosition.effects[0]
+        assertNestedFields(effectPosition, 'message.id')
+        const id = effectPosition.message.id
+
+        // Payee aborted the Payment.
+        if (input.action === Enum.Events.Event.Action.ABORT) {
+          const abortedAt = new Date()
+          abortedAt.setMilliseconds(0)
+          return {
+            input,
+            tag: 'ABORT_OK',
+            context: {
+              id,
+              abortedAt
+            }
+          }
+        }
 
         return { input, tag: 'FAIL_OTHER' }
       }
-      // // Sometimes the position change fails with FAIL_OTHER because the fulfil result fails
-      // // validation + prepare was invalid, in which case the cyril becomes empty and the
-      // // position change fails.
-      // if (result.type === 'FAIL_VALIDATION') {
-      //   type = PaymentFulfilResultType.FAIL_VALIDATION
-      //   error = result.error
-      //   break
-      // }
-
-      // type = PaymentFulfilResultType.FAIL_OTHER
-      // error = resultPosition.error
-      // break
       default: throw new Error(`fulfilNext() unhandled resultPosition.type: ${resultPosition.type}.`)
     }
   }
@@ -1696,7 +1712,7 @@ export class LedgerSql implements Ledger {
     }
   }
 
-  public async sweepTimedOut(now: Date): Promise<SweepResult> {
+  public async sweepTimedOut(now: Date): Promise<CommandResult<TimeoutResult>> {
     const knex = db.getKnex() as Knex
 
     // Naïve approach - use MySQL named locks to prevent concurrent timeout handlers.
@@ -1735,19 +1751,13 @@ export class LedgerSql implements Ledger {
         now
       )
 
-      const paymentsResults = this.helper.paymentEffects(transferTimeoutList)
-      const forexResults = this.helper.forexEffects(fxTransferTimeoutList)
-      const forwardedPaymentsResults = this.helper.forwardedPaymentEffects(transferForwardedList)
-      const forwardedForexesResults = this.helper.forwardedForexEffects(fxTransferForwardedList)
       return Result.commandResultSuccess({
         intervalPayment: [intervalPaymentMin, intervalPaymentMax],
         intervalForex: [intervalForexMin, intervalForexMax],
-        results: [
-          ...paymentsResults,
-          ...forexResults,
-          ...forwardedPaymentsResults,
-          ...forwardedForexesResults
-        ]
+        payments: transferTimeoutList,
+        forexes: fxTransferTimeoutList,
+        paymentForwards: transferForwardedList,
+        forexForwards: fxTransferForwardedList
       })
     } catch (err) {
       return Result.commandResultFailure(err)

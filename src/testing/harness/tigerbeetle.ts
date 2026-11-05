@@ -90,26 +90,19 @@ export class TigerBeetle {
     assert(this.pathToDataFile, 'Expected pathToDataFile to exist.')
 
     this.logger.info(`TigerBeetle starting at localhost:${port}`)
-    this.logger.debug(`$ ${this.pathToBinary} start --addresses=${port} ${this.pathToDataFile}`)
+    this.logger.info(`$ ${this.pathToBinary} start --addresses=${port} ${this.pathToDataFile}`)
     this.child = spawn(this.pathToBinary, [
       'start',
       `--addresses=${port}`,
       this.pathToDataFile
     ], {
-      // stdio: 'ignore',
-      // stdio: 'pipe',
       stdio: ['pipe', 'pipe', 'pipe'],
       detached: false
     })
 
-    // this.child.stdout && this.child.stdout.on('data', (data) => {
-    //   console.log(`stdout: ${data}`);
-    // });
-
     this.child.stderr && this.child.stderr.on('data', (data) => {
       this.logger.info(`tigerbeetle stderr: ${data}`);
     });
-
 
     this._connectionOptions = { clusterId: 0n, port }
 
@@ -137,10 +130,6 @@ export class TigerBeetle {
       })
       this.child = null
     }
-
-    // TODO: LD disabled this for now, when we run one after the other, we seem to get a race
-    // condition where the down from the previous harness runs after the next harness up, meaning
-    // that the file is deleted after `createDataFileIfNotExists()` runs.
 
     // Clean up the datafile.
     if (this.pathToDataFile) {
@@ -189,12 +178,14 @@ export class TigerBeetle {
         + `'tigerbeetle format --cluster=0 --replica=0 --replia-count=1 --development ${pathToDataFile}'.`
       )
       try {
-        await execAsync(`${this.pathToBinary} format --cluster=0 ` +
+        const {stderr} = await execAsync(`${this.pathToBinary} format --cluster=0 ` +
           `--replica=0 --replica-count=1 --development ${pathToDataFile}`
         )
+        this.logger.info(`tigerbeetle stderr: ${stderr}`)
+
         // We made a data file.
         this.pathToDataFile = pathToDataFile
-        continue
+        return
       } catch (err) {
         continue
       }

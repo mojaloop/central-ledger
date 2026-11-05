@@ -486,6 +486,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
       ilpCondition: payload.condition,
+      // TODO: LD if we use an invalid date, this breaks. 
       expirationDate: Time.getUTCString(new Date(payload.expiration)),
       createdDate: new Date()
     }

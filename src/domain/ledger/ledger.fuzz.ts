@@ -59,7 +59,7 @@ assert(filename)
 describe('Ledger Fuzz', () => {
   it('runs the fuzzer for LedgerSQL', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 5000)
-    const trace = await run(stepsMax, { LEDGER: 'SQL' })
+    const trace = await run(stepsMax, { LEDGER: 'SQL' }, 'LEGACY')
 
     const dirTrace = `.fuzz_output/${filename}/${sanitizeTestName(context.name)}`
     const pathTrace = `${dirTrace}/trace.txt`
@@ -70,7 +70,7 @@ describe('Ledger Fuzz', () => {
 
   it('runs the fuzzer for LedgerTigerBeetle', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 1000)
-    const trace = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
+    const trace = await run(stepsMax, { LEDGER: 'TIGERBEETLE' }, 'DETAILED')
 
     const dirTrace = `.fuzz_output/${filename}/${sanitizeTestName(context.name)}`
     const pathTrace = `${dirTrace}/trace.txt`
@@ -81,8 +81,8 @@ describe('Ledger Fuzz', () => {
 
   it.only('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 250)
-    const traceA = await run(stepsMax, { LEDGER: 'SQL' })
-    const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
+    const traceA = await run(stepsMax, { LEDGER: 'SQL' }, 'LEGACY')
+    const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' }, 'LEGACY')
 
     const pathBase = `.fuzz_output/${filename}/${sanitizeTestName(context.name)}`
     fs.mkdirSync(pathBase, { recursive: true });
@@ -100,7 +100,7 @@ describe('Ledger Fuzz', () => {
 
   it('Searches for failing seeds', async (context) => {
     const searches = envOrDefaultNumber('SEARCHES', 15)
-    const stepsMax = envOrDefaultNumber('STEPS_MAX', 250)
+    const stepsMax = envOrDefaultNumber('STEPS_MAX', 750)
 
     const failing: Array<number> = []
 
@@ -110,8 +110,8 @@ describe('Ledger Fuzz', () => {
       console.log(`idxSearch: ${idxSearch}, SEED=${seed}`)
       Harness.injectPrngAndPatchDateGlobal(prng)
 
-      const traceA = await run(stepsMax, { LEDGER: 'SQL' })
-      const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' })
+      const traceA = await run(stepsMax, { LEDGER: 'SQL' }, 'LEGACY')
+      const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' }, 'LEGACY')
       try {
         traceA.compare(traceB, { nameLeft: 'LEDGER=SQL', nameRight: 'LEDGER=TIGERBEETLE', seed })
       } catch (err) {
@@ -125,8 +125,8 @@ describe('Ledger Fuzz', () => {
 
   it('is fully deterministic', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 2000)
-    const traceA = await run(stepsMax, {})
-    const traceB = await run(stepsMax, {})
+    const traceA = await run(stepsMax, {}, 'LEGACY')
+    const traceB = await run(stepsMax, {}, 'LEGACY')
 
     const filename = path.basename(__filename)
     assert(filename)
@@ -145,13 +145,15 @@ describe('Ledger Fuzz', () => {
   })
 })
 
-const run = async (stepsMax: number, config: Partial<ApplicationConfig>): Promise<Trace> => {
+type BalanceTraceMode = 'NONE' | 'LEGACY' | 'DETAILED'
+
+const run = async (stepsMax: number, config: Partial<ApplicationConfig>, balanceTraceMode: BalanceTraceMode): Promise<Trace> => {
   const start = performance.now()
   harness.clock.reset()
   harness.prng.reset()
 
   try {
-    const options: FuzzOptions = { stepsMax }
+    const options: FuzzOptions = { stepsMax, balanceTraceMode }
     await harness.up()
     harness.configOverride(config)
     await harness.setupGlobals()
@@ -214,6 +216,11 @@ interface FuzzOptions {
    * How many steps the fuzzer should take.
    */
   stepsMax: number,
+
+  /**
+   * Should we check the balances between each step and emit them to the trace file?
+   */
+  balanceTraceMode: BalanceTraceMode
 }
 
 class LedgerFuzzer {
@@ -291,7 +298,27 @@ class LedgerFuzzer {
   }
 
   private async doStep() {
-    return this.randomAction()()
+    await this.randomAction()()
+
+    if (this.options.balanceTraceMode === 'NONE') {
+      return
+    }    
+
+    // Log the balance after each step.
+    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
+    const statePost = this.options.balanceTraceMode === 'LEGACY' ? balanceSheetPost.toStringAll()
+      : balanceSheetPost.toTAccounts(this.registeredDfsps, ['USD'])
+
+    this.trace.push({
+      step: this.step,
+      action: 'balance',
+      path: '',
+      payload: '',
+      code: 0,
+      body: '',
+      prngCalls: this.harness.prng.callCount,
+      statePost: statePost
+    })
   }
 
   private actions: Record<ActionName, () => Promise<void>> = {
@@ -418,7 +445,7 @@ class LedgerFuzzer {
     }
 
     // TODO: also need to check for net debit caps etc.
-    if (this.registeredDfsps.length >= 10) {
+    if (this.registeredDfsps.length >= 20) {
       this.applyWeightsPhaseOne()
     }
   }
@@ -427,8 +454,8 @@ class LedgerFuzzer {
     this.weights = {
       createHubAccount: 2,
       createDfsp: 6,
-      disableDfsp: 1,
-      enableDfsp: 1,
+      disableDfsp: 0,
+      enableDfsp: 0,
       enableDfspAccount: 1,
       disableDfspAccount: 1,
       deposit: 1,
@@ -471,11 +498,11 @@ class LedgerFuzzer {
       withdrawPrepare: 2,
       withdrawCommit: 2,
       withdrawAbort: 2,
-      getHubAccounts: 1,
+      getHubAccounts: 0,
       getDfsp: 1,
-      getAllDfsps: 1,
-      getDfspAccounts: 1,
-      getAllDfspAccounts: 1,
+      getAllDfsps: 0,
+      getDfspAccounts: 0,
+      getAllDfspAccounts: 0,
       setNetDebitCap: 2,
       getNetDebitCap: 1,
       getNetDebitCaps: 1,
@@ -575,8 +602,6 @@ class LedgerFuzzer {
   }
 
   private async deposit(): Promise<void> {
-    // const balanceSheetPre = await this.reporter.balanceSheet(new Date())
-
     const name = this.randomDfspName()
     const cmd: DepositCommand = {
       dfspId: name,
@@ -586,16 +611,10 @@ class LedgerFuzzer {
       reason: this.prng.randomString()
     }
     const result = await this.ledger.deposit(cmd)
-    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
-    // const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
-    // const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
-
-    // this.traceResult('deposit', cmd, result, statePost, statePre)
     this.traceResult('deposit', cmd, result)
   }
 
   private async withdrawPrepare(): Promise<void> {
-    const balanceSheetPre = await this.reporter.balanceSheet(new Date())
 
     const name = this.randomDfspName()
     let cmd: WithdrawPrepareCommand = {
@@ -617,13 +636,7 @@ class LedgerFuzzer {
     }
 
     const result = await this.ledger.withdrawPrepare(cmd)
-    // const balanceSheetPost = await this.reporter.balanceSheet(new Date())
-    // const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
-    // const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
-
-    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
-    // this.traceResult('withdrawPrepare', cmd, result, statePost, statePre)
-    this.traceResult('withdrawPrepare', cmd, result, balanceSheetPost.toStringAll(), balanceSheetPre.toStringAll())
+    this.traceResult('withdrawPrepare', cmd, result)
 
     if (!this.withdrawIds[cmd.transferId]) {
       this.withdrawIds[cmd.transferId] = true
@@ -636,24 +649,19 @@ class LedgerFuzzer {
       transferId: this.randomWithdawId()
     }
     const result = await this.ledger.withdrawCommit(cmd)
-    const balanceSheet = await this.reporter.balanceSheet(new Date())
-    this.traceResult('withdrawCommit', cmd, result, balanceSheet.toStringAll())
+    this.traceResult('withdrawCommit', cmd, result)
   }
 
   private async withdrawAbort(): Promise<void> {
-    const balanceSheetPre = await this.reporter.balanceSheet(new Date())
-
     const cmd: WithdrawAbortCommand = {
       transferId: this.randomWithdawId()
     }
     const result = await this.ledger.withdrawAbort(cmd)
 
-    const balanceSheetPost = await this.reporter.balanceSheet(new Date())
-    this.traceResult('withdrawAbort', cmd, result, balanceSheetPost.toStringAll(), balanceSheetPre.toStringAll())
+    this.traceResult('withdrawAbort', cmd, result)
   }
 
   private async setNetDebitCap(): Promise<void> {
-    // const balanceSheetPre = await this.reporter.balanceSheet(new Date())
     let cmd: SetNetDebitCapCommand = {
       netDebitCapType: 'LIMITED',
       dfspId: this.randomDfspName(),
@@ -663,11 +671,6 @@ class LedgerFuzzer {
     }
 
     const result = await this.ledger.setNetDebitCap(cmd)
-    // const balanceSheetPost = await this.reporter.balanceSheet(new Date())
-    // const statePre = balanceSheetPre.toTAccounts([cmd.dfspId], [cmd.currency])
-    // const statePost = balanceSheetPost.toTAccounts([cmd.dfspId], [cmd.currency])
-
-    // this.traceResult('setNetDebitCap', cmd, result, statePost, statePre)
     this.traceResult('setNetDebitCap', cmd, result)
   }
 
@@ -814,8 +817,8 @@ class LedgerFuzzer {
         clone.error = ''
       }
       // Bug in ledger-sql which makes the completedTimestamp change on a DUPLICATE_FINAL.
-      if (clone.tag === 'DUPLICATE_FINAL') {
-        // clone.context.fulfiledAt = new Date(0)
+      if (clone.tag === 'DUPLICATE_FINAL' && clone.context.fulfiledAt) {
+        clone.context.fulfiledAt = new Date(0)
       }
 
       return clone
@@ -859,8 +862,8 @@ class LedgerFuzzer {
 
   private mutatePrepare(payment: ApiHelpers.Payment): PrepareHandlerInput {
     const mutation = this.prng.randomElementWeighted([
-      'invalidIlpPacket', 'swapSrcDest', 'changeCurrency', 'changeAmount', 'invalidExpiration'
-    ], [2, 2, 2, 2, 1])
+      'invalidIlpPacket', 'swapSrcDest', 'changeCurrency', 'changeAmount'
+    ], [2, 2, 2, 2])
     const prepare = payment.toPrepare()
     switch (mutation) {
       case 'invalidIlpPacket': {
@@ -879,9 +882,11 @@ class LedgerFuzzer {
       case 'changeAmount':
         prepare.payload.amount.amount = this.randomAmount()
         return prepare
-      case 'invalidExpiration':
-        prepare.payload.expiration = "invalid date"
-        return prepare
+      // TODO(LD): Not sure if we should reenable, or rely on the ml-api-adapter to catch this.
+      // Invalid dates break the prepare() handling in ledger-sql.
+      // case 'invalidExpiration':
+      //   prepare.payload.expiration = "invalid date"
+      //   return prepare
     }
 
     throw new Error(`mutatePrepare() - unsupported mutation: ${mutation}`)

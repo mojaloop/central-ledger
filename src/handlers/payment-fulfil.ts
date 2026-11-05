@@ -143,6 +143,10 @@ export type PaymentFulfilResultPartial = {
   // TODO: refactor me away, we should be able to generate the fx effects based on the context.
   fxEffect?: Effect
 } | {
+  // The Payee aborted the payment succesfully.
+  tag: 'ABORT_OK',
+  context: FulfilContext
+} | {
   tag: 'DUPLICATE_FINAL'
   context: FulfilContext,
 } | {
@@ -152,7 +156,7 @@ export type PaymentFulfilResultPartial = {
   failureReasons: Array<string>
 } | {
   tag: 'FAIL_OTHER'
-} | { 
+} | {
   tag: 'INVALID_FULFILMENT'
 } | {
   tag: 'MODIFIED'
