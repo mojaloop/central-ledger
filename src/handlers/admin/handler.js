@@ -70,10 +70,11 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   }
 }
 
-// A recordFundsOut reservation can be aborted from these states. The timeout handler marks an expired
-// reservation RESERVED_TIMEOUT but never releases its position: its timed-out transfer list only covers
-// PAYER_DFSP/PAYEE_DFSP transfers, not the HUB/DFSP_SETTLEMENT pair a reconciliation transfer has.
-const abortableRecordFundsOutStates = new Set([
+// The states in which a recordFundsOut reservation still holds its position, so a commit or an abort can
+// act on it. The timeout handler marks an expired reservation RESERVED_TIMEOUT but never releases its
+// position: its timed-out transfer list only covers PAYER_DFSP/PAYEE_DFSP transfers, not the
+// HUB/DFSP_SETTLEMENT pair a reconciliation transfer has.
+const reservedRecordFundsOutStates = new Set([
   Enum.Transfers.TransferState.RESERVED,
   Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
 ])
@@ -94,7 +95,7 @@ const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTime
     logAdminTransfer(payload.action, 'validationFailed::notFound')
   } else if (!settlementParticipant || String(settlementParticipant.participantCurrencyId) !== String(payload.participantCurrencyId)) {
     logAdminTransfer(payload.action, 'validationFailed::notRecordFundsOutForAccount')
-  } else if (!abortableRecordFundsOutStates.has(transferState.transferStateId)) {
+  } else if (!reservedRecordFundsOutStates.has(transferState.transferStateId)) {
     logAdminTransfer(payload.action, 'validationFailed::nonReservedState')
   } else if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT) {
     // A commit needs a live reservation. An abort is accepted after the reservation has expired because
