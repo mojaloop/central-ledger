@@ -304,6 +304,17 @@ const binItems = [{
   }
 }]
 
+// A net debit cap high enough not to affect liquidity tests
+const participantLimitHigh = {
+  participantCurrencyId: 1,
+  participantLimitTypeId: 1,
+  value: 1000,
+  isActive: 1,
+  createdBy: 'unknown',
+  participantLimitId: 1,
+  thresholdAlarmPercentage: 0.5
+}
+
 Test('Prepare domain', positionIndexTest => {
   let sandbox
 
@@ -772,6 +783,120 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages.length, 3)
       test.equal(processedMessages.accumulatedPositionChanges.length, 0)
       test.equal(processedMessages.accumulatedPositionValue, -4)
+      test.end()
+    })
+
+    changeParticipantPositionTest.test('reduce the available liquidity after each reservation in the bin', async (test) => {
+      // Liquidity cover 3, three transfers of 2: only the first fits
+      const processedMessages = await processPositionPrepareBin(
+        binItems,
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            [transferMessage1.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            [transferMessage2.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            [transferMessage3.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE
+          },
+          settlementParticipantPosition: -3,
+          participantLimit: { ...participantLimitHigh }
+        }
+      )
+
+      test.deepEqual(
+        processedMessages.accumulatedTransferStateChanges.map(change => change.transferStateId),
+        [Enum.Transfers.TransferState.RESERVED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED],
+        'first transfer reserved, the other two rejected'
+      )
+      test.equal(processedMessages.notifyMessages[1].message.content.payload?.errorInformation?.errorCode, '4001', 'second transfer rejected for insufficient liquidity')
+      test.equal(processedMessages.notifyMessages[2].message.content.payload?.errorInformation?.errorCode, '4001', 'third transfer rejected for insufficient liquidity')
+      test.equal(processedMessages.accumulatedPositionChanges.length, 1, 'one position change')
+      test.equal(processedMessages.accumulatedPositionValue, 2, 'payer position stays within the liquidity cover')
+      test.end()
+    })
+
+    changeParticipantPositionTest.test('reduce the available net debit cap after each reservation in the bin', async (test) => {
+      // Net debit cap 3, three transfers of 2: only the first fits
+      const processedMessages = await processPositionPrepareBin(
+        binItems,
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            [transferMessage1.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            [transferMessage2.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            [transferMessage3.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE
+          },
+          settlementParticipantPosition: -1000,
+          participantLimit: { ...participantLimitHigh, value: 3 }
+        }
+      )
+
+      test.deepEqual(
+        processedMessages.accumulatedTransferStateChanges.map(change => change.transferStateId),
+        [Enum.Transfers.TransferState.RESERVED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED],
+        'first transfer reserved, the other two rejected'
+      )
+      test.equal(processedMessages.notifyMessages[1].message.content.payload?.errorInformation?.errorCode, '4200', 'second transfer rejected for the payer limit')
+      test.equal(processedMessages.notifyMessages[2].message.content.payload?.errorInformation?.errorCode, '4200', 'third transfer rejected for the payer limit')
+      test.equal(processedMessages.accumulatedPositionChanges.length, 1, 'one position change')
+      test.equal(processedMessages.accumulatedPositionValue, 2, 'payer position stays within the net debit cap')
+      test.end()
+    })
+
+    changeParticipantPositionTest.test('reserve up to the exact available liquidity in the bin', async (test) => {
+      // Liquidity cover 4, three transfers of 2: the first two fit exactly
+      const processedMessages = await processPositionPrepareBin(
+        binItems,
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            [transferMessage1.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            [transferMessage2.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            [transferMessage3.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE
+          },
+          settlementParticipantPosition: -4,
+          participantLimit: { ...participantLimitHigh }
+        }
+      )
+
+      test.deepEqual(
+        processedMessages.accumulatedTransferStateChanges.map(change => change.transferStateId),
+        [Enum.Transfers.TransferState.RESERVED, Enum.Transfers.TransferState.RESERVED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED],
+        'first two transfers reserved, the third rejected'
+      )
+      test.equal(processedMessages.accumulatedPositionValue, 4, 'payer position equals the liquidity cover')
+      test.end()
+    })
+
+    changeParticipantPositionTest.test('not use up available liquidity for a rejected transfer', async (test) => {
+      // Liquidity cover 3, transfers of 2, 2 and 1: the second is rejected, the third still fits
+      const smallTransferBinItem = {
+        ...binItems[2],
+        decodedPayload: { ...binItems[2].decodedPayload, amount: { amount: '1', currency: 'USD' } }
+      }
+      const processedMessages = await processPositionPrepareBin(
+        [binItems[0], binItems[1], smallTransferBinItem],
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            [transferMessage1.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            [transferMessage2.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            [transferMessage3.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE
+          },
+          settlementParticipantPosition: -3,
+          participantLimit: { ...participantLimitHigh }
+        }
+      )
+
+      test.deepEqual(
+        processedMessages.accumulatedTransferStateChanges.map(change => change.transferStateId),
+        [Enum.Transfers.TransferState.RESERVED, Enum.Transfers.TransferInternalState.ABORTED_REJECTED, Enum.Transfers.TransferState.RESERVED],
+        'transfers of 2 and 1 reserved, the second transfer of 2 rejected'
+      )
+      test.equal(processedMessages.accumulatedPositionValue, 3, 'payer position equals the liquidity cover')
       test.end()
     })
 
