@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.3.2](https://github.com/mojaloop/central-ledger/compare/v20.3.1...v20.3.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* prepare batch liquidity loosening ([#1312](https://github.com/mojaloop/central-ledger/issues/1312)) ([bb9b115](https://github.com/mojaloop/central-ledger/commit/bb9b1150884059fc0adbe615b20fde636058eed6))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([4286e64](https://github.com/mojaloop/central-ledger/commit/4286e64e9afada6ef9fc06dd099c3002a4dca8c2))
+
 ### [20.3.1](https://github.com/mojaloop/central-ledger/compare/v20.3.0...v20.3.1) (2026-10-22)
 
 
