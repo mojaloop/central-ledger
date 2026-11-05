@@ -107,6 +107,13 @@ export interface DfspAccountIds {
   netDebitCapSetUtil: bigint
   restricted: bigint
   reserved: bigint
+
+  /**
+   * Move funds into this account when a payment expires or is aborted.
+   * Funds are swept from return back to unrestricted/restricted periodially.
+   */
+  return: bigint
+
   commitedOutgoing: bigint
   clearingCredit: bigint
   clearingSetup: bigint
@@ -196,7 +203,6 @@ export type NetDebitCap = {
  * proxied through another Participant (PROXY).
  */
 export type ParticipantLocation = 'LOCAL' | 'PROXY'
-
 
 /**
  * Metadata relating to the payment.
@@ -748,6 +754,19 @@ export default class MetaStore {
     await this.savePaymentMetas(payments)
   }
 
+  /**
+   * Look up the payments that might have expired between the two given dates.
+   */
+  public async lookupPaymentsByExpiryBetween(start: Date, end: Date): Promise<Array<PaymentMeta>> {
+    assert(end.getTime() > start.getTime())
+
+    const rows = await this.db('metaPayment')
+      .whereBetween('expiration', [start, end])
+      .select('*')
+
+    return rows.map(MetaStore.hydratePaymentMeta)
+  }
+
   public async queryDfspRootsWithCurrencies(): Promise<{
     // All rows joined together.
     dfspRootAndCurrency: Array<DfspRoot & DfspCurrency>,
@@ -950,7 +969,7 @@ export default class MetaStore {
   public async createDfspCurrency(dfspId: string, currency: string, now: Date, ids: Array<number>):
     Promise<DfspCurrency> {
     let trx: Knex.Transaction | undefined
-    assert(ids.length >= 12)
+    assert(ids.length >= 13)
     try {
       trx = await this.db.transaction()
 
@@ -978,6 +997,7 @@ export default class MetaStore {
         netDebitCap: BigInt(ids[10]),
         netDebitCapSet: BigInt(ids[11]),
         netDebitCapSetUtil: BigInt(ids[12]),
+        return: BigInt(ids[13]),
         changedDate: now,
         changedDatePosition: now,
         changedDateSettlement: now,
@@ -1252,6 +1272,7 @@ export default class MetaStore {
       unrestrictedLock: BigInt(row.unrestrictedLock),
       restricted: BigInt(row.restricted),
       reserved: BigInt(row.reserved),
+      return: BigInt(row.return),
       commitedOutgoing: BigInt(row.commitedOutgoing),
       clearingCredit: BigInt(row.clearingCredit),
       clearingSetup: BigInt(row.clearingSetup),

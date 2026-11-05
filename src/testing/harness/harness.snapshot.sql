@@ -1527,6 +1527,7 @@ CREATE TABLE `metaDfspCurrency` (
   `unrestrictedLock` bigint(20) unsigned NOT NULL,
   `restricted` bigint(20) unsigned NOT NULL,
   `reserved` bigint(20) unsigned NOT NULL,
+  `return` bigint(20) unsigned NOT NULL,
   `commitedOutgoing` bigint(20) unsigned NOT NULL,
   `clearingCredit` bigint(20) unsigned NOT NULL,
   `clearingSetup` bigint(20) unsigned NOT NULL,
@@ -4125,4 +4126,4 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-11-04  9:19:41
+-- Dump completed on 2026-11-09 10:41:50

@@ -1,11 +1,12 @@
 import assert from "node:assert";
 import { randomUUID } from "node:crypto";
-import { CommitPaymentDtoAborted, FulfilContextFulfiled, FulfilHandlerInput, PaymentFulfilResult } from "../handlers/payment-fulfil";
-import { PaymentPrepareResult, PrepareHandlerInput } from "../handlers/payment-prepare";
+import { CommitPaymentDtoAborted, FulfilContextFulfiled, FulfilHandlerInput, PaymentFulfilResult, PaymentFulfilResultTag } from "../handlers/payment-fulfil";
+import { PaymentPrepareResult, PaymentPrepareResultTag, PrepareHandlerInput } from "../handlers/payment-prepare";
 import { ApplicationConfig } from "../lib/config";
 import { Effect } from "./message-bus";
 import { ForwardedFxTransfer, ForwardedTransfer, TimedOutFxTransfer, TimedOutTransfer } from "../models/transfer/facade";
-import { TimeoutResultPayment, TimeoutResultPaymentForward } from "../handlers/timeout-v2";
+import { PaymentTimeout, TimeoutResultPayment, TimeoutResultPaymentForward } from "../handlers/timeout-v2";
+import { Payment } from "../testing/api-helpers";
 
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { StreamingProtocol, resourceVersions } = Util
@@ -56,45 +57,45 @@ export default class MessagingHelper {
     // Shortcut.
     const input = result.input
     switch (result.tag) {
-      case 'FAIL_VALIDATION': {
+      case PaymentPrepareResultTag.FAIL_VALIDATION: {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           result.failureReasons.join(', ')
         )
         return [this.buildEffectPrepareNotificationError(input, fspiopError)]
       }
-      case 'MODIFIED': {
+      case PaymentPrepareResultTag.MODIFIED: {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
         )
         return [this.buildEffectPrepareNotificationError(input, fspiopError)]
       }
-      case 'DUPLICATE_FINAL': {
+      case PaymentPrepareResultTag.DUPLICATE_FINAL: {
         return [this.buildEffectPrepareNotificationDuplicate(input, result.context)]
       }
-      case 'DUPLICATE_NON_FINAL': return []
-      case 'FAIL_ACCOUNT_CLOSED': {
+      case PaymentPrepareResultTag.DUPLICATE_NON_FINAL: return []
+      case PaymentPrepareResultTag.FAIL_ACCOUNT_CLOSED: {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           'Account closed'
         )
         return [this.buildEffectPrepareNotificationError(input, fspiopError)]
       }
-      case 'FAIL_LIQUIDITY': {
+      case PaymentPrepareResultTag.FAIL_LIQUIDITY: {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY
         )
         return [this.buildEffectPrepareNotificationErrorLiquidity(input, fspiopError)]
       }
-      case 'FAIL_OTHER': {
+      case PaymentPrepareResultTag.FAIL_OTHER: {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
         )
         return [this.buildEffectPrepareNotificationError(input, fspiopError)]
       }
       // Special case for UNFUSE handler. We need to emit a prepare position message.
-      case 'PREPARE_NEXT': return [result.effectPosition]
-      case 'OK': return [
+      case PaymentPrepareResultTag.PREPARE_NEXT: return [result.effectPosition]
+      case PaymentPrepareResultTag.OK: return [
         this.buildEffectPrepareNotificationSuccess(input)
       ]
       default: {
@@ -108,20 +109,20 @@ export default class MessagingHelper {
     // Shortcut.
     const input = result.input
     switch (result.tag) {
-      case 'FAIL_VALIDATION': {
+      case PaymentFulfilResultTag.FAIL_VALIDATION: {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           result.failureReasons.join(', ')
         )
         return [this.buildEffectFulfilNotificationError(input, fspiopError)]
       }
-      case 'EXPIRED': {
+      case PaymentFulfilResultTag.EXPIRED: {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED
         )
         return [this.buildEffectFulfilNotificationError(input, fspiopError)]
       }
-      case 'INVALID_FULFILMENT': {
+      case PaymentFulfilResultTag.INVALID_FULFILMENT: {
         const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           'invalid fulfilment'
@@ -129,37 +130,37 @@ export default class MessagingHelper {
 
         return [this.buildEffectFulfilNotificationError(input, errorFspiop)]
       }
-      case 'MODIFIED': {
+      case PaymentFulfilResultTag.MODIFIED: {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST
         )
         return [this.buildEffectFulfilNotificationError(input, fspiopError)]
       }
-      case 'DUPLICATE_FINAL': {
+      case PaymentFulfilResultTag.DUPLICATE_FINAL: {
         // TODO: what about duplicate aborted?
         // @ts-ignore
         return [this.buildEffectFulfilDuplicate(input, result.context)]
       }
-      case 'DUPLICATE_NON_FINAL': return []
+      case PaymentFulfilResultTag.DUPLICATE_NON_FINAL: return []
 
 
-      case 'FAIL_OTHER': {
+      case PaymentFulfilResultTag.FAIL_OTHER: {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
         )
         return [this.buildEffectFulfilNotificationError(input, fspiopError)]
       }
       // Special case for UNFUSE handler. We need to emit a fulfil position + notification message.
-      case 'FULFIL_NEXT': return result.effects
+      case PaymentFulfilResultTag.FULFIL_NEXT: return result.effects
 
-      case 'ABORT_OK': {
+      case PaymentFulfilResultTag.ABORT_OK: {
         const payload = input.payload as CommitPaymentDtoAborted
         const fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(
           payload.errorInformation
         )
         return [this.buildEffectAbortNotification(input, fspiopError)]
       }
-      case 'OK': {
+      case PaymentFulfilResultTag.OK: {
         const effects = [
           // @ts-ignore
           this.buildEffectFulfilNotificationSuccess(input, result.context),
@@ -431,14 +432,14 @@ export default class MessagingHelper {
     return effect
   }
 
-  public buildEffectsTimedOutPayments(payments: Array<TimedOutTransfer>):
+  public buildEffectsTimedOutPayments(payments: Array<PaymentTimeout>):
     Array<TimeoutResultPayment> {
     return payments.map(payment => {
-      if (payment.bulkTransferId) {
-        throw new Error('TimeoutHandlerV2 - timeouts for bulk transfers not yet supported.')
-      }
+      // if (payment.bulkTransferId) {
+      //   throw new Error('TimeoutHandlerV2 - timeouts for bulk transfers not yet supported.')
+      // }
 
-      switch (payment.transferStateId) {
+      switch (payment.state) {
         // Payment expired _before_ the position was reserved.
         case 'EXPIRED_PREPARED': {
           return {
@@ -453,7 +454,7 @@ export default class MessagingHelper {
             effect: this.buildEffectPaymentPositionTimeout(payment)
           }
         default: {
-          throw new Error(`timeoutPaymentEffects - unhandled transferStateId: ${payment.transferStateId}`)
+          throw new Error(`timeoutPaymentEffects - unhandled transferStateId: ${payment.state}`)
         }
       }
     })
@@ -546,7 +547,7 @@ export default class MessagingHelper {
     }
   }
 
-  public buildEffectPaymentTimeoutNotification(payment: TimedOutTransfer): Effect {
+  public buildEffectPaymentTimeoutNotification(payment: PaymentTimeout): Effect {
     const effect: Effect = {
       functionality: Type.NOTIFICATION,
       action: Action.TIMEOUT_RECEIVED,
@@ -559,21 +560,24 @@ export default class MessagingHelper {
     return effect
   }
 
-  public buildEffectPaymentPositionTimeout(payment: TimedOutTransfer): Effect {
+  public buildEffectPaymentPositionTimeout(payment: PaymentTimeout): Effect {
     return {
       functionality: Type.POSITION,
       action: Action.TIMEOUT_RESERVED,
       message: this.buildTimeoutMessagePayment(payment),
-      messageKey: payment.effectedParticipantCurrencyId.toString(),
+      // TODO: do we need this?
+      // messageKey: payment.effectedParticipantCurrencyId.toString(),
       topicName: 'topic-transfer-position-batch',
       status: 'FAILURE',
       fspiopError: this.timeoutError
     }
   }
 
-  public buildTimeoutMessagePayment(payment: TimedOutTransfer) {
-    const destination = payment.externalPayerName || payment.payerFsp
-    const source = payment.externalPayeeName || payment.payeeFsp
+  public buildTimeoutMessagePayment(payment: PaymentTimeout) {
+    // const destination = payment.externalPayerName || payment.payerFsp
+    // const source = payment.externalPayeeName || payment.payeeFsp
+    const destination = payment.payerId
+    const source = payment.payeeId
     const transfersResource = Enum.Http.HeaderResources.TRANSFERS
     const contentVersion = resourceVersions[transfersResource].contentVersion
 
@@ -583,7 +587,7 @@ export default class MessagingHelper {
       this.timeoutError.errorInformation.errorDescription
     )
     const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(
-      payment.transferId,
+      payment.id,
       Enum.Kafka.Topics.NOTIFICATION,
       Action.TIMEOUT_RECEIVED,
       state
@@ -592,19 +596,19 @@ export default class MessagingHelper {
       destination, transfersResource, this.deps.config.HUB_NAME, contentVersion
     )
     const message = Util.StreamingProtocol.createMessage(
-      payment.transferId,
+      payment.id,
       destination,
       source,
       metadata,
       headers,
       this.timeoutError,
-      { id: payment.transferId },
+      { id: payment.id },
       `application/vnd.interoperability.${transfersResource}+json;version=${contentVersion}`
     )
     message.from = this.deps.config.HUB_NAME
     message.content.context = {
-      payer: payment.externalPayerName || payment.payerFsp,
-      payee: payment.externalPayeeName || payment.payeeFsp
+      payer: payment.payerId,
+      payee: payment.payeeId
     }
 
     return message

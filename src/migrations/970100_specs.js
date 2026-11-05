@@ -72,6 +72,7 @@ exports.up = async (knex) => {
         t.bigInteger('unrestrictedLock').unsigned().notNullable()
         t.bigInteger('restricted').unsigned().notNullable()
         t.bigInteger('reserved').unsigned().notNullable()
+        t.bigInteger('return').unsigned().notNullable()
         t.bigInteger('commitedOutgoing').unsigned().notNullable()
         t.bigInteger('clearingCredit').unsigned().notNullable()
         t.bigInteger('clearingSetup').unsigned().notNullable()

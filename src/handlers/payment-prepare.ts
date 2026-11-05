@@ -90,27 +90,39 @@ export interface PrepareHandlerInput {
   actionEnum: string;
 }
 
+export enum PaymentPrepareResultTag {
+  FAIL_VALIDATION = 'FAIL_VALIDATION',
+  MODIFIED = 'MODIFIED',
+  DUPLICATE_FINAL = 'DUPLICATE_FINAL',
+  DUPLICATE_NON_FINAL = 'DUPLICATE_NON_FINAL',
+  FAIL_ACCOUNT_CLOSED = 'FAIL_ACCOUNT_CLOSED',
+  FAIL_LIQUIDITY = 'FAIL_LIQUIDITY',
+  FAIL_OTHER = 'FAIL_OTHER',
+  OK = 'OK',
+  PREPARE_NEXT = 'PREPARE_NEXT',
+}
+
 export type PaymentPrepareResultPartial = {
-  tag: 'FAIL_VALIDATION'
+  tag: PaymentPrepareResultTag.FAIL_VALIDATION
   failureReasons: Array<string>
 } | {
-  tag: 'MODIFIED',
+  tag: PaymentPrepareResultTag.MODIFIED,
 } | {
-  tag: 'DUPLICATE_FINAL'
+  tag: PaymentPrepareResultTag.DUPLICATE_FINAL
   context: FulfilContext
 } | {
-  tag: 'DUPLICATE_NON_FINAL'
+  tag: PaymentPrepareResultTag.DUPLICATE_NON_FINAL
 } | {
-  tag: 'FAIL_ACCOUNT_CLOSED'
+  tag: PaymentPrepareResultTag.FAIL_ACCOUNT_CLOSED
 } | {
-  tag: 'FAIL_LIQUIDITY'
+  tag: PaymentPrepareResultTag.FAIL_LIQUIDITY
 } | {
-  tag: 'FAIL_OTHER'
+  tag: PaymentPrepareResultTag.FAIL_OTHER
 } | {
-  tag: 'OK'
+  tag: PaymentPrepareResultTag.OK
 } | {
   // Special case for unfuse + LedgerSQL
-  tag: 'PREPARE_NEXT',
+  tag: PaymentPrepareResultTag.PREPARE_NEXT
   effectPosition: Effect
 }
 

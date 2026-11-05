@@ -202,6 +202,7 @@ export enum AccountCode {
   Clearing_Credit = 20101,
   Restricted = 20200,
   Reserved = 20300,
+  Return = 20400,
   Committed_Outgoing = 20400,
   Dfsp = 60100,
   Net_Debit_Cap = 60200,
@@ -217,6 +218,9 @@ export enum AccountCode {
   Unrestricted_Lock = 60600,
   Settlement_Outgoing = 60701,
   Settlement_Incoming = 60702,
+
+  Bookmark_Debit = 7100,
+  Bookmark_Credit = 7101,
 
   // TODO(LD): remove me! 
   TIMEOUT = 9000,
@@ -240,6 +244,7 @@ export enum TransferCode {
   Net_Debit_Cap_Sweep_To_Unrestricted = 50006,
   Close_Account = 50007,
   Set_Net_Debit_Cap = 60001,
+  Sweep_Bookmark = 7001
 }
 
 export const TransferCodeDescription = {
@@ -259,7 +264,8 @@ export const TransferCodeDescription = {
   [TransferCode.Net_Debit_Cap_Set_Unlimited]: 'Set the new Net Debit Cap to unlimited.',
   [TransferCode.Net_Debit_Cap_Sweep_To_Unrestricted]: 'Sweep total balance from Restricted to Unrestricted',
   [TransferCode.Close_Account]: 'Close account.',
-  [TransferCode.Set_Net_Debit_Cap]: 'Set net debit cap top ',
+  [TransferCode.Set_Net_Debit_Cap]: 'Set net debit cap.',
+  [TransferCode.Sweep_Bookmark]: 'Sweep bookmark.',
 }
 
 
@@ -417,34 +423,12 @@ export type SetNetDebitCapCommand = {
   currency: string
 }
 
-export enum DeactivateDfspResponseType {
-  /**
-   * Closed the account successfully
-   */
-  SUCCESS = 'SUCCESS',
-
-  /**
-   * Account is already closed
-   */
-  ALREADY_CLOSED = 'ALREADY_CLOSED',
-
-  /**
-   * Retryable error - control account not created
-   */
-  CREATE_ACCOUNT = 'CREATE_ACCOUNT',
-
-  /**
-   * Fatal Error
-   */
-  FAILED = 'FAILED'
-}
-
 export type DeactivateDfspResponse = {
-  type: DeactivateDfspResponseType.SUCCESS | DeactivateDfspResponseType.ALREADY_CLOSED
+  type: 'SUCCESS'
 } | {
-  type: DeactivateDfspResponseType.CREATE_ACCOUNT
+  type: 'ALREADY_CLOSED' | 'CREATE_ACCOUNT'
 } | {
-  type: DeactivateDfspResponseType.FAILED
+  type: 'FAILURE'
   error: Error
 }
 

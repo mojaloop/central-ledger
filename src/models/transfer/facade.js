@@ -1028,7 +1028,10 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
               .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
               .leftJoin('transferTimeout AS tt', 'tt.transferId', 't.transferId')
               .whereNull('tt.transferId')
-              .whereIn('tsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, `${Enum.Transfers.TransferState.RESERVED}`])
+              .whereIn('tsc.transferStateId', [
+                `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, 
+                `${Enum.Transfers.TransferState.RESERVED}`,
+              ])
               .select('t.transferId', 't.expirationDate')
           })
 

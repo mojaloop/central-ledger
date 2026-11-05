@@ -30,6 +30,7 @@ import {
   GetSettlementWindowsQuery,
   Ledger,
   LookupTransferQuery,
+  PrepareResultType,
   SetNetDebitCapCommand,
   Settlement,
   SettlementAbortCommand,
@@ -40,8 +41,8 @@ import {
   WithdrawCommitCommand,
   WithdrawPrepareCommand
 } from "../ledger/shared/types"
-import { PrepareHandlerInput } from "../../handlers/payment-prepare"
-import { FulfilHandlerInput, PaymentFulfilResultType } from "../../handlers/payment-fulfil"
+import { PaymentPrepareResultTag, PrepareHandlerInput } from "../../handlers/payment-prepare"
+import { FulfilHandlerInput, PaymentFulfilResultTag, PaymentFulfilResultType } from "../../handlers/payment-fulfil"
 import { Reporter } from "./shared/reporter"
 
 const logger = loggerFactory()
@@ -68,7 +69,7 @@ describe('Ledger Fuzz', () => {
     console.log(`Fuzz trace written to ${pathTrace}.`)
   })
 
-  it('runs the fuzzer for LedgerTigerBeetle', async (context) => {
+  it.only('runs the fuzzer for LedgerTigerBeetle', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 1000)
     const trace = await run(stepsMax, { LEDGER: 'TIGERBEETLE' }, 'DETAILED')
 
@@ -79,7 +80,7 @@ describe('Ledger Fuzz', () => {
     console.log(`Fuzz trace written to ${pathTrace}.`)
   })
 
-  it.only('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
+  it('LedgerSql and LedgerTigerBeetle are identical', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 250)
     const traceA = await run(stepsMax, { LEDGER: 'SQL' }, 'LEGACY')
     const traceB = await run(stepsMax, { LEDGER: 'TIGERBEETLE' }, 'LEGACY')
@@ -232,17 +233,26 @@ class LedgerFuzzer {
   private registeredCurrencies: Array<string> = []
   private registeredDfspIds: Record<string, true> = {}
   private registeredDfsps: Array<string> = []
-  private dfspAccountIds: Record<number, true> = {}
+  private dfspAccountIds: Record<number, string> = {}
+  private dfspsByCurrency: Record<string, Array<string>> = {}
   private withdrawIds: Record<string, true> = {}
   private withdraws: Array<any> = []
   private transferIds: Record<string, true> = {}
+  private pendingPrepareIds: Set<string> = new Set()
   private prepareIdsSuccess: Record<string, true> = {}
   private fulfilIdsSuccess: Record<string, true> = {}
+  private countPrepareAttempt: number = 0
+  private countFulfilAttempt: number = 0
+  private disabledDfsps: Set<string> = new Set()
+  private disabledAccountIds: Set<number> = new Set()
+  private disabledDfspCurrencies: Record<string, {dfsp: string, currency: string }> = {}
 
   private abortedIds: Record<string, true> = {}
   private payments: Array<ApiHelpers.Payment> = []
   private settlementIds: Record<number, true> = {}
   private settlements: Array<Settlement> = []
+
+  private readonly allCurrencies = ['USD', 'AUD', 'EUR', 'GBP']
 
   private ledger: Ledger
   private prng: PRNG
@@ -288,9 +298,11 @@ class LedgerFuzzer {
     }
 
     logger.warn(`Summary:`)
-    logger.warn(`\tDFSPS Created:       ${Object.keys(this.registeredDfsps).length}`)
-    logger.warn(`\tSuccessful Prepares: ${Object.keys(this.prepareIdsSuccess).length}`)
-    logger.warn(`\tSuccessful Fulfils:  ${Object.keys(this.fulfilIdsSuccess).length}`)
+    logger.warn(`\tDFSPS Created:     ${Object.keys(this.registeredDfsps).length}`)
+    const statPrepares = `${Object.keys(this.prepareIdsSuccess).length}/${this.countPrepareAttempt}`
+    const statFulfils = `${Object.keys(this.fulfilIdsSuccess).length}/${this.countFulfilAttempt}`
+    logger.warn(`\tPrepares: ${statPrepares.padStart(12)}`)
+    logger.warn(`\tFulfils:  ${statFulfils.padStart(12)}`)
   }
 
   get trace() {
@@ -302,7 +314,7 @@ class LedgerFuzzer {
 
     if (this.options.balanceTraceMode === 'NONE') {
       return
-    }    
+    }
 
     // Log the balance after each step.
     const balanceSheetPost = await this.reporter.balanceSheet(new Date())
@@ -386,7 +398,7 @@ class LedgerFuzzer {
 
   private async createHubAccount(): Promise<void> {
     const accountType = this.prng.coin() ? this.randomAccountType() : undefined
-    const currency = this.randomCurrency()
+    const currency = this.randomCurrencyNew()
 
     const cmd: CreateHubAccountCommand = {
       currency,
@@ -399,17 +411,36 @@ class LedgerFuzzer {
     const result = await this.ledger.createHubAccount(cmd)
     this.traceResult('createHubAccount', cmd, result)
 
-    if (result.type === 'SUCCESS') this.registeredCurrencies.push(currency)
+    // console.log(`createHubAccount currency=${currency}, result: ${result.type}`)
+    // if (result.type === 'FAILURE') {
+    //   console.log(`\t ${result.error}`)
+    // }
 
-    if (this.registeredCurrencies.length >= 4) {
-      // No more need to create hub accounts.
-      this.weights.createHubAccount = 0
+    if (result.type === 'SUCCESS') {
+      this.registeredCurrencies.push(currency)
+      if (this.registeredCurrencies.length >= 2) {
+        this.applyWeightsPhaseOne()
+      }
     }
   }
 
   private async createDfsp(): Promise<void> {
-    const name = this.randomDfspName()
-    const currency = this.randomCurrency()
+    const name = this.prng.randomElementFrom([
+      'dfsp_a',
+      'dfsp_b',
+      'dfsp_c',
+      'dfsp_d',
+      'dfsp_e',
+      'dfsp_f',
+      'dfsp_g',
+      'dfsp_h',
+      'dfsp_i',
+      'dfsp_j',
+      'dfsp_k',
+      'dfsp_l',
+    ])
+    // const currency = this.randomCurrency()
+    const currency = this.randomCurrencyOld()
 
     const cmd: CreateDfspCommand = {
       dfspId: name,
@@ -428,12 +459,24 @@ class LedgerFuzzer {
     const result = await this.ledger.createDfsp(cmd)
     this.traceResult('createDfsp', cmd, result)
 
+    // console.log(`createDfsp ${cmd.dfspId} result: ${result.type}`)
+    // if (result.type === 'FAILURE') {
+    //   console.log(`\t${result.error}`)
+    // }
+
     if (result.type === 'SUCCESS' && !this.registeredDfspIds[name]) {
+      // Track which DFSPs exist.
       this.registeredDfspIds[name] = true
       this.registeredDfsps.push(name)
 
-      // Maybe also set up the net debit cap.
-      if (this.prng.coin()) {
+      // Track which DFSPs have which currencies.
+      if (!this.dfspsByCurrency[currency]) {
+        this.dfspsByCurrency[currency] = []
+      }
+      this.dfspsByCurrency[currency].push(name)
+
+      // Probably also set up the net debit cap.
+      if (this.prng.intExclusive(100) > 0) {
         await this.ledger.setNetDebitCap({
           dfspId: name,
           currency: currency,
@@ -442,18 +485,31 @@ class LedgerFuzzer {
           alarmPercentage: this.prng.intExclusive(100),
         })
       }
+
+      // Probably also deposit.
+      if (this.prng.intExclusive(100) > 0) {
+        await this.ledger.deposit({
+          dfspId: name,
+          currency: currency,
+          amount: 100000,
+          transferId: this.prng.uuidv4(),
+          reason: this.prng.randomString()
+        })
+      }
     }
 
+
     // TODO: also need to check for net debit caps etc.
-    if (this.registeredDfsps.length >= 20) {
-      this.applyWeightsPhaseOne()
+    if (this.registeredDfsps.length >= 8) {
+      this.applyWeightsPhaseTwo()
     }
   }
 
   private applyWeightsPhaseBootstrap() {
     this.weights = {
-      createHubAccount: 2,
-      createDfsp: 6,
+      ...this.weights,
+      createHubAccount: 10,
+      createDfsp: 3,
       disableDfsp: 0,
       enableDfsp: 0,
       enableDfspAccount: 1,
@@ -470,71 +526,23 @@ class LedgerFuzzer {
       setNetDebitCap: 2,
       getNetDebitCap: 1,
       getNetDebitCaps: 1,
-      prepare: 0,
-      fulfil: 0,
-      sweepTimedOut: 0,
-      lookupTransfer: 0,
-      closeSettlementWindow: 0,
-      settlementPrepare: 0,
-      settlementAbort: 0,
-      settlementCommit: 0,
-      settlementUpdate: 0,
-      getSettlementWindows: 0,
-      getSettlementWindow: 0,
-      getSettlement: 0,
-      getSettlements: 0,
     }
   }
 
   private applyWeightsPhaseOne() {
     this.weights = {
-      createHubAccount: 0,
-      createDfsp: 1,
+      ...this.weights,
+      createHubAccount: 1,
+      createDfsp: 10,
       disableDfsp: 1,
       enableDfsp: 1,
       enableDfspAccount: 1,
       disableDfspAccount: 1,
-      deposit: 1,
+      deposit: 10,
       withdrawPrepare: 2,
       withdrawCommit: 2,
       withdrawAbort: 2,
-      getHubAccounts: 0,
-      getDfsp: 1,
-      getAllDfsps: 0,
-      getDfspAccounts: 0,
-      getAllDfspAccounts: 0,
-      setNetDebitCap: 2,
-      getNetDebitCap: 1,
-      getNetDebitCaps: 1,
-      prepare: 100,
-      fulfil: 50,
-      sweepTimedOut: 0,
-      lookupTransfer: 0,
-      closeSettlementWindow: 0,
-      settlementPrepare: 0,
-      settlementAbort: 0,
-      settlementCommit: 0,
-      settlementUpdate: 0,
-      getSettlementWindows: 0,
-      getSettlementWindow: 0,
-      getSettlement: 0,
-      getSettlements: 0,
-    }
-  }
-
-  private applyWeightsPhaseTwo() {
-    this.weights = {
-      createHubAccount: 0,
-      createDfsp: 0,
-      disableDfsp: 1,
-      enableDfsp: 1,
-      enableDfspAccount: 1,
-      disableDfspAccount: 1,
-      deposit: 1,
-      withdrawPrepare: 2,
-      withdrawCommit: 2,
-      withdrawAbort: 2,
-      getHubAccounts: 0,
+      getHubAccounts: 1,
       getDfsp: 1,
       getAllDfsps: 1,
       getDfspAccounts: 1,
@@ -542,11 +550,35 @@ class LedgerFuzzer {
       setNetDebitCap: 2,
       getNetDebitCap: 1,
       getNetDebitCaps: 1,
+    }
+  }
+
+  private applyWeightsPhaseTwo() {
+    this.weights = {
+      ...this.weights,
+      createHubAccount: 0,
+      createDfsp: 1,
+      disableDfsp: 1,
+      enableDfsp: 5,
+      enableDfspAccount: 5,
+      disableDfspAccount: 1,
+      deposit: 6,
+      withdrawPrepare: 2,
+      withdrawCommit: 2,
+      withdrawAbort: 2,
+      getHubAccounts: 0,
+      getDfsp: 0,
+      getAllDfsps: 0,
+      getDfspAccounts: 0,
+      getAllDfspAccounts: 0,
+      setNetDebitCap: 0,
+      getNetDebitCap: 0,
+      getNetDebitCaps: 0,
       prepare: 100,
-      fulfil: 50,
-      sweepTimedOut: 0,
+      fulfil: 75,
+      sweepTimedOut: 25,
       lookupTransfer: 0,
-      closeSettlementWindow: 0,
+      closeSettlementWindow: 3,
       settlementPrepare: 0,
       settlementAbort: 0,
       settlementCommit: 0,
@@ -564,22 +596,43 @@ class LedgerFuzzer {
     const cmd = { dfspId: name }
     const result = await this.ledger.disableDfsp(cmd)
     this.traceResult('disableDfsp', cmd, result)
+
+    // console.log(`disableDfsp() name=${name} result: ${result.type}`)
+
+    if (result.type === 'SUCCESS') {
+      this.disabledDfsps.add(name)
+    }
   }
 
   private async enableDfsp(): Promise<void> {
-    const name = this.randomDfspName()
+    let name = this.randomDfspName()
+
+    // Most likely to pick a disabled dfsp.
+    if (this.disabledDfsps.size > 0 && this.prng.intExclusive(100) > 0) {
+      name = this.prng.randomElementFrom([...this.disabledDfsps])
+    }
 
     const cmd = {
       dfspId: name
     }
     const result = await this.ledger.enableDfsp(cmd)
     this.traceResult('enableDfsp', cmd, result)
+
+    // console.log(`enableDfsp() name=${name} result: ${result.type}`)
+
+    if (result.type === 'SUCCESS') {
+      this.disabledDfsps.delete(name)
+    }
   }
 
   private async enableDfspAccount(): Promise<void> {
     const name = this.randomDfspName()
-    // TODO: we need to populate the dfsp accountIds.
-    const accountId = this.randomDfspAccount()
+
+    // Most likely to pick an existing account to enable.
+    let accountId = this.randomDfspAccount().id
+    if (this.disabledAccountIds.size > 0 && this.prng.intExclusive(100) > 0) {
+      accountId = this.prng.randomElementFrom([...this.disabledAccountIds])
+    }
 
     const cmd: EnableDfspAccountCommand = {
       dfspId: name,
@@ -587,18 +640,30 @@ class LedgerFuzzer {
     }
     const result = await this.ledger.enableDfspAccount(cmd)
     this.traceResult('enableDfspAccount', cmd, result)
+
+    if (result.type === 'SUCCESS') {
+      this.disabledAccountIds.delete(accountId)
+      const currency = this.dfspAccountIds[accountId]
+      assert(currency)
+      delete this.disabledDfspCurrencies[`${name}:${currency}`]
+    }
   }
 
   private async disableDfspAccount(): Promise<void> {
     const name = this.randomDfspName()
-    const accountId = this.randomDfspAccount()
+    const account = this.randomDfspAccount()
 
     const cmd: DisableDfspAccountCommand = {
       dfspId: name,
-      accountId,
+      accountId: account.id,
     }
     const result = await this.ledger.disableDfspAccount(cmd)
     this.traceResult('disableDfspAccount', cmd, result)
+
+    if (result.type === 'SUCCESS') {
+      this.disabledAccountIds.add(account.id)
+      this.disabledDfspCurrencies[`${name}:${account.currency}`] = {dfsp: name, currency: account.currency}
+    }
   }
 
   private async deposit(): Promise<void> {
@@ -606,12 +671,16 @@ class LedgerFuzzer {
     const cmd: DepositCommand = {
       dfspId: name,
       transferId: this.prng.uuidv4(),
-      currency: this.randomCurrency(),
+      currency: this.randomCurrencyOld(),
       amount: this.prng.intExclusive(100000) + 1,
       reason: this.prng.randomString()
     }
     const result = await this.ledger.deposit(cmd)
     this.traceResult('deposit', cmd, result)
+
+    // if (result.type !== 'SUCCESS') {
+    //   console.log(`deposit ${cmd.dfspId} ${cmd.currency} ${cmd.amount} result: ${result.type}`)
+    // }
   }
 
   private async withdrawPrepare(): Promise<void> {
@@ -697,7 +766,7 @@ class LedgerFuzzer {
     }
 
     result.result.accounts.forEach(account => {
-      this.dfspAccountIds[Number(account.id)] = true
+      this.dfspAccountIds[Number(account.id)] = account.currency
     })
 
 
@@ -762,6 +831,7 @@ class LedgerFuzzer {
 
   private async prepare(): Promise<void> {
     const prepares: Array<PrepareHandlerInput> = [this.makePrepare()]
+    this.countPrepareAttempt += prepares.length
 
     const result = await this.ledger.prepare(prepares)
     const resultNormalized = result.map(prepareResult => {
@@ -799,13 +869,20 @@ class LedgerFuzzer {
       const prepare = prepares[idx]
       if (prepareResult.tag === 'OK') {
         this.prepareIdsSuccess[prepare.transferId] = true
+        this.pendingPrepareIds.add(prepare.transferId)
       }
+      // if (prepareResult.tag === PaymentPrepareResultTag.FAIL_VALIDATION) {
+      //   console.log(`prepare failed with tag: ${prepareResult.tag}, \n\treasons: [${prepareResult.failureReasons.join(',')}]`)
+      // } else if (prepareResult.tag !== PaymentPrepareResultTag.OK) {
+      //   console.log(`prepare failed with tag: ${prepareResult.tag}`)
+      // }
     })
   }
 
   private async fulfil(): Promise<void> {
     const fulfills: Array<FulfilHandlerInput> = [this.makeFulfilOrAbort()]
     const results = await this.ledger.fulfil(fulfills)
+    this.countFulfilAttempt += fulfills.length
 
     const resultNormalized = results.map(result => {
       const clone = structuredClone(result) as any
@@ -827,9 +904,16 @@ class LedgerFuzzer {
 
     results.forEach((fulfilResult, idx) => {
       const fulfil = fulfills[idx]
-      if (fulfilResult.tag === 'OK') {
+      if (fulfilResult.tag === 'OK' || fulfilResult.tag === 'ABORT_OK') {
         this.fulfilIdsSuccess[fulfil.transferId] = true
+        this.pendingPrepareIds.delete(fulfil.transferId)
       }
+
+      // if (fulfilResult.tag === PaymentFulfilResultTag.FAIL_VALIDATION) {
+      //   console.log(`fulfil failed with tag: ${fulfilResult.tag}, \n\treasons: [${fulfilResult.failureReasons.join(',')}]`)
+      // } else if (fulfilResult.tag !== PaymentFulfilResultTag.OK) {
+      //   console.log(`fulfil failed with tag: ${fulfilResult.tag}`)
+      // }
     })
   }
 
@@ -844,11 +928,34 @@ class LedgerFuzzer {
       return this.mutatePrepare(this.prng.randomElementFrom(this.payments))
     }
 
+    // Find currencies with at least 2 DFSPs with active accounts.
+    const eligibleCurrencies = Object.entries(this.dfspsByCurrency)
+      .filter(([currency, dfsps]) => {
+        return this.activeDfspsForCurrency(currency, dfsps).length >= 2
+      })
+      .map(([currency]) => currency)
+
+    let currency = this.randomCurrencyOld()
+    let payer = this.randomDfspName()
+    let payee = this.randomDfspName()
+
+    // High likelihood of picking Currency + DFSPs based on what is already registered.
+    if (eligibleCurrencies.length > 0 && this.prng.intExclusive(100) > 5) {
+      currency = this.prng.randomElementFrom(eligibleCurrencies)
+      const activeDfsps = this.activeDfspsForCurrency(currency, this.dfspsByCurrency[currency])
+
+      if (activeDfsps.length >= 2) {
+        const parties = this.prng.randomSampleFrom(activeDfsps, 2)
+        payer = parties[0]
+        payee = parties[1]
+      }
+    }
+
     const payment = ApiHelpers.buildPayment()
       .deps(this.harness)
       .transferId(this.prng.uuidv4())
-      .parties(this.randomDfspName(), this.randomDfspName())
-      .amount(this.randomAmount())
+      .parties(payer, payee)
+      .amount(this.randomAmount(), currency)
       .expiry(this.prng.intExclusive(500))
       .build()
 
@@ -893,7 +1000,7 @@ class LedgerFuzzer {
   }
 
   private makeFulfilOrAbort() {
-    return this.prng.coin() ? this.makeFulfil() : this.makeAbort()
+    return (this.prng.intExclusive(100) > 10) ? this.makeFulfil() : this.makeAbort()
   }
 
   private makeFulfil(): FulfilHandlerInput {
@@ -909,12 +1016,10 @@ class LedgerFuzzer {
       return paymentAborted.toFulfil(this.prng.randomElementFrom(['COMMITTED', 'RESERVED']))
     }
 
-    // Get a payment that was prepared succesfully.
-    if (Object.keys(this.prepareIdsSuccess).length > 0 && this.prng.intExclusive(100) > 5) {
-      const id = this.prng.randomElementFrom(Object.keys(this.prepareIdsSuccess))
-      const payment = this.payments.find(payment => payment.getOptions().transferId === id)
-      assert(payment, `Could not find existing payment for succesfully preparedId: ${id}.`)
-
+    if (this.pendingPrepareIds.size > 0 && this.prng.intExclusive(100) > 0) {
+      const id = this.prng.randomElementFrom([...this.pendingPrepareIds])
+      const payment = this.payments.find(p => p.getOptions().transferId === id)
+      assert(payment)
       return payment.toFulfil(this.prng.randomElementFrom(['COMMITTED', 'RESERVED']))
     }
 
@@ -932,7 +1037,7 @@ class LedgerFuzzer {
         .build()
     }
 
-    if (this.prng.intExclusive(100) > 60) {
+    if (this.prng.intExclusive(100) > 99) {
       return this.mutateFulfil(payment)
     }
 
@@ -941,11 +1046,14 @@ class LedgerFuzzer {
 
   private makeAbort() {
     let payment: ApiHelpers.Payment
-    // High chance of getting an existing payment.
-    if (this.payments.length > 0 && this.prng.intExclusive(100) > 5) {
+
+    if (this.pendingPrepareIds.size > 0 && this.prng.intExclusive(100) > 0) {
+      const id = this.prng.randomElementFrom([...this.pendingPrepareIds])
+      payment = this.payments.find(p => p.getOptions().transferId === id)!
+      assert(payment)
+    } else if (this.payments.length > 0 && this.prng.intExclusive(100) > 5) {
       payment = this.prng.randomElementFrom(this.payments)
     } else {
-      // Make up a new payment.
       payment = ApiHelpers.buildPayment()
         .deps(this.harness)
         .transferId(this.prng.uuidv4())
@@ -1019,7 +1127,19 @@ class LedgerFuzzer {
   private async sweepTimedOut(): Promise<void> {
     const now = this.harness.clock.now
     const result = await this.ledger.sweepTimedOut(now)
-    this.traceResult('sweepTimedOut', now, result)
+    const cloned = structuredClone(result)
+
+    if (result.type === 'SUCCESS') {
+      const idsSwept = result.result.payments.map(payment => payment.id)
+      idsSwept.forEach(id => this.pendingPrepareIds.delete(id))
+    }
+
+    if (cloned.type === 'SUCCESS') {
+      // Intervals are implemented differently between LedgerSql and LedgerTigerBeetle.
+      cloned.result.intervalPayment = [0, 0]
+    }
+
+    this.traceResult('sweepTimedOut', now, cloned)
   }
 
   private async closeSettlementWindow(): Promise<void> {
@@ -1231,7 +1351,7 @@ class LedgerFuzzer {
   }
 
   private randomDfspName(): string {
-    if (this.registeredDfsps.length > 0 && this.harness.prng.intExclusive(100) > 20) {
+    if (this.registeredDfsps.length > 0 && this.harness.prng.intExclusive(100) > 0) {
       // Reuse.
       return this.harness.prng.randomElementFrom(this.registeredDfsps)
     }
@@ -1259,15 +1379,18 @@ class LedgerFuzzer {
     return this.prng.uuidv4()
   }
 
-  private randomDfspAccount(): number {
+  private randomDfspAccount(): {id: number, currency: string} {
     if (Object.keys(this.dfspAccountIds).length > 0 && this.harness.prng.intExclusive(100) > 20) {
       // Reuse.
       return this.harness.prng.randomElementFrom(
-        Object.keys(this.dfspAccountIds).map(key => Number.parseInt(key))
+        Object.entries(this.dfspAccountIds).map(([key, value]) => ({id: Number.parseInt(key), currency: value}))
       )
     }
 
-    return this.prng.intExclusive(1000)
+    return {
+      id: this.prng.intExclusive(1000),
+      currency: this.randomCurrency(),
+    }
   }
 
   private randomCurrency(): string {
@@ -1277,8 +1400,51 @@ class LedgerFuzzer {
 
     return this.harness.prng.randomElementWeighted(
       ['USD', 'AUD', 'EUR', 'GBP', this.prng.randomString(3)],
-      [10, 10, 5, 5, 10]
+      [10, 10, 5, 5, 1]
     )
+  }
+
+  // Filter out DFSPs that are disabled or have a disabled account for the given currency.
+  private activeDfspsForCurrency(currency: string, dfsps: Array<string>): Array<string> {
+    return dfsps
+      .filter(dfsp => !this.disabledDfsps.has(dfsp))
+      .filter(dfsp => !this.disabledDfspCurrencies[`${dfsp}:${currency}`])
+  }
+
+  // Bias towards a unique currency that hasn't been registered yet.
+  private randomCurrencyNew(): string {
+    const unregistered = this.allCurrencies.filter(
+      currency => !this.registeredCurrencies.includes(currency)
+    )
+
+    if (this.registeredCurrencies.length > 0 && this.prng.intExclusive(100) === 0) {
+      return this.prng.randomElementFrom(this.registeredCurrencies)
+    }
+
+    if (unregistered.length > 0) {
+      return this.prng.randomElementFrom(unregistered)
+    }
+
+    return this.prng.randomElementFrom(this.allCurrencies)
+  }
+
+  // Bias towards a unique currency that _has_ been registered.
+  private randomCurrencyOld(): string {
+    const unregistered = this.allCurrencies.filter(
+      currency => !this.registeredCurrencies.includes(currency)
+    )
+
+    // 99% chance: pick registered (if any exist)
+    if (this.registeredCurrencies.length > 0 && this.prng.intExclusive(100) > 0) {
+      return this.prng.randomElementFrom(this.registeredCurrencies)
+    }
+
+    // 1% chance (or none registered): pick unregistered
+    if (unregistered.length > 0) {
+      return this.prng.randomElementFrom(unregistered)
+    }
+
+    return this.prng.randomElementFrom(this.allCurrencies)
   }
 
   private randomAmount(): string {

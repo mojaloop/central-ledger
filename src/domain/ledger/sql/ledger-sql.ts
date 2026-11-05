@@ -7,12 +7,14 @@ import {
   FulfilHandlerInput,
   PaymentFulfilResult,
   PaymentFulfilResultPartial,
+  PaymentFulfilResultTag,
   PaymentFulfilResultType
 } from '../../../handlers/payment-fulfil';
 import {
   CreatePaymentDto,
   PaymentPrepareResult,
   PaymentPrepareResultPartial,
+  PaymentPrepareResultTag,
   PrepareHandlerInput
 } from "../../../handlers/payment-prepare";
 import { PositionHandlerV2, PositionResultType } from "../../../handlers/position-v2";
@@ -23,7 +25,7 @@ import {
   TransferProxyObligation
 } from "../../../handlers/transfer-types";
 import { ApplicationConfig } from "../../../lib/config";
-import { Effect, MessageBus } from "../../../messaging/message-bus";
+import { Effect } from "../../../messaging/message-bus";
 import ParticipantFacade from '../../../models/participant/facade';
 import { getTransferErrorDuplicateCheck } from '../../../models/transfer/transferErrorDuplicateCheck';
 import { logger } from "../../../shared/logger";
@@ -113,7 +115,7 @@ import SettlementModel from '../../../models/settlement/settlement'
 import * as Result from '../shared/results'
 import Helper from './helper';
 import { CurrencyConfig } from '../tigerbeetle/meta-store';
-import { TimeoutResult } from '../../../handlers/timeout-v2';
+import { PaymentTimeout, TimeoutResult } from '../../../handlers/timeout-v2';
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
@@ -549,14 +551,12 @@ export class LedgerSql implements Ledger {
         assert(ledgerAccountType)
         const formattedAccount: LegacyLedgerAccount = {
           id: BigInt(currency.participantCurrencyId),
-          // TODO: disabled this for now, the LedgerSql implementation is quite hard to 
-          // match with LedgerTigerBeetle since the database autoincrements the id on failure.
-          // id: BigInt(0),
           ledgerAccountType,
           currency: currency.currencyId,
           isActive: Boolean(currency.isActive),
           changedDate: new Date(currency.createdDate),
           createdDate: new Date(currency.createdDate),
+          // TODO:
           // These feel wrong to me - we should just return the value anyway
           // but the getByName query doesn't look up account values.
           value: 0,
@@ -1089,7 +1089,7 @@ export class LedgerSql implements Ledger {
       switch (result.status) {
         case 'rejected': return {
           input,
-          tag: 'FAIL_OTHER'
+          tag: PaymentPrepareResultTag.FAIL_OTHER
         }
         case 'fulfilled': return {
           input,
@@ -1117,7 +1117,7 @@ export class LedgerSql implements Ledger {
 
       switch (result.status) {
         case 'rejected': return {
-          tag: 'FAIL_OTHER',
+          tag: PaymentFulfilResultTag.FAIL_OTHER,
           input
         }
         case 'fulfilled': return {
@@ -1139,7 +1139,7 @@ export class LedgerSql implements Ledger {
     )
 
     if (hasDuplicateId && !hasDuplicateHash) {
-      return { tag: 'MODIFIED' }
+      return { tag: PaymentPrepareResultTag.MODIFIED }
       // Original also covers case for BULK_PREPARE, but we don't handle that here.
     }
 
@@ -1149,7 +1149,7 @@ export class LedgerSql implements Ledger {
       switch (payment.transferStateEnumeration) {
         case TransferState.COMMITTED: {
           return {
-            tag: 'DUPLICATE_FINAL',
+            tag: PaymentPrepareResultTag.DUPLICATE_FINAL,
             context: {
               id: input.payload.transferId,
               fulfiledAt: new Date(0),
@@ -1159,19 +1159,19 @@ export class LedgerSql implements Ledger {
         }
         case TransferState.ABORTED: {
           return {
-            tag: 'DUPLICATE_FINAL',
+            tag: PaymentPrepareResultTag.DUPLICATE_FINAL,
             context: {
               id: input.payload.transferId,
               abortedAt: payment.createdDate
             },
           }
         }
-        case TransferState.RESERVED: return { tag: 'DUPLICATE_NON_FINAL' }
+        case TransferState.RESERVED: return { tag: PaymentPrepareResultTag.DUPLICATE_NON_FINAL }
       }
     }
 
     // We should also look up the error we sent last time and if we have one, return that?
-    if (hasDuplicateId) return { tag: 'DUPLICATE_NON_FINAL' }
+    if (hasDuplicateId) return { tag: PaymentPrepareResultTag.DUPLICATE_NON_FINAL }
 
     const proxyResult = await this.calculateProxyObligation(input.payload)
     const allErrors = [...proxyResult.errors]
@@ -1188,7 +1188,7 @@ export class LedgerSql implements Ledger {
       )
 
       return {
-        tag: 'FAIL_VALIDATION',
+        tag: PaymentPrepareResultTag.FAIL_VALIDATION,
         failureReasons: allErrors
       }
     }
@@ -1223,7 +1223,7 @@ export class LedgerSql implements Ledger {
         proxyObligation,
       )
       return {
-        tag: 'FAIL_VALIDATION',
+        tag: PaymentPrepareResultTag.FAIL_VALIDATION,
         failureReasons: allErrors
       }
     }
@@ -1248,7 +1248,7 @@ export class LedgerSql implements Ledger {
     )
     if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
       return {
-        tag: 'PREPARE_NEXT',
+        tag: PaymentPrepareResultTag.PREPARE_NEXT,
         effectPosition
       }
     }
@@ -1268,9 +1268,9 @@ export class LedgerSql implements Ledger {
     const resultPosition = resultsPosition[0]
 
     switch (resultPosition.type) {
-      case PositionResultType.PASS: return { input, tag: 'OK' }
-      case PositionResultType.FAIL_LIQUIDITY: return { input, tag: 'FAIL_LIQUIDITY' }
-      case PositionResultType.FAIL_OTHER: return { input, tag: 'FAIL_OTHER' }
+      case PositionResultType.PASS: return { input, tag: PaymentPrepareResultTag.OK }
+      case PositionResultType.FAIL_LIQUIDITY: return { input, tag: PaymentPrepareResultTag.FAIL_LIQUIDITY }
+      case PositionResultType.FAIL_OTHER: return { input, tag: PaymentPrepareResultTag.FAIL_OTHER }
     }
   }
 
@@ -1322,7 +1322,7 @@ export class LedgerSql implements Ledger {
       (transfer.transferState === 'INVALID' || transfer.transferState === 'ABORTED_REJECTED')
     ) {
       return {
-        tag: 'FAIL_VALIDATION',
+        tag: PaymentFulfilResultTag.FAIL_VALIDATION,
         failureReasons: [`transfer not found or invalid for id: ${transferId}.`]
       }
     }
@@ -1363,7 +1363,7 @@ export class LedgerSql implements Ledger {
         savedFulfilHash = (await getTransferFulfilmentDuplicateCheck(transferId)).hash
         if (savedFulfilHash === payloadHash) {
           return {
-            tag: 'DUPLICATE_FINAL',
+            tag: PaymentFulfilResultTag.DUPLICATE_FINAL,
             context: {
               id: transferId,
               fulfilment: transfer.fulfilment,
@@ -1372,13 +1372,13 @@ export class LedgerSql implements Ledger {
           }
         }
 
-        return { tag: 'MODIFIED' }
+        return { tag: PaymentFulfilResultTag.MODIFIED }
       } catch (err) {
         const error = ErrorHandler.Factory.createInternalServerFSPIOPError(
           'found finalized transfer, but no `getTransferFulfilmentDuplicateCheck`'
         )
         logger.error(error.message)
-        return { tag: 'FAIL_OTHER' }
+        return { tag: PaymentFulfilResultTag.FAIL_OTHER }
       }
     }
 
@@ -1387,7 +1387,7 @@ export class LedgerSql implements Ledger {
       // or if the fulfil message was modified in some way.
       let hasDuplicateId = true
       let hasDuplicateHash = true
-      // We should also check to see if the duplocate hash exists with getTransferDuplicateCheck
+      // We should also check to see if the duplicate hash exists with getTransferDuplicateCheck
       const duplicateHashError = await getTransferErrorDuplicateCheck(transferId)
       // We saved the duplicate check, _then_ the payment failed.
       const duplicateHashOk = await getTransferFulfilmentDuplicateCheck(transferId)
@@ -1405,7 +1405,7 @@ export class LedgerSql implements Ledger {
       if (hasDuplicateId) {
         if (payloadHash === duplicateHash) {
           return {
-            tag: 'DUPLICATE_FINAL',
+            tag: PaymentFulfilResultTag.DUPLICATE_FINAL,
             context: {
               id: transferId,
               abortedAt: transfer.completedTimestamp
@@ -1413,12 +1413,12 @@ export class LedgerSql implements Ledger {
           }
         } else {
           // We've seen this id, payload was modified.
-          return { tag: 'MODIFIED' }
+          return { tag: PaymentFulfilResultTag.MODIFIED }
         }
       }
 
       return {
-        tag: 'FAIL_VALIDATION',
+        tag: PaymentFulfilResultTag.FAIL_VALIDATION,
         failureReasons: ['non-RESERVED transfer state']
       }
     }
@@ -1442,7 +1442,7 @@ export class LedgerSql implements Ledger {
 
       if (hasDuplicateId && hasDuplicateHash) {
         return {
-          tag: 'DUPLICATE_FINAL',
+          tag: PaymentFulfilResultTag.DUPLICATE_FINAL,
           // TODO: find me!
           context: {
             id: transferId,
@@ -1452,7 +1452,7 @@ export class LedgerSql implements Ledger {
         }
       }
 
-      if (hasDuplicateId && !hasDuplicateHash) return { tag: 'MODIFIED' }
+      if (hasDuplicateId && !hasDuplicateHash) return { tag: PaymentFulfilResultTag.MODIFIED }
 
       // Validate transfer is in RESERVED or RESERVED_FORWARDED state
       // This check must happen AFTER duplicate checking to preserve legacy behavior.
@@ -1460,7 +1460,7 @@ export class LedgerSql implements Ledger {
         transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
       ) {
         return {
-          tag: 'FAIL_VALIDATION',
+          tag: PaymentFulfilResultTag.FAIL_VALIDATION,
           failureReasons: ['non-RESERVED transfer state']
         }
       }
@@ -1470,7 +1470,7 @@ export class LedgerSql implements Ledger {
       if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
         transfer.expirationDate <= new Date()
       ) {
-        return { tag: 'EXPIRED' }
+        return { tag: PaymentFulfilResultTag.EXPIRED }
       }
 
       await TransferService.handlePayeeResponse(
@@ -1496,7 +1496,7 @@ export class LedgerSql implements Ledger {
 
     if (hasDuplicateId && hasDuplicateHash) {
       return {
-        tag: 'DUPLICATE_FINAL',
+        tag: PaymentFulfilResultTag.DUPLICATE_FINAL,
         context: {
           id: transferId,
           fulfilment: payload.fulfilment,
@@ -1505,26 +1505,34 @@ export class LedgerSql implements Ledger {
       }
     }
 
-    if (hasDuplicateId && !hasDuplicateHash) return { tag: 'MODIFIED' }
+    if (hasDuplicateId && !hasDuplicateHash) return { tag: PaymentFulfilResultTag.MODIFIED }
 
-    // Check if the transfer has expired. For interscheme we ignore expiration for forwarded 
+    // Check if the transfer has expired. For interscheme we ignore expiration for forwarded
     // transfers.
     if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
       transfer.expirationDate <= new Date()
     ) {
-      const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'prepare expired'
-      )
-      const error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
-      await TransferService.handlePayeeResponse(
-        transferId,
-        payload,
-        'abort-validation',
-        error
-      )
+      // Note that we don't modify the transfer in the database here, we just 
+      // return expired, and the timeout handler will clean up the positions for us.
+      return {
+        tag: PaymentFulfilResultTag.EXPIRED
+      }
+      // const errorFspiop = ErrorHandler.Factory.createFSPIOPError(
+      //   ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED
+      // )
+      // const error = errorFspiop.toApiErrorObject(this.deps.config.ERROR_HANDLING)
+      // await TransferService.handlePayeeResponse(
+      //   transferId,
+      //   payload,
+      //   'abort-validation',
+      //   error
+      // )
 
-      return { tag: 'EXPIRED' }
+      // const effects = [await this.helper.buildEffectPositionRollback(input, transfer, error)]
+      // if (input.action === Action.RESERVE) {
+      //   effects.push(this.helper.buildEffectReservedAbortedNotification(input, transfer))
+      // }
+      // return this.fulfilNext(effects, input)
     }
 
     if (!TransferHelper.fulfilmentMatchesCondition(payload.fulfilment, transfer.condition)) {
@@ -1589,7 +1597,7 @@ export class LedgerSql implements Ledger {
 
     if (this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'UNFUSE') {
       return {
-        tag: 'FULFIL_NEXT',
+        tag: PaymentFulfilResultTag.FULFIL_NEXT,
         effects: [effectPosition]
       }
     }
@@ -1632,7 +1640,7 @@ export class LedgerSql implements Ledger {
         // 1: action=commit,    functionality=notification
         const response: PaymentFulfilResult = {
           input,
-          tag: 'OK',
+          tag: PaymentFulfilResultTag.OK,
           context: {
             id,
             fulfilment: payload.fulfilment,
@@ -1659,7 +1667,7 @@ export class LedgerSql implements Ledger {
           abortedAt.setMilliseconds(0)
           return {
             input,
-            tag: 'ABORT_OK',
+            tag: PaymentFulfilResultTag.ABORT_OK,
             context: {
               id,
               abortedAt
@@ -1667,7 +1675,7 @@ export class LedgerSql implements Ledger {
           }
         }
 
-        return { input, tag: 'FAIL_OTHER' }
+        return { input, tag: PaymentFulfilResultTag.FAIL_OTHER }
       }
       default: throw new Error(`fulfilNext() unhandled resultPosition.type: ${resultPosition.type}.`)
     }
@@ -1749,12 +1757,26 @@ export class LedgerSql implements Ledger {
         // Keeping behavior the same by passing through null.
         null,
         now
-      )
+      )      
+
+      const payments: Array<PaymentTimeout> = transferTimeoutList.map(transfer => ({
+        id: transfer.transferId,
+        payerId: transfer.payerFsp,
+        payeeId: transfer.payeeFsp,
+        state: transfer.transferStateId as 'EXPIRED_PREPARED' | 'RESERVED_TIMEOUT'
+      }))
+
+      // Now we need to build the effects here for the RESERVED_TIMEOUT so 
+      // we can revert the positions.
+      assert(this.deps.config.HANDLERS_TRANSFER_POSITION_FUSE === 'FUSE')
+      const effects = this.helper.paymentEffects(transferTimeoutList).map(thing => thing.effect)
+      const kafkaMessages = effects.map(this.deps.effectToKafkaMessage)
+      await this.deps.positionHandler.handle(null, kafkaMessages)
 
       return Result.commandResultSuccess({
         intervalPayment: [intervalPaymentMin, intervalPaymentMax],
         intervalForex: [intervalForexMin, intervalForexMax],
-        payments: transferTimeoutList,
+        payments,
         forexes: fxTransferTimeoutList,
         paymentForwards: transferForwardedList,
         forexForwards: fxTransferForwardedList
@@ -1762,7 +1784,7 @@ export class LedgerSql implements Ledger {
     } catch (err) {
       return Result.commandResultFailure(err)
     } finally {
-      await knex.raw(`SELECT RELEASE_LOCK("timeout_handler")`)
+      await db.getKnex().raw(`SELECT RELEASE_LOCK("timeout_handler")`)
     }
   }
 

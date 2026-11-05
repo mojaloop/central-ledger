@@ -137,34 +137,47 @@ export type FulfilContextFulfiled = {
 
 export type FulfilContext = FulfilContextAborted | FulfilContextFulfiled
 
+export enum PaymentFulfilResultTag {
+  OK = 'OK',
+  ABORT_OK = 'ABORT_OK',
+  DUPLICATE_FINAL = 'DUPLICATE_FINAL',
+  DUPLICATE_NON_FINAL = 'DUPLICATE_NON_FINAL',
+  FAIL_VALIDATION = 'FAIL_VALIDATION',
+  FAIL_OTHER = 'FAIL_OTHER',
+  INVALID_FULFILMENT = 'INVALID_FULFILMENT',
+  MODIFIED = 'MODIFIED',
+  EXPIRED = 'EXPIRED',
+  FULFIL_NEXT = 'FULFIL_NEXT',
+}
+
 export type PaymentFulfilResultPartial = {
-  tag: 'OK',
+  tag: PaymentFulfilResultTag.OK,
   context: FulfilContext
   // TODO: refactor me away, we should be able to generate the fx effects based on the context.
   fxEffect?: Effect
 } | {
   // The Payee aborted the payment succesfully.
-  tag: 'ABORT_OK',
+  tag: PaymentFulfilResultTag.ABORT_OK,
   context: FulfilContext
 } | {
-  tag: 'DUPLICATE_FINAL'
+  tag: PaymentFulfilResultTag.DUPLICATE_FINAL
   context: FulfilContext,
 } | {
-  tag: 'DUPLICATE_NON_FINAL'
+  tag: PaymentFulfilResultTag.DUPLICATE_NON_FINAL
 } | {
-  tag: 'FAIL_VALIDATION',
+  tag: PaymentFulfilResultTag.FAIL_VALIDATION
   failureReasons: Array<string>
 } | {
-  tag: 'FAIL_OTHER'
+  tag: PaymentFulfilResultTag.FAIL_OTHER
 } | {
-  tag: 'INVALID_FULFILMENT'
+  tag: PaymentFulfilResultTag.INVALID_FULFILMENT
 } | {
-  tag: 'MODIFIED'
+  tag: PaymentFulfilResultTag.MODIFIED
 } | {
-  tag: 'EXPIRED'
+  tag: PaymentFulfilResultTag.EXPIRED
 } | {
   // A special 'internal' state for unfused fulfil + position handlers.
-  tag: 'FULFIL_NEXT',
+  tag: PaymentFulfilResultTag.FULFIL_NEXT
   effects: Array<Effect>
 }
 

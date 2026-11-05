@@ -24,10 +24,19 @@ export type TimeoutResultForexForward = {
   effect: Effect
 }
 
+// Subset of TimedOutTransfer. Contains only what is essential to build
+// the timeout effects.
+export type PaymentTimeout = {
+  id: string,
+  state:  'EXPIRED_PREPARED' | 'RESERVED_TIMEOUT'
+  payerId: string,
+  payeeId: string
+}
+
 export type TimeoutResult = {
   intervalPayment: [number, number],
   intervalForex: [number, number],
-  payments: Array<TimedOutTransfer>
+  payments: Array<PaymentTimeout>
   forexes: Array<TimedOutFxTransfer>
   paymentForwards: Array<ForwardedTransfer>
   forexForwards: Array<ForwardedFxTransfer>

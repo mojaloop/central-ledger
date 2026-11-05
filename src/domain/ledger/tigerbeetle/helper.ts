@@ -1,11 +1,11 @@
 import { failureWithError, QueryResult } from "../../../shared/results"
-import { Account, AccountFlags, amount_max, Client, CreateTransferResult, CreateTransferStatus, id, Transfer, TransferFlags } from "tigerbeetle-node";
+import { Account, AccountFlags, amount_max, Client, CreateAccountResult, CreateAccountStatus, CreateTransferResult, CreateTransferStatus, id, Transfer, TransferFlags } from "tigerbeetle-node";
 import crypto, { hash } from "crypto";
 import assert from "assert";
 import { ContextPayments, CurrencyConfig, DfspCurrency, DfspRoot, FulfilMeta, InternalDfspCurrency, NetDebitCap, ParticipantLocation, PaymentMeta, PrepareMeta } from "./meta-store";
 import { AccountCode, LedgerAccount, LegacyLedgerAccountNoValue, PayloadFinalizedTransfer, TransferCode } from "../shared/types";
-import { CreatePaymentDto, PaymentPrepareResult, PrepareHandlerInput } from "../../../handlers/payment-prepare";
-import { CommitPaymentDto, FulfilHandlerInput, PaymentFulfilResult } from "../../../handlers/payment-fulfil";
+import { CreatePaymentDto, PaymentPrepareResult, PaymentPrepareResultTag, PrepareHandlerInput } from "../../../handlers/payment-prepare";
+import { CommitPaymentDto, FulfilHandlerInput, PaymentFulfilResult, PaymentFulfilResultTag } from "../../../handlers/payment-fulfil";
 import { Effect } from "../../../messaging/message-bus";
 import { ApplicationConfig } from "../../../lib/config";
 import { Enum, EventActionEnum, Util } from '@mojaloop/central-services-shared';
@@ -39,6 +39,12 @@ export type PrepareInternalStatus = {
   }
 } | {
   tag: 'DUPLICATE_NON_FINAL'
+  context: {}
+} | {
+  tag: 'FAIL_PAYER_CLOSED'
+  context: {}
+} | {
+  tag: 'FAIL_PAYEE_CLOSED'
   context: {}
 } | {
   tag: 'FAIL_ACCOUNT_CLOSED'
@@ -77,6 +83,8 @@ export type FulfilInternalStatus = {
 } | {
   tag: 'INVALID_FULFILMENT'
 } | {
+  tag: 'PASS_VALIDATION'
+} | {
   tag: 'OK',
   fulfilMeta: FulfilMeta
 } | {
@@ -113,12 +121,27 @@ export type InterledgerValidationResult = InterledgerValidationPass
   | InterledgerValidationFail
 
 
+export type ExpireResult = {
+  id: string,
+  result: 'OK' | 'ALREADY_EXPIRED' | 'ALREADY_FULFILED'
+  paymentMeta: PaymentMeta
+}
+
 interface Dependencies {
   randomBytes: (length: number) => Buffer,
   config: ApplicationConfig
 }
 
 export default class Helper {
+
+  /**
+   * How many TigerBeetle transfers for each Prepare.
+   */
+  public static readonly ampFactorPrepare = 7
+  public static readonly ampFactorFulfilCommit = 2
+  public static readonly ampFactorFulfilAbort = 10
+  public static readonly ampFactorExpire = 2
+
 
   constructor(private deps: Dependencies) {
     assert(deps.randomBytes)
@@ -250,7 +273,6 @@ export default class Helper {
    * to maintain backwards compatibility, we generate our own random accountIds under 
    * Number.MAX_SAFE_INTEGER to be safe.
    */
-  // TODO: we should also namespace this so we can have multiple runs against a single TB instance.
   public idSmall(): bigint {
     const bytes = this.deps.randomBytes(8)
     const value = bytes.readBigUInt64BE();
@@ -352,6 +374,14 @@ export default class Helper {
         code: AccountCode.Reserved,
         flags: AccountFlags.linked | AccountFlags.debits_must_not_exceed_credits,
       },
+      // Return
+      {
+        ...Helper.createAccountTemplate,
+        id: dfspCurrency.return,
+        ledger: ledgerOperation,
+        code: AccountCode.Return,
+        flags: AccountFlags.linked | AccountFlags.debits_must_not_exceed_credits,
+      },
       // Committed_Outgoing
       {
         ...Helper.createAccountTemplate,
@@ -415,9 +445,69 @@ export default class Helper {
         code: AccountCode.Net_Debit_Cap_Set_Util,
         flags: 0,
       },
+
+      // Control accounts.
+      ...this.buildAccountsBookmark()
     ]
 
     return accounts
+  }
+
+  public mapCreateAccountResults(
+    resultsTigerBeetle: Array<CreateAccountResult>,
+    accounts: Array<Account>
+  ): void {
+    assert(resultsTigerBeetle.length === accounts.length)
+    let fatal = false
+    const readableErrors: Array<any> = []
+    resultsTigerBeetle.forEach((result, idx) => {
+      const account = accounts[idx]
+
+      // Ignore these.
+      if (result.status === CreateAccountStatus.linked_event_failed) return
+      if (result.status === CreateAccountStatus.created) return
+      if (result.status === CreateAccountStatus.exists) return
+
+      if (account.code === AccountCode.Unrestricted) {
+        // This is fine, the 'different flags' could be closed.
+        if (result.status === CreateAccountStatus.exists_with_different_flags) return
+      }
+
+      // If the Dfsp Root account was already created, then by definition it exists with a
+      // different user_data_64.
+      if (account.code === AccountCode.Dfsp) {
+        if (result.status === CreateAccountStatus.exists_with_different_user_data_64) return
+        // This is fine, the 'different flags' could be closed.
+        if (result.status === CreateAccountStatus.exists_with_different_flags) return
+      }
+
+      readableErrors.push(CreateAccountStatus[result.status])
+      const failedAccount = accounts[idx]
+      console.error(`Batch account at ${idx} failed to create: ${CreateAccountStatus[result.status]}.\n`
+        + `Failed account: ${Helper.stringify(failedAccount)}.`
+      )
+      fatal = true
+    })
+
+    if (fatal) {
+      throw new Error(`mapCreateAccountResults(): ${readableErrors.join(',')}`)
+    }
+  }
+
+  /**
+  * Lazy creation of the devNull account. Used as a counterparty for things such as closing
+  * dfsp master accounts.
+  */
+  public buildAccountDevNull(): Array<Account> {
+    return [
+      {
+        ...Helper.createAccountTemplate,
+        id: Helper.accountIds.devNull,
+        ledger: Helper.ledgerIds.globalControl,
+        code: AccountCode.Dev_Null,
+        flags: 0,
+      }
+    ]
   }
 
   /**
@@ -439,7 +529,8 @@ export default class Helper {
   public transferTemplateNDC(
     netDebitCapLockAmount: bigint,
     dfspCurrency: DfspCurrency,
-    currencyConfig: CurrencyConfig
+    currencyConfig: CurrencyConfig,
+    linkLast: boolean = false
   ): Array<Transfer> {
     const idLockReserved = id()
     const idLockUnrestricted = id()
@@ -534,7 +625,7 @@ export default class Helper {
         amount: netDebitCapLockAmount,
         ledger: currencyConfig.idOperation,
         code: TransferCode.Net_Debit_Cap_Lock,
-        flags: TransferFlags.balancing_debit
+        flags: linkLast ? (TransferFlags.balancing_debit | TransferFlags.linked) : TransferFlags.balancing_debit
       }
     ]
   }
@@ -793,14 +884,6 @@ export default class Helper {
     return transfers
   }
 
-
-  /**
-   * How many TigerBeetle transfers for each Prepare.
-   */
-  public static readonly ampFactorPrepare = 7
-  public static readonly ampFactorFulfilCommit = 2
-  public static readonly ampFactorFulfilAbort = 10
-
   /**
    * Given a list of validated prepares, return a list of TigerBeetle transfers to be created.
    */
@@ -979,20 +1062,20 @@ export default class Helper {
     switch (status.tag) {
       case "OK": {
         return {
-          tag: 'OK',
+          tag: PaymentPrepareResultTag.OK,
           input: prepare
         }
       }
       case "FAIL_VALIDATION": {
         return {
-          tag: 'FAIL_VALIDATION',
+          tag: PaymentPrepareResultTag.FAIL_VALIDATION,
           failureReasons: status.failureReasons,
           input: prepare,
         }
       }
       case "MODIFIED": {
         return {
-          tag: 'MODIFIED',
+          tag: PaymentPrepareResultTag.MODIFIED,
           input: prepare,
         }
       }
@@ -1001,7 +1084,7 @@ export default class Helper {
         const abortedAt = status.context.prepareMeta.abortedAt || status.context.fulfilMeta.abortedAt
         assert(abortedAt, 'Expected either prepareMeta.abortedAt or fulfilMeta.abortedAt.')
         return {
-          tag: 'DUPLICATE_FINAL',
+          tag: PaymentPrepareResultTag.DUPLICATE_FINAL,
           context: {
             id: status.context.prepareMeta.id,
             abortedAt
@@ -1015,7 +1098,7 @@ export default class Helper {
         assert(fulfiledAt)
         assert(fulfilment)
         return {
-          tag: 'DUPLICATE_FINAL',
+          tag: PaymentPrepareResultTag.DUPLICATE_FINAL,
           context: {
             id: status.context.prepareMeta.id,
             fulfiledAt,
@@ -1026,27 +1109,43 @@ export default class Helper {
       }
       case "DUPLICATE_NON_FINAL": {
         return {
-          tag: 'DUPLICATE_NON_FINAL',
+          tag: PaymentPrepareResultTag.DUPLICATE_NON_FINAL,
+          input: prepare,
+        }
+      }
+      case "FAIL_PAYER_CLOSED": {
+        // Backwards compatibility. LedgerSql doesn't keep the closed account validation around.
+        return {
+          tag: PaymentPrepareResultTag.FAIL_VALIDATION,
+          failureReasons: [`dfsp ${prepare.payload.payerFsp} closed`],
+          input: prepare,
+        }
+      }
+      case "FAIL_PAYEE_CLOSED": {
+        // Backwards compatibility. LedgerSql doesn't keep the closed account validation around.
+        return {
+          tag: PaymentPrepareResultTag.FAIL_VALIDATION,
+          failureReasons: [`dfsp ${prepare.payload.payeeFsp} closed`],
           input: prepare,
         }
       }
       case "FAIL_ACCOUNT_CLOSED": {
         // Backwards compatibility. LedgerSql doesn't keep the closed account validation around.
         return {
-          tag: 'FAIL_VALIDATION',
+          tag: PaymentPrepareResultTag.FAIL_VALIDATION,
           failureReasons: ['account closed'],
           input: prepare,
         }
       }
       case "FAIL_LIQUIDITY": {
         return {
-          tag: 'FAIL_LIQUIDITY',
+          tag: PaymentPrepareResultTag.FAIL_LIQUIDITY,
           input: prepare,
         }
       }
       case "FAIL_OTHER": {
         return {
-          tag: 'FAIL_OTHER',
+          tag: PaymentPrepareResultTag.FAIL_OTHER,
           input: prepare,
         }
       }
@@ -1088,8 +1187,10 @@ export default class Helper {
             statuses[idxPrepare] = { tag: 'MODIFIED', context: {} }
             return
           case CreateTransferStatus.debit_account_already_closed:
+            statuses[idxPrepare] = { tag: 'FAIL_PAYER_CLOSED', context: {} }
+            return
           case CreateTransferStatus.credit_account_already_closed:
-            statuses[idxPrepare] = { tag: 'FAIL_ACCOUNT_CLOSED', context: {} }
+            statuses[idxPrepare] = { tag: 'FAIL_PAYEE_CLOSED', context: {} }
             return
         }
       }
@@ -1134,7 +1235,8 @@ export default class Helper {
     const statuses: Array<FulfilInternalStatus> = []
 
     let idxResult = 0
-    for (let idxFulfil = 0; idxFulfil < fulfils.length; idxFulfil++) {
+    // TODO: LD see if we can simplify this!
+    outer: for (let idxFulfil = 0; idxFulfil < fulfils.length; idxFulfil++) {
       const fulfil = fulfils[idxFulfil]
       const fulfilMeta = fulfilMetas[idxFulfil]
       assert(fulfil)
@@ -1161,18 +1263,35 @@ export default class Helper {
                 tag: 'ALREADY_FULFILLED',
                 fulfilMeta,
               })
-              continue
+              continue outer
             }
             case CreateTransferStatus.pending_transfer_already_voided: {
+              // TODO(LD): come back to this one
+              if (!fulfilMeta.abortedAt) {
+                console.log(`TB says transfer already aborted, but no fulfilMeta.abortedAt for ${fulfilMeta.id}.`)
+                fulfilMeta.abortedAt = new Date()
+              }
               statuses.push({ tag: 'ALREADY_ABORTED', fulfilMeta })
-              continue
+              continue outer
             }
+            case CreateTransferStatus.debit_account_already_closed:
+              statuses.push({
+                tag: 'FAIL_VALIDATION',
+                failureReasons: ['Payer account closed.']
+              })
+              continue outer
+            case CreateTransferStatus.credit_account_already_closed:
+              statuses.push({
+                tag: 'FAIL_VALIDATION',
+                failureReasons: ['Payee account closed.']
+              })
+              continue outer
             case CreateTransferStatus.pending_transfer_not_found:
               statuses.push({
                 tag: 'FAIL_VALIDATION',
                 failureReasons: ['Pending transfer not found']
               })
-              continue
+              continue outer
           }
         }
 
@@ -1201,10 +1320,12 @@ export default class Helper {
       statuses.push({
         tag: 'OK', fulfilMeta: fulfilMetaNew
       })
-
     }
 
-    assert(statuses.length === fulfils.length)
+    assert(
+      statuses.length === fulfils.length,
+      `Expected status count: ${statuses.length} to match fulfil count: ${fulfils.length}`
+    )
     return statuses
   }
 
@@ -1218,12 +1339,15 @@ export default class Helper {
     status: FulfilInternalStatus
   ): PaymentFulfilResult {
     switch (status.tag) {
+      case 'PASS_VALIDATION': {
+        throw new Error(`Internal status only: ${status.tag}.`)
+      }
       case 'OK': {
         // Was fulfiled.
         assert(status.fulfilMeta.fulfiledAt)
         assert(status.fulfilMeta.fulfilment)
         return {
-          tag: 'OK',
+          tag: PaymentFulfilResultTag.OK,
           context: {
             id: status.fulfilMeta.id,
             fulfilment: status.fulfilMeta.fulfilment,
@@ -1237,7 +1361,7 @@ export default class Helper {
         assert(status.fulfilMeta.abortedAt)
 
         return {
-          tag: 'ABORT_OK',
+          tag: PaymentFulfilResultTag.ABORT_OK,
           context: {
             id: status.fulfilMeta.id,
             abortedAt: status.fulfilMeta.abortedAt
@@ -1248,13 +1372,13 @@ export default class Helper {
       case 'PREPARE_NOT_FOUND':
       case 'PREPARE_ALREADY_ABORTED':
         return {
-          tag: 'FAIL_VALIDATION',
+          tag: PaymentFulfilResultTag.FAIL_VALIDATION,
           failureReasons: ['Invalid or missing prepare.'],
           input: fulfil
         }
       case 'PREPARE_EXPIRED': {
         return {
-          tag: 'EXPIRED',
+          tag: PaymentFulfilResultTag.EXPIRED,
           input: fulfil,
         }
       }
@@ -1263,7 +1387,7 @@ export default class Helper {
         assert(status.fulfilMeta.fulfilment)
 
         return {
-          tag: 'DUPLICATE_FINAL',
+          tag: PaymentFulfilResultTag.DUPLICATE_FINAL,
           context: {
             id: status.fulfilMeta.id,
             fulfilment: status.fulfilMeta.fulfilment,
@@ -1276,7 +1400,7 @@ export default class Helper {
         assert(status.fulfilMeta.abortedAt)
 
         return {
-          tag: 'DUPLICATE_FINAL',
+          tag: PaymentFulfilResultTag.DUPLICATE_FINAL,
           context: {
             id: status.fulfilMeta.id,
             abortedAt: status.fulfilMeta.abortedAt
@@ -1285,19 +1409,19 @@ export default class Helper {
         }
       case 'INVALID_FULFILMENT': {
         return {
-          tag: 'INVALID_FULFILMENT',
+          tag: PaymentFulfilResultTag.INVALID_FULFILMENT,
           input: fulfil
         }
       }
       case 'MODIFIED': {
         return {
-          tag: 'MODIFIED',
+          tag: PaymentFulfilResultTag.MODIFIED,
           input: fulfil
         }
       }
       case 'FAIL_VALIDATION': {
         return {
-          tag: 'FAIL_VALIDATION',
+          tag: PaymentFulfilResultTag.FAIL_VALIDATION,
           failureReasons: status.failureReasons,
           input: fulfil
         }
@@ -1432,6 +1556,223 @@ export default class Helper {
     return transfers
   }
 
+  /**
+   * Control accounts for recording the sweep bookmark transfers.
+   */
+  public buildAccountsBookmark(): Array<Account> {
+    return [
+      {
+        ...Helper.createAccountTemplate,
+        id: Helper.accountIds.bookmarkDebit,
+        ledger: Helper.ledgerIds.globalControl,
+        code: AccountCode.Bookmark_Debit,
+        flags: AccountFlags.linked
+      },
+      {
+        ...Helper.createAccountTemplate,
+        id: Helper.accountIds.bookmarkCredit,
+        ledger: Helper.ledgerIds.globalControl,
+        code: AccountCode.Bookmark_Credit,
+        flags: 0
+      }
+    ]
+  }
+
+  public buildTransfersTimeoutBookmark(when: Date): Array<Transfer> {
+    return [
+      {
+        ...Helper.createTransferTemplate,
+        id: id(),
+        debit_account_id: Helper.accountIds.bookmarkDebit,
+        credit_account_id: Helper.accountIds.bookmarkCredit,
+        amount: 0n,
+        user_data_64: BigInt(when.getTime()),
+        ledger: Helper.ledgerIds.globalControl,
+        code: TransferCode.Sweep_Bookmark,
+        flags: 0
+      }
+    ]
+  }
+
+  public buildTransfersExpire(
+    paymentMetas: Array<PaymentMeta>,
+    context: ContextPayments,
+    netDebitCaps: Array<NetDebitCap>
+  ): Array<Transfer> {
+    const dfspCurrencies = Helper.toMapByDfspAndCurrency(context.dfspCurrencies)
+    const currencyConfigs = Helper.toMapBy(context.currencyConfigs, item => item.currency)
+    const netDebitCapMap = Helper.toMapByDfspAndCurrency(netDebitCaps)
+
+    const transfers: Array<Transfer> = []
+    for (const paymentMeta of paymentMetas) {
+      const currencyConfig = currencyConfigs[paymentMeta.currency]
+      assert(
+        currencyConfig,
+        `No currencyConfig found for paymentMeta.currency: ${paymentMeta.currency}.`
+      )
+      const amountTigerBeetle = Helper.fromMojaloopAmount(
+        paymentMeta.amount, currencyConfig.assetScale
+      )
+      const prepareId = Helper.fromMojaloopId(paymentMeta.id)
+      const dfspCurrencyPayer = dfspCurrencies[`${paymentMeta.payerId}:${paymentMeta.currency}`]
+      assert(
+        dfspCurrencyPayer,
+        `dfspCurrency not found for payerId: ${paymentMeta.payerId}` +
+        ` + currency: ${paymentMeta.currency}.`
+      )
+      const dfspCurrencyPayee = dfspCurrencies[`${paymentMeta.payeeId}:${paymentMeta.currency}`]
+      assert(
+        dfspCurrencyPayee,
+        `dfspCurrency not found for payeeId: ${paymentMeta.payeeId}` +
+        ` currency: ${paymentMeta.currency}.`
+      )
+
+      const netDebitCapPayer = netDebitCapMap[`${paymentMeta.payerId}:${paymentMeta.currency}`]
+      assert(
+        netDebitCapPayer,
+        `net debit cap not found for payerId: ${paymentMeta.payerId}` +
+        ` currency: ${paymentMeta.currency}.`
+      )
+      const netDebitCapPayee = netDebitCapMap[`${paymentMeta.payeeId}:${paymentMeta.currency}`]
+      assert(
+        netDebitCapPayee,
+        `net debit cap not found for payeeId: ${paymentMeta.payeeId}` +
+        ` currency: ${paymentMeta.currency}.`
+      )
+
+      transfers.push(
+        // 1. Abort the logical payment.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          pending_id: prepareId,
+          debit_account_id: 0n,
+          credit_account_id: 0n,
+          user_data_128: prepareId,
+          amount: 0n,
+          ledger: 0,
+          code: 0,
+          flags: TransferFlags.linked | TransferFlags.void_pending_transfer,
+        },
+        // 2. Move funds to return.
+        {
+          ...Helper.createTransferTemplate,
+          id: id(),
+          debit_account_id: dfspCurrencyPayer.reserved,
+          credit_account_id: dfspCurrencyPayer.return,
+          amount: amountTigerBeetle,
+          user_data_128: prepareId,
+          ledger: currencyConfig.idOperation,
+          code: TransferCode.Clearing_Credit,
+          flags: 0
+        },
+      )
+    }
+
+    return transfers
+  }
+
+
+  public mapResultsExpire(
+    resultsCreateTransfers: Array<CreateTransferResult>,
+    paymentMetas: Array<PaymentMeta>
+  ): Array<ExpireResult> {
+    assert(resultsCreateTransfers.length === paymentMetas.length * Helper.ampFactorExpire)
+
+    const resultsExpire: Array<ExpireResult> = []
+    for (let idxPayment = 0; idxPayment < paymentMetas.length; idxPayment++) {
+      const paymentMeta = paymentMetas[idxPayment]
+      const resultsPayment = resultsCreateTransfers.slice(
+        idxPayment * Helper.ampFactorExpire,
+        (idxPayment + 1) * Helper.ampFactorExpire
+      )
+      assert(resultsPayment.length === Helper.ampFactorExpire)
+
+      resultsPayment.forEach((result, idx) => {
+        if (result.status === CreateTransferStatus.linked_event_failed) return
+        if (idx === 0) {
+          switch (result.status) {
+            case CreateTransferStatus.created:
+              resultsExpire.push({
+                id: paymentMeta.id,
+                result: 'OK',
+                paymentMeta
+              })
+              return
+            case CreateTransferStatus.pending_transfer_already_posted:
+              resultsExpire.push({
+                id: paymentMeta.id,
+                result: 'ALREADY_FULFILED',
+                paymentMeta
+              })
+              return
+            case CreateTransferStatus.pending_transfer_not_found:
+            case CreateTransferStatus.pending_transfer_already_voided:
+              resultsExpire.push({
+                id: paymentMeta.id,
+                result: 'ALREADY_EXPIRED',
+                paymentMeta
+              })
+              return
+          }
+        }
+        if (result.status === CreateTransferStatus.created) return
+
+        throw new Error(`Unhandled error at idx: ${idx}, ${CreateTransferStatus[result.status]}`)
+      })
+    }
+    return resultsExpire
+  }
+
+  /**
+   * Batch-safe wrapper around TigerBeetle's createTransfers. If the transfers exceeds the max
+   * batch size, it looks for logical breaks in linked chains to split into separate batches 
+   * and recombines them into a single result array.
+   */
+  public async createTransfersInBatches(
+    client: Client,
+    transfers: Array<Transfer>
+  ): Promise<Array<CreateTransferResult>> {
+    if (transfers.length < Helper.maxBatchSize) {
+      return client.createTransfers(transfers)
+    }
+
+    // Explicit limit, just to be safe! We can change this to be higher if needed.
+    const MAX_BATCHES = 100
+    if (transfers.length > MAX_BATCHES * Helper.maxBatchSize) {
+      throw new Error(`createTransfersInBatches can create at most ${MAX_BATCHES * Helper.maxBatchSize} transfers.`)
+    }
+
+    const results: Array<CreateTransferResult> = []
+    for (let idxBatch = 0; idxBatch <= MAX_BATCHES; idxBatch++) {
+      if (results.length === transfers.length) return results
+      if (results.length > transfers.length) throw new Error('Duplicated result somehow')
+
+      // Go backwards from the last entry that could fit and look for the end of a linked chain.
+      for (let idx = Helper.maxBatchSize - 1; idx > 0; idx--) {
+        const transfer = transfers[idx]
+        // We found a break.
+        if ((transfer.flags & TransferFlags.linked) !== TransferFlags.linked) {
+          // Mutates the original array!
+          const subset = transfers.splice(0, idx)
+          const resultsSubset = await client.createTransfers(subset)
+          results.push(...resultsSubset)
+        }
+
+        throw new Error(`No break in linked chain found for: ${Helper.maxBatchSize} transfers.`)
+      }
+    }
+    throw new Error(`Missing result.`)
+  }
+
+  public mapResultsTimeoutBookmark(results: Array<CreateTransferResult>): void {
+    results.forEach((result, idx) => {
+      if (result.status === CreateTransferStatus.created) return
+
+      throw new Error(`mapResultsTimeoutBookmark unhandled tigerbeetle error at ${idx}, ${CreateTransferStatus[result.status]}`)
+    })
+  }
+
   public static fromMojaloopId(mojaloopId: string): bigint {
     assert(mojaloopId)
     // TODO: assert that this actually is a uuid
@@ -1443,13 +1784,13 @@ export default class Helper {
   public static toMojaloopId(id: bigint): string {
     assert(id !== undefined && id !== null, 'id is required')
 
-    // Convert bigint to hex string (without 0x prefix)
+    // Convert bigint to hex string (without 0x prefix).
     let hex = id.toString(16);
 
-    // Pad to 32 characters (128 bits = 16 bytes = 32 hex chars)
+    // Pad to 32 characters (128 bits = 16 bytes = 32 hex chars).
     hex = hex.padStart(32, '0');
 
-    // Insert dashes to create UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    // Insert dashes to create UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
   }
 

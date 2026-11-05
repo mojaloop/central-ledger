@@ -85,7 +85,7 @@ export default class Trace {
     const BG_YELLOW = '\x1b[43m'
     const RESET = '\x1b[0m'
 
-    let maxWidth = 200
+    let maxWidth = 100
     const strLeft = this.formatItems(left)
     const strRight = this.formatItems(right)
 
