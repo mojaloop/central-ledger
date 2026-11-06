@@ -63,12 +63,6 @@ const processBins = async (bins, trx) => {
   // Get transferIdList, reservedActionTransferIdList and commitRequestId for actions PREPARE, FX_PREPARE, FX_RESERVE, COMMIT and RESERVE
   const { transferIdList, reservedActionTransferIdList, commitRequestIdList } = await _getTransferIdList(bins)
 
-  // Pre fetch latest transferStates for all the transferIds in the account-bin
-  const latestTransferStates = await _fetchLatestTransferStates(trx, transferIdList)
-
-  // Pre fetch latest fxTransferStates for all the commitRequestIds in the account-bin
-  const latestFxTransferStates = await _fetchLatestFxTransferStates(trx, commitRequestIdList)
-
   const accountIds = [...Object.keys(bins).filter(accountId => accountId !== '0')]
 
   // Get all participantIdMap for the accountIds
@@ -85,6 +79,12 @@ const processBins = async (bins, trx) => {
     ...accountIds,
     ...settlementCurrencyIds.map(pc => pc.participantCurrencyId)
   ])
+
+  // Read the latest transfer and fxTransfer states only after the position rows are locked.
+  // Every copy of a position message locks the same position row, so a copy waits here until an
+  // earlier copy has committed, and then reads its result (READ COMMITTED, see startDbTransaction).
+  const latestTransferStates = await _fetchLatestTransferStates(trx, transferIdList)
+  const latestFxTransferStates = await _fetchLatestFxTransferStates(trx, commitRequestIdList)
 
   const latestTransferInfoByTransferId = await BatchPositionModel.getTransferInfoList(
     trx,

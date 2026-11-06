@@ -329,7 +329,7 @@ Test('Prepare domain', positionIndexTest => {
   })
 
   positionIndexTest.test('processPositionPrepareBin should', changeParticipantPositionTest => {
-    changeParticipantPositionTest.test('produce abort message for transfers not in the right transfer state', async (test) => {
+    changeParticipantPositionTest.test('skip transfers not in the right transfer state without a state change or notification', async (test) => {
       const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
@@ -354,7 +354,7 @@ Test('Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
       test.equal(processedMessages.notifyMessages[0].message.content.headers.accept, transferMessage1.value.content.headers.accept)
       test.equal(processedMessages.notifyMessages[0].message.content.headers['fspiop-destination'], transferMessage1.value.content.headers['fspiop-destination'])
       test.equal(processedMessages.notifyMessages[0].message.content.headers['fspiop-source'], transferMessage1.value.content.headers['fspiop-source'])
@@ -367,22 +367,14 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[1].message.content.headers['content-type'], transferMessage2.value.content.headers['content-type'])
       test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferState.RESERVED)
 
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, transferMessage3.value.id)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, transferMessage3.value.content.headers.accept)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], transferMessage3.value.content.headers['fspiop-source'])
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], transferMessage3.value.content.headers['content-type'])
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], 'INVALID_STATE', 'transfer in an unexpected state is left unchanged')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferId, transferMessage2.value.id)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferId, transferMessage3.value.id)
+      test.equal(processedMessages.accumulatedTransferStateChanges.length, 2, 'no state change for the transfer in an unexpected state')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedPositionValue, 4)
       test.end()
@@ -413,7 +405,7 @@ Test('Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
       test.equal(processedMessages.accumulatedPositionChanges.length, 0)
 
       test.equal(processedMessages.notifyMessages[0].message.content.uriParams.id, transferMessage1.value.id)
@@ -435,22 +427,14 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[1].message.content.payload.errorInformation.errorDescription, 'Payer FSP insufficient liquidity')
       test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, transferMessage3.value.id)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, transferMessage3.value.content.headers.accept)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], transferMessage3.value.content.headers['fspiop-source'])
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], transferMessage3.value.content.headers['content-type'])
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], 'INVALID_STATE', 'transfer in an unexpected state is left unchanged')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferId, transferMessage2.value.id)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferId, transferMessage3.value.id)
+      test.equal(processedMessages.accumulatedTransferStateChanges.length, 2, 'no state change for the transfer in an unexpected state')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedPositionValue, 0)
       test.end()
@@ -481,7 +465,7 @@ Test('Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
       test.equal(processedMessages.accumulatedPositionChanges.length, 0)
 
       test.equal(processedMessages.notifyMessages[0].message.content.uriParams.id, transferMessage1.value.id)
@@ -502,22 +486,14 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[1].message.content.payload.errorInformation.errorDescription, 'Payer limit error')
       test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, transferMessage3.value.id)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, transferMessage3.value.content.headers.accept)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], transferMessage3.value.content.headers['fspiop-source'])
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], transferMessage3.value.content.headers['content-type'])
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], 'INVALID_STATE', 'transfer in an unexpected state is left unchanged')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferId, transferMessage2.value.id)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferId, transferMessage3.value.id)
+      test.equal(processedMessages.accumulatedTransferStateChanges.length, 2, 'no state change for the transfer in an unexpected state')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       // Accumulated position value should not change from the input
       test.equal(processedMessages.accumulatedPositionValue, 1000)
@@ -549,7 +525,7 @@ Test('Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
 
       test.equal(processedMessages.accumulatedPositionChanges.length, 2)
 
@@ -567,22 +543,14 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedPositionChanges[1].value, 0)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferState.RESERVED)
 
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, transferMessage3.value.id)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, transferMessage3.value.content.headers.accept)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], transferMessage3.value.content.headers['fspiop-source'])
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], transferMessage3.value.content.headers['content-type'])
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], 'INVALID_STATE', 'transfer in an unexpected state is left unchanged')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferId, transferMessage2.value.id)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferId, transferMessage3.value.id)
+      test.equal(processedMessages.accumulatedTransferStateChanges.length, 2, 'no state change for the transfer in an unexpected state')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedPositionValue, 0)
       test.end()
@@ -621,7 +589,7 @@ Test('Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
 
       test.equal(processedMessages.accumulatedPositionChanges.length, 2)
 
@@ -639,22 +607,14 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedPositionChanges[1].value, -8)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferState.RESERVED)
 
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, transferMessage3.value.id)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, transferMessage3.value.content.headers.accept)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], transferMessage3.value.content.headers['fspiop-source'])
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], transferMessage3.value.content.headers['content-type'])
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], 'INVALID_STATE', 'transfer in an unexpected state is left unchanged')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferId, transferMessage2.value.id)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferId, transferMessage3.value.id)
+      test.equal(processedMessages.accumulatedTransferStateChanges.length, 2, 'no state change for the transfer in an unexpected state')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedPositionValue, -8)
       test.end()
@@ -685,7 +645,7 @@ Test('Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
       test.equal(processedMessages.accumulatedPositionChanges.length, 2)
 
       test.equal(processedMessages.notifyMessages[0].message.content.headers.accept, transferMessage1.value.content.headers.accept)
@@ -702,22 +662,14 @@ Test('Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedPositionChanges[1].value, 0)
       test.equal(processedMessages.accumulatedTransferStates[transferMessage2.value.id], Enum.Transfers.TransferState.RESERVED)
 
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, transferMessage3.value.id)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, transferMessage3.value.content.headers.accept)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], transferMessage3.value.content.headers['fspiop-source'])
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], transferMessage3.value.content.headers['content-type'])
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedTransferStates[transferMessage3.value.id], 'INVALID_STATE', 'transfer in an unexpected state is left unchanged')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferId, transferMessage1.value.id)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferId, transferMessage2.value.id)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferId, transferMessage3.value.id)
+      test.equal(processedMessages.accumulatedTransferStateChanges.length, 2, 'no state change for the transfer in an unexpected state')
 
       test.equal(processedMessages.accumulatedTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
-      test.equal(processedMessages.accumulatedTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedPositionValue, 0)
       test.end()
@@ -748,8 +700,8 @@ Test('Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
-      test.equal(processedMessages.limitAlarms.length, 2)
+      test.equal(processedMessages.notifyMessages.length, 2)
+      test.equal(processedMessages.limitAlarms.length, 1)
       test.equal(processedMessages.accumulatedPositionValue, 4)
       test.end()
     })
@@ -780,7 +732,7 @@ Test('Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
       test.equal(processedMessages.accumulatedPositionChanges.length, 0)
       test.equal(processedMessages.accumulatedPositionValue, -4)
       test.end()
