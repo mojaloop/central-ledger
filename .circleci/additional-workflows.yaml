@@ -1,0 +1,37 @@
+orbs:
+  build: mojaloop/build@dev:pr95
+jobs:
+  orb-pr95-non-login-probe:
+    executor: build/machine
+    shell: /bin/bash -eo pipefail
+    steps:
+      - run:
+          name: Shell state before configure_nvm
+          command: |
+            echo "BASH_ENV=$BASH_ENV"
+            echo "--- BASH_ENV contents"
+            cat "$BASH_ENV" || true
+            echo "--- end"
+            echo "NVM_DIR=${NVM_DIR:-unset}"
+            if type nvm >/dev/null 2>&1; then echo "nvm: defined"; else echo "nvm: NOT defined"; fi
+            for c in node npm npx docker-compose; do printf '%s: ' "$c"; command -v "$c" || echo "not found"; done
+            docker compose version || true
+      - checkout
+      - run:
+          name: Declare npm 12.2.2 in devEngines
+          command: |
+            jq '.devEngines = {"packageManager": {"name": "npm", "version": "12.2.2", "onFail": "error"}}' package.json > /tmp/package.json
+            mv /tmp/package.json package.json
+            echo "npm on PATH: $(npm --version)"
+            if npm run >/dev/null 2>&1; then echo "npm run accepted"; else echo "npm run refused"; fi
+      - build/configure_nvm
+      - run:
+          name: npm in a later non-login step
+          command: |
+            nvm use default
+            echo "node $(node --version), npm $(npm --version)"
+            npm run
+workflows:
+  build_and_test:
+    jobs:
+      - orb-pr95-non-login-probe
