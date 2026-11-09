@@ -150,7 +150,7 @@ export class Snapshot {
    * Check a `have` of any against the snapshot string.
    */
   public checkUnwrap(have: any): void {
-    const haveString = JSON.stringify(have, null, 2);
+    const haveString = JSON.stringify(have, stringifyFormatter, 2);
     return this.checkStringUnwrap(haveString)
   }
 
@@ -546,4 +546,12 @@ export function getCallerLocation(depth: number = 1): CallerLocation {
     line: Number.parseInt(match![2]), 
     col: Number.parseInt(match![3]) 
   }
+}
+
+function stringifyFormatter(_key: string, value: unknown) {
+  if (typeof value === 'bigint') {
+    return value.toString()
+  }
+
+  return value
 }

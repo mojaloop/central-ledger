@@ -121,6 +121,9 @@ const createSettlementModel = async (settlementModel, trx = null) => {
 }
 
 /* istanbul ignore next */
+/**
+ * @returns {Promise<SettlementModel>}
+ */
 const getByName = async (name, trx = null) => {
   try {
     return await SettlementModelModel.getByName(name, trx)

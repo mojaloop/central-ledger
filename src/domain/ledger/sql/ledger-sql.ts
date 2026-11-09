@@ -1,4 +1,33 @@
-import { Enum, Util } from '@mojaloop/central-services-shared';
+/*****
+ License
+ --------------
+ Copyright © 2020-2026 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
+ --------------
+ ******/
+
+import { Enum, Util } from '@mojaloop/central-services-shared'
 const { TransferState } = Enum.Transfers
 import assert from "node:assert"
 import Transaction from '../../../domain/transactions'
@@ -8,8 +37,7 @@ import {
   PaymentFulfilResult,
   PaymentFulfilResultPartial,
   PaymentFulfilResultTag,
-  PaymentFulfilResultType
-} from '../../../handlers/payment-fulfil';
+} from '../../../handlers/payment-fulfil'
 import {
   CreatePaymentDto,
   PaymentPrepareResult,
@@ -17,17 +45,17 @@ import {
   PaymentPrepareResultTag,
   PrepareHandlerInput
 } from "../../../handlers/payment-prepare";
-import { PositionHandlerV2, PositionResultType } from "../../../handlers/position-v2";
+import { PositionHandlerV2, PositionResultType } from "../../../handlers/position-v2"
 import {
   CreateRemittanceEntityPayment,
   ProxyCache,
   TransferDeterminingCheckResult,
   TransferProxyObligation
 } from "../../../handlers/transfer-types";
-import { ApplicationConfig } from "../../../lib/config";
-import { Effect } from "../../../messaging/message-bus";
-import ParticipantFacade from '../../../models/participant/facade';
-import { getTransferErrorDuplicateCheck } from '../../../models/transfer/transferErrorDuplicateCheck';
+import { ApplicationConfig } from "../../../lib/config"
+import { Effect } from "../../../messaging/message-bus"
+import ParticipantFacade from '../../../models/participant/facade'
+import { getTransferErrorDuplicateCheck } from '../../../models/transfer/transferErrorDuplicateCheck'
 import { logger } from "../../../shared/logger";
 import TransferService, {
   getTransferFulfilmentDuplicateCheck,
@@ -35,7 +63,7 @@ import TransferService, {
   saveTransferFulfilmentDuplicateCheck,
   getTransferDuplicateCheck,
   saveTransferDuplicateCheck
-} from "../../transfer";
+} from "../../transfer"
 import {
   AnyQuery,
   CloseSettlementWindowResult,
@@ -79,8 +107,8 @@ import {
   SettlementCloseWindowCommand,
   SettlementCommitCommand,
   SettlementPrepareCommand,
+  SettlementUpdate,
   SettlementUpdateCommand,
-  SettlementUpdateResult,
   SettlementWindow,
   SettlementWindowState,
   SweepResult,
@@ -97,25 +125,17 @@ const FxTransferStateChangeModel = require('../../../models/fxTransfer/stateChan
 import { Knex } from 'knex';
 import { TransferHelper } from '../../../handlers/transfer-helper'
 import { assertBoolean, assertNestedFields, safeStringToNumber } from '../../../lib/config/util'
-import db from "../../../lib/db";
-import {
-  ForwardedFxTransfer,
-  ForwardedTransfer,
-  TimedOutFxTransfer,
-  TimedOutTransfer
-} from '../../../models/transfer/facade';
-import * as Participant from '../../participant';
-import TimeoutService from '../../timeout';
-import TransferObjectTransform from '../../transfer/transform'
-import { deserializeIlpPacket } from 'ilp-packet';
-import base64url from 'base64url';
+import db from "../../../lib/db"
+import * as Participant from '../../participant'
+import TimeoutService from '../../timeout'
+import { deserializeIlpPacket } from 'ilp-packet'
+import base64url from 'base64url'
 import SettlementDomain from '../../../domain/settlement'
 import SettlementWindowDomain from '../../../domain/settlementWindow'
 import SettlementModel from '../../../models/settlement/settlement'
 import * as Result from '../shared/results'
 import Helper from './helper';
-import { CurrencyConfig } from '../tigerbeetle/meta-store';
-import { PaymentTimeout, TimeoutResult } from '../../../handlers/timeout-v2';
+import { PaymentTimeout, TimeoutResult } from '../../../handlers/timeout-v2'
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { FSPIOPError } = ErrorHandler
@@ -2077,7 +2097,7 @@ export class LedgerSql implements Ledger {
     }
   }
 
-  public async settlementAbort(cmd: SettlementAbortCommand): Promise<CommandResult<SettlementUpdateResult>> {
+  public async settlementAbort(cmd: SettlementAbortCommand): Promise<CommandResult<Settlement>> {
     assert(cmd)
     assert(typeof cmd.id === 'number')
 
@@ -2099,7 +2119,7 @@ export class LedgerSql implements Ledger {
 
       return {
         type: 'SUCCESS',
-        result: result as unknown as SettlementUpdateResult
+        result: result as unknown as Settlement
       }
     } catch (err: any) {
       return {
@@ -2117,7 +2137,7 @@ export class LedgerSql implements Ledger {
     return { type: 'SUCCESS' }
   }
 
-  public async settlementUpdate(cmd: SettlementUpdateCommand): Promise<CommandResult<SettlementUpdateResult>> {
+  public async settlementUpdate(cmd: SettlementUpdateCommand): Promise<CommandResult<Settlement>> {
     assert(cmd)
     assert(typeof cmd.id === 'number')
     assert(cmd.updates)
@@ -2128,7 +2148,8 @@ export class LedgerSql implements Ledger {
       // Group updates by participantId to batch accounts per participant
       // TODO: maybe don't use a map?
       const participantMap = new Map<number, Array<{ id: number, state: string, reason: string, externalReference: string }>>()
-      for (const update of cmd.updates) {
+      for (const updateAny of cmd.updates) {
+        const update = updateAny as SettlementUpdate
         assert(update.participantId)
         assert(update.accountId)
         assert(update.participantState)
@@ -2160,7 +2181,7 @@ export class LedgerSql implements Ledger {
 
       return {
         type: 'SUCCESS',
-        result: result as unknown as SettlementUpdateResult
+        result: result as unknown as Settlement
       }
     } catch (err: any) {
       return {

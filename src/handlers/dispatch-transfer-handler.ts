@@ -119,38 +119,6 @@ export class DispatchTransferHandler {
     this.legacyTransferHandler = require('../handlers/transfers/handler')
   }
 
-  /**
-   * @deprecated Replaced by MessageBus.init()
-   * Do async init stuff.
-   *
-   * Register the prepare and fulfil kafka consumers. In test we need this to be able to commit the
-   * offsets, but when running properly, this registers the handlers. Eventually this will be
-   * refactored so that the dispatch handler has no notion of kafka at all, but instead kafka will
-   * be handled at a messaging layer.
-   */
-  public async init(): Promise<void> {
-    // Register the consumers in globals.
-    const topicConsumePrepare = 'topic-transfer-prepare'
-    const topicConsumeFulfil = 'topic-transfer-fulfil'
-    const configConsumePrepare = Kafka.getKafkaConfig(
-      this.config.KAFKA_CONFIG,
-      'CONSUMER',
-      'TRANSFER',
-      'PREPARE'
-    )
-    const configConsumeFulfil = Kafka.getKafkaConfig(
-      this.config.KAFKA_CONFIG,
-      'CONSUMER',
-      'TRANSFER',
-      'FULFIL'
-    )
-    configConsumePrepare.rdkafkaConf['client.id'] = topicConsumePrepare
-    configConsumeFulfil.rdkafkaConf['client.id'] = topicConsumeFulfil
-
-    await Consumer.createHandler(topicConsumePrepare, configConsumePrepare, this.prepare.bind(this))
-    await Consumer.createHandler(topicConsumeFulfil, configConsumeFulfil, this.fulfil.bind(this))
-  }
-
   public async prepare(error: any, messageOrMessages: any | Array<any>):
     Promise<Array<
       PaymentPrepareResult | PaymentForwardResult | ForexPrepareResult | ForexForwardResult

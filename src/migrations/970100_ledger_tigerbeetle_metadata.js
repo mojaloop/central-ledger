@@ -44,8 +44,8 @@ exports.up = async (knex) => {
         t.bigInteger('id').primary().notNullable()
         t.string('currency', 3).notNullable()
         t.string('accountType').notNullable()
-        t.dateTime('createdDate').notNullable()
-        t.dateTime('changedDate').notNullable()
+        t.dateTime('createdDate', { precision: 3 }).notNullable()
+        t.dateTime('changedDate', { precision: 3 }).notNullable()
         t.unique(['currency', 'accountType'])
         t.foreign('currency').references('currencyId').inTable('currency')
       })
@@ -81,10 +81,10 @@ exports.up = async (knex) => {
         t.bigInteger('netDebitCap').unsigned().notNullable()
         t.bigInteger('netDebitCapSet').unsigned().notNullable()
         t.bigInteger('netDebitCapSetUtil').unsigned().notNullable()
-        t.dateTime('createdDate').notNullable()
-        t.dateTime('changedDatePosition').notNullable()
-        t.dateTime('changedDateSettlement').notNullable()
-        t.dateTime('changedDate').notNullable()
+        t.dateTime('createdDate', { precision: 3 }).notNullable()
+        t.dateTime('changedDatePosition', { precision: 3 }).notNullable()
+        t.dateTime('changedDateSettlement', { precision: 3 }).notNullable()
+        t.dateTime('changedDate', { precision: 3 }).notNullable()
 
         t.primary(['dfspId', 'currency'])
         t.foreign('dfspId').references('dfspId').inTable('metaDfspRoot')
@@ -105,7 +105,7 @@ exports.up = async (knex) => {
         t.text('ilpPacket').notNullable()
         t.string('amount', 16).notNullable()
         t.string('currency', 3).notNullable()
-        t.dateTime('expiration').notNullable()
+        t.dateTime('expiration', { precision: 3 }).notNullable()
 
         t.foreign('payerId').references('dfspId').inTable('metaDfspRoot')
         t.foreign('payeeId').references('dfspId').inTable('metaDfspRoot')
@@ -119,7 +119,7 @@ exports.up = async (knex) => {
       return knex.schema.createTable('metaPrepare', (t) => {
         t.string('id', 36).primary().notNullable()
         t.integer('payloadHash').unsigned().notNullable()
-        t.dateTime('abortedAt')
+        t.dateTime('abortedAt', { precision: 3 })
       })
     }
   })
@@ -129,8 +129,8 @@ exports.up = async (knex) => {
       return knex.schema.createTable('metaFulfil', (t) => {
         t.string('id', 36).primary().notNullable()
         t.integer('payloadHash').unsigned().notNullable()
-        t.dateTime('abortedAt')
-        t.dateTime('fulfiledAt')
+        t.dateTime('abortedAt', { precision: 3 })
+        t.dateTime('fulfiledAt', { precision: 3 })
         t.string('fulfilment', 256)
       })
     }

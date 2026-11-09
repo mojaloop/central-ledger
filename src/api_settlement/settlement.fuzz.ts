@@ -1,4 +1,33 @@
-import { describe, it } from "node:test"
+/*****
+ License
+ --------------
+ Copyright © 2020-2026 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
+ --------------
+ ******/
+
+ import { describe, it } from "node:test"
 import fs from "node:fs"
 import path from 'path'
 import LoggerMock from "../testing/logger-mock"
@@ -15,7 +44,7 @@ import Trace from "../testing/fuzz/trace"
 import assert from "node:assert"
 import PRNG from "../testing/prng"
 import { ApplicationConfig } from "../lib/config"
-import { Settlement } from "../domain/ledger/shared/types"
+import { Settlement, SettlementAccount, SettlementParticipant } from "../domain/ledger/shared/types"
 import HandlerSettlementV2 from "./handler-v2"
 const logger = loggerFactory()
 
@@ -31,7 +60,7 @@ const filename = path.basename(__filename)
 assert(filename)
 
 describe('Settlement API Fuzz', () => {
-  it('runs the fuzzer', async (context) => {
+  it.only('runs the fuzzer', async (context) => {
     const stepsMax = envOrDefaultNumber('STEPS_MAX', 2500)
     const trace = await run(stepsMax, {API_MODE_SETTLEMENT: 'LEDGER'})
 
@@ -426,7 +455,7 @@ class SettlementApiFuzzer {
       const settlement = this.harness.prng.randomElementFrom(this.settlements)
       settlementId = settlement.id
 
-      const participant = this.harness.prng.randomElementFrom(settlement.participants)
+      const participant = this.harness.prng.randomElementFrom(settlement.participants as Array<SettlementParticipant>)
       participantId = participant.id
       assert(participant.accounts.length > 0, 'Expected participant to have at least one account.')
       accountId = this.harness.prng.randomElementFrom(participant.accounts).id
@@ -466,7 +495,7 @@ class SettlementApiFuzzer {
       const participant = this.harness.prng.randomElementFrom(settlement.participants)
       participantId = participant.id
       assert(participant.accounts.length > 0, 'Expected participant to have at least one account.')
-      accountId = this.harness.prng.randomElementFrom(participant.accounts).id
+      accountId = this.harness.prng.randomElementFrom(participant.accounts as Array<SettlementAccount>).id
     } else {
       settlementId = this.harness.prng.intExclusive(1000)
       participantId = this.harness.prng.intExclusive(1000)
@@ -496,7 +525,7 @@ class SettlementApiFuzzer {
       const participant = this.harness.prng.randomElementFrom(settlement.participants)
       participantId = participant.id
       assert(participant.accounts.length > 0, 'Expected participant to have at least one account.')
-      accountId = this.harness.prng.randomElementFrom(participant.accounts).id
+      accountId = this.harness.prng.randomElementFrom(participant.accounts as Array<SettlementAccount>).id
     } else {
       settlementId = this.harness.prng.intExclusive(1000)
       participantId = this.harness.prng.intExclusive(1000)

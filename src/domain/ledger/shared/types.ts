@@ -1,6 +1,35 @@
-import { PrepareHandlerInput, PaymentPrepareResult } from '../../../handlers/payment-prepare';
-import { FulfilHandlerInput, PaymentFulfilResult } from '../../../handlers/payment-fulfil';
-import { TimeoutResult } from '../../../handlers/timeout-v2';
+/*****
+ License
+ --------------
+ Copyright © 2020-2026 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
+ --------------
+ ******/
+
+import { PrepareHandlerInput, PaymentPrepareResult } from '../../../handlers/payment-prepare'
+import { FulfilHandlerInput, PaymentFulfilResult } from '../../../handlers/payment-fulfil'
+import { TimeoutResult } from '../../../handlers/timeout-v2'
 
 /**
  * Common interface for all Ledger implementations
@@ -72,7 +101,7 @@ export interface Ledger {
    */
   closeSettlementWindow(cmd: SettlementCloseWindowCommand): Promise<CommandResult<void>>
   settlementPrepare(cmd: SettlementPrepareCommand): Promise<CommandResult<{ id: number }>>;
-  settlementAbort(cmd: SettlementAbortCommand): Promise<CommandResult<SettlementUpdateResult>>;
+  settlementAbort(cmd: SettlementAbortCommand): Promise<CommandResult<Settlement>>;
 
   /**
    * Commit the settlement - this doesn't really match legacy settlement, since it depends
@@ -83,7 +112,7 @@ export interface Ledger {
   /**
    * Update the internal, per Dfsp status of a Settlement
    */
-  settlementUpdate(cmd: SettlementUpdateCommand): Promise<CommandResult<SettlementUpdateResult>>;
+  settlementUpdate(cmd: SettlementUpdateCommand): Promise<CommandResult<Settlement>>;
 
   getSettlementWindows(query: GetSettlementWindowsQuery): Promise<QueryResult<GetSettlementWindowsQueryResponse>>
   getSettlementWindow(query: GetSettlementWindowQuery): Promise<QueryResultWithNotFound<SettlementWindow>>
@@ -218,6 +247,7 @@ export enum AccountCode {
   Unrestricted_Lock = 60600,
   Settlement_Outgoing = 60701,
   Settlement_Incoming = 60702,
+  Settlement_Calculate = 60703,
 
   Bookmark_Debit = 7100,
   Bookmark_Credit = 7101,
@@ -235,8 +265,11 @@ export enum TransferCode {
   Clearing_Credit = 30004,
   Clearing_Reverse = 30005,
   Clearing_Burn_Id = 30006,
-  Settlement_Deposit_Reduce = 40001,
-  Settlement_Deposit_Increase = 40002,
+  Settlement_Record = 40001,
+  Settlement_Resolve = 40002,
+  Settlement_Deposit_Reduce = 40003,
+  Settlement_Deposit_Increase = 40004,
+
   Net_Debit_Cap_Lock = 50001,
   Net_Debit_Cap_Sweep_To_Restricted = 50002,
   Net_Debit_Cap_Set_Limited = 50004,
@@ -616,6 +649,12 @@ export type SettlementPrepareCommand = {
   model: string,
   reason: string,
   now: Date
+
+  /**
+   * Optional list of ids to the accounts and transfers on the SettlementLegs.
+   * Use this for deterministic ids.
+   */
+  ids?: Array<bigint>
 }
 
 export type SettlementAbortCommand = {
@@ -638,9 +677,11 @@ export type SettlementAbortCommand = {
  * For each Dfsp
  */
 export type SettlementCommitCommand = {
-
+  /**
+   * The settlement id.
+   */
+  id: number
 }
-
 
 export type SettlementUpdate = {
   participantId: number
@@ -653,16 +694,27 @@ export type SettlementUpdate = {
   externalReference: string
 }
 
+export type SettlementUpdateV2 = {
+  dfspId: string
+  accountId: bigint
+  /**
+   * PS_TRANSFERS_RECORDED - Pending settlement transfers have been created.
+   */
+  state: 'PS_TRANSFERS_RECORDED'
+  reason: string
+  externalReference: string
+}
+
 export type SettlementUpdateCommand = {
   /**
-   * The settlement id
+   * The settlement id.
    */
   id: number
 
   /**
-   * A list of updates to apply to the settlement
+   * A list of updates to apply to the settlement.
    */
-  updates: Array<SettlementUpdate>
+  updates: Array<SettlementUpdate | SettlementUpdateV2>
 }
 
 export type CloseSettlementWindowResult = {
@@ -673,19 +725,14 @@ export type CloseSettlementWindowResult = {
   state: SettlementWindowState,
 }
 
-export type SettlementUpdateResult = {
-  createdDate: Date,
-  id: number,
-  participants: Array<{
-    accounts: Array<SettlementAccount>
-    id: number
-  }>
-  settlementWindows: Array<SettlementWindow>
-  state: LegacySettlementState  
-}
-
-export type SettlementWindowState = 'OPEN' | 'CLOSED' | 'PENDING_SETTLEMENT' | 'SETTLED'
-  | 'ABORTED' | 'PROCESSING' | 'FAILED'
+export type SettlementWindowState = 
+  | 'OPEN' 
+  | 'CLOSED' 
+  | 'PENDING_SETTLEMENT' 
+  | 'SETTLED'
+  | 'ABORTED' 
+  | 'PROCESSING'
+  | 'FAILED'
 
 export type InternalSettlementState =
   | 'PENDING_SETTLEMENT'
@@ -696,9 +743,15 @@ export type InternalSettlementState =
   | 'SETTLED'
   | 'ABORTED'
 
-// TODO: we should remove this completely
-export type LegacySettlementState = 'PENDING_SETTLEMENT' | 'PS_TRANSFERS_RECORDED' | 'PS_TRANSFERS_RESERVED'
-  | 'PS_TRANSFERS_COMMITTED' | 'SETTLING' | 'SETTLED' | 'ABORTED'
+
+export type LegacySettlementState = 
+  | 'PENDING_SETTLEMENT' 
+  | 'PS_TRANSFERS_RECORDED' 
+  | 'PS_TRANSFERS_RESERVED'
+  | 'PS_TRANSFERS_COMMITTED' 
+  | 'SETTLING'
+  | 'SETTLED' 
+  | 'ABORTED'
 
 export type GetSettlementWindowsQuery = {
   participantId?: number
@@ -719,7 +772,7 @@ export type GetSettlementWindowsQueryResponse = Array<SettlementWindow>
 
 export type GetSettlementQuery = {
   /**
-   * The settlement id of the settlement
+   * The settlement id.
    */
   id: number
 }
@@ -741,13 +794,10 @@ export type SettlementWindow = {
   state: SettlementWindowState,
   reason: string,
   createdDate: Date,
-  // TODO(LD): I don't know what this is meant to be. The closed date? or does that not get used?
   changedDate: Date,
   content: Array<{
     id: number,
-    // TODO(LD): better typing
     state: string
-    // TODO(LD): better typing
     ledgerAccountType: string
     currencyId: string,
     createdDate: Date,
@@ -755,21 +805,11 @@ export type SettlementWindow = {
   }>
 }
 
-export type SettlementAccount = {
-  id: number
-  // TODO(LD): better typing
-  state: string
+export type SettlementWindowV2 = {
+  settlementWindowId: number,
   reason: string,
-  owing: number,
-  owed: number,
-  currency: string
-
-  // legacy amount
-  netSettlementAmount: {
-    // TODO(LD): should this be a number?
-    amount: string,
-    currency: string
-  }
+  openDate: Date,
+  closeDate: Date,
 }
 
 export type Settlement = {
@@ -778,13 +818,46 @@ export type Settlement = {
   reason: string,
   createdDate: Date,
   changedDate: Date,
-  settlementWindows: Array<SettlementWindow>
-  participants: Array<SettlementParticipant>
+  settlementWindows: Array<SettlementWindow | SettlementWindowV2>
+  participants: Array<SettlementParticipant | SettlementParticipantV2>
 }
 
 export type SettlementParticipant = {
   id: number,
   accounts: Array<SettlementAccount>
+}
+
+export type SettlementAccount = {
+  id: number
+  state: string
+  reason: string,
+  netSettlementAmount: {
+    // TODO(LD): should this be a number?
+    amount: string,
+    currency: string
+  }
+}
+
+export type SettlementParticipantV2 = {
+  /**
+   * @deprecated
+   * Always set to 0. The previous implementation exposed
+   * the participantCurrencyId, but we don't need this in the
+   * LedgerTigerBeetle implementation. 
+   */
+  id: number,
+  dfspId: string,
+  accounts: Array<SettlementAccountV2>
+}
+
+export type SettlementAccountV2 = {
+  id: bigint
+  state: string
+  reason: string,
+  netSettlementAmount: {
+    amount: string,
+    currency: string
+  }
 }
 
 export type GetSettlementQueryResponse = Settlement & {
@@ -798,97 +871,45 @@ export type GetSettlementQueryResponse = Settlement & {
 
 export type GetSettlementsQueryResponse = QueryResult<Array<Settlement>>
 
-export type SettlementPrepareCommandV2 = {
-
-  /**
-   * Unique id (64 bit bigint) to represent the settlement
-   */
-  settlementId: bigint,
-
-  /**
-   * Currency to be settled
-   */
-  currency: string,
-
-  /**
-   * The selector used to select Payments to be settled
-   */
-  selector: SettlementSelector
-}
-
-export type SettlementSelector = {
-  type: 'LEDGER_TIMERANGE',
-
-  /**
-   * The minimum Ledger creation timestamp to include in the Settlement
-   * inclusive range.
-   */
-  timestampMin: number,
-
-  /**
-   * The maximum Ledger creation timestamp to include in the Settlement
-   * inclusive range.
-   */
-  timestampMax: number
-} | {
-  type: 'TRANSFER_ID',
-  transferIds: Array<string>
-}
-
-// could also be batchId, time range from Dfsp's perspective?
-
-export type SettlementReport = {
-  // TODO(LD): This should be Logical Transfers
-  payments: Array<Payment>
-  currency: string
-  participants: Array<string>
-  netMoneyMovements: Record<string, NetMoneyMovement>
-}
-
-export type SettlementPrepareResult = {
-  type: 'SUCCESS',
-  report: SettlementReport
-} | {
-  // failure during the setup
-  type: 'SETUP_FAILURE'
-  error: Error
-} | {
-  type: 'UNKNOWN_FAILURE',
-  error: Error
-}
-
-
 // Internal representation of a payment
-type Payment = {
-  status: 'CREATED' | 'ABORTED' | 'FULFILLED' | 'SETTLED'
-  amount: number
+export type Payment = {
+  status: 'CREATED'
+  amount: bigint
   currency: string,
   payer: string,
   payee: string,
-  // could do even better and have this as a dict based on the status
-  transfers: Array<any>
+} | {
+  status: 'ABORTED'
+  amount: bigint
+  currency: string,
+  payer: string,
+  payee: string,
+  abortedAt: Date
+} | {
+  status: 'FULFILLED'
+  amount: bigint
+  currency: string,
+  payer: string,
+  payee: string,
+  fulfiledAt: Date
+} | {
+  status: 'SETTLED'
+  amount: bigint
+  currency: string,
+  payer: string,
+  payee: string,
+  fulfiledAt: Date
+  settledAt: Date
 }
 
-type NetMoneyMovement = {
-  participant: string,
-  currency: string,
-  owingGross: number
-  owedGross: number
-  net: {
-    direction: 'OWING',
-    amount: number
-  } | {
-    direction: 'OWED',
-    amount: number
-  }
-}
+export type PaymentFulfilled = Extract<Payment, { status: 'FULFILLED' }>
 
 /**
  * Convenience Types for QueryResult
  * When T is void, result property is omitted
  */
 
-export type QueryResultSuccess<T> = T extends void
+export type QueryResultSuccess<T> = [T] extends [void]
   ? { type: 'SUCCESS' }
   : { type: 'SUCCESS'; result: T }
 
@@ -904,9 +925,7 @@ export type QueryResultNotFound = {
 
 export type QueryResult<T> = QueryResultSuccess<T> | QueryResultFailure
 
-// TODO: can we just combine this into QueryResult?
 export type QueryResultWithNotFound<T> = QueryResultSuccess<T> | QueryResultNotFound | QueryResultFailure
-
 
 /**
  * Mojaloop internal enums for things such as Transfer States, account types etc.
@@ -930,7 +949,6 @@ export interface Enums {
   transferStates: Record<string, number>
   settlementInterchange: Record<string, number>
 }
-
 
 export type PayloadFinalizedTransfer = {
   completedTimestamp: Date

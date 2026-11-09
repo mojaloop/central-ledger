@@ -1,9 +1,39 @@
+/*****
+ License
+ --------------
+ Copyright © 2020-2026 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
+ --------------
+ ******/
+
+ 
 import { describe, it } from "node:test"
 import fs from "node:fs"
 import path from 'path'
 import LoggerMock from "../../testing/logger-mock"
 import { logger as loggerGlobal } from "../../shared/logger"
-// @ts-ignore  Override the globally exported logger. Note that we MUST do this before
+// @ts-ignore Override the globally exported logger. Note that we MUST do this before
 // we import Harness, which imports the globals.
 loggerGlobal = new LoggerMock()
 import Harness from "../../testing/harness/harness"
@@ -30,19 +60,21 @@ import {
   GetSettlementWindowsQuery,
   Ledger,
   LookupTransferQuery,
-  PrepareResultType,
   SetNetDebitCapCommand,
   Settlement,
   SettlementAbortCommand,
   SettlementCloseWindowCommand,
+  SettlementCommitCommand,
+  SettlementParticipantV2,
   SettlementPrepareCommand,
   SettlementUpdateCommand,
+  SettlementUpdateV2,
   WithdrawAbortCommand,
   WithdrawCommitCommand,
   WithdrawPrepareCommand
 } from "../ledger/shared/types"
-import { PaymentPrepareResultTag, PrepareHandlerInput } from "../../handlers/payment-prepare"
-import { FulfilHandlerInput, PaymentFulfilResultTag, PaymentFulfilResultType } from "../../handlers/payment-fulfil"
+import { PrepareHandlerInput } from "../../handlers/payment-prepare"
+import { FulfilHandlerInput } from "../../handlers/payment-fulfil"
 import { Reporter } from "./shared/reporter"
 
 const logger = loggerFactory()
@@ -245,12 +277,13 @@ class LedgerFuzzer {
   private countFulfilAttempt: number = 0
   private disabledDfsps: Set<string> = new Set()
   private disabledAccountIds: Set<number> = new Set()
-  private disabledDfspCurrencies: Record<string, {dfsp: string, currency: string }> = {}
+  private disabledDfspCurrencies: Record<string, { dfsp: string, currency: string }> = {}
 
   private abortedIds: Record<string, true> = {}
   private payments: Array<ApiHelpers.Payment> = []
-  private settlementIds: Record<number, true> = {}
-  private settlements: Array<Settlement> = []
+  private currentSettlementWindow: number = 1
+  private settlements: Record<number, Settlement> = {}
+  private settlementIdsSuccess: Record<number, true> = {}
 
   private readonly allCurrencies = ['USD', 'AUD', 'EUR', 'GBP']
 
@@ -301,8 +334,10 @@ class LedgerFuzzer {
     logger.warn(`\tDFSPS Created:     ${Object.keys(this.registeredDfsps).length}`)
     const statPrepares = `${Object.keys(this.prepareIdsSuccess).length}/${this.countPrepareAttempt}`
     const statFulfils = `${Object.keys(this.fulfilIdsSuccess).length}/${this.countFulfilAttempt}`
-    logger.warn(`\tPrepares: ${statPrepares.padStart(12)}`)
-    logger.warn(`\tFulfils:  ${statFulfils.padStart(12)}`)
+    const statSettlements = `${Object.keys(this.settlementIdsSuccess).length}/${Object.keys(this.settlements).length}`
+    logger.warn(`\tPrepares:    ${statPrepares.padStart(12)}`)
+    logger.warn(`\tFulfils:     ${statFulfils.padStart(12)}`)
+    logger.warn(`\tSettlements: ${statSettlements.padStart(12)}`)
   }
 
   get trace() {
@@ -316,10 +351,12 @@ class LedgerFuzzer {
       return
     }
 
+    if (this.step % 25 === 0) logger.info(`step: ${this.step}/${this.stepsMax}.`)
+
     // Log the balance after each step.
     const balanceSheetPost = await this.reporter.balanceSheet(new Date())
     const statePost = this.options.balanceTraceMode === 'LEGACY' ? balanceSheetPost.toStringAll()
-      : balanceSheetPost.toTAccounts(this.registeredDfsps, ['USD'])
+      : balanceSheetPost.toTAccounts(this.registeredDfsps, this.registeredCurrencies)
 
     this.trace.push({
       step: this.step,
@@ -379,10 +416,6 @@ class LedgerFuzzer {
     // Really its up to the outer layers to convert the response to something the API/messaging
     // layer can understand.
     const outputClone = structuredClone(output)
-    if (outputClone.error) {
-      // outputClone.error = {}
-    }
-
     this.trace.push({
       step: this.step,
       action,
@@ -411,10 +444,6 @@ class LedgerFuzzer {
     const result = await this.ledger.createHubAccount(cmd)
     this.traceResult('createHubAccount', cmd, result)
 
-    // console.log(`createHubAccount currency=${currency}, result: ${result.type}`)
-    // if (result.type === 'FAILURE') {
-    //   console.log(`\t ${result.error}`)
-    // }
 
     if (result.type === 'SUCCESS') {
       this.registeredCurrencies.push(currency)
@@ -459,11 +488,6 @@ class LedgerFuzzer {
     const result = await this.ledger.createDfsp(cmd)
     this.traceResult('createDfsp', cmd, result)
 
-    // console.log(`createDfsp ${cmd.dfspId} result: ${result.type}`)
-    // if (result.type === 'FAILURE') {
-    //   console.log(`\t${result.error}`)
-    // }
-
     if (result.type === 'SUCCESS' && !this.registeredDfspIds[name]) {
       // Track which DFSPs exist.
       this.registeredDfspIds[name] = true
@@ -499,7 +523,6 @@ class LedgerFuzzer {
     }
 
 
-    // TODO: also need to check for net debit caps etc.
     if (this.registeredDfsps.length >= 8) {
       this.applyWeightsPhaseTwo()
     }
@@ -574,19 +597,19 @@ class LedgerFuzzer {
       setNetDebitCap: 0,
       getNetDebitCap: 0,
       getNetDebitCaps: 0,
-      prepare: 100,
-      fulfil: 75,
-      sweepTimedOut: 25,
+      prepare: 40,
+      fulfil: 25,
+      sweepTimedOut: 10,
       lookupTransfer: 0,
-      closeSettlementWindow: 3,
-      settlementPrepare: 0,
-      settlementAbort: 0,
-      settlementCommit: 0,
-      settlementUpdate: 0,
-      getSettlementWindows: 0,
-      getSettlementWindow: 0,
-      getSettlement: 0,
-      getSettlements: 0,
+      closeSettlementWindow: 10,
+      settlementPrepare: 10,
+      settlementAbort: 4,
+      settlementCommit: 5,
+      settlementUpdate: 5,
+      getSettlementWindows: 2,
+      getSettlementWindow: 2,
+      getSettlement: 3,
+      getSettlements: 3,
     }
   }
 
@@ -662,7 +685,10 @@ class LedgerFuzzer {
 
     if (result.type === 'SUCCESS') {
       this.disabledAccountIds.add(account.id)
-      this.disabledDfspCurrencies[`${name}:${account.currency}`] = {dfsp: name, currency: account.currency}
+      this.disabledDfspCurrencies[`${name}:${account.currency}`] = { 
+        dfsp: name, 
+        currency: account.currency 
+      }
     }
   }
 
@@ -989,11 +1015,6 @@ class LedgerFuzzer {
       case 'changeAmount':
         prepare.payload.amount.amount = this.randomAmount()
         return prepare
-      // TODO(LD): Not sure if we should reenable, or rely on the ml-api-adapter to catch this.
-      // Invalid dates break the prepare() handling in ledger-sql.
-      // case 'invalidExpiration':
-      //   prepare.payload.expiration = "invalid date"
-      //   return prepare
     }
 
     throw new Error(`mutatePrepare() - unsupported mutation: ${mutation}`)
@@ -1144,17 +1165,14 @@ class LedgerFuzzer {
 
   private async closeSettlementWindow(): Promise<void> {
     let windowId
-    try {
-      const windows = await ApiHelpers.getOpenSettlementWindows(harness)
-      windowId = this.harness.prng.randomElementWeighted([
-        this.harness.prng.randomElementFrom(windows.map(window => window.settlementWindowId)),
-        this.harness.prng.intExclusive(100)
-      ], [4, 1])
-    } catch (err: any) {
-      logger.warn('failed to get open settlement window', err.message)
-      // Ignoring error, just get a random id.
-      windowId = this.harness.prng.intExclusive(100)
+
+    if (this.prng.intExclusive(100) > 1) {
+      // Most likely pick the correct settlement window.
+      windowId = this.currentSettlementWindow
+    } else {
+      windowId = this.prng.intExclusive(1000)
     }
+
     const cmd: SettlementCloseWindowCommand = {
       id: windowId,
       now: this.harness.clock.now,
@@ -1163,18 +1181,21 @@ class LedgerFuzzer {
 
     const result = await this.ledger.closeSettlementWindow(cmd)
     this.traceResult('closeSettlementWindow', cmd, result)
+
+    if (result.type === 'SUCCESS') {
+      this.currentSettlementWindow += 1
+    }
   }
 
   private async settlementPrepare(): Promise<void> {
-    const windows = (await ApiHelpers.getSettlementWindows(harness))
-      .filter(window => window.state === 'CLOSED')
-
-
-    if (windows.length === 0 && this.harness.prng.coin()) {
-      // Don't bother trying if we don't have a closed window, so just close a window.
-      await this.closeSettlementWindow()
+    const getWindowResult = await this.harness.ledger.getSettlementWindows({
+      state: 'CLOSED'
+    })
+    if (getWindowResult.type !== 'SUCCESS' || getWindowResult.result.length === 0) {
+      // No eligible settlement windows.
       return
     }
+    const windows = getWindowResult.result
 
     let windowIds: Array<number> = []
     if (windows.length > 0) {
@@ -1195,25 +1216,85 @@ class LedgerFuzzer {
     this.traceResult('settlementPrepare', cmd, result)
 
     if (result.type === 'SUCCESS') {
-      this.settlementIds[result.result.id] = true
-      const settlement = await ApiHelpers.getSettlement(this.harness, result.result.id)
-      this.settlements.push(settlement as unknown as Settlement)
+      await this.reloadSettlement(result.result.id)
+    }
+  }
+
+  private async settlementUpdate(): Promise<void> {
+    const settlementIds = Object.keys(this.settlements)
+
+    if (settlementIds.length === 0) return
+
+    const settlement = this.harness.prng.randomElementFrom(Object.values(this.settlements))
+    const updates: Array<SettlementUpdateV2> = []
+    settlement.participants.forEach(participantAny => {
+      const participant = participantAny as SettlementParticipantV2
+      participant.accounts.forEach(account => {
+        updates.push({
+          dfspId: participant.dfspId,
+          accountId: account.id,
+          state: 'PS_TRANSFERS_RECORDED',
+          reason: this.prng.randomString(),
+          externalReference: this.prng.randomString(),
+        })
+      })
+    })
+
+    const cmd = {
+      id: settlement.id,
+      updates,
+    } as SettlementUpdateCommand
+
+    const result = await this.ledger.settlementUpdate(cmd)
+    this.traceResult('settlementUpdate', cmd, result)
+
+    // Update local settlement list.
+    if (result.type === 'SUCCESS') {
+      await this.reloadSettlement(result.result.id)
+    }
+  }
+
+  private async settlementCommit(): Promise<void> {
+    const settlementIds = Object.keys(this.settlements)
+
+    if (settlementIds.length === 0) return
+
+    const settlementsReady = Object.values(this.settlements)
+      .filter(settlement => settlement.state === 'PS_TRANSFERS_RESERVED')
+    if (settlementsReady.length === 0) return
+
+    let settlement = this.harness.prng.randomElementFrom(settlementsReady)
+    // Maybe get any old settlement.
+    if (this.prng.intExclusive(100) < 2) {
+      settlement = this.harness.prng.randomElementFrom(Object.values(this.settlements))
+    }
+
+    const cmd: SettlementCommitCommand = { id: settlement.id }
+    const result = await this.ledger.settlementCommit(cmd)
+    this.traceResult('settlementCommit', cmd, result)
+
+    if (result.type === 'SUCCESS') {
+      this.settlementIdsSuccess[cmd.id] = true
+      await this.reloadSettlement(cmd.id)
     }
   }
 
   private async settlementAbort(): Promise<void> {
-    const settlementIds = Object.keys(this.settlementIds)
+    const settlementIds = Object.keys(this.settlements)
 
-    if (settlementIds.length === 0 && this.prng.intExclusive(101) > 99) {
-      return
-    }
+    if (settlementIds.length === 0) return
 
-    let settlementId = this.harness.prng.intExclusive(1000)
-    if (settlementIds.length > 0) {
-      settlementId = Number.parseInt(this.harness.prng.randomElementFrom(settlementIds))
+    const settlementsReady = Object.values(this.settlements)
+      .filter(settlement => settlement.state === 'PS_TRANSFERS_RESERVED')
+    if (settlementsReady.length === 0) return
+    let settlement = this.harness.prng.randomElementFrom(settlementsReady)
+
+    // Maybe get any old settlement.
+    if (this.prng.intExclusive(100) < 2) {
+      settlement = this.harness.prng.randomElementFrom(Object.values(this.settlements))
     }
     const cmd: SettlementAbortCommand = {
-      id: settlementId,
+      id: settlement.id,
       reason: this.harness.prng.randomString(),
     }
 
@@ -1221,52 +1302,17 @@ class LedgerFuzzer {
     this.traceResult('settlementAbort', cmd, result)
   }
 
-  private async settlementCommit(): Promise<void> {
-    const result = await this.ledger.settlementCommit({})
-    this.traceResult('settlementCommit', {}, result)
-  }
-
-  private async settlementUpdate(): Promise<void> {
-    const settlementIds = Object.keys(this.settlementIds)
-
-    if (settlementIds.length === 0 && this.prng.intExclusive(101) > 99) {
-      return
-    }
-
-    let settlementId = this.harness.prng.intExclusive(1000)
-    let participantId = this.harness.prng.intExclusive(1000)
-    let accountId = this.harness.prng.intExclusive(1000)
-    if (this.settlements.length > 0 && this.harness.prng.intExclusive(100) < 98) {
-      const settlement = this.harness.prng.randomElementFrom(this.settlements)
-      settlementId = settlement.id
-
-      const participant = this.harness.prng.randomElementFrom(settlement.participants)
-      participantId = participant.id
-      assert(participant.accounts.length > 0, 'Expected participant to have at least one account.')
-      accountId = this.harness.prng.randomElementFrom(participant.accounts).id
-    }
-
-    if (settlementIds.length > 0) {
-      settlementId = Number.parseInt(this.harness.prng.randomElementFrom(settlementIds))
-    }
-    const cmd = {
-      id: settlementId,
-      updates: [{
-        participantId,
-        accountId,
-        participantState: this.randomSettlementTransferState(),
-        reason: this.prng.randomString(),
-        externalReference: this.prng.randomString(),
-      }]
-    } as SettlementUpdateCommand
-
-    const result = await this.ledger.settlementUpdate(cmd)
-    this.traceResult('settlementUpdate', cmd, result)
+  /**
+   * Update our local record of a settlement for a given id.
+   */
+  private async reloadSettlement(id: number): Promise<void> {
+    const getSettlementResult = await this.ledger.getSettlement({ id })
+    assert(getSettlementResult.type === 'SUCCESS')
+    this.settlements[id] = getSettlementResult.result
   }
 
   private async getSettlementWindows(): Promise<void> {
-    const generators: Record<string, () => string> = {
-      participantId: () => this.harness.prng.intExclusive(100).toString(),
+    const generators: Record<string, () => string | Date> = {
       state: () => this.randomSettlementWindowState(),
       fromDateTime: () => this.randomDateTime(),
       toDateTime: () => this.randomDateTime(),
@@ -1274,7 +1320,7 @@ class LedgerFuzzer {
     }
 
     const keys = Object.keys(generators)
-    const paramsCount = this.harness.prng.randomElementWeighted([0, 1, 2, 3, 4], [5, 15, 3, 2, 1])
+    const paramsCount = this.harness.prng.randomElementWeighted([0, 1, 2, 3, 4], [5, 15, 15, 2, 1])
     const keysSelected = this.harness.prng.randomSampleFrom(keys, paramsCount)
     const query: Record<string, any> = {}
     keysSelected.forEach(key => query[key] = generators[key]())
@@ -1284,7 +1330,14 @@ class LedgerFuzzer {
   }
 
   private async getSettlementWindow(): Promise<void> {
-    const id = this.harness.prng.intExclusive(100)
+    // Get the last settlementWindow most of the time.
+    let id = 1
+    if (this.currentSettlementWindow > 1 && this.prng.intExclusive(100) > 1) {
+      id = this.currentSettlementWindow - 1
+    } else {
+      id = this.prng.intExclusive(1000)
+    }
+
     const query: GetSettlementWindowQuery = { id }
     const result = await this.ledger.getSettlementWindow(query)
     this.traceResult('getSettlementWindow', query, result)
@@ -1292,28 +1345,20 @@ class LedgerFuzzer {
 
   private async getSettlement(): Promise<void> {
     let id = this.harness.prng.intExclusive(100)
-    if (Object.keys(this.settlementIds).length > 0 && this.harness.prng.coin()) {
-      id = Number.parseInt(this.harness.prng.randomElementFrom(Object.keys(this.settlementIds)))
+    // Most likely get an existing id.
+    if (Object.keys(this.settlements).length > 0 && this.prng.intExclusive(100) > 1) {
+      id = Number.parseInt(this.harness.prng.randomElementFrom(Object.keys(this.settlements)))
     }
 
     const query: GetSettlementQuery = { id }
     const result = await this.ledger.getSettlement(query)
     this.traceResult('getSettlement', query, result)
-
-    if (result.type === 'SUCCESS') {
-      if (!this.settlementIds[id]) {
-        this.settlementIds[id] = true
-        this.settlements.push(result.result)
-      }
-    }
   }
 
   private async getSettlements(): Promise<void> {
-    const generators: Record<string, () => string> = {
+    const generators: Record<string, () => string | Date> = {
       currency: () => this.randomCurrency(),
       state: () => this.randomSettlementState(),
-      participantId: () => this.harness.prng.intExclusive(100).toString(),
-      accountId: () => this.harness.prng.intExclusive(100).toString(),
       settlementWindowId: () => this.harness.prng.intExclusive(100).toString(),
       fromDateTime: () => this.randomDateTime(),
       toDateTime: () => this.randomDateTime(),
@@ -1329,15 +1374,6 @@ class LedgerFuzzer {
 
     const result = await this.ledger.getSettlements(query as GetSettlementsQuery)
     this.traceResult('getSettlements', query, result)
-
-    if (result.type === 'SUCCESS') {
-      for (const settlement of result.result) {
-        if (!this.settlementIds[settlement.id]) {
-          this.settlementIds[settlement.id] = true
-          this.settlements.push(settlement)
-        }
-      }
-    }
   }
 
   // Helpers.
@@ -1379,11 +1415,12 @@ class LedgerFuzzer {
     return this.prng.uuidv4()
   }
 
-  private randomDfspAccount(): {id: number, currency: string} {
+  private randomDfspAccount(): { id: number, currency: string } {
     if (Object.keys(this.dfspAccountIds).length > 0 && this.harness.prng.intExclusive(100) > 20) {
       // Reuse.
       return this.harness.prng.randomElementFrom(
-        Object.entries(this.dfspAccountIds).map(([key, value]) => ({id: Number.parseInt(key), currency: value}))
+        Object.entries(this.dfspAccountIds)
+          .map(([key, value]) => ({ id: Number.parseInt(key), currency: value }))
       )
     }
 
@@ -1481,10 +1518,7 @@ class LedgerFuzzer {
   private randomSettlementState(): string {
     return this.harness.prng.randomElementFrom([
       'PENDING_SETTLEMENT',
-      'PS_TRANSFERS_RECORDED',
       'PS_TRANSFERS_RESERVED',
-      'PS_TRANSFERS_COMMITTED',
-      'SETTLING',
       'SETTLED',
       'ABORTED',
     ])
@@ -1500,23 +1534,15 @@ class LedgerFuzzer {
     ])
   }
 
-  private randomSettlementTransferState() {
-    return this.harness.prng.randomElementFrom([
-      'PS_TRANSFERS_RECORDED',
-      'PS_TRANSFERS_RESERVED',
-      'PS_TRANSFERS_COMMITTED',
-      'SETTLED'
-    ])
-  }
+  private randomDateTime(): Date {
+    const date = new Date()
+    date.setFullYear(this.harness.prng.intInRange(2020, 2027))
+    date.setMonth(this.harness.prng.intInRange(1, 12))
+    date.setDate(this.harness.prng.intInRange(1, 28))
+    date.setHours(this.harness.prng.intInRange(0, 59))
+    date.setMinutes(this.harness.prng.intInRange(0, 59))
+    date.setSeconds(this.harness.prng.intInRange(0, 59))
 
-  private randomDateTime(): string {
-    const year = this.harness.prng.intInRange(2020, 2027)
-    const month = String(this.harness.prng.intInRange(1, 12)).padStart(2, '0')
-    const day = String(this.harness.prng.intInRange(1, 28)).padStart(2, '0')
-    const hour = String(this.harness.prng.intInRange(0, 59)).padStart(2, '0')
-    const min = String(this.harness.prng.intInRange(0, 59)).padStart(2, '0')
-    const sec = String(this.harness.prng.intInRange(0, 59)).padStart(2, '0')
-
-    return `${year}-${month}-${day}T${hour}:${min}:${sec}Z`
+    return date
   }
 }

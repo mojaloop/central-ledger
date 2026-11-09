@@ -1,8 +1,37 @@
-import assert from "node:assert"
-import { ApplicationConfig } from "../../../lib/config"
-import { AccountCode, Ledger, LedgerAccount, LegacyLedgerAccount, LegacyLimitItem } from "./types"
-import { CurrencyConfig, NetDebitCap } from "../tigerbeetle/meta-store"
-import { LedgerTigerBeetle } from "../tigerbeetle/ledger-tigerbeetle"
+/*****
+ License
+ --------------
+ Copyright © 2020-2026 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the 'License') and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
+ --------------
+ ******/
+
+import assert from 'node:assert'
+import { ApplicationConfig } from '../../../lib/config'
+import { AccountCode, Ledger, LedgerAccount, LegacyLedgerAccount, LegacyLimitItem } from './types'
+import { CurrencyConfig } from '../tigerbeetle/meta-store'
+import { LedgerTigerBeetle } from '../tigerbeetle/ledger-tigerbeetle'
 
 interface DepsReporter {
   ledger: Ledger
@@ -187,8 +216,8 @@ class BalanceSheet {
       }
       const netDebitCap = dfspBalance.netDebitCap ? dfspBalance.netDebitCap.limit.value.toString() : 'none'
       const valueNetDebitCap = netDebitCap.padStart(COL_VAL)
-      const valuePosition = dfspBalance.dfspAccountsLegacy.balancePosition.toString().padStart(COL_VAL)
-      const valueSettlement = dfspBalance.dfspAccountsLegacy.balanceSettlement.toString().padStart(COL_VAL)
+      const valuePosition = dfspBalance.dfspAccountsLegacy.balancePosition.toFixed(2).padStart(COL_VAL)
+      const valueSettlement = dfspBalance.dfspAccountsLegacy.balanceSettlement.toFixed(2).padStart(COL_VAL)
       builder += `│ ${dfspId.padEnd(COL_DFSP - 1)}|${valueNetDebitCap}  │${valuePosition}  │${valueSettlement}  │\n`
     }
     builder += `└${'─'.repeat(COL_DFSP)}┴${'─'.repeat(COL_VAL + 2)}┴${'─'.repeat(COL_VAL + 2)}┴${'─'.repeat(COL_VAL + 2)}┘\n`
