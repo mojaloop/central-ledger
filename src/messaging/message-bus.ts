@@ -71,6 +71,7 @@ export enum HandlerName {
 export class MessageBus {
   private config: ApplicationConfig
   private helper: MessagingHelper
+  private timeoutJob: CronJob
 
   constructor(private deps: Dependencies) {
     assert(deps.config)
@@ -81,6 +82,13 @@ export class MessageBus {
 
     this.config = deps.config
     this.helper = deps.helper
+
+    this.timeoutJob = CronJob.from({
+      cronTime: this.deps.config.HANDLERS_TIMEOUT_TIMEXP,
+      onTick: () => this.timeout(new Date()),
+      start: false,
+      timeZone: this.deps.config.HANDLERS_TIMEOUT_TIMEZONE
+    })
   }
 
   /**
@@ -122,14 +130,7 @@ export class MessageBus {
           break
         }
         case HandlerName.timeout: {
-          const timeoutJob = CronJob.from({
-            cronTime: this.deps.config.HANDLERS_TIMEOUT_TIMEXP,
-            onTick: () => this.timeout(new Date()),
-            start: false,
-            timeZone: this.deps.config.HANDLERS_TIMEOUT_TIMEZONE
-          })
-          timeoutJob.start()
-
+          this.timeoutJob.start()
           logger.info(`Registered timeout handler.`)
           break
         }
@@ -138,6 +139,9 @@ export class MessageBus {
   }
 
   public async deinit(): Promise<void> {
+    // Stop the timeout job.
+    this.timeoutJob.stop()
+
     // Stop listening to kafka.
     await Consumer.disconnectAll()
     await Producer.disconnect(null)
@@ -180,14 +184,18 @@ export class MessageBus {
 
 
   public async timeout(now: Date): Promise<void> {
-    logger.info(`MessageBus.timeout() called for date: ${now.toISOString()}.`)
-    const result = await this.deps.handlers.timeoutHandler.run(now)
-    const effects = this.helper.buildEffectsTimedOutPayments(result.payments)
+    try {
+      logger.info(`MessageBus.timeout() called for date: ${now.toISOString()}.`)
+      const result = await this.deps.handlers.timeoutHandler.run(now)
+      const effects = this.helper.buildEffectsTimedOutPayments(result.payments)
       .map(result => result.effect)
-
-    // Emit the notifications.
-    const effectsNotification = effects.filter(effect => effect.functionality === 'notification')
-    await this.emit(effectsNotification)
+      
+      // Emit the notifications.
+      const effectsNotification = effects.filter(effect => effect.functionality === 'notification')
+      await this.emit(effectsNotification)
+    } catch (err: any) {
+      logger.error(`timeout failed with error: ${err.message}`)
+    }
   }
 
   /**
@@ -195,12 +203,21 @@ export class MessageBus {
    */
   private async emit(effects: Array<Effect>): Promise<void> {
     const emitResults = await Promise.allSettled(effects.map(effect => this.emitOne(effect)))
+    const failures: Array<PromiseRejectedResult> = []
     emitResults.forEach(result => {
       if (result.status === 'rejected') {
+        failures.push(result)
         logger.error(`emitOne() failed to emit effect with error: ${result.reason}`)
         if (result.reason.stack) logger.error(`stack\n\t${result.reason.stack}`)
       }
     })
+
+    if (failures.length > 0) {
+      throw new AggregateError(
+        failures.map(failure => failure.reason),
+        `emit() failed for ${failures.length} of ${effects.length} effects.`
+      )
+    }
   }
 
   /**
@@ -216,10 +233,6 @@ export class MessageBus {
       default:
         throw new Error(`resolveKafkaConfig: unhandled topicName: ${topicName}.`)
     }
-  }
-
-  private collectEffects<T extends { effects: Array<Effect> }>(results: Array<T>): Array<Effect> {
-    return results.reduce((acc: Array<Effect>, curr) => acc.concat(curr.effects), [])
   }
 
   private async emitOne(effect: Effect): Promise<void> {

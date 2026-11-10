@@ -56,6 +56,7 @@ export class DispatchTransferHandler {
 
   public async prepare(error: any, messages: Array<any>):
     Promise<Array<PaymentPrepareResult>> {
+    if (error) throw error
     assert(Array.isArray(messages))
 
     const messagesPrepare = DispatchTransferHandler.filterByAction(messages, ['prepare'])
@@ -78,6 +79,7 @@ export class DispatchTransferHandler {
   }
 
   public async fulfil(error: any, messages: Array<any>): Promise<Array<PaymentFulfilResult>> {
+    if (error) throw error
     assert(Array.isArray(messages))
 
     const messagesFulfil = DispatchTransferHandler.filterByAction(

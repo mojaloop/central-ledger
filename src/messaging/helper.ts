@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { randomUUID } from "node:crypto";
-import { CommitPaymentDtoAborted, FulfilContextFulfiled, FulfilHandlerInput, PaymentFulfilResult, PaymentFulfilResultTag } from "../handlers/payment-fulfil";
+import { CommitPaymentDtoAborted, FulfilContext, FulfilContextFulfiled, FulfilHandlerInput, PaymentFulfilResult, PaymentFulfilResultTag } from "../handlers/payment-fulfil";
 import { PaymentPrepareResult, PaymentPrepareResultTag, PrepareHandlerInput } from "../handlers/payment-prepare";
 import { PaymentTimeout, TimeoutResultPayment } from "../handlers/timeout-v2";
 import { ApplicationConfig } from "../lib/config";
@@ -136,7 +136,7 @@ export default class MessagingHelper {
         return [this.buildEffectFulfilNotificationError(input, fspiopError)]
       }
       case PaymentFulfilResultTag.DUPLICATE_FINAL: {
-        return [this.buildEffectFulfilDuplicate(input, result.context as FulfilContextFulfiled)]
+        return [this.buildEffectFulfilDuplicate(input, result.context)]
       }
       case PaymentFulfilResultTag.DUPLICATE_NON_FINAL: return []
 
@@ -158,8 +158,10 @@ export default class MessagingHelper {
         return [this.buildEffectAbortNotification(input, fspiopError)]
       }
       case PaymentFulfilResultTag.OK: {
+        const context = result.context as FulfilContextFulfiled
+        assert(context.fulfilment)
         const effects = [
-          this.buildEffectFulfilNotificationSuccess(input, result.context as FulfilContextFulfiled),
+          this.buildEffectFulfilNotificationSuccess(input, context),
         ]
         // We need to adjust buildEffectNotificationSuccess, to include the linked Payment context.
         if (result.fxEffect) effects.push(result.fxEffect)
@@ -224,7 +226,7 @@ export default class MessagingHelper {
     }
   }
 
-  public buildEffectFulfilDuplicate(input: FulfilHandlerInput, context: FulfilContextFulfiled): Effect {
+  public buildEffectFulfilDuplicate(input: FulfilHandlerInput, context: FulfilContext): Effect {
     const message = structuredClone(input.message.value)
     message.content.uriParams = { id: input.transferId }
 
@@ -236,11 +238,15 @@ export default class MessagingHelper {
     }
 
     // Override the message.content.payload.completedTimestamp with the date of the original.
-    message.content.payload = {
-      transferState: 'COMMITTED',
-      fulfilment: context.fulfilment,
-      completedTimestamp: context.fulfiledAt,
-    }
+    message.content.payload = 'fulfilment' in context ?
+      {
+        transferState: 'COMMITTED',
+        fulfilment: context.fulfilment,
+        completedTimestamp: context.fulfiledAt,
+      } : {
+        transferState: 'ABORTED',
+        completedTimestamp: context.abortedAt
+      }
 
     return {
       functionality: Type.NOTIFICATION,
