@@ -54,7 +54,6 @@ exclude: [
   'src/handlers/payment-prepare.ts',
   'src/handlers/payment-fulfil.ts',
   'src/handlers/dispatch-transfer-handler.ts',
-  'src/domain/ledger/shared/types.ts',
-  'src/messaging/message-bus.ts',
+  'src/domain/ledger/shared/types.ts'
 ]
 ## todo: increase test coverage before merging feat/fx-impl to main branch

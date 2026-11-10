@@ -177,7 +177,7 @@ export enum AccountCode {
   Restricted = 20200,
   Reserved = 20300,
   Return = 20400,
-  Committed_Outgoing = 20400,
+  Committed_Outgoing = 20401,
   Dfsp = 60100,
   Net_Debit_Cap = 60200,
   Net_Debit_Cap_Control = 60201,
@@ -513,7 +513,7 @@ export enum PrepareResultType {
   FAIL_VALIDATION = 'FAIL_VALIDATION',
 
   /**
-   * Transfer failed as payee didn't have sufficent liquidity
+   * Transfer failed as payer didn't have sufficent liquidity
    */
   FAIL_LIQUIDITY = 'FAIL_LIQUIDITY',
 
