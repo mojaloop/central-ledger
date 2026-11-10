@@ -65,7 +65,7 @@ const RULES = Object.freeze({
       State.RECEIVED_REJECT,
       State.RESERVED_TIMEOUT,
       State.COMMITTED,
-      'SETTLED', // seeded transfer state, not in the shared enum
+      Enum.Transfers.TransferState.SETTLED,
       State.ABORTED_ERROR,
       State.ABORTED_REJECTED,
       State.EXPIRED_RESERVED
