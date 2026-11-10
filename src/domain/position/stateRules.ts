@@ -20,12 +20,10 @@
  optionally within square brackets <email>.
 
  * Mojaloop Foundation
- - Shashikant Hirugade
+ - Shashikant Hirugade <shirugade@mojaloop.io>
 
  --------------
  ******/
-
-'use strict'
 
 /**
  * Decides what a position message should do, given the state its transfer is in.
@@ -41,63 +39,52 @@
  * - UNEXPECTED:      the state should never be seen for this message; no-op, error log and alert
  */
 
-const { Enum } = require('@mojaloop/central-services-shared')
+import { Enum } from '@mojaloop/central-services-shared'
 
 const State = Enum.Transfers.TransferInternalState
 const Action = Enum.Events.Event.Action
 
-const OUTCOME = Object.freeze({
+export const OUTCOME = {
   APPLY: 'apply',
   ALREADY_DONE: 'already_done',
   ALREADY_DECIDED: 'already_decided',
   UNEXPECTED: 'unexpected'
-})
+} as const
+
+export type Outcome = typeof OUTCOME[keyof typeof OUTCOME]
+
+/** transfer state -> outcome, for one position message action */
+type StateRules = ReadonlyMap<string, Outcome>
+
+const PREPARE_RULES: StateRules = new Map<string, Outcome>([
+  [State.RECEIVED_PREPARE, OUTCOME.APPLY],
+
+  [State.RESERVED, OUTCOME.ALREADY_DONE],
+  [State.RESERVED_FORWARDED, OUTCOME.ALREADY_DONE],
+  [State.RECEIVED_FULFIL, OUTCOME.ALREADY_DONE],
+  [State.RECEIVED_ERROR, OUTCOME.ALREADY_DONE],
+  [State.RECEIVED_REJECT, OUTCOME.ALREADY_DONE],
+  [State.RESERVED_TIMEOUT, OUTCOME.ALREADY_DONE],
+  [State.COMMITTED, OUTCOME.ALREADY_DONE],
+  [Enum.Transfers.TransferState.SETTLED, OUTCOME.ALREADY_DONE],
+  [State.ABORTED_ERROR, OUTCOME.ALREADY_DONE],
+  [State.ABORTED_REJECTED, OUTCOME.ALREADY_DONE],
+  [State.EXPIRED_RESERVED, OUTCOME.ALREADY_DONE],
+
+  // The timeout handler expired the transfer before it was reserved, and has notified the payer.
+  [State.EXPIRED_PREPARED, OUTCOME.ALREADY_DECIDED]
+])
 
 // Any state not listed for an action is UNEXPECTED.
-const RULES = Object.freeze({
-  [Action.PREPARE]: {
-    [OUTCOME.APPLY]: [State.RECEIVED_PREPARE],
-    [OUTCOME.ALREADY_DONE]: [
-      State.RESERVED,
-      State.RESERVED_FORWARDED,
-      State.RECEIVED_FULFIL,
-      State.RECEIVED_ERROR,
-      State.RECEIVED_REJECT,
-      State.RESERVED_TIMEOUT,
-      State.COMMITTED,
-      Enum.Transfers.TransferState.SETTLED,
-      State.ABORTED_ERROR,
-      State.ABORTED_REJECTED,
-      State.EXPIRED_RESERVED
-    ],
-    // The timeout handler expired the transfer before it was reserved, and has notified the payer.
-    [OUTCOME.ALREADY_DECIDED]: [State.EXPIRED_PREPARED]
-  }
-})
-
-// action -> state -> outcome, built once from RULES
-const LOOKUP = Object.freeze(Object.fromEntries(
-  Object.entries(RULES).map(([action, outcomes]) => [
-    action,
-    Object.freeze(Object.fromEntries(
-      Object.entries(outcomes).flatMap(([outcome, states]) => states.map(state => [state, outcome]))
-    ))
-  ])
-))
+const RULES: ReadonlyMap<string, StateRules> = new Map([
+  [Action.PREPARE, PREPARE_RULES]
+])
 
 /**
- * @function classify
- * @param {string} action - position message action, e.g. Enum.Events.Event.Action.PREPARE
- * @param {string} state - the transfer's current state
- * @returns {string} one of OUTCOME
+ * @param action - position message action, e.g. Enum.Events.Event.Action.PREPARE
+ * @param state - the transfer's current state; missing for a transfer with no state change
  */
-const classify = (action, state) => {
-  const states = LOOKUP[action]
-  if (!states || typeof state !== 'string') return OUTCOME.UNEXPECTED
-  return Object.prototype.hasOwnProperty.call(states, state) ? states[state] : OUTCOME.UNEXPECTED
-}
-
-module.exports = {
-  OUTCOME,
-  classify
+export const classify = (action: string, state: string | null | undefined): Outcome => {
+  if (typeof state !== 'string') return OUTCOME.UNEXPECTED
+  return RULES.get(action)?.get(state) ?? OUTCOME.UNEXPECTED
 }
