@@ -4,34 +4,5 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [ // NOTE": Please add as much information as possible to any items added to the allowList
-    // GHSA-g3hv-75wg-m249 (minimatch globparts DoS) affects minimatch >= 7.0.0 < 11.0.1 and is fixed only in
-    // 11.0.1. The one copy in that range is minimatch 10.2.6 at the root of node_modules, reached through the
-    // three development-only paths below: nodemon (^10.2.1), nyc's test-exclude (^10.2.2) and
-    // @typescript-eslint/typescript-estree (^10.2.2) do not accept 11 yet. None of them is in the image
-    // (the Dockerfile runs `npm prune --omit=dev`). The 3.x, 5.x, 9.x and 11.x copies are outside the range.
-    // The records are path-scoped (one record per object, as audit-ci reads them), so a new path to an
-    // affected minimatch still fails the audit. Reassess before the expiry: drop each path as its tool moves
-    // to minimatch 11.
-    {
-      "GHSA-g3hv-75wg-m249|nodemon>minimatch": {
-        "active": true,
-        "notes": "Development-only path: nodemon (npm run watch) pins minimatch ^10.2.1, which excludes the fixed 11.0.1. Not in the image.",
-        "expiry": "2026-12-31"
-      }
-    },
-    {
-      "GHSA-g3hv-75wg-m249|nyc>test-exclude>minimatch": {
-        "active": true,
-        "notes": "Development-only path: nyc's test-exclude pins minimatch ^10.2.2, which excludes the fixed 11.0.1. Coverage runs only, not in the image.",
-        "expiry": "2026-12-31"
-      }
-    },
-    {
-      "GHSA-g3hv-75wg-m249|*>@typescript-eslint/typescript-estree>minimatch*": {
-        "active": true,
-        "notes": "Development-only paths: @typescript-eslint/typescript-estree pins minimatch ^10.2.2, which excludes the fixed 11.0.1, and is reached from @typescript-eslint/parser, eslint-plugin, type-utils and utils. Lint only, not in the image.",
-        "expiry": "2026-12-31"
-      }
-    }
   ]
 }

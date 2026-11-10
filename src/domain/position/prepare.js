@@ -238,8 +238,9 @@ const processPositionPrepareBin = async (
         if (changePositions) {
           currentPosition = currentPosition.add(transferAmount)
 
-          availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.add(transferAmount)
-          availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.add(transferAmount)
+          // The reservation uses up headroom, so later transfers in this bin are checked against what is left
+          availablePositionBasedOnLiquidityCover = availablePositionBasedOnLiquidityCover.subtract(transferAmount)
+          availablePositionBasedOnPayerLimit = availablePositionBasedOnPayerLimit.subtract(transferAmount)
 
           const participantPositionChange = {
             transferId: transfer.transferId, // Need to delete this in bin processor while updating transferStateChangeId
