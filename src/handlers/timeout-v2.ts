@@ -45,8 +45,7 @@ export type PaymentTimeout = {
 }
 
 export type TimeoutResult = {
-  intervalPayment: [number, number],
-  intervalForex: [number, number],
+  interval: [number, number],
   payments: Array<PaymentTimeout>
 }
 
