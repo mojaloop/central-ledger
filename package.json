@@ -165,6 +165,7 @@
     "ts-node": "^10.9.2"
   },
   "overrides": {
+    "mongoose": "9.11.4",
     "@hapi/wreck": "18.1.2",
     "@now-ims/hapi-now-auth": {
       "joi": "17.13.9"
