@@ -71,6 +71,8 @@ import knex from 'knex'
 import { ApplicationConfig, overrideForTesting, RecursivePartial, resetOverride } from "../lib/config"
 import { randomAvailablePort } from "./util"
 import { Consumer } from "./kafka"
+import PRNG from "./prng"
+import MockClock, { Clock } from "./mock-clock"
 import { Message } from "node-rdkafka"
 
 const logger = Logger.child({ scope: 'harness' })
@@ -113,6 +115,8 @@ export interface HarnessOptions {
  */
 export default class Harness {
   private static instance: Harness | null = null;
+  private static _prng: PRNG | null = null
+  private static _clock: Clock | null = null
   private options: HarnessOptions
   private dependencyRedpanda: Redpanda
   private dependencyMySql: MySql
@@ -135,6 +139,11 @@ export default class Harness {
 
   private constructor(options: HarnessOptions) {
     this.options = options
+
+    if (!Harness._clock) {
+      logger.info('Harness.constructor() - lazy init clock.')
+      Harness._clock = new Clock()
+    }
 
     this.dependencyRedpanda = new Redpanda({
       harnessId: this.options.id
@@ -345,6 +354,20 @@ export default class Harness {
   get enums(): any {
     assert(this._enums, 'Enums not initalized. Did you forget to call setupGlobals()?')
     return this._enums
+  }
+
+  get prng(): PRNG {
+    assert(Harness._prng, 'no Harness._prng, did you call `Harness.injectPrngAndPatchDateGlobal`?')
+    return Harness._prng
+  }
+
+  /**
+   * The clock behind every `new Date()` and `Date.now()` in the process: the real one, until
+   * `Harness.injectPrngAndPatchDateGlobal()` swaps in a MockClock that only moves when a test ticks it.
+   */
+  get clock(): Clock {
+    assert(Harness._clock, 'no Harness._clock, did you call `Harness.injectPrngAndPatchDateGlobal`?')
+    return Harness._clock
   }
 
   get topicTransferPrepare(): { topicName: string } {
@@ -640,6 +663,43 @@ Found only ${markNew - markLast} new messages.`
   public spoolLastPayload(numMessages: number): Array<any> {
     const last = this.spoolLast(numMessages)
     return last.map(message => message.valueParsed.content.payload)
+  }
+
+  /**
+   * Replaces the global `Date` with one that reads a MockClock, so the application only sees time pass
+   * when a test ticks the clock. Call it at the top of the test file, before anything captures `Date`.
+   */
+  public static injectPrngAndPatchDateGlobal(prng: PRNG, now: Date = new Date('2026-02-01T00:00:00.000Z')): MockClock {
+    Harness._prng = prng
+    const clock = new MockClock(prng, now)
+
+    const OriginalDate = global.Date
+
+    global.Date = class extends OriginalDate {
+      constructor(...args: any[]) {
+        if (args.length === 0) {
+          super(clock.now.getTime())
+        } else {
+          // @ts-ignore
+          super(...args)
+        }
+      }
+
+      static now() {
+        return clock.now.getTime()
+      }
+
+      static parse(str: string) {
+        return OriginalDate.parse(str)
+      }
+
+      static UTC(...args: any[]) {
+        return (OriginalDate.UTC as any)(...args)
+      }
+    } as any
+
+    Harness._clock = clock
+    return clock
   }
 }
 
