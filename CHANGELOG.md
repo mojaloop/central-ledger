@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.3.3](https://github.com/mojaloop/central-ledger/compare/v20.3.2...v20.3.3) (2026-11-12)
+
+
+### Bug Fixes
+
+* allow aborting expired recordFundsOut reservations ([#1310](https://github.com/mojaloop/central-ledger/issues/1310)) ([bd2b8c0](https://github.com/mojaloop/central-ledger/commit/bd2b8c022a38e1d97b018f5138b757876751f54c))
+* **deps:** override mongoose to 9.11.4 to clear security advisories ([#1316](https://github.com/mojaloop/central-ledger/issues/1316)) ([6bb40cc](https://github.com/mojaloop/central-ledger/commit/6bb40cc2f776baa694de2e701b843a6d73c42f5d))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([a27ce85](https://github.com/mojaloop/central-ledger/commit/a27ce857baf6ba9493dae3cd0d78f79a9aa56aa1))
+
 ### [20.3.2](https://github.com/mojaloop/central-ledger/compare/v20.3.1...v20.3.2) (2026-11-05)
 
 
