@@ -33,6 +33,8 @@ import Harness, { MojaloopKafkaMessage } from '../../testing/harness'
 import * as ApiHelpers from '../../testing/api-helpers'
 import { assertPositionDiff } from "../../testing/util"
 import { overrideForTesting } from '../../lib/config'
+import Db from '../../lib/db'
+import Metrics from '@mojaloop/central-services-metrics'
 
 import TransferFacade from "../../models/transfer/facade"
 import handlerAll from '../transfers/handler'
@@ -81,22 +83,71 @@ const prepareWithoutPositionProcessing = async (
 }
 
 /**
- * Processes the position messages as a single batch, as the batch consumer would deliver them
- * (parsed JSON value, same key). The topic is set to the batch topic so the offset commit uses the
- * registered batch consumer.
+ * Builds a batch as the batch consumer would deliver it (parsed JSON value, same key). The topic
+ * is set to the batch topic so the offset commit uses the registered batch consumer.
  */
-const processAsOneBatch = async (positionMessages: Array<MojaloopKafkaMessage>): Promise<Array<any>> => {
-  const batch = positionMessages.map(message => ({
-    ...message,
-    topic: TOPIC_POSITION_BATCH,
-    value: message.valueParsed
-  }))
+const toBatch = (positionMessages: Array<MojaloopKafkaMessage>) => positionMessages.map(message => ({
+  ...message,
+  topic: TOPIC_POSITION_BATCH,
+  value: message.valueParsed
+}))
 
+/**
+ * Processes the position messages as a single batch, and returns the notifications it produced.
+ * By default expects one notification per position message.
+ */
+const processAsOneBatch = async (
+  positionMessages: Array<MojaloopKafkaMessage>,
+  expectedNotifications: number = positionMessages.length
+): Promise<Array<any>> => {
   const mark = harness.redpandaMark()
-  await PositionBatchHandler.positions(null, batch)
-  // One notification per position message.
-  await harness.redpandaDrain(mark, positionMessages.length)
-  return harness.spoolLastPayload(positionMessages.length)
+  await PositionBatchHandler.positions(null, toBatch(positionMessages))
+  await harness.redpandaDrain(mark, expectedNotifications)
+  return expectedNotifications > 0 ? harness.spoolLastPayload(expectedNotifications) : []
+}
+
+/** The transfer's state history, oldest first. */
+const getStateHistory = async (transferId: string): Promise<Array<string>> => {
+  const rows = await Db.getKnex()('transferStateChange')
+    .where({ transferId })
+    .orderBy('transferStateChangeId', 'asc')
+    .select('transferStateId')
+  return rows.map((row: { transferStateId: string }) => row.transferStateId)
+}
+
+/** The number of position changes recorded against the transfer. */
+const countPositionChanges = async (transferId: string): Promise<number> => {
+  const [row] = await Db.getKnex()('participantPositionChange AS ppc')
+    .join('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ppc.transferStateChangeId')
+    .where('tsc.transferId', transferId)
+    .count({ count: '*' })
+  return Number(row.count)
+}
+
+/**
+ * The number of batches the handler has failed and rolled back, from its `transfer_position_batch`
+ * histogram. A failed batch is not committed to Kafka, so it is redelivered and processed again.
+ */
+const countFailedBatches = async (): Promise<number> => {
+  const histogram = Metrics.getHistogram(
+    'transfer_position_batch',
+    'Consume a batch of prepare transfer messages from the kafka topic and process them',
+    ['success']
+  )
+  const { values } = await histogram.get()
+  const failed = values.find((v: any) => v.metricName.endsWith('_count') && String(v.labels.success) === 'false')
+  return failed?.value ?? 0
+}
+
+/** Checks that the transfer was reserved exactly once: one RESERVED state change and one position change. */
+const assertReservedOnce = async (transferId: string) => {
+  assert.deepEqual(await getStateHistory(transferId), ['RECEIVED_PREPARE', 'RESERVED'], `${transferId}: one RESERVED state change`)
+  assert.equal(await countPositionChanges(transferId), 1, `${transferId}: one position change`)
+}
+
+const assertPayerPositionMoved = async (positionStart: any, posted: number) => {
+  const positionEnd = await ApiHelpers.getPositionAccount('dfsp_dup', 'USD')
+  assertPositionDiff('payer', positionStart, positionEnd, { posted })
 }
 
 const buildPayments = (payerFsp: string, transferIds: Array<string>, amount: string) =>
@@ -151,6 +202,14 @@ describe('handlers/positions/handlerBatch', () => {
       initialPostionsAndLimits: [{ initialPosition: 0, value: 100000 }],
       deposits: [150]
     })
+    // Plenty of liquidity and net debit cap, for the duplicate message tests.
+    await ApiHelpers.createDfsp(harness, {
+      name: 'dfsp_dup',
+      currencies: ['USD'],
+      isProxy: false,
+      initialPostionsAndLimits: [{ initialPosition: 0, value: 100000 }],
+      deposits: [10000]
+    })
     await ApiHelpers.createDfsp(harness, {
       name: 'dfsp_b',
       currencies: ['USD'],
@@ -193,5 +252,59 @@ describe('handlers/positions/handlerBatch', () => {
 
     const positionEnd = await ApiHelpers.getPositionAccount('dfsp_liq', 'USD')
     assertPositionDiff('payer', positionStart, positionEnd, { posted: 100 })
+  })
+
+  describe('duplicate prepare position messages', () => {
+    it('reserves once when two copies are in one batch, without affecting another transfer.', async () => {
+      const [transferId, otherTransferId] = ['3000021', '3000022']
+      const positionStart = await ApiHelpers.getPositionAccount('dfsp_dup', 'USD')
+      const [positionMessage, otherPositionMessage] = await prepareWithoutPositionProcessing(
+        buildPayments('dfsp_dup', [transferId, otherTransferId], '100.00')
+      )
+
+      // The duplicate copy produces no notification; each transfer's prepare is forwarded to the payee.
+      const notifications = await processAsOneBatch([positionMessage, positionMessage, otherPositionMessage], 2)
+
+      assert.deepEqual(errorCodesOf(notifications), [], 'no error sent to the payer')
+      await assertReservedOnce(transferId)
+      await assertReservedOnce(otherTransferId)
+      await assertPayerPositionMoved(positionStart, 200)
+    })
+
+    it('does nothing when a copy is replayed after the first was committed.', async () => {
+      const transferId = '3000031'
+      const positionStart = await ApiHelpers.getPositionAccount('dfsp_dup', 'USD')
+      const [positionMessage] = await prepareWithoutPositionProcessing(buildPayments('dfsp_dup', [transferId], '100.00'))
+
+      await processAsOneBatch([positionMessage], 1)
+      const notifications = await processAsOneBatch([positionMessage], 0)
+
+      assert.deepEqual(notifications, [], 'the replay sends no notification')
+      await assertReservedOnce(transferId)
+      await assertPayerPositionMoved(positionStart, 100)
+    })
+
+    it('reserves once when two batches with the same message run at the same time.', async () => {
+      const transferId = '3000041'
+      const positionStart = await ApiHelpers.getPositionAccount('dfsp_dup', 'USD')
+      const [positionMessage] = await prepareWithoutPositionProcessing(buildPayments('dfsp_dup', [transferId], '100.00'))
+
+      // Each batch has its own database transaction. The second waits on the payer's position lock
+      // until the first commits, then must see the RESERVED state and skip the message. If it read
+      // the state before the lock it would act on RECEIVED_PREPARE: MySQL 8.0 would reserve again,
+      // and MariaDB (the harness) fails the batch, which Kafka would then redeliver.
+      const failedBatchesStart = await countFailedBatches()
+      const mark = harness.redpandaMark()
+      await Promise.all([
+        PositionBatchHandler.positions(null, toBatch([positionMessage])),
+        PositionBatchHandler.positions(null, toBatch([positionMessage]))
+      ])
+      await harness.redpandaDrain(mark, 1)
+
+      assert.equal(await countFailedBatches(), failedBatchesStart, 'neither batch failed')
+      assert.deepEqual(errorCodesOf(harness.spoolLastPayload(1)), [], 'no error sent to the payer')
+      await assertReservedOnce(transferId)
+      await assertPayerPositionMoved(positionStart, 100)
+    })
   })
 })

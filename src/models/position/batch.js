@@ -37,7 +37,9 @@ const rethrow = require('../../shared/rethrow')
 
 const startDbTransaction = async () => {
   const knex = Db.getKnex()
-  const trx = await knex.transaction()
+  // READ COMMITTED, so the transfer states read after the position lock see what the previous
+  // lock holder committed. Under REPEATABLE READ they could come from an older snapshot.
+  const trx = await knex.transaction({ isolationLevel: 'read committed' })
   return trx
 }
 
@@ -99,9 +101,11 @@ const getAllParticipantCurrency = async (trx) => {
 
 const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
   const knex = Db.getKnex()
+  // Lock in a fixed order so concurrent batches lock overlapping accounts in the same order
   const participantPositions = await knex('participantPosition')
     .transacting(trx)
     .whereIn('participantCurrencyId', accountIds)
+    .orderBy('participantCurrencyId')
     .forUpdate()
     .select('*')
   const positions = {}
