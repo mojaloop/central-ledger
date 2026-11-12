@@ -940,6 +940,43 @@ const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transac
  */
 
 /**
+ * @typedef {Object} ForwardedTransfer
+ *
+ * @property {Integer} transferForwardedId
+ * @property {String} transferId
+ * @property {Date} expirationDate
+ * @property {Date} createdDate
+ * @property {Integer} attemptCount
+ * @property {String} transferStateId
+ * @property {String} payerFsp
+ * @property {String} payeeFsp
+ * @property {Integer} payerParticipantCurrencyId
+ * @property {Integer} payeeParticipantCurrencyId
+ * @property {Integer} effectedParticipantCurrencyId
+ * @property {Integer} bulkTransferId
+ * @property {String} externalPayerName
+ * @property {String} externalPayeeName
+ */
+
+/**
+ * @typedef {Object} ForwardedFxTransfer
+ *
+ * @property {Integer} fxTransferForwardedId
+ * @property {String} commitRequestId
+ * @property {Date} expirationDate
+ * @property {Date} createdDate
+ * @property {Integer} attemptCount
+ * @property {String} transferStateId
+ * @property {String} initiatingFsp
+ * @property {String} counterPartyFsp
+ * @property {Integer} initiatingParticipantCurrencyId
+ * @property {Integer} counterPartyParticipantCurrencyId
+ * @property {Integer} effectedParticipantCurrencyId
+ * @property {String} externalInitiatingFspName
+ * @property {String} externalCounterPartyFspName
+ */
+
+/**
  *  Returns the list of transfers/fxTransfers that have timed out
  *
  * @returns {Promise<{
