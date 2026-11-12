@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "20.3.3",
+  "version": "20.4.0",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -267,8 +267,7 @@
     "yaml@2": "2.9.1",
     "argparse@1": "2.0.1",
     "argparse@3": "3.0.0",
-    "follow-redirects": "1.16.2",
-    "mongoose": "9.11.4"
+    "follow-redirects": "1.16.2"
   },
   "config": {
     "knex": "--knexfile ./dist/knexfile.js",

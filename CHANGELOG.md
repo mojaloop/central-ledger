@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.4.0](https://github.com/mojaloop/central-ledger/compare/v20.3.3...v20.4.0) (2026-11-12)
+
+
+### Features
+
+* `ledger` interface, message bus abstraction ([#1314](https://github.com/mojaloop/central-ledger/issues/1314)) ([5186ed7](https://github.com/mojaloop/central-ledger/commit/5186ed71f27059b95f509d61ac955d8248ad45fd))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([bd93a5e](https://github.com/mojaloop/central-ledger/commit/bd93a5e51b7f81e35f1ee76c540a4540554983e4))
+
 ### [20.3.3](https://github.com/mojaloop/central-ledger/compare/v20.3.2...v20.3.3) (2026-11-12)
 
 
