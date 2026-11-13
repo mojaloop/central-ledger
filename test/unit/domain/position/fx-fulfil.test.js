@@ -188,11 +188,9 @@ Test('Fx Fulfil domain', processPositionFxFulfilBinTest => {
     test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
     test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], fxTransferCallbackTestData3.message.value.content.headers['content-type'])
     test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-    test.equal(processedMessages.accumulatedFxTransferStates[fxTransferCallbackTestData3.message.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+    test.equal(processedMessages.accumulatedFxTransferStates[fxTransferCallbackTestData3.message.value.id], 'INVALID_STATE', 'fx transfer in an unexpected state is left unchanged')
 
-    test.equal(processedMessages.accumulatedFxTransferStateChanges.length, 1)
-    test.equal(processedMessages.accumulatedFxTransferStateChanges[0].commitRequestId, fxTransferCallbackTestData3.message.value.id)
-    test.equal(processedMessages.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+    test.equal(processedMessages.accumulatedFxTransferStateChanges.length, 0, 'no relabel to ABORTED_REJECTED')
 
     test.end()
   })

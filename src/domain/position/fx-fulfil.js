@@ -38,6 +38,8 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Logger = require('../../shared/logger').logger
+const StateRules = require('./stateRules')
+const { recordSkippedMessage, countSkippedMessage } = require('./skippedMessage')
 
 /**
  * @function processPositionFxFulfilBin
@@ -62,8 +64,6 @@ const processPositionFxFulfilBin = async (
 
   if (binItems && binItems.length > 0) {
     for (const binItem of binItems) {
-      let transferStateId
-      let reason
       let resultMessage
       const commitRequestId = binItem.message.value.content.uriParams.id
       const counterPartyFsp = binItem.message.value.from
@@ -72,8 +72,21 @@ const processPositionFxFulfilBin = async (
       Logger.isDebugEnabled && Logger.debug(`processPositionFxFulfilBin::fxTransfer:processingMessage: ${JSON.stringify(fxTransfer)}`)
       Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates: ${JSON.stringify(accumulatedFxTransferStates)}`)
       Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates[commitRequestId]: ${accumulatedFxTransferStates[commitRequestId]}`)
-      // Inform sender if transfer is not in RECEIVED_FULFIL_DEPENDENT state, skip making any transfer state changes
-      if (accumulatedFxTransferStates[commitRequestId] !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT) {
+      // The fulfil is forwarded only from RECEIVED_FULFIL_DEPENDENT. Read the running state.
+      const action = Enum.Events.Event.Action.FX_RESERVE
+      const currentState = accumulatedFxTransferStatesCopy[commitRequestId]
+      const outcome = StateRules.classify(action, currentState)
+      if (outcome === StateRules.OUTCOME.ALREADY_DONE) {
+        // The determining transfer committed the conversion after this message was first processed: send nothing.
+        recordSkippedMessage(binItem, action, commitRequestId, outcome, currentState)
+        continue
+      }
+
+      // Inform sender if transfer is not in RECEIVED_FULFIL_DEPENDENT state. The conversion's state is
+      // left as it is: another decision has been made, or the state is unexpected.
+      if (outcome !== StateRules.OUTCOME.APPLY) {
+        countSkippedMessage(action, commitRequestId, outcome, currentState)
+
         // forward same headers from the request, except the content-length header
         // set destination to counterPartyFsp and source to switch
         const headers = { ...binItem.message.value.content.headers }
@@ -81,12 +94,8 @@ const processPositionFxFulfilBin = async (
         headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
         delete headers['content-length']
 
-        // There is no such logic in the fulfil handler.
-        transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-        reason = 'FxFulfil in incorrect state'
-
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
-          `Invalid State: ${accumulatedFxTransferStates[commitRequestId]} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`
+          `Invalid State: ${currentState} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL_DEPENDENT}`
         ).toApiErrorObject(Config.ERROR_HANDLING)
         const state = Utility.StreamingProtocol.createEventState(
           Enum.Events.EventStatus.FAILURE.status,
@@ -147,25 +156,12 @@ const processPositionFxFulfilBin = async (
       }
 
       resultMessages.push({ binItem, message: Utility.clone(resultMessage) })
-
-      if (transferStateId) {
-        const fxTransferStateChange = {
-          commitRequestId,
-          transferStateId,
-          reason
-        }
-        fxTransferStateChanges.push(fxTransferStateChange)
-        Logger.isDebugEnabled && Logger.debug(`processPositionFxFulfilBin::fxTransferStateChange: ${JSON.stringify(fxTransferStateChange)}`)
-
-        accumulatedFxTransferStatesCopy[commitRequestId] = transferStateId
-        Logger.isDebugEnabled && Logger.debug(`processPositionFxFulfilBin::accumulatedTransferStatesCopy:finalizedFxTransferState ${JSON.stringify(transferStateId)}`)
-      }
     }
   }
 
   return {
-    accumulatedFxTransferStates: accumulatedFxTransferStatesCopy, // finalized fx transfer state after fx-fulfil processing
-    accumulatedFxTransferStateChanges: fxTransferStateChanges, // fx transfer state changes to be persisted in order
+    accumulatedFxTransferStates: accumulatedFxTransferStatesCopy, // fx-reserve writes no fx transfer state
+    accumulatedFxTransferStateChanges: fxTransferStateChanges, // always empty: fx-reserve writes no fx transfer state
     notifyMessages: resultMessages // array of objects containing bin item and result message. {binItem, message}
   }
 }

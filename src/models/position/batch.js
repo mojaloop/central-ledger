@@ -101,7 +101,9 @@ const getAllParticipantCurrency = async (trx) => {
 
 const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
   const knex = Db.getKnex()
-  // Lock in a fixed order so concurrent batches lock overlapping accounts in the same order
+  // ORDER BY sorts the result; it does not set the lock order. InnoDB locks rows in the order it
+  // scans them, which on a range scan of the participantCurrencyId index is participantCurrencyId
+  // order. A lock-wait deadlock between two batches is still possible, and rolls one of them back.
   const participantPositions = await knex('participantPosition')
     .transacting(trx)
     .whereIn('participantCurrencyId', accountIds)

@@ -476,9 +476,31 @@ const _getTransferIdList = async (bins) => {
     } else if (action === Enum.Events.Event.Action.FX_ABORT_VALIDATION) {
       commitRequestIdList.push(item.message.value.content.uriParams.id)
     }
+
+    // An FX commit or abort is a chain of steps, each on one part: the transfer or an fxTransfer.
+    // Load every step's part, so each step can be checked against its own part's state.
+    if (CHAIN_ACTIONS.includes(action)) {
+      const cyrilResult = item.message.value.content.context?.cyrilResult
+      for (const step of cyrilResult?.positionChanges || []) {
+        if (step.isFxTransferStateChange) {
+          step.commitRequestId && commitRequestIdList.push(step.commitRequestId)
+        } else {
+          step.transferId && transferIdList.push(step.transferId)
+        }
+      }
+    }
   })
   return { transferIdList, reservedActionTransferIdList, commitRequestIdList }
 }
+
+const CHAIN_ACTIONS = [
+  Enum.Events.Event.Action.COMMIT,
+  Enum.Events.Event.Action.RESERVE,
+  Enum.Events.Event.Action.ABORT,
+  Enum.Events.Event.Action.ABORT_VALIDATION,
+  Enum.Events.Event.Action.FX_ABORT,
+  Enum.Events.Event.Action.FX_ABORT_VALIDATION
+]
 
 const _fetchLatestTransferStates = async (trx, transferIdList) => {
   const latestTransferStateChanges = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, transferIdList)

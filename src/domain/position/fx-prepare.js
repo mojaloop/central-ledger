@@ -39,6 +39,8 @@ const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('../../shared/logger').logger
+const StateRules = require('./stateRules')
+const { recordSkippedMessage } = require('./skippedMessage')
 
 /**
  * @function processFxPositionPrepareBin
@@ -50,7 +52,7 @@ const Logger = require('../../shared/logger').logger
  * @param {object} options
  *   @param {number} accumulatedPositionValue - value of position accumulated so far from previous bin processing
  *   @param {number} accumulatedPositionReservedValue - value of position reserved accumulated so far, not used but kept for consistency
- *   @param {object} accumulatedFxTransferStates - object with fx commit request id keys and fx transfer state id values. Used to check if fx transfer is in correct state for processing. Clone and update states for output.
+ *   @param {object} accumulatedFxTransferStates - object with fx commit request id keys and fx transfer state id values. Cloned; the copy is the running state, used to check whether each fx transfer is in the right state and updated for output.
  *   @param {number} settlementParticipantPosition - position value of the participants settlement account
  *   @param {object} participantLimit - participant limit object for the currency
  *   @param {boolean} changePositions - whether to change positions or not
@@ -100,54 +102,20 @@ const processFxPositionPrepareBin = async (
 
       Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(fxTransfer)}`)
 
-      /* eslint-disable brace-style */
-      // Check if fxTransfer is in correct state for processing, produce an internal error message
-      if (accumulatedFxTransferStates[fxTransfer.commitRequestId] !== Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
-        Logger.isDebugEnabled && Logger.debug(`processFxPositionPrepareBin::transferState: ${accumulatedFxTransferStates[fxTransfer.commitRequestId]} !== ${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
-
-        transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-        reason = 'FxTransfer in incorrect state'
-
-        // forward same headers from the prepare message, except the content-length header
-        // set destination to initiatingFsp and source to switch
-        const headers = { ...binItem.message.value.content.headers }
-        headers[Enum.Http.Headers.FSPIOP.DESTINATION] = fxTransfer.initiatingFsp
-        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
-        delete headers['content-length']
-
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
-        ).toApiErrorObject(Config.ERROR_HANDLING)
-
-        const state = Utility.StreamingProtocol.createEventState(
-          Enum.Events.EventStatus.FAILURE.status,
-          fspiopError.errorInformation.errorCode,
-          fspiopError.errorInformation.errorDescription
-        )
-
-        const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-          fxTransfer.commitRequestId,
-          Enum.Kafka.Topics.NOTIFICATION,
-          Enum.Events.Event.Action.FX_PREPARE,
-          state
-        )
-
-        resultMessage = Utility.StreamingProtocol.createMessage(
-          fxTransfer.commitRequestId,
-          fxTransfer.initiatingFsp,
-          Config.HUB_NAME,
-          metadata,
-          headers,
-          fspiopError,
-          { id: fxTransfer.commitRequestId },
-          'application/json',
-          binItem.message.value.content.context
-        )
-
-        binItem.result = { success: false }
+      // Only an fxTransfer in RECEIVED_PREPARE can be reserved. Any other state means this message is a
+      // duplicate or arrived after another decision: skip it without changing state, position or
+      // sending a notification.
+      // Read the running state, so a copy later in this bin sees what an earlier copy did.
+      const currentState = accumulatedFxTransferStatesCopy[fxTransfer.commitRequestId]
+      const outcome = StateRules.classify(Enum.Events.Event.Action.FX_PREPARE, currentState)
+      if (outcome !== StateRules.OUTCOME.APPLY) {
+        recordSkippedMessage(binItem, Enum.Events.Event.Action.FX_PREPARE, fxTransfer.commitRequestId, outcome, currentState)
+        continue
       }
+
+      /* eslint-disable brace-style */
       // Check if payer has insufficient liquidity, produce an error message and abort transfer
-      else if (changePositions && availablePositionBasedOnLiquidityCover.toNumber() < transferAmount) {
+      if (changePositions && availablePositionBasedOnLiquidityCover.toNumber() < transferAmount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
 

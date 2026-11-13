@@ -37,33 +37,10 @@ const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
-const Metrics = require('@mojaloop/central-services-metrics')
 const Logger = require('../../shared/logger').logger
 const Config = require('../../lib/config')
 const StateRules = require('./stateRules')
-
-/**
- * Records a position message that was skipped because of its transfer's state.
- *
- * binItem.result is spread into the `transfer_position` histogram, whose only labels are
- * `success` and `action`, so no other fields are added to it.
- */
-const recordSkippedMessage = (binItem, transferId, outcome, state) => {
-  binItem.result = { success: true }
-
-  Metrics.getCounter(
-    'position_prepare_skipped',
-    'Position prepare messages skipped because of the transfer state',
-    ['outcome', 'state']
-  ).inc({ outcome, state: state || 'none' })
-
-  const message = `processPositionPrepareBin::skipped - transferId: ${transferId}, state: ${state}, outcome: ${outcome}`
-  if (outcome === StateRules.OUTCOME.UNEXPECTED) {
-    Logger.isErrorEnabled && Logger.error(message)
-  } else {
-    Logger.isDebugEnabled && Logger.debug(message)
-  }
-}
+const { recordSkippedMessage } = require('./skippedMessage')
 
 /**
  * @function processPositionPrepareBin
@@ -133,7 +110,7 @@ const processPositionPrepareBin = async (
       const currentState = accumulatedTransferStatesCopy[transfer.transferId]
       const outcome = StateRules.classify(Enum.Events.Event.Action.PREPARE, currentState)
       if (outcome !== StateRules.OUTCOME.APPLY) {
-        recordSkippedMessage(binItem, transfer.transferId, outcome, currentState)
+        recordSkippedMessage(binItem, Enum.Events.Event.Action.PREPARE, transfer.transferId, outcome, currentState)
         continue
       }
 
