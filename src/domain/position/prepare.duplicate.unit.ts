@@ -25,22 +25,19 @@
  --------------
  ******/
 
-'use strict'
-
 /**
- * Regression tests: a duplicate position message from the prepare handler
- * must not reserve the payer's funds twice.
+ * Regression tests: a duplicate position message from the prepare handler must not reserve the
+ * payer's funds twice.
  *
  * Design: position-idempotency-duplicate-prepare.md
  *   - Change 1: a duplicate position message is a no-op
  *   - Change 2: the state check uses the running state of the batch
- *
- * These tests fail on v20.3.1 and are expected to pass once the design is implemented.
  */
 
-const Test = require('tapes')(require('tape'))
-const { Enum } = require('@mojaloop/central-services-shared')
-const { processPositionPrepareBin } = require('../../../../src/domain/position/prepare')
+import { describe, it } from 'node:test'
+import assert from 'node:assert'
+import { Enum } from '@mojaloop/central-services-shared'
+import { processPositionPrepareBin } from './prepare'
 
 const State = Enum.Transfers.TransferInternalState
 const PAYER = 'dfsp1'
@@ -52,7 +49,7 @@ const T2 = 'a1b2c3d4-0000-4000-8000-000000000002'
 const T3 = 'a1b2c3d4-0000-4000-8000-000000000003'
 
 // A separate object for every call, as Kafka would deliver for each copy of a message
-const positionMessage = (transferId) => ({
+const positionMessage = (transferId: string): any => ({
   message: {
     value: {
       from: PAYER,
@@ -89,7 +86,11 @@ const positionMessage = (transferId) => ({
 })
 
 // liquidity cover 1000, net debit cap 1000, current position 0
-const runPrepare = (binItems, accumulatedTransferStates, { settlementParticipantPosition = -1000 } = {}) =>
+const runPrepare = (
+  binItems: Array<any>,
+  accumulatedTransferStates: Record<string, string | undefined>,
+  { settlementParticipantPosition = -1000 } = {}
+) =>
   processPositionPrepareBin(binItems, {
     accumulatedPositionValue: 0,
     accumulatedPositionReservedValue: 0,
@@ -123,130 +124,121 @@ const ALREADY_DONE_STATES = [
 
 const ALREADY_DECIDED_STATES = [State.EXPIRED_PREPARED]
 
-const UNEXPECTED_STATES = [State.INVALID, State.FAILED, State.RECEIVED_FULFIL_DEPENDENT, undefined, 'SOME_UNKNOWN_STATE']
+// RECEIVED_FULFIL_DEPENDENT exists at runtime, but is missing from the central-services-shared types
+const UNEXPECTED_STATES = [State.INVALID, State.FAILED, 'RECEIVED_FULFIL_DEPENDENT', undefined, 'SOME_UNKNOWN_STATE']
 
 // A no-op writes nothing, sends nothing, leaves the state alone and does not throw
-const assertNoOp = (test, result, binItem, state) => {
+const assertNoOp = (result: any, binItem: any, state: string | undefined) => {
   const label = `state ${state}`
-  test.equal(result.accumulatedPositionChanges.length, 0, `${label}: no position change`)
-  test.equal(result.accumulatedTransferStateChanges.length, 0, `${label}: no state change`)
-  test.equal(result.notifyMessages.length, 0, `${label}: no notification`)
-  test.equal(result.accumulatedPositionValue, 0, `${label}: position unchanged`)
-  test.equal(result.accumulatedTransferStates[T1], state, `${label}: transfer state unchanged`)
+  assert.strictEqual(result.accumulatedPositionChanges.length, 0, `${label}: no position change`)
+  assert.strictEqual(result.accumulatedTransferStateChanges.length, 0, `${label}: no state change`)
+  assert.strictEqual(result.notifyMessages.length, 0, `${label}: no notification`)
+  assert.strictEqual(result.accumulatedPositionValue, 0, `${label}: position unchanged`)
+  assert.strictEqual(result.accumulatedTransferStates[T1], state, `${label}: transfer state unchanged`)
   // binItem.result is spread into a histogram with only `success` and `action` labels (handlerBatch.js)
-  test.deepEqual(binItem.result, { success: true }, `${label}: binItem.result is { success: true }`)
+  assert.deepStrictEqual(binItem.result, { success: true }, `${label}: binItem.result is { success: true }`)
 }
 
-Test('Prepare domain: duplicate position message (position-idempotency-duplicate-prepare)', duplicateTest => {
-  duplicateTest.test('Change 2: two copies in one bin reserve the funds once', async (test) => {
+describe('domain/position/prepare: duplicate position messages (position-idempotency-duplicate-prepare)', () => {
+  it('Change 2: two copies in one bin reserve the funds once', async () => {
     const result = await runPrepare(
       [positionMessage(T1), positionMessage(T1)],
       { [T1]: State.RECEIVED_PREPARE }
     )
 
-    test.equal(result.accumulatedPositionValue, AMOUNT, 'payer position goes up by the amount once')
-    test.equal(result.accumulatedPositionChanges.length, 1, 'one participantPositionChange')
-    test.equal(result.accumulatedTransferStateChanges.length, 1, 'one transferStateChange')
-    test.equal(result.accumulatedTransferStateChanges[0].transferStateId, State.RESERVED, 'the state change is RESERVED')
-    test.equal(result.notifyMessages.length, 1, 'the payee receives the prepare request once')
-    test.equal(result.accumulatedTransferStates[T1], State.RESERVED, 'running state is RESERVED')
-    test.end()
+    assert.strictEqual(result.accumulatedPositionValue, AMOUNT, 'payer position goes up by the amount once')
+    assert.strictEqual(result.accumulatedPositionChanges.length, 1, 'one participantPositionChange')
+    assert.strictEqual(result.accumulatedTransferStateChanges.length, 1, 'one transferStateChange')
+    assert.strictEqual(result.accumulatedTransferStateChanges[0].transferStateId, State.RESERVED, 'the state change is RESERVED')
+    assert.strictEqual(result.notifyMessages.length, 1, 'the payee receives the prepare request once')
+    assert.strictEqual(result.accumulatedTransferStates[T1], State.RESERVED, 'running state is RESERVED')
   })
 
-  duplicateTest.test('Change 2: three copies in one bin reserve the funds once', async (test) => {
+  it('Change 2: three copies in one bin reserve the funds once', async () => {
     const result = await runPrepare(
       [positionMessage(T1), positionMessage(T1), positionMessage(T1)],
       { [T1]: State.RECEIVED_PREPARE }
     )
 
-    test.equal(result.accumulatedPositionValue, AMOUNT, 'payer position goes up by the amount once')
-    test.equal(result.accumulatedPositionChanges.length, 1, 'one participantPositionChange')
-    test.equal(result.accumulatedTransferStateChanges.length, 1, 'one transferStateChange')
-    test.equal(result.notifyMessages.length, 1, 'one notification')
-    test.end()
+    assert.strictEqual(result.accumulatedPositionValue, AMOUNT, 'payer position goes up by the amount once')
+    assert.strictEqual(result.accumulatedPositionChanges.length, 1, 'one participantPositionChange')
+    assert.strictEqual(result.accumulatedTransferStateChanges.length, 1, 'one transferStateChange')
+    assert.strictEqual(result.notifyMessages.length, 1, 'one notification')
   })
 
-  duplicateTest.test('Change 2: two copies in one bin, payer short of liquidity, are rejected once', async (test) => {
+  it('Change 2: two copies in one bin, payer short of liquidity, are rejected once', async () => {
     const result = await runPrepare(
       [positionMessage(T1), positionMessage(T1)],
       { [T1]: State.RECEIVED_PREPARE },
       { settlementParticipantPosition: 0 } // liquidity cover 0
     )
 
-    test.equal(result.accumulatedPositionChanges.length, 0, 'no position change')
-    test.equal(result.accumulatedTransferStateChanges.length, 1, 'one transferStateChange')
-    test.equal(result.accumulatedTransferStateChanges[0].transferStateId, State.ABORTED_REJECTED, 'the state change is ABORTED_REJECTED')
-    test.equal(result.notifyMessages.length, 1, 'the payer receives one error')
-    test.equal(result.notifyMessages[0].message.content.payload.errorInformation.errorCode, '4001', 'the error is insufficient liquidity')
-    test.end()
+    assert.strictEqual(result.accumulatedPositionChanges.length, 0, 'no position change')
+    assert.strictEqual(result.accumulatedTransferStateChanges.length, 1, 'one transferStateChange')
+    assert.strictEqual(result.accumulatedTransferStateChanges[0].transferStateId, State.ABORTED_REJECTED, 'the state change is ABORTED_REJECTED')
+    assert.strictEqual(result.notifyMessages.length, 1, 'the payer receives one error')
+    assert.strictEqual(result.notifyMessages[0].message.content.payload.errorInformation.errorCode, '4001', 'the error is insufficient liquidity')
   })
 
-  duplicateTest.test('Change 2: a duplicate next to other transfers does not affect them', async (test) => {
+  it('Change 2: a duplicate next to other transfers does not affect them', async () => {
     const result = await runPrepare(
       [positionMessage(T1), positionMessage(T2), positionMessage(T1), positionMessage(T3)],
       { [T1]: State.RECEIVED_PREPARE, [T2]: State.RECEIVED_PREPARE, [T3]: State.RECEIVED_PREPARE }
     )
 
-    test.equal(result.accumulatedPositionValue, 3 * AMOUNT, 'each transfer is reserved once')
-    test.deepEqual(
-      result.accumulatedPositionChanges.map(change => change.transferId),
+    assert.strictEqual(result.accumulatedPositionValue, 3 * AMOUNT, 'each transfer is reserved once')
+    assert.deepStrictEqual(
+      result.accumulatedPositionChanges.map((change: any) => change.transferId),
       [T1, T2, T3],
       'one participantPositionChange per transfer'
     )
-    test.deepEqual(
-      result.accumulatedTransferStateChanges.map(change => [change.transferId, change.transferStateId]),
+    assert.deepStrictEqual(
+      result.accumulatedTransferStateChanges.map((change: any) => [change.transferId, change.transferStateId]),
       [[T1, State.RESERVED], [T2, State.RESERVED], [T3, State.RESERVED]],
       'one RESERVED state change per transfer'
     )
-    test.equal(result.notifyMessages.length, 3, 'one notification per transfer')
-    test.end()
+    assert.strictEqual(result.notifyMessages.length, 3, 'one notification per transfer')
   })
 
-  duplicateTest.test('Change 1: a position message for a transfer already past RECEIVED_PREPARE is a no-op (already_done)', async (test) => {
+  it('Change 1: a position message for a transfer already past RECEIVED_PREPARE is a no-op (already_done)', async () => {
     for (const state of ALREADY_DONE_STATES) {
       const binItem = positionMessage(T1)
       const result = await runPrepare([binItem], { [T1]: state })
-      assertNoOp(test, result, binItem, state)
+      assertNoOp(result, binItem, state)
     }
-    test.end()
   })
 
-  duplicateTest.test('Change 1: a position message for an EXPIRED_PREPARED transfer is a no-op (already_decided)', async (test) => {
+  it('Change 1: a position message for an EXPIRED_PREPARED transfer is a no-op (already_decided)', async () => {
     for (const state of ALREADY_DECIDED_STATES) {
       const binItem = positionMessage(T1)
       const result = await runPrepare([binItem], { [T1]: state })
-      assertNoOp(test, result, binItem, state)
+      assertNoOp(result, binItem, state)
     }
-    test.end()
   })
 
-  duplicateTest.test('Change 1: a position message for a transfer in an unexpected state is a no-op (unexpected)', async (test) => {
+  it('Change 1: a position message for a transfer in an unexpected state is a no-op (unexpected)', async () => {
     for (const state of UNEXPECTED_STATES) {
       const binItem = positionMessage(T1)
       const result = await runPrepare([binItem], { [T1]: state })
-      assertNoOp(test, result, binItem, state)
+      assertNoOp(result, binItem, state)
     }
-    test.end()
   })
 
-  duplicateTest.test('Change 1: a duplicate of a COMMITTED transfer next to a new transfer only reserves the new one', async (test) => {
+  it('Change 1: a duplicate of a COMMITTED transfer next to a new transfer only reserves the new one', async () => {
     const duplicate = positionMessage(T1)
     const result = await runPrepare(
       [duplicate, positionMessage(T2)],
       { [T1]: State.COMMITTED, [T2]: State.RECEIVED_PREPARE }
     )
 
-    test.equal(result.accumulatedPositionValue, AMOUNT, 'only the new transfer is reserved')
-    test.deepEqual(
-      result.accumulatedTransferStateChanges.map(change => [change.transferId, change.transferStateId]),
+    assert.strictEqual(result.accumulatedPositionValue, AMOUNT, 'only the new transfer is reserved')
+    assert.deepStrictEqual(
+      result.accumulatedTransferStateChanges.map((change: any) => [change.transferId, change.transferStateId]),
       [[T2, State.RESERVED]],
       'no state change for the COMMITTED transfer'
     )
-    test.equal(result.notifyMessages.length, 1, 'one notification, for the new transfer')
-    test.equal(result.accumulatedTransferStates[T1], State.COMMITTED, 'COMMITTED transfer keeps its state')
-    test.deepEqual(duplicate.result, { success: true }, 'duplicate binItem.result is { success: true }')
-    test.end()
+    assert.strictEqual(result.notifyMessages.length, 1, 'one notification, for the new transfer')
+    assert.strictEqual(result.accumulatedTransferStates[T1], State.COMMITTED, 'COMMITTED transfer keeps its state')
+    assert.deepStrictEqual(duplicate.result, { success: true }, 'duplicate binItem.result is { success: true }')
   })
-
-  duplicateTest.end()
 })
