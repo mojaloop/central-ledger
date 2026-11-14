@@ -529,8 +529,11 @@ describe('domain/participant/index', () => {
           },
           initialPosition: 0
         }
+        const mark = harness.redpandaMark()
         const result = await ParticipantService.addLimitAndInitialPosition(dfsp, payload)
         assert.equal(result, true)
+        // Wait for the notification, so that it cannot be counted by the redpandaDrain() of a later test.
+        await harness.redpandaDrain(mark, 1)
       }
     }
 
@@ -651,10 +654,13 @@ describe('domain/participant/index', () => {
       deposits: [10000]
     })
 
+    const mark = harness.redpandaMark()
     const result = await ParticipantService.adjustLimits(name, {
       currency: 'USD',
       limit: { type: 'NET_DEBIT_CAP', value: 9999 }
     })
+    // Wait for the notification, so that it cannot be counted by the redpandaDrain() of a later test.
+    await harness.redpandaDrain(mark, 1)
     Snapshot.from(`{
       "participantLimit": {
         "participantCurrencyId": :ignore,
