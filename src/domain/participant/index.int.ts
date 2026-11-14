@@ -519,6 +519,7 @@ describe('domain/participant/index', () => {
   })
 
   it('addLimitAndInitialPosition() for each dfsp', async () => {
+    const mark = harness.redpandaMark()
     for (const dfsp of dfsps) {
       for (const currency of currencies) {
         const payload = {
@@ -529,13 +530,13 @@ describe('domain/participant/index', () => {
           },
           initialPosition: 0
         }
-        const mark = harness.redpandaMark()
         const result = await ParticipantService.addLimitAndInitialPosition(dfsp, payload)
         assert.equal(result, true)
-        // Wait for the notification, so that it cannot be counted by the redpandaDrain() of a later test.
-        await harness.redpandaDrain(mark, 1)
       }
     }
+    // Wait for the notification of every call, so that none can be counted by the redpandaDrain() of a
+    // later test.
+    await harness.redpandaDrain(mark, dfsps.length * currencies.length)
 
     // Now check the positions and limits for each dfsp (ignoring tmp_dfsp from other tests).
     const positions = (await ParticipantService.getLimitsForAllParticipants({

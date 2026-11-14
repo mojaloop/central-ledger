@@ -186,14 +186,13 @@ describe('settlement/models/settlement/facade', () => {
 
     // The object the API handlers build through request.server.methods.enums(name).
     const Enums = require('../lib/enums')
-    enums = {}
-    for (const name of [
+    const enumNames = [
       'ledgerAccountTypes', 'ledgerEntryTypes', 'participantLimitTypes', 'settlementDelay',
       'settlementGranularity', 'settlementInterchange', 'settlementStates', 'settlementWindowStates',
       'transferParticipantRoleTypes', 'transferStates', 'transferStateEnums'
-    ]) {
-      enums[name] = await Enums[name]()
-    }
+    ]
+    const enumValues = await Promise.all(enumNames.map(name => Enums[name]()))
+    enums = Object.fromEntries(enumNames.map((name, index) => [name, enumValues[index]]))
 
     // prepare() and fulfil() are called directly, but they commit kafka offsets, so their consumers
     // have to be connected.
