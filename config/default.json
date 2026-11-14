@@ -118,6 +118,10 @@
     "RETRY_INTERVAL": 3000,
     "CLOSE_DELAY_MS": 30000
   },
+  "DEADLOCK": {
+    "RETRIES": 3,
+    "RETRY_DELAY_MS": 50
+  },
   "KAFKA": {
     "EVENT_TYPE_ACTION_TOPIC_MAP" : {
       "POSITION":{

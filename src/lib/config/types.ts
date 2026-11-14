@@ -113,6 +113,20 @@ export interface ApplicationConfig {
    * @default 0 when `WINDOW_AGGREGATION.CLOSE_DELAY_MS` is not set. `config/default.json` sets 30000.
    */
   WINDOW_AGGREGATION_CLOSE_DELAY_MS: number,
+  /**
+   * How many times a settlement update is retried after the database reports a deadlock.
+   * Set by `DEADLOCK.RETRIES`.
+   *
+   * @default 3
+   */
+  SETTLEMENT_DEADLOCK_RETRIES: number,
+  /**
+   * How long a settlement update waits before a deadlock retry, in milliseconds. The wait is this
+   * value multiplied by the number of the retry. Set by `DEADLOCK.RETRY_DELAY_MS`.
+   *
+   * @default 50
+   */
+  SETTLEMENT_DEADLOCK_RETRY_DELAY_MS: number,
 
 
   PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED: boolean,

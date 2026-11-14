@@ -259,10 +259,15 @@ sequenceDiagram
     T->>H: pay dfsp_a to dfsp_b 5
     H->>DB: transfer fulfilled in window 2
 
+    T->>DB: zero one position change of window 1
+    T->>W: close(window 1)
+    W--xT: refused, debits and credits do not balance
+    T->>DB: assert window 1 still PROCESSING and nothing aggregated, then restore the row
+
     T->>W: close(window 1)
     W->>DB: aggregate window 1 into settlementContentAggregation
     W->>DB: window 1 CLOSED
-    T->>DB: assert one row per account and role, summing to zero
+    T->>DB: assert a closedDate, and one row per account and role, summing to zero
 
     T->>S: settlementEventTrigger(window 1)
     S->>DB: settlement PENDING_SETTLEMENT, dfsp_a owes 70, dfsp_b is owed 70
@@ -293,6 +298,8 @@ What it cannot show:
   `CREATE TEMPORARY TABLES` privilege.
 - The wait of `WINDOW_AGGREGATION.CLOSE_DELAY_MS` before a window is closed. That happens in the
   `deferredSettlement` handler, which the test does not go through; the handler's unit test covers it.
+- The deadlock retry of `putById()` (`DEADLOCK.RETRIES`, `DEADLOCK.RETRY_DELAY_MS`). A deadlock cannot
+  be staged reliably here, and no unit test exercises that path either.
 
 ### Running Functional Tests
 

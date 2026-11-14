@@ -29,10 +29,11 @@
  *
  * One scenario, in order, because every step needs the state the previous one left behind:
  *
- *   1. three transfers between two DFSPs, two before the settlement window is closed and one after;
- *   2. the window is closed, which aggregates its transfers into settlementContentAggregation;
- *   3. a settlement is created for the closed window;
- *   4. the settlement is walked through PS_TRANSFERS_RECORDED, PS_TRANSFERS_RESERVED,
+ *   1. three transfers between two DFSPs, two before the settlement window starts closing and one after;
+ *   2. the close is refused while the position changes of the window do not sum to zero;
+ *   3. the window is closed, which aggregates its transfers into settlementContentAggregation;
+ *   4. a settlement is created for the closed window;
+ *   5. the settlement is walked through PS_TRANSFERS_RECORDED, PS_TRANSFERS_RESERVED,
  *      PS_TRANSFERS_COMMITTED and SETTLED, which moves the positions back.
  *
  * The steps call the settlement services the API handlers and the deferredSettlement handler call,
@@ -46,7 +47,9 @@
  *     creates a temporary table, for which the service's database user needs the CREATE TEMPORARY
  *     TABLES privilege;
  *   - the wait of WINDOW_AGGREGATION.CLOSE_DELAY_MS before a window is closed, which happens in the
- *     deferredSettlement handler and is covered by that handler's unit test.
+ *     deferredSettlement handler and is covered by that handler's unit test;
+ *   - the deadlock retry of putById(). A deadlock cannot be staged reliably here, and no unit test
+ *     exercises that path either.
  *
  * See "Settlement scenario" in the README for a sequence diagram.
  */
@@ -212,7 +215,7 @@ describe('settlement/models/settlement/facade', () => {
     await harness.down()
   })
 
-  it('close() aggregates the transfers of the closed window, and only those', async () => {
+  it('process() starts closing the window and opens the next one', async () => {
     await pay('dfsp_a', 'dfsp_b', '7000001', '100.00')
     await pay('dfsp_b', 'dfsp_a', '7000002', '30.00')
 
@@ -231,9 +234,37 @@ describe('settlement/models/settlement/facade', () => {
 
     // Fulfilled while the first window is being closed, so it belongs to the new one.
     await pay('dfsp_a', 'dfsp_b', '7000003', '5.00')
+  })
 
+  it('close() refuses a window whose position changes do not sum to zero', async () => {
+    const knex = await Db.getKnex()
+    const [positionChange] = await knex('participantPositionChange AS ppc')
+      .join('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ppc.transferStateChangeId')
+      .where('tsc.transferId', '7000001')
+      .orderBy('ppc.participantPositionChangeId')
+      .select('ppc.participantPositionChangeId AS id', 'ppc.change')
+    const setChange = (change: string | number) =>
+      knex('participantPositionChange').where('participantPositionChangeId', positionChange.id).update({ change })
+
+    // Unbalance the window by dropping what the payer of the first transfer owes.
+    await setChange(0)
+    try {
+      await assert.rejects(SettlementWindowService.close(closedWindowId, reason), /not balanced/)
+
+      // The window is left as it was, with nothing aggregated.
+      assert.equal(await windowState(closedWindowId), 'PROCESSING')
+      assert.deepEqual(await aggregationOf(closedWindowId), [])
+    } finally {
+      await setChange(positionChange.change)
+    }
+  })
+
+  it('close() aggregates the transfers of the closed window, and only those', async () => {
     const closed = await SettlementWindowService.close(closedWindowId, reason)
     assert.equal(closed.state, 'CLOSED')
+    // closedDate is when the window was closed. A window that has not been closed has none.
+    assert.ok(closed.closedDate)
+    assert.equal((await SettlementWindowService.getById({ settlementWindowId: openWindowId })).closedDate, null)
 
     const aggregation = await aggregationOf(closedWindowId)
     assert.deepEqual(

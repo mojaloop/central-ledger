@@ -68,6 +68,59 @@ describe('lib/config/resolver', () => {
     assert.doesNotThrow(() => parseAndValidateConfig(resolved))
   })
 
+  it('reads the settlement deadlock retry settings', () => {
+    // Arrange
+    const raw = loadRawConfig()
+    raw.DEADLOCK = { RETRIES: 5, RETRY_DELAY_MS: 10 }
+
+    // Act
+    const resolved = resolveConfig(raw)
+
+    // Assert
+    assert.equal(resolved.SETTLEMENT_DEADLOCK_RETRIES, 5)
+    assert.equal(resolved.SETTLEMENT_DEADLOCK_RETRY_DELAY_MS, 10)
+  })
+
+  it('defaults the settlement deadlock retries when DEADLOCK.RETRIES is not set', () => {
+    // Arrange
+    const raw = loadRawConfig()
+    raw.DEADLOCK = { RETRY_DELAY_MS: 10 }
+
+    // Act
+    const resolved = resolveConfig(raw)
+
+    // Assert
+    assert.equal(resolved.SETTLEMENT_DEADLOCK_RETRIES, 3)
+    assert.equal(resolved.SETTLEMENT_DEADLOCK_RETRY_DELAY_MS, 10)
+  })
+
+  it('defaults the settlement deadlock retry delay when DEADLOCK.RETRY_DELAY_MS is not set', () => {
+    // Arrange
+    const raw = loadRawConfig()
+    raw.DEADLOCK = { RETRIES: 5 }
+
+    // Act
+    const resolved = resolveConfig(raw)
+
+    // Assert
+    assert.equal(resolved.SETTLEMENT_DEADLOCK_RETRIES, 5)
+    assert.equal(resolved.SETTLEMENT_DEADLOCK_RETRY_DELAY_MS, 50)
+  })
+
+  it('defaults both settlement deadlock retry settings when a config file has no DEADLOCK block', () => {
+    // Arrange
+    const raw = loadRawConfig()
+    delete raw.DEADLOCK
+
+    // Act
+    const resolved = resolveConfig(raw)
+
+    // Assert
+    assert.equal(resolved.SETTLEMENT_DEADLOCK_RETRIES, 3)
+    assert.equal(resolved.SETTLEMENT_DEADLOCK_RETRY_DELAY_MS, 50)
+    assert.doesNotThrow(() => parseAndValidateConfig(resolved))
+  })
+
   it('throws if LEDGER !== LEGACY', () => {
     // Arrange
     const pathToConfigFile = path.join(__dirname, '../../..', 'config/default.json')
