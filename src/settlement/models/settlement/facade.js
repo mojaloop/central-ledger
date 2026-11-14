@@ -51,6 +51,44 @@ const _isDeadlockError = (err) =>
   err?.message?.includes('ER_LOCK_DEADLOCK') ||
   (typeof err?.cause === 'string' && err.cause.includes('ER_LOCK_DEADLOCK'))
 
+/**
+ * Reads the accounts of a settlement with their current state, and locks them.
+ *
+ * Only the settlementParticipantCurrency rows are selected FOR UPDATE. participantCurrency is fetched
+ * separately, without a lock, to avoid placing X locks on it: including it in the FOR UPDATE join caused
+ * FK-check S lock conflicts with concurrent transferParticipant INSERTs in the transfer prepare handler,
+ * leading to deadlocks under REPEATABLE READ and blocking under READ COMMITTED.
+ */
+const getSettlementAccountListForUpdate = async (knex, settlementId, trx) => {
+  const spcList = await knex('settlementParticipantCurrency AS spc')
+    .leftJoin('settlementParticipantCurrencyStateChange AS spcsc', 'spcsc.settlementParticipantCurrencyStateChangeId', 'spc.currentStateChangeId')
+    .select('spc.participantCurrencyId', 'spcsc.settlementStateId', 'spcsc.reason', 'spc.netAmount', 'spc.settlementParticipantCurrencyId AS key')
+    .where('spc.settlementId', settlementId)
+    .transacting(trx)
+    .forUpdate()
+
+  const pcMap = {}
+  if (spcList.length > 0) {
+    const pcRows = await knex('participantCurrency')
+      .select('participantCurrencyId', 'participantId', 'currencyId')
+      .whereIn('participantCurrencyId', spcList.map(r => r.participantCurrencyId))
+      .transacting(trx)
+    for (const pc of pcRows) {
+      pcMap[pc.participantCurrencyId] = pc
+    }
+  }
+
+  return spcList.map(spc => ({
+    participantId: pcMap[spc.participantCurrencyId].participantId,
+    participantCurrencyId: spc.participantCurrencyId,
+    settlementStateId: spc.settlementStateId,
+    reason: spc.reason,
+    netAmount: spc.netAmount,
+    currencyId: pcMap[spc.participantCurrencyId].currencyId,
+    key: spc.key
+  }))
+}
+
 const groupByWindowsWithContent = (records) => {
   const settlementWindowsAssoc = {}
   for (const record of records) {
@@ -812,37 +850,7 @@ const Facade = {
               delete settlementData.requireLiquidityCheck
 
               // seq-settlement-6.2.5, step 5
-              // participantCurrency is fetched separately (without forUpdate) to avoid placing X locks on it.
-              // Including participantCurrency in the forUpdate JOIN caused FK-check S lock conflicts with
-              // concurrent transferParticipant INSERTs in the transfer prepare handler, leading to deadlocks
-              // under REPEATABLE READ and blocking under READ COMMITTED.
-              const spcList = await knex('settlementParticipantCurrency AS spc')
-                .leftJoin('settlementParticipantCurrencyStateChange AS spcsc', 'spcsc.settlementParticipantCurrencyStateChangeId', 'spc.currentStateChangeId')
-                .select('spc.participantCurrencyId', 'spcsc.settlementStateId', 'spcsc.reason', 'spc.netAmount', 'spc.settlementParticipantCurrencyId AS key')
-                .where('spc.settlementId', settlementId)
-                .transacting(trx)
-                .forUpdate()
-
-              const pcMap = {}
-              if (spcList.length > 0) {
-                const pcRows = await knex('participantCurrency')
-                  .select('participantCurrencyId', 'participantId', 'currencyId')
-                  .whereIn('participantCurrencyId', spcList.map(r => r.participantCurrencyId))
-                  .transacting(trx)
-                for (const pc of pcRows) {
-                  pcMap[pc.participantCurrencyId] = pc
-                }
-              }
-
-              const settlementAccountList = spcList.map(spc => ({
-                participantId: pcMap[spc.participantCurrencyId].participantId,
-                participantCurrencyId: spc.participantCurrencyId,
-                settlementStateId: spc.settlementStateId,
-                reason: spc.reason,
-                netAmount: spc.netAmount,
-                currencyId: pcMap[spc.participantCurrencyId].currencyId,
-                key: spc.key
-              }))
+              const settlementAccountList = await getSettlementAccountListForUpdate(knex, settlementId, trx)
 
               // seq-settlement-6.2.5, step 7
               const settlementAccounts = {
@@ -1255,34 +1263,7 @@ const Facade = {
         const transactionTimestamp = new Date().toISOString().replace(/[TZ]/g, ' ').trim()
 
         // seq-settlement-6.2.6, step 8
-        // participantCurrency is fetched separately (without forUpdate) — same reasoning as putById step 5.
-        const spcList = await knex('settlementParticipantCurrency AS spc')
-          .leftJoin('settlementParticipantCurrencyStateChange AS spcsc', 'spcsc.settlementParticipantCurrencyStateChangeId', 'spc.currentStateChangeId')
-          .select('spc.participantCurrencyId', 'spcsc.settlementStateId', 'spcsc.reason', 'spc.netAmount', 'spc.settlementParticipantCurrencyId AS key')
-          .where('spc.settlementId', settlementId)
-          .transacting(trx)
-          .forUpdate()
-
-        const pcMap = {}
-        if (spcList.length > 0) {
-          const pcRows = await knex('participantCurrency')
-            .select('participantCurrencyId', 'participantId', 'currencyId')
-            .whereIn('participantCurrencyId', spcList.map(r => r.participantCurrencyId))
-            .transacting(trx)
-          for (const pc of pcRows) {
-            pcMap[pc.participantCurrencyId] = pc
-          }
-        }
-
-        const settlementAccountList = spcList.map(spc => ({
-          participantId: pcMap[spc.participantCurrencyId].participantId,
-          participantCurrencyId: spc.participantCurrencyId,
-          settlementStateId: spc.settlementStateId,
-          reason: spc.reason,
-          netAmount: spc.netAmount,
-          currencyId: pcMap[spc.participantCurrencyId].currencyId,
-          key: spc.key
-        }))
+        const settlementAccountList = await getSettlementAccountListForUpdate(knex, settlementId, trx)
 
         // seq-settlement-6.2.6, step 10
         const windowsList = await knex('settlementSettlementWindow AS ssw')
