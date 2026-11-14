@@ -133,6 +133,7 @@ const resolveConfig = (rawConfig: any): UnsafeApplicationConfig => {
     API_DOC_ENDPOINTS_ENABLED: defaultTo(rawConfig.API_DOC_ENDPOINTS_ENABLED, false),
     WINDOW_AGGREGATION_RETRY_COUNT: rawConfig.WINDOW_AGGREGATION.RETRY_COUNT,
     WINDOW_AGGREGATION_RETRY_INTERVAL: rawConfig.WINDOW_AGGREGATION.RETRY_INTERVAL,
+    WINDOW_AGGREGATION_CLOSE_DELAY_MS: defaultTo(rawConfig.WINDOW_AGGREGATION.CLOSE_DELAY_MS, 0),
     KAFKA_CONFIG: kafka,
     SERVER_PRINT_ROUTES_ON_STARTUP: defaultTo(rawConfig.SERVER_PRINT_ROUTES_ON_STARTUP, true),
     LEDGER: defaultTo(rawConfig.LEDGER, 'LEGACY'),
@@ -196,6 +197,7 @@ const parseAndValidateConfig = (unsafeConfig: UnsafeApplicationConfig): Applicat
   assertInstrumentationMetricsLabels(unsafeConfig.INSTRUMENTATION_METRICS_LABELS)
   assertInstrumentationConfig(unsafeConfig.INSTRUMENTATION_METRICS_CONFIG)
   assertBoolean(unsafeConfig.API_DOC_ENDPOINTS_ENABLED)
+  assertNumber(unsafeConfig.WINDOW_AGGREGATION_CLOSE_DELAY_MS)
   assertBoolean(unsafeConfig.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED)
   assertBoolean(unsafeConfig.SERVER_PRINT_ROUTES_ON_STARTUP)
 

@@ -21,6 +21,7 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
+ - Shashikant Hirugade <shashi.mojaloop@gmail.com>
 
  * ModusBoc
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
@@ -992,6 +993,17 @@ Test('Settlement facade', async (settlementFacadeTest) => {
       }]
     }
   ]
+  // Derive spcList (settlement-only fields, locked) and pcRows (participantCurrency read)
+  // from each putById settlementAccountList — mirrors the split query fix in facade.js
+  for (const entry of stubData.putById) {
+    entry.spcList = entry.settlementAccountList.map(({ participantCurrencyId, settlementStateId, reason, netAmount, key }) => ({
+      participantCurrencyId, settlementStateId, reason, netAmount, key
+    }))
+    entry.pcRows = entry.settlementAccountList.map(({ participantCurrencyId, participantId, currencyId }) => ({
+      participantCurrencyId, participantId, currencyId
+    }))
+  }
+
   stubData.triggerSettlementEvent = {
     settlementId: 1,
     settlementParticipantCurrencyList: [
@@ -2991,14 +3003,12 @@ Test('Settlement facade', async (settlementFacadeTest) => {
               })
             }),
             leftJoin: sandbox.stub().returns({
-              join: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  where: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns({
-                      forUpdate: sandbox.stub().returns(
-                        Promise.resolve(stubData.putById[0].settlementAccountList)
-                      )
-                    })
+              select: sandbox.stub().returns({
+                where: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    forUpdate: sandbox.stub().returns(
+                      Promise.resolve(stubData.putById[0].spcList)
+                    )
                   })
                 })
               })
@@ -3012,6 +3022,11 @@ Test('Settlement facade', async (settlementFacadeTest) => {
                     )
                   })
                 })
+              }),
+              whereIn: sandbox.stub().returns({
+                transacting: sandbox.stub().returns(
+                  Promise.resolve(stubData.putById[0].pcRows)
+                )
               })
             }),
             insert: sandbox.stub().returns({
@@ -3052,7 +3067,7 @@ Test('Settlement facade', async (settlementFacadeTest) => {
 
           const result = await SettlementFacade.putById(1, payload.putById[0], enums)
           test.ok(result, 'Result returned')
-          test.equal(knexStub.callCount, 9, 'Knex called 9 times')
+          test.equal(knexStub.callCount, 10, 'Knex called 10 times')
           test.equal(result.state, 'PENDING_SETTLEMENT', 'Settlement should remain in PENDING_SETTLEMENT state')
           test.equal(result.settlementWindows.length, 2, 'Exactly two settlement windows are expected to be affected')
           test.equal(result.participants.length, 2, 'Two participants are affected')
@@ -3124,14 +3139,12 @@ Test('Settlement facade', async (settlementFacadeTest) => {
               })
             }),
             leftJoin: sandbox.stub().returns({
-              join: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  where: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns({
-                      forUpdate: sandbox.stub().returns(
-                        Promise.resolve(stubData.putById[1].settlementAccountList)
-                      )
-                    })
+              select: sandbox.stub().returns({
+                where: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    forUpdate: sandbox.stub().returns(
+                      Promise.resolve(stubData.putById[1].spcList)
+                    )
                   })
                 })
               })
@@ -3145,6 +3158,11 @@ Test('Settlement facade', async (settlementFacadeTest) => {
                     )
                   })
                 })
+              }),
+              whereIn: sandbox.stub().returns({
+                transacting: sandbox.stub().returns(
+                  Promise.resolve(stubData.putById[1].pcRows)
+                )
               })
             }),
             insert: sandbox.stub().returns({
@@ -3237,14 +3255,12 @@ Test('Settlement facade', async (settlementFacadeTest) => {
               })
             }),
             leftJoin: sandbox.stub().returns({
-              join: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  where: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns({
-                      forUpdate: sandbox.stub().returns(
-                        Promise.resolve(stubData.putById[2].settlementAccountList)
-                      )
-                    })
+              select: sandbox.stub().returns({
+                where: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    forUpdate: sandbox.stub().returns(
+                      Promise.resolve(stubData.putById[2].spcList)
+                    )
                   })
                 })
               })
@@ -3258,6 +3274,11 @@ Test('Settlement facade', async (settlementFacadeTest) => {
                     )
                   })
                 })
+              }),
+              whereIn: sandbox.stub().returns({
+                transacting: sandbox.stub().returns(
+                  Promise.resolve(stubData.putById[2].pcRows)
+                )
               })
             }),
             insert: sandbox.stub().returns({
@@ -3350,14 +3371,12 @@ Test('Settlement facade', async (settlementFacadeTest) => {
               })
             }),
             leftJoin: sandbox.stub().returns({
-              join: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  where: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns({
-                      forUpdate: sandbox.stub().returns(
-                        Promise.resolve(stubData.putById[3].settlementAccountList)
-                      )
-                    })
+              select: sandbox.stub().returns({
+                where: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    forUpdate: sandbox.stub().returns(
+                      Promise.resolve(stubData.putById[3].spcList)
+                    )
                   })
                 })
               })
@@ -3371,6 +3390,11 @@ Test('Settlement facade', async (settlementFacadeTest) => {
                     )
                   })
                 })
+              }),
+              whereIn: sandbox.stub().returns({
+                transacting: sandbox.stub().returns(
+                  Promise.resolve(stubData.putById[3].pcRows)
+                )
               })
             }),
             insert: sandbox.stub().returns({
@@ -3488,14 +3512,12 @@ Test('Settlement facade', async (settlementFacadeTest) => {
               })
             }),
             leftJoin: sandbox.stub().returns({
-              join: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  where: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns({
-                      forUpdate: sandbox.stub().returns(
-                        Promise.resolve(stubData.putById[4].settlementAccountList)
-                      )
-                    })
+              select: sandbox.stub().returns({
+                where: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    forUpdate: sandbox.stub().returns(
+                      Promise.resolve(stubData.putById[4].spcList)
+                    )
                   })
                 })
               })
@@ -3509,6 +3531,11 @@ Test('Settlement facade', async (settlementFacadeTest) => {
                     )
                   })
                 })
+              }),
+              whereIn: sandbox.stub().returns({
+                transacting: sandbox.stub().returns(
+                  Promise.resolve(stubData.putById[4].pcRows)
+                )
               })
             }),
             insert: sandbox.stub().returns({
@@ -3601,14 +3628,12 @@ Test('Settlement facade', async (settlementFacadeTest) => {
               })
             }),
             leftJoin: sandbox.stub().returns({
-              join: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  where: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns({
-                      forUpdate: sandbox.stub().returns(
-                        Promise.resolve(stubData.putById[5].settlementAccountList)
-                      )
-                    })
+              select: sandbox.stub().returns({
+                where: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    forUpdate: sandbox.stub().returns(
+                      Promise.resolve(stubData.putById[5].spcList)
+                    )
                   })
                 })
               })
@@ -3622,6 +3647,11 @@ Test('Settlement facade', async (settlementFacadeTest) => {
                     )
                   })
                 })
+              }),
+              whereIn: sandbox.stub().returns({
+                transacting: sandbox.stub().returns(
+                  Promise.resolve(stubData.putById[5].pcRows)
+                )
               })
             }),
             insert: sandbox.stub().returns({
@@ -3864,12 +3894,10 @@ Test('Settlement facade', async (settlementFacadeTest) => {
 
           knexStub.returns({
             leftJoin: sandbox.stub().returns({
-              join: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  where: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns({
-                      forUpdate: sandbox.stub().returns(Promise.resolve([]))
-                    })
+              select: sandbox.stub().returns({
+                where: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    forUpdate: sandbox.stub().returns(Promise.resolve([]))
                   })
                 })
               })
@@ -3957,13 +3985,16 @@ Test('Settlement facade', async (settlementFacadeTest) => {
             reason: payload.reason
           }
           const settlementResultMock = { id: 1, state: 'PS_TRANSFERS_RESERVED' }
-          const settlementAccountListMock = [{
-            participantId: 2,
+          const spcListMock = [{
             participantCurrencyId: 3,
             reason: 'text',
             netAmount: 100,
-            currencyId: 'USD',
             key: 1
+          }]
+          const pcRowsMock = [{
+            participantCurrencyId: 3,
+            participantId: 2,
+            currencyId: 'USD'
           }]
           const windowsListMock = [{
             settlementWindowId: 1,
@@ -4000,14 +4031,17 @@ Test('Settlement facade', async (settlementFacadeTest) => {
               })
             }),
             leftJoin: sandbox.stub().returns({
-              join: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  where: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns({
-                      forUpdate: sandbox.stub().returns(settlementAccountListMock)
-                    })
+              select: sandbox.stub().returns({
+                where: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    forUpdate: sandbox.stub().returns(spcListMock)
                   })
                 })
+              })
+            }),
+            select: sandbox.stub().returns({
+              whereIn: sandbox.stub().returns({
+                transacting: sandbox.stub().returns(Promise.resolve(pcRowsMock))
               })
             }),
             insert: sandbox.stub().returns({
@@ -4039,13 +4073,16 @@ Test('Settlement facade', async (settlementFacadeTest) => {
             state: 'ABORTED'
           }
           const settlementResultMock = { id: 1, state: 'PS_TRANSFERS_RECORDED' }
-          const settlementAccountListMock = [{
-            participantId: 2,
+          const spcListMock = [{
             participantCurrencyId: 3,
             reason: 'text',
             netAmount: 100,
-            currencyId: 'USD',
             key: 1
+          }]
+          const pcRowsMock = [{
+            participantCurrencyId: 3,
+            participantId: 2,
+            currencyId: 'USD'
           }]
           const windowsListMock = [{
             settlementWindowId: 1,
@@ -4082,14 +4119,17 @@ Test('Settlement facade', async (settlementFacadeTest) => {
               })
             }),
             leftJoin: sandbox.stub().returns({
-              join: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  where: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns({
-                      forUpdate: sandbox.stub().returns(settlementAccountListMock)
-                    })
+              select: sandbox.stub().returns({
+                where: sandbox.stub().returns({
+                  transacting: sandbox.stub().returns({
+                    forUpdate: sandbox.stub().returns(spcListMock)
                   })
                 })
+              })
+            }),
+            select: sandbox.stub().returns({
+              whereIn: sandbox.stub().returns({
+                transacting: sandbox.stub().returns(Promise.resolve(pcRowsMock))
               })
             }),
             insert: sandbox.stub().returns({

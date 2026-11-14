@@ -40,7 +40,13 @@
  * deferredSettlement consumer. The unit tests of these modules stub knex, so this file is what runs
  * their SQL against a real database.
  *
- * What it cannot show: behaviour specific to MySQL, because the harness runs MariaDB, as root.
+ * What it cannot show:
+ *
+ *   - behaviour specific to MySQL, because the harness runs MariaDB, as root. In particular, close()
+ *     creates a temporary table, for which the service's database user needs the CREATE TEMPORARY
+ *     TABLES privilege;
+ *   - the wait of WINDOW_AGGREGATION.CLOSE_DELAY_MS before a window is closed, which happens in the
+ *     deferredSettlement handler and is covered by that handler's unit test.
  *
  * See "Settlement scenario" in the README for a sequence diagram.
  */

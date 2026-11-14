@@ -32,10 +32,40 @@ import parseStringsInObject from 'parse-strings-in-object'
 import RC from 'rc'
 import path from 'node:path'
 
+/**
+ * A private copy of what makeConfig() hands to resolveConfig(). RC() extends the object that
+ * require() caches for config/default.json, so removing a key from it directly would change every
+ * config loaded later in the same process.
+ */
+const loadRawConfig = (): any => {
+  const pathToConfigFile = path.join(__dirname, '../../..', 'config/default.json')
+  return structuredClone(parseStringsInObject(RC('CLEDG', require(pathToConfigFile))))
+}
+
 describe('lib/config/resolver', () => {
   it('loads the config', () => {
     const config = makeConfig()
     assert.ok(config)
+  })
+
+  it('reads the settlement window close delay', () => {
+    const resolved = resolveConfig(loadRawConfig())
+
+    // What config/default.json ships.
+    assert.equal(resolved.WINDOW_AGGREGATION_CLOSE_DELAY_MS, 30000)
+  })
+
+  it('closes settlement windows without a delay when WINDOW_AGGREGATION.CLOSE_DELAY_MS is not set', () => {
+    // Arrange
+    const raw = loadRawConfig()
+    delete raw.WINDOW_AGGREGATION.CLOSE_DELAY_MS
+
+    // Act
+    const resolved = resolveConfig(raw)
+
+    // Assert
+    assert.equal(resolved.WINDOW_AGGREGATION_CLOSE_DELAY_MS, 0)
+    assert.doesNotThrow(() => parseAndValidateConfig(resolved))
   })
 
   it('throws if LEDGER !== LEGACY', () => {

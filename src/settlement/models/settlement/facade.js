@@ -21,6 +21,7 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
+ - Shashikant Hirugade <shashi.mojaloop@gmail.com>
 
  * ModusBox
  - Deon Botha <deon.botha@modusbox.com>
@@ -806,14 +807,37 @@ const Facade = {
           delete settlementData.requireLiquidityCheck
 
           // seq-settlement-6.2.5, step 5
-          const settlementAccountList = await knex('settlementParticipantCurrency AS spc')
+          // participantCurrency is fetched separately (without forUpdate) to avoid placing X locks on it.
+          // Including participantCurrency in the forUpdate JOIN caused FK-check S lock conflicts with
+          // concurrent transferParticipant INSERTs in the transfer prepare handler, leading to deadlocks
+          // under REPEATABLE READ and blocking under READ COMMITTED.
+          const spcList = await knex('settlementParticipantCurrency AS spc')
             .leftJoin('settlementParticipantCurrencyStateChange AS spcsc', 'spcsc.settlementParticipantCurrencyStateChangeId', 'spc.currentStateChangeId')
-            .join('participantCurrency AS pc', 'pc.participantCurrencyId', 'spc.participantCurrencyId')
-            .select('pc.participantId', 'spc.participantCurrencyId', 'spcsc.settlementStateId', 'spcsc.reason', 'spc.netAmount', 'pc.currencyId', 'spc.settlementParticipantCurrencyId AS key'
-            )
+            .select('spc.participantCurrencyId', 'spcsc.settlementStateId', 'spcsc.reason', 'spc.netAmount', 'spc.settlementParticipantCurrencyId AS key')
             .where('spc.settlementId', settlementId)
             .transacting(trx)
             .forUpdate()
+
+          const pcMap = {}
+          if (spcList.length > 0) {
+            const pcRows = await knex('participantCurrency')
+              .select('participantCurrencyId', 'participantId', 'currencyId')
+              .whereIn('participantCurrencyId', spcList.map(r => r.participantCurrencyId))
+              .transacting(trx)
+            for (const pc of pcRows) {
+              pcMap[pc.participantCurrencyId] = pc
+            }
+          }
+
+          const settlementAccountList = spcList.map(spc => ({
+            participantId: pcMap[spc.participantCurrencyId].participantId,
+            participantCurrencyId: spc.participantCurrencyId,
+            settlementStateId: spc.settlementStateId,
+            reason: spc.reason,
+            netAmount: spc.netAmount,
+            currencyId: pcMap[spc.participantCurrencyId].currencyId,
+            key: spc.key
+          }))
 
           // seq-settlement-6.2.5, step 7
           const settlementAccounts = {
@@ -1210,14 +1234,34 @@ const Facade = {
         const transactionTimestamp = new Date().toISOString().replace(/[TZ]/g, ' ').trim()
 
         // seq-settlement-6.2.6, step 8
-        const settlementAccountList = await knex('settlementParticipantCurrency AS spc')
+        // participantCurrency is fetched separately (without forUpdate) — same reasoning as putById step 5.
+        const spcList = await knex('settlementParticipantCurrency AS spc')
           .leftJoin('settlementParticipantCurrencyStateChange AS spcsc', 'spcsc.settlementParticipantCurrencyStateChangeId', 'spc.currentStateChangeId')
-          .join('participantCurrency AS pc', 'pc.participantCurrencyId', 'spc.participantCurrencyId')
-          .select('pc.participantId', 'spc.participantCurrencyId', 'spcsc.settlementStateId', 'spcsc.reason', 'spc.netAmount', 'pc.currencyId', 'spc.settlementParticipantCurrencyId AS key'
-          )
+          .select('spc.participantCurrencyId', 'spcsc.settlementStateId', 'spcsc.reason', 'spc.netAmount', 'spc.settlementParticipantCurrencyId AS key')
           .where('spc.settlementId', settlementId)
           .transacting(trx)
           .forUpdate()
+
+        const pcMap = {}
+        if (spcList.length > 0) {
+          const pcRows = await knex('participantCurrency')
+            .select('participantCurrencyId', 'participantId', 'currencyId')
+            .whereIn('participantCurrencyId', spcList.map(r => r.participantCurrencyId))
+            .transacting(trx)
+          for (const pc of pcRows) {
+            pcMap[pc.participantCurrencyId] = pc
+          }
+        }
+
+        const settlementAccountList = spcList.map(spc => ({
+          participantId: pcMap[spc.participantCurrencyId].participantId,
+          participantCurrencyId: spc.participantCurrencyId,
+          settlementStateId: spc.settlementStateId,
+          reason: spc.reason,
+          netAmount: spc.netAmount,
+          currencyId: pcMap[spc.participantCurrencyId].currencyId,
+          key: spc.key
+        }))
 
         // seq-settlement-6.2.6, step 10
         const windowsList = await knex('settlementSettlementWindow AS ssw')

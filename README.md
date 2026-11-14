@@ -286,7 +286,13 @@ node --test --require ts-node/register src/settlement/models/settlement/facade.i
 In CI it runs with every other `.int.ts` file in CircleCI's `Integration tests` job, through
 `npm run test:integration`.
 
-What it cannot show: behaviour specific to MySQL, because the harness runs MariaDB as `root`.
+What it cannot show:
+
+- Behaviour specific to MySQL, because the harness runs MariaDB as `root`. In particular, closing a
+  window creates a temporary table, for which the service's database user needs the
+  `CREATE TEMPORARY TABLES` privilege.
+- The wait of `WINDOW_AGGREGATION.CLOSE_DELAY_MS` before a window is closed. That happens in the
+  `deferredSettlement` handler, which the test does not go through; the handler's unit test covers it.
 
 ### Running Functional Tests
 

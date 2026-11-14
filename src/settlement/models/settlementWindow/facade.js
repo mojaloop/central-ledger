@@ -21,6 +21,7 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
+ - Shashikant Hirugade <shashi.mojaloop@gmail.com>
 
  * ModusBox
  - Deon Botha <deon.botha@modusbox.com>
@@ -196,76 +197,112 @@ const Facade = {
             smMap[sm.settlementModelId] = sm
           }
           const settlementModelCurrenciesList = allSettlementModels.filter(record => record.currencyId !== null).map(record => record.currencyId)
-          const swcList = await knex
-            .from(/* istanbul ignore next */ function () {
-              this.select('tf.settlementWindowId', 'ppc.participantCurrencyId')
-                .from('transferFulfilment AS tf')
-                .join('transferStateChange AS tsc', 'tsc.transferId', 'tf.transferId')
-                .join('participantPositionChange AS ppc', 'ppc.transferStateChangeId', 'tsc.transferStateChangeId')
-                .where('tf.settlementWindowId', settlementWindowId)
-                .unionAll(/* istanbul ignore next */ function () {
-                  this.select('ftf.settlementWindowId', 'ppc.participantCurrencyId')
-                    .from('fxTransferFulfilment AS ftf')
-                    .join('fxTransferStateChange AS ftsc', 'ftsc.commitRequestId', 'ftf.commitRequestId')
-                    .join('participantPositionChange AS ppc', 'ppc.fxTransferStateChangeId', 'ftsc.fxTransferStateChangeId')
-                    .where('ftf.settlementWindowId', settlementWindowId)
-                }).as('unioned')
-            }).as('swc')
-            .join('participantCurrency AS pc', 'pc.participantCurrencyId', 'unioned.participantCurrencyId')
-            .join('settlementModel AS m', 'm.ledgerAccountTypeId', 'pc.ledgerAccountTypeId')
-            .where('m.settlementGranularityId', Enum.Settlements.SettlementGranularity.NET)
-            .distinct('unioned.settlementWindowId', 'pc.ledgerAccountTypeId', 'pc.currencyId', 'm.settlementModelId')
-            .transacting(trx)
+
+          // To avoid inconsistencies under READ COMMITTED isolation level, transferFulfilment
+          // is read only once. Without this, a transfer committed between the two reads would
+          // appear in settlementContentAggregation but not in settlementWindowContent, producing
+          // wrong net amounts. The temp table fixes one consistent snapshot for both operations.
+          await knex.raw('DROP TEMPORARY TABLE IF EXISTS tmp_swc_agg').transacting(trx)
+          // Inner subquery assigns role per individual change row (matching original
+          // CASE WHEN unioned.change > 0 semantics), outer GROUP BY then sums per
+          // (content, participant, role) — preserving the original aggregation shape.
+          await knex.raw(`
+            CREATE TEMPORARY TABLE tmp_swc_agg AS
+            SELECT
+              ledgerAccountTypeId,
+              currencyId,
+              settlementModelId,
+              participantCurrencyId,
+              transferParticipantRoleTypeId,
+              ledgerEntryTypeId,
+              SUM(amount) AS amount
+            FROM (
+              SELECT
+                pc.ledgerAccountTypeId,
+                pc.currencyId,
+                m.settlementModelId,
+                pc.participantCurrencyId,
+                CASE WHEN base.change > 0 THEN ? ELSE ? END AS transferParticipantRoleTypeId,
+                ? AS ledgerEntryTypeId,
+                base.change AS amount
+              FROM (
+                SELECT ppc.participantCurrencyId, ppc.change
+                FROM transferFulfilment AS tf
+                JOIN transferStateChange AS tsc ON tsc.transferId = tf.transferId
+                JOIN participantPositionChange AS ppc ON ppc.transferStateChangeId = tsc.transferStateChangeId
+                WHERE tf.settlementWindowId = ?
+                UNION ALL
+                SELECT ppc.participantCurrencyId, ppc.change
+                FROM fxTransferFulfilment AS ftf
+                JOIN fxTransferStateChange AS ftsc ON ftsc.commitRequestId = ftf.commitRequestId
+                JOIN participantPositionChange AS ppc ON ppc.fxTransferStateChangeId = ftsc.fxTransferStateChangeId
+                WHERE ftf.settlementWindowId = ?
+              ) AS base
+              JOIN participantCurrency AS pc ON pc.participantCurrencyId = base.participantCurrencyId
+              JOIN settlementModel AS m ON m.ledgerAccountTypeId = pc.ledgerAccountTypeId
+              WHERE m.settlementGranularityId = ?
+            ) AS enriched
+            GROUP BY
+              ledgerAccountTypeId, currencyId, settlementModelId,
+              participantCurrencyId, transferParticipantRoleTypeId, ledgerEntryTypeId
+          `, [
+            Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
+            Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+            Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
+            settlementWindowId,
+            settlementWindowId,
+            Enum.Settlements.SettlementGranularity.NET
+          ]).transacting(trx)
+
+          // Derive distinct swc combinations from temp table — no second read of transferFulfilment
+          const [swcDistinct] = await knex.raw(
+            'SELECT DISTINCT ledgerAccountTypeId, currencyId, settlementModelId FROM tmp_swc_agg'
+          ).transacting(trx)
+
+          // Insert settlementWindowContent — same smMap filtering as before
           const promiseArray = []
-          swcList.forEach(swc => {
-            const currentModel = smMap[swc.settlementModelId]
-            if (currentModel.settlementModelId === swc.settlementModelId) {
-              if ((currentModel.currencyId === swc.currencyId) ||
-              (!settlementModelCurrenciesList.includes(swc.currencyId) && currentModel.currencyId === null)) { // is default settlement model
-                swc.createdDate = transactionTimestamp
-                promiseArray.push(knex('settlementWindowContent').insert(swc).transacting(trx))
+          for (const row of swcDistinct) {
+            const currentModel = smMap[row.settlementModelId]
+            if (currentModel && currentModel.settlementModelId === row.settlementModelId) {
+              if ((currentModel.currencyId === row.currencyId) ||
+                (!settlementModelCurrenciesList.includes(row.currencyId) && currentModel.currencyId === null)) { // is default settlement model
+                promiseArray.push(knex('settlementWindowContent').transacting(trx).insert({
+                  settlementWindowId,
+                  ledgerAccountTypeId: row.ledgerAccountTypeId,
+                  currencyId: row.currencyId,
+                  settlementModelId: row.settlementModelId,
+                  createdDate: transactionTimestamp
+                }))
               }
             }
-          })
-
+          }
           await Promise.all(promiseArray)
-          // Insert settlementContentAggregation
-          let builder = knex
-            .from(knex.raw('settlementContentAggregation (settlementWindowContentId, participantCurrencyId, transferParticipantRoleTypeId, ledgerEntryTypeId, currentStateId, createdDate, amount)'))
-            .insert(/* istanbul ignore next */ function () {
-              this.from(function () {
-                this.select('ppc.participantCurrencyId', 'ppc.change', 'tf.settlementWindowId')
-                  .from('transferFulfilment AS tf')
-                  .join('transferStateChange AS tsc', 'tsc.transferId', 'tf.transferId')
-                  .join('participantPositionChange AS ppc', 'ppc.transferStateChangeId', 'tsc.transferStateChangeId')
-                  .where('tf.settlementWindowId', settlementWindowId)
-                  .unionAll(/* istanbul ignore next */ function () {
-                    this.select('ppc.participantCurrencyId', 'ppc.change', 'fxtf.settlementWindowId')
-                      .from('fxTransferFulfilment AS fxtf')
-                      .join('fxTransferStateChange AS fxtsc', 'fxtsc.commitRequestId', 'fxtf.commitRequestId')
-                      .join('participantPositionChange AS ppc', 'ppc.fxTransferStateChangeId', 'fxtsc.fxTransferStateChangeId')
-                      .where('fxtf.settlementWindowId', settlementWindowId)
-                  }).as('unioned')
-              })
-                .join('participantCurrency AS pc', 'pc.participantCurrencyId', 'unioned.participantCurrencyId')
-                .join('participant AS p', 'p.participantId', 'pc.participantId')
-                .join('settlementWindowContent AS swc', function () {
-                  this.on('swc.settlementWindowId', 'unioned.settlementWindowId')
-                    .on('swc.ledgerAccountTypeId', 'pc.ledgerAccountTypeId')
-                    .on('swc.currencyId', 'pc.currencyId')
-                })
-                .join('settlementModel AS m', 'm.settlementModelId', 'swc.settlementModelId')
-                .andWhere('m.settlementGranularityId', Enum.Settlements.SettlementGranularity.NET)
-                .groupBy('swc.settlementWindowContentId', 'pc.participantCurrencyId', 'transferParticipantRoleTypeId', 'ledgerEntryTypeId')
-                .select('swc.settlementWindowContentId', 'pc.participantCurrencyId',
-                  knex.raw('CASE WHEN unioned.change > 0 THEN ? ELSE ?? END AS transferParticipantRoleTypeId', [Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP]),
-                  knex.raw('? AS ??', [Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE, 'ledgerEntryTypeId']),
-                  knex.raw('? AS ??', [Enum.Settlements.SettlementWindowState.CLOSED, 'settlementWindowStateId']),
-                  knex.raw('? AS ??', [transactionTimestamp, 'createdDate']))
-                .sum('unioned.change AS amount')
-            })
-            .transacting(trx)
+
+          // Insert settlementContentAggregation from temp table — no second read of transferFulfilment
+          let builder = knex.raw(`
+            INSERT INTO settlementContentAggregation
+              (settlementWindowContentId, participantCurrencyId, transferParticipantRoleTypeId, ledgerEntryTypeId, currentStateId, createdDate, amount)
+            SELECT
+              swc.settlementWindowContentId,
+              t.participantCurrencyId,
+              t.transferParticipantRoleTypeId,
+              t.ledgerEntryTypeId,
+              ?, ?,
+              t.amount
+            FROM tmp_swc_agg t
+            JOIN settlementWindowContent swc
+              ON swc.settlementWindowId = ?
+              AND swc.ledgerAccountTypeId = t.ledgerAccountTypeId
+              AND swc.currencyId = t.currencyId
+              AND swc.settlementModelId = t.settlementModelId
+          `, [
+            Enum.Settlements.SettlementWindowState.CLOSED,
+            transactionTimestamp,
+            settlementWindowId
+          ]).transacting(trx)
           await builder
+
+          await knex.raw('DROP TEMPORARY TABLE IF EXISTS tmp_swc_agg').transacting(trx)
 
           // Insert settlementWindowContentStateChange
           builder = knex
@@ -312,9 +349,16 @@ const Facade = {
             .update({ currentStateChangeId: settlementWindowStateChangeId })
             .transacting(trx)
 
+          await knex.raw('DROP TEMPORARY TABLE IF EXISTS tmp_swc_agg').transacting(trx)
           return true
         } catch (err) {
           logger.error(err)
+          // Best-effort cleanup so the pooled connection does not carry the temp table forward
+          try {
+            await knex.raw('DROP TEMPORARY TABLE IF EXISTS tmp_swc_agg').transacting(trx)
+          } catch (cleanupErr) {
+            logger.warn('Failed to drop temp table during cleanup', cleanupErr)
+          }
           throw ErrorHandler.Factory.reformatFSPIOPError(err)
         }
       })

@@ -105,6 +105,14 @@ export interface ApplicationConfig {
   API_DOC_ENDPOINTS_ENABLED: boolean,
   WINDOW_AGGREGATION_RETRY_COUNT: number,
   WINDOW_AGGREGATION_RETRY_INTERVAL: number,
+  /**
+   * How long the deferredSettlement handler waits before it closes a settlement window, in
+   * milliseconds, so that transfers still in flight for that window reach their final state first.
+   * 0 closes the window straight away.
+   *
+   * @default 0 when `WINDOW_AGGREGATION.CLOSE_DELAY_MS` is not set. `config/default.json` sets 30000.
+   */
+  WINDOW_AGGREGATION_CLOSE_DELAY_MS: number,
 
 
   PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED: boolean,
