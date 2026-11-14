@@ -250,13 +250,13 @@ sequenceDiagram
     participant DB as MariaDB
     participant K as topic-notification-event
 
-    Note over T,DB: Setup: hub accounts, one DEFERRED / NET / MULTILATERAL model for USD, dfsp_a and dfsp_b
+    Note over T,DB: Setup: hub accounts, one DEFERRED / NET / MULTILATERAL model for USD, dfsp_a, and dfsp_b whose net debit cap was raised once
 
     T->>H: pay dfsp_a to dfsp_b 100, pay dfsp_b to dfsp_a 30
     H->>DB: both transfers fulfilled in window 1 (OPEN)
     T->>W: process(window 1)
     W->>DB: window 1 PROCESSING, window 2 OPEN
-    T->>H: pay dfsp_a to dfsp_b 5
+    T->>H: pay dfsp_b to dfsp_a 20
     H->>DB: transfer fulfilled in window 2
 
     T->>DB: zero one position change of window 1
@@ -276,7 +276,7 @@ sequenceDiagram
         T->>S: putById(accounts, state)
         S->>DB: account states, settlement transfers, positions
         S-->>K: position change notification (RESERVED and COMMITTED only)
-        T->>DB: assert settlement state and positions
+        T->>DB: assert settlement state and positions, and after RESERVED that the net debit cap of dfsp_b is untouched
     end
 
     T->>DB: assert settlement, window 1 and its content SETTLED

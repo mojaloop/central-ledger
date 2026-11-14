@@ -34,7 +34,8 @@
  *   3. the window is closed, which aggregates its transfers into settlementContentAggregation;
  *   4. a settlement is created for the closed window;
  *   5. the settlement is walked through PS_TRANSFERS_RECORDED, PS_TRANSFERS_RESERVED,
- *      PS_TRANSFERS_COMMITTED and SETTLED, which moves the positions back.
+ *      PS_TRANSFERS_COMMITTED and SETTLED, which moves the positions back and leaves the net debit
+ *      caps alone.
  *
  * The steps call the settlement services the API handlers and the deferredSettlement handler call,
  * rather than going through HTTP or Kafka: the harness boots no hapi server and does not register the
@@ -59,6 +60,7 @@ import assert from 'node:assert'
 
 import Harness from '../../../testing/harness'
 import * as ApiHelpers from '../../../testing/api-helpers'
+import ParticipantService from '../../../domain/participant'
 import TransferHandler from '../../../handlers/transfers/handler'
 
 const harness = Harness.getInstance()
@@ -67,6 +69,10 @@ const currency = 'USD'
 const settlementModel = `DEFERRED_MULTILATERAL_NET_${currency}`
 const reason = 'settlement integration test'
 const topicNotification = 'topic-notification-event'
+/** The net debit cap of both DFSPs. */
+const netDebitCap = 100000
+/** The cap dfsp_b had before it was raised. It stays in the database as an inactive limit. */
+const staleNetDebitCap = 10
 
 // Required in before(), once harness.setupGlobals() has overridden the global config.
 let Db: any
@@ -101,6 +107,20 @@ const windowState = async (settlementWindowId: number): Promise<string> =>
 /** Position of dfsp_a, then of dfsp_b. */
 const positions = async (): Promise<Array<string>> =>
   (await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', currency)).map(account => account.value)
+
+/** The NET_DEBIT_CAP limits of the position account of a DFSP, oldest first, as [value, isActive]. */
+const netDebitCapsOf = async (name: string): Promise<Array<[number, number]>> => {
+  const knex = await Db.getKnex()
+  const account = await ApiHelpers.getPositionAccount(name, currency)
+  const limits = await knex('participantLimit')
+    .where({
+      participantCurrencyId: account.id,
+      participantLimitTypeId: enums.participantLimitTypes.NET_DEBIT_CAP
+    })
+    .orderBy('participantLimitId')
+    .select('value', 'isActive')
+  return limits.map((limit: any) => [Number(limit.value), limit.isActive])
+}
 
 /** The aggregation rows close() wrote for a window, one per account and role. */
 const aggregationOf = async (settlementWindowId: number): Promise<Array<any>> => {
@@ -196,15 +216,27 @@ describe('settlement/models/settlement/facade', () => {
         autoPositionReset: true
       }]
     })
-    for (const name of ['dfsp_a', 'dfsp_b']) {
-      await ApiHelpers.createDfsp(harness, {
-        name,
-        currencies: [currency],
-        isProxy: false,
-        initialPostionsAndLimits: [{ initialPosition: 0, value: 100000 }],
-        deposits: [10000]
-      })
-    }
+    await ApiHelpers.createDfsp(harness, {
+      name: 'dfsp_a',
+      currencies: [currency],
+      isProxy: false,
+      initialPostionsAndLimits: [{ initialPosition: 0, value: netDebitCap }],
+      deposits: [10000]
+    })
+    // dfsp_b gets its net debit cap in two steps, which leaves its first limit behind as an inactive row.
+    await ApiHelpers.createDfsp(harness, {
+      name: 'dfsp_b',
+      currencies: [currency],
+      isProxy: false,
+      initialPostionsAndLimits: [{ initialPosition: 0, value: staleNetDebitCap }],
+      deposits: [10000]
+    })
+    const mark = harness.redpandaMark()
+    await ParticipantService.adjustLimits('dfsp_b', {
+      currency,
+      limit: { type: 'NET_DEBIT_CAP', value: netDebitCap }
+    })
+    await harness.redpandaDrain(mark, 1)
   })
 
   after(async () => {
@@ -232,8 +264,10 @@ describe('settlement/models/settlement/facade', () => {
       ['PROCESSING', 'OPEN']
     )
 
-    // Fulfilled while the first window is being closed, so it belongs to the new one.
-    await pay('dfsp_a', 'dfsp_b', '7000003', '5.00')
+    // Fulfilled while the first window is being closed, so it belongs to the new one. It also leaves
+    // dfsp_b in a position that the settlement will move above its old net debit cap, but not above
+    // its current one.
+    await pay('dfsp_b', 'dfsp_a', '7000003', '20.00')
   })
 
   it('close() refuses a window whose position changes do not sum to zero', async () => {
@@ -308,22 +342,25 @@ describe('settlement/models/settlement/facade', () => {
 
   it('putById() walks the settlement to SETTLED and moves the positions back', async () => {
     const both = [netSender, netRecipient]
-    // 100 - 30 from the closed window, 5 from the open one.
-    assert.deepEqual(await positions(), ['75.0000', '-75.0000'])
+    // 100 - 30 from the closed window, 20 the other way from the open one.
+    assert.deepEqual(await positions(), ['50.0000', '-50.0000'])
 
     // Creates the two settlement transfers. No position moves yet.
     assert.equal(await moveAccounts('PS_TRANSFERS_RECORDED', both, 0), 'PS_TRANSFERS_RECORDED')
-    assert.deepEqual(await positions(), ['75.0000', '-75.0000'])
+    assert.deepEqual(await positions(), ['50.0000', '-50.0000'])
 
     // Reserves them: the net recipient is credited and notified.
     assert.equal(await moveAccounts('PS_TRANSFERS_RESERVED', both, 1), 'PS_TRANSFERS_RESERVED')
-    assert.deepEqual(await positions(), ['75.0000', '-5.0000'])
-    assertPositionNotification('dfsp_b', -5)
+    assert.deepEqual(await positions(), ['50.0000', '20.0000'])
+    assertPositionNotification('dfsp_b', 20)
+    // The net recipient is checked against its active net debit cap. Checked against the inactive one
+    // it would be found over its cap, and its limit would be replaced.
+    assert.deepEqual(await netDebitCapsOf('dfsp_b'), [[staleNetDebitCap, 0], [netDebitCap, 1]])
 
     // Commits them: the net sender is debited and notified.
     assert.equal(await moveAccounts('PS_TRANSFERS_COMMITTED', both, 1), 'PS_TRANSFERS_COMMITTED')
-    assert.deepEqual(await positions(), ['5.0000', '-5.0000'])
-    assertPositionNotification('dfsp_a', 5)
+    assert.deepEqual(await positions(), ['-20.0000', '20.0000'])
+    assertPositionNotification('dfsp_a', -20)
 
     // The settlement is SETTLING until its last account is settled.
     assert.equal(await moveAccounts('SETTLED', [netSender], 0), 'SETTLING')
@@ -360,7 +397,7 @@ describe('settlement/models/settlement/facade', () => {
     assert.deepEqual(fulfilments.map((row: any) => row.settlementWindowId), [null, null])
 
     // Only the transfer of the open window is left on the positions, and the hub account nets to zero.
-    assert.deepEqual(await positions(), ['5.0000', '-5.0000'])
+    assert.deepEqual(await positions(), ['-20.0000', '20.0000'])
     const hub = await knex('participantPosition AS pp')
       .join('participantCurrency AS pc', 'pc.participantCurrencyId', 'pp.participantCurrencyId')
       .where({
