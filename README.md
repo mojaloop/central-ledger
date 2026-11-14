@@ -230,6 +230,63 @@ For example, to run `src/domain/participant/index.int.ts`:
 node --test --require ts-node/register src/domain/participant/index.int.ts
 ```
 
+#### Settlement scenario
+
+[`src/settlement/models/settlement/facade.int.ts`](./src/settlement/models/settlement/facade.int.ts)
+runs one deferred net settlement from end to end against the harness database and Kafka. The unit tests
+of the settlement models stub knex, so this is the test that executes their SQL.
+
+It calls the same services the Settlement API handlers and the `deferredSettlement` handler call, in the
+order a hub operator would trigger them. It does not go through HTTP or through the
+`topic-deferredsettlement-close` consumer: the harness starts neither.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant T as Test
+    participant H as Transfer handlers<br/>(prepare, position, fulfil)
+    participant W as Settlement window<br/>service
+    participant S as Settlement<br/>service
+    participant DB as MariaDB
+    participant K as topic-notification-event
+
+    Note over T,DB: Setup: hub accounts, one DEFERRED / NET / MULTILATERAL model for USD, dfsp_a and dfsp_b
+
+    T->>H: pay dfsp_a to dfsp_b 100, pay dfsp_b to dfsp_a 30
+    H->>DB: both transfers fulfilled in window 1 (OPEN)
+    T->>W: process(window 1)
+    W->>DB: window 1 PROCESSING, window 2 OPEN
+    T->>H: pay dfsp_a to dfsp_b 5
+    H->>DB: transfer fulfilled in window 2
+
+    T->>W: close(window 1)
+    W->>DB: aggregate window 1 into settlementContentAggregation
+    W->>DB: window 1 CLOSED
+    T->>DB: assert one row per account and role, summing to zero
+
+    T->>S: settlementEventTrigger(window 1)
+    S->>DB: settlement PENDING_SETTLEMENT, dfsp_a owes 70, dfsp_b is owed 70
+
+    loop PS_TRANSFERS_RECORDED, PS_TRANSFERS_RESERVED, PS_TRANSFERS_COMMITTED, SETTLED
+        T->>S: putById(accounts, state)
+        S->>DB: account states, settlement transfers, positions
+        S-->>K: position change notification (RESERVED and COMMITTED only)
+        T->>DB: assert settlement state and positions
+    end
+
+    T->>DB: assert settlement, window 1 and its content SETTLED
+```
+
+Run it on its own with:
+
+```bash
+node --test --require ts-node/register src/settlement/models/settlement/facade.int.ts
+```
+
+In CI it runs with every other `.int.ts` file in CircleCI's `Integration tests` job, through
+`npm run test:integration`.
+
+What it cannot show: behaviour specific to MySQL, because the harness runs MariaDB as `root`.
 
 ### Running Functional Tests
 
