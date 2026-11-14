@@ -199,6 +199,52 @@ ignore:
     reason: >-
       Base image npm package: undici - bundled in Node.js base image, not fixable via application dependencies as of
       2026-10-22 (low severity)
+  - vulnerability: GHSA-xjj6-f33q-929c
+    include-aliases: true
+    reason: >-
+      Base image npm package: undici - bundled in Node.js base image, not fixable via application dependencies as of
+      2026-11-14 (high severity)
+  - vulnerability: CVE-2026-4738
+    include-aliases: true
+    reason: 'Alpine base image package (apk): zlib - no npm fix available as of 2026-11-14 (critical severity)'
+  - vulnerability: GHSA-3g3m-2fjr-6pw4
+    include-aliases: true
+    reason: >-
+      Base image npm package: glob - bundled in Node.js base image, not fixable via application dependencies as of
+      2026-11-14 (moderate severity)
+  - vulnerability: GHSA-g3hv-75wg-m249
+    include-aliases: true
+    reason: >-
+      Base image npm package: minimatch - bundled in Node.js base image, not fixable via application dependencies as of
+      2026-11-14 (moderate severity)
+  - vulnerability: GHSA-rxp7-6hxx-x8q5
+    include-aliases: true
+    reason: >-
+      Base image npm package: ip-address - bundled in Node.js base image, not fixable via application dependencies as of
+      2026-11-14 (moderate severity)
+  - vulnerability: GHSA-4qv8-2p9j-2685
+    include-aliases: true
+    reason: >-
+      Base image npm package: undici - bundled in Node.js base image, not fixable via application dependencies as of
+      2026-11-14 (moderate severity)
+  - vulnerability: GHSA-9fm3-97px-rjf6
+    include-aliases: true
+    reason: >-
+      Base image npm package: undici - bundled in Node.js base image, not fixable via application dependencies as of
+      2026-11-14 (moderate severity)
+  - vulnerability: GHSA-qrxm-fqhp-jwvm
+    include-aliases: true
+    reason: >-
+      Base image npm package: undici - bundled in Node.js base image, not fixable via application dependencies as of
+      2026-11-14 (high severity)
+  - vulnerability: GHSA-2m5v-pch6-74hx
+    include-aliases: true
+    reason: >-
+      Base image npm package: undici - bundled in Node.js base image, not fixable via application dependencies as of
+      2026-11-14 (high severity)
+  - vulnerability: GHSA-gcqx-w48m-w2h4
+    include-aliases: true
+    reason: 'Unfixable npm transitive vulnerability: deepmerge (low severity) as of 2026-11-14'
 output:
   - table
   - json
