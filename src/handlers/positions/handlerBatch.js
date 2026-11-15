@@ -61,7 +61,7 @@ const rethrow = require('../../shared/rethrow')
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
  *
- * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ * @returns {(error, messages) => Promise<any>} - Returns a boolean: true if successful, or throws and error if failed
  */
 
 const positions = batchConfig => async (error, messages) => {

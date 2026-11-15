@@ -182,14 +182,17 @@ describe('handlers/fx-abort', () => {
       .parties('fxp_a', 'dfsp_b')
       .transferId('6000001')
       .amount('10.00', 'USD')
-      .fx()
+      .fx('5000001')
       .build()
 
     await payment.prepare()
-    // Need to do a custom fulfil here, as we expect 4 messages due to FX.
-    const mark = harness.redpandaMark()
+
+    // Need to do a custom fulfil here, as we expect 3 messages due to FX.
     await TransferHandler.fulfil(null, payment.buildMessageAbort())
-    await harness.redpandaDrain(mark, 4)
+    // 1: fx reject notification
+    // 2. position update
+    // 3. payer notification
+    await harness.drainMessages(3, '6000001')
 
     const transfer = await TransferFacade.getById('6000001')
     assert.equal(transfer.transferState, 'ABORTED_ERROR')

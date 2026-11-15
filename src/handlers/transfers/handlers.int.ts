@@ -264,9 +264,8 @@ describe('handlers/tranfers/handlers', () => {
     await paymentA.prepare()
 
     // Manually prepare the second payment - it will fail.
-    const mark = harness.redpandaMark()
     await handlerPrepare.prepare(null, [paymentB.buildMessagePrepare()])
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, transferId)
 
     const messages = harness.spoolLastPayload(1)
     Snapshot.from(`[
@@ -349,9 +348,8 @@ describe('handlers/tranfers/handlers', () => {
       transferState: "RESERVED"
     })
 
-    const mark = harness.redpandaMark()
     await handlerAll.fulfil(null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)])
-    await harness.redpandaDrain(mark, 2)
+    await harness.drainMessages(2, transferId)
 
     // Get the transfer:
     const transfer = await TransferFacade.getById(transferId)
@@ -401,9 +399,9 @@ describe('handlers/tranfers/handlers', () => {
     putTransfer.headers['fspiop-source'] = 'dfsp_a'
     putTransfer.headers['fspiop-destination'] = 'dfsp_b'
 
-    const mark = harness.redpandaMark()
     await handlerAll.fulfil(null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)])
-    await harness.redpandaDrain(mark, 2)
+    await harness.drainMessages(2, transferId)
+
 
     // Get the transfer:
     const transfer = await TransferFacade.getById(transferId)
@@ -430,9 +428,8 @@ describe('handlers/tranfers/handlers', () => {
       expirySeconds: 100
     })
 
-    let mark = harness.redpandaMark()
     await handlerPrepare.prepare(null, [ApiHelpers.buildMessagePrepare(harness, postTransfer)])
-    await harness.redpandaDrain(mark, 2)
+    await harness.drainMessages(2, transferId)
 
     const putTransfer = ApiHelpers.buildMojaloopPutTransfer({
       payerFsp: 'dfsp_a',
@@ -450,9 +447,8 @@ describe('handlers/tranfers/handlers', () => {
     // Make the callback come from a 3rd dfsp.
     putTransfer.headers['fspiop-source'] = 'dfsp_x'
 
-    mark = harness.redpandaMark()
     await handlerAll.fulfil(null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)])
-    await harness.redpandaDrain(mark, 2)
+    await harness.drainMessages(2, transferId)
 
     // Check the last messages.
     const topics = harness.spoolLastTopic(2)
@@ -487,10 +483,9 @@ describe('handlers/tranfers/handlers', () => {
     await sleepSeconds(10)
     // We don't run the timeout handler in these tests, but instead just call timeout()
     // directly. This makes the tests more predictable and deterministic.
-    const mark = harness.redpandaMark()
     const timeoutResult = (await TimeoutHandler.timeout()) as unknown as {transferTimeoutList: Array<unknown>}
     assert(timeoutResult.transferTimeoutList.length === 1)
-    await harness.redpandaDrain(mark, 2)
+    await harness.drainMessages(2, transferId)
 
     const lastTopics = harness.spoolLastTopic(2)
     Snapshot.from(`[
