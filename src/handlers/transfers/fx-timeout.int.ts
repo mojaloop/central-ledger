@@ -41,7 +41,7 @@ let TransferFacade: any
 let FxTransferService: any
 let proxyCache: any
 
-describe('handlers/tx-timeout', () => {
+describe('handlers/fx-timeout', () => {
   before(async () => {
     await harness.up('BATCH')
     await harness.setupGlobals()
@@ -177,7 +177,6 @@ describe('handlers/tx-timeout', () => {
     assert.equal(fxTransfer.fxTransferState, 'RESERVED')
 
     await sleepSeconds(10)
-    const mark = harness.redpandaMark()
     const resultTimeout = await TimeoutHandler.timeout()
     assert(resultTimeout)
     // Annoyingly the timeout handler still includes aborted transfers in timeouts.
@@ -200,7 +199,7 @@ describe('handlers/tx-timeout', () => {
       }
     ]`).checkUnwrap(fxTransfers)
     assert(fxTransfers.length === 1)
-    await harness.redpandaDrain(mark, 2)
+    await harness.drainMessages(2, '8000001')
 
     fxTransfer = await FxTransferService.getByIdLight('8000001')
     assert.equal(fxTransfer.fxTransferState, 'EXPIRED_RESERVED')
@@ -239,14 +238,14 @@ describe('handlers/tx-timeout', () => {
       .transferId('9000002')
       .amount('10.00', 'USD')
       .expiry(1)
-      .fx()
+      .fx('8000002')
       .build()
 
     await payment.prepare()
 
     // Now time out the payment.
     await sleepSeconds(10)
-    const mark = harness.redpandaMark()
+    // const mark = harness.redpandaMark()
     const resultTimeout = await TimeoutHandler.timeout()
     assert(resultTimeout)
     // Annoyingly the timeout handler still includes aborted transfers in timeouts.
@@ -270,7 +269,8 @@ describe('handlers/tx-timeout', () => {
       }
     ]`).checkUnwrap(transfers)
     assert(transfers.length === 1)
-    await harness.redpandaDrain(mark, 4)
+    await harness.drainMessages(2,'8000002')
+    await harness.drainMessages(2,'9000002')
 
     const transfer = await TransferFacade.getById('9000002')
     assert.equal(transfer.transferState, 'EXPIRED_RESERVED')

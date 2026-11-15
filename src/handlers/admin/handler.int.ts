@@ -106,10 +106,9 @@ const recordFundsOutPrepareReserve = async (name: string, transferId: string, am
     externalReference: `withdrawal-${transferId}`,
     amount: { amount, currency }
   }
-  const mark = harness.redpandaMark()
   const handled = adminHandled(transferId, payload.action)
   await ParticipantService.recordFundsInOut(payload, { name, id: settlementAccount.id, transferId }, harness.enums)
-  await harness.redpandaDrain(mark, 1)
+  await harness.drainMessages(1, transferId)
   await handled
   assert.equal(await getTransferStateId(transferId), TransferState.RESERVED)
 }
@@ -123,10 +122,9 @@ const recordFundsOutPrepareReserve = async (name: string, transferId: string, am
 const recordFundsOutCommitOrAbort = async (action: string, name: string, transferId: string): Promise<void> => {
   const settlementAccount = await ApiHelpers.getSettlementAccount(name, currency)
   const payload = { action, reason: `${action} by ${name}` }
-  const mark = harness.redpandaMark()
   const handled = adminHandled(transferId, action)
   await ParticipantService.recordFundsInOut(payload, { name, id: settlementAccount.id, transferId }, harness.enums)
-  await harness.redpandaDrain(mark, 1)
+  await harness.drainMessages(1, transferId)
   await handled
 }
 
@@ -258,9 +256,8 @@ describe('handlers/admin/handler', () => {
     // The position handler releases the payer position exactly once, when the transfer times out. Its
     // notification is the second message: by then the state change and the position are in the database.
     letReservationsExpire()
-    const mark = harness.redpandaMark()
     await TimeoutHandler.timeout()
-    await harness.redpandaDrain(mark, 2)
+    await harness.drainMessages(2, transferId)
     assert.equal(await getTransferStateId(transferId), TransferInternalState.EXPIRED_RESERVED)
     assertPositionDiff('payer', positionStart, await ApiHelpers.getPositionAccount('dfsp_a', currency), { posted: 0 })
   })

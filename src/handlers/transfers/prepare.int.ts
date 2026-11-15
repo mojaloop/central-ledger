@@ -236,7 +236,7 @@ describe('handlers/prepare', () => {
       .parties('external_dfsp_a', 'external_dfsp_b')
       .transferId('3000001')
       .amount('1.00', 'USD')
-      .fx()
+      .fx('2000001')
       .build()
 
     await payment.prepare()
@@ -277,9 +277,8 @@ describe('handlers/prepare', () => {
     await forex.prepare()
 
     // Manually prepare again.
-    const mark = harness.redpandaMark()
     await PrepareHandler.prepare(null, forex.buildMessagePrepare())
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, '2000002')
 
     const lastTopics = harness.spoolLastTopic(3)
     Snapshot.from(`[
@@ -302,10 +301,8 @@ describe('handlers/prepare', () => {
     await forex.prepareAndFulfil()
 
     // Now send the first message again.
-    // await forex.prepare()
-    const mark = harness.redpandaMark()
     await PrepareHandler.prepare(null, forex.buildMessagePrepare())
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, '2000003')
 
     const lastTopics = harness.spoolLastTopic(1)
     Snapshot.from(`[
@@ -337,14 +334,13 @@ describe('handlers/prepare', () => {
       .parties('external_dfsp_a', 'external_dfsp_b')
       .transferId('3000004')
       .amount('1.00', 'USD')
-      .fx()
+      .fx('2000004')
       .build()
       .prepareAndFulfil()
 
     // Now send the first message again.
-    const mark = harness.redpandaMark()
     await PrepareHandler.prepare(null, forex.buildMessagePrepare())
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, '2000004')
 
     const lastTopics = harness.spoolLastTopic(1)
     Snapshot.from(`[
@@ -372,9 +368,8 @@ describe('handlers/prepare', () => {
     await forex.abort()
 
     // Now send the first message again.
-    const mark = harness.redpandaMark()
     await PrepareHandler.prepare(null, forex.buildMessagePrepare())
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, '2000005')
 
     const lastTopics = harness.spoolLastTopic(1)
     Snapshot.from(`[
@@ -444,9 +439,9 @@ describe('handlers/prepare', () => {
     await sleepSeconds(10)
     // We don't run the timeout handler in these tests, but instead just call timeout()
     // directly. This makes the tests more predictable and deterministic.
-    const mark = harness.redpandaMark()
+    // const mark = harness.redpandaMark()
     await TimeoutHandler.timeout()
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, transferId)
     const [positionPayerC] = await ApiHelpers.getPositions('dfsp_a', 'dfsp_b', 'BWP')
     assertPositionDiff('payer', positionPayerB, positionPayerC, {
       pending: 0,
@@ -547,9 +542,8 @@ describe('handlers/prepare', () => {
       transferId: transferId,
       proxyId: 'dfsp_a_proxy'
     })
-    let mark = harness.redpandaMark();
     await PrepareHandler.prepare(null, forwardedMsg)
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, transferId)
 
     const lastPayload = harness.spoolLastPayload(1)
     Snapshot.from(`[
@@ -586,9 +580,8 @@ describe('handlers/prepare', () => {
     assert.equal(transferBefore.transferState, 'RESERVED')
     await sleepSeconds(10)
 
-    let mark = harness.redpandaMark()
     await TimeoutHandler.timeout()
-    await harness.redpandaDrain(mark, 2)
+    await harness.drainMessages(2, transferId)
 
     const transferExpired = await TransferFacade.getById(transferId)
     assert.equal(transferExpired.transferState, 'EXPIRED_RESERVED')
@@ -597,9 +590,8 @@ describe('handlers/prepare', () => {
       transferId: transferId,
       proxyId: 'dfsp_a_proxy'
     })
-    mark = harness.redpandaMark()
     await PrepareHandler.prepare(null, forwardedMsg)
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, transferId)
 
     Snapshot.from(`[
       {
@@ -644,9 +636,8 @@ describe('handlers/prepare', () => {
 
     // Time out to trigger notification.
     await sleepSeconds(10)
-    const mark = harness.redpandaMark()
     const resultTimeout = await TimeoutHandler.timeout()
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, transferId)
     
     assert(resultTimeout)
     // Annoyingly the timeout handler still includes aborted transfers in timeouts.
@@ -732,9 +723,10 @@ describe('handlers/prepare', () => {
 
     // Now time it out - no message should be produced.
     await sleepSeconds(10)
-    const mark = harness.redpandaMark()
-    await TimeoutHandler.timeout()
-    await harness.redpandaDrain(mark, 0)
+    const resultTimeout = await TimeoutHandler.timeout()
+    assert(resultTimeout)
+    assert(resultTimeout.fxTransferForwardedList.length === 0)
+    assert(resultTimeout.fxTransferTimeoutList.length === 0)
 
     // Check the result.
     transfer = await FxTransferService.getByIdLight('2000011')
@@ -765,9 +757,9 @@ describe('handlers/prepare', () => {
 
   //   // Now time it out - no message should be produced.
   //   await sleepSeconds(10)
-  //   const mark = harness.redpandaMark()
   //   await TimeoutHandler.timeout()
-  //   await harness.redpandaDrain(mark, 0)
+  //   await harness.drainMessages(1, '2000012')
+
 
   //   // Check the result.
   //   transfer = await FxTransferService.getByIdLight('2000012')
@@ -832,9 +824,8 @@ describe('handlers/prepare', () => {
       commitRequestId: '2000014',
       proxyId: 'dfsp_a_proxy'
     })
-    const mark = harness.redpandaMark()
     await PrepareHandler.prepare(null, forwardedMsg)
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, '2000014')
 
     Snapshot.from(`[
       {
@@ -879,10 +870,9 @@ describe('handlers/prepare', () => {
   //     .where({ tableName: 'fxTransferStateChange', segmentType: 'timeout' })
   //     .update({ value: 0 })
 
-  //   const mark = harness.redpandaMark()
   //   // For some reason, timeout isn't producing any messages.
   //   const timeoutResult = await TimeoutHandler.timeout()
-  //   await harness.redpandaDrain(mark, 1)
+  //   await harness.drainMessages(1, '2000015')
 
   //   let fxTransfer = await FxTransferService.getByIdLight('2000015')
   //   assert.equal(fxTransfer.fxTransferState, 'EXPIRED_RESERVED')
@@ -948,7 +938,7 @@ describe('handlers/prepare', () => {
         .parties(externalFxp, externalPayee)
         .transferId('3000018')
         .amount('10.00', 'USD')
-        .fx()
+        .fx('2000018')
         .build()
       await payment.prepare()
 
@@ -1009,7 +999,7 @@ describe('handlers/prepare', () => {
         .parties(externalPayer, externalPayee)
         .transferId('3000020')
         .amount('10.00', 'USD')
-        .fx()
+        .fx('2000020')
         .build()
 
       await payment.prepare()
@@ -1177,9 +1167,8 @@ describe('handlers/prepare', () => {
       // Manually fulfil with bad headers.
       const messageFulfil = forex.buildMessageFulfil()
       messageFulfil.value.content.headers['fspiop-source'] = 'wrongfsp'
-      const mark = harness.redpandaMark()
       await TransferHandler.fulfil(null, messageFulfil)
-      await harness.redpandaDrain(mark, 1)
+      await harness.drainMessages(2, '2000121')
 
       // A DFSP may not change another DFSP's fxTransfer: only the error is sent (no position message),
       // and the fxTransfer is not aborted.
@@ -1227,7 +1216,7 @@ describe('handlers/prepare', () => {
         .parties(externalPayer, externalPayee)
         .transferId('3000222')
         .amount('10.00', 'USD')
-        .fx()
+        .fx('2000022')
         .build()
       await payment.prepareAndFulfil()
 
@@ -1277,7 +1266,7 @@ describe('handlers/prepare', () => {
         .parties('dfsp_a', externalPayee)
         .transferId('3000033')
         .amount('10.00', 'USD')
-        .fx()
+        .fx('2000033')
         .build()
       await payment.prepareAndFulfil()
 

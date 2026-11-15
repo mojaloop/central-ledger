@@ -109,9 +109,8 @@ describe('handlers/fx', () => {
       .amountTarget('10.00', 'USD')
       .build()
 
-    const mark = harness.redpandaMark()
     await TransferHandler.fulfil(null, forex.buildMessageFulfil())
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, '4000001')
 
     Snapshot.from(`[
       {
@@ -209,13 +208,11 @@ describe('handlers/fx', () => {
       .amountTarget('10.00', 'USD')
       .build()
 
-    // Prepare the first.
+    // Prepare the 1st.
     await forexA.prepare()
-
     // Manually prepare the 2nd.
-    const mark = harness.redpandaMark()
     await TransferHandler.prepare(null, forexB.buildMessagePrepare())
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, fxId)
 
     Snapshot.from(`[
       {
@@ -251,9 +248,13 @@ describe('handlers/fx', () => {
     const messageFulfil = forex.buildMessageFulfil()
     assert(messageFulfil.value.content.payload)
     messageFulfil.value.content.payload.fulfilment = 'invalid-fulfilment'
-    const mark = harness.redpandaMark()
     await TransferHandler.fulfil(null, messageFulfil)
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(2, '4000004')
+
+    Snapshot.from(`[
+      "topic-transfer-position-batch",
+      "topic-notification-event"
+    ]`).checkUnwrap(harness.spoolLastTopic(2))
 
     Snapshot.from(`[
       {
@@ -264,12 +265,26 @@ describe('handlers/fx', () => {
             "extension": [
               {
                 "key": "cause",
-                "value": "FSPIOPError: Invalid FX:ignore
+                "value": :ignore
+              }
+            ]
+          }
+        }
+      },
+      {
+        "errorInformation": {
+          "errorCode": "3100",
+          "errorDescription": "Generic validation error",
+          "extensionList": {
+            "extension": [
+              {
+                "key": "cause",
+                "value": :ignore
               }
             ]
           }
         }
       }
-    ]`).checkUnwrap(harness.spoolLastPayload(1))
+    ]`).checkUnwrap(harness.spoolLastPayload(2))
   })
 })
