@@ -137,8 +137,8 @@ export const createDfsp = async (harness: Harness, payload: CreateDfspPayload): 
     )
     await harness.redpandaDrain(mark, 1)
 
-    // Annoyingly we still have a position update race condition here.
-    await sleepSeconds(2)
+    // The admin handler applies the deposit some time after the harness has consumed its message.
+    await waitForSettlementBalance(name, currency, `-${deposit}.0000`)
     accounts = await ParticipantService.getAccounts(name, { currency })
     const settlementAccountResponse = accounts
       .filter((account: any) => account.ledgerAccountType === 'SETTLEMENT')[0]
@@ -182,6 +182,34 @@ export const getSettlementAccount = async (name: string, currency: string) => {
 
   assert(account, `No settlement account found for name: ${name} + currency: ${currency}.`)
   return account;
+}
+
+/**
+ * Helper to wait until the balance of a Settlement account is `value`.
+ *
+ * A funds-in or funds-out changes the balance when the admin handler has processed its message, which
+ * is some time after the harness has consumed the same message. How long depends on the machine, so
+ * wait for the balance instead of sleeping.
+ */
+export const waitForSettlementBalance = async (
+  name: string,
+  currency: string,
+  value: string,
+  timeoutMs: number = 10_000
+): Promise<void> => {
+  const start = performance.now()
+  const poll = async (): Promise<void> => {
+    const account = await getSettlementAccount(name, currency)
+    if (account.value === value) {
+      return
+    }
+    if (performance.now() - start >= timeoutMs) {
+      throw new Error(`Timed out after ${timeoutMs}ms waiting for the ${currency} settlement balance of ${name} to be ${value}. It is ${account.value}.`)
+    }
+    await sleepSeconds(0.02)
+    return poll()
+  }
+  return poll()
 }
 
 /**
