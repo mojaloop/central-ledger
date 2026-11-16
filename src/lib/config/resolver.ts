@@ -220,18 +220,31 @@ const parseAndValidateConfig = (unsafeConfig: UnsafeApplicationConfig): Applicat
   return unsafeConfig as ApplicationConfig
 }
 
-const makeConfig = (): ApplicationConfig => {
+/**
+ * @function loadConfigRaw
+ * @description Load the config file, with the `CLEDG_` environment overrides applied, as it is before
+ *   resolveConfig() reshapes it. The file is `config/default.json` unless `PATH_TO_CONFIG_FILE` is set.
+ *
+ *   The object returned is the one `require()` caches for the config file, extended by RC(). Copy it
+ *   before changing it, or every config loaded later in the same process sees the change.
+ */
+const loadConfigRaw = (): any => {
   const PATH_TO_CONFIG_FILE = defaultEnvString(
     process.env,
     'PATH_TO_CONFIG_FILE',
     path.join(__dirname, '../../..', 'config/default.json')
   )
-  logger.info(`makeConfig() - Loading config from: ${PATH_TO_CONFIG_FILE}`)
-  const raw = parseStringsInObject(RC('CLEDG', require(PATH_TO_CONFIG_FILE)))
+  logger.info(`loadConfigRaw() - Loading config from: ${PATH_TO_CONFIG_FILE}`)
+
+  return parseStringsInObject(RC('CLEDG', require(PATH_TO_CONFIG_FILE)))
+}
+
+const makeConfig = (): ApplicationConfig => {
+  const raw = loadConfigRaw()
   const resolved = resolveConfig(raw)
   const validated = parseAndValidateConfig(resolved)
 
   return validated
 }
 
-export { makeConfig, resolveConfig, parseAndValidateConfig }
+export { loadConfigRaw, makeConfig, resolveConfig, parseAndValidateConfig }
