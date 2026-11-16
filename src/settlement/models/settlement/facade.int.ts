@@ -58,8 +58,9 @@
 import { after, before, describe, it } from 'node:test'
 import assert from 'node:assert'
 
-import Harness from '../../../testing/harness'
+import Harness, { MojaloopKafkaMessage } from '../../../testing/harness'
 import * as ApiHelpers from '../../../testing/api-helpers'
+import { waitForLastMessage } from '../../../testing/util'
 import ParticipantService from '../../../domain/participant'
 import TransferHandler from '../../../handlers/transfers/handler'
 
@@ -138,19 +139,15 @@ const aggregationOf = async (settlementWindowId: number): Promise<Array<any>> =>
 /**
  * What PUT /settlements/{id} does. putById() reports an account it refuses in the response and still
  * resolves, so every returned account is checked. Resolves with the state of the settlement.
- *
- * @param notifications how many messages the call is expected to produce.
  */
-const moveAccounts = async (state: string, accounts: Array<Account>, notifications: number): Promise<string> => {
+const moveAccounts = async (state: string, accounts: Array<Account>): Promise<string> => {
   const payload = {
     participants: accounts.map(({ participantId, accountId }) => ({
       id: participantId,
       accounts: [{ id: accountId, state, reason }]
     }))
   }
-  const mark = harness.redpandaMark()
   const result = await SettlementService.putById(settlementId, payload, enums)
-  await harness.redpandaDrain(mark, notifications)
 
   const returned = result.participants.flatMap((participant: any) => participant.accounts)
   assert.equal(returned.length, accounts.length)
@@ -161,16 +158,24 @@ const moveAccounts = async (state: string, accounts: Array<Account>, notificatio
   return result.state
 }
 
-/** Checks the last message consumed: a position change notification for `to`. */
-const assertPositionNotification = (to: string, value: number) => {
-  const [message] = harness.spoolLast(1)
+/** Whether a message is a notification that a settlement changed a position. */
+const isSettlementNotification = (message: MojaloopKafkaMessage): boolean =>
+  message.topic === topicNotification &&
+  message.valueParsed.metadata?.event?.action === 'settlement-transfer-position-change'
+
+/** Matches the notification that tells `to` that a settlement changed its position to `value`. */
+const positionNotification = (to: string, value: number) => (message: MojaloopKafkaMessage): boolean => {
   const parsed = message.valueParsed as any
-  assert.equal(message.topic, topicNotification)
-  assert.equal(parsed.metadata.event.action, 'settlement-transfer-position-change')
-  assert.deepEqual(
-    [parsed.to, parsed.content.payload.currency, Number(parsed.content.payload.value)],
-    [to, currency, value]
-  )
+  return isSettlementNotification(message) &&
+    parsed.to === to &&
+    parsed.content?.payload?.currency === currency &&
+    Number(parsed.content?.payload?.value) === value
+}
+
+/** Matches the notification that the net debit cap of `name` was set to `value`. */
+const limitNotification = (name: string, value: number) => (message: MojaloopKafkaMessage): boolean => {
+  const payload = message.valueParsed.content?.payload
+  return message.topic === topicNotification && payload?.name === name && payload?.limit?.value === value
 }
 
 describe('settlement/models/settlement/facade', () => {
@@ -230,12 +235,12 @@ describe('settlement/models/settlement/facade', () => {
       initialPostionsAndLimits: [{ initialPosition: 0, value: staleNetDebitCap }],
       deposits: [10000]
     })
-    const mark = harness.redpandaMark()
     await ParticipantService.adjustLimits('dfsp_b', {
       currency,
       limit: { type: 'NET_DEBIT_CAP', value: netDebitCap }
     })
-    await harness.redpandaDrain(mark, 1)
+    // Wait for its notification, so that it cannot arrive in the middle of a payment.
+    await waitForLastMessage(harness, limitNotification('dfsp_b', netDebitCap), 'the limit notification of dfsp_b')
   })
 
   after(async () => {
@@ -345,26 +350,30 @@ describe('settlement/models/settlement/facade', () => {
     assert.deepEqual(await positions(), ['50.0000', '-50.0000'])
 
     // Creates the two settlement transfers. No position moves yet.
-    assert.equal(await moveAccounts('PS_TRANSFERS_RECORDED', both, 0), 'PS_TRANSFERS_RECORDED')
+    assert.equal(await moveAccounts('PS_TRANSFERS_RECORDED', both), 'PS_TRANSFERS_RECORDED')
     assert.deepEqual(await positions(), ['50.0000', '-50.0000'])
 
     // Reserves them: the net recipient is credited and notified.
-    assert.equal(await moveAccounts('PS_TRANSFERS_RESERVED', both, 1), 'PS_TRANSFERS_RESERVED')
+    assert.equal(await moveAccounts('PS_TRANSFERS_RESERVED', both), 'PS_TRANSFERS_RESERVED')
     assert.deepEqual(await positions(), ['50.0000', '20.0000'])
-    assertPositionNotification('dfsp_b', 20)
+    await waitForLastMessage(harness, positionNotification('dfsp_b', 20), 'the position notification of dfsp_b')
+    // It is the first one: recording the transfers notified nobody.
+    assert.equal(isSettlementNotification(harness.spoolLast(2)[0]), false)
     // The net recipient is checked against its active net debit cap. Checked against the inactive one
     // it would be found over its cap, and its limit would be replaced.
     assert.deepEqual(await netDebitCapsOf('dfsp_b'), [[staleNetDebitCap, 0], [netDebitCap, 1]])
 
     // Commits them: the net sender is debited and notified.
-    assert.equal(await moveAccounts('PS_TRANSFERS_COMMITTED', both, 1), 'PS_TRANSFERS_COMMITTED')
+    assert.equal(await moveAccounts('PS_TRANSFERS_COMMITTED', both), 'PS_TRANSFERS_COMMITTED')
     assert.deepEqual(await positions(), ['-20.0000', '20.0000'])
-    assertPositionNotification('dfsp_a', -20)
+    await waitForLastMessage(harness, positionNotification('dfsp_a', -20), 'the position notification of dfsp_a')
+    // It directly follows the one for dfsp_b: each of the two steps notified exactly once.
+    assert.equal(positionNotification('dfsp_b', 20)(harness.spoolLast(2)[0]), true)
 
     // The settlement is SETTLING until its last account is settled.
-    assert.equal(await moveAccounts('SETTLED', [netSender], 0), 'SETTLING')
+    assert.equal(await moveAccounts('SETTLED', [netSender]), 'SETTLING')
     assert.equal(await windowState(closedWindowId), 'PENDING_SETTLEMENT')
-    assert.equal(await moveAccounts('SETTLED', [netRecipient], 0), 'SETTLED')
+    assert.equal(await moveAccounts('SETTLED', [netRecipient]), 'SETTLED')
   })
 
   it('leaves the settlement, the window and its content SETTLED', async () => {
@@ -394,6 +403,9 @@ describe('settlement/models/settlement/facade', () => {
       .where('spc.settlementId', settlementId)
       .select('tf.settlementWindowId')
     assert.deepEqual(fulfilments.map((row: any) => row.settlementWindowId), [null, null])
+
+    // Settling the accounts notified nobody: the last message is still the one of the commit step.
+    assert.equal(positionNotification('dfsp_a', -20)(harness.spoolLast(1)[0]), true)
 
     // Only the transfer of the open window is left on the positions, and the hub account nets to zero.
     assert.deepEqual(await positions(), ['-20.0000', '20.0000'])
