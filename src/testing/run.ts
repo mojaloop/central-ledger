@@ -23,14 +23,11 @@ export const TAPE_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/tape')
 export const TAP_XUNIT_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/tap-xunit')
 
 /**
- * @function exitWhenStdoutFlushed
- * @description Exit the process only once everything already queued on stdout has actually been
- *   written. `process.exit()` is synchronous, but writes to a non-TTY stdout (e.g. when piped into
- *   `tap-spec`) are not - calling it right after a large `console.log`/`write` can truncate that
- *   write mid-flight. Queuing an empty write and exiting in its callback guarantees everything
- *   enqueued before it has already drained, since a writable stream processes writes in order.
+ * @function flushAndExit
+ * @description Exit the process only once everything already queued on stdout has been written.
  */
-function exitWhenStdoutFlushed(code: number): void {
+function flushAndExit(code: number | null): void {
+  code ??= 0
   process.stdout.write('', () => process.exit(code))
 }
 
@@ -40,19 +37,19 @@ async function main() {
     switch (task.tag) {
       case 'TEST_UNIT': {
         const result = await runUnitTests(task)
-        exitWhenStdoutFlushed(result.exitCode)
+        flushAndExit(result.exitCode)
         break
       }
       case 'TEST_COVERAGE': {
         await runCoverage(task)
         if (task.onlyReport) {
-          exitWhenStdoutFlushed(0)
+          flushAndExit(0)
         }
         return
       }
       case 'TEST_INTEGRATION': {
         const result = await runIntegrationTests(task)
-        exitWhenStdoutFlushed(result.exitCode)
+        flushAndExit(result.exitCode)
         break
       }
     }
@@ -78,13 +75,7 @@ async function runUnitTests(task: RunTaskUnit): Promise<ResultTest> {
       results = await runUnitTestsNative()
       break
     case 'BOTH': {
-      // Run both suites silently (only accumulating their output, not relaying it live) because
-      // each one emits its own separate "TAP version 13" document. Concatenating two raw TAP
-      // documents on stdout is not valid TAP, and Node's native-test TAP dialect (nested
-      // subtests, large stack-trace diagnostics) crashes older TAP consumers like tap-spec
-      // outright - which then throws EPIPE back into this process when it keeps writing to a
-      // closed pipe. mergeTapStreams() below produces the one valid, flattened TAP document
-      // that should actually reach stdout.
+      // mergeTapStreams() below produces the one valid, flattened TAP document.
       console.error('==== Running Legacy (Tape) unit tests ====')
       const resultsTape = await runUnitTestsTape({ silent: true })
       assert(resultsTape.exitCode !== null, 'Encountered unknown error when runUnitTestsTape().')
@@ -127,15 +118,23 @@ async function runUnitTests(task: RunTaskUnit): Promise<ResultTest> {
 async function runCoverage(task: RunTaskCoverage): Promise<void> {
   switch (task.type) {
     case 'TAPE':
-      runCoverageTape({ silent: false, noClean: false })
+      runCoverageTape({ silent: false, clean: true })
       break
     case 'NATIVE':
-      runCoverageNative({ silent: false, noClean: false })
+      runCoverageNative({ silent: false, clean: true })
       break
-    case 'BOTH':
-      // First run native check, but don't cleanup so we accumulate coverage between runs.
-      runCoverageTape({ silent: true, noClean: false })
-      runCoverageNative({ silent: true, noClean: true })
+    case 'INTEGRATION':
+      await runCoverageIntegration({ silent: true, clean: true })
+      break
+    case 'UNIT':
+      runCoverageTape({ silent: true, clean: true })
+      runCoverageNative({ silent: true, clean: false })
+      break
+    case 'ALL':
+      // Clean on the first one removes any leftover coverage results.
+      runCoverageTape({ silent: true, clean: true })
+      runCoverageNative({ silent: true, clean: false })
+      await runCoverageIntegration({ silent: true, clean: false })
       // Generate combined report.
       spawnSync(NYC_BIN, ['report', '--reporter=lcov', '--reporter=text-summary'], {
         cwd: PROJECT_ROOT,
@@ -158,7 +157,7 @@ async function runCoverage(task: RunTaskCoverage): Promise<void> {
 
 type NycOptions = {
   silent: boolean
-  noClean: boolean
+  clean: boolean
 }
 
 /**
@@ -178,7 +177,7 @@ function runCoverageTape(opts: NycOptions): void {
 
   const nycArgs: string[] = []
   if (opts.silent) nycArgs.push('--silent')
-  if (opts.noClean) nycArgs.push('--no-clean')
+  if (!opts.clean) nycArgs.push('--no-clean')
   if (!opts.silent) nycArgs.push('--reporter=lcov', '--reporter=text-summary')
 
   const args = [...nycArgs, '--', TAPE_BIN, ...testFiles]
@@ -214,7 +213,7 @@ function runCoverageNative(opts: NycOptions): void {
 
   const nycArgs: string[] = []
   if (opts.silent) nycArgs.push('--silent')
-  if (opts.noClean) nycArgs.push('--no-clean')
+  if (!opts.clean) nycArgs.push('--no-clean')
   if (!opts.silent) nycArgs.push('--reporter=lcov', '--reporter=text-summary')
 
   const args = [
@@ -234,6 +233,58 @@ function runCoverageNative(opts: NycOptions): void {
 
   if (result.error) {
     console.error('Failed to run native tests with coverage:', result.error.message)
+    process.exit(1)
+  }
+}
+
+/**
+ * @function runCoverageIntegration
+ * @description Runs the integration tests with coverage.
+ */
+async function runCoverageIntegration(opts: NycOptions) {
+  console.log('runCoverageIntegration')
+  const files = findFiles(
+    path.join(PROJECT_ROOT, 'src'),
+    '**/*.int.ts'
+  ).map(f => path.join(PROJECT_ROOT, 'src', f))
+
+  if (files.length === 0) {
+    return { output: '', exitCode: 0 }
+  }
+
+  process.once('uncaughtException', async (err) => {
+    console.error(`Uncaught exception:`, err)
+    process.exit(1)
+  })
+
+  process.once('unhandledRejection', async (err) => {
+    console.error(`Unhandled rejection:`, err)
+    process.exit(1)
+  })
+
+  const nycArgs: string[] = []
+  if (opts.silent) nycArgs.push('--silent')
+  if (!opts.clean) nycArgs.push('--no-clean')
+  if (!opts.silent) nycArgs.push('--reporter=lcov', '--reporter=text-summary')
+
+  const args = [
+    ...nycArgs,
+    '--',
+    process.execPath,
+    '--require', 'ts-node/register',
+    '--test',
+    '--test-reporter=tap',
+    '--test-concurrency=2',
+    ...files
+  ]
+  const result = spawnSync(NYC_BIN, args, {
+    cwd: PROJECT_ROOT,
+    stdio: 'inherit',
+    env: process.env
+  })
+
+  if (result.error) {
+    console.error('Failed to run integration tests with coverage:', result.error.message)
     process.exit(1)
   }
 }
@@ -385,8 +436,6 @@ async function runIntegrationTests(task: RunTaskIntegration): Promise<ResultTest
   tapStream.pipe(process.stdout)
   await finished(testStream)
 
-  // TODO: figure out how to export to xml to be compatible with circleci.
-
   return {
     output: '',
     exitCode
@@ -443,7 +492,7 @@ const parseUnitTestOptions = (args: Array<string>): Omit<RunTaskUnit, 'tag'> => 
 }
 
 const parseCoverageOptions = (args: Array<string>): Omit<RunTaskCoverage, 'tag'> => {
-  let type = 'BOTH' as RunTaskUnit['type']
+  let type = 'ALL' as RunTaskCoverage['type']
   let onlyReport = false
   args.forEach(arg => {
     const matchType = arg.match(/--type=(.*)$/)
@@ -452,7 +501,9 @@ const parseCoverageOptions = (args: Array<string>): Omit<RunTaskCoverage, 'tag'>
       switch (matchType[1]) {
         case 'tape': type = 'TAPE'; return
         case 'native': type = 'NATIVE'; return
-        case 'both': type = 'BOTH'; return
+        case 'integration': type = 'INTEGRATION'; return
+        case 'all': type = 'ALL'; return
+        case 'unit': type = 'UNIT'; return
         default: {
           throw new Error(`Invalid --type=${matchType[1]}, expected: tape | native | both .`)
         }
@@ -464,7 +515,8 @@ const parseCoverageOptions = (args: Array<string>): Omit<RunTaskCoverage, 'tag'>
       return
     }
 
-    throw new Error(`unhandled arg: ${arg}. Supported args for coverage are:\n  --type=[tape|native|both]\n  --only-report .`)
+    throw new Error(`unhandled arg: ${arg}. Supported args for coverage are:\n` + 
+      ` --type=[tape|native|both]\n  --only-report .`)
   })
 
   return {
@@ -530,7 +582,6 @@ Usage:
   'integration'   : Run the integration tests.
   'functional'    : *Preview - not yet implemented* Run the functional tests.
 
-
   Examples:
 
   # Run the unit tests.
@@ -547,6 +598,9 @@ Usage:
 
   # Run coverage report only (don't check thresholds)
   ./testing/run.ts coverage --only-report
+
+  # Check the accumulated coverage across all test types.
+  ./testing/run.ts coverage --type=all
 
   # Run all of the integration tests.
   ./testing/run.ts integration
