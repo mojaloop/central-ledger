@@ -37,12 +37,12 @@ const EventSdk = require('@mojaloop/event-sdk')
 const span = EventSdk.Tracer.createSpan('thing')
 span.audit('Hopefully we dont see this!')
 
-import assert from "assert"
-import { execAsync } from "./exec-async"
+import assert from 'assert'
+import { execAsync } from './exec-async'
 
 import Cache from '../lib/cache'
-import { makeConfig } from "../lib/config/resolver"
-import { deepMerge } from "../lib/config/util"
+import { makeConfig } from '../lib/config/resolver'
+import { assertNestedFields, deepMerge } from '../lib/config/util'
 import Db from '../lib/db'
 import Enums from '../lib/enumCached'
 import { Enum } from '@mojaloop/central-services-shared'
@@ -66,14 +66,14 @@ import ProxyCache from '../lib/proxyCache'
 const BatchPositionModelCached = require('../models/position/batchCached')
 const ExternalParticipantCached = require('../models/participant/externalParticipantCached')
 
-import Logger from "@mojaloop/central-services-logger"
+import Logger from '@mojaloop/central-services-logger'
 import knex from 'knex'
-import { ApplicationConfig, overrideForTesting, RecursivePartial, resetOverride } from "../lib/config"
-import { randomAvailablePort } from "./util"
-import { Consumer } from "./kafka"
-import PRNG from "./prng"
-import MockClock, { Clock } from "./mock-clock"
-import { Message } from "node-rdkafka"
+import { ApplicationConfig, overrideForTesting, RecursivePartial, resetOverride } from '../lib/config'
+import { randomAvailablePort } from './util'
+import { Consumer } from './kafka'
+import PRNG from './prng'
+import MockClock, { Clock } from './mock-clock'
+import { Message } from 'node-rdkafka'
 
 const logger = Logger.child({ scope: 'harness' })
 
@@ -124,6 +124,8 @@ export default class Harness {
   private applicationConfig: ApplicationConfig | null = null;
   private omniConsumer: Consumer | null = null;
   private messageQueue: Array<MojaloopKafkaMessage> = []
+  private messageQueuePerId: Record<string, Array<MojaloopKafkaMessage>> = {}
+
   private positionHandlerType: 'NON_BATCH' | 'BATCH' = 'NON_BATCH'
 
   /**
@@ -393,33 +395,124 @@ export default class Harness {
     const parsed = JSON.parse(messageValueStr)
     assert(parsed)
 
-    assert(message.timestamp, 'message.timestamp is not defined.')
-
     const mojaloopKafkaMessage = {
       ...message,
       valueStr: messageValueStr,
       valueParsed: parsed
     } as MojaloopKafkaMessage
-    const lastMessage = this.peekMessageQueue()
-    const lastTimestamp = lastMessage ? lastMessage.timestamp : 0
-    // Even if the message is outdated, still append to the message queue instead of dropping it.
-    // This warning will help us catch tests that have overlapping messages.
-    if (mojaloopKafkaMessage.timestamp < lastTimestamp) {
-      const message = `appendMessageQueue() inserted a stale message with timestamp:\
-        ${mojaloopKafkaMessage.timestamp} after message with timestamp: ${lastTimestamp}.`
-      logger.warn(message)
-    }
-    this.messageQueue.push(mojaloopKafkaMessage)
-  }
 
-  /**
-   * Get the last message from the queue.
-   */
-  private peekMessageQueue(): MojaloopKafkaMessage | undefined {
-    if (this.messageQueue.length === 0) {
-      return
+    // Still push to the general queue, we use this to check messages
+    // in spoolLast().
+    this.messageQueue.push(mojaloopKafkaMessage)
+
+    // Pull out a correlation id from the message, based on the topic.
+    // Could be a transferId (in multiple places, or some other id)
+    let correlationId
+    switch (mojaloopKafkaMessage.topic) {
+      case 'topic-notification-event': {
+        assertNestedFields(parsed, 'metadata.event.action')
+        switch (parsed.metadata.event.action) {
+          // The AdminAPI doesn't let us pass through any transfer id here, so we use the
+          // `from` field to be able to match the message.
+          case 'limit-adjustment': {
+            assert(parsed.from)
+            correlationId = parsed.from
+            break;
+          }
+          case 'fx-prepare-duplicate':
+          case 'forwarded':
+          case 'fx-forwarded':
+          case 'fx-fulfil':
+          case 'fx-reserve':
+          case 'abort':
+          case 'abort-validation':
+          case 'commit':
+            {
+              assertNestedFields(parsed, 'content.uriParams.id')
+              correlationId = parsed.content.uriParams.id
+              break;
+            }
+          case 'fx-prepare': {
+            if (parsed.id) {
+              correlationId = parsed.id
+            } else {
+              assertNestedFields(parsed, 'content.uriParams.id')
+              correlationId = parsed.content.uriParams.id
+            }
+            break;
+          }
+          case 'prepare-duplicate':
+          case 'fulfil-duplicate':
+          case 'prepare': {
+            // It can either be at parsed.id, or at parsed.content.uriParams.id.
+            if (parsed.id) {
+              correlationId = parsed.id
+            } else if (parsed.content.payload.transferId) {
+              correlationId = parsed.content.payload.transferId
+            } else {
+              assertNestedFields(parsed, 'content.uriParams.id')
+              correlationId = parsed.content.uriParams.id
+            }
+            break;
+          }
+          default: {
+            if (parsed.id) {
+              correlationId = parsed.id
+            }
+          }
+        }
+        break
+      }
+      case 'topic-admin-transfer': {
+        if (parsed.id) {
+          correlationId = parsed.id
+        }
+        break;
+      }
+      case 'topic-transfer-position':
+      case 'topic-transfer-position-batch': {
+        assertNestedFields(parsed, 'metadata.event.action')
+        switch (parsed.metadata.event.action) {
+          case 'commit':
+          case 'fx-reserve':
+          case 'fx-abort':
+          case 'abort':
+          case 'abort-validation':
+          case 'timeout-reserved':
+          case 'fx-abort-validation':
+          case 'fx-timeout-reserved':
+            {
+              assertNestedFields(parsed, 'content.uriParams.id')
+              correlationId = parsed.content.uriParams.id
+              break;
+            }
+          case 'fx-prepare': {
+            assertNestedFields(parsed, 'content.payload.commitRequestId')
+            correlationId = parsed.content.payload.commitRequestId
+            break;
+          }
+          default: {
+            assertNestedFields(parsed, 'content.payload.transferId', `for action: ${parsed.metadata.event.action}`)
+            correlationId = parsed.content.payload.transferId
+          }
+        }
+        break;
+      }
+      default: {
+        throw new Error(`Unhandled topic: ${mojaloopKafkaMessage.topic}.`)
+      }
     }
-    return this.messageQueue.at(-1)
+
+    if (correlationId) {
+      let messages = this.messageQueuePerId[correlationId]
+      if (!messages) {
+        messages = []
+      }
+      messages.push(mojaloopKafkaMessage)
+      this.messageQueuePerId[correlationId] = messages
+    } else {
+      logger.warn(`No correlationId for topic: ${mojaloopKafkaMessage.topic} action: ${parsed.metadata.event.action}. `)
+    }
   }
 
   /**
@@ -538,43 +631,38 @@ environment!\n ${err.message}`)
     }
   }
 
-  public redpandaMark(): number {
-    return this.messageQueue.length
-  }
-
   /**
-   * @description Wait for redpanda to produce and consume _n_ messages.
-   */
-  public async redpandaDrain(markLast: number, numMessages: number, attempts: number = 25): Promise<void> {
+  * @description Wait for a number of messages to be emitted, relating to a given
+  *   id.
+  */
+  public async drainMessages(numMessages: number, id: string, attempts: number = 25):
+    Promise<Array<MojaloopKafkaMessage>> {
     const start = performance.now()
-    assert(markLast >= 0)
-    assert(numMessages >= 0)
-
     let delayMs = 10
-    let markNew = this.messageQueue.length
+
+    // Lazy init.
+    if (!this.messageQueuePerId[id]) {
+      this.messageQueuePerId[id] = []
+    }
+
+    let markNew
     for (let attempt = 1; attempt <= attempts; attempt++) {
       try {
-        markNew = this.messageQueue.length
-        if (markNew < markLast) {
-          throw new Error(`It appears redpanda went backwards! markLast: ${markLast} --> ${markNew}`)
-        }
-
-        if (markNew > (markLast + numMessages)) {
-          const errorMessage = `Redpanda expected to consume: ${numMessages}, but consumed: ${markNew - markLast}`
+        markNew = this.messageQueuePerId[id].length
+        if (markNew > numMessages) {
+          const errorMessage = `Redpanda expected to consume: ${numMessages} for id: ${id}, but consumed: ${markNew}.`
           logger.error(errorMessage)
-          this.printLast(markNew - markLast)
+          this.print(this.messageQueuePerId[id])
           throw new Error(errorMessage)
         }
 
-        if (markNew === (markLast + numMessages)) {
-          const end = performance.now()
-          logger.info(`Redpanda consumed ${numMessages} message${numMessages === 1 ? ' ' : 's'} after ${(end - start).toFixed(0).padStart(4)}ms.`)
-
-          // Cool down for 20ms, check that there are no late messages.
-          await new Promise(resolve => setTimeout(resolve, 20))
-          const extraMessages = this.messageQueue.length - markNew
+        if (markNew === numMessages) {
+          // Cool down for 50ms, check that there are no late messages.
+          await new Promise(resolve => setTimeout(resolve, 50))
+          const checkAgain = this.messageQueuePerId[id].length
+          const extraMessages = checkAgain - markNew
           assert(extraMessages >= 0)
-          if (extraMessages !== 0) {
+          if (extraMessages > 0) {
             const errorMessage = `After cooldown, Redpanda consumed ${extraMessages} extra message${extraMessages === 1 ? ' ' : 's'}.`
             logger.error(errorMessage)
 
@@ -582,18 +670,21 @@ environment!\n ${err.message}`)
             throw new Error(errorMessage)
           }
 
-          return
+          const messages = structuredClone(this.messageQueuePerId[id])
+          // Clear the queue.
+          this.messageQueuePerId[id] = []
+          return messages
         }
 
         throw new Error('Not ready')
       } catch (err: any) {
         if (attempt === attempts) {
-          const errorMessage = `redpandaDrain() failed to consume ${numMessages} messages after ${attempts} attempts.\
-Found only ${markNew - markLast} new messages.`
-          logger.error(errorMessage)
-          this.printLast(markNew - markLast)
-
-          throw new Error(errorMessage)
+          const error = new Error(`drainMessages() failed to consume ${numMessages} for id: ${id} after ${attempts} attempts.\
+Found only ${markNew} new messages.`)
+          logger.error(error.message)
+          logger.error(error.stack)
+          this.print(this.messageQueuePerId[id])
+          throw error
         }
 
         if (err.message !== 'Not ready') {
@@ -601,12 +692,13 @@ Found only ${markNew - markLast} new messages.`
           throw err
         }
 
-        logger.info(`redpandaDrain() waiting for Redpanda: [attempt ${`${attempt}`.padStart(3)}/${attempts}, delayMs: ${delayMs}].`)
         // Slowly back off.
         delayMs = Math.floor((delayMs * 1.1) + 10)
         await new Promise(resolve => setTimeout(resolve, delayMs))
       }
     }
+
+    return []
   }
 
   /**
@@ -643,6 +735,22 @@ Found only ${markNew - markLast} new messages.`
       uriParams: ${msg.valueParsed.content.uriParams ?
           JSON.stringify(msg.valueParsed.content.uriParams) : ''
         }
+      valueParsed:
+      ${JSON.stringify(msg.valueParsed.content.payload, null, 2)}
+      `.replaceAll(/^\s{6}/gm, ''))
+    })
+  }
+
+  public print(messages: Array<MojaloopKafkaMessage>): void {
+    messages.forEach(msg => {
+      logger.warn(`\n
+      ts:   ${msg.timestamp}
+      topic: ${msg.topic}
+      uriParams: ${msg.valueParsed.content.uriParams ?
+          JSON.stringify(msg.valueParsed.content.uriParams) : ''
+        }
+      fspiop-source:      ${msg.valueParsed.content.headers['fspiop-source']}
+      fspiop-destination: ${msg.valueParsed.content.headers['fspiop-destination']}
       valueParsed:
       ${JSON.stringify(msg.valueParsed.content.payload, null, 2)}
       `.replaceAll(/^\s{6}/gm, ''))

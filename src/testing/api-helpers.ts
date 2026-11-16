@@ -99,10 +99,9 @@ export const createDfsp = async (harness: Harness, payload: CreateDfspPayload): 
       },
       initialPosition: limit.initialPosition
     }
-    const mark = harness.redpandaMark()
     let result = await ParticipantService.addLimitAndInitialPosition(name, payload)
     assert.equal(result, true)
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, name)
 
     result = await ParticipantService.getPositions(name, { currency })
     Snapshot.from(`{
@@ -129,13 +128,13 @@ export const createDfsp = async (harness: Harness, payload: CreateDfspPayload): 
     );
     assert(settlementAccount, 'Settlement account not found');
 
-    const mark = harness.redpandaMark()
+    const transferId = `${name}_${currency}_01`
     await ParticipantService.recordFundsInOut(
       payload,
-      { name, id: settlementAccount.participantCurrencyId, transferId: `${name}_${currency}_01` },
+      { name, id: settlementAccount.participantCurrencyId, transferId },
       harness.enums
     )
-    await harness.redpandaDrain(mark, 1)
+    await harness.drainMessages(1, transferId)
 
     // Annoyingly we still have a position update race condition here.
     await sleepSeconds(2)
@@ -234,6 +233,11 @@ export interface PaymentOptions {
   payerFsp: string,
   payeeFsp: string,
   transferId: string,
+
+  /**
+   * The commitRequestId of the linked PaymentFx.
+   */
+  linkedCommitRequestId?: string
   amountComplex: {
     amount: string,
     currency: string,
@@ -251,9 +255,8 @@ export class Payment {
   }
 
   public async prepare(): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
     this.options.transferHandler.prepare(null, this.buildMessagePrepare())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.drainMessages(2, this.options.transferId)
 
     return this
   }
@@ -317,16 +320,20 @@ export class Payment {
   }
 
   public async fulfil(state: 'COMMITTED' | 'RESERVED' = 'COMMITTED'): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
+    // const mark = this.options.harness.redpandaMark()
     await this.options.transferHandler.fulfil(null, this.buildMessageFulfil(state))
     if (this.options.fx) {
-      // If this is a properly build fx transfer, we want to consume 4 messages.
-      await this.options.harness.redpandaDrain(mark, 4)
+      // Fulfiling an FX produces 3 messages for the transferId:
+      // 1. position-batch (1st position change)
+      // 2. position-batch (2nd position change / followup for FXP-payee obligation)
+      // 3. notification-event (final commit notification)
+      await this.options.harness.drainMessages(3, this.options.transferId)
+      assert(this.options.linkedCommitRequestId)
+      await this.options.harness.drainMessages(1, this.options.linkedCommitRequestId)
       return this
     }
 
-    await this.options.harness.redpandaDrain(mark, 2)
-
+    await this.options.harness.drainMessages(2, this.options.transferId)
     return this
   }
 
@@ -338,11 +345,23 @@ export class Payment {
   }
 
   public async abort(): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
     await this.options.transferHandler.fulfil(null, this.buildMessageAbort())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.drainMessages(2, this.options.transferId)
 
     return this
+  }
+
+  getOptions() {
+    return {
+      payerFsp: this.options.payerFsp,
+      payeeFsp: this.options.payeeFsp,
+      transferId: this.options.transferId,
+      linkedCommitRequestId: this.options.linkedCommitRequestId,
+      amountComplex: this.options.amountComplex,
+      date: this.options.date,
+      expirySeconds: this.options.expirySeconds,
+      fx: this.options.fx,
+    }
   }
 }
 
@@ -359,6 +378,7 @@ export class PaymentBuilder {
   private _date: Date = new Date();
   private expirySeconds: number = 30;
   private _fx: boolean = false
+  private _linkedCommitRequestId: string | undefined = undefined
   private amountComplex: {
     amount: string,
     currency: string
@@ -399,8 +419,9 @@ export class PaymentBuilder {
     return this;
   }
 
-  fx(fx: boolean = true): this {
-    this._fx = fx
+  fx(linkedCommitRequestId: string): this {
+    this._fx = true
+    this._linkedCommitRequestId = linkedCommitRequestId
 
     return this
   }
@@ -428,6 +449,7 @@ export class PaymentBuilder {
       date: this._date,
       expirySeconds: this.expirySeconds,
       fx: this._fx,
+      linkedCommitRequestId: this._linkedCommitRequestId,
     }
 
     return new Payment(options)
@@ -455,9 +477,8 @@ export class Forex {
   public constructor(private options: ForexOptions) { }
 
   public async prepare(): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
     await this.options.transferHandler.prepare(null, this.buildMessagePrepare())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.drainMessages(2, this.options.commitRequestId)
 
     return this
   }
@@ -495,9 +516,8 @@ export class Forex {
   }
 
   public async fulfil(): Promise<this> {
-    const mark = this.options.harness.redpandaMark()
     await this.options.transferHandler.fulfil(null, this.buildMessageFulfil())
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.drainMessages(2, this.options.commitRequestId)
 
     return this
   }
@@ -539,9 +559,8 @@ export class Forex {
     const messageKafka = buildMessageAbortFx(
       this.options.harness, putTransfer, this.options.commitRequestId,
     )
-    const mark = this.options.harness.redpandaMark()
     await this.options.transferHandler.fulfil(null, messageKafka)
-    await this.options.harness.redpandaDrain(mark, 2)
+    await this.options.harness.drainMessages(2, this.options.commitRequestId)
 
     return this
   }

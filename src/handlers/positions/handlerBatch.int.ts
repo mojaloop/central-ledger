@@ -38,6 +38,7 @@ import TransferFacade from "../../models/transfer/facade"
 import handlerAll from '../transfers/handler'
 import handlerPrepare from '../transfers/prepare'
 import PositionBatchHandler from './handlerBatch'
+import { assertNestedFields } from '../../lib/config/util'
 
 const harness = Harness.getInstance()
 
@@ -63,9 +64,8 @@ const prepareWithoutPositionProcessing = async (
   try {
     const positionMessages: Array<MojaloopKafkaMessage> = []
     for (const payment of payments) {
-      const mark = harness.redpandaMark()
       await handlerPrepare.prepare(null, [payment.buildMessagePrepare()])
-      await harness.redpandaDrain(mark, 1)
+      await harness.drainMessages(1, payment.getOptions().transferId)
 
       const [positionMessage] = harness.spoolLast(1)
       assert.equal(positionMessage.topic, TOPIC_POSITION_UNCONSUMED)
@@ -92,10 +92,12 @@ const processAsOneBatch = async (positionMessages: Array<MojaloopKafkaMessage>):
     value: message.valueParsed
   }))
 
-  const mark = harness.redpandaMark()
   await PositionBatchHandler.positions(null, batch)
   // One notification per position message.
-  await harness.redpandaDrain(mark, positionMessages.length)
+  for (const message of positionMessages) {
+    assertNestedFields(message, 'valueParsed.content.payload.transferId')
+    await harness.drainMessages(1, message.valueParsed.content.payload.transferId)
+  }
   return harness.spoolLastPayload(positionMessages.length)
 }
 
