@@ -27,7 +27,7 @@ export const TAP_XUNIT_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/tap-xuni
  * @description Exit the process only once everything already queued on stdout has been written.
  */
 function flushAndExit(code: number | null): void {
-  if (code === null) code = 0
+  code ??= 0
   process.stdout.write('', () => process.exit(code))
 }
 
@@ -124,7 +124,7 @@ async function runCoverage(task: RunTaskCoverage): Promise<void> {
       runCoverageNative({ silent: false, clean: true })
       break
     case 'INTEGRATION':
-      runCoverageIntegration({ silent: true, clean: true })
+      await runCoverageIntegration({ silent: true, clean: true })
       break
     case 'UNIT':
       runCoverageTape({ silent: true, clean: true })
@@ -134,7 +134,7 @@ async function runCoverage(task: RunTaskCoverage): Promise<void> {
       // Clean on the first one removes any leftover coverage results.
       runCoverageTape({ silent: true, clean: true })
       runCoverageNative({ silent: true, clean: false })
-      runCoverageIntegration({ silent: true, clean: false })
+      await runCoverageIntegration({ silent: true, clean: false })
       // Generate combined report.
       spawnSync(NYC_BIN, ['report', '--reporter=lcov', '--reporter=text-summary'], {
         cwd: PROJECT_ROOT,
