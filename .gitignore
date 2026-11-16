@@ -67,6 +67,8 @@ devspace*
 
 .rush
 
-
 # Build output
 dist
+
+# TigerBeetle binary and data files for test.
+.tigerbeetle

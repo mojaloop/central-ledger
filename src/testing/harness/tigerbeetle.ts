@@ -1,0 +1,318 @@
+/*****
+ License
+ --------------
+ Copyright © 2020-2026 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
+ --------------
+
+ ******/
+
+import assert from "assert"
+import { execAsync } from "../exec-async"
+import Logger from "@mojaloop/central-services-logger"
+import { randomAvailablePort } from "../util"
+import { HarnessOptions } from "../harness";
+import path from "node:path";
+import fs, { createWriteStream, unlink } from "node:fs"
+import os from "node:os"
+import crypto from "node:crypto";
+import { Transform } from "node:stream";
+import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
+import { ChildProcess, spawn } from "node:child_process";
+
+const logger = Logger.child({ scope: 'harness' })
+
+interface HarnessOptionsTigerBeetle extends HarnessOptions {
+  pathToBinary: string,
+
+  /**
+   * Data file location. If you provide more than one, then it will fall back to other 
+   * directories in case the previous fails or runs out of space etc. This is helpful for using 
+   * RAMDisk for some installs, but automatically falling back to disk in case the RAMDisk is 
+   * not available.
+   */
+  dataDirs: Array<string>,
+  version: string
+}
+
+export interface ConnectionOptionsTigerBeetle {
+  clusterId: bigint,
+  port: number,
+}
+
+/**
+ * @class TigerBeetle
+ * @description Runs a single replica tigerbeetle cluster from the binary. If no binary is found,
+ *   downloads the binary from https://github.com/tigerbeetle/tigerbeetle/releases 
+ */
+export class TigerBeetle {
+  private logger = logger.child({ scope: 'TigerBeetle' })
+  private _connectionOptions: ConnectionOptionsTigerBeetle | null = null
+  private pathToBinary: string
+  private dataFileName: string
+  private pathToDataFile: string | null = null
+  private pathToDataFiles: Array<string>
+  private child: ChildProcess | null = null
+
+  private readonly releases = [
+    {
+      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-aarch64-linux.zip',
+      checksum: '413994920fe48b04f5aa86895b7a1d9d98d14803b29d4e91d2a6d0098fff4ef2',
+    },
+    {
+      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-universal-macos.zip',
+      checksum: '4e085eaffc66c2ed82e7f94a8137c468256d2fb0b35152ccf903cc6676c22940'
+    },
+    {
+      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-x86_64-linux.zip',
+      checksum: 'af71f2c0057e3b409bf79940fa94894b738187b0d4f1e711097bca15df5d8cd4',
+    },
+    {
+      url: 'https://github.com/tigerbeetle/tigerbeetle/releases/download/0.17.9/tigerbeetle-x86_64-windows.zip',
+      checksum: 'aaac96a69380b33a0e63f981635c24924d610f28c3f41637f9e57b8caa0e5e77'
+    }
+  ]
+
+  constructor(private options: HarnessOptionsTigerBeetle) {
+    assert(options)
+    assert(options.id)
+    assert(options.pathToBinary)
+
+    if (options.version !== '0.17.9') {
+      throw new Error(`Currently only TigerBeetle verion '0.17.9' is supported.`)
+    }
+
+    this.dataFileName = `0_0.${options.id}.tigerbeetle`
+    this.pathToDataFiles = this.options.dataDirs.map(dir => path.join(dir, this.dataFileName))
+    this.pathToBinary = options.pathToBinary
+  }
+
+  public async up(): Promise<void> {
+    const timerStart = performance.now()
+    this.logger.debug(`up()`)
+    const port = await randomAvailablePort()
+
+    await this.checkBinaryOrDownload()
+    await this.createDataFileIfNotExists()
+    assert(this.pathToDataFile, 'Expected pathToDataFile to exist.')
+
+    this.logger.info(`TigerBeetle starting at localhost:${port}`)
+    this.logger.info(`$ ${this.pathToBinary} start --addresses=${port} ${this.pathToDataFile}`)
+    this.child = spawn(this.pathToBinary, [
+      'start',
+      `--addresses=${port}`,
+      this.pathToDataFile
+    ], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      detached: false
+    })
+
+    this.child.stderr && this.child.stderr.on('data', (data) => {
+      this.logger.info(`tigerbeetle stderr: ${data}`);
+    });
+
+    this._connectionOptions = { clusterId: 0n, port }
+
+    logger.warn(`Connect to the repl with: '.tigerbeetle/tigerbeetle repl --addresses=${port} --cluster=0'`)
+
+    const timerEnd = performance.now()
+    this.logger.info(`up() - took: ${Math.floor(timerEnd - timerStart)}ms`)
+  }
+
+  get connectionOptions() {
+    if (!this._connectionOptions) {
+      throw new Error(`Connection options not defined. Have you called up()?`)
+    }
+    return this._connectionOptions
+  }
+
+  public async down(): Promise<void> {
+    // Kill the TigerBeetle Process.
+    if (this.child) {
+      await new Promise<void>(resolve => {
+        if (!this.child) return
+
+        this.child.on('exit', () => resolve())
+        this.child.kill('SIGTERM')
+      })
+      this.child = null
+    }
+
+    // Clean up the datafile.
+    if (this.pathToDataFile) {
+      fs.rmSync(this.pathToDataFile, { force: false })
+    }
+  }
+
+  private async checkBinaryOrDownload(): Promise<void> {
+    const dir = path.dirname(this.pathToBinary)
+    fs.mkdirSync(dir, { recursive: true })
+    const stats = fs.statSync(this.pathToBinary, { throwIfNoEntry: false })
+    if (stats) {
+      // We have a TigerBeetle binary. 
+      return
+    }
+
+    const release = this.getRelease()
+    await this.downloadRelease(release.url, this.pathToBinary, release.checksum)
+  }
+
+  /**
+   * Try and make a data file at the pathToDataFiles[0], falling back to other paths if it fails
+   * and others are provided.
+   */
+  private async createDataFileIfNotExists(): Promise<void> {
+    assert(this.options.dataDirs.length === this.pathToDataFiles.length)
+    for (let idx = 0; idx < this.pathToDataFiles.length; idx++) {
+      const pathToDataFile = this.pathToDataFiles[idx]
+      const dataDir = this.options.dataDirs[idx]
+
+      try {
+        fs.mkdirSync(dataDir, { recursive: true })
+      } catch (err) {
+        continue
+      }
+      const stats = fs.statSync(pathToDataFile, { throwIfNoEntry: false })
+      if (stats) {
+        this.logger.info(`createDataFileIfNotExists() - datafile exists at ${pathToDataFile}.`)
+        // Data file already exists. Don't do anything.
+        this.pathToDataFile = pathToDataFile
+        return
+      }
+
+      this.logger.info(`createDataFileIfNotExists() - no datafile found at ${dataDir}. `
+        + `Creating a new one with\n`
+        + `'tigerbeetle format --cluster=0 --replica=0 --replia-count=1 --development ${pathToDataFile}'.`
+      )
+      try {
+        const {stderr} = await execAsync(`${this.pathToBinary} format --cluster=0 ` +
+          `--replica=0 --replica-count=1 --development ${pathToDataFile}`
+        )
+        this.logger.info(`tigerbeetle stderr: ${stderr}`)
+
+        // We made a data file.
+        this.pathToDataFile = pathToDataFile
+        return
+      } catch (err) {
+        continue
+      }
+    }
+
+    if (!this.pathToDataFile) {
+      const msg = `Failed to create data file in the following locations: ` +
+        `[${this.pathToDataFiles.join(',')}]`
+      this.logger.error(msg)
+      throw new Error(msg)
+    }
+  }
+
+  private async downloadRelease(url: string, to: string, checksum: string): Promise<void> {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`downloadRelease() failed with error: ${response.status}.`)
+    }
+    const hash = crypto.createHash('sha256')
+    const hashTransform = new Transform({
+      transform(chunk, encoding, callback) {
+        hash.update(chunk)
+        callback(null, chunk)
+      }
+    })
+
+    assert(response.body, 'Expected response.body to be defined.')
+
+    // Download while calculating the hash as we go. Append the harnessId so racing downloads
+    // don't delete eachother's files.
+    const toZipDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tmp-'))
+    const toZip = path.join(toZipDir, 'tigerbeele.zip')
+    const toUnzip = path.join(toZipDir, 'tigerbeetle')
+    await pipeline(
+      Readable.fromWeb(response.body),
+      hashTransform,
+      createWriteStream(toZip)
+    )
+    const hashFound = hash.digest('hex')
+    if (hashFound !== checksum) {
+      fs.unlinkSync(toZip)
+      throw new Error(`downloadRelease() checksum mismatch. Expected: ${checksum}, got ${hashFound}.`)
+    }
+
+    // Extract zip.
+    await execAsync(`unzip -o "${toZip}" tigerbeetle -d "${toZipDir}"`)
+
+    // Make executable.
+    fs.chmodSync(toUnzip, '0755')
+
+    try {
+      // Move file to destination atomically with rename.
+      fs.renameSync(toUnzip, to)
+    } catch (err: any) {
+      if (err.code === 'EEXIST') {
+        this.logger.warn(`Tried to copy: ${toUnzip} -> ${to}, but destination already exists.`)
+      } else {
+        this.logger.warn(`Tried to copy: ${toUnzip} -> ${to}, failed with error: ${err.message}`)
+        throw err
+      }
+    }
+  }
+
+  private getRelease(): { url: string, checksum: string } {
+    let suffix = ''
+    switch (process.arch) {
+      case "arm":
+      case "arm64":
+        switch (process.platform) {
+          case "darwin":
+            suffix = 'universal-macos.zip'
+            break;
+          case "linux":
+            suffix = 'aarch64-linux.zip'
+            break;
+          default:
+            throw new Error(`getRelease() unsupported arch: ${process.arch} + platform: ${process.platform}`)
+        }
+        break;
+      case "x64":
+        switch (process.platform) {
+          case "darwin":
+            suffix = 'universal-macos.zip'
+            break;
+          case "linux":
+            suffix = 'x86_64-linux.zip'
+            break;
+          case "win32":
+            suffix = 'x86_64-windows.zip'
+          default:
+            throw new Error(`getRelease() unsupported arch: ${process.arch} + platform: ${process.platform}`)
+        }
+        break;
+      default:
+        throw new Error(`getRelease() unsupported arch: ${process.arch}`)
+    }
+
+    assert(suffix)
+    const filtered = this.releases.find(release => release.url.endsWith(suffix))
+    assert(filtered, `No release found in list for ${suffix}`)
+
+    return filtered
+  }
+}
