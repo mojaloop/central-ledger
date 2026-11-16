@@ -187,12 +187,14 @@ describe('handlers/fx-abort', () => {
 
     await payment.prepare()
 
-    // Need to do a custom fulfil here, as we expect 3 messages due to FX.
+    // Need to do a custom fulfil here, as we expect 3 messages for the payment.
     await TransferHandler.fulfil(null, payment.buildMessageAbort())
     // 1: fx reject notification
     // 2. position update
     // 3. payer notification
     await harness.drainMessages(3, '6000001')
+    // Then the final message related to the fx.
+    await harness.drainMessages(1, '5000001')
 
     const transfer = await TransferFacade.getById('6000001')
     assert.equal(transfer.transferState, 'ABORTED_ERROR')
