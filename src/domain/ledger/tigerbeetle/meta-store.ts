@@ -1327,8 +1327,8 @@ export default class MetaStore {
       await this.db.raw(
         `UPDATE ?? SET fulfilment = CASE ${fulfilmentClauses} END,` +
         `fulfiledAt = CASE ${fulfiledAtClauses} END` +
-        ` WHERE id in (${ids.map(() => '?').join(',')})`,
-        ['metaFulfil', ...bindings, ...ids]
+        ` WHERE id in (${ids.map(id => `'${id}'`).join(',')})`,
+        ['metaFulfil']
       )
 
       return updates.map(update => ({

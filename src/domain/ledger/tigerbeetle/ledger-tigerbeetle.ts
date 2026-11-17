@@ -220,7 +220,7 @@ export class LedgerTigerBeetle implements Ledger {
     assertBoolean(cmd.isProxy)
 
     if (!cmd.ids) {
-      const idsToCreate = cmd.currencies.length * 13
+      const idsToCreate = cmd.currencies.length * 14
       cmd.ids = Array.from({ length: idsToCreate }, (_) => Number(this.deps.helper.idSmall()))
     }
     try {
