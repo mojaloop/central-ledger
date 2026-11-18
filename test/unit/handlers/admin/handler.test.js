@@ -16,6 +16,13 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
 
+// The admin API attaches the database enums to every message (ParticipantService.recordFundsInOut). The
+// handler needs these two to look up the settlement account a recordFundsOut reservation was made on.
+const requestEnums = {
+  transferParticipantRoleType: { HUB: 3, DFSP_SETTLEMENT: 4 },
+  ledgerEntryType: { RECORD_FUNDS_IN: 9, RECORD_FUNDS_OUT: 10 }
+}
+
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
   payerFsp: 'dfsp1',
@@ -95,7 +102,7 @@ const messageProtocolRecordFundsIn = {
       params: {
         id: 1
       },
-      enums: {}
+      enums: requestEnums
     }
   },
   pp: ''
@@ -125,7 +132,7 @@ const messageProtocolrecordFundsOutPrepareReserve = {
       params: {
         id: 1
       },
-      enums: {}
+      enums: requestEnums
     }
   },
   pp: ''
@@ -163,7 +170,7 @@ const messageProtocolRecordFundsOutCommit = {
       params: {
         id: 1
       },
-      enums: {}
+      enums: requestEnums
     }
   },
   pp: ''
@@ -203,7 +210,7 @@ const messageProtocolRecordFundsOutAbort = {
       params: {
         id: 1
       },
-      enums: {}
+      enums: requestEnums
     }
   },
   pp: ''
@@ -246,7 +253,7 @@ const messageProtocolWrongAction = {
         params: {
           id: 1
         },
-        enums: {}
+        enums: requestEnums
       }
     },
     pp: ''
@@ -320,6 +327,9 @@ Test('Admin handler', adminHandlerTest => {
     sandbox.stub(TransferService, 'getTransferStateChange')
     sandbox.stub(TransferService, 'getTransferState')
     sandbox.stub(TransferService, 'getTransferById')
+    // Every fixture addresses settlement account 1, so the transfer is a recordFundsOut reservation made on that
+    // account. The other cases (a P2P transfer, another account) are in src/handlers/admin/handler.int.ts.
+    sandbox.stub(TransferService, 'getTransferInfoToChangePosition').returns({ participantCurrencyId: 1 })
     sandbox.stub(Kafka)
     sandbox.stub(Comparators)
     Kafka.transformAccountToTopicName.returns(topicName)

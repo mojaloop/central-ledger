@@ -3,6 +3,11 @@
   // audit-ci supports reading JSON, JSONC, and JSON5 config files.
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
-  "allowlist": [ // NOTE": Please add as much information as possible to any items added to the allowList
+  "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
+    // GHSA-fc5q-39xc-vjpf (CVE-2026-112366): picomatch <=4.0.7 ReDoS via repeated extglobs. No patched version yet.
+    // Risk: needs an attacker-supplied glob pattern. The only runtime use is require-glob with a fixed pattern
+    // (src/settlement/handlers/register.js); all other paths are dev tooling.
+    // Remove once picomatch publishes a fix.
+    "GHSA-fc5q-39xc-vjpf"
   ]
 }

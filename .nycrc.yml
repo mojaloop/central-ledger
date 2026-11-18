@@ -43,6 +43,17 @@ exclude: [
   'src/**/*.test.ts',
   'src/testing/**',     # Test runner.
   'src/**/*.unit.ts',   # Unit test files.
-  'src/**/*.int.ts'    # Integration test tests.
+  'src/**/*.int.ts',    # Integration test tests.
+
+  # TigerBeetle related new files, will be removed in a followup PR to 
+  # https://github.com/mojaloop/central-ledger/pull/1314 
+  # 
+  'src/messaging/message-bus.ts',
+  'src/messaging/helper.ts',
+  'src/handlers/timeout-v2.ts',
+  'src/handlers/payment-prepare.ts',
+  'src/handlers/payment-fulfil.ts',
+  'src/handlers/dispatch-transfer-handler.ts',
+  'src/domain/ledger/shared/types.ts'
 ]
 ## todo: increase test coverage before merging feat/fx-impl to main branch

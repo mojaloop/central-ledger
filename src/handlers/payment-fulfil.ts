@@ -1,0 +1,272 @@
+/*****
+ License
+ --------------
+ Copyright © 2020-2026 Mojaloop Foundation
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Mojaloop Foundation for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Mojaloop Foundation
+ - Name Surname <name.surname@mojaloop.io>
+
+ * TigerBeetle
+ - Lewis Daly <lewis@tigerbeetle.com>
+ --------------
+ ******/
+
+import assert from 'node:assert'
+import { ApplicationConfig } from '../lib/config'
+import { logger } from '../shared/logger'
+import { Enum, Util, EventActionEnum } from '@mojaloop/central-services-shared'
+const { decodePayload } = Util.StreamingProtocol
+import { Effect } from "../messaging/message-bus";
+import { assertNestedFields } from "../lib/config/util"
+import { Ledger } from '../domain/ledger/shared/types'
+
+interface Dependencies {
+  config: ApplicationConfig
+  ledger: Ledger
+}
+
+export type CommitPaymentDto = {
+  transferState: 'COMMITTED' | 'RESERVED' | 'RESERVED_FORWARDED',
+  fulfilment: string,
+  completedTimestamp: string,
+} | {
+  transferState: 'ABORTED',
+  // Not sure if this is here.
+  completedTimestamp: string,
+  errorInformation: {
+    errorCode: string,
+    errorDescription: string,
+    extensionList?: {
+      extension: Array<{
+        key: string,
+        value: string
+      }>
+    }
+  }
+}
+export type CommitPaymentDtoAborted = Extract<CommitPaymentDto, { transferState: 'ABORTED' }>;
+
+export type FulfilHandlerAction = EventActionEnum.ABORT
+  | EventActionEnum.COMMIT
+  | EventActionEnum.RESERVE;
+
+export interface FulfilHandlerInput {
+  message: any;
+  payload: CommitPaymentDto
+  headers: Record<string, any>;
+  /**
+   * The Mojaloop logical transfer id.
+   */
+  transferId: string;
+  action: FulfilHandlerAction;
+  eventType: string;
+  kafkaTopic: string;
+  /**
+   * The DFSP ID of the caller, from the FSPIOP-Source header.
+   */
+  callerDfspId: string;
+
+  /**
+   * The DFSP ID of the destination, from the FSPIOP-Destination header.
+   */
+  destinationDfspId: string;
+  /**
+   * The FSPIOP API version from the content-type header.
+   */
+  apiVersion: string;
+}
+
+export enum PaymentFulfilResultType {
+  /**
+   * Fulfil step completed validation. Payment was either fulfilled or aborted successfully
+   */
+  PASS = 'PASS',
+
+  /**
+   * Duplicate payment found in a finalized state
+   */
+  DUPLICATE_FINAL = 'DUPLICATE_FINAL',
+
+  /**
+   * Duplicate payment found that is still being processed
+   */
+  DUPLICATE_NON_FINAL = 'DUPLICATE_NON_FINAL',
+
+  /**
+   * Payment failed validation.
+   */
+  FAIL_VALIDATION = 'FAIL_VALIDATION',
+
+  /**
+   * Catch-all Payment failed for another reason.
+   */
+  FAIL_OTHER = 'FAIL_OTHER',
+}
+
+export type FulfilContextAborted = {
+  id: string,
+  abortedAt: Date
+}
+
+export type FulfilContextFulfiled = {
+  id: string,
+  fulfilment: string,
+  fulfiledAt: Date,
+}
+
+export type FulfilContext = FulfilContextAborted | FulfilContextFulfiled
+
+export enum PaymentFulfilResultTag {
+  OK = 'OK',
+  ABORT_OK = 'ABORT_OK',
+  DUPLICATE_FINAL = 'DUPLICATE_FINAL',
+  DUPLICATE_NON_FINAL = 'DUPLICATE_NON_FINAL',
+  FAIL_VALIDATION = 'FAIL_VALIDATION',
+  FAIL_OTHER = 'FAIL_OTHER',
+  INVALID_FULFILMENT = 'INVALID_FULFILMENT',
+  MODIFIED = 'MODIFIED',
+  EXPIRED = 'EXPIRED',
+  FULFIL_NEXT = 'FULFIL_NEXT',
+}
+
+export type PaymentFulfilResultPartial = {
+  tag: PaymentFulfilResultTag.OK,
+  context: FulfilContext
+  fxEffect?: Effect
+} | {
+  // The Payee aborted the payment succesfully.
+  tag: PaymentFulfilResultTag.ABORT_OK,
+  context: FulfilContext
+} | {
+  tag: PaymentFulfilResultTag.DUPLICATE_FINAL
+  context: FulfilContext,
+} | {
+  tag: PaymentFulfilResultTag.DUPLICATE_NON_FINAL
+} | {
+  tag: PaymentFulfilResultTag.FAIL_VALIDATION
+  failureReasons: Array<string>
+} | {
+  tag: PaymentFulfilResultTag.FAIL_OTHER
+} | {
+  tag: PaymentFulfilResultTag.INVALID_FULFILMENT
+} | {
+  tag: PaymentFulfilResultTag.MODIFIED
+} | {
+  tag: PaymentFulfilResultTag.EXPIRED
+} | {
+  // A special 'internal' state for unfused fulfil + position handlers.
+  tag: PaymentFulfilResultTag.FULFIL_NEXT
+  effects: Array<Effect>
+}
+
+export type PaymentFulfilResult = {
+  input: FulfilHandlerInput
+} & PaymentFulfilResultPartial
+
+export class PaymentFulfilHandler {
+  constructor(private deps: Dependencies) { }
+
+  /**
+   * Handle a batch of messages coming off of Kafka.
+   */
+  async handle(error: any, messages: any): Promise<Array<PaymentFulfilResult>> {
+    if (error) {
+      throw error
+    }
+
+    assert(Array.isArray(messages))
+    if (messages.length === 0) {
+      logger.debug('PaymentFulfilHandler.handle() - received empty batch, nothing to process');
+      return []
+    }
+    logger.debug(`PaymentFulfilHandler.handle() - processing batch of ${messages.length} messages`)
+    const inputs = messages
+      .map(message => this.extractMessageData(message))
+      .filter(input => {
+        // This check should happen at the ml-api-adapter. Central-ledger shouldn't have to worry
+        // about validating the messages based on the API version, in fact it shouldn't have any
+        // notion of 'apiVersion' at all.
+        if (input.apiVersion === '1.0' && input.payload.transferState === 'RESERVED') {
+          logger.error(`TransferState 'RESERVE' is not supported in FSPIOP v1.0. Ignoring this message.`)
+          return false
+        }
+        return true
+      })
+    if (inputs.length === 0) {
+      return []
+    }
+    return this.deps.ledger.fulfil(inputs)
+  }
+
+  private extractMessageData(message: any): FulfilHandlerInput {
+    assertNestedFields(message, 'value.metadata.event')
+
+    const payloadEncoded = message.value.content.payload
+    const payload = decodePayload(payloadEncoded, {}) as CommitPaymentDto
+    const eventType = message.value.metadata.event.type;
+    const headers = message.value.content.headers;
+
+    const contentTypeStr = headers['content-type']
+    assert(contentTypeStr, 'No `content-type` header found.')
+    assert(typeof contentTypeStr === 'string', '`content-type` header should be a string')
+    const [_, apiVersionStr] = contentTypeStr.split('=')
+    assert(apiVersionStr, 'Malformed `content-type` string.')
+
+    assert(message.value.content.uriParams)
+    assert(message.value.content.uriParams.id)
+    const transferId = message.value.content.uriParams.id
+    assert(transferId, 'could not parse transferId')
+
+    const actionStr = message.value.metadata.event.action
+    assert(actionStr)
+    let action: FulfilHandlerAction
+    switch (actionStr) {
+      case Enum.Events.Event.Action.ABORT:
+      case Enum.Events.Event.Action.COMMIT:
+      case Enum.Events.Event.Action.RESERVE:
+        action = actionStr as FulfilHandlerAction
+        break;
+      case Enum.Events.Event.Action.BULK_ABORT:
+      case Enum.Events.Event.Action.BULK_COMMIT:
+      default:
+        throw new Error(`FusedFulfilHandler.extractMessageData() - unexpected action: ${actionStr}.`)
+    }
+
+    // Extract caller DFSP ID from FSPIOP-Source header.
+    const callerDfspId = headers['fspiop-source'];
+    assert(callerDfspId, '`callerDfspId` is required.');
+    assert(typeof callerDfspId === 'string', '`callerDfspId` must be a string.');
+    const destinationDfspId = headers['fspiop-destination']
+    assert(destinationDfspId, '`destinationDfspId` is required.');
+    assert(typeof destinationDfspId === 'string', '`destinationDfspId` must be a string.');
+
+    return {
+      message,
+      payload,
+      headers,
+      transferId,
+      action,
+      eventType,
+      kafkaTopic: message.topic,
+      callerDfspId,
+      destinationDfspId,
+      apiVersion: apiVersionStr
+    };
+  }
+}

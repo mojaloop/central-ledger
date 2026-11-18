@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.4.0](https://github.com/mojaloop/central-ledger/compare/v20.3.3...v20.4.0) (2026-11-12)
+
+
+### Features
+
+* `ledger` interface, message bus abstraction ([#1314](https://github.com/mojaloop/central-ledger/issues/1314)) ([5186ed7](https://github.com/mojaloop/central-ledger/commit/5186ed71f27059b95f509d61ac955d8248ad45fd))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([bd93a5e](https://github.com/mojaloop/central-ledger/commit/bd93a5e51b7f81e35f1ee76c540a4540554983e4))
+
+### [20.3.3](https://github.com/mojaloop/central-ledger/compare/v20.3.2...v20.3.3) (2026-11-12)
+
+
+### Bug Fixes
+
+* allow aborting expired recordFundsOut reservations ([#1310](https://github.com/mojaloop/central-ledger/issues/1310)) ([bd2b8c0](https://github.com/mojaloop/central-ledger/commit/bd2b8c022a38e1d97b018f5138b757876751f54c))
+* **deps:** override mongoose to 9.11.4 to clear security advisories ([#1316](https://github.com/mojaloop/central-ledger/issues/1316)) ([6bb40cc](https://github.com/mojaloop/central-ledger/commit/6bb40cc2f776baa694de2e701b843a6d73c42f5d))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([a27ce85](https://github.com/mojaloop/central-ledger/commit/a27ce857baf6ba9493dae3cd0d78f79a9aa56aa1))
+
+### [20.3.2](https://github.com/mojaloop/central-ledger/compare/v20.3.1...v20.3.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* prepare batch liquidity loosening ([#1312](https://github.com/mojaloop/central-ledger/issues/1312)) ([bb9b115](https://github.com/mojaloop/central-ledger/commit/bb9b1150884059fc0adbe615b20fde636058eed6))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([4286e64](https://github.com/mojaloop/central-ledger/commit/4286e64e9afada6ef9fc06dd099c3002a4dca8c2))
+
 ### [20.3.1](https://github.com/mojaloop/central-ledger/compare/v20.3.0...v20.3.1) (2026-10-22)
 
 

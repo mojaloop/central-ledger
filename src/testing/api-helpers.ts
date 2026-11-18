@@ -174,6 +174,17 @@ export const getPositionAccount = async (name: string, currency: string) => {
 }
 
 /**
+ * Helper to get Settlement account.
+ */
+export const getSettlementAccount = async (name: string, currency: string) => {
+  const account = (await ParticipantService.getAccounts(name, { currency }))
+    .find(account => account.ledgerAccountType === 'SETTLEMENT')
+
+  assert(account, `No settlement account found for name: ${name} + currency: ${currency}.`)
+  return account;
+}
+
+/**
  * Helper to build both valid and invalid Mojaloop Payments. 
  * @example
  * // Create payment of $100.00 USD from dfsp_a to dfsp_b with id 1000001.
