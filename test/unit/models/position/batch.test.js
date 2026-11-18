@@ -204,8 +204,10 @@ Test('Batch model', async (positionBatchTest) => {
       knexStub.returns({
         transacting: sandbox.stub().returns({
           whereIn: sandbox.stub().returns({
-            forUpdate: sandbox.stub().returns({
-              select: sandbox.stub().returns([{ participantCurrencyId: 1 }, { participantCurrencyId: 2 }])
+            orderBy: sandbox.stub().returns({
+              forUpdate: sandbox.stub().returns({
+                select: sandbox.stub().returns([{ participantCurrencyId: 1 }, { participantCurrencyId: 2 }])
+              })
             })
           })
         })

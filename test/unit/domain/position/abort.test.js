@@ -244,28 +244,30 @@ Test('abort domain', positionIndexTest => {
   })
 
   positionIndexTest.test('processPositionAbortBin should', processPositionAbortBinTest => {
-    processPositionAbortBinTest.test('produce abort message for transfers not in the right transfer state', async (test) => {
+    processPositionAbortBinTest.test('skip abort messages for transfers not in the right transfer state, without throwing', async (test) => {
       const { abort1, abort2 } = makeAbortMessages()
       const binItems = makeBinItems([abort1, abort2])
 
-      await expectThrows(test, async () => {
-        await processPositionAbortBin(
-          binItems,
-          {
-            accumulatedPositionValue: 0,
-            accumulatedPositionReservedValue: 0,
-            accumulatedTransferStates: {
-              [abort1.value.id]: 'INVALID_STATE',
-              [abort2.value.id]: 'INVALID_STATE'
-            },
-            accumulatedFxTransferStates: {
-              'b0000001-0000-0000-0000-000000000000': 'INVALID_STATE'
-            },
-            isFx: false
-          }
-        )
-      })
+      const result = await processPositionAbortBin(
+        binItems,
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            [abort1.value.id]: 'INVALID_STATE',
+            [abort2.value.id]: 'INVALID_STATE'
+          },
+          accumulatedFxTransferStates: {
+            'b0000001-0000-0000-0000-000000000000': 'INVALID_STATE'
+          },
+          isFx: false
+        }
+      )
 
+      test.equal(result.accumulatedPositionChanges.length, 0, 'no position change')
+      test.equal(result.accumulatedTransferStateChanges.length, 0, 'no state change')
+      test.equal(result.notifyMessages.length, 0, 'nothing sent')
+      test.equal(result.followupMessages.length, 0, 'no follow-up')
       test.end()
     })
 
@@ -560,28 +562,30 @@ Test('abort domain', positionIndexTest => {
   })
 
   positionIndexTest.test('processPositionAbortBin with FX should', processPositionAbortBinTest => {
-    processPositionAbortBinTest.test('produce fx-abort message for fxTransfers not in the right transfer state', async (test) => {
+    processPositionAbortBinTest.test('skip fx-abort messages for fxTransfers not in the right transfer state, without throwing', async (test) => {
       const { fx1, fx2 } = makeFxAbortMessages()
       const binItems = makeBinItems([fx1, fx2])
 
-      await expectThrows(test, async () => {
-        await processPositionAbortBin(
-          binItems,
-          {
-            accumulatedPositionValue: 0,
-            accumulatedPositionReservedValue: 0,
-            accumulatedTransferStates: {
-              'd0000001-0000-0000-0000-000000000000': 'INVALID_STATE'
-            },
-            accumulatedFxTransferStates: {
-              [fx1.value.id]: 'INVALID_STATE',
-              [fx2.value.id]: 'INVALID_STATE'
-            },
-            isFx: true
-          }
-        )
-      })
+      const result = await processPositionAbortBin(
+        binItems,
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            'd0000001-0000-0000-0000-000000000000': 'INVALID_STATE'
+          },
+          accumulatedFxTransferStates: {
+            [fx1.value.id]: 'INVALID_STATE',
+            [fx2.value.id]: 'INVALID_STATE'
+          },
+          isFx: true
+        }
+      )
 
+      test.equal(result.accumulatedPositionChanges.length, 0, 'no position change')
+      test.equal(result.accumulatedFxTransferStateChanges.length, 0, 'no fx state change')
+      test.equal(result.notifyMessages.length, 0, 'nothing sent')
+      test.equal(result.followupMessages.length, 0, 'no follow-up')
       test.end()
     })
 
