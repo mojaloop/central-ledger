@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.5.0](https://github.com/mojaloop/central-ledger/compare/v20.4.1...v20.5.0) (2026-11-19)
+
+
+### Features
+
+* **settlement:** port central-settlement changes since the [#1286](https://github.com/mojaloop/central-ledger/issues/1286) copy [mojaloop/[#4547](https://github.com/mojaloop/central-ledger/issues/4547)] ([#1317](https://github.com/mojaloop/central-ledger/issues/1317)) ([321d551](https://github.com/mojaloop/central-ledger/commit/321d5513a80d85e8d6358856cb4d7ff53ba519f6)), closes [mojaloop/central-settlement#478](https://github.com/mojaloop/central-settlement/issues/478) [mojaloop/central-settlement#490](https://github.com/mojaloop/central-settlement/issues/490) [mojaloop/central-settlement#497](https://github.com/mojaloop/central-settlement/issues/497) [central-settlement#478](https://github.com/mojaloop/central-settlement/issues/478) [#686](https://github.com/mojaloop/central-ledger/issues/686) [mojaloop/central-ledger#1318](https://github.com/mojaloop/central-ledger/issues/1318) [#1318](https://github.com/mojaloop/central-ledger/issues/1318) [#1318](https://github.com/mojaloop/central-ledger/issues/1318) [mojaloop/central-ledger#1318](https://github.com/mojaloop/central-ledger/issues/1318) [mojaloop/central-services-logger#89](https://github.com/mojaloop/central-services-logger/issues/89)
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([cb61475](https://github.com/mojaloop/central-ledger/commit/cb61475d68dc4e9ce28b92c2a28f5c85a6c241a9))
+
+### [20.4.1](https://github.com/mojaloop/central-ledger/compare/v20.4.0...v20.4.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* make batch position handler idempotent ([#1313](https://github.com/mojaloop/central-ledger/issues/1313)) ([369cb50](https://github.com/mojaloop/central-ledger/commit/369cb5018b9e08c574e5bf1840fd7b0c609ec9a6))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([69cdf67](https://github.com/mojaloop/central-ledger/commit/69cdf670d69c9eefbef00022e9e9e859aa6ef01b))
+
 ## [20.4.0](https://github.com/mojaloop/central-ledger/compare/v20.3.3...v20.4.0) (2026-11-12)
 
 

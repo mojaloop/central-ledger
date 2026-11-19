@@ -21,6 +21,7 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
+ - Shashikant Hirugade <shashi.mojaloop@gmail.com>
 
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
@@ -51,6 +52,7 @@ const fromSwitch = true
 
 const retryDelay = Config.WINDOW_AGGREGATION_RETRY_INTERVAL
 const retryCount = Config.WINDOW_AGGREGATION_RETRY_COUNT
+const closeDelayMs = Config.WINDOW_AGGREGATION_CLOSE_DELAY_MS
 const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
@@ -102,6 +104,11 @@ const closeSettlementWindow = async (error, messages) => {
     const reason = payload.reason
     logger.info(Utility.breadcrumb(location, 'validationPassed'))
     await Kafka.commitMessageSync(Consumer, kafkaTopic, message)
+
+    if (closeDelayMs > 0) {
+      logger.info(Utility.breadcrumb(location, `windowCloseDelay--waiting ${closeDelayMs}ms before closing window ${settlementWindowId}`))
+      await new Promise(resolve => setTimeout(resolve, closeDelayMs))
+    }
 
     await retry(async () => { // use bail(new Error('to break before max retries'))
       const settlementWindow = await SettlementWindowService.close(settlementWindowId, reason)

@@ -6,6 +6,8 @@ import path from 'node:path'
 import { createServer } from 'node:net';
 import { Request, ReqRefDefaults } from '@hapi/hapi';
 import { Snapshot } from './snapshot';
+import type Harness from './harness'
+import type { MojaloopKafkaMessage } from './harness'
 
 export const PROJECT_ROOT = path.resolve(__dirname, '../..')
 
@@ -216,6 +218,46 @@ export async function randomAvailablePort(): Promise<number> {
 export async function sleepSeconds(seconds: number) {
   return new Promise(resolve => setTimeout(resolve, seconds * 1000))
 }
+
+/**
+ * @description Wait until the last kafka message the harness has consumed satisfies `matches`, and
+ *   return it.
+ *
+ *   Use it after a call that produces a message which nothing else waits for, so that the message
+ *   cannot arrive in the middle of a later step. It waits for one specific message rather than for
+ *   a number of messages, and needs nothing from the harness but `spoolLast()`.
+ *
+ * @param description what is being waited for, used in the error when it does not arrive.
+ */
+export const waitForLastMessage = (
+  harness: Harness,
+  matches: (message: MojaloopKafkaMessage) => boolean,
+  description: string,
+  timeoutMs: number = 5_000
+): Promise<MojaloopKafkaMessage> => new Promise((resolve, reject) => {
+  const start = performance.now()
+  const check = () => {
+    let last: MojaloopKafkaMessage | undefined
+    try {
+      last = harness.spoolLast(1)[0]
+    } catch {
+      // Nothing has been consumed yet.
+    }
+    if (last && matches(last)) {
+      resolve(last)
+      return
+    }
+    if (performance.now() - start >= timeoutMs) {
+      const found = last
+        ? `${last.topic} ${last.valueParsed.metadata?.event?.action}: ${JSON.stringify(last.valueParsed.content?.payload)}`
+        : 'none'
+      reject(new Error(`Timed out after ${timeoutMs}ms waiting for ${description}. Last message consumed: ${found}`))
+      return
+    }
+    setTimeout(check, 20)
+  }
+  check()
+})
 
 /**
  * @function createRequest

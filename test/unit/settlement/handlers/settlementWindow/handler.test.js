@@ -21,6 +21,7 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
+ - Shashikant Hirugade <shashi.mojaloop@gmail.com>
 
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
@@ -193,6 +194,19 @@ const settlementWindow = {
 
 const command = () => {}
 
+const ConfigStub = {
+  WINDOW_AGGREGATION_CLOSE_DELAY_MS: 0,
+  WINDOW_AGGREGATION_RETRY_COUNT: 3,
+  WINDOW_AGGREGATION_RETRY_INTERVAL: 0,
+  KAFKA_CONFIG: {
+    TOPIC_TEMPLATES: {
+      GENERAL_TOPIC_TEMPLATE: {
+        TEMPLATE: 'topic-template'
+      }
+    }
+  }
+}
+
 Test('SettlementWindowHandler', async (settlementWindowHandlerTest) => {
   let sandbox
   let SpanStub
@@ -235,7 +249,8 @@ Test('SettlementWindowHandler', async (settlementWindowHandlerTest) => {
     }
 
     SettlementWindowHandler = Proxyquire('../../../../../src/settlement/handlers/deferredSettlement/handler', {
-      '@mojaloop/event-sdk': EventSdkStub
+      '@mojaloop/event-sdk': EventSdkStub,
+      '../../../lib/config': ConfigStub
     })
     test.end()
   })
@@ -266,6 +281,39 @@ Test('SettlementWindowHandler', async (settlementWindowHandlerTest) => {
       test.equal(result, true)
       test.end()
     })
+    closeSettlementWindowTest.test('wait for close delay when CLOSE_DELAY_MS is set', async (test) => {
+      const localMessages = Util.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformAccountToTopicName.returns(topicName)
+      Kafka.proceed.returns(true)
+      SettlementWindowService.close.returns(Promise.resolve(settlementWindow))
+
+      const delaySpanStub = {
+        audit: sandbox.stub().callsFake(),
+        error: sandbox.stub().callsFake(),
+        finish: sandbox.stub().callsFake(),
+        setTags: sandbox.stub().callsFake()
+      }
+      const delayEventSdkStub = {
+        Tracer: {
+          extractContextFromMessage: sandbox.stub().returns({}),
+          createChildSpanFromContext: sandbox.stub().returns(delaySpanStub)
+        }
+      }
+      const DelayedHandler = Proxyquire('../../../../../src/settlement/handlers/deferredSettlement/handler', {
+        '@mojaloop/event-sdk': delayEventSdkStub,
+        '../../../lib/config': {
+          WINDOW_AGGREGATION_CLOSE_DELAY_MS: 1,
+          WINDOW_AGGREGATION_RETRY_COUNT: 3,
+          WINDOW_AGGREGATION_RETRY_INTERVAL: 0,
+          KAFKA_CONFIG: ConfigStub.KAFKA_CONFIG
+        }
+      })
+
+      const result = await DelayedHandler.closeSettlementWindow(null, localMessages[0])
+      test.equal(result, true)
+      test.end()
+    })
     closeSettlementWindowTest.test('retry when the settlement window state is not CLOSED', async (test) => {
       const openSettlementWindow = {
         state: Enum.Settlements.SettlementWindowState.OPEN
@@ -278,7 +326,8 @@ Test('SettlementWindowHandler', async (settlementWindowHandlerTest) => {
 
       const retryStub = sandbox.stub().callsArg(0)
       const SettlementWindowHandlerProxy = Proxyquire('../../../../../src/settlement/handlers/deferredSettlement/handler', {
-        'async-retry': retryStub
+        'async-retry': retryStub,
+        '../../../lib/config': ConfigStub
       })
 
       const result = await SettlementWindowHandlerProxy.closeSettlementWindow(null, localMessages[0])
@@ -297,7 +346,8 @@ Test('SettlementWindowHandler', async (settlementWindowHandlerTest) => {
 
       const retryStub = sandbox.stub().callsArg(0)
       const SettlementWindowHandlerProxy = Proxyquire('../../../../../src/settlement/handlers/deferredSettlement/handler', {
-        'async-retry': retryStub
+        'async-retry': retryStub,
+        '../../../lib/config': ConfigStub
       })
 
       const result = await SettlementWindowHandlerProxy.closeSettlementWindow(null, localMessages[0])

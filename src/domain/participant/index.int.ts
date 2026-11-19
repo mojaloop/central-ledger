@@ -6,6 +6,7 @@ import ParticipantService from './index'
 import { ApplicationConfig } from "../../lib/config/types"
 import { Snapshot } from "../../testing/snapshot"
 import { createDfsp } from "../../testing/api-helpers"
+import { waitForLastMessage } from "../../testing/util"
 
 const harness = Harness.getInstance()
 
@@ -533,6 +534,12 @@ describe('domain/participant/index', () => {
         assert.equal(result, true)
       }
     }
+    // Wait for the notification of the last call. They are consumed in order, so by then none of them
+    // can arrive in the middle of a later test.
+    await waitForLastMessage(harness, message => {
+      const payload = message.valueParsed.content.payload
+      return payload?.name === dfsps.at(-1) && payload?.currency === currencies.at(-1)
+    }, 'the limit notification of the last dfsp')
 
     // Now check the positions and limits for each dfsp (ignoring tmp_dfsp from other tests).
     const positions = (await ParticipantService.getLimitsForAllParticipants({
@@ -655,6 +662,11 @@ describe('domain/participant/index', () => {
       currency: 'USD',
       limit: { type: 'NET_DEBIT_CAP', value: 9999 }
     })
+    // Wait for the notification, so that it cannot arrive in the middle of a later test.
+    await waitForLastMessage(harness, message => {
+      const payload = message.valueParsed.content.payload
+      return payload?.name === name && payload?.limit?.value === 9999
+    }, `the limit notification of ${name}`)
     Snapshot.from(`{
       "participantLimit": {
         "participantCurrencyId": :ignore,

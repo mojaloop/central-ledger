@@ -1,5 +1,5 @@
 # Arguments
-ARG NODE_VERSION="lts-alpine"
+ARG NODE_VERSION="24.22.2-alpine3.24"
 # NOTE: Ensure you set NODE_VERSION Build Argument as follows...
 #
 # export NODE_VERSION="$(cat .nvmrc)-alpine"
