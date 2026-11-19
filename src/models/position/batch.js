@@ -37,7 +37,9 @@ const rethrow = require('../../shared/rethrow')
 
 const startDbTransaction = async () => {
   const knex = Db.getKnex()
-  const trx = await knex.transaction()
+  // READ COMMITTED, so the transfer states read after the position lock see what the previous
+  // lock holder committed. Under REPEATABLE READ they could come from an older snapshot.
+  const trx = await knex.transaction({ isolationLevel: 'read committed' })
   return trx
 }
 
@@ -99,9 +101,13 @@ const getAllParticipantCurrency = async (trx) => {
 
 const getPositionsByAccountIdsForUpdate = async (trx, accountIds) => {
   const knex = Db.getKnex()
+  // ORDER BY sorts the result; it does not set the lock order. InnoDB locks rows in the order it
+  // scans them, which on a range scan of the participantCurrencyId index is participantCurrencyId
+  // order. A lock-wait deadlock between two batches is still possible, and rolls one of them back.
   const participantPositions = await knex('participantPosition')
     .transacting(trx)
     .whereIn('participantCurrencyId', accountIds)
+    .orderBy('participantCurrencyId')
     .forUpdate()
     .select('*')
   const positions = {}

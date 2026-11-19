@@ -63,12 +63,6 @@ const processBins = async (bins, trx) => {
   // Get transferIdList, reservedActionTransferIdList and commitRequestId for actions PREPARE, FX_PREPARE, FX_RESERVE, COMMIT and RESERVE
   const { transferIdList, reservedActionTransferIdList, commitRequestIdList } = await _getTransferIdList(bins)
 
-  // Pre fetch latest transferStates for all the transferIds in the account-bin
-  const latestTransferStates = await _fetchLatestTransferStates(trx, transferIdList)
-
-  // Pre fetch latest fxTransferStates for all the commitRequestIds in the account-bin
-  const latestFxTransferStates = await _fetchLatestFxTransferStates(trx, commitRequestIdList)
-
   const accountIds = [...Object.keys(bins).filter(accountId => accountId !== '0')]
 
   // Get all participantIdMap for the accountIds
@@ -85,6 +79,12 @@ const processBins = async (bins, trx) => {
     ...accountIds,
     ...settlementCurrencyIds.map(pc => pc.participantCurrencyId)
   ])
+
+  // Read the latest transfer and fxTransfer states only after the position rows are locked.
+  // Every copy of a position message locks the same position row, so a copy waits here until an
+  // earlier copy has committed, and then reads its result (READ COMMITTED, see startDbTransaction).
+  const latestTransferStates = await _fetchLatestTransferStates(trx, transferIdList)
+  const latestFxTransferStates = await _fetchLatestFxTransferStates(trx, commitRequestIdList)
 
   const latestTransferInfoByTransferId = await BatchPositionModel.getTransferInfoList(
     trx,
@@ -476,9 +476,31 @@ const _getTransferIdList = async (bins) => {
     } else if (action === Enum.Events.Event.Action.FX_ABORT_VALIDATION) {
       commitRequestIdList.push(item.message.value.content.uriParams.id)
     }
+
+    // An FX commit or abort is a chain of steps, each on one part: the transfer or an fxTransfer.
+    // Load every step's part, so each step can be checked against its own part's state.
+    if (CHAIN_ACTIONS.includes(action)) {
+      const cyrilResult = item.message.value.content.context?.cyrilResult
+      for (const step of cyrilResult?.positionChanges || []) {
+        if (step.isFxTransferStateChange) {
+          step.commitRequestId && commitRequestIdList.push(step.commitRequestId)
+        } else {
+          step.transferId && transferIdList.push(step.transferId)
+        }
+      }
+    }
   })
   return { transferIdList, reservedActionTransferIdList, commitRequestIdList }
 }
+
+const CHAIN_ACTIONS = [
+  Enum.Events.Event.Action.COMMIT,
+  Enum.Events.Event.Action.RESERVE,
+  Enum.Events.Event.Action.ABORT,
+  Enum.Events.Event.Action.ABORT_VALIDATION,
+  Enum.Events.Event.Action.FX_ABORT,
+  Enum.Events.Event.Action.FX_ABORT_VALIDATION
+]
 
 const _fetchLatestTransferStates = async (trx, transferIdList) => {
   const latestTransferStateChanges = await BatchPositionModel.getLatestTransferStateChangesByTransferIdList(trx, transferIdList)

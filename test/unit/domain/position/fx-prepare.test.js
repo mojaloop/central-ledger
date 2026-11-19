@@ -176,7 +176,7 @@ Test('FX Prepare domain', positionIndexTest => {
   })
 
   positionIndexTest.test('processFxPositionPrepareBin should', changeParticipantPositionTest => {
-    changeParticipantPositionTest.test('produce abort message for transfers not in the right transfer state', async (test) => {
+    changeParticipantPositionTest.test('skip fx transfers not in the right transfer state without a state change or notification', async (test) => {
       const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
@@ -202,7 +202,7 @@ Test('FX Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
       test.equal(processedMessages.notifyMessages[0].message.content.headers.accept, fxTransferTestData1.message.value.content.headers.accept)
       test.equal(processedMessages.notifyMessages[0].message.content.headers['fspiop-destination'], fxTransferTestData1.message.value.content.headers['fspiop-destination'])
       test.equal(processedMessages.notifyMessages[0].message.content.headers['fspiop-source'], fxTransferTestData1.message.value.content.headers['fspiop-source'])
@@ -215,22 +215,14 @@ Test('FX Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[1].message.content.headers['content-type'], fxTransferTestData2.message.value.content.headers['content-type'])
       test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData2.message.value.id], Enum.Transfers.TransferState.RESERVED)
 
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, fxTransferTestData3.message.value.id)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, fxTransferTestData3.message.value.content.headers.accept)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], fxTransferTestData3.message.value.content.headers['fspiop-source'])
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], fxTransferTestData3.message.value.content.headers['content-type'])
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData3.message.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData3.message.value.id], 'INVALID_STATE', 'fx transfer in an unexpected state is left unchanged')
 
       test.equal(processedMessages.accumulatedFxTransferStateChanges[0].commitRequestId, fxTransferTestData1.message.value.id)
       test.equal(processedMessages.accumulatedFxTransferStateChanges[1].commitRequestId, fxTransferTestData2.message.value.id)
-      test.equal(processedMessages.accumulatedFxTransferStateChanges[2].commitRequestId, fxTransferTestData3.message.value.id)
+      test.equal(processedMessages.accumulatedFxTransferStateChanges.length, 2, 'no state change for the fx transfer in an unexpected state')
 
       test.equal(processedMessages.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedFxTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
-      test.equal(processedMessages.accumulatedFxTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedPositionValue, sourceAmount * 2)
       test.end()
@@ -262,7 +254,7 @@ Test('FX Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
       test.equal(processedMessages.accumulatedPositionChanges.length, 0)
 
       test.equal(processedMessages.notifyMessages[0].message.content.uriParams.id, fxTransferTestData1.message.value.id)
@@ -284,22 +276,14 @@ Test('FX Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[1].message.content.payload.errorInformation.errorDescription, 'Payer FSP insufficient liquidity')
       test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData2.message.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, fxTransferTestData3.message.value.id)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, fxTransferTestData3.message.value.content.headers.accept)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], fxTransferTestData3.message.value.content.headers['fspiop-source'])
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], fxTransferTestData3.message.value.content.headers['content-type'])
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData3.message.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData3.message.value.id], 'INVALID_STATE', 'fx transfer in an unexpected state is left unchanged')
 
       test.equal(processedMessages.accumulatedFxTransferStateChanges[0].commitRequestId, fxTransferTestData1.message.value.id)
       test.equal(processedMessages.accumulatedFxTransferStateChanges[1].commitRequestId, fxTransferTestData2.message.value.id)
-      test.equal(processedMessages.accumulatedFxTransferStateChanges[2].commitRequestId, fxTransferTestData3.message.value.id)
+      test.equal(processedMessages.accumulatedFxTransferStateChanges.length, 2, 'no state change for the fx transfer in an unexpected state')
 
       test.equal(processedMessages.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
       test.equal(processedMessages.accumulatedFxTransferStateChanges[1].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
-      test.equal(processedMessages.accumulatedFxTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedPositionValue, 0)
       test.end()
@@ -331,7 +315,7 @@ Test('FX Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
       test.equal(processedMessages.accumulatedPositionChanges.length, 0)
 
       test.equal(processedMessages.notifyMessages[0].message.content.uriParams.id, fxTransferTestData1.message.value.id)
@@ -352,22 +336,14 @@ Test('FX Prepare domain', positionIndexTest => {
       test.equal(processedMessages.notifyMessages[1].message.content.payload.errorInformation.errorDescription, 'Payer limit error')
       test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData2.message.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, fxTransferTestData3.message.value.id)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, fxTransferTestData3.message.value.content.headers.accept)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], fxTransferTestData3.message.value.content.headers['fspiop-source'])
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], fxTransferTestData3.message.value.content.headers['content-type'])
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData3.message.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData3.message.value.id], 'INVALID_STATE', 'fx transfer in an unexpected state is left unchanged')
 
       test.equal(processedMessages.accumulatedFxTransferStateChanges[0].commitRequestId, fxTransferTestData1.message.value.id)
       test.equal(processedMessages.accumulatedFxTransferStateChanges[1].commitRequestId, fxTransferTestData2.message.value.id)
-      test.equal(processedMessages.accumulatedFxTransferStateChanges[2].commitRequestId, fxTransferTestData3.message.value.id)
+      test.equal(processedMessages.accumulatedFxTransferStateChanges.length, 2, 'no state change for the fx transfer in an unexpected state')
 
       test.equal(processedMessages.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
       test.equal(processedMessages.accumulatedFxTransferStateChanges[1].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
-      test.equal(processedMessages.accumulatedFxTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       // Accumulated position value should not change from the input
       test.equal(processedMessages.accumulatedPositionValue, 1000)
@@ -400,7 +376,7 @@ Test('FX Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
 
       test.equal(processedMessages.accumulatedPositionChanges.length, 2)
 
@@ -418,22 +394,14 @@ Test('FX Prepare domain', positionIndexTest => {
       test.equal(processedMessages.accumulatedPositionChanges[1].value, sourceAmount * 2)
       test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData2.message.value.id], Enum.Transfers.TransferState.RESERVED)
 
-      test.equal(processedMessages.notifyMessages[2].message.content.uriParams.id, fxTransferTestData3.message.value.id)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers.accept, fxTransferTestData3.message.value.content.headers.accept)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-destination'], fxTransferTestData3.message.value.content.headers['fspiop-source'])
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['fspiop-source'], Config.HUB_NAME)
-      test.equal(processedMessages.notifyMessages[2].message.content.headers['content-type'], fxTransferTestData3.message.value.content.headers['content-type'])
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorCode, '2001')
-      test.equal(processedMessages.notifyMessages[2].message.content.payload.errorInformation.errorDescription, 'Internal server error')
-      test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData3.message.value.id], Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
+      test.equal(processedMessages.accumulatedFxTransferStates[fxTransferTestData3.message.value.id], 'INVALID_STATE', 'fx transfer in an unexpected state is left unchanged')
 
       test.equal(processedMessages.accumulatedFxTransferStateChanges[0].commitRequestId, fxTransferTestData1.message.value.id)
       test.equal(processedMessages.accumulatedFxTransferStateChanges[1].commitRequestId, fxTransferTestData2.message.value.id)
-      test.equal(processedMessages.accumulatedFxTransferStateChanges[2].commitRequestId, fxTransferTestData3.message.value.id)
+      test.equal(processedMessages.accumulatedFxTransferStateChanges.length, 2, 'no state change for the fx transfer in an unexpected state')
 
       test.equal(processedMessages.accumulatedFxTransferStateChanges[0].transferStateId, Enum.Transfers.TransferState.RESERVED)
       test.equal(processedMessages.accumulatedFxTransferStateChanges[1].transferStateId, Enum.Transfers.TransferState.RESERVED)
-      test.equal(processedMessages.accumulatedFxTransferStateChanges[2].transferStateId, Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
 
       test.equal(processedMessages.accumulatedPositionValue, sourceAmount * 2)
       test.end()
@@ -465,8 +433,8 @@ Test('FX Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
-      test.equal(processedMessages.limitAlarms.length, 2)
+      test.equal(processedMessages.notifyMessages.length, 2)
+      test.equal(processedMessages.limitAlarms.length, 1, 'the skipped fx transfer raises no alarm')
       test.equal(processedMessages.accumulatedPositionValue, sourceAmount * 2)
       test.end()
     })
@@ -498,7 +466,7 @@ Test('FX Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
       test.equal(processedMessages.accumulatedPositionChanges.length, 0)
       test.equal(processedMessages.accumulatedPositionValue, -4)
       test.end()
@@ -539,7 +507,7 @@ Test('FX Prepare domain', positionIndexTest => {
         }
       )
       Logger.isInfoEnabled && Logger.info(processedMessages)
-      test.equal(processedMessages.notifyMessages.length, 3)
+      test.equal(processedMessages.notifyMessages.length, 2)
       test.equal(processedMessages.accumulatedPositionChanges.length, 2)
       test.equal(processedMessages.accumulatedPositionChanges[0].value, 50)
       test.equal(processedMessages.accumulatedPositionChanges[1].value, 100)
@@ -649,6 +617,34 @@ Test('FX Prepare domain', positionIndexTest => {
       )
       test.equal(processedMessages.notifyMessages[1].message.content.payload?.errorInformation?.errorCode, '4001', 'second fx transfer rejected for insufficient liquidity')
       test.equal(processedMessages.accumulatedPositionValue, 7, 'position equals the liquidity cover')
+      test.end()
+    })
+
+    changeParticipantPositionTest.test('reserve once when the same fx prepare message is in the bin twice', async (test) => {
+      const [data, otherData] = [1, 2].map(() => constructFxTransferTestData('perffsp1', 'perffsp2', sourceAmount.toString(), 'USD', '50', 'XXX'))
+      const toBinItem = d => ({ message: d.message, span, decodedPayload: d.decodedPayload })
+      const processedMessages = await processFxPositionPrepareBin(
+        [toBinItem(data), toBinItem(data), toBinItem(otherData)],
+        {
+          accumulatedPositionValue: 0,
+          accumulatedPositionReservedValue: 0,
+          accumulatedFxTransferStates: {
+            [data.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
+            [otherData.message.value.id]: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE
+          },
+          settlementParticipantPosition: -1000,
+          participantLimit: { ...highLimit }
+        }
+      )
+
+      test.deepEqual(
+        processedMessages.accumulatedFxTransferStateChanges.map(change => [change.commitRequestId, change.transferStateId]),
+        [[data.message.value.id, Enum.Transfers.TransferInternalState.RESERVED], [otherData.message.value.id, Enum.Transfers.TransferInternalState.RESERVED]],
+        'one RESERVED per fx transfer'
+      )
+      test.equal(processedMessages.accumulatedPositionChanges.length, 2, 'one position change per fx transfer')
+      test.equal(processedMessages.notifyMessages.length, 2, 'the duplicate copy sends nothing')
+      test.equal(processedMessages.accumulatedPositionValue, sourceAmount * 2, 'reserved once per fx transfer')
       test.end()
     })
 

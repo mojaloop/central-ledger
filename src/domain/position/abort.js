@@ -38,6 +38,8 @@ const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('../../shared/logger').logger
+const StateRules = require('./stateRules')
+const { recordSkippedMessage } = require('./skippedMessage')
 
 /**
  * @function processPositionAbortBin
@@ -77,21 +79,44 @@ const processPositionAbortBin = async (
   if (abortBins && abortBins.length > 0) {
     for (const binItem of abortBins) {
       Logger.isDebugEnabled && Logger.debug(`processPositionAbortBin::binItem: ${JSON.stringify(binItem.message.value)}`)
-      if (isFx) {
-        // If the transfer is not in `RECEIVED_ERROR`, a position fx-abort message was incorrectly published.
-        // i.e Something has gone extremely wrong.
-        if (accumulatedFxTransferStates[binItem.message.value.content.uriParams.id] !== Enum.Transfers.TransferInternalState.RECEIVED_ERROR) {
-          throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
+      const cyrilResult = binItem.message.value.content.context?.cyrilResult
+
+      // A regular abort has only transfer steps and no transferStateChanges: what Cyril returns for a
+      // transfer with no related fxTransfer. FX aborts, and aborts with FX steps, are chains (below).
+      const isRegularAbort = !isFx &&
+        cyrilResult?.positionChanges?.length > 0 &&
+        cyrilResult.positionChanges.every(positionChange => !positionChange.isFxTransferStateChange) &&
+        !(cyrilResult.transferStateChanges?.length > 0)
+
+      if (isRegularAbort) {
+        // The reservation is released only from RECEIVED_ERROR. Any other state means this message is a
+        // duplicate or arrived after another decision: skip it without changing state or position,
+        // sending a notification or throwing.
+        // Read the running state, so a copy later in this bin sees what an earlier copy did.
+        const transferId = binItem.message.value.content.uriParams.id
+        const action = binItem.message.value.metadata.event.action
+        const currentState = accumulatedTransferStatesCopy[transferId]
+        const outcome = StateRules.classify(action, currentState)
+        if (outcome !== StateRules.OUTCOME.APPLY) {
+          recordSkippedMessage(binItem, action, transferId, outcome, currentState)
+          continue
         }
       } else {
-        // If the transfer is not in `RECEIVED_ERROR`, a position abort message was incorrectly published.
-        // i.e Something has gone extremely wrong.
-        if (accumulatedTransferStates[binItem.message.value.content.uriParams.id] !== Enum.Transfers.TransferInternalState.RECEIVED_ERROR) {
-          throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
+        // An FX abort (the FXP's error) or an FX-linked abort (the payee's error on a transfer with a
+        // conversion) is a chain of steps, one per message. Check the chain's starting part: the
+        // fxTransfer named in an FX abort, or the transfer. It may already be ABORTED_ERROR, when its own
+        // step came first.
+        const startingPartId = binItem.message.value.content.uriParams.id
+        const action = binItem.message.value.metadata.event.action
+        const startingState = isFx ? accumulatedFxTransferStatesCopy[startingPartId] : accumulatedTransferStatesCopy[startingPartId]
+        if (!StateRules.isChainStartingState(StateRules.CHAIN.ABORT, startingState)) {
+          // The abort has been overtaken by another decision, whose own chain (or the timeout) handles
+          // every part: change nothing, send nothing.
+          recordSkippedMessage(binItem, action, startingPartId, StateRules.classify(action, startingState), startingState)
+          continue
         }
       }
 
-      const cyrilResult = binItem.message.value.content.context?.cyrilResult
       if (!cyrilResult || !cyrilResult.positionChanges || cyrilResult.positionChanges.length === 0) {
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
       }
@@ -101,7 +126,33 @@ const processPositionAbortBin = async (
       // Find out the first item to be processed
       const positionChangeIndex = cyrilResult.positionChanges.findIndex(positionChange => !positionChange.isDone)
       const positionChangeToBeProcessed = cyrilResult.positionChanges[positionChangeIndex]
-      if (positionChangeToBeProcessed.isFxTransferStateChange) {
+
+      let applyStep = true
+      if (!isRegularAbort) {
+        // Check the part of the step about to be applied: it must still hold its reservation.
+        const action = binItem.message.value.metadata.event.action
+        const partId = StateRules.stepPartId(positionChangeToBeProcessed)
+        const partState = positionChangeToBeProcessed.isFxTransferStateChange
+          ? accumulatedFxTransferStatesCopy[partId]
+          : accumulatedTransferStatesCopy[partId]
+        const stepOutcome = StateRules.classifyStep(StateRules.STEP.RELEASE, partState)
+        if (stepOutcome === StateRules.OUTCOME.ALREADY_DONE) {
+          if (!StateRules.hasEarlierStepForSamePart(cyrilResult.positionChanges, positionChangeIndex)) {
+            // A copy of a step already applied: the original sent the follow-up or the notifications.
+            recordSkippedMessage(binItem, action, partId, stepOutcome, partState)
+            continue
+          }
+          // The second step for a part with two reservations: it was released by the first, go on.
+          Logger.isErrorEnabled && Logger.error(`processPositionAbortBin::step for an already released part - id: ${binItem.message.value.content.uriParams.id}, part: ${partId}, state: ${partState}`)
+          applyStep = false
+        } else if (stepOutcome !== StateRules.OUTCOME.APPLY) {
+          // A linked part was decided otherwise (or is in an unexpected state). What to do is an open
+          // decision (FX design §18, decision 1). Until it is made, keep today's behaviour: apply the step.
+          Logger.isErrorEnabled && Logger.error(`processPositionAbortBin::step applied although its part was decided otherwise - id: ${binItem.message.value.content.uriParams.id}, part: ${partId}, state: ${partState}, outcome: ${stepOutcome}`)
+        }
+      }
+
+      if (applyStep && positionChangeToBeProcessed.isFxTransferStateChange) {
         const { participantPositionChange, fxTransferStateChange, transferStateId, updatedRunningPosition } =
           _handleParticipantPositionChangeFx(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.commitRequestId, accumulatedPositionReservedValue)
         runningPosition = updatedRunningPosition
@@ -115,7 +166,7 @@ const processPositionAbortBin = async (
         for (const patchMessage of patchMessages) {
           resultMessages.push({ binItem, message: patchMessage })
         }
-      } else {
+      } else if (applyStep) {
         const { participantPositionChange, transferStateChange, transferStateId, updatedRunningPosition } =
           _handleParticipantPositionChange(runningPosition, positionChangeToBeProcessed.amount, positionChangeToBeProcessed.transferId, accumulatedPositionReservedValue)
         runningPosition = updatedRunningPosition

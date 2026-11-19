@@ -39,6 +39,8 @@ const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('../../shared/logger').logger
 const Config = require('../../lib/config')
+const StateRules = require('./stateRules')
+const { recordSkippedMessage } = require('./skippedMessage')
 
 /**
  * @function processPositionPrepareBin
@@ -101,53 +103,19 @@ const processPositionPrepareBin = async (
 
       Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transfer:processingMessage: ${JSON.stringify(transfer)}`)
 
-      // Check if transfer is in correct state for processing, produce an internal error message
-      if (accumulatedTransferStates[transfer.transferId] !== Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
-        Logger.isDebugEnabled && Logger.debug(`processPositionPrepareBin::transferState: ${accumulatedTransferStates[transfer.transferId]} !== ${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
+      // Only a transfer in RECEIVED_PREPARE can be reserved. Any other state means this message is a
+      // duplicate or arrived after another decision: skip it without changing state, position or
+      // sending a notification.
+      // Read the running state, so a copy later in this bin sees what an earlier copy did.
+      const currentState = accumulatedTransferStatesCopy[transfer.transferId]
+      const outcome = StateRules.classify(Enum.Events.Event.Action.PREPARE, currentState)
+      if (outcome !== StateRules.OUTCOME.APPLY) {
+        recordSkippedMessage(binItem, Enum.Events.Event.Action.PREPARE, transfer.transferId, outcome, currentState)
+        continue
+      }
 
-        transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-        reason = 'Transfer in incorrect state'
-
-        // forward same headers from the prepare message, except the content-length header
-        // set destination to payerfsp and source to switch
-        const headers = { ...binItem.message.value.content.headers }
-        headers[Enum.Http.Headers.FSPIOP.DESTINATION] = transfer.payerFsp
-        headers[Enum.Http.Headers.FSPIOP.SOURCE] = Config.HUB_NAME
-        delete headers['content-length']
-
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR
-        ).toApiErrorObject(Config.ERROR_HANDLING)
-
-        const state = Utility.StreamingProtocol.createEventState(
-          Enum.Events.EventStatus.FAILURE.status,
-          fspiopError.errorInformation.errorCode,
-          fspiopError.errorInformation.errorDescription
-        )
-
-        const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(
-          transfer.transferId,
-          Enum.Kafka.Topics.NOTIFICATION,
-          Enum.Events.Event.Action.PREPARE,
-          state
-        )
-
-        resultMessage = Utility.StreamingProtocol.createMessage(
-          transfer.transferId,
-          transfer.payerFsp,
-          Config.HUB_NAME,
-          metadata,
-          headers,
-          fspiopError,
-          { id: transfer.transferId },
-          'application/json',
-          binItem.message.value.content.context
-        )
-
-        binItem.result = { success: false }
-
-        // Check if payer has insufficient liquidity, produce an error message and abort transfer
-      } else if (changePositions && availablePositionBasedOnLiquidityCover.toNumber() < transferAmount) {
+      // Check if payer has insufficient liquidity, produce an error message and abort transfer
+      if (changePositions && availablePositionBasedOnLiquidityCover.toNumber() < transferAmount) {
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
         reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
 
