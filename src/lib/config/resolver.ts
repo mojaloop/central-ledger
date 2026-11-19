@@ -133,6 +133,9 @@ const resolveConfig = (rawConfig: any): UnsafeApplicationConfig => {
     API_DOC_ENDPOINTS_ENABLED: defaultTo(rawConfig.API_DOC_ENDPOINTS_ENABLED, false),
     WINDOW_AGGREGATION_RETRY_COUNT: rawConfig.WINDOW_AGGREGATION.RETRY_COUNT,
     WINDOW_AGGREGATION_RETRY_INTERVAL: rawConfig.WINDOW_AGGREGATION.RETRY_INTERVAL,
+    WINDOW_AGGREGATION_CLOSE_DELAY_MS: defaultTo(rawConfig.WINDOW_AGGREGATION.CLOSE_DELAY_MS, 0),
+    SETTLEMENT_DEADLOCK_RETRIES: defaultTo(rawConfig.DEADLOCK?.RETRIES, 3),
+    SETTLEMENT_DEADLOCK_RETRY_DELAY_MS: defaultTo(rawConfig.DEADLOCK?.RETRY_DELAY_MS, 50),
     KAFKA_CONFIG: kafka,
     SERVER_PRINT_ROUTES_ON_STARTUP: defaultTo(rawConfig.SERVER_PRINT_ROUTES_ON_STARTUP, true),
     LEDGER: defaultTo(rawConfig.LEDGER, 'LEGACY'),
@@ -196,6 +199,9 @@ const parseAndValidateConfig = (unsafeConfig: UnsafeApplicationConfig): Applicat
   assertInstrumentationMetricsLabels(unsafeConfig.INSTRUMENTATION_METRICS_LABELS)
   assertInstrumentationConfig(unsafeConfig.INSTRUMENTATION_METRICS_CONFIG)
   assertBoolean(unsafeConfig.API_DOC_ENDPOINTS_ENABLED)
+  assertNumber(unsafeConfig.WINDOW_AGGREGATION_CLOSE_DELAY_MS)
+  assertNumber(unsafeConfig.SETTLEMENT_DEADLOCK_RETRIES)
+  assertNumber(unsafeConfig.SETTLEMENT_DEADLOCK_RETRY_DELAY_MS)
   assertBoolean(unsafeConfig.PAYEE_PARTICIPANT_CURRENCY_VALIDATION_ENABLED)
   assertBoolean(unsafeConfig.SERVER_PRINT_ROUTES_ON_STARTUP)
 
@@ -214,18 +220,31 @@ const parseAndValidateConfig = (unsafeConfig: UnsafeApplicationConfig): Applicat
   return unsafeConfig as ApplicationConfig
 }
 
-const makeConfig = (): ApplicationConfig => {
+/**
+ * @function loadConfigRaw
+ * @description Load the config file, with the `CLEDG_` environment overrides applied, as it is before
+ *   resolveConfig() reshapes it. The file is `config/default.json` unless `PATH_TO_CONFIG_FILE` is set.
+ *
+ *   The object returned is the one `require()` caches for the config file, extended by RC(). Copy it
+ *   before changing it, or every config loaded later in the same process sees the change.
+ */
+const loadConfigRaw = (): any => {
   const PATH_TO_CONFIG_FILE = defaultEnvString(
     process.env,
     'PATH_TO_CONFIG_FILE',
     path.join(__dirname, '../../..', 'config/default.json')
   )
-  logger.info(`makeConfig() - Loading config from: ${PATH_TO_CONFIG_FILE}`)
-  const raw = parseStringsInObject(RC('CLEDG', require(PATH_TO_CONFIG_FILE)))
+  logger.info(`loadConfigRaw() - Loading config from: ${PATH_TO_CONFIG_FILE}`)
+
+  return parseStringsInObject(RC('CLEDG', require(PATH_TO_CONFIG_FILE)))
+}
+
+const makeConfig = (): ApplicationConfig => {
+  const raw = loadConfigRaw()
   const resolved = resolveConfig(raw)
   const validated = parseAndValidateConfig(resolved)
 
   return validated
 }
 
-export { makeConfig, resolveConfig, parseAndValidateConfig }
+export { loadConfigRaw, makeConfig, resolveConfig, parseAndValidateConfig }

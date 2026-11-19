@@ -230,6 +230,102 @@ For example, to run `src/domain/participant/index.int.ts`:
 node --test --require ts-node/register src/domain/participant/index.int.ts
 ```
 
+#### Settlement scenario
+
+[`src/settlement/models/settlement/facade.int.ts`](./src/settlement/models/settlement/facade.int.ts)
+runs one deferred net settlement from end to end against the harness database and Kafka. The unit tests
+of the settlement models stub knex, so this is the test that executes their SQL.
+
+It calls the same services the Settlement API handlers and the `deferredSettlement` handler call, in the
+order a hub operator would trigger them. It does not go through HTTP or through the
+`topic-deferredsettlement-close` consumer: the harness starts neither.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant T as Test
+    participant H as Transfer handlers<br/>(prepare, position, fulfil)
+    participant W as Settlement window<br/>service
+    participant S as Settlement<br/>service
+    participant DB as MariaDB
+    participant K as topic-notification-event
+
+    Note over T,DB: Setup: hub accounts and a DEFERRED / NET / MULTILATERAL model for USD and for EUR, dfsp_a, and dfsp_b whose USD net debit cap was raised once
+
+    T->>H: pay dfsp_a to dfsp_b 100 USD, pay dfsp_b to dfsp_a 30 USD
+    H->>DB: both transfers fulfilled in window 1 (OPEN)
+    T->>W: process(window 1)
+    W->>DB: window 1 PROCESSING, window 2 OPEN
+    T->>H: pay dfsp_b to dfsp_a 20 USD
+    H->>DB: transfer fulfilled in window 2
+
+    T->>DB: zero one position change of window 1
+    T->>W: close(window 1)
+    W--xT: refused, debits and credits do not balance
+    T->>DB: assert window 1 still PROCESSING and nothing aggregated, then restore the row
+
+    T->>W: close(window 1)
+    W->>DB: aggregate window 1 into settlementContentAggregation
+    W->>DB: window 1 CLOSED
+    T->>DB: assert a closedDate, and one row per account and role, summing to zero
+
+    T->>S: settlementEventTrigger(window 1)
+    S->>DB: settlement PENDING_SETTLEMENT, dfsp_a owes 70, dfsp_b is owed 70
+
+    T->>S: putById(accounts, PS_TRANSFERS_RECORDED)
+    S->>DB: account states and settlement transfers
+    T->>DB: assert settlement state, and positions unchanged
+
+    T->>DB: in a second transaction, lock the position of dfsp_b
+    T->>S: putById(accounts, PS_TRANSFERS_RESERVED)
+    S->>DB: lock the settlement, then wait for the position of dfsp_b
+    T->>DB: in the second transaction, ask for the settlement
+    DB--xS: deadlock, transaction rolled back
+    T->>DB: roll back the second transaction
+    S->>DB: retry: account states, settlement transfers, position of dfsp_b
+    S-->>K: position change notification for dfsp_b
+    T->>DB: assert one deadlock and one retry, settlement state and positions, and that the net debit cap of dfsp_b is untouched
+
+    loop PS_TRANSFERS_COMMITTED, SETTLED
+        T->>S: putById(accounts, state)
+        S->>DB: account states, settlement transfers, positions
+        S-->>K: position change notification (COMMITTED only)
+        T->>DB: assert settlement state and positions
+    end
+
+    T->>DB: assert settlement, window 1 and its content SETTLED
+
+    T->>H: pay dfsp_a to dfsp_b 50 EUR
+    H->>DB: transfer fulfilled in window 2
+    T->>W: process(window 2)
+    W->>DB: window 2 PROCESSING, window 3 OPEN
+    T->>DB: add 10 to a USD position change of window 2, take 10 from an EUR one
+    T->>W: close(window 2)
+    W--xT: refused, neither currency balances although their total does
+    T->>DB: assert window 2 still PROCESSING and nothing aggregated, then restore the rows
+    T->>W: close(window 2)
+    W->>DB: window 2 CLOSED, aggregated per currency
+```
+
+Run it on its own with:
+
+```bash
+node --test --require ts-node/register src/settlement/models/settlement/facade.int.ts
+```
+
+In CI it runs with every other `.int.ts` file in CircleCI's `Integration tests` job, through
+`npm run test:integration`.
+
+What it cannot show:
+
+- Behaviour specific to MySQL, because the harness runs MariaDB as `root`. In particular, closing a
+  window creates a temporary table, for which the service's database user needs the
+  `CREATE TEMPORARY TABLES` privilege.
+- The wait of `WINDOW_AGGREGATION.CLOSE_DELAY_MS` before a window is closed. That happens in the
+  `deferredSettlement` handler, which the test does not go through; the handler's unit test covers it.
+- A deadlock anywhere but on the position of the net recipient in the reserve step, where the test
+  stages one, and a deadlock that outlasts `DEADLOCK.RETRIES`. The unit tests of the settlement facade
+  cover those, with transactions that fail with the deadlock error of the database driver.
 
 ### Running Functional Tests
 
