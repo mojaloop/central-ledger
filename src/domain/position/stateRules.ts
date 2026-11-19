@@ -139,6 +139,29 @@ const FX_RESERVE_RULES: StateRules = new Map<string, Outcome>([
   [State.EXPIRED_RESERVED, OUTCOME.ALREADY_DECIDED]
 ])
 
+// TIMEOUT_RESERVED: the timeout handler wrote RESERVED_TIMEOUT before sending the message.
+const TIMEOUT_RESERVED_RULES: StateRules = new Map<string, Outcome>([
+  [State.RESERVED_TIMEOUT, OUTCOME.APPLY],
+
+  // An earlier copy of this message released the reservation.
+  [State.EXPIRED_RESERVED, OUTCOME.ALREADY_DONE],
+
+  // A fulfil or an error was written after the timeout handler read RESERVED: the commit or abort
+  // message completes the transfer.
+  [State.RECEIVED_FULFIL, OUTCOME.ALREADY_DECIDED],
+  [State.COMMITTED, OUTCOME.ALREADY_DECIDED],
+  [Enum.Transfers.TransferState.SETTLED, OUTCOME.ALREADY_DECIDED],
+  [State.RECEIVED_ERROR, OUTCOME.ALREADY_DECIDED],
+  [State.ABORTED_ERROR, OUTCOME.ALREADY_DECIDED]
+])
+
+// FX_TIMEOUT_RESERVED: the same for an fxTransfer. The FXP's fulfil may also have been written after
+// the timeout handler's read: the conversion then waits for its determining transfer.
+const FX_TIMEOUT_RESERVED_RULES: StateRules = new Map<string, Outcome>([
+  ...TIMEOUT_RESERVED_RULES,
+  [RECEIVED_FULFIL_DEPENDENT, OUTCOME.ALREADY_DECIDED]
+])
+
 // Any state not listed for an action is UNEXPECTED.
 const RULES: ReadonlyMap<string, StateRules> = new Map([
   [Action.PREPARE, PREPARE_RULES],
@@ -147,7 +170,9 @@ const RULES: ReadonlyMap<string, StateRules> = new Map([
   [Action.RESERVE, COMMIT_RULES],
   [Action.ABORT, ABORT_RULES],
   [Action.ABORT_VALIDATION, ABORT_RULES],
-  [Action.FX_RESERVE, FX_RESERVE_RULES]
+  [Action.FX_RESERVE, FX_RESERVE_RULES],
+  [Action.TIMEOUT_RESERVED, TIMEOUT_RESERVED_RULES],
+  [Action.FX_TIMEOUT_RESERVED, FX_TIMEOUT_RESERVED_RULES]
 ])
 
 /**

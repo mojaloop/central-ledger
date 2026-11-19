@@ -39,6 +39,8 @@ const Config = require('../../lib/config')
 const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('../../shared/logger').logger
+const StateRules = require('./stateRules')
+const { recordSkippedMessage } = require('./skippedMessage')
 
 /**
  * @function processPositionTimeoutReservedBin
@@ -81,10 +83,15 @@ const processPositionTimeoutReservedBin = async (
       const payeeFsp = binItem.message.value.to
       const payerFsp = binItem.message.value.from
 
-      // If the transfer is not in `RESERVED_TIMEOUT`, a position timeout-reserved message was incorrectly published.
-      // i.e Something has gone extremely wrong.
-      if (accumulatedTransferStates[transferId] !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
-        throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
+      // The reservation is released only from RESERVED_TIMEOUT. Any other state means this message is a
+      // duplicate or arrived after another decision: skip it without changing state or position,
+      // sending a notification or throwing.
+      // Read the running state, so a copy later in this bin sees what an earlier copy did.
+      const action = Enum.Events.Event.Action.TIMEOUT_RESERVED
+      const currentState = accumulatedTransferStatesCopy[transferId]
+      const outcome = StateRules.classify(action, currentState)
+      if (outcome !== StateRules.OUTCOME.APPLY) {
+        recordSkippedMessage(binItem, action, transferId, outcome, currentState)
       } else {
         Logger.isDebugEnabled && Logger.debug(`accumulatedTransferStates: ${JSON.stringify(accumulatedTransferStates)}`)
 

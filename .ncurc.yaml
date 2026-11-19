@@ -7,5 +7,9 @@ reject: [
   "tape",
   # ilp-packet >2.2.0 (3.x is currently an alpha prerelease) implements a newer ILP packet format
   # that is not compatible with the Mojaloop Specification.
-  "ilp-packet"
+  "ilp-packet",
+  # central-services-logger 12.x is a major release. central-services-shared 19.0.0 (and
+  # central-services-health and other Mojaloop libs) still declare a logger 11.x.x peer, so
+  # npm can't resolve 12.x. Remove once those libraries release with logger 12 support.
+  "@mojaloop/central-services-logger"
 ]
