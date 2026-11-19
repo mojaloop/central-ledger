@@ -250,13 +250,13 @@ sequenceDiagram
     participant DB as MariaDB
     participant K as topic-notification-event
 
-    Note over T,DB: Setup: hub accounts, one DEFERRED / NET / MULTILATERAL model for USD, dfsp_a, and dfsp_b whose net debit cap was raised once
+    Note over T,DB: Setup: hub accounts and a DEFERRED / NET / MULTILATERAL model for USD and for EUR, dfsp_a, and dfsp_b whose USD net debit cap was raised once
 
-    T->>H: pay dfsp_a to dfsp_b 100, pay dfsp_b to dfsp_a 30
+    T->>H: pay dfsp_a to dfsp_b 100 USD, pay dfsp_b to dfsp_a 30 USD
     H->>DB: both transfers fulfilled in window 1 (OPEN)
     T->>W: process(window 1)
     W->>DB: window 1 PROCESSING, window 2 OPEN
-    T->>H: pay dfsp_b to dfsp_a 20
+    T->>H: pay dfsp_b to dfsp_a 20 USD
     H->>DB: transfer fulfilled in window 2
 
     T->>DB: zero one position change of window 1
@@ -280,6 +280,17 @@ sequenceDiagram
     end
 
     T->>DB: assert settlement, window 1 and its content SETTLED
+
+    T->>H: pay dfsp_a to dfsp_b 50 EUR
+    H->>DB: transfer fulfilled in window 2
+    T->>W: process(window 2)
+    W->>DB: window 2 PROCESSING, window 3 OPEN
+    T->>DB: add 10 to a USD position change of window 2, take 10 from an EUR one
+    T->>W: close(window 2)
+    W--xT: refused, neither currency balances although their total does
+    T->>DB: assert window 2 still PROCESSING and nothing aggregated, then restore the rows
+    T->>W: close(window 2)
+    W->>DB: window 2 CLOSED, aggregated per currency
 ```
 
 Run it on its own with:

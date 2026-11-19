@@ -298,14 +298,20 @@ const Facade = {
           Enum.Settlements.SettlementGranularity.NET
         ]).transacting(trx)
 
-        // First we need to check if debits and credits are balanced
-        const ledgerTotal = await knex
+        // First we need to check if debits and credits are balanced. They have to balance within each
+        // settlement window content, that is per ledger account type, currency and settlement model: one
+        // total for the window would let a surplus in one currency hide a shortfall in another.
+        const contentTotals = await knex
           .from('tmp_swc_agg')
+          .select('ledgerAccountTypeId', 'currencyId', 'settlementModelId')
           .sum('amount AS balanced')
-          .first()
+          .groupBy('ledgerAccountTypeId', 'currencyId', 'settlementModelId')
           .transacting(trx)
 
-        if (ledgerTotal.balanced == null || new MLNumber(ledgerTotal.balanced).toNumber() !== 0) {
+        // A window without position changes has no totals, and is refused as well.
+        const isBalanced = contentTotals.length > 0 &&
+          contentTotals.every(total => total.balanced != null && new MLNumber(total.balanced).toNumber() === 0)
+        if (!isBalanced) {
           const errMessage = `Debits and credits are not balanced in participantPositionChange for window ID ${settlementWindowId}`
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, errMessage)
         }

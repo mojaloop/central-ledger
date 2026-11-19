@@ -35,7 +35,9 @@
  *   4. a settlement is created for the closed window;
  *   5. the settlement is walked through PS_TRANSFERS_RECORDED, PS_TRANSFERS_RESERVED,
  *      PS_TRANSFERS_COMMITTED and SETTLED, which moves the positions back and leaves the net debit
- *      caps alone.
+ *      caps alone;
+ *   6. the next window, which holds transfers in two currencies, is refused while the currencies only
+ *      balance against each other, and is closed once each of them balances.
  *
  * The steps call the settlement services the API handlers and the deferredSettlement handler call,
  * rather than going through HTTP or Kafka: the harness boots no hapi server and does not register the
@@ -68,6 +70,8 @@ const harness = Harness.getInstance()
 
 const currency = 'USD'
 const settlementModel = `DEFERRED_MULTILATERAL_NET_${currency}`
+/** A second currency, for the window that has to balance in each of its currencies. */
+const otherCurrency = 'EUR'
 const reason = 'settlement integration test'
 const topicNotification = 'topic-notification-event'
 /** The net debit cap of both DFSPs. */
@@ -93,14 +97,31 @@ let netSender: Account
 /** dfsp_b is owed 70 for the closed window. */
 let netRecipient: Account
 
-const pay = (payer: string, payee: string, transferId: string, amount: string) =>
+const pay = (payer: string, payee: string, transferId: string, amount: string, payCurrency: string = currency) =>
   ApiHelpers.buildPayment()
     .deps(harness, TransferHandler)
     .parties(payer, payee)
     .transferId(transferId)
-    .amount(amount, currency)
+    .amount(amount, payCurrency)
     .build()
     .prepareAndFulfil()
+
+/** The position change that made the payer of a transfer owe its amount. */
+const payerPositionChange = async (transferId: string): Promise<{ id: number, change: string }> => {
+  const knex = await Db.getKnex()
+  const [positionChange] = await knex('participantPositionChange AS ppc')
+    .join('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ppc.transferStateChangeId')
+    .where('tsc.transferId', transferId)
+    .orderBy('ppc.participantPositionChangeId')
+    .select('ppc.participantPositionChangeId AS id', 'ppc.change')
+  return positionChange
+}
+
+/** Rewrites the amount of a position change, to make a window look unbalanced, or to restore it. */
+const setPositionChange = async (id: number, change: string | number): Promise<void> => {
+  const knex = await Db.getKnex()
+  await knex('participantPositionChange').where('participantPositionChangeId', id).update({ change })
+}
 
 const windowState = async (settlementWindowId: number): Promise<string> =>
   (await SettlementWindowService.getById({ settlementWindowId })).state
@@ -123,7 +144,7 @@ const netDebitCapsOf = async (name: string): Promise<Array<[number, number]>> =>
   return limits.map((limit: any) => [Number(limit.value), limit.isActive])
 }
 
-/** The aggregation rows close() wrote for a window, one per account and role. */
+/** The aggregation rows close() wrote for a window, one per account and role, by currency. */
 const aggregationOf = async (settlementWindowId: number): Promise<Array<any>> => {
   const knex = await Db.getKnex()
   return knex('settlementContentAggregation AS sca')
@@ -132,8 +153,9 @@ const aggregationOf = async (settlementWindowId: number): Promise<Array<any>> =>
     .join('participant AS p', 'p.participantId', 'pc.participantId')
     .join('transferParticipantRoleType AS tprt', 'tprt.transferParticipantRoleTypeId', 'sca.transferParticipantRoleTypeId')
     .where('swc.settlementWindowId', settlementWindowId)
-    .orderBy(['p.name', 'tprt.name'])
-    .select('p.name AS participant', 'tprt.name AS role', 'sca.amount', 'sca.currentStateId AS state', 'sca.settlementId')
+    .orderBy(['swc.currencyId', 'p.name', 'tprt.name'])
+    .select('swc.currencyId AS currency', 'p.name AS participant', 'tprt.name AS role', 'sca.amount',
+      'sca.currentStateId AS state', 'sca.settlementId')
 }
 
 /**
@@ -204,36 +226,44 @@ describe('settlement/models/settlement/facade', () => {
     await TransferHandler.registerPrepareHandler()
     await TransferHandler.registerFulfilHandler()
 
+    // One settlement model per currency. Only the first currency is settled here.
+    const modelFor = (modelCurrency: string) => ({
+      name: `DEFERRED_MULTILATERAL_NET_${modelCurrency}`,
+      settlementGranularity: 'NET',
+      settlementInterchange: 'MULTILATERAL',
+      settlementDelay: 'DEFERRED',
+      currency: modelCurrency,
+      // Makes the reserve step read the NET_DEBIT_CAP limit of the net recipient.
+      requireLiquidityCheck: true,
+      ledgerAccountType: 'POSITION',
+      settlementAccountType: 'SETTLEMENT',
+      // Without it putById() changes states but moves no position.
+      autoPositionReset: true
+    })
     await ApiHelpers.createHub(harness, {
-      currencies: [currency],
-      settlementModels: [{
-        name: settlementModel,
-        settlementGranularity: 'NET',
-        settlementInterchange: 'MULTILATERAL',
-        settlementDelay: 'DEFERRED',
-        currency,
-        // Makes the reserve step read the NET_DEBIT_CAP limit of the net recipient.
-        requireLiquidityCheck: true,
-        ledgerAccountType: 'POSITION',
-        settlementAccountType: 'SETTLEMENT',
-        // Without it putById() changes states but moves no position.
-        autoPositionReset: true
-      }]
+      currencies: [currency, otherCurrency],
+      settlementModels: [modelFor(currency), modelFor(otherCurrency)]
     })
     await ApiHelpers.createDfsp(harness, {
       name: 'dfsp_a',
-      currencies: [currency],
+      currencies: [currency, otherCurrency],
       isProxy: false,
-      initialPostionsAndLimits: [{ initialPosition: 0, value: netDebitCap }],
-      deposits: [10000]
+      initialPostionsAndLimits: [
+        { initialPosition: 0, value: netDebitCap },
+        { initialPosition: 0, value: netDebitCap }
+      ],
+      deposits: [10000, 10000]
     })
     // dfsp_b gets its net debit cap in two steps, which leaves its first limit behind as an inactive row.
     await ApiHelpers.createDfsp(harness, {
       name: 'dfsp_b',
-      currencies: [currency],
+      currencies: [currency, otherCurrency],
       isProxy: false,
-      initialPostionsAndLimits: [{ initialPosition: 0, value: staleNetDebitCap }],
-      deposits: [10000]
+      initialPostionsAndLimits: [
+        { initialPosition: 0, value: staleNetDebitCap },
+        { initialPosition: 0, value: netDebitCap }
+      ],
+      deposits: [10000, 10000]
     })
     await ParticipantService.adjustLimits('dfsp_b', {
       currency,
@@ -275,17 +305,10 @@ describe('settlement/models/settlement/facade', () => {
   })
 
   it('close() refuses a window whose position changes do not sum to zero', async () => {
-    const knex = await Db.getKnex()
-    const [positionChange] = await knex('participantPositionChange AS ppc')
-      .join('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ppc.transferStateChangeId')
-      .where('tsc.transferId', '7000001')
-      .orderBy('ppc.participantPositionChangeId')
-      .select('ppc.participantPositionChangeId AS id', 'ppc.change')
-    const setChange = (change: string | number) =>
-      knex('participantPositionChange').where('participantPositionChangeId', positionChange.id).update({ change })
+    const positionChange = await payerPositionChange('7000001')
 
     // Unbalance the window by dropping what the payer of the first transfer owes.
-    await setChange(0)
+    await setPositionChange(positionChange.id, 0)
     try {
       await assert.rejects(SettlementWindowService.close(closedWindowId, reason), /not balanced/)
 
@@ -293,7 +316,7 @@ describe('settlement/models/settlement/facade', () => {
       assert.equal(await windowState(closedWindowId), 'PROCESSING')
       assert.deepEqual(await aggregationOf(closedWindowId), [])
     } finally {
-      await setChange(positionChange.change)
+      await setPositionChange(positionChange.id, positionChange.change)
     }
   })
 
@@ -418,5 +441,43 @@ describe('settlement/models/settlement/facade', () => {
       })
       .first('pp.value')
     assert.equal(Number(hub.value), 0)
+  })
+
+  it('close() refuses a window whose currencies only balance against each other', async () => {
+    // The open window holds the 20 USD of the third transfer. Add 50 EUR and start closing it.
+    await pay('dfsp_a', 'dfsp_b', '7000004', '50.00', otherCurrency)
+    await SettlementWindowModel.process(
+      { settlementWindowId: openWindowId, reason }, enums.settlementWindowStates
+    )
+    assert.equal(await windowState(openWindowId), 'PROCESSING')
+
+    // 10 USD too many and 10 EUR too few. Nothing is missing in total, but neither currency balances.
+    const owedInUsd = await payerPositionChange('7000003')
+    const owedInEur = await payerPositionChange('7000004')
+    await setPositionChange(owedInUsd.id, Number(owedInUsd.change) + 10)
+    await setPositionChange(owedInEur.id, Number(owedInEur.change) - 10)
+    try {
+      await assert.rejects(SettlementWindowService.close(openWindowId, reason), /not balanced/)
+
+      // The window is left as it was, with nothing aggregated.
+      assert.equal(await windowState(openWindowId), 'PROCESSING')
+      assert.deepEqual(await aggregationOf(openWindowId), [])
+    } finally {
+      await setPositionChange(owedInUsd.id, owedInUsd.change)
+      await setPositionChange(owedInEur.id, owedInEur.change)
+    }
+
+    // Balanced in each currency, the window closes, with its transfers aggregated per currency.
+    const closed = await SettlementWindowService.close(openWindowId, reason)
+    assert.equal(closed.state, 'CLOSED')
+    assert.deepEqual(
+      (await aggregationOf(openWindowId)).map(row => [row.currency, row.participant, row.role, row.amount]),
+      [
+        [otherCurrency, 'dfsp_a', 'PAYER_DFSP', '50.0000'],
+        [otherCurrency, 'dfsp_b', 'PAYEE_DFSP', '-50.0000'],
+        [currency, 'dfsp_a', 'PAYEE_DFSP', '-20.0000'],
+        [currency, 'dfsp_b', 'PAYER_DFSP', '20.0000']
+      ]
+    )
   })
 })

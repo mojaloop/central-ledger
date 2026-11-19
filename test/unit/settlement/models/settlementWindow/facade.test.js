@@ -889,7 +889,13 @@ Test('Settlement Window facade', async (settlementWindowFacadeTest) => {
 
           // knex.from(knex.raw('settlementWindowContentStateChange ...')).insert(fn).transacting(trx)
           knexStub.from = sandbox.stub().returns({
-            sum: sandbox.stub().returns({ first: sandbox.stub().returns({ transacting: sandbox.stub().resolves({ balanced: 1 }) }) }),
+            select: sandbox.stub().returns({
+              sum: sandbox.stub().returns({
+                groupBy: sandbox.stub().returns({
+                  transacting: sandbox.stub().resolves([{ ledgerAccountTypeId: 1, currencyId: 'USD', settlementModelId: 1, balanced: 1 }])
+                })
+              })
+            }),
             insert: sandbox.stub().returns({ transacting: sandbox.stub().resolves() })
           })
 
@@ -1060,7 +1066,13 @@ Test('Settlement Window facade', async (settlementWindowFacadeTest) => {
 
           // knex.from(knex.raw('settlementWindowContentStateChange ...')).insert(fn).transacting(trx)
           knexStub.from = sandbox.stub().returns({
-            sum: sandbox.stub().returns({ first: sandbox.stub().returns({ transacting: sandbox.stub().resolves({ balanced: 0 }) }) }),
+            select: sandbox.stub().returns({
+              sum: sandbox.stub().returns({
+                groupBy: sandbox.stub().returns({
+                  transacting: sandbox.stub().resolves([{ ledgerAccountTypeId: 1, currencyId: 'USD', settlementModelId: 1, balanced: 0 }])
+                })
+              })
+            }),
             insert: sandbox.stub().returns({ transacting: sandbox.stub().resolves() })
           })
 
@@ -1102,6 +1114,54 @@ Test('Settlement Window facade', async (settlementWindowFacadeTest) => {
           test.end()
         }
       })
+
+      /**
+       * Stubs what close() reads before it checks the balance of a window in the PROCESSING state.
+       * `contentTotals` is what the balance query returns: one total per settlement window content.
+       */
+      const stubCloseUpToBalanceCheck = contentTotals => {
+        const knexStub = sandbox.stub()
+        knexStub.transaction = sandbox.stub().callsArgWith(0, sandbox.stub())
+        knexStub.withArgs('settlementWindow').returns({
+          where: () => ({ forUpdate: () => ({ first: () => ({ transacting: async () => ({ currentStateChangeId: 0 }) }) }) })
+        })
+        knexStub.withArgs('settlementWindowStateChange').returns({
+          where: () => ({ first: () => ({ transacting: async () => ({ settlementWindowStateId: 'PROCESSING' }) }) })
+        })
+        knexStub.raw = sandbox.stub().returns({ transacting: sandbox.stub().resolves() })
+        knexStub.groupBy = sandbox.stub().returns({ transacting: sandbox.stub().resolves(contentTotals) })
+        knexStub.from = sandbox.stub().returns({ select: () => ({ sum: () => ({ groupBy: knexStub.groupBy }) }) })
+        sandbox.stub(SettlementModel, 'getAll').resolves([])
+        Db.getKnex = sandbox.stub().returns(knexStub)
+        return knexStub
+      }
+
+      const unbalancedWindows = {
+        'if debits and credits only balance across currencies': [
+          { ledgerAccountTypeId: 1, currencyId: 'USD', settlementModelId: 1, balanced: 10 },
+          { ledgerAccountTypeId: 1, currencyId: 'EUR', settlementModelId: 2, balanced: -10 }
+        ],
+        'if one of its currencies is not balanced': [
+          { ledgerAccountTypeId: 1, currencyId: 'USD', settlementModelId: 1, balanced: 0 },
+          { ledgerAccountTypeId: 1, currencyId: 'EUR', settlementModelId: 2, balanced: '0.0100' }
+        ],
+        'if the window has no position changes': []
+      }
+      for (const [condition, contentTotals] of Object.entries(unbalancedWindows)) {
+        await closeTest.test(`close the specified open window will throw an error ${condition}.`, async test => {
+          const knexStub = stubCloseUpToBalanceCheck(contentTotals)
+
+          const error = await SettlementWindowFacade.close(settlementWindowId, reason).then(() => null, err => err)
+
+          test.ok(error, 'Error thrown as expected')
+          test.equal(error.message, `Debits and credits are not balanced in participantPositionChange for window ID ${settlementWindowId}`)
+          test.ok(knexStub.groupBy.calledOnceWithExactly('ledgerAccountTypeId', 'currencyId', 'settlementModelId'),
+            'the totals are taken per settlement window content')
+          test.notOk(knexStub.calledWith('settlementWindowContent'), 'nothing is aggregated')
+          test.end()
+        })
+      }
+
       await closeTest.end()
     } catch (err) {
       logger.error(`settlementFacadeTest failed with error - ${err}`)
