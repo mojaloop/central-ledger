@@ -722,6 +722,8 @@ export type MojaloopKafkaMessage = {
   partition: number,
   offset: number,
   valueParsed: {
+    from: string,
+    to: string,
     content: {
       uriParams: any
       context: any,
