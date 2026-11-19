@@ -299,7 +299,8 @@ What it cannot show:
 - The wait of `WINDOW_AGGREGATION.CLOSE_DELAY_MS` before a window is closed. That happens in the
   `deferredSettlement` handler, which the test does not go through; the handler's unit test covers it.
 - The deadlock retry of `putById()` (`DEADLOCK.RETRIES`, `DEADLOCK.RETRY_DELAY_MS`). A deadlock cannot
-  be staged reliably here, and no unit test exercises that path either.
+  be staged reliably here. The unit tests of the settlement facade cover it instead, with a transaction
+  that fails with the deadlock error of the database driver.
 
 ### Running Functional Tests
 

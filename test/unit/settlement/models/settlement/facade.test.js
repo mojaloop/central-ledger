@@ -39,6 +39,7 @@ const ParticipantFacade = require('../../../../../src/models/participant/facade'
 const idGenerator = require('@mojaloop/central-services-shared').Util.id
 const Utility = require('../../../../../src/settlement/lib/utility')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
+const Config = require('../../../../../src/lib/config')
 
 const generateULID = idGenerator({ type: 'ulid' })
 
@@ -3762,6 +3763,123 @@ Test('Settlement facade', async (settlementFacadeTest) => {
         } catch (err) {
           logger.error(`putById failed with error - ${err}`)
           test.ok('Error is thrown as expected')
+          test.end()
+        }
+      })
+
+      // The error mysql2 raises in the transaction that the database rolls back to break a deadlock.
+      const deadlockError = () => Object.assign(
+        new Error('Deadlock found when trying to get lock; try restarting transaction'),
+        { code: 'ER_LOCK_DEADLOCK', errno: 1213, sqlState: '40001' }
+      )
+
+      /**
+       * Stubs the queries putById() runs to move the one account of a settlement from PS_TRANSFERS_RECORDED
+       * to PS_TRANSFERS_RESERVED, each with the calls putById() chains on it. Every read resolves with new
+       * objects, as it does in the transaction that follows a rolled back one. `transaction` is left to the
+       * test.
+       */
+      const stubKnexForReserve = () => {
+        const { spcList, pcRows, processedContent } = stubData.putById[1]
+        const settlementData = () => ({
+          settlementId: 1,
+          settlementStateId: enums.settlementStates.PS_TRANSFERS_RECORDED,
+          reason: 'reason',
+          createdDate: now,
+          autoPositionReset: true,
+          requireLiquidityCheck: true
+        })
+        const copyOf = rows => () => rows.map(row => ({ ...row }))
+        // An object on which `methods` are called in that order. The last call resolves with result().
+        const query = (methods, result) => methods.reduceRight(
+          (next, method) => () => ({ [method]: next }),
+          async () => result()
+        )()
+
+        const knexStub = sandbox.stub()
+        knexStub.withArgs('settlement AS s')
+          .returns(query(['join', 'join', 'select', 'where', 'first', 'transacting', 'forUpdate'], settlementData))
+        knexStub.withArgs('settlementParticipantCurrency AS spc')
+          .returns(query(['leftJoin', 'select', 'where', 'transacting', 'forUpdate'], copyOf(spcList)))
+        knexStub.withArgs('participantCurrency')
+          .returns(query(['select', 'whereIn', 'transacting'], copyOf(pcRows)))
+        knexStub.withArgs('settlementParticipantCurrencyStateChange')
+          .returns(query(['insert', 'transacting'], () => [21]))
+        knexStub.withArgs('settlementParticipantCurrency')
+          .returns(query(['where', 'update', 'transacting'], () => 1))
+        knexStub.withArgs('settlementContentAggregation AS sca')
+          .returns(query(['transacting', 'join', 'join', 'join', 'join', 'join', 'whereIn', 'where', 'distinct', 'orderBy'], copyOf(processedContent)))
+        knexStub.withArgs('settlementStateChange')
+          .returns(query(['insert', 'transacting'], () => [31]))
+        knexStub.withArgs('settlement')
+          .returns(query(['where', 'update', 'transacting'], () => 1))
+        sandbox.stub(Db, 'getKnex').returns(knexStub)
+        return knexStub
+      }
+
+      await putByIdTest.test('retry the transaction after a deadlock and send only the notifications of the one that committed', async test => {
+        try {
+          const knexStub = stubKnexForReserve()
+          const trxStub = sandbox.stub()
+          const notification = { id: 'settlement-transfer-position-change' }
+          // Reserving the transfers queues a notification, to be sent once the transaction has committed.
+          sandbox.replace(SettlementFacade, 'settlementTransfersReserve', sandbox.stub().callsFake(async (...args) => {
+            args[5].push(notification)
+          }))
+          sandbox.stub(Utility, 'produceGeneralMessage').resolves()
+          // The first transaction gets as far as queueing its notification, then is rolled back.
+          knexStub.transaction = sandbox.stub()
+          knexStub.transaction.onFirstCall().callsFake(async trxFunction => {
+            await trxFunction(trxStub)
+            throw deadlockError()
+          })
+          knexStub.transaction.onSecondCall().callsFake(trxFunction => trxFunction(trxStub))
+
+          const outcome = SettlementFacade.putById(1, payload.putById[1], enums)
+            .then(result => ({ result }), error => ({ error }))
+          await clock.tickAsync(Config.SETTLEMENT_DEADLOCK_RETRY_DELAY_MS - 1)
+          test.equal(knexStub.transaction.callCount, 1, 'waits before it retries')
+          await clock.tickAsync(1)
+          const { result, error } = await outcome
+
+          test.notOk(error, 'does not throw')
+          test.equal(knexStub.transaction.callCount, 2, 'retries the transaction once')
+          test.equal(result.state, enums.settlementStates.PS_TRANSFERS_RESERVED, 'returns the result of the transaction that committed')
+          test.equal(SettlementFacade.settlementTransfersReserve.callCount, 2, 'both transactions queued a notification')
+          test.ok(Utility.produceGeneralMessage.calledOnceWithExactly(
+            Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, notification, Utility.ENUMS.STATE.SUCCESS
+          ), 'sends the notification once')
+          test.end()
+        } catch (err) {
+          logger.error(`putById failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await putByIdTest.test('give up with an FSPIOP error when the deadlocks outlast the retries', async test => {
+        try {
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().rejects(deadlockError())
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          sandbox.stub(Utility, 'produceGeneralMessage').resolves()
+
+          const outcome = SettlementFacade.putById(1, payload.putById[1], enums)
+            .then(result => ({ result }), error => ({ error }))
+          await clock.runAllAsync()
+          const { error } = await outcome
+
+          const retries = Config.SETTLEMENT_DEADLOCK_RETRIES
+          test.ok(error instanceof FSPIOPError, 'throws an FSPIOP error')
+          test.equal(error.message, deadlockError().message, 'made from the deadlock error')
+          test.equal(knexStub.transaction.callCount, 1 + retries, 'retries the transaction SETTLEMENT_DEADLOCK_RETRIES times')
+          test.equal(clock.now - now.getTime(), Config.SETTLEMENT_DEADLOCK_RETRY_DELAY_MS * retries * (retries + 1) / 2,
+            'waits one SETTLEMENT_DEADLOCK_RETRY_DELAY_MS longer before each retry')
+          test.ok(Utility.produceGeneralMessage.notCalled, 'sends no notification')
+          test.end()
+        } catch (err) {
+          logger.error(`putById failed with error - ${err}`)
+          test.fail()
           test.end()
         }
       })
